@@ -358,3 +358,63 @@ Every dependency is pinned to an exact version (`.npmrc` `save-exact=true`), and
 `package-lock.json` is committed. Tooling scripts are TypeScript run directly by Node
 (type stripping), so they use erasable syntax only.
 **Why:** product owner decision in session 0.2. Reproducible installs locally and in CI.
+
+## D-038 — Contract field names are the schema column names
+2026-11-04 · accepted
+Contract schemas use the exact `snake_case` table and column names of `docs/schema.sql`
+(`first_name`, `command_rank_id`). No camelCase mapping exists in any layer: IndexedDB,
+the remote adapter and the UI see the same names as Postgres.
+**Why:** product owner decision in session 1.1a. One name per fact removes a mapping layer
+and makes the drift test exact.
+
+## D-039 — The schema drift test lives in contracts
+2026-11-04 · accepted
+`src/contracts/schema-drift.test.ts` reads `docs/schema.sql` and fails when a table, a
+column, nullability, a length, a value type or a CHECK vocabulary differs from the
+contracts. `.dependency-cruiser.cjs` allows contracts **test files only** to read
+`docs/schema.sql`. Production contracts code still imports `zod` only.
+`unit_closure` has no contract: it is a Postgres-only derived index (D-009, D-019).
+**Why:** product owner decision in session 1.1a.
+
+## D-040 — Valid permission combinations
+2026-11-04 · accepted · refines D-003
+Only these `(resource, action)` pairs are valid. Contracts lists them
+(`PERMISSION_ACTIONS_BY_RESOURCE`, `Permission`), and the `role_permissions` contract
+rejects any other pair.
+
+| resource | actions |
+|----------|---------|
+| organization | view, update |
+| unit_levels, units, command_ranks, tags, leave_types, deployments, availability_rules, properties, roles | view, create, update, delete |
+| seniority_overrides | view, create, delete (= revoke) |
+| soldiers | view, create, update, delete (= archive) |
+| soldier_private | view, update |
+| memberships | view, update |
+| leaves | view, create, update, delete (= cancel), duplicate, approve, export |
+| leave_comments, internal_comments | view, create |
+| access_grants | view, create, delete (= revoke) |
+| accounts | view, approve |
+| data_transfer | export, import |
+
+Assigning a tag to a soldier is `soldiers:update`. "delete" never hard-deletes (D-017).
+**Why:** product owner decision in session 1.1a. A closed list keeps the roles screen free
+of meaningless pairs such as `tags:approve`.
+
+## D-041 — Settings defaults
+2026-11-04 · accepted · refines D-013
+- `OrganizationSettings.reschedule_policy`: `keep_if_can_approve` (default) or
+  `always_pending`. With the default, moving an approved leave keeps it approved only if the
+  actor holds `leaves:approve` over the soldier. Otherwise it returns to `pending`.
+- `SoldierPreferences.create_leaves_as_approved`: default `false`. It only pre-selects
+  the choice, and the server re-checks the permission.
+- Both JSONB columns default to `{}`. The contract schemas fill in the defaults when they
+  parse.
+**Why:** product owner chose the reschedule default in session 1.1a. The preference
+default is the conservative choice.
+
+## D-042 — Date and time representation in contracts
+2026-11-04 · accepted
+`DATE` columns are ISO calendar-date strings (`YYYY-MM-DD`). `TIMESTAMPTZ` columns are
+ISO 8601 date-time strings with an offset. Contracts cannot import a date library
+(D-020), so domain converts them with `@internationalized/date` (D-035). `NUMERIC`
+columns are numbers.

@@ -1,0 +1,100 @@
+import { z } from 'zod'
+
+// Permission vocabulary (D-003) and its valid combinations (D-040).
+
+export const PermissionResource = z.enum([
+  'organization',
+  'unit_levels',
+  'units',
+  'command_ranks',
+  'seniority_overrides',
+  'soldiers',
+  'soldier_private',
+  'memberships',
+  'tags',
+  'leave_types',
+  'leaves',
+  'leave_comments',
+  'internal_comments',
+  'deployments',
+  'availability_rules',
+  'properties',
+  'roles',
+  'access_grants',
+  'accounts',
+  'data_transfer',
+])
+export type PermissionResource = z.infer<typeof PermissionResource>
+
+export const PermissionAction = z.enum([
+  'view',
+  'create',
+  'update',
+  'delete',
+  'duplicate',
+  'approve',
+  'export',
+  'import',
+])
+export type PermissionAction = z.infer<typeof PermissionAction>
+
+const MANAGE = ['view', 'create', 'update', 'delete'] as const
+
+/**
+ * The only valid `(resource, action)` pairs (D-040). "delete" archives, cancels or revokes;
+ * nothing is hard-deleted (D-017).
+ */
+export const PERMISSION_ACTIONS_BY_RESOURCE = {
+  organization: ['view', 'update'],
+  unit_levels: MANAGE,
+  units: MANAGE,
+  command_ranks: MANAGE,
+  seniority_overrides: ['view', 'create', 'delete'],
+  soldiers: MANAGE,
+  soldier_private: ['view', 'update'],
+  memberships: ['view', 'update'],
+  tags: MANAGE,
+  leave_types: MANAGE,
+  leaves: ['view', 'create', 'update', 'delete', 'duplicate', 'approve', 'export'],
+  leave_comments: ['view', 'create'],
+  internal_comments: ['view', 'create'],
+  deployments: MANAGE,
+  availability_rules: MANAGE,
+  properties: MANAGE,
+  roles: MANAGE,
+  access_grants: ['view', 'create', 'delete'],
+  accounts: ['view', 'approve'],
+  data_transfer: ['export', 'import'],
+} as const satisfies Record<PermissionResource, readonly PermissionAction[]>
+
+function pairOf<R extends PermissionResource>(resource: R) {
+  return z.object({
+    resource: z.literal(resource),
+    action: z.enum(PERMISSION_ACTIONS_BY_RESOURCE[resource]),
+  })
+}
+
+/** A valid permission pair, e.g. `{ resource: 'leaves', action: 'approve' }`. Rejects pairs outside D-040. */
+export const Permission = z.discriminatedUnion('resource', [
+  pairOf('organization'),
+  pairOf('unit_levels'),
+  pairOf('units'),
+  pairOf('command_ranks'),
+  pairOf('seniority_overrides'),
+  pairOf('soldiers'),
+  pairOf('soldier_private'),
+  pairOf('memberships'),
+  pairOf('tags'),
+  pairOf('leave_types'),
+  pairOf('leaves'),
+  pairOf('leave_comments'),
+  pairOf('internal_comments'),
+  pairOf('deployments'),
+  pairOf('availability_rules'),
+  pairOf('properties'),
+  pairOf('roles'),
+  pairOf('access_grants'),
+  pairOf('accounts'),
+  pairOf('data_transfer'),
+])
+export type Permission = z.infer<typeof Permission>

@@ -5,7 +5,7 @@
  *   config imports contracts only; i18n imports nothing (leaf, used by ui and app).
  *
  * npm packages per layer:
- *   contracts -> zod only (D-020)
+ *   contracts -> zod only (D-020); its *.test.ts may also use vitest and docs/schema.sql (D-039)
  *   domain    -> @internationalized/date only (D-035)
  *   config    -> zod only (env schema)
  *   i18n      -> nothing
@@ -31,8 +31,18 @@ module.exports = {
       name: 'contracts-imports-zod-only',
       comment: 'contracts holds Zod schemas and inferred types; it imports nothing but zod.',
       severity: 'error',
-      from: { path: '^src/contracts/' },
+      from: { path: '^src/contracts/', pathNot: '\\.test\\.ts$' },
       to: { pathNot: ['^src/contracts/', '^node_modules/zod/'] },
+    },
+    {
+      name: 'contracts-tests-read-schema-only',
+      comment:
+        'contracts tests may also use vitest and read docs/schema.sql (drift test, D-039).',
+      severity: 'error',
+      from: { path: '^src/contracts/.+\\.test\\.ts$' },
+      to: {
+        pathNot: ['^src/contracts/', '^node_modules/zod/', '^node_modules/vitest/', '^docs/schema\\.sql$'],
+      },
     },
     {
       name: 'domain-imports-contracts-only',
