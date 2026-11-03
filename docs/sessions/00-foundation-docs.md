@@ -28,8 +28,8 @@ Date: 2026-11-03 · Track: docs · No source code touched.
 
 ## Open items
 
-- **git is not installed** on this machine, so the repository is not initialized yet.
-  Session 0.2 starts with `git init` and a first commit after the owner installs Git.
+- Git repository initialized on branch `main` with the session 0.1 commit. Git warns about
+  LF→CRLF conversion; session 0.2 adds `.gitattributes` (LF) and renormalizes.
 - `npm install` has not been run in this folder.
 - Backend provider still provisional (D-027).
 
