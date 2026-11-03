@@ -1,4 +1,5 @@
 // Public entry point of the CONTRACTS layer.
-// Types and interfaces only: entities, repository interfaces, service
-// interfaces, auth interfaces, shared constants-as-types. No logic.
+// Zod schemas and their inferred types (D-020): entities, inputs, enums,
+// filters, permission vocabulary, repository/command/auth interfaces, error
+// codes. No behavior. Imports `zod` only.
 export {}

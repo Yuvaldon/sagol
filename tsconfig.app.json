@@ -29,6 +29,7 @@
        must target the layer's public entry point (index.ts) only. */
     "paths": {
       "@contracts": ["./src/contracts/index.ts"],
+      "@domain": ["./src/domain/index.ts"],
       "@config": ["./src/config/index.ts"],
       "@data": ["./src/data/index.ts"],
       "@logic": ["./src/logic/index.ts"],

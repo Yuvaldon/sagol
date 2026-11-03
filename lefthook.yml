@@ -1,0 +1,19 @@
+# Git hooks (ROADMAP session 0.2). Installed by `npm install` (script "prepare").
+# pre-commit runs the fast subset of `npm run check`; CI runs all of it.
+pre-commit:
+  parallel: true
+  jobs:
+    - name: typecheck
+      glob: "*.{ts,tsx}"
+      run: npm run typecheck
+    - name: lint
+      glob: "*.{ts,tsx,js,cjs,mjs}"
+      run: npx oxlint --deny-warnings {staged_files} && node scripts/lint-custom.ts
+    - name: layers
+      glob: "src/**/*.{ts,tsx}"
+      run: npx depcruise --config .dependency-cruiser.cjs {staged_files}
+
+commit-msg:
+  jobs:
+    - name: conventional-commits
+      run: node scripts/check-commit-msg.ts {1}

@@ -1,7 +1,13 @@
 @import "tailwindcss";
 
 /*
- * Semantic design tokens (light default, dark added later as a second token
- * set) are defined here once Design.md is approved. Components must only use
- * semantic utilities generated from those tokens.
+ * Tailwind's default palette and spacing scale are reset: no `bg-red-500`, no `p-4`.
+ * Only semantic tokens exist (`--color-surface`, `--color-status-pending`, ...).
+ * They are defined in UI session 4.1 (light set) and phase 8.5 (dark set), and
+ * `docs/Design.md` is derived from them (D-024).
  */
+@theme {
+  --color-*: initial;
+  --spacing: initial;
+  --spacing-*: initial;
+}
