@@ -1,7 +1,9 @@
 # Sagol — instructions for every session
 
 Read before doing anything: `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/schema.sql`,
-`docs/ROADMAP.md`, and the latest file in `docs/sessions/`.
+`docs/ROADMAP.md`, `docs/OPEN_ITEMS.md`, and the latest file in `docs/sessions/`.
+Every `open` item in `docs/OPEN_ITEMS.md` targeted at this session or its layer is in scope
+(D-043).
 
 ## Iron rules
 
@@ -23,6 +25,8 @@ Read before doing anything: `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/s
   in the handoff note as the input for that layer's session.
 - Finish with `npm run check` green, a commit (Conventional Commits), and a handoff note
   in `docs/sessions/NN-<name>.md`: done, decisions, open items, input for the next session.
+- Anything left for another session goes into `docs/OPEN_ITEMS.md` (new id, target
+  session). Close resolved items there. Handoffs refer to items by id, never copy them.
 - Update the status column in `docs/ROADMAP.md`.
 
 ## Communication

@@ -20,7 +20,10 @@ Roadmap row: N.M · Commits: `<hash> <conventional commit header>`
 
 ## Open items
 
-- Known gaps, follow-ups, anything left deliberately undone and why.
+- Ids only; the text lives in `docs/OPEN_ITEMS.md` (D-043).
+- Closed: OI-NNN (one line on how). Opened: OI-NNN (target session). Moved: OI-NNN → new
+  target, with the reason (also written in the Notes column).
+- If none: "No open items touched."
 
 ## Input for the next session
 
@@ -35,3 +38,4 @@ Conventions
   build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test. Scope = layer or
   track (e.g. `feat(domain): ...`). Enforced by the commit-msg hook.
 - Update the status column in `docs/ROADMAP.md`.
+- Update `docs/OPEN_ITEMS.md`: close resolved items, add new ones (never delete rows).

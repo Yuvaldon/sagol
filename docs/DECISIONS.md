@@ -418,3 +418,14 @@ default is the conservative choice.
 ISO 8601 date-time strings with an offset. Contracts cannot import a date library
 (D-020), so domain converts them with `@internationalized/date` (D-035). `NUMERIC`
 columns are numbers.
+
+## D-043 — Open items live in one file
+2026-11-04 · accepted
+`docs/OPEN_ITEMS.md` is the single source of truth for work one session leaves for another.
+Each item has a permanent id (`OI-NNN`), a target session (roadmap number, or a layer when
+not fixed yet), its source session, a status and notes. Every session reads it at the start
+and takes in scope the open items targeted at it. At the end it closes what it resolved,
+adds new items, and its handoff refers to items by id instead of copying them. Rows are
+never deleted. An item not resolved in its target session is moved explicitly, with a reason.
+**Why:** product owner decision in session 0.3. Sessions read only the latest handoff, so an
+item aimed several sessions ahead (e.g. leave filters for 3.3) could be lost.

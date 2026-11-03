@@ -3,10 +3,11 @@
 One session = one layer (or one non-code track: docs / tooling). Every session:
 
 1. starts by reading `CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`,
-   `docs/schema.sql` and the previous handoff in `docs/sessions/`;
+   `docs/schema.sql`, `docs/OPEN_ITEMS.md` and the previous handoff in `docs/sessions/`,
+   and takes in scope every open item targeted at it (D-043);
 2. touches only its layer's folder (plus `i18n`/theme tokens in UI sessions, D-025);
-3. ends with `npm run check` green, a commit, and a handoff note
-   `docs/sessions/NN-<name>.md` (done / decisions taken / open items / next input).
+3. ends with `npm run check` green, `docs/OPEN_ITEMS.md` updated, a commit, and a handoff
+   note `docs/sessions/NN-<name>.md` (done / decisions taken / open item ids / next input).
 
 Contracts are written once for the whole domain (phase 1). After that, features are built
 as vertical slices across consecutive single-layer sessions.
@@ -19,6 +20,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 |---|-------|---------|--------|
 | 0.1 | docs | Decisions log (D-001 … D-033), schema rev 3.1, architecture rev 2, roadmap, CLAUDE.md | ☑ |
 | 0.2 | tooling | See guardrails below. Folder skeleton, deps pinned, env example + build guard, CI (D-034 … D-037) | ☑ |
+| 0.3 | docs | `docs/OPEN_ITEMS.md` as the single open-items log; workflow files updated (D-043) | ☑ |
 
 ### Session 0.2 guardrails
 
