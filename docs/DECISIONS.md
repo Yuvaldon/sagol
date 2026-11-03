@@ -328,3 +328,33 @@ Supabase is recommended: Postgres matches `schema.sql`, Row Level Security match
 server-authoritative policy model, Google OAuth is built in, and SQL functions host the
 commands. Cloudflare D1 is SQLite without RLS, so all authorization would live in Worker
 code. Final decision at phase 8. Creating the account and project is done by the owner.
+
+## D-034 — Icons: lucide-react
+2026-11-03 · accepted · extends D-026
+`lucide-react` is the icon library. Schema `icon_key` values are semantic keys; the UI theme
+maps each key to a lucide icon. Components never pick icons by free-form name.
+**Why:** product owner decision in session 0.2; it was already in the skeleton.
+
+## D-035 — domain may import `@internationalized/date`
+2026-11-03 · accepted · amends D-007
+`domain` imports `contracts` and `@internationalized/date` and nothing else. The library is
+pure (no I/O, no React) and is the only date library (D-026). Availability, leave and rule
+evaluation need calendar arithmetic. The JavaScript `Date` stays forbidden outside the date
+adapter (raw-value scan). Enforced by `.dependency-cruiser.cjs`.
+**Why:** product owner decision in session 0.2.
+
+## D-036 — Type assertions only in adapters and tests
+2026-11-03 · accepted
+`as` assertions (other than `as const`) are a lint error except in `src/data/**`,
+`src/ui/engines/*/adapter/**` and `*.test.ts(x)`. Tests may pass deliberately invalid input
+to prove validation rejects it. `any` and non-null assertions are forbidden everywhere.
+**Why:** product owner decision in session 0.2. Adapters sit on untyped boundaries
+(IndexedDB, remote payloads) and validate there.
+
+## D-037 — Node 24 LTS and exact dependency versions
+2026-11-03 · accepted
+Node is pinned to 24 LTS (`.nvmrc` 24.12.0, `engines` `>=24.12.0 <25`, `engine-strict`).
+Every dependency is pinned to an exact version (`.npmrc` `save-exact=true`), and
+`package-lock.json` is committed. Tooling scripts are TypeScript run directly by Node
+(type stripping), so they use erasable syntax only.
+**Why:** product owner decision in session 0.2. Reproducible installs locally and in CI.

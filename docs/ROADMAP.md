@@ -18,7 +18,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | # | Track | Content | Status |
 |---|-------|---------|--------|
 | 0.1 | docs | Decisions log (D-001 … D-033), schema rev 3.1, architecture rev 2, roadmap, CLAUDE.md | ☑ |
-| 0.2 | tooling | See guardrails below. Folder skeleton, deps pinned, env schema stub, CI | ☐ |
+| 0.2 | tooling | See guardrails below. Folder skeleton, deps pinned, env example + build guard, CI (D-034 … D-037) | ☑ |
 
 ### Session 0.2 guardrails
 

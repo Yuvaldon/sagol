@@ -31,7 +31,7 @@ contracts  <-  domain  <-  data | logic  <-  ui  <-  app
 | Layer     | Responsibility                                                         | May import                         |
 |-----------|------------------------------------------------------------------------|------------------------------------|
 | contracts | Zod schemas + inferred types, enums, repository/command/auth interfaces | `zod` only                        |
-| domain    | Pure rules: policy, hierarchy, leave state machine, availability, filters | contracts                        |
+| domain    | Pure rules: policy, hierarchy, leave state machine, availability, filters | contracts, `@internationalized/date` (D-035) |
 | config    | Constants: storage keys, view ids, breakpoints, palette keys, env schema | contracts                         |
 | data      | Server-authoritative adapters (IndexedDB now, remote later)            | contracts, domain, config          |
 | logic     | Use cases, query/mutation hooks, view state for the UI                 | contracts, domain, config          |
