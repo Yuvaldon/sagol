@@ -25,6 +25,7 @@ Roadmap row: 0.3 · Commits: `docs: add open-items log and workflow rule (sessio
 ## Open items
 
 - Opened: OI-001 … OI-014 (migrated from earlier handoffs). No items closed.
+- Opened: OI-015 (docs, trigger-based): plan to keep session reading cheap as docs grow.
 
 ## Input for the next session (1.1b contracts)
 
