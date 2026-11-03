@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Strictness */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* One alias per layer. Cross-layer imports must use these aliases and
+       must target the layer's public entry point (index.ts) only. */
+    "paths": {
+      "@contracts": ["./src/contracts/index.ts"],
+      "@config": ["./src/config/index.ts"],
+      "@data": ["./src/data/index.ts"],
+      "@logic": ["./src/logic/index.ts"],
+      "@ui": ["./src/ui/index.ts"],
+      "@i18n": ["./src/i18n/index.ts"],
+      "@app": ["./src/app/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

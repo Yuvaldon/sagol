@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/*
+ * Semantic design tokens (light default, dark added later as a second token
+ * set) are defined here once Design.md is approved. Components must only use
+ * semantic utilities generated from those tokens.
+ */

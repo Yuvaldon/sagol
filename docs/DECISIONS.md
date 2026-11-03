@@ -1,0 +1,330 @@
+# Sagol — Decision Log
+
+Every architectural or product decision that shapes code is recorded here. A decision is
+changed only by adding a new entry that supersedes it, never by editing history.
+Format: `D-NNN — title` · date · status · decision · reason.
+
+---
+
+## D-001 — One person entity: every user is a soldier
+2026-11-03 · accepted
+Every user of the system is a `soldiers` row. There is no separate "user" or "person"
+entity. Authentication identities are linked to a soldier through `soldier_accounts`.
+**Why:** product owner decision. One identity model keeps permissions and audit simple.
+
+## D-002 — Command rank is the single user-defined "level" of a soldier
+2026-11-03 · accepted · supersedes the "military rank vs position" question
+Each soldier has exactly one `command_rank` (e.g. fighter, squad commander, platoon
+commander). Ranks are created, renamed, reordered and colored by users. Their ordering is
+`seniority` (an integer users can change in any direction). There is no separate military
+rank entity; if one is needed it is modeled as a tag category.
+**Why:** product owner described one fixed, user-defined rank per soldier. Military rank
+(e.g. sergeant) carries no business logic and fits the tag model.
+
+## D-003 — Permissions are data: roles, rank bindings and grants
+2026-11-03 · accepted
+- `roles` are user-defined permission sets; `role_permissions` lists `(resource, action)`.
+- Resources and actions are a closed vocabulary in contracts (code branches on them).
+  Everything else (names, which role does what, who holds it) is data.
+- Effective permissions of a soldier = union of:
+  1. the organization's **baseline role** applied to `self` (every active linked soldier);
+  2. **rank bindings**: default roles of the soldier's command rank, scoped *relative* to the
+     soldier's primary unit (`self`, `home_unit`, `home_unit_tree`, `organization`);
+  3. **access grants**: explicit, time-bounded, revocable grants to one soldier, scoped
+     *absolutely* (a unit, a unit tree, a single soldier, or the organization).
+- A permission can be limited by `subject_rank_constraint` (`any`, `junior`,
+  `junior_or_equal`) to express "approve only those below me".
+- Acting commanders, cross-unit temporary responsibility, and "a fighter allowed to
+  approve" are all access grants with `valid_from`/`valid_to`. Revocation sets
+  `revoked_at`; nothing is deleted.
+- Effective permissions are **derived**, never stored. Moving a soldier to another unit
+  moves their default scope automatically.
+**Why:** supports arbitrary user-defined hierarchies plus vertical/lateral temporary
+authority without duplicating data (single source of truth).
+
+## D-004 — System administrator is a grant, not a flag
+2026-11-03 · accepted · closes ARCHITECTURE open decision "source of admin flag"
+"Administrator" means holding, at `organization` scope, the permissions to manage roles
+and access grants. It is transferable like any grant. Invariant enforced server-side:
+an organization always keeps at least one active soldier able to manage access
+(no lockout).
+
+## D-005 — Production bootstrap and account linking
+2026-11-03 · accepted
+- Sign-in is Google only, behind the `AuthProvider` contract.
+- **Bootstrap:** on an organization with no accounts, the first sign-in whose verified
+  email matches the server secret `BOOTSTRAP_OWNER_EMAIL` becomes the owner (atomic server
+  function). The email lives in the server environment, never in source code.
+  Without that match, nobody can claim an empty system.
+- **Account creation, path 1:** a commander creates a soldier by personal ID (optionally
+  with an invite email).
+- **Account creation, path 2:** a person signs in with Google and enters their personal ID
+  (and details) in onboarding.
+- **Linking:** a sign-in is auto-linked to an existing soldier only when the personal ID
+  matches **and** the soldier's invite email equals the verified Google email. Any other
+  case creates an `account_link_requests` row that an authorized commander approves.
+  The response never reveals whether a personal ID exists (no enumeration).
+- An unlinked account sees no data.
+**Why:** matching on a personal ID alone would let anyone who knows a soldier's ID take
+over their record. This is the industry-standard "claim with verification" pattern.
+
+## D-006 — Development mode is the real system with a local identity
+2026-11-03 · accepted
+`VITE_AUTH_MODE=local` uses a local identity provider and the local data adapter.
+On an empty local store the same bootstrap flow makes the developer the owner, so all
+permissions are granted *by the real policy*, not by bypassing it. A dev-only identity
+switcher allows testing as other soldiers. The production build fails if the auth mode is
+local. There is no code path that skips permission checks.
+
+## D-007 — New pure layer: `domain`
+2026-11-03 · accepted
+`src/domain` holds pure functions (no I/O, no React, no framework): permission policy,
+hierarchy (ancestry, cycle detection), leave state machine, availability and rule
+evaluation, filter evaluation. It imports `contracts` only. Both `data` and `logic` use it.
+**Why:** the local adapter must enforce exactly what the server will enforce. One policy
+implementation feeds the local adapter, the UI's "can I?" hints, and the test matrix that
+later verifies the Postgres RLS policies.
+
+## D-008 — Server-authoritative data layer
+2026-11-03 · accepted
+The data adapter behaves like a server: it derives the actor from the session it was
+constructed with (never from a parameter the caller passes), filters every read by
+permission, validates every write, enforces integrity, and writes audit events.
+Workflow changes (approve, reject, cancel, reschedule, link account, grant access) are
+**commands**, not raw updates. In remote mode the same commands are server functions
+and RLS policies.
+
+## D-009 — Unit hierarchy: `parent_id` is the only source of truth
+2026-11-03 · accepted
+`units.path` is removed. Ancestry is derived: computed by `domain` locally; in Postgres a
+closure table maintained only by triggers (a derived index, never written by app code).
+Cycles are rejected in `domain` and by a database trigger. Levels above, below or beside
+the current root can be added at any time by re-parenting.
+User-defined `unit_levels` (e.g. battalion, company, platoon) classify units.
+
+## D-010 — Memberships are time-bounded rows from day one
+2026-11-03 · accepted
+A soldier's unit is a `unit_memberships` row (`primary` or `attached`, with
+`valid_from`/`valid_to`). The MVP uses only one open primary membership per soldier
+(database exclusion constraint). Changing a unit closes one row and opens another, which
+keeps history (where a soldier was when a leave happened). Attachments, temporary task
+units (`units.kind = 'temporary'`) and simulations are future features that need no
+schema change.
+
+## D-011 — Multi-tenant from day one
+2026-11-03 · accepted
+Every table carries `organization_id`. The MVP runs one organization (company "Sagol").
+The tenant boundary is independent of the unit tree: levels above the company (battalion)
+are added inside the same organization.
+
+## D-012 — Leaves: whole days, overlaps allowed, availability by union
+2026-11-03 · accepted
+- Dates are whole days (`start_date`, `end_date` inclusive). Times may be added later as
+  extra optional columns (additive change).
+- A soldier may have overlapping leaves (e.g. an approved leave plus a sick note plus an
+  exam marker). Availability per day = the soldier is unavailable if *any* approved leave of
+  an `unavailable` type covers that day. Counts and summaries use that union, so overlaps
+  never double count.
+- `leave_types.availability_effect` distinguishes real absence (`unavailable`) from markers
+  (`available`, e.g. an exam during a leave). `leave_type_groups` (user-defined) separate
+  categories like vacation vs course vs mission.
+- `leave_batches` group leaves created together (collective leave, rotation round).
+- Status is the authoritative current state. `leave_events` is an append-only audit trail.
+  Comments live in `leave_comments` with `shared` or `internal` visibility.
+- `version` column on every mutable row gives optimistic concurrency (two commanders
+  dragging the same leave).
+
+## D-013 — Approval behavior
+2026-11-03 · accepted
+- New leaves are `pending` by default.
+- A creator who holds `leaves:approve` over the subject soldier may create or move a leave
+  as `approved` in one step. A per-soldier preference sets the default of that choice.
+  The server re-checks the permission. A fighter can never self-approve without it.
+- When an approved leave is moved, the organization setting `reschedule_policy` decides:
+  keep approved if the actor can approve, or always return to pending.
+- The leave type does not affect who approves (permissions do).
+
+## D-014 — Availability rules (replaces "readiness_rules")
+2026-11-03 · accepted
+Users with permission define `availability_rules`: "at least / at most N (or N%) of
+*population* must be available, in *scope*, during *validity*".
+- **Scope:** a unit tree, or each descendant unit at a chosen level, or each direct child.
+- **Population:** a filter expression (the same filter model the views use): tags (medics,
+  drivers), command ranks or seniority (commanders), etc.
+- **Metric:** count or percent; `min_value` and/or `max_value`.
+- **Validity:** always, a date range (heightened alert), or a deployment.
+- **Enforcement:** `soft` (warn and require an acknowledgment that is logged) or `hard`
+  (the server blocks the change). Chosen by the rule's author.
+- Evaluation is a pure `domain` function over memberships + approved leaves for a date
+  range. It powers warnings while approving or dragging, and the timeline "heat" row.
+- Option `count_pending_as_unavailable` supports planning ahead.
+
+## D-015 — Tags have categories with selection mode
+2026-11-03 · accepted
+`tag_categories` (user-defined, e.g. civilian / military / marital status) with
+`selection_mode` `single` or `multiple`. A tag inherits its category color unless it has
+its own.
+
+## D-016 — Notion-like custom properties
+2026-11-03 · accepted
+Users can add typed properties to soldiers, units and leaves through
+`property_definitions` (text, number, date, boolean, select, multi-select, soldier
+reference, unit reference). Values live in the entity's `properties` JSONB, keyed by
+definition id (renames are safe) and validated against the definition.
+Concepts that business logic depends on (dates, status, unit, rank, tags) stay
+first-class columns and tables, never custom properties.
+
+## D-017 — Soft delete and audit columns
+2026-11-03 · accepted
+Reference and mutable entities carry `created_at`, `created_by`, `updated_at`,
+`updated_by`, `version`, `archived_at`. "Delete" in the UI archives. Archived rows stay
+referenceable, so history and rule filters never break. Purging is a separate admin
+operation, out of MVP scope. Leaves are cancelled, not archived.
+
+## D-018 — Sensitive fields are separated
+2026-11-03 · accepted
+Personal ID and contact details live in `soldier_private` with its own permission
+resource, so row-level security can protect them separately from the public profile.
+
+## D-019 — Derived state is never stored
+2026-11-03 · accepted
+`deployments.is_active` is removed (derived from dates). Unit paths are derived.
+Effective permissions are derived. Availability is derived.
+
+## D-020 — Contracts hold Zod schemas
+2026-11-03 · accepted · amends ARCHITECTURE "contracts = types only"
+`contracts` defines entities, inputs and settings as Zod schemas, and the TypeScript types
+are inferred from them. One definition gives compile-time types and runtime validation
+(data adapter, forms, URL search params, environment). `contracts` may import `zod` and
+nothing else. It still contains no behavior.
+
+## D-021 — Local adapter uses IndexedDB
+2026-11-03 · accepted
+The local data adapter uses IndexedDB (through Dexie), not localStorage: real
+transactions, indexes, no 5 MB limit, versioned migrations, live queries.
+
+## D-022 — Initial data without mock data: import/export
+2026-11-03 · accepted
+Real initial data is entered through validated CSV/JSON import (preview, validation
+report, then commit through the same commands), plus full organization export/backup.
+The same export lets a developer move local data to the real backend. Management screens
+exist independently of first run; empty states guide the user to the next step. No
+first-run wizard is required.
+
+## D-023 — Single-screen workspace
+2026-11-03 · accepted
+The product is one main workspace: the central viewport shows the active view engine and
+everything else opens in floating surfaces (side drawer on desktop, bottom sheet on
+mobile, popovers). Management modules (units, ranks, roles, tags, leave types, rules,
+properties) are drawer modules, not separate pages. All view state (view id, date range,
+filters, open panel) lives in typed URL search params, so switching views keeps filters
+and deep links and the back button work.
+
+## D-024 — First designed component
+2026-11-03 · accepted
+The design language (Design.md) is derived from the **workspace frame** (floating
+navigation, filter bar, empty viewport state) **plus the drawer/sheet hosting the units
+tree module**. That covers the central screen and the pattern every action uses, with
+content simple enough to get right first.
+
+## D-025 — i18n and theme tokens inside UI sessions
+2026-11-03 · accepted
+Strings and tokens needed by a UI feature are added in that UI session, under these
+rules: keys are typed (a missing key is a compile error), no string or color literal
+appears in components, and tooling detects unused keys and raw values.
+
+## D-026 — Libraries
+2026-11-03 · accepted (exact versions pinned in session 0.2)
+TanStack Router (typed search params), TanStack Query (cache and optimistic updates),
+TanStack Table (table engine), TanStack Virtual (long lists and timeline rows),
+TanStack Form, React Aria Components (accessible primitives with first-class RTL),
+`@internationalized/date` (the only date library; calendar and timezone aware),
+`motion` (sheet gestures and transitions), `@dnd-kit` (sortable lists), Zod, Dexie.
+Timeline drag is implemented in the engine's pure core with pointer events.
+Testing: Vitest, Testing Library, Playwright (mobile and desktop, RTL), axe.
+
+## D-028 — Unified scope model with relative anchors
+2026-11-03 · accepted · supersedes the scope part of D-003
+Rank bindings and access grants share one scope structure:
+`anchor_type` + `include_descendants`, where the anchor is one of
+- `self`, `organization`;
+- relative to the soldier's primary unit: `home_unit`, `home_ancestor_steps` (N levels up),
+  `home_ancestor_at_level` (the ancestor at a given unit level);
+- absolute: `unit`, `soldier`.
+
+This lets a role's tree attachment change up, down or sideways, generally (on a rank
+binding: "every squad commander sees the whole platoon" = ancestor 1 step up +
+descendants) or individually (on a grant to one soldier: "squad commander A of platoon 1
+only"). Relative anchors follow the soldier when their membership changes. Absolute
+anchors do not.
+
+## D-029 — Effective seniority with personal overrides
+2026-11-03 · accepted · extends D-002
+A soldier's effective seniority is their rank's `seniority`, unless an active
+`seniority_overrides` row exists (temporary with `valid_to`, or permanent without it, at
+most one active per soldier per day). Changing a rank's seniority affects every holder at
+once. An override affects one soldier. `subject_rank_constraint` (junior / junior or
+equal) always compares effective seniority. Effective seniority is derived, never stored.
+
+## D-030 — Account linking without email
+2026-11-03 · accepted · refines D-005
+Commanders are not required to collect emails or personal IDs:
+`soldier_private.personal_id` becomes optional. Linking rules:
+- **Auto-link** only on personal ID match + invite email equal to the verified Google
+  email (the only case that needs no human).
+- **Otherwise** onboarding creates an `account_link_requests` row. Domain computes
+  **candidate matches** (exact personal ID, then normalized first + last name) and shows
+  them only to the reviewer, never to the requester. The reviewer is a soldier with
+  `accounts:approve` over the candidate's unit (no candidate → organization-scope
+  approvers). The reviewer links to a candidate, creates a new soldier, or rejects.
+- On approval, missing fields on the soldier (personal ID, names) are filled from the
+  request. That is the two-way enrichment: whichever side has the data provides it.
+- Security holds because nothing is linked without verified email or human approval, and
+  the requester never learns whether a match exists.
+
+## D-031 — Availability rules: grouping, global scope, priority
+2026-11-03 · accepted · extends D-014
+- **Tags and ranks:** the population filter selects by tags (drivers, medics), ranks,
+  seniority, or any combination, with multi-select.
+- **Grouping:** `group_by` (`none`, `tag`, `command_rank`, optionally restricted to one tag
+  category) evaluates the rule separately for each group value. "Always keep at least 2 of
+  every selected tag" is one rule: population = the selected tags, group_by = tag,
+  min = 2.
+- **Global:** `scope_unit_id` NULL means the whole organization.
+- **Priority:** every applicable rule is evaluated, and all must hold. When two rules
+  evaluate the same **target** (same scope unit, same canonical population, same group
+  value, same day), the one with the higher `priority` is effective and the other is
+  shown as overridden. Equal priority: both apply, so the strictest wins.
+  Example: global "≥2 per tag" (priority 0) and "≥3 medics in platoon 1 during alert"
+  (priority 10): medics in platoon 1 during the alert need 3; all else needs 2.
+- **Configuration conflicts** (an effective min above an effective max on the same target)
+  are detected by domain and shown in the rules module.
+
+## D-032 — Leave types are user-managed. Availability is a partition.
+2026-11-03 · accepted · extends D-012
+- Leave type groups and leave types (name, palette color key, icon key, availability
+  effect, requires reason, order) are created and managed by authorized users. Nothing is
+  predefined.
+- Default availability effect of a new type is `unavailable`. A single leave may override
+  its type's effect (`leaves.availability_effect_override`).
+- **Invariant:** for every soldier and day, domain computes exactly one availability status
+  (`available` / `unavailable`) plus the list of leaves covering that day. Unavailable if
+  any approved leave whose effective effect is `unavailable` covers the day. Present/absent
+  lists are a partition of the population: every soldier appears in exactly one list,
+  once. Markers (e.g. an exam) are shown as annotations on that single entry. A test
+  enforces the invariant.
+
+## D-033 — Simple first-run setup wizard
+2026-11-03 · accepted · amends D-022
+A guided setup wizard walks through organization → unit levels → units → command ranks →
+roles and rank bindings → leave types → tag categories and tags, with an explanation per
+step. It reuses the management module forms and the same commands, so there is no second
+code path. Each step can be skipped and revisited. Step completion is **derived from
+existing data**, not stored as a flag. Import/export (D-022) stays as well.
+
+## D-027 — Backend target (provisional)
+2026-11-03 · proposed
+Supabase is recommended: Postgres matches `schema.sql`, Row Level Security matches the
+server-authoritative policy model, Google OAuth is built in, and SQL functions host the
+commands. Cloudflare D1 is SQLite without RLS, so all authorization would live in Worker
+code. Final decision at phase 8. Creating the account and project is done by the owner.
