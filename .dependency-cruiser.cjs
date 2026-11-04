@@ -6,7 +6,7 @@
  *
  * npm packages per layer:
  *   contracts -> zod only (D-020); its *.test.ts may also use vitest and docs/schema.sql (D-039)
- *   domain    -> @internationalized/date only (D-035)
+ *   domain    -> @internationalized/date only (D-035); its *.test.ts may also use vitest (D-061)
  *   config    -> zod only (env schema)
  *   i18n      -> nothing
  *
@@ -48,9 +48,23 @@ module.exports = {
       name: 'domain-imports-contracts-only',
       comment: 'domain is pure: contracts and @internationalized/date only (D-007, D-035).',
       severity: 'error',
-      from: { path: '^src/domain/' },
+      from: { path: '^src/domain/', pathNot: '\\.test\\.ts$' },
       to: {
         pathNot: ['^src/domain/', '^src/contracts/', '^node_modules/@internationalized/date/'],
+      },
+    },
+    {
+      name: 'domain-tests-add-vitest-only',
+      comment: 'domain tests may also use vitest (D-061).',
+      severity: 'error',
+      from: { path: '^src/domain/.+\\.test\\.ts$' },
+      to: {
+        pathNot: [
+          '^src/domain/',
+          '^src/contracts/',
+          '^node_modules/@internationalized/date/',
+          '^node_modules/vitest/',
+        ],
       },
     },
     {

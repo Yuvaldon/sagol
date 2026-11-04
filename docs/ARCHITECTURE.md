@@ -88,7 +88,12 @@ The data layer is written as if it were the server:
   override is active, D-029). Implemented once in `domain/policy`, consumed by the local
   adapter, by `logic` for UI hints ("can I?"), and mirrored by Postgres
   `has_permission()` + RLS.
-- **Invariant:** at least one soldier always holds organization-scope access management.
+- **Targets:** a permission is checked against a soldier, a unit or the organization.
+  Organization-wide data can be viewed from any scope and changed only at organization
+  scope. A soldier's unit is the primary membership today. Only active, linked soldiers
+  hold permissions (D-053 … D-058).
+- **Invariant:** at least one soldier always holds organization-scope access management,
+  without expiry (D-059). Nobody grants pairs they do not hold (D-060).
 - **Test matrix:** one table-driven matrix (actor × resource × action × target → allowed)
   runs against `domain/policy` now and against the database policies in phase 8.
 

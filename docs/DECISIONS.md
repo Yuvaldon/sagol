@@ -537,3 +537,85 @@ The handoff and the closing message name the next roadmap row and recommend a Cl
 and effort level for it, with a one-line reason, following the guide in
 `docs/sessions/TEMPLATE.md`. The owner decides.
 **Why:** product owner decision in session 0.4, to spend tokens where judgment matters.
+
+## D-053 — What a permission scope covers (policy targets)
+2026-11-04 · accepted · refines D-003, D-028
+`can()` checks a permission against a **target** of one of three kinds:
+- **soldier** (leaves, comments, soldier rows, private fields, memberships, seniority
+  overrides, access grants by grantee): covered by `self` (the holder only), by a `soldier`
+  anchor (that soldier), by a unit scope when the soldier's primary unit today is the
+  anchor unit (or a descendant, with `include_descendants`), and by `organization`.
+- **unit** (units, deployments, availability rules with a scope unit, placements): covered
+  by a unit scope (the anchor unit, or a descendant with `include_descendants`) and by
+  `organization`.
+- **organization** (organization, unit levels, command ranks, tags, leave types,
+  properties, roles and rank bindings, data transfer, global availability rules, top-level
+  units): `view` is covered by any non-empty scope; every other action only by
+  `organization`.
+Domain lists the target kinds each resource accepts (`TARGET_KINDS_BY_RESOURCE`). A
+target of another kind is refused.
+Domain is clock-free: callers pass `today` (organization time zone) and `now`.
+**Why:** product owner approved in session 1.2a. Lets the baseline role show reference
+data to everyone without letting a unit commander change organization-wide data.
+
+## D-054 — A soldier's unit for policy is the primary membership today
+2026-11-04 · accepted · refines D-028
+The home unit of a permission holder (relative anchors) and the unit of a subject soldier
+are the unit of the soldier's `primary` membership that covers today. A soldier with no
+such membership is covered only by `organization`, `self` and `soldier` scopes, and holds
+no relative unit scope.
+**Why:** product owner approved in session 1.2a.
+
+## D-055 — Unresolvable anchors give an empty scope
+2026-11-04 · accepted · refines D-028
+An anchor that cannot be resolved (more steps up than the tree has, no ancestor at the
+level, a holder without a home unit) resolves to an empty scope that covers nothing.
+`home_ancestor_at_level` includes the home unit itself.
+**Why:** product owner approved in session 1.2a. Fails closed.
+
+## D-056 — Only active, linked soldiers hold permissions
+2026-11-04 · accepted · refines D-003
+A soldier holds permissions (baseline, rank bindings and grants) only while
+`status = 'active'`, not archived, with a non-revoked account (`soldier_accounts`).
+Otherwise the soldier holds nothing.
+**Why:** product owner approved in session 1.2a (active and not archived); the account
+condition is D-003's "every active linked soldier", applied to every source.
+
+## D-057 — Subject rank constraints with missing ranks
+2026-11-04 · accepted · refines D-029
+`subject_rank_constraint` compares effective seniority today. A subject without seniority
+(no rank and no override) is junior to every holder with seniority. A holder without
+seniority gets only `any` permissions. `junior` excludes the holder's own record,
+`junior_or_equal` includes it. The constraint applies to soldier targets only.
+**Why:** product owner approved in session 1.2a.
+
+## D-058 — What counts as an active permission source
+2026-11-04 · accepted
+Archived roles and archived rank bindings grant nothing. An access grant is active when
+`revoked_at` is NULL and `valid_from <= now < valid_to` (NULL `valid_to` = open).
+Timestamps are compared as instants, not as strings (OI-009).
+**Why:** product owner approved in session 1.2a.
+
+## D-059 — Access-manager invariant (no lockout)
+2026-11-04 · accepted · refines D-004
+An access manager is an active, linked soldier (D-056) who holds `access_grants:create`,
+`access_grants:delete` and `roles:update` at `organization` scope from sources without
+expiry (a rank binding, or a grant without `valid_to`). Every write that can change
+permissions is checked on the state after the change: if no access manager remains, the
+data layer rejects it with `last_access_manager`.
+**Why:** product owner approved in session 1.2a. A grant that expires later would lock the
+organization out with no write to reject.
+
+## D-060 — No privilege escalation
+2026-11-04 · accepted · refines D-003
+An actor may grant a role, or add `(resource, action)` pairs to a role, only when the actor
+already holds every one of those pairs (at any non-empty scope). Removing pairs is not
+limited. A missing pair makes the command fail with `forbidden`.
+**Why:** product owner approved in session 1.2a. Without it, `roles:update` or
+`access_grants:create` would let anyone give themselves any permission.
+
+## D-061 — domain tests may import vitest
+2026-11-04 · accepted · amends D-035 for test files only
+`src/domain/**/*.test.ts` may also import `vitest`. Production domain code still imports
+`contracts` and `@internationalized/date` only. Enforced by `.dependency-cruiser.cjs`.
+**Why:** domain is unit-tested (ROADMAP 1.2, 1.3), like contracts (D-039).
