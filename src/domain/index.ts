@@ -5,5 +5,12 @@
 // callers pass `today` and `now` (D-053).
 
 export * from './time'
+export * from './json'
+export * from './issues'
 export * from './hierarchy'
 export * from './policy'
+export * from './leaves'
+export * from './accounts'
+export * from './properties'
+export * from './tags'
+export * from './filters'

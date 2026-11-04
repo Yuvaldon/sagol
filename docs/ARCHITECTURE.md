@@ -56,7 +56,8 @@ The data layer is written as if it were the server:
   `rescheduleLeave`, `grantAccess`, `revokeAccess`, `requestAccountLink`,
   `reviewAccountLink`, `bootstrapOwner`, `moveUnit`, `changeMembership`, `importBatch`.
 - Errors are typed results with stable codes (contracts). The UI maps codes to i18n.
-  An invisible row answers `not_found`, never `forbidden` (D-046).
+  An invisible row answers `not_found`, never `forbidden` (D-046). Schema failures are
+  mapped to field codes by one domain function, shared with the forms (D-068).
 - The contract of an adapter is `DataAdapter` (contracts): `session`, `repositories`
   (one per table), `commands` (grouped by resource), `transfer` (import/export) and
   `changes`. It is built from an `IdentitySource` only (D-048). Create inputs carry
@@ -75,8 +76,9 @@ The data layer is written as if it were the server:
   create soldiers with names only (personal ID and email optional). Linking is automatic
   only on personal ID + verified invite email match. Anything else becomes an
   `account_link_requests` row. Domain proposes candidate matches (personal ID, then
-  normalized names) to the reviewer only, and approval fills missing fields on either side
-  (D-030). Unlinked accounts see nothing, and requesters never learn whether a match exists.
+  normalized names, in either order) to the reviewer only, and approval fills a missing
+  personal ID (D-030, D-066). Personal IDs are stored normalized. Unlinked accounts see
+  nothing, and requesters never learn whether a match exists.
 - **Bootstrap:** the first sign-in on an empty organization becomes owner only if its
   verified email matches the server secret `BOOTSTRAP_OWNER_EMAIL`. Atomic server function.
   Locally, the same flow makes the developer the owner.
@@ -124,7 +126,17 @@ change leaves evaluate affected rules: soft violations need an acknowledgment st
 ## Filters (shared model)
 
 One `FilterExpression` schema (contracts) and evaluator (domain) is used by view filters,
-saved views (later) and rule populations. A filter means the same thing everywhere.
+saved views (later) and rule populations. A filter means the same thing everywhere: it is
+evaluated per soldier per day (unit and seniority on that day), negative operators are
+complements, and text compares case-insensitively. Rules compare populations by a
+structural canonical key (D-067).
+
+## Leave workflow (D-013, D-063, D-064)
+
+Domain owns the leave state machine: which transitions each status allows, the permission
+each one needs, the review columns and the event. Rejected and cancelled leaves are closed
+until reopened. A material edit of an approved leave (dates, type, effect) follows
+`reschedule_policy`. Commands check the returned permissions with `can()`.
 
 ## Workspace, routing and view state (D-023)
 

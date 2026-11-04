@@ -54,7 +54,7 @@ The session that finishes the row before an audit reminds the owner to open it.
 | 1.1a | contracts | Zod schemas for every table, branded ids, enums, settings, FilterExpression, permission vocabulary + valid combos (D-040). Drift test vs `schema.sql` (D-039) | ☑ |
 | 1.1b | contracts | Command inputs, repository/command/auth/session interfaces, error codes (D-044 … D-050) | ☑ |
 | 1.2a | domain | hierarchy (ancestry, descendants, cycles), membership and seniority-override overlap, policy (scope anchors, targets, effective seniority, effective permissions, can()), access-manager invariant, escalation guard, grant validity (D-053 … D-060). Policy test matrix | ☑ |
-| 1.2b | domain | leave state machine, account-link candidate matching, filter evaluator + canonical form, property validation, Zod issue mapping | ☐ |
+| 1.2b | domain | leave state machine, account-link candidate matching, filter evaluator + canonical form, property validation, Zod issue mapping (D-063 … D-068) | ☑ |
 | 1.3 | domain | availability (one status per soldier/day, partition invariant test) and rule evaluation (targets, group_by, priority, conflicts), with tests | ☐ |
 | 1.4 | config | env schema, storage keys, view ids, URL param names, breakpoints, palette keys, date formats | ☐ |
 | A1 | audit | Phase 1 audit: contracts and domain against the decisions (`docs/AUDIT.md`) | ☐ |
