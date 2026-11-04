@@ -56,6 +56,12 @@ The data layer is written as if it were the server:
   `rescheduleLeave`, `grantAccess`, `revokeAccess`, `requestAccountLink`,
   `reviewAccountLink`, `bootstrapOwner`, `moveUnit`, `changeMembership`, `importBatch`.
 - Errors are typed results with stable codes (contracts). The UI maps codes to i18n.
+  An invisible row answers `not_found`, never `forbidden` (D-046).
+- The contract of an adapter is `DataAdapter` (contracts): `session`, `repositories`
+  (one per table), `commands` (grouped by resource), `transfer` (import/export) and
+  `changes`. It is built from an `IdentitySource` only (D-048). Create inputs carry
+  caller-generated ids (D-044); inputs follow D-045; leave commands take
+  `acknowledged_rule_ids` for soft rules (D-047).
 - Every adapter must pass one shared **repository contract test suite**. The remote adapter
   (phase 8) passes the same suite, which is what makes the switch safe.
 - Repositories expose change subscriptions, so the UI has one live source of truth

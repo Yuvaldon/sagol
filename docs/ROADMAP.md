@@ -46,7 +46,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | # | Layer | Content | Status |
 |---|-------|---------|--------|
 | 1.1a | contracts | Zod schemas for every table, branded ids, enums, settings, FilterExpression, permission vocabulary + valid combos (D-040). Drift test vs `schema.sql` (D-039) | ☑ |
-| 1.1b | contracts | Command inputs, repository/command/auth/session interfaces, error codes | ☐ |
+| 1.1b | contracts | Command inputs, repository/command/auth/session interfaces, error codes (D-044 … D-050) | ☑ |
 | 1.2 | domain | policy (scope anchors, effective seniority, effective permissions, can()), hierarchy (ancestry, cycles), leave state machine, account-link candidate matching, filter evaluator + canonical form, property validation. Policy test matrix | ☐ |
 | 1.3 | domain | availability (one status per soldier/day, partition invariant test) and rule evaluation (targets, group_by, priority, conflicts), with tests | ☐ |
 | 1.4 | config | env schema, storage keys, view ids, URL param names, breakpoints, palette keys, date formats | ☐ |
