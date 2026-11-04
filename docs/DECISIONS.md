@@ -517,3 +517,23 @@ per operation without writing (the import preview). Export is
 derived `unit_closure`.
 **Why:** product owner approved in session 1.1b. Import uses the same commands, so it
 has no path around validation or permissions.
+
+## D-051 — Phase audits are separate, read-only sessions
+2026-11-04 · accepted
+At the end of each phase the roadmap has an audit row (`A1` … `A8`). The product owner
+opens it as its own session using `docs/AUDIT.md`. The audit reads and reports only: it
+checks intent, decision coverage, test meaning, documentation sync, open-item health and
+cross-session drift, which the automated checks do not cover. It does not report choices a
+decision explains, work assigned to later sessions, or style, and it proposes no fixes.
+Accepted findings become `OPEN_ITEMS.md` entries, recorded by a docs session, and are fixed
+in the owning layer's session. Execution sessions never audit; they remind the owner when
+an audit row is next or still pending.
+**Why:** product owner decision in session 0.4. A review that also fixes would cross
+layers and bypass the session rules; a review that re-checks automated gates wastes tokens.
+
+## D-052 — Each session recommends the model and effort for the next one
+2026-11-04 · accepted
+The handoff and the closing message name the next roadmap row and recommend a Claude model
+and effort level for it, with a one-line reason, following the guide in
+`docs/sessions/TEMPLATE.md`. The owner decides.
+**Why:** product owner decision in session 0.4, to spend tokens where judgment matters.

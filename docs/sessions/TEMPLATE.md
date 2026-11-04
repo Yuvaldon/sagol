@@ -29,6 +29,18 @@ Roadmap row: N.M · Commits: `<hash> <conventional commit header>`
 
 - What the next session (name it by roadmap number) needs from this one: APIs exported,
   files to read, constraints, fixes that belong to another layer.
+- If the next row is an audit (`A<n>`): "Next: audit A<n>. Open a separate read-only
+  session with the prompt in `docs/AUDIT.md`." (D-051)
+
+## Recommendation for the next session (D-052)
+
+- Model: <current model name> · Effort: <low | medium | high | xhigh | max>
+- Reason: one line, based on the next row's work.
+- Guide: new design, decisions or security logic (contracts, domain policy, data commands,
+  audits, the first UI that sets the design language) → the strongest model, high effort.
+  Well-specified work that follows existing patterns (config constants, more modules of an
+  established kind, docs bookkeeping) → a mid-tier model or medium effort. Use lighter
+  settings only for mechanical, low-risk changes. When unsure, choose the stronger one.
 
 ---
 

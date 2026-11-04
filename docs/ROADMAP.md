@@ -14,6 +14,10 @@ as vertical slices across consecutive single-layer sessions.
 
 Status: ☐ pending · ◐ in progress · ☑ done
 
+Rows `A1` … `A8` are **audit sessions** (D-051): read-only, opened by the product owner at
+the end of a phase, following `docs/AUDIT.md`. An execution session never runs an audit.
+The session that finishes the row before an audit reminds the owner to open it.
+
 ## Phase 0 — Foundations
 
 | # | Track | Content | Status |
@@ -21,6 +25,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 0.1 | docs | Decisions log (D-001 … D-033), schema rev 3.1, architecture rev 2, roadmap, CLAUDE.md | ☑ |
 | 0.2 | tooling | See guardrails below. Folder skeleton, deps pinned, env example + build guard, CI (D-034 … D-037) | ☑ |
 | 0.3 | docs | `docs/OPEN_ITEMS.md` as the single open-items log; workflow files updated (D-043) | ☑ |
+| 0.4 | docs | Audit process (`docs/AUDIT.md`, rows A1 … A8) and next-session model recommendation (D-051, D-052) | ☑ |
 
 ### Session 0.2 guardrails
 
@@ -50,6 +55,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 1.2 | domain | policy (scope anchors, effective seniority, effective permissions, can()), hierarchy (ancestry, cycles), leave state machine, account-link candidate matching, filter evaluator + canonical form, property validation. Policy test matrix | ☐ |
 | 1.3 | domain | availability (one status per soldier/day, partition invariant test) and rule evaluation (targets, group_by, priority, conflicts), with tests | ☐ |
 | 1.4 | config | env schema, storage keys, view ids, URL param names, breakpoints, palette keys, date formats | ☐ |
+| A1 | audit | Phase 1 audit: contracts and domain against the decisions (`docs/AUDIT.md`) | ☐ |
 
 ## Phase 2 — Data
 
@@ -58,6 +64,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 2.1 | data | Dexie schema + migrations, session source, transaction/version/audit helpers, reference-data repositories | ☐ |
 | 2.2 | data | Commands: bootstrap, accounts, access grants, memberships, units move, leaves workflow with rule enforcement | ☐ |
 | 2.3 | data | Shared repository contract test suite (adapter-agnostic) + import/export | ☐ |
+| A2 | audit | Phase 2 audit: server-authoritative behavior, no bypasses (`docs/AUDIT.md`) | ☐ |
 
 ## Phase 3 — Logic
 
@@ -66,6 +73,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 3.1 | logic | Session/auth service (local provider), permission hints, query client setup | ☐ |
 | 3.2 | logic | Reference-data use cases and hooks (units, levels, ranks, roles, tags, leave types, properties) | ☐ |
 | 3.3 | logic | View state (URL search params), filters, leave use cases and hooks with optimistic updates | ☐ |
+| A3 | audit | Phase 3 audit: logic layer (`docs/AUDIT.md`) | ☐ |
 
 ## Phase 4 — Workspace and management
 
@@ -78,6 +86,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 4.5 | ui | Modules: tag categories & tags, leave type groups & types, custom properties | ☐ |
 | 4.6 | ui | Import/export module | ☐ |
 | 4.7 | ui | First-run setup wizard reusing module forms; step completion derived from data (D-033) | ☐ |
+| A4 | audit | Phase 4 audit: first UI, design system, end-to-end run (`docs/AUDIT.md`) | ☐ |
 
 ## Phase 5 — People and requests
 
@@ -86,6 +95,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 5.1 | ui | Soldiers module (profile, private fields, tags, membership history), account link review | ☐ |
 | 5.2 | ui | Leave request (soldier), my requests and history, comments | ☐ |
 | 5.3 | ui | Commander inbox: approve/reject with rule warnings | ☐ |
+| A5 | audit | Phase 5 audit (`docs/AUDIT.md`) | ☐ |
 
 ## Phase 6 — View engines
 
@@ -97,6 +107,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 6.4 | ui | Timeline view + adapter (read-only) | ☐ |
 | 6.5 | ui | Timeline interactions: create, move, resize, conflict/rule feedback | ☐ |
 | 6.6 | ui | Calendar engine | ☐ |
+| A6 | audit | Phase 6 audit (`docs/AUDIT.md`) | ☐ |
 
 ## Phase 7 — Availability rules UI
 
@@ -105,6 +116,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 7.1 | logic | Rule use cases, availability queries for a window | ☐ |
 | 7.2 | ui | Rules module (builder using the shared filter UI) | ☐ |
 | 7.3 | ui | Timeline heat row, rule status in views and inbox | ☐ |
+| A7 | audit | Phase 7 audit (`docs/AUDIT.md`) | ☐ |
 
 ## Phase 8 — Production
 
@@ -115,6 +127,7 @@ Status: ☐ pending · ◐ in progress · ☑ done
 | 8.3 | data | Remote adapter passing the repository contract suite | ☐ |
 | 8.4 | app | Google auth provider, env per environment (dev/staging/prod), deploy | ☐ |
 | 8.5 | ui | Dark Mode token set | ☐ |
+| A8 | audit | Phase 8 audit: production readiness, RLS against the policy matrix (`docs/AUDIT.md`) | ☐ |
 
 ## Later (no schema change required)
 

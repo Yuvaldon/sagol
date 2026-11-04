@@ -28,6 +28,14 @@ Every `open` item in `docs/OPEN_ITEMS.md` targeted at this session or its layer 
 - Anything left for another session goes into `docs/OPEN_ITEMS.md` (new id, target
   session). Close resolved items there. Handoffs refer to items by id, never copy them.
 - Update the status column in `docs/ROADMAP.md`.
+- **Audits (D-051):** never run an audit inside an execution session. If the next roadmap
+  row is an audit (`A1` … `A8`), end by telling the owner to open a separate audit session
+  with `docs/AUDIT.md`. If an earlier audit row is still `☐` when you start, remind the
+  owner and ask whether to continue. An audit session itself follows `docs/AUDIT.md` and
+  is read-only.
+- **Next-session recommendation (D-052):** the handoff and the closing message name the
+  next session (roadmap row), and recommend a Claude model and effort level for it, with a
+  one-line reason (see `docs/sessions/TEMPLATE.md`).
 
 ## Communication
 
