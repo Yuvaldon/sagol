@@ -26,6 +26,7 @@ The session that finishes the row before an audit reminds the owner to open it.
 | 0.2 | tooling | See guardrails below. Folder skeleton, deps pinned, env example + build guard, CI (D-034 … D-037) | ☑ |
 | 0.3 | docs | `docs/OPEN_ITEMS.md` as the single open-items log; workflow files updated (D-043) | ☑ |
 | 0.4 | docs | Audit process (`docs/AUDIT.md`, rows A1 … A8) and next-session model recommendation (D-051, D-052) | ☑ |
+| 0.5 | docs | Decision index at the top of `DECISIONS.md`; OI-015 partly resolved with a new trigger (D-062) | ☑ |
 
 ### Session 0.2 guardrails
 

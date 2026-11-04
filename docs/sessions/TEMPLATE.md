@@ -50,4 +50,6 @@ Conventions
   build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test. Scope = layer or
   track (e.g. `feat(domain): ...`). Enforced by the commit-msg hook.
 - Update the status column in `docs/ROADMAP.md`.
+- A new D-entry adds its row to the index at the top of `docs/DECISIONS.md`, and fills the
+  "changed by" column of the rows it changes (D-062).
 - Update `docs/OPEN_ITEMS.md`: close resolved items, add new ones (never delete rows).
