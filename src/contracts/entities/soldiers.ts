@@ -61,40 +61,42 @@ export const SoldierPrivate = z.object({
 })
 export type SoldierPrivate = z.infer<typeof SoldierPrivate>
 
+/** Columns of `seniority_overrides`, without row checks. */
+export const SeniorityOverrideColumns = z.object({
+  id: SeniorityOverrideId,
+  organization_id: OrganizationId,
+  soldier_id: SoldierId,
+  seniority: Integer,
+  valid_from: CalendarDate,
+  valid_to: CalendarDate.nullable(),
+  reason: Text.nullable(),
+  ...createdColumns,
+  revoked_at: Timestamp.nullable(),
+  revoked_by: SoldierId.nullable(),
+})
+
 /** `seniority_overrides`: personal seniority, temporary or permanent (D-029). */
-export const SeniorityOverride = z
-  .object({
-    id: SeniorityOverrideId,
-    organization_id: OrganizationId,
-    soldier_id: SoldierId,
-    seniority: Integer,
-    valid_from: CalendarDate,
-    valid_to: CalendarDate.nullable(),
-    reason: Text.nullable(),
-    ...createdColumns,
-    revoked_at: Timestamp.nullable(),
-    revoked_by: SoldierId.nullable(),
-  })
-  .superRefine((row, ctx) => {
-    checkDateRange(ctx, row.valid_from, row.valid_to, 'valid_to')
-  })
+export const SeniorityOverride = SeniorityOverrideColumns.superRefine((row, ctx) => {
+  checkDateRange(ctx, row.valid_from, row.valid_to, 'valid_to')
+})
 export type SeniorityOverride = z.infer<typeof SeniorityOverride>
 
+/** Columns of `unit_memberships`, without row checks. */
+export const UnitMembershipColumns = z.object({
+  id: UnitMembershipId,
+  organization_id: OrganizationId,
+  soldier_id: SoldierId,
+  unit_id: UnitId,
+  membership_type: MembershipType,
+  valid_from: CalendarDate,
+  /** NULL = open. */
+  valid_to: CalendarDate.nullable(),
+  ...createdColumns,
+  ...updatedColumns,
+})
+
 /** `unit_memberships`: time-bounded unit membership (D-010). */
-export const UnitMembership = z
-  .object({
-    id: UnitMembershipId,
-    organization_id: OrganizationId,
-    soldier_id: SoldierId,
-    unit_id: UnitId,
-    membership_type: MembershipType,
-    valid_from: CalendarDate,
-    /** NULL = open. */
-    valid_to: CalendarDate.nullable(),
-    ...createdColumns,
-    ...updatedColumns,
-  })
-  .superRefine((row, ctx) => {
-    checkDateRange(ctx, row.valid_from, row.valid_to, 'valid_to')
-  })
+export const UnitMembership = UnitMembershipColumns.superRefine((row, ctx) => {
+  checkDateRange(ctx, row.valid_from, row.valid_to, 'valid_to')
+})
 export type UnitMembership = z.infer<typeof UnitMembership>

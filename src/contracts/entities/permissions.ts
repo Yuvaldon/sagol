@@ -46,7 +46,7 @@ export const RolePermission = z
 export type RolePermission = z.infer<typeof RolePermission>
 
 /** Scope columns shared by rank bindings and access grants (D-028). */
-const scopeColumns = {
+export const scopeColumns = {
   anchor_type: ScopeAnchorType,
   anchor_unit_id: UnitId.nullable(),
   anchor_soldier_id: SoldierId.nullable(),
@@ -56,43 +56,45 @@ const scopeColumns = {
   subject_rank_constraint: SubjectRankConstraint,
 }
 
+/** Columns of `rank_role_bindings`, without row checks. */
+export const RankRoleBindingColumns = z.object({
+  id: RankRoleBindingId,
+  organization_id: OrganizationId,
+  command_rank_id: CommandRankId,
+  role_id: RoleId,
+  ...scopeColumns,
+  ...auditColumns,
+})
+
 /** `rank_role_bindings`: default roles of a command rank, general per rank. */
-export const RankRoleBinding = z
-  .object({
-    id: RankRoleBindingId,
-    organization_id: OrganizationId,
-    command_rank_id: CommandRankId,
-    role_id: RoleId,
-    ...scopeColumns,
-    ...auditColumns,
-  })
-  .superRefine((row, ctx) => {
-    checkScope(ctx, row)
-  })
+export const RankRoleBinding = RankRoleBindingColumns.superRefine((row, ctx) => {
+  checkScope(ctx, row)
+})
 export type RankRoleBinding = z.infer<typeof RankRoleBinding>
+
+/** Columns of `access_grants`, without row checks. */
+export const AccessGrantColumns = z.object({
+  id: AccessGrantId,
+  organization_id: OrganizationId,
+  grantee_soldier_id: SoldierId,
+  role_id: RoleId,
+  ...scopeColumns,
+  valid_from: Timestamp,
+  /** NULL = until revoked. */
+  valid_to: Timestamp.nullable(),
+  reason: Text.nullable(),
+  /** NULL only for bootstrap. */
+  granted_by: SoldierId.nullable(),
+  granted_at: Timestamp,
+  revoked_at: Timestamp.nullable(),
+  revoked_by: SoldierId.nullable(),
+})
 
 /**
  * `access_grants`: explicit, time-bounded, revocable grants to one soldier.
  * `valid_to > valid_from` compares instants, so domain checks it (D-042).
  */
-export const AccessGrant = z
-  .object({
-    id: AccessGrantId,
-    organization_id: OrganizationId,
-    grantee_soldier_id: SoldierId,
-    role_id: RoleId,
-    ...scopeColumns,
-    valid_from: Timestamp,
-    /** NULL = until revoked. */
-    valid_to: Timestamp.nullable(),
-    reason: Text.nullable(),
-    /** NULL only for bootstrap. */
-    granted_by: SoldierId.nullable(),
-    granted_at: Timestamp,
-    revoked_at: Timestamp.nullable(),
-    revoked_by: SoldierId.nullable(),
-  })
-  .superRefine((row, ctx) => {
-    checkScope(ctx, row)
-  })
+export const AccessGrant = AccessGrantColumns.superRefine((row, ctx) => {
+  checkScope(ctx, row)
+})
 export type AccessGrant = z.infer<typeof AccessGrant>

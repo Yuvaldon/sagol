@@ -60,32 +60,33 @@ export const LeaveBatch = z.object({
 })
 export type LeaveBatch = z.infer<typeof LeaveBatch>
 
+/** Columns of `leaves`, without row checks. */
+export const LeaveColumns = z.object({
+  id: LeaveId,
+  organization_id: OrganizationId,
+  soldier_id: SoldierId,
+  leave_type_id: LeaveTypeId,
+  batch_id: LeaveBatchId.nullable(),
+  start_date: CalendarDate,
+  end_date: CalendarDate,
+  status: LeaveStatus,
+  /** NULL = use the effect of the leave type (D-032). */
+  availability_effect_override: AvailabilityEffect.nullable(),
+  reason: Text.nullable(),
+  reviewed_by: SoldierId.nullable(),
+  reviewed_at: Timestamp.nullable(),
+  properties: PropertyValues,
+  ...createdColumns,
+  ...updatedColumns,
+})
+
 /**
  * `leaves`: whole days, `end_date` inclusive, overlaps allowed (D-012).
  * Leaves are cancelled, never archived (D-017).
  */
-export const Leave = z
-  .object({
-    id: LeaveId,
-    organization_id: OrganizationId,
-    soldier_id: SoldierId,
-    leave_type_id: LeaveTypeId,
-    batch_id: LeaveBatchId.nullable(),
-    start_date: CalendarDate,
-    end_date: CalendarDate,
-    status: LeaveStatus,
-    /** NULL = use the effect of the leave type (D-032). */
-    availability_effect_override: AvailabilityEffect.nullable(),
-    reason: Text.nullable(),
-    reviewed_by: SoldierId.nullable(),
-    reviewed_at: Timestamp.nullable(),
-    properties: PropertyValues,
-    ...createdColumns,
-    ...updatedColumns,
-  })
-  .superRefine((row, ctx) => {
-    checkDateRange(ctx, row.start_date, row.end_date, 'end_date')
-  })
+export const Leave = LeaveColumns.superRefine((row, ctx) => {
+  checkDateRange(ctx, row.start_date, row.end_date, 'end_date')
+})
 export type Leave = z.infer<typeof Leave>
 
 /** Before/after of one changed field in a leave event. */
