@@ -27,6 +27,7 @@ The session that finishes the row before an audit reminds the owner to open it.
 | 0.3 | docs | `docs/OPEN_ITEMS.md` as the single open-items log; workflow files updated (D-043) | ☑ |
 | 0.4 | docs | Audit process (`docs/AUDIT.md`, rows A1 … A8) and next-session model recommendation (D-051, D-052) | ☑ |
 | 0.5 | docs | Decision index at the top of `DECISIONS.md`; OI-015 partly resolved with a new trigger (D-062) | ☑ |
+| 0.6 | docs | `personal_id` = military personal number (D-069); invite links opened as OI-026 | ☑ |
 
 ### Session 0.2 guardrails
 

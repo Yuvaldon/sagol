@@ -82,9 +82,10 @@ am = amends, ref = refines, ext = extends.
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | |
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | |
-| D-066 | Account-link matching and personal ids | domain, data, ui, backend | |
+| D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069 |
 | D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | |
 | D-068 | Schema issue mapping | domain, data, logic | |
+| D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
 
 ---
 
@@ -843,3 +844,11 @@ non-integer → `not_integer`; wrong type → `invalid_type`; length bounds of t
 `unknown_field` at its own path; anything else → `invalid_value`. Each `(path, code)`
 appears once. The data adapter and the forms (through logic) use the same function.
 **Why:** OI-016; one mapping keeps adapter and form errors identical.
+
+## D-069 — `personal_id` is the military personal number
+2026-11-05 · accepted · refines D-030, D-066
+`soldier_private.personal_id` and `account_link_requests.claimed_personal_id` hold the
+soldier's military personal number (מספר אישי), not the national identity number (תעודת
+זהות). No identity-number check digit is validated; normalization stays as in D-066. UI
+labels say "מספר אישי". Column names do not change.
+**Why:** product owner clarification in session 0.6.

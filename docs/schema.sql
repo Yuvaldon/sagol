@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS "soldiers" (
 CREATE TABLE IF NOT EXISTS "soldier_private" (
 	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id"),
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
-	"personal_id" VARCHAR(50),                       -- optional; filled by commander or by approved link (D-030)
+	"personal_id" VARCHAR(50),                       -- optional; military personal number, not national id (D-069); filled by commander or by approved link (D-030)
 	"invite_email" VARCHAR(255),                     -- optional; enables verified auto-link (D-005)
 	"phone" VARCHAR(30),
 	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS "account_link_requests" (
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
 	"auth_user_id" UUID NOT NULL,
 	"email" VARCHAR(255) NOT NULL,
-	"claimed_personal_id" VARCHAR(50),               -- optional; candidates also matched by name (D-030)
+	"claimed_personal_id" VARCHAR(50),               -- optional; military personal number, not national id (D-069); candidates also matched by name (D-030)
 	"first_name" VARCHAR(50) NOT NULL,
 	"last_name" VARCHAR(50) NOT NULL,
 	"status" VARCHAR(20) NOT NULL DEFAULT 'pending',
