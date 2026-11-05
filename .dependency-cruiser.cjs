@@ -7,7 +7,7 @@
  * npm packages per layer:
  *   contracts -> zod only (D-020); its *.test.ts may also use vitest and docs/schema.sql (D-039)
  *   domain    -> @internationalized/date only (D-035); its *.test.ts may also use vitest (D-061)
- *   config    -> zod only (env schema)
+ *   config    -> zod only (env schema); its *.test.ts may also use vitest (D-074)
  *   i18n      -> nothing
  *
  * Inside ui (view engines, ARCHITECTURE "View engines"):
@@ -71,8 +71,17 @@ module.exports = {
       name: 'config-imports-contracts-only',
       comment: 'config may depend on contracts and zod (env schema) only.',
       severity: 'error',
-      from: { path: '^src/config/' },
+      from: { path: '^src/config/', pathNot: '\\.test\\.ts$' },
       to: { pathNot: ['^src/config/', '^src/contracts/', '^node_modules/zod/'] },
+    },
+    {
+      name: 'config-tests-add-vitest-only',
+      comment: 'config tests may also use vitest (D-074).',
+      severity: 'error',
+      from: { path: '^src/config/.+\\.test\\.ts$' },
+      to: {
+        pathNot: ['^src/config/', '^src/contracts/', '^node_modules/zod/', '^node_modules/vitest/'],
+      },
     },
     {
       name: 'i18n-imports-nothing',

@@ -36,10 +36,10 @@ am = amends, ref = refines, ext = extends.
 | D-017 | Soft delete and audit columns | contracts, data, backend, ui | |
 | D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | |
 | D-019 | Derived state is never stored | all | |
-| D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | |
+| D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
 | D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050 |
-| D-023 | Single-screen workspace, view state in URL | logic, ui | |
+| D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074 |
 | D-024 | First designed component | ui | |
 | D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | |
 | D-026 | Libraries | all | ext D-034 |
@@ -77,7 +77,7 @@ am = amends, ref = refines, ext = extends.
 | D-058 | What counts as an active permission source | domain, backend | |
 | D-059 | Access-manager invariant (no lockout) | domain, data, backend | |
 | D-060 | No privilege escalation | domain, data, backend | |
-| D-061 | domain tests may import vitest | domain, tooling | |
+| D-061 | domain tests may import vitest | domain, tooling | ext D-074 |
 | D-062 | Decision index; read rule unchanged | docs | |
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | |
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | |
@@ -90,6 +90,7 @@ am = amends, ref = refines, ext = extends.
 | D-071 | Rule targets, populations and thresholds | domain, data, logic, ui, backend | |
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | |
+| D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | |
 
 ---
 
@@ -927,3 +928,27 @@ the rest follows D-031.
 - Only leave commands are gated (D-014). Membership, tag, status and rule changes are not;
   their effect shows in the evaluation.
 **Why:** product owner decision in session 1.3 (only a change that makes it worse).
+
+## D-074 — Config vocabularies
+2026-11-05 · accepted · refines D-020, D-023; extends D-061 (config tests)
+`config` holds, as constants with no logic beyond validation:
+- **Env:** `EnvSchema` and `parseEnv(raw, { production })` over `VITE_AUTH_MODE`,
+  `VITE_DATA_ADAPTER`, `VITE_REMOTE_URL`, `VITE_REMOTE_ANON_KEY`, built from `AuthMode` and
+  `DataAdapterMode` (D-048). Blank counts as unset. The remote adapter requires URL and key;
+  a production parse refuses `DEVELOPMENT_ONLY_AUTH_MODES`. It returns issues
+  (`missing`, `invalid`, `development_only`, `required_for_remote`), never throws.
+- **Palette:** 12 closed `color_key` values: red, orange, amber, lime, green, teal, cyan,
+  blue, indigo, purple, pink, gray. Adding one is a config + theme change, no schema change.
+- **Breakpoints:** Tailwind's `sm 640`, `md 768`, `lg 1024`, `xl 1280`; desktop (top bar,
+  side drawer) from `md`, mobile (bottom bar, bottom sheet) below.
+- **Views and URL:** view ids `timeline`, `calendar`, `list`, `table`, default `timeline`;
+  search params `view`, `from`, `to`, `filter`, `panel`, `entity`. Panel ids and the
+  encoding of `filter` belong to the sessions that build them.
+- **Storage:** IndexedDB name `sagol`; one `localStorage` key, the local identity (D-006).
+- **Dates:** locale `he-IL`, week starts on Sunday, six `Intl` format presets. The
+  organization time zone stays in its settings.
+- `src/config/**/*.test.ts` may also import `vitest`, like contracts (D-039) and domain
+  (D-061). Enforced by `.dependency-cruiser.cjs`.
+**Why:** product owner chose the 12-color palette and Tailwind breakpoints in session 1.4.
+Default view, URL names, storage names and the Sunday week start are the session's
+proposals, changeable by a later entry.

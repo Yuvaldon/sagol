@@ -193,7 +193,7 @@ never reach the client bundle.
 src/
   contracts/   entities/ inputs/ enums/ filters/ permissions/ repositories/ commands/ auth/ errors/
   domain/      policy/ hierarchy/ leaves/ availability/ filters/ properties/
-  config/      env/ storage/ views/ url/ breakpoints/ palette/
+  config/      env/ storage/ views/ url/ breakpoints/ palette/ dates/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
   logic/       services/ queries/ mutations/ view-state/ session/
