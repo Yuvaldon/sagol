@@ -107,21 +107,27 @@ descendants and depth, and rejects cycles. Postgres keeps a trigger-maintained
 `unit_memberships`, so history is kept and attachments or temporary units need no schema
 change.
 
-## Availability (D-012, D-014)
+## Availability (D-012, D-014, D-070 … D-073)
 
-`domain/availability` computes, for a date range, exactly **one status per soldier per
-day** plus the leaves covering it. A soldier is unavailable if any approved leave whose
-effective effect (the leave's override, else its type's effect) is `unavailable` covers the
-day. Present/absent lists are a partition: each soldier appears once, in one list, and
-markers are annotations on that entry (D-032, enforced by a test).
+`domain/availability` computes exactly **one status per soldier per day** plus the pending
+and approved leaves covering it. A soldier is unavailable if any approved leave (or pending,
+when pending leaves are counted) whose effective effect (the leave's override, else its
+type's effect) is `unavailable` covers the day. Present/absent lists are a partition: each
+soldier appears once, in one list, and markers are annotations on that entry (D-032, D-070,
+enforced by a test).
 
-`availability_rules` are evaluated per target (scope unit × canonical population × group
-value × day) → `{ required, actual, status }`. Global rules (no scope unit) cover the whole
-organization. `group_by` splits one rule per tag or rank. On the same target the
-higher-`priority` rule is effective and the others show as overridden. At equal priority
-all apply. Min/max conflicts are reported as configuration errors (D-031). Commands that
-change leaves evaluate affected rules: soft violations need an acknowledgment stored in
-`leave_events`, hard violations are rejected by the adapter/server.
+`availability_rules` are evaluated per target (evaluated unit × canonical population × group
+value × day) → members, available count, required minimum, allowed maximum, broken bounds.
+Each child or level unit of a rule's scope is its own target; global rules (no scope unit)
+cover the whole organization. Populations are active, non-archived soldiers placed that day,
+filtered by the rule and, with a deployment, by its members. Thresholds are exact counts
+(minimum up, maximum down). `group_by` splits a rule per tag or rank, including selected
+groups nobody holds (D-071, D-072). On the same target the higher-`priority` rule is
+effective and the others show as overridden. At equal priority all apply. Min/max conflicts
+are reported as configuration errors (D-031). Commands that change leaves get the
+violations the change makes worse (`leaveChangeViolations`) and `ruleGate` turns them into
+the answer: soft violations need an acknowledgment stored in `leave_events`, hard
+violations are rejected by the adapter/server (D-047, D-073).
 
 ## Filters (shared model)
 

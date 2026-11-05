@@ -1,4 +1,4 @@
-import { parseAbsolute, toCalendarDate } from '@internationalized/date'
+import { parseAbsolute, parseDate, toCalendarDate } from '@internationalized/date'
 import type { CalendarDate, Timestamp } from '@contracts'
 
 // Calendar and instant arithmetic shared by every domain module (D-035, D-042).
@@ -67,4 +67,25 @@ export interface InstantWindow {
 export function windowContains(window: InstantWindow, now: Timestamp): boolean {
   if (compareInstants(window.valid_from, now) > 0) return false
   return window.valid_to === null || compareInstants(now, window.valid_to) < 0
+}
+
+/** Inclusive range of whole days (leaves, rule windows). */
+export interface DateRange {
+  readonly start_date: CalendarDate
+  readonly end_date: CalendarDate
+}
+
+/** Every day of the inclusive range, in order. Empty when the range is inverted. */
+export function eachDay(range: DateRange): CalendarDate[] {
+  const days: CalendarDate[] = []
+  const end = parseDate(range.end_date)
+  for (let day = parseDate(range.start_date); day.compare(end) <= 0; day = day.add({ days: 1 })) {
+    days.push(day.toString())
+  }
+  return days
+}
+
+/** True when `date` lies inside the inclusive range. */
+export function rangeCovers(range: DateRange, date: CalendarDate): boolean {
+  return compareDates(range.start_date, date) <= 0 && compareDates(date, range.end_date) <= 0
 }
