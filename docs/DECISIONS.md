@@ -46,7 +46,7 @@ am = amends, ref = refines, ext = extends.
 | D-027 | Backend target (**proposed**) | backend | |
 | D-028 | Unified scope model with relative anchors | contracts, domain, data, backend | ref D-053, D-054, D-055 |
 | D-029 | Effective seniority with personal overrides | contracts, domain, backend | ref D-057 |
-| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066 |
+| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069 |
 | D-031 | Availability rules: grouping, global scope, priority | contracts, domain, ui | ref D-067 (canonical population), D-071, D-072 |
 | D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070 |
 | D-033 | Simple first-run setup wizard | ui | |

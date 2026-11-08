@@ -28,6 +28,7 @@ the row before an audit reminds the owner to open it.
 | 0.5 | docs | Decision index at the top of `DECISIONS.md`; OI-015 partly resolved with a new trigger (D-062) | ☑ |
 | 0.6 | docs | `personal_id` = military personal number (D-069); invite links opened as OI-026 | ☑ |
 | 0.7 | docs | Move to vertical slices: `docs/FEATURE_MAP.md`, Stone 3 direction (D-075 … D-082) | ☑ |
+| 0.8 | docs | Record audit A1: `docs/audits/A1.md`, OI-034 … OI-042 | ☑ |
 
 ### Session 0.2 guardrails
 
@@ -58,7 +59,7 @@ the row before an audit reminds the owner to open it.
 | 1.2b | domain | leave state machine, account-link candidate matching, filter evaluator + canonical form, property validation, Zod issue mapping (D-063 … D-068) | ☑ |
 | 1.3 | domain | availability (one status per soldier/day, partition invariant test) and rule evaluation (targets, group_by, priority, conflicts), with tests | ☑ |
 | 1.4 | config | env schema, storage keys, view ids, URL param names, breakpoints, palette keys, date formats | ☑ |
-| A1 | audit | Contracts and domain against the decisions (`docs/AUDIT.md`). May run alongside V0 (D-078) | ☐ |
+| A1 | audit | Contracts and domain against the decisions (`docs/AUDIT.md`). May run alongside V0 (D-078). Report: `docs/audits/A1.md` | ☑ |
 
 ## M1 — The company exists
 

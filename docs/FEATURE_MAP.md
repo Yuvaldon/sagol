@@ -153,8 +153,10 @@ state. A reload keeps the session. A second local identity sees "no access yet" 
 - **ui + i18n:** Stone 3 tokens; first primitives; dictionary and error mapping; sign-in,
   onboarding and workspace frame; `docs/Design.md` first version.
 - **app:** env parsing; adapter construction; providers; router; mount.
-- **Open items:** OI-002, OI-003, OI-004, OI-005, OI-006, OI-007; OI-021 (a), OI-023 (e), OI-024
-  and OI-033 start here.
+- **Open items:** OI-002, OI-003, OI-004, OI-005, OI-006, OI-007, OI-035; OI-021 (a), OI-023 (e),
+  OI-024 and OI-033 start here.
+- **Owner decisions at start:** who reads the current time (OI-004); where a time zone is validated
+  (OI-035).
 - **Decisions:** D-001, D-004, D-005, D-006, D-011, D-021, D-023, D-024, D-026, D-034, D-048,
   D-056, D-059, D-060, D-077, D-079, D-080.
 
@@ -245,7 +247,7 @@ hard rule refuses it.
   about invisible soldiers (OI-027).
 - **logic:** evaluation for a window; live warnings equal to the command result.
 - **ui:** rules module on the shared filter UI; heat row; acknowledgment dialog.
-- **Open items:** OI-023 (c), OI-027, OI-028.
+- **Open items:** OI-023 (c), OI-027, OI-028, OI-042 (asked at start).
 - **Decisions:** D-014, D-031, D-047, D-067, D-071, D-072, D-073.
 
 #### V8 — Timeline drag
@@ -263,8 +265,8 @@ until V10 gives them a role, and that is correct.
 - **data:** `accounts` commands; `autoLinkSoldier`; `linkCandidates`; `canReviewLinkRequest`;
   `linkEnrichment`.
 - **ui:** onboarding request form; review module.
-- **Open items:** OI-023 (d), OI-019 (asked at start, with its schema note); OI-026 (decided at
-  start, its own slice if accepted).
+- **Open items:** OI-023 (d), OI-036, OI-034 and OI-019 (asked at start, OI-019 with its schema
+  note); OI-026 (decided at start, its own slice if accepted).
 - **Decisions:** D-005, D-030, D-066, D-069.
 
 #### V10 — Roles and access
@@ -275,7 +277,7 @@ squad commander their platoon, and controls follow. Lockout and escalation are r
   `accessManagerIssues`; `missingPermissions`; `accessGrantIssues`.
 - **logic:** hints across all modules.
 - **ui:** roles module; scope picker; grants module.
-- **Open items:** OI-021 (a, b, d).
+- **Open items:** OI-021 (a, b, d); OI-038, OI-039, OI-040, OI-041 (asked at start).
 - **Decisions:** D-003, D-004, D-028, D-040, D-053 … D-060.
 
 #### V11 — Soldier self-service
@@ -313,7 +315,7 @@ database; remote adapter passing the same contract suite; Google auth, environme
 
 From M6 on, each slice also updates the remote adapter and server functions, and the contract
 suite holds both to the same behavior (D-082). V14 and V15 also close the last parts of OI-021,
-OI-023 and OI-027.
+OI-023 and OI-027, and V14 closes OI-037.
 
 **Not assigned yet:** focus mode (the mock's "מצב מיקוד") has no decision behind it (OI-032). It
 gets a definition and a slice when the owner wants it.
@@ -322,7 +324,7 @@ gets a definition and a slice when the owner wants it.
 
 | Audit | When | Covers |
 |-------|------|--------|
-| A1 | open, may run alongside V0 | Contracts and domain against the decisions |
+| A1 | done, `docs/audits/A1.md` | Contracts and domain against the decisions |
 | A2 | after M1 | Server-authoritative behavior, no bypasses, first UI and Design.md |
 | A3 | after M2 | Leave workflow, timeline engine, view state |
 | A4 | after M3 | Filters and rules: UI warnings equal command results |

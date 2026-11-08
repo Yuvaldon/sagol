@@ -34,7 +34,7 @@ contracts  <-  domain  <-  data | logic  <-  ui  <-  app
 |-----------|------------------------------------------------------------------------|------------------------------------|
 | contracts | Zod schemas + inferred types, enums, repository/command/auth interfaces | `zod` only                        |
 | domain    | Pure rules: policy, hierarchy, leave state machine, availability, filters | contracts, `@internationalized/date` (D-035) |
-| config    | Constants: storage keys, view ids, breakpoints, palette keys, env schema | contracts                         |
+| config    | Constants: storage keys, view ids, breakpoints, palette keys, env schema | contracts, `zod` (D-074)          |
 | data      | Server-authoritative adapters (IndexedDB now, remote later)            | contracts, domain, config          |
 | logic     | Use cases, query/mutation hooks, view state for the UI                 | contracts, domain, config          |
 | ui        | Shell, view engines, modules, primitives, theme                        | contracts, config, i18n, logic     |
@@ -200,7 +200,8 @@ never reach the client bundle.
 ```
 src/
   contracts/   entities/ inputs/ enums/ filters/ permissions/ repositories/ commands/ auth/ errors/
-  domain/      policy/ hierarchy/ leaves/ availability/ filters/ properties/
+  domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/
+               json/ time/
   config/      env/ storage/ views/ url/ breakpoints/ palette/ dates/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
@@ -211,6 +212,7 @@ src/
 supabase/      migrations/ policies/ functions/ tests/   (phase 8)
 e2e/           Playwright specs
 docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md sessions/
+               audits/
 ```
 
 ## Quality gates
