@@ -118,7 +118,8 @@ tables get commands only in later slices.
 
 | Piece | Built in | Reused by |
 |-------|----------|-----------|
-| Transaction, version and audit helpers; snapshot loader; change feed | V0 | all |
+| Transaction and audit helpers; snapshot loader; change feed | V0 | all |
+| Version helper (`expected_version`) | V1, with the first update command | all |
 | Shared contract suite with `seed` port | V0 | all, then the remote adapter (8.3) |
 | Theme tokens and primitives; `docs/Design.md` | V0, settled in V1 | all UI |
 | Error-code to i18n mapping; form issue mapping (OI-024) | V0 | all forms |
