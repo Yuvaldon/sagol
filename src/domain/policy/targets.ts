@@ -1,14 +1,18 @@
-import type { PermissionResource, SoldierId, UnitId } from '@contracts'
+import type { PermissionResource, PolicyTarget, Unit, UnitId } from '@contracts'
 
-// What a permission is checked against (D-053).
-
-export type PolicyTarget =
-  /** Organization-wide data with no unit or soldier subject. */
-  | { kind: 'organization' }
-  | { kind: 'unit'; unit_id: UnitId }
-  | { kind: 'soldier'; soldier_id: SoldierId }
+// Which targets a permission accepts (D-053). The target itself is a contract (D-091).
 
 export type PolicyTargetKind = PolicyTarget['kind']
+
+/** The target of a unit's own row: a top-level unit is organization data (D-053, D-089). */
+export function unitTarget(unit: Pick<Unit, 'id' | 'parent_id'>): PolicyTarget {
+  return unit.parent_id === null ? { kind: 'organization' } : { kind: 'unit', unit_id: unit.id }
+}
+
+/** The target of placing a unit under a parent: the parent, or the organization at the top (D-089). */
+export function placementTarget(parentId: UnitId | null): PolicyTarget {
+  return parentId === null ? { kind: 'organization' } : { kind: 'unit', unit_id: parentId }
+}
 
 const ORGANIZATION = ['organization'] as const satisfies readonly PolicyTargetKind[]
 const SOLDIER = ['soldier'] as const satisfies readonly PolicyTargetKind[]

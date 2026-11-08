@@ -3,11 +3,12 @@ import {
   type Permission,
   type PermissionAction,
   type PermissionResource,
+  type PolicyTarget,
   type SoldierId,
 } from '@contracts'
 import type { EffectivePermission, PolicyContext } from './context'
 import { scopeCovers } from './scope'
-import { acceptsTarget, type PolicyTarget } from './targets'
+import { acceptsTarget } from './targets'
 
 // The one authorization check (D-007): the local adapter, logic's "can I?" hints and the
 // test matrix all call it; Postgres `has_permission()` mirrors it in phase 8.

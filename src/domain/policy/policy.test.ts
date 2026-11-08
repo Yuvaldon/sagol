@@ -12,6 +12,7 @@ import {
   UnitMembershipId,
   type PermissionAction,
   type PermissionResource,
+  type PolicyTarget,
 } from '@contracts'
 import type { Clock } from '../time'
 import {
@@ -23,9 +24,10 @@ import {
   can,
   createPolicyContext,
   missingPermissions,
+  placementTarget,
   seniorityOverrideOverlapIssues,
+  unitTarget as targetOfUnit,
   type PolicyData,
-  type PolicyTarget,
 } from './index'
 
 // ============================================================================ sample world
@@ -465,5 +467,20 @@ describe('row checks', () => {
     expect(seniorityOverrideOverlapIssues(existing, candidate('2026-11-01', null, S.f12))).toEqual([])
     expect(seniorityOverrideOverlapIssues(existing, candidate('2026-11-01', null, S.sc11))).toEqual([])
     expect(seniorityOverrideOverlapIssues(existing, candidate('2026-10-31', null, S.sc11))).toEqual(overlap)
+  })
+})
+
+describe('targets of the unit commands (D-053, D-089)', () => {
+  const company = UnitId.parse('00000000-0000-4000-8000-000000000901')
+  const platoon = UnitId.parse('00000000-0000-4000-8000-000000000902')
+
+  it('treats a top-level unit as organization data, and any other unit as itself', () => {
+    expect(targetOfUnit({ id: company, parent_id: null })).toEqual({ kind: 'organization' })
+    expect(targetOfUnit({ id: platoon, parent_id: company })).toEqual({ kind: 'unit', unit_id: platoon })
+  })
+
+  it('checks a placement against the parent, or the organization at the top', () => {
+    expect(placementTarget(null)).toEqual({ kind: 'organization' })
+    expect(placementTarget(company)).toEqual({ kind: 'unit', unit_id: company })
   })
 })

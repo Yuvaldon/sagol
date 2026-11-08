@@ -4,12 +4,13 @@ import {
   type AccountLinkRequest,
   type Issue,
   type Permission,
+  type PolicyTarget,
   type Soldier,
   type SoldierAccount,
   type SoldierId,
   type SoldierPrivate,
 } from '@contracts'
-import { can, type PolicyContext, type PolicyTarget } from '../policy'
+import { can, type PolicyContext } from '../policy'
 import { normalizeEmail, normalizeName, normalizePersonalId } from './normalize'
 
 // Account linking (D-005, D-030, D-066). Candidates are shown to the reviewer only, never to

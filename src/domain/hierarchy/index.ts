@@ -10,4 +10,10 @@ export {
   type UnitNode,
   type UnitTree,
 } from './tree'
-export { membershipOverlapIssues, primaryUnitOn, type MembershipSpan } from './memberships'
+export {
+  archiveUnitIssues,
+  membershipOverlapIssues,
+  primaryUnitOn,
+  type ArchiveUnitFacts,
+  type MembershipSpan,
+} from './memberships'

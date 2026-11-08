@@ -22,6 +22,7 @@ export {
 export {
   TARGET_KINDS_BY_RESOURCE,
   acceptsTarget,
-  type PolicyTarget,
+  placementTarget,
+  unitTarget,
   type PolicyTargetKind,
 } from './targets'

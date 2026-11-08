@@ -4,6 +4,7 @@ import {
   ancestorAtSteps,
   ancestorOrSelfAtLevel,
   ancestorsOf,
+  archiveUnitIssues,
   buildUnitTree,
   depthOf,
   descendantsOf,
@@ -133,5 +134,36 @@ describe('memberships', () => {
     expect(membershipOverlapIssues(history, span(2, S12, '2026-07-01', null))).toEqual([])
     expect(membershipOverlapIssues(history, span(4, S12, '2026-08-01', null, 'attached'))).toEqual([])
     expect(membershipOverlapIssues(history, span(4, S12, '2026-08-01', null, 'primary', other))).toEqual([])
+  })
+})
+
+describe('archiving a unit (D-088)', () => {
+  const TODAY = '2026-11-08'
+  const refused = [{ path: [], code: 'unit_not_empty' }]
+  const live = { parent_id: P1, archived_at: null }
+
+  it('allows an empty unit', () => {
+    expect(archiveUnitIssues({ units: [], memberships: [] }, P1, TODAY)).toEqual([])
+  })
+
+  it('refuses a unit with a live sub-unit, and ignores archived ones and other units', () => {
+    expect(archiveUnitIssues({ units: [live], memberships: [] }, P1, TODAY)).toEqual(refused)
+    const archived = { parent_id: P1, archived_at: '2026-11-01T00:00:00Z' }
+    expect(archiveUnitIssues({ units: [archived], memberships: [] }, P1, TODAY)).toEqual([])
+    expect(archiveUnitIssues({ units: [live], memberships: [] }, P2, TODAY)).toEqual([])
+  })
+
+  it('refuses a placement that is open, ends today or ends later, and allows a past one', () => {
+    const issues = (valid_to: string | null) =>
+      archiveUnitIssues({ units: [], memberships: [{ unit_id: P1, valid_to }] }, P1, TODAY)
+    expect(issues(null)).toEqual(refused)
+    expect(issues(TODAY)).toEqual(refused)
+    expect(issues('2026-12-01')).toEqual(refused)
+    expect(issues('2026-11-07')).toEqual([])
+  })
+
+  it('counts only placements in this unit', () => {
+    const memberships = [{ unit_id: P2, valid_to: null }]
+    expect(archiveUnitIssues({ units: [], memberships }, P1, TODAY)).toEqual([])
   })
 })

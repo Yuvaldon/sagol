@@ -1,5 +1,6 @@
 import {
   PermissionAction,
+  type PolicyTarget,
   type RankRoleBinding,
   type SoldierId,
   type UnitId,
@@ -10,7 +11,6 @@ import {
   isAncestorOrSelf,
   type UnitTree,
 } from '../hierarchy'
-import type { PolicyTarget } from './targets'
 
 // Scope anchors (D-028) resolved for one holder, and what a resolved scope covers (D-053).
 
