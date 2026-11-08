@@ -5,6 +5,7 @@
 // outside allowed modules.
 import ts from 'typescript'
 import {
+  CLASS_NAMES_LIVE_IN,
   RAW_COLOR_ALLOWED_IN,
   RAW_DATE_ALLOWED_IN,
   SOURCE_ROOT,
@@ -105,13 +106,17 @@ function isPropertyName(node: ts.Identifier): boolean {
 function scanTs(file: string): Finding[] {
   const source = parseTs(file, readSource(file))
   const findings: Finding[] = []
+  const classesLiveHere = isUnder(file, CLASS_NAMES_LIVE_IN)
   const colorsAllowed = isUnder(file, RAW_COLOR_ALLOWED_IN)
   const dateAllowed = isUnder(file, RAW_DATE_ALLOWED_IN)
   const storageAllowed = isUnder(file, WEB_STORAGE_ALLOWED_IN)
 
   walk(source, (node) => {
     if (isStringLike(node)) {
-      const problems = [...classProblems(node.text), ...(colorsAllowed ? [] : colorProblems(node.text))]
+      const problems = [
+        ...(classesLiveHere ? classProblems(node.text) : []),
+        ...(colorsAllowed ? [] : colorProblems(node.text)),
+      ]
       for (const message of problems) findings.push(findingAt(source, node, 'raw-value', message))
       return
     }

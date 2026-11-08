@@ -1109,4 +1109,6 @@ In remote mode the same read maps to `has_permission()`.
   row 8.3) shows the startup error screen. Nothing is stubbed (D-076).
 - The local identity's one `localStorage` key (D-074) holds the current identity and the identities
   that signed in on the device (the switcher's list).
+- The raw-value scan applies its Tailwind class rules only to `ui` and `app`, the layers whose
+  strings can be classes. Color, date and web-storage rules still cover all of `src`.
 **Why:** product owner approved in V0.

@@ -10,6 +10,12 @@ export const ENTRY_POINT_LAYER = 'app'
 /** Layers that may share one commit (D-025, D-075). Sorted alphabetically. */
 export const ALLOWED_LAYER_PAIRS: readonly (readonly string[])[] = [['i18n', 'ui']]
 
+/**
+ * Layers whose strings can be Tailwind classes, so the class rules apply to them. Elsewhere a
+ * string such as a Dexie compound key (`[role_id+resource]`) is not a class (D-086).
+ */
+export const CLASS_NAMES_LIVE_IN: readonly string[] = ['src/ui/', 'src/app/']
+
 /** Raw colors (hex, rgb(), oklch(), ...) may appear only where theme tokens are defined. */
 export const RAW_COLOR_ALLOWED_IN: readonly string[] = ['src/ui/theme/']
 
