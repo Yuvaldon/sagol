@@ -11,5 +11,7 @@ export function composePorts(env: Env): LogicPorts | null {
   if (env.authMode !== 'local' || env.dataAdapter !== 'local') return null
   const auth = createLocalAuthProvider(browserIdentityStore())
   const data = createLocalDataAdapter({ identity: auth, time: systemTime })
-  return { auth, data }
+  // `logic` starts to require `time` in its next commit (D-100).
+  const ports = { auth, data, time: systemTime }
+  return ports
 }
