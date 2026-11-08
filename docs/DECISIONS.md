@@ -91,7 +91,7 @@ am = amends, ref = refines, ext = extends.
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092 |
-| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | |
+| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | |
 | D-078 | Audits follow milestones | docs | |
@@ -109,6 +109,7 @@ am = amends, ref = refines, ext = extends.
 | D-090 | The order of checks inside a command | data, backend, docs | |
 | D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | |
 | D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | |
+| D-093 | A new issue code lands after its message | contracts, ui, docs | |
 
 ---
 
@@ -1185,3 +1186,12 @@ re-asks after every change on the feed. The command still decides (D-008).
 - **Surface:** a modal drawer on the inline end (the left in Hebrew) from `md`, and below it a bottom
   sheet that also closes by dragging its grip down. In V3 the drawer leaves the name column visible.
 **Why:** product owner approved in V1.
+
+## D-093 — A new issue code lands after its message
+2026-11-08 · accepted · refines D-075
+The map from issue codes to messages in `ui` is total, and a commit touches one layer, so a new code
+in contracts cannot compile in its own commit. The order is: first an `i18n` + `ui` commit with the
+message, then the code in contracts. The map is checked by assignment, so it may hold the message
+for a moment before the code exists, and a code without a message still fails to compile. This is
+the one exception to "contracts first".
+**Why:** the session's proposal in V1, told to the owner while building. Changeable by a later entry.
