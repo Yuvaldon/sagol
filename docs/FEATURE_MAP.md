@@ -1,0 +1,410 @@
+# Sagol — Feature and Dependency Map
+
+The work order of the project (D-075). Each slice takes one feature from the data layer to the
+screen, so the owner sees a working product after every slice. Layer separation stays as strict
+as it was, enforced by tools rather than by how sessions are divided. Status lives in
+`docs/ROADMAP.md`.
+
+## 1. Where we stood at the start (session 0.7)
+
+| Layer | State | Notes |
+|-------|-------|-------|
+| contracts | complete | Every table, input, repository, command, auth and error type |
+| domain | complete | Policy, hierarchy, leaves, accounts, properties, tags, filters, availability |
+| config | complete | Env, palette, breakpoints, views, URL, storage, dates |
+| data | empty | The next thing every slice needs |
+| logic | empty | |
+| i18n | empty | |
+| ui | empty | `AppRoot` returns null; Tailwind defaults are reset, no tokens yet |
+| app | mount only | No env parsing, adapters, providers or router |
+
+`npm run check` is green with 372 tests, and nothing is visible yet. The contracts and domain
+already hold most of the hard rules, so slices are mostly wiring, screens and storage.
+
+## 2. Working rules (D-075, D-076)
+
+**One session = one slice. One commit = one layer.**
+
+1. **Order inside a slice:** `docs/contracts` (only when the model changes) → `domain` →
+   `config` → `data` → `logic` → `i18n` + `ui` → `app` → `e2e`. Each layer is written against
+   the public API of the one below it.
+2. **Every commit passes `npm run check`** and touches one layer. A pre-commit guard
+   (`scripts/check-commit-layers.ts`, added in V0) rejects a commit whose `src/` files cross
+   layers. `i18n` with `ui` is the one allowed pair (D-025). Files outside `src/` are not a
+   layer, so a model change commits `docs` and `contracts` together (iron rule 7).
+3. **Boundaries do not change:** `index.ts` only, aliases only, dependency-cruiser as today.
+4. **No stubs.** The local adapter grows by slice. Until it is complete, its type is
+   `Pick<DataCommands, ...>` and `Pick<DataRepositories, ...>` of what exists, and each `logic`
+   module declares the narrow port it needs. Nothing returns "not implemented". When the last
+   group lands the adapter `satisfies DataAdapter`, which the remote adapter must also satisfy.
+5. **No dead controls.** A control appears only when its action works end to end. The view
+   switcher, for example, lists what the engine registry holds, so it grows with the engines.
+6. **Permissions are real from V0.** Every read and write goes through the policy from the
+   first command. The owner passes because of a real grant (D-006), not a shortcut.
+7. **Denial paths are tested before their screens exist.** The shared contract suite takes a
+   `seed` port per adapter (local: direct store writes, inside test files only). So "a soldier
+   without permission cannot create a unit" is tested in V1, long before the roles screen.
+8. **A fix goes in the layer that owns it,** in its own commit in the same slice, if the slice
+   needs it. Anything else becomes an open item with a target slice.
+
+**A slice is done when:**
+
+- `npm run check` and `npm run build` are green;
+- its demo runs in Playwright, desktop and mobile, RTL, with axe;
+- the owner can follow the demo steps in the handoff in a real browser;
+- `OPEN_ITEMS.md`, `ROADMAP.md` and the handoff are updated (D-043, D-052).
+
+If a slice will not fit one session, split it at a smaller demo and record the split here.
+
+## 3. Dependency graph
+
+```mermaid
+graph TD
+  subgraph M1["M1 — The company exists"]
+    V0[V0 Walking skeleton] --> V1[V1 Unit tree] --> V2[V2 Roster]
+  end
+  subgraph M2["M2 — The board works"]
+    V2 --> V3[V3 Timeline grid] --> V4[V4 Leaves on the timeline] --> V5[V5 Approval workflow]
+  end
+  subgraph M3["M3 — Who is missing"]
+    V4 --> V6[V6 Tags and filters] --> V7[V7 Availability rules] --> V8[V8 Timeline drag]
+    V5 --> V7
+    V5 --> V8
+  end
+  subgraph M4["M4 — Everyone has the right access"]
+    V5 --> V9[V9 Account linking] --> V10[V10 Roles and access] --> V11[V11 Soldier self-service]
+  end
+  subgraph M5["M5 — Go live"]
+    V11 --> V12[V12 Import and export] --> P[8.1-8.4 Backend, RLS, remote adapter, Google]
+    V7 --> P
+  end
+  subgraph M6["M6 — Complete"]
+    P --> V13[V13 More views]
+    P --> V14[V14 Custom properties]
+    P --> V15[V15 Deployments, batches, overrides]
+    P --> V16[V16 Setup wizard]
+    P --> V17[V17 Dark Mode]
+  end
+```
+
+**M3 and M4 do not depend on each other.** Either can follow M2, and the owner chooses when M2
+is done (OI-031). Both must finish before the backend: V7 because rule enforcement is ported to
+the server (OI-029), V11 because real people need linking and roles.
+
+### Why this order
+
+- **Units before soldiers:** a soldier is placed through `unit_memberships`, and the policy
+  scopes everything through the unit tree (D-054). The tree is also the simplest content that
+  sets the drawer and form patterns (D-024).
+- **Soldiers before the timeline:** soldiers are its rows.
+- **The grid before the bars:** the grid needs only soldiers, so the real Stone 3 screen shows
+  one slice earlier, and V4 only adds bars to it.
+- **Linking before roles:** a second person can act only once linked. Roles have no visible
+  effect without one, while a linked soldier with no role is a valid, testable state (D-056).
+- **Rules after filters:** a rule's population is a `FilterExpression`, and its builder reuses
+  the filter UI (D-014). The rule gate itself runs from V4, with no rules defined yet.
+- **Backend before completion features (D-082):** IndexedDB lives on one device (D-021). Two
+  real people can use the product only on the backend, so M6 comes after go-live.
+
+### What the data layer needs from the first slice
+
+The policy snapshot (`PolicyData`) reads `organizations.baseline_role_id`, `units`, `soldiers`,
+`command_ranks`, `seniority_overrides`, `unit_memberships`, `soldier_accounts`, `roles`,
+`role_permissions`, `rank_role_bindings` and `access_grants`, on every check. So V0 creates the
+full Dexie schema (one version, all tables) and the snapshot loader, even though most of those
+tables get commands only in later slices.
+
+### Shared pieces, built once in the first slice that needs them
+
+| Piece | Built in | Reused by |
+|-------|----------|-----------|
+| Transaction, version and audit helpers; snapshot loader; change feed | V0 | all |
+| Shared contract suite with `seed` port | V0 | all, then the remote adapter (8.3) |
+| Theme tokens and primitives; `docs/Design.md` | V0, settled in V1 | all UI |
+| Error-code to i18n mapping; form issue mapping (OI-024) | V0 | all forms |
+| Generic reference commands (create, update, archive, reorder) | V1 | V2, V4, V6, V7, V10, V14, V15 |
+| Drawer/sheet and form patterns; panel state in the URL | V1 | all modules |
+| Virtualized list | V2 | V5, V9, V13 |
+| Engine registry, viewport, view state, floating bars | V3 | V13 |
+| Filter encoding in the URL | V3 (unit), V6 (all) | V7, V13 |
+| Rule gate in leave commands | V4 | V5, V8, V15 |
+| Rule acknowledgment dialog | V7 | V5's forms, V8 |
+
+## 4. Slices
+
+Each card lists what the owner sees, the work per layer, the open items it closes, and the
+decisions beyond the baseline. **Baseline for every slice:** D-008, D-017, D-019, D-025, D-036,
+D-038, D-044, D-045, D-046, D-068, D-074, D-075, D-076.
+
+### M1 — The company exists
+
+#### V0 — Walking skeleton
+**Owner sees:** `npm run dev` → a local sign-in screen in the Stone 3 look → on an empty store,
+a form to claim the organization (name, time zone, own name) → the empty workspace: floating
+bar with the organization name, user menu, sign-out and the dev identity switcher, and an empty
+state. A reload keeps the session. A second local identity sees "no access yet" and no data.
+- **tooling:** commit-layer guard; `fake-indexeddb`; Playwright config, first spec, axe, CI job;
+  Heebo self-hosted; `.claude/launch.json`.
+- **data:** Dexie schema; local identity provider; session resolver; helpers; snapshot loader;
+  change feed across tabs; `organizations.bootstrapOwner`; `organizations.current`;
+  `session.onboardingState`; contract suite and `seed` port; the date adapter.
+- **logic:** adapter ports; session service and hooks; query client invalidated by the change
+  feed; `can` hint; form issues.
+- **ui + i18n:** Stone 3 tokens; first primitives; dictionary and error mapping; sign-in,
+  onboarding and workspace frame; `docs/Design.md` first version.
+- **app:** env parsing; adapter construction; providers; router; mount.
+- **Open items:** OI-002, OI-003, OI-004, OI-005, OI-006, OI-007; OI-021 (a), OI-023 (e), OI-024
+  and OI-033 start here.
+- **Decisions:** D-001, D-004, D-005, D-006, D-011, D-021, D-023, D-024, D-026, D-034, D-048,
+  D-056, D-059, D-060, D-077, D-079, D-080.
+
+#### V1 — Unit tree
+**Owner sees:** a "Units" drawer (bottom sheet on mobile): create levels and a tree, rename,
+reorder, drag to move (a cycle is refused), archive. A deep link reopens the drawer, and two
+tabs stay in sync.
+- **data:** generic reference commands; `unit_levels`; `units` with `move` and `reorder`; policy
+  filter on reads; `color_key` membership; `moveUnitIssues`; `propertyValueIssues`.
+- **logic:** reference-data hooks; panel state in the URL.
+- **ui:** drawer/sheet; form pattern; tree module (`@dnd-kit`); palette token pairs;
+  `docs/Design.md` settled (D-024).
+- **Open items:** OI-011; parts of OI-021 (c), OI-023 (b), OI-033.
+- **Decisions:** D-009, D-024, D-040, D-053, D-065, D-077.
+
+#### V2 — Roster
+**Owner sees:** "Ranks" and "Soldiers" drawers: add a soldier by name, with rank and unit; edit
+profile and private fields (מספר אישי); move between units with history kept; archive. Archiving
+the last access manager is refused with a clear message.
+- **data:** `command_ranks`; `soldiers` (create, update, archive, `updatePrivate`,
+  `changeMembership`); `normalizePersonalId`; `membershipOverlapIssues`; `accessManagerIssues`
+  after status, archive, rank and membership writes.
+- **logic:** soldier view model (rank and unit today, derived).
+- **ui:** virtualized list; soldier form; ranks module.
+- **Open items:** parts of OI-021 (a, c), OI-023 (b, d: normalization).
+- **Decisions:** D-002, D-010, D-018, D-029, D-030, D-054, D-057, D-059, D-065, D-066, D-069.
+
+### M2 — The board works
+
+#### V3 — Timeline grid
+**Owner sees:** the main screen: real soldier rows, floating days header, today marked, week
+navigation, a unit selector. The window and unit live in the URL, and the back button works. On
+a phone the grid scrolls sideways under the bottom bar. No bars yet.
+- **logic:** view state (typed search params, date window); rows for a unit on a day (filter
+  evaluator).
+- **ui:** registry and viewport; timeline core (pure, tested) and view with TanStack Virtual;
+  adapter; floating bars; view switcher fed by the registry.
+- **Open items:** part of OI-033 (mobile timeline).
+- **Decisions:** D-023, D-054, D-067, D-077.
+- **Note:** the mock's view switcher shows four views. Here it lists only the timeline.
+
+#### V4 — Leaves on the timeline
+**Owner sees:** a leave types module (color, icon, effect, requires reason); a new-leave button;
+the leave appears on the timeline, pending dashed and approved solid, with marker types as an
+icon badge. Overlaps get lanes.
+- **data:** `leave_type_groups`; `leave_types`; `leaves.create`; `leaves` and `leave_events`
+  reads; `planLeaveCreation`; `leaveReasonIssues`; `leaveChangeViolations` and `ruleGate` from
+  the first leave command.
+- **logic:** leaves by window; create with optimistic update; availability context.
+- **ui:** types module; new-leave form; timeline lanes and bars; icon key map.
+- **Open items:** OI-013, OI-030; parts of OI-023 (a, b), OI-027, OI-028.
+- **Decisions:** D-012, D-013, D-032, D-034, D-041, D-047, D-049, D-063, D-070, D-073.
+- **Owner decision at start (OI-030):** what a bar's color means. Stone 3 colors by status, while
+  D-032 gives each leave type its own `color_key`.
+
+#### V5 — Approval workflow
+**Owner sees:** click a bar → a details drawer: approve, reject, cancel, reopen, edit dates or
+type, history, shared and internal comments. An inbox lists what is pending. A stale edit from
+another tab gets a clear message.
+- **data:** `leaves.transition`, `update`, `reschedule`; `leave_comments`; `updateMyPreferences`.
+- **logic:** optimistic updates with rollback on `stale_version`; hints from `LEAVE_PERMISSIONS`.
+- **ui:** leave details; inbox; comments; confirm dialogs.
+- **Open items:** OI-031; parts of OI-023 (a), OI-024, OI-027.
+- **Decisions:** D-013, D-041, D-047, D-049, D-063, D-064.
+
+**End of M2: one commander runs a real leave board. Audit A3 follows, and the owner picks M3 or M4
+(OI-031).**
+
+### M3 — Who is missing
+
+#### V6 — Tags and filters
+**Owner sees:** tag categories and tags, assigned to soldiers; filter chips in the bar; "only
+who is missing"; present and absent counts and lists for a day. Filters stay across views and
+in the URL.
+- **data:** `tag_categories`; `tags`; `soldiers.setTags`; `tagSelectionIssues`;
+  `selectionModeChangeIssues`.
+- **logic:** filter state and URL encoding; `partitionAvailability`.
+- **ui:** filter bar, chips, present/absent panel.
+- **Open items:** OI-012 (the mock's "status" chip is a leave filter, which is that question);
+  parts of OI-023 (b), OI-028.
+- **Decisions:** D-015, D-032, D-065, D-067, D-070.
+
+#### V7 — Availability rules
+**Owner sees:** a rule builder ("at least 2 medics in each platoon"), a heat row on the timeline,
+conflicts in the rules module. A leave that breaks a soft rule asks for acknowledgment, and a
+hard rule refuses it.
+- **data:** `availability_rules`; `filterIssues`, `filterReferences`; what a violation reveals
+  about invisible soldiers (OI-027).
+- **logic:** evaluation for a window; live warnings equal to the command result.
+- **ui:** rules module on the shared filter UI; heat row; acknowledgment dialog.
+- **Open items:** OI-023 (c), OI-027, OI-028.
+- **Decisions:** D-014, D-031, D-047, D-067, D-071, D-072, D-073.
+
+#### V8 — Timeline drag
+**Owner sees:** drag to create, move and resize, with live rule and conflict feedback, plus a
+touch path on mobile.
+- **ui:** drag math in the pure core, tested; interactions through the V4 and V5 commands.
+- **Decisions:** D-064, D-073.
+
+### M4 — Everyone has the right access
+
+#### V9 — Account linking
+**Owner sees:** a second identity asks to link; the owner reviews candidates and approves or
+rejects; auto-link works on personal id + verified invite email. The linked soldier sees nothing
+until V10 gives them a role, and that is correct.
+- **data:** `accounts` commands; `autoLinkSoldier`; `linkCandidates`; `canReviewLinkRequest`;
+  `linkEnrichment`.
+- **ui:** onboarding request form; review module.
+- **Open items:** OI-023 (d), OI-019 (asked at start, with its schema note); OI-026 (decided at
+  start, its own slice if accepted).
+- **Decisions:** D-005, D-030, D-066, D-069.
+
+#### V10 — Roles and access
+**Owner sees:** roles with a permission grid, rank bindings with scope, a baseline role, individual
+grants for an acting commander. The identity switcher proves it: a fighter sees their own row, a
+squad commander their platoon, and controls follow. Lockout and escalation are refused.
+- **data:** `roles`; `role_permissions`; `rank_role_bindings`; `access_grants`; baseline role;
+  `accessManagerIssues`; `missingPermissions`; `accessGrantIssues`.
+- **logic:** hints across all modules.
+- **ui:** roles module; scope picker; grants module.
+- **Open items:** OI-021 (a, b, d).
+- **Decisions:** D-003, D-004, D-028, D-040, D-053 … D-060.
+
+#### V11 — Soldier self-service
+**Owner sees:** a fighter on a phone requests a leave, sees status and history, and comments; the
+commander approves in the inbox; the fighter sees the result.
+- **ui:** my requests and history; mobile-first request flow.
+- **Decisions:** D-013, D-023, D-063.
+
+### M5 — Go live
+
+#### V12 — Import and export
+**Owner sees:** upload a CSV or JSON, preview a validation report, commit; export the organization.
+- **data:** `transfer.importBatch` with `dry_run`; `exportOrganization`.
+- **ui:** import/export module.
+- **Open items:** OI-018 (restore of history, decided at start).
+- **Decisions:** D-022, D-050.
+
+#### 8.1–8.4 — Backend
+Provider decision, migrations, triggers and server functions; RLS and the policy matrix against the
+database; remote adapter passing the same contract suite; Google auth, environments and deploy.
+- **Open items:** OI-008 (git remote), OI-014, OI-020, OI-022, OI-025, OI-029.
+- **Decisions:** D-027, plus the policy, workflow and availability decisions they port.
+
+**End of M5: real people use the product on their own devices. Audit A6 follows.**
+
+### M6 — Complete
+
+| Slice | Owner sees | Decisions |
+|-------|------------|-----------|
+| V13 More views | List, table/agenda and calendar engines beside the timeline | D-023, D-026 |
+| V14 Custom properties | Definitions module; values in forms and filters | D-016, D-065, D-067 |
+| V15 Deployments, batches, overrides | Collective leave, duplicate, deployments and members, seniority overrides | D-012, D-029, D-049, D-071 |
+| V16 Setup wizard | Guided first run over the existing forms; progress derived from data | D-033 |
+| V17 Dark Mode | Second token set (was row 8.5) | D-024, D-077 |
+
+From M6 on, each slice also updates the remote adapter and server functions, and the contract
+suite holds both to the same behavior (D-082). V14 and V15 also close the last parts of OI-021,
+OI-023 and OI-027.
+
+**Not assigned yet:** focus mode (the mock's "מצב מיקוד") has no decision behind it (OI-032). It
+gets a definition and a slice when the owner wants it.
+
+## 5. Audits (D-078)
+
+| Audit | When | Covers |
+|-------|------|--------|
+| A1 | open, may run alongside V0 | Contracts and domain against the decisions |
+| A2 | after M1 | Server-authoritative behavior, no bypasses, first UI and Design.md |
+| A3 | after M2 | Leave workflow, timeline engine, view state |
+| A4 | after M3 | Filters and rules: UI warnings equal command results |
+| A5 | after M4 | Permissions end to end |
+| A6 | after M5 | Production readiness, RLS against the policy matrix |
+| A7 | after M6 | Whole product |
+
+A8 is retired. Audits stay separate and read-only, and accepted findings become open items with a
+target slice.
+
+## 6. Design input: Stone 3 (D-077)
+
+Source: canvas "סגול — וריאציות מראה", artboard "אבן 3" (`project/Stone3.dc.html`), at
+<https://claude.ai/artifact/QxPHzP8EKeSiUbduUvdvnD>, not final. It is a direction: V0 turns it into
+tokens and `docs/Design.md`, and real screens may refine it.
+
+| Token (semantic) | Value | Mock's name |
+|------------------|-------|-------------|
+| `--color-canvas` | `#EDECE8` | רקע |
+| `--color-surface` | `#FAF9F6` | משטח |
+| `--color-line` | `#E7E5DF` | קו |
+| `--color-text` | `#1A1A18` | טקסט |
+| `--color-text-muted` | `#5F5D57` | טקסט משני |
+| `--color-action` | `rgba(16,19,24,.70)`, solid `#1A1E25` | פעולה |
+| `--color-on-action` | `#F4F6F8` | |
+| `--color-status-approved` | `#3F7A5D` | מאושר |
+| `--color-status-pending` | `#B7791F`, fill at 8%, dashed | ממתין |
+| `--color-status-rejected` | `#A8382D` | נדחה |
+| `--color-marker` | `#5B45C4`, ink `#4A36B8` | סימון |
+| `--color-today` | `#2A2A26`, band `rgba(26,26,24,.035)` | |
+
+- **Glass:** white at 50–60% with blur 14–20 and `saturate(180%)` for bars, chips and cards; dark glass
+  for the primary action. Solid fallbacks under `prefers-reduced-transparency` (the mock's
+  `reduceTransparency`).
+- **Type:** Heebo 400–700; 24 title, 15 body, 13 soldier name, 12.5 controls, 11.5 and 11 labels; tabular
+  digits.
+- **Shape:** bars 6, panels 16, pills 15–20, sheet 24. Rows 36, name column 124, day column 64, as
+  density tokens.
+- **Form carries status:** solid approved, dashed pending, round icon badge for a marker. The badge
+  maps cleanly to an effective effect of `available` (D-012, D-032).
+
+Things the mock leaves open, to settle while building (OI-030, OI-033):
+
+- **Pending as text:** `#B7791F` on the surface is about 3.5:1, fine for a dashed border, below 4.5:1
+  for text. It needs a darker text variant.
+- **Touch targets:** controls are 30 px and the chip's remove button 22 px. Mobile needs 44 px.
+- **Not shown:** drawer/sheet, forms, the mobile layout and the 12 palette keys. V1 and V3 design them
+  in the same language.
+- **Bar color:** see the V4 decision.
+
+## 7. Replaced roadmap rows
+
+Rows 8.1 to 8.4 keep their ids. The others moved here:
+
+| Old rows | Now in |
+|----------|--------|
+| 2.1, 2.2, 2.3 (data) | Split across V0–V12; the contract suite grows with each slice |
+| 3.1 | V0 |
+| 3.2 | V1, V2, V4, V6 |
+| 3.3 | V3, V4, V6 |
+| 4.1, 4.2 | V0, V1 |
+| 4.3 | V0 (sign-in, frame, empty states), V9 (onboarding request), V3 (navigation) |
+| 4.4 | V1, V2 (levels, ranks), V10 (roles, grants) |
+| 4.5 | V4, V6, V14 |
+| 4.6 | V12 |
+| 4.7 | V16 |
+| 5.1 | V2, V6, V9 |
+| 5.2 | V5, V11 |
+| 5.3 | V5, V7 |
+| 6.1, 6.3, 6.4 | V3, V4 |
+| 6.2, 6.6 | V13 |
+| 6.5 | V8 |
+| 7.1, 7.2, 7.3 | V7 |
+| 8.5 | V17 |
+
+## 8. Risks
+
+- **First-session size.** V0 lays rails in every layer, roughly 2,000 lines. If it will not fit,
+  split it at "sign in and see the empty frame" before the bootstrap form.
+- **A missed decision.** Sessions now read part of `DECISIONS.md` (D-081). The cards list what each
+  slice needs, and an audit reads everything. A card found to be missing an entry gets fixed here.
+- **One device until M5.** Everything before the backend is one browser. The identity switcher
+  simulates other people on that device, but it is not real multi-user use.
+- **Late backend port.** M5 ports twelve slices of rules to SQL at once. The shared contract suite and
+  policy matrix exist to contain that, and M3 and M4 add to it.

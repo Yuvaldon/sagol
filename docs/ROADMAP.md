@@ -1,22 +1,21 @@
 # Sagol — Roadmap
 
-One session = one layer (or one non-code track: docs / tooling). Every session:
+Status of the work. The order, dependencies and contents of each slice are in
+`docs/FEATURE_MAP.md`. One session = one vertical slice, one commit = one layer (D-075). Every
+session:
 
-1. starts by reading `CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`,
-   `docs/schema.sql`, `docs/OPEN_ITEMS.md` and the previous handoff in `docs/sessions/`,
-   and takes in scope every open item targeted at it (D-043);
-2. touches only its layer's folder (plus `i18n`/theme tokens in UI sessions, D-025);
-3. ends with `npm run check` green, `docs/OPEN_ITEMS.md` updated, a commit, and a handoff
-   note `docs/sessions/NN-<name>.md` (done / decisions taken / open item ids / next input).
-
-Contracts are written once for the whole domain (phase 1). After that, features are built
-as vertical slices across consecutive single-layer sessions.
+1. starts with the reading rule in `CLAUDE.md` (D-081) and takes in scope every open item
+   targeted at it (D-043);
+2. commits layer by layer, in dependency order, through each layer's public API;
+3. ends with `npm run check` and `npm run build` green, the slice's demo running in Playwright,
+   `docs/OPEN_ITEMS.md` updated, and a handoff note `docs/sessions/NN-<name>.md` (done / how to
+   see it / decisions / open item ids / next input).
 
 Status: ☐ pending · ◐ in progress · ☑ done
 
-Rows `A1` … `A8` are **audit sessions** (D-051): read-only, opened by the product owner at
-the end of a phase, following `docs/AUDIT.md`. An execution session never runs an audit.
-The session that finishes the row before an audit reminds the owner to open it.
+Rows `A1` … `A7` are **audit sessions** (D-051, D-078): read-only, opened by the product owner,
+following `docs/AUDIT.md`. An execution session never runs an audit. The session that finishes
+the row before an audit reminds the owner to open it.
 
 ## Phase 0 — Foundations
 
@@ -28,6 +27,7 @@ The session that finishes the row before an audit reminds the owner to open it.
 | 0.4 | docs | Audit process (`docs/AUDIT.md`, rows A1 … A8) and next-session model recommendation (D-051, D-052) | ☑ |
 | 0.5 | docs | Decision index at the top of `DECISIONS.md`; OI-015 partly resolved with a new trigger (D-062) | ☑ |
 | 0.6 | docs | `personal_id` = military personal number (D-069); invite links opened as OI-026 | ☑ |
+| 0.7 | docs | Move to vertical slices: `docs/FEATURE_MAP.md`, Stone 3 direction (D-075 … D-082) | ☑ |
 
 ### Session 0.2 guardrails
 
@@ -58,79 +58,69 @@ The session that finishes the row before an audit reminds the owner to open it.
 | 1.2b | domain | leave state machine, account-link candidate matching, filter evaluator + canonical form, property validation, Zod issue mapping (D-063 … D-068) | ☑ |
 | 1.3 | domain | availability (one status per soldier/day, partition invariant test) and rule evaluation (targets, group_by, priority, conflicts), with tests | ☑ |
 | 1.4 | config | env schema, storage keys, view ids, URL param names, breakpoints, palette keys, date formats | ☑ |
-| A1 | audit | Phase 1 audit: contracts and domain against the decisions (`docs/AUDIT.md`) | ☐ |
+| A1 | audit | Contracts and domain against the decisions (`docs/AUDIT.md`). May run alongside V0 (D-078) | ☐ |
 
-## Phase 2 — Data
+## M1 — The company exists
 
-| # | Layer | Content | Status |
-|---|-------|---------|--------|
-| 2.1 | data | Dexie schema + migrations, session source, transaction/version/audit helpers, reference-data repositories | ☐ |
-| 2.2 | data | Commands: bootstrap, accounts, access grants, memberships, units move, leaves workflow with rule enforcement | ☐ |
-| 2.3 | data | Shared repository contract test suite (adapter-agnostic) + import/export | ☐ |
-| A2 | audit | Phase 2 audit: server-authoritative behavior, no bypasses (`docs/AUDIT.md`) | ☐ |
+| # | Slice | The owner sees | Status |
+|---|-------|----------------|--------|
+| V0 | Walking skeleton | Local sign-in, claim the organization, empty workspace in the Stone 3 look | ☐ |
+| V1 | Unit tree | Units drawer: levels, tree, move, reorder, archive | ☐ |
+| V2 | Roster | Ranks and soldiers, private fields, unit history | ☐ |
+| A2 | audit | Server-authoritative behavior, no bypasses, first UI and `Design.md` | ☐ |
 
-## Phase 3 — Logic
+## M2 — The board works
 
-| # | Layer | Content | Status |
-|---|-------|---------|--------|
-| 3.1 | logic | Session/auth service (local provider), permission hints, query client setup | ☐ |
-| 3.2 | logic | Reference-data use cases and hooks (units, levels, ranks, roles, tags, leave types, properties) | ☐ |
-| 3.3 | logic | View state (URL search params), filters, leave use cases and hooks with optimistic updates | ☐ |
-| A3 | audit | Phase 3 audit: logic layer (`docs/AUDIT.md`) | ☐ |
+| # | Slice | The owner sees | Status |
+|---|-------|----------------|--------|
+| V3 | Timeline grid | Main screen with real soldiers, week navigation, unit selector | ☐ |
+| V4 | Leaves on the timeline | Leave types, new leave, bars on the timeline | ☐ |
+| V5 | Approval workflow | Details drawer, approve and reject, history, comments, inbox | ☐ |
+| A3 | audit | Leave workflow, timeline engine, view state | ☐ |
 
-## Phase 4 — Workspace and management
+## M3 — Who is missing
 
-| # | Layer | Content | Status |
-|---|-------|---------|--------|
-| 4.1 | ui | Tokens, primitives, workspace frame + drawer/sheet + units tree module → `docs/Design.md` | ☐ |
-| 4.2 | app | Composition root: env parsing, adapters, providers, router, local auth. First end-to-end run | ☐ |
-| 4.3 | ui | Navigation (top floating / bottom bar), sign-in + onboarding screens, empty states | ☐ |
-| 4.4 | ui | Modules: unit levels, command ranks, roles & permissions, access grants | ☐ |
-| 4.5 | ui | Modules: tag categories & tags, leave type groups & types, custom properties | ☐ |
-| 4.6 | ui | Import/export module | ☐ |
-| 4.7 | ui | First-run setup wizard reusing module forms; step completion derived from data (D-033) | ☐ |
-| A4 | audit | Phase 4 audit: first UI, design system, end-to-end run (`docs/AUDIT.md`) | ☐ |
+| # | Slice | The owner sees | Status |
+|---|-------|----------------|--------|
+| V6 | Tags and filters | Tags, filter chips, "only who is missing", present and absent lists | ☐ |
+| V7 | Availability rules | Rule builder, heat row, soft-rule acknowledgment, hard-rule refusal | ☐ |
+| V8 | Timeline drag | Drag to create, move and resize, with live feedback | ☐ |
+| A4 | audit | Filters and rules: UI warnings equal command results | ☐ |
 
-## Phase 5 — People and requests
+## M4 — Everyone has the right access
 
-| # | Layer | Content | Status |
-|---|-------|---------|--------|
-| 5.1 | ui | Soldiers module (profile, private fields, tags, membership history), account link review | ☐ |
-| 5.2 | ui | Leave request (soldier), my requests and history, comments | ☐ |
-| 5.3 | ui | Commander inbox: approve/reject with rule warnings | ☐ |
-| A5 | audit | Phase 5 audit (`docs/AUDIT.md`) | ☐ |
+M3 and M4 do not depend on each other. The owner picks their order at the end of M2 (OI-031).
 
-## Phase 6 — View engines
+| # | Slice | The owner sees | Status |
+|---|-------|----------------|--------|
+| V9 | Account linking | A second identity asks to link, the owner reviews | ☐ |
+| V10 | Roles and access | Roles, rank bindings, grants; each identity sees only its own scope | ☐ |
+| V11 | Soldier self-service | A fighter requests on a phone, a commander approves | ☐ |
+| A5 | audit | Permissions end to end | ☐ |
 
-| # | Layer | Content | Status |
-|---|-------|---------|--------|
-| 6.1 | ui | Neutral engine model, registry, viewport container, view switcher | ☐ |
-| 6.2 | ui | List and table/agenda engines | ☐ |
-| 6.3 | ui | Timeline core (pure: layout, lanes, virtualization windows, drag math) + tests | ☐ |
-| 6.4 | ui | Timeline view + adapter (read-only) | ☐ |
-| 6.5 | ui | Timeline interactions: create, move, resize, conflict/rule feedback | ☐ |
-| 6.6 | ui | Calendar engine | ☐ |
-| A6 | audit | Phase 6 audit (`docs/AUDIT.md`) | ☐ |
-
-## Phase 7 — Availability rules UI
-
-| # | Layer | Content | Status |
-|---|-------|---------|--------|
-| 7.1 | logic | Rule use cases, availability queries for a window | ☐ |
-| 7.2 | ui | Rules module (builder using the shared filter UI) | ☐ |
-| 7.3 | ui | Timeline heat row, rule status in views and inbox | ☐ |
-| A7 | audit | Phase 7 audit (`docs/AUDIT.md`) | ☐ |
-
-## Phase 8 — Production
+## M5 — Go live
 
 | # | Track | Content | Status |
 |---|-------|---------|--------|
+| V12 | slice | Import and export | ☐ |
 | 8.1 | backend | Provider decision (D-027), migrations from `schema.sql`, triggers, server functions | ☐ |
 | 8.2 | backend | RLS policies + policy matrix run against the database | ☐ |
 | 8.3 | data | Remote adapter passing the repository contract suite | ☐ |
 | 8.4 | app | Google auth provider, env per environment (dev/staging/prod), deploy | ☐ |
-| 8.5 | ui | Dark Mode token set | ☐ |
-| A8 | audit | Phase 8 audit: production readiness, RLS against the policy matrix (`docs/AUDIT.md`) | ☐ |
+| A6 | audit | Production readiness, RLS against the policy matrix | ☐ |
+
+## M6 — Complete
+
+From here on, each slice also updates the remote adapter and server functions (D-082).
+
+| # | Slice | The owner sees | Status |
+|---|-------|----------------|--------|
+| V13 | More views | List, table/agenda and calendar engines | ☐ |
+| V14 | Custom properties | Definitions module, values in forms and filters | ☐ |
+| V15 | Deployments, batches, overrides | Collective leave, duplicate, deployments, seniority overrides | ☐ |
+| V16 | Setup wizard | Guided first run over the existing forms (D-033) | ☐ |
+| V17 | Dark Mode | Second token set | ☐ |
+| A7 | audit | Whole product | ☐ |
 
 ## Later (no schema change required)
 

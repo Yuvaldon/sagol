@@ -1,12 +1,16 @@
 # Session N.M — <title>
 
-Date: YYYY-MM-DD · Layer/track: <contracts | domain | config | data | logic | ui | app | docs | tooling>
-Roadmap row: N.M · Commits: `<hash> <conventional commit header>`
+Date: YYYY-MM-DD · Slice/track: <V0, V1, ... | docs | tooling>
+Roadmap row: <V0> · Commits: one per layer, `<hash> <conventional commit header>`
 
 ## Done
 
-- What was built, by folder. Only this session's layer (plus i18n keys / theme tokens in UI
-  sessions, D-025).
+- What was built, by layer. Each layer's work is in its own commit (D-075).
+
+## How to see it
+
+- Numbered steps the owner can follow in a browser, from `npm run dev`, ending in what they
+  should see. Skip this section only for a non-code track.
 
 ## Decisions
 
@@ -15,20 +19,20 @@ Roadmap row: N.M · Commits: `<hash> <conventional commit header>`
 
 ## Checks
 
-- `npm run check`: green. `npm run build`: green.
+- `npm run check`: green. `npm run build`: green. Playwright demo: green (desktop, mobile).
 - New tests and what they prove.
 
 ## Open items
 
 - Ids only; the text lives in `docs/OPEN_ITEMS.md` (D-043).
-- Closed: OI-NNN (one line on how). Opened: OI-NNN (target session). Moved: OI-NNN → new
+- Closed: OI-NNN (one line on how). Opened: OI-NNN (target slice). Moved: OI-NNN → new
   target, with the reason (also written in the Notes column).
 - If none: "No open items touched."
 
 ## Input for the next session
 
-- What the next session (name it by roadmap number) needs from this one: APIs exported,
-  files to read, constraints, fixes that belong to another layer.
+- What the next slice needs from this one: APIs exported, patterns to reuse, files to read,
+  constraints. A slice that was split is recorded in `docs/FEATURE_MAP.md`.
 - If the next row is an audit (`A<n>`): "Next: audit A<n>. Open a separate read-only
   session with the prompt in `docs/AUDIT.md`." (D-051)
 

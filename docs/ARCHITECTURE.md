@@ -4,12 +4,14 @@ Military reserve unit management and leave tracking. React + TypeScript + Tailwi
 native RTL (Hebrew), Light Mode default (Dark Mode added later as a second token set).
 
 Sources of truth: entity and column names → `docs/schema.sql`. Decisions and their
-reasons → `docs/DECISIONS.md`. Build order → `docs/ROADMAP.md`.
+reasons → `docs/DECISIONS.md`. Build order and dependencies → `docs/FEATURE_MAP.md`, status →
+`docs/ROADMAP.md`.
 
 ## Iron rules (non-negotiable)
 
-1. **Layer separation.** Data, Logic and UI are fully separate. Never work on two layers in
-   the same session. Each session starts from the contracts as input.
+1. **Layer separation.** Data, Logic and UI are fully separate. A session builds one feature
+   across the layers (one vertical slice), and each commit touches one layer, written against
+   the public API of the layer below it (D-075).
 2. **Communication only through APIs.** A layer talks to a neighbour only through that
    neighbour's public API (`index.ts`). No layer touches another layer's internals.
 3. **No hardcoded values.** Not strings, colors, sizes, keys, statuses, breakpoints, date
@@ -63,8 +65,12 @@ The data layer is written as if it were the server:
   `changes`. It is built from an `IdentitySource` only (D-048). Create inputs carry
   caller-generated ids (D-044); inputs follow D-045; leave commands take
   `acknowledged_rule_ids` for soft rules (D-047).
-- Every adapter must pass one shared **repository contract test suite**. The remote adapter
-  (phase 8) passes the same suite, which is what makes the switch safe.
+- An adapter grows by slice: until it is complete, its type is a `Pick` of the groups that exist,
+  each `logic` module declares the narrow port it needs, and nothing returns "not implemented"
+  (D-076).
+- Every adapter must pass one shared **repository contract test suite**, which grows with each
+  slice and takes a `seed` port per adapter (D-076). The remote adapter (phase 8) passes the same
+  suite, which is what makes the switch safe.
 - Repositories expose change subscriptions, so the UI has one live source of truth
   across tabs and views.
 
@@ -177,8 +183,10 @@ Replacing an engine replaces one registry entry. Engines never call each other.
   in `config`, and each key maps to a token pair for light/dark in the theme.
 - Only logical (RTL-safe) properties: `ms-`/`me-`/`ps-`/`pe-`/`start-`/`end-`, never
   `left`/`right`/`ml`/`mr`.
-- `docs/Design.md` is derived from the first built component (D-024) and binds all later
-  UI work.
+- The visual direction is the owner's "Stone 3" canvas (D-077, values in
+  `docs/FEATURE_MAP.md`). `docs/Design.md` is derived from the first built components (D-024)
+  and binds all later UI work.
+- A control renders only when its action works end to end (D-076).
 
 ## Environment
 
@@ -202,15 +210,15 @@ src/
   app/         env/ composition/ providers/ router/
 supabase/      migrations/ policies/ functions/ tests/   (phase 8)
 e2e/           Playwright specs
-docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md Design.md sessions/
+docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md sessions/
 ```
 
 ## Quality gates
 
 `npm run check` = typecheck (strict) + lint + layer boundaries + raw-value scan + i18n key
 check + unit tests. CI also runs build (with production env validation) and Playwright
-(desktop + mobile, RTL, axe). A pre-commit hook runs the fast subset. Guardrail details:
-`docs/ROADMAP.md`, session 0.2.
+(desktop + mobile, RTL, axe). A pre-commit hook runs the fast subset and, from V0, rejects a
+commit that crosses layers (D-075). Guardrail details: `docs/ROADMAP.md`, session 0.2.
 
 ## Open decisions
 
