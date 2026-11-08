@@ -1,5 +1,5 @@
 import { parseAbsolute, parseDate, toCalendarDate } from '@internationalized/date'
-import type { CalendarDate, Timestamp } from '@contracts'
+import { IssueCode, type CalendarDate, type Issue, type Timestamp } from '@contracts'
 
 // Calendar and instant arithmetic shared by every domain module (D-035, D-042).
 // Domain never reads a clock: callers pass `today` and `now` (D-053).
@@ -88,4 +88,25 @@ export function eachDay(range: DateRange): CalendarDate[] {
 /** True when `date` lies inside the inclusive range. */
 export function rangeCovers(range: DateRange, date: CalendarDate): boolean {
   return compareDates(range.start_date, date) <= 0 && compareDates(date, range.end_date) <= 0
+}
+
+/** Any fixed instant: a time zone's validity does not depend on the date. */
+const TIME_ZONE_PROBE: Timestamp = '2000-01-01T00:00:00Z'
+
+/**
+ * True when the runtime knows `timezone`, so `todayIn` and `clockAt` cannot throw for it. The
+ * answer depends on the runtime's time-zone data, which is why contracts do not check it (D-084).
+ */
+export function isKnownTimeZone(timezone: string): boolean {
+  try {
+    todayIn(timezone, TIME_ZONE_PROBE)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Issues of `organizations.timezone`, at path `timezone` (D-084). */
+export function timeZoneIssues(timezone: string): Issue[] {
+  return isKnownTimeZone(timezone) ? [] : [{ path: ['timezone'], code: IssueCode.enum.invalid_value }]
 }
