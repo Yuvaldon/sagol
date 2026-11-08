@@ -1,0 +1,51 @@
+import type { DataChange, TableName } from '@contracts'
+import { QueryClient, type QueryKey } from '@tanstack/react-query'
+
+// The query cache. It holds what the adapter answered and never decides anything by itself. The
+// change feed tells it when an answer is out of date, so it needs no timers (ARCHITECTURE).
+
+const TABLE_SCOPE = 'table'
+
+export const QUERY_KEYS = {
+  session: ['session'],
+  identities: ['identities'],
+  onboarding: ['onboarding'],
+  organization: [TABLE_SCOPE, 'organizations'],
+} as const satisfies Record<string, QueryKey>
+
+/** Queries that survive a change of identity: they describe the device, not the actor's data. */
+const IDENTITY_INDEPENDENT = new Set<unknown>([QUERY_KEYS.session[0], QUERY_KEYS.identities[0]])
+
+/** Tables the onboarding answer reads. */
+const ONBOARDING_TABLES: ReadonlySet<TableName> = new Set<TableName>([
+  'organizations',
+  'soldier_accounts',
+  'account_link_requests',
+])
+
+export function createQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        // IndexedDB answers offline, and the adapter's answer is final: a refusal is not retried.
+        networkMode: 'always',
+        retry: false,
+        refetchOnWindowFocus: false,
+        staleTime: Infinity,
+      },
+      mutations: { networkMode: 'always', retry: false },
+    },
+  })
+}
+
+export function invalidateChanged(client: QueryClient, changes: readonly DataChange[]): void {
+  for (const change of changes) {
+    void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
+    if (ONBOARDING_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.onboarding })
+  }
+}
+
+/** Nothing one identity read may stay visible to the next one. */
+export function forgetIdentityData(client: QueryClient): void {
+  client.removeQueries({ predicate: (query) => !IDENTITY_INDEPENDENT.has(query.queryKey[0]) })
+}
