@@ -94,7 +94,7 @@ The data layer is written as if it were the server:
   at a level, an absolute unit, or a soldier) plus `include_descendants`, optionally limited
   by subject rank against **effective seniority** (rank seniority unless a personal
   override is active, D-029). Implemented once in `domain/policy`, consumed by the local
-  adapter, by `logic` for UI hints ("can I?"), and mirrored by Postgres
+  adapter, which answers UI hints ("can I?", D-085), and mirrored by Postgres
   `has_permission()` + RLS.
 - **Targets:** a permission is checked against a soldier, a unit or the organization.
   Organization-wide data can be viewed from any scope and changed only at organization

@@ -151,7 +151,7 @@ state. A reload keeps the session. A second local identity sees "no access yet" 
   change feed across tabs; `organizations.bootstrapOwner`; `organizations.current`;
   `session.onboardingState`; contract suite and `seed` port.
 - **logic:** adapter ports; session service and hooks; query client invalidated by the change
-  feed; `can` hint; form issues.
+  feed; form issues. The `can` hint moved to V1 (D-085).
 - **ui + i18n:** Stone 3 tokens; first primitives; dictionary and error mapping; sign-in,
   onboarding and workspace frame; `docs/Design.md` first version.
 - **app:** env parsing; the date adapter (`TimeSource`, D-083); adapter construction; providers;
@@ -159,7 +159,7 @@ state. A reload keeps the session. A second local identity sees "no access yet" 
 - **Open items:** OI-002, OI-003, OI-004, OI-005, OI-006, OI-007, OI-035; OI-021 (a), OI-023 (e),
   OI-024 and OI-033 start here.
 - **Decisions:** D-001, D-004, D-005, D-006, D-011, D-021, D-023, D-024, D-026, D-034, D-048,
-  D-056, D-059, D-060, D-077, D-079, D-080, D-083, D-084.
+  D-056, D-059, D-060, D-077, D-079, D-080, D-083, D-084, D-085, D-086.
 
 #### V1 — Unit tree
 **Owner sees:** a "Units" drawer (bottom sheet on mobile): create levels and a tree, rename,
@@ -167,11 +167,11 @@ reorder, drag to move (a cycle is refused), archive. A deep link reopens the dra
 tabs stay in sync.
 - **data:** generic reference commands; `unit_levels`; `units` with `move` and `reorder`; policy
   filter on reads; `color_key` membership; `moveUnitIssues`; `propertyValueIssues`.
-- **logic:** reference-data hooks; panel state in the URL.
+- **logic:** reference-data hooks; panel state in the URL; the `can` hint (OI-043, D-085).
 - **ui:** drawer/sheet; form pattern; tree module (`@dnd-kit`); palette token pairs;
   `docs/Design.md` settled (D-024).
-- **Open items:** OI-011; parts of OI-021 (c), OI-023 (b), OI-033.
-- **Decisions:** D-009, D-024, D-040, D-053, D-065, D-077.
+- **Open items:** OI-011, OI-043; parts of OI-021 (c), OI-023 (b), OI-033.
+- **Decisions:** D-009, D-024, D-040, D-053, D-065, D-077, D-085.
 
 #### V2 — Roster
 **Owner sees:** "Ranks" and "Soldiers" drawers: add a soldier by name, with rank and unit; edit

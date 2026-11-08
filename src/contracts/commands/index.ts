@@ -1,5 +1,5 @@
 import type { AsyncResult } from '../common/result'
-import type { IdentitySource, Session, SessionService } from '../auth'
+import type { IdentitySource, Session, SessionService, TimeSource } from '../auth'
 import type { AccountLinkRequest, SoldierPreferencesRecord } from '../entities/accounts'
 import type { Deployment, DeploymentMember } from '../entities/deployments'
 import type { Unit, UnitLevel } from '../entities/hierarchy'
@@ -252,5 +252,8 @@ export interface DataAdapter {
   changes: ChangeFeed
 }
 
-/** Adapters receive only an identity source; the actor is derived from it (D-008). */
-export type DataAdapterFactory = (dependencies: { identity: IdentitySource }) => DataAdapter
+/** Adapters receive who is signed in and what time it is; the actor is derived (D-008, D-083). */
+export type DataAdapterFactory = (dependencies: {
+  identity: IdentitySource
+  time: TimeSource
+}) => DataAdapter

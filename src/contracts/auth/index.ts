@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AuthUserId, OrganizationId, SoldierId } from '../common/ids'
 import type { AsyncResult, Unsubscribe } from '../common/result'
-import { Email, label } from '../common/scalars'
+import { Email, label, type Timestamp } from '../common/scalars'
 import { AccountLinkRequest } from '../entities/accounts'
 import { IdentityProvider } from '../enums'
 
@@ -36,6 +36,11 @@ export type AuthIdentity = z.infer<typeof AuthIdentity>
 export interface IdentitySource {
   current(): AuthIdentity | null
   subscribe(listener: (identity: AuthIdentity | null) => void): Unsubscribe
+}
+
+/** The one source of the current time (D-083). Tests inject a fixed time. */
+export interface TimeSource {
+  now(): Timestamp
 }
 
 /** Google sign-in (production, phase 8). */

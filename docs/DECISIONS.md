@@ -22,7 +22,7 @@ am = amends, ref = refines, ext = extends.
 | D-003 | Permissions are data: roles, rank bindings, grants | contracts, domain, data, logic, backend | sup D-028 (scope); ref D-040, D-053, D-056, D-060 |
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
 | D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030 |
-| D-006 | Development mode is the real system with a local identity | app, data, tooling | |
+| D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
 | D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035 |
 | D-008 | Server-authoritative data layer | data, backend | |
 | D-009 | Unit hierarchy: `parent_id` only, derived ancestry | contracts, domain, data, backend | |
@@ -92,7 +92,7 @@ am = amends, ref = refines, ext = extends.
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | |
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | |
-| D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | |
+| D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | |
 | D-078 | Audits follow milestones | docs | |
 | D-079 | The bootstrap owner role holds every valid permission pair | data, backend | |
@@ -101,6 +101,8 @@ am = amends, ref = refines, ext = extends.
 | D-082 | Go-live before completion features | data, backend, docs | |
 | D-083 | One source of the current time: `TimeSource` | contracts, data, logic, app, tooling | |
 | D-084 | Domain validates the organization time zone | domain, data, logic, ui | |
+| D-085 | The `can` hint moves to V1, computed by the adapter | contracts, data, logic, ui, backend | |
+| D-086 | V0 setup choices: dev env file, local bootstrap, time-zone picker, unsupported modes | tooling, data, ui, app | |
 
 ---
 
@@ -1084,3 +1086,27 @@ length check only. The data layer calls the function on every write of `organiza
 **Why:** product owner approved in session 0.8. Validity depends on the runtime's time-zone data,
 domain already owns time, and contracts hold no behavior (D-020). A bad value that reached `todayIn`
 would throw across a layer, against D-046.
+
+## D-085 — The `can` hint moves to V1, computed by the adapter
+2026-11-08 · accepted · refines D-076 · changes card V0
+V0 builds no `can` hint in `logic`: no V0 control uses one, and exporting it unused would be dead
+code. V1, the first slice with a gated control, builds it. Direction for V1 (OI-043): the hint asks
+the adapter, as a contract read such as `session.can(...)`, instead of evaluating the policy in
+`logic`. Authorization itself goes through the policy from V0 on (D-076).
+**Why:** product owner approved in V0. `can()` reads a full policy snapshot, and every repository
+read is filtered, so `logic` cannot rebuild it without seeing the whole organization's permissions.
+In remote mode the same read maps to `has_permission()`.
+
+## D-086 — V0 setup choices
+2026-11-08 · accepted · refines D-006
+- `.env.development` is committed, so `npm run dev` and the Playwright demo need no setup file. A
+  production build does not read it.
+- With the local provider, any verified identity may claim an empty store, and the first one wins.
+  There is no server secret locally. "Empty" means no organization and no account.
+- The claim form picks the time zone from a searchable list of the runtime's zones, starting at the
+  device's zone. Zone names stay in English (IANA).
+- A valid env whose adapter or auth provider is not built yet (`google`, `remote`, until row 8.4 and
+  row 8.3) shows the startup error screen. Nothing is stubbed (D-076).
+- The local identity's one `localStorage` key (D-074) holds the current identity and the identities
+  that signed in on the device (the switcher's list).
+**Why:** product owner approved in V0.
