@@ -1,3 +1,5 @@
+import { t, type I18nKey } from '@i18n'
+import type { ReactNode } from 'react'
 import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react-aria-components'
 
 // The action button of Stone 3: dark glass for the primary action, quiet for everything else.
@@ -17,4 +19,22 @@ export interface ButtonProps extends Omit<AriaButtonProps, 'className'> {
 
 export function Button({ variant = 'quiet', ...props }: ButtonProps) {
   return <AriaButton {...props} className={`${BASE} ${VARIANTS[variant]}`} />
+}
+
+export interface IconButtonProps extends Omit<AriaButtonProps, 'className' | 'children' | 'aria-label'> {
+  readonly labelKey: I18nKey
+  readonly children: ReactNode
+}
+
+/** A button that shows only an icon. Its name is still read aloud. */
+export function IconButton({ labelKey, children, ...props }: IconButtonProps) {
+  return (
+    <AriaButton
+      {...props}
+      aria-label={t(labelKey)}
+      className="inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-pill text-text-muted outline-focus outline-offset-2 md:min-h-control md:min-w-control data-focus-visible:outline-2 data-hovered:bg-inner"
+    >
+      {children}
+    </AriaButton>
+  )
 }

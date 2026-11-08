@@ -81,6 +81,12 @@ export function issueKey(code: IssueCode): I18nKey {
   return ISSUE_KEYS[code]
 }
 
+/** The one message of a refused action with no field to show it on. */
+export function failureKey(error: AppError): I18nKey {
+  const [issue] = error.code === 'validation_failed' ? error.issues : []
+  return issue === undefined ? errorKey(error) : issueKey(issue.code)
+}
+
 export function envIssueKey(code: EnvIssueCode): I18nKey {
   return ENV_ISSUE_KEYS[code]
 }
