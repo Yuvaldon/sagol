@@ -145,20 +145,21 @@ bar with the organization name, user menu, sign-out and the dev identity switche
 state. A reload keeps the session. A second local identity sees "no access yet" and no data.
 - **tooling:** commit-layer guard; `fake-indexeddb`; Playwright config, first spec, axe, CI job;
   Heebo self-hosted; `.claude/launch.json`.
+- **contracts:** `TimeSource`, and `DataAdapterFactory` takes it (D-083).
+- **domain:** time-zone check (D-084).
 - **data:** Dexie schema; local identity provider; session resolver; helpers; snapshot loader;
   change feed across tabs; `organizations.bootstrapOwner`; `organizations.current`;
-  `session.onboardingState`; contract suite and `seed` port; the date adapter.
+  `session.onboardingState`; contract suite and `seed` port.
 - **logic:** adapter ports; session service and hooks; query client invalidated by the change
   feed; `can` hint; form issues.
 - **ui + i18n:** Stone 3 tokens; first primitives; dictionary and error mapping; sign-in,
   onboarding and workspace frame; `docs/Design.md` first version.
-- **app:** env parsing; adapter construction; providers; router; mount.
+- **app:** env parsing; the date adapter (`TimeSource`, D-083); adapter construction; providers;
+  router; mount.
 - **Open items:** OI-002, OI-003, OI-004, OI-005, OI-006, OI-007, OI-035; OI-021 (a), OI-023 (e),
   OI-024 and OI-033 start here.
-- **Owner decisions at start:** who reads the current time (OI-004); where a time zone is validated
-  (OI-035).
 - **Decisions:** D-001, D-004, D-005, D-006, D-011, D-021, D-023, D-024, D-026, D-034, D-048,
-  D-056, D-059, D-060, D-077, D-079, D-080.
+  D-056, D-059, D-060, D-077, D-079, D-080, D-083, D-084.
 
 #### V1 — Unit tree
 **Owner sees:** a "Units" drawer (bottom sheet on mobile): create levels and a tree, rename,

@@ -28,7 +28,7 @@ the row before an audit reminds the owner to open it.
 | 0.5 | docs | Decision index at the top of `DECISIONS.md`; OI-015 partly resolved with a new trigger (D-062) | ☑ |
 | 0.6 | docs | `personal_id` = military personal number (D-069); invite links opened as OI-026 | ☑ |
 | 0.7 | docs | Move to vertical slices: `docs/FEATURE_MAP.md`, Stone 3 direction (D-075 … D-082) | ☑ |
-| 0.8 | docs | Record audit A1: `docs/audits/A1.md`, OI-034 … OI-042 | ☑ |
+| 0.8 | docs | Record audit A1: `docs/audits/A1.md`, OI-034 … OI-042, D-083, D-084 | ☑ |
 
 ### Session 0.2 guardrails
 

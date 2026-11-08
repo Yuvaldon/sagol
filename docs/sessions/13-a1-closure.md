@@ -1,7 +1,8 @@
 # Session 0.8 — Record audit A1
 
 Date: 2026-11-08 · Track: docs
-Roadmap row: 0.8, closes A1 · Commits: `docs: record audit A1 (session 0.8)`
+Roadmap row: 0.8, closes A1 · Commits: `docs: record audit A1 (session 0.8)`,
+`docs: time source and time zone decisions (session 0.8)`
 
 ## Done
 
@@ -21,8 +22,10 @@ Non-code track, nothing to run. Read `docs/audits/A1.md`.
 
 ## Decisions
 
-- No new decision. The owner did not answer the audit's questions and asked to move on, so each one
-  became an open item that its target slice asks first.
+- D-083: one source of the current time, `TimeSource`, implemented in `app`. D-084: domain validates
+  the organization time zone. Both approved by the owner in this session.
+- The owner did not answer the audit's other questions and asked to move on, so each became an open
+  item that its target slice asks first.
 - The findings the owner deferred to "phase 8, before production" (2, 4, 13) target V10, not row
   8.x. V10 writes those commands and D-082 places it before the backend, so they still close before
   production. The owner can move them.
@@ -40,9 +43,9 @@ Non-code track, nothing to run. Read `docs/audits/A1.md`.
 
 ## Input for the next session
 
-- **Next: V0, walking skeleton.** No audit is pending. Ask the owner first: who reads the current
-  time (OI-004), and where a time zone is validated (OI-035). The claim form writes the first time
-  zone.
+- **Next: V0, walking skeleton.** No audit is pending. The card now includes a contracts commit
+  (`TimeSource`, D-083) and a domain commit (the time-zone check, D-084). The date adapter moved from
+  data to `app`. The claim form writes the first time zone.
 - The rest of the input in `docs/sessions/12-vertical-transition.md` still applies: stale comments,
   `.env.local`, and the commit-layer guard as V0's first commit.
 

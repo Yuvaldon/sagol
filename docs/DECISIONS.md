@@ -64,12 +64,12 @@ am = amends, ref = refines, ext = extends.
 | D-045 | Command input conventions | contracts, data, logic | |
 | D-046 | Error model (`Result`, `AppError` codes) | contracts, data, logic, ui | ref D-068 |
 | D-047 | Soft-rule acknowledgment protocol | contracts, domain, data, ui | ref D-073 |
-| D-048 | Auth and session contracts | contracts, data, logic, app | ref D-076 |
+| D-048 | Auth and session contracts | contracts, data, logic, app | ref D-076, D-083 |
 | D-049 | Leave command set | contracts, domain, data | ref D-063, D-064 |
 | D-050 | Import and export | contracts, data | |
 | D-051 | Phase audits are separate, read-only sessions | docs | am D-078 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075 |
-| D-053 | What a permission scope covers (policy targets) | domain, data, backend | |
+| D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083 |
 | D-054 | Policy unit = primary membership today | domain, backend | |
 | D-055 | Unresolvable anchors give an empty scope | domain, backend | |
 | D-056 | Only active, linked soldiers hold permissions | domain, backend | |
@@ -99,6 +99,8 @@ am = amends, ref = refines, ext = extends.
 | D-080 | `fake-indexeddb` for data tests | data, tooling | |
 | D-081 | Start-of-session reading follows the slice | docs | |
 | D-082 | Go-live before completion features | data, backend, docs | |
+| D-083 | One source of the current time: `TimeSource` | contracts, data, logic, app, tooling | |
+| D-084 | Domain validates the organization time zone | domain, data, logic, ui | |
 
 ---
 
@@ -1060,3 +1062,25 @@ behavior. M3 and M4 do not depend on each other: the owner picks their order at 
 (OI-031).
 **Why:** IndexedDB lives on one device (D-021), so two real people can use the product only on
 the backend. Product owner approved in session 0.7.
+
+## D-083 — One source of the current time: `TimeSource`
+2026-11-08 · accepted · refines D-048, D-053 · from audit A1, OI-004
+`contracts` defines `TimeSource`, an interface beside `IdentitySource` with `now()` returning a
+`Timestamp`. `DataAdapterFactory` takes it beside `identity`. The only implementation that reads the
+system clock lives in `app`, which is the path OI-004 adds to `RAW_DATE_ALLOWED_IN`. `app` gives the
+same source to `logic`. Tests inject a fixed time. Domain stays clock-free: callers derive its `Clock`
+with `clockAt(timezone, now)`.
+**Why:** product owner approved in session 0.8. One source keeps audit columns, policy checks and UI
+hints on the same time, and tests never depend on the real clock. The name differs from domain's
+`Clock` because the two are different things: a source of the time, and today and now for one
+organization.
+
+## D-084 — Domain validates the organization time zone
+2026-11-08 · accepted · from audit A1, OI-035
+One domain function decides whether a string is a time zone the runtime knows. `contracts` keeps the
+length check only. The data layer calls the function on every write of `organizations.timezone`
+(`bootstrapOwner`, `updateOrganization`) and rejects a bad value with `validation_failed`, code
+`invalid_value`, at path `timezone`. Forms get the same answer through `logic`.
+**Why:** product owner approved in session 0.8. Validity depends on the runtime's time-zone data,
+domain already owns time, and contracts hold no behavior (D-020). A bad value that reached `todayIn`
+would throw across a layer, against D-046.

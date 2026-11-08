@@ -62,7 +62,7 @@ The data layer is written as if it were the server:
   mapped to field codes by one domain function, shared with the forms (D-068).
 - The contract of an adapter is `DataAdapter` (contracts): `session`, `repositories`
   (one per table), `commands` (grouped by resource), `transfer` (import/export) and
-  `changes`. It is built from an `IdentitySource` only (D-048). Create inputs carry
+  `changes`. It is built from an `IdentitySource` and a `TimeSource` (D-048, D-083). Create inputs carry
   caller-generated ids (D-044); inputs follow D-045; leave commands take
   `acknowledged_rule_ids` for soft rules (D-047).
 - An adapter grows by slice: until it is complete, its type is a `Pick` of the groups that exist,
