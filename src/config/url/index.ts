@@ -12,8 +12,10 @@ export const SEARCH_PARAMS = {
   filter: 'filter',
   /** Open drawer or sheet module. */
   panel: 'panel',
-  /** Entity opened inside that panel. */
+  /** Row opened inside that panel, or `NEW_ENTITY`. */
   entity: 'entity',
+  /** Parent of a new unit (D-092). */
+  parent: 'parent',
 } as const
 
 export type SearchParamName = (typeof SEARCH_PARAMS)[keyof typeof SEARCH_PARAMS]

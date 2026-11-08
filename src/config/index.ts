@@ -18,6 +18,7 @@ export { CHANGE_FEED_CHANNEL, INDEXED_DB_NAME, STORAGE_KEYS, type StorageKey } f
 export { ROUTES, type RoutePath } from './routes'
 export { STARTUP_ERROR_CODES } from './startup'
 export { DEFAULT_VIEW_ID, VIEW_IDS, ViewId } from './views'
+export { DRAG_ACTIVATION_PX, DROP_EDGE_FRACTION, NEW_ENTITY, PANEL_IDS, PanelId, SHEET_DISMISS } from './panels'
 export { SEARCH_PARAMS, type SearchParamName } from './url'
 export {
   BREAKPOINTS_PX,

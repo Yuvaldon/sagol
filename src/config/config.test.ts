@@ -9,6 +9,8 @@ import {
   ENV_VARIABLES,
   INDEXED_DB_NAME,
   PALETTE_KEYS,
+  PANEL_IDS,
+  PanelId,
   SEARCH_PARAMS,
   STORAGE_KEYS,
   VIEW_IDS,
@@ -161,5 +163,12 @@ describe('views, url, storage, breakpoints, dates', () => {
       const formatter = new Intl.DateTimeFormat(DATE_LOCALE, options)
       expect(formatter.resolvedOptions().locale).toBe(DATE_LOCALE)
     }
+  })
+})
+
+describe('panels (D-092)', () => {
+  it('lists every panel id in the schema', () => {
+    expect([...PanelId.options].sort()).toEqual(Object.values(PANEL_IDS).sort())
+    expect(PanelId.safeParse('nothing').success).toBe(false)
   })
 })
