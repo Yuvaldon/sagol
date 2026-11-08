@@ -1,6 +1,5 @@
 // Public entry point of the UI layer.
 // Shell, view engines, components and theme. Talks to @logic only.
-export { AppRoot } from './AppRoot'
 export { UiRoot } from './UiRoot'
 export { OnboardingScreen } from './shell/OnboardingScreen'
 export { SignInScreen } from './shell/SignInScreen'
