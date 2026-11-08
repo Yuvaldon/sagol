@@ -33,11 +33,18 @@ export function useCan(checks: readonly PermissionCheck[]): CanAnswer {
 const MODULE_CHECKS = {
   units: { permission: { resource: 'units', action: 'view' }, target: { kind: 'organization' } },
   unitLevels: { permission: { resource: 'unit_levels', action: 'view' }, target: { kind: 'organization' } },
+  soldiers: { permission: { resource: 'soldiers', action: 'view' }, target: { kind: 'organization' } },
+  commandRanks: { permission: { resource: 'command_ranks', action: 'view' }, target: { kind: 'organization' } },
 } as const satisfies Record<string, PermissionCheck>
 
 const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
 
 export function useModuleAccess() {
   const can = useCan(MODULE_CHECK_LIST)
-  return { units: can(MODULE_CHECKS.units), unitLevels: can(MODULE_CHECKS.unitLevels) }
+  return {
+    units: can(MODULE_CHECKS.units),
+    unitLevels: can(MODULE_CHECKS.unitLevels),
+    soldiers: can(MODULE_CHECKS.soldiers),
+    commandRanks: can(MODULE_CHECKS.commandRanks),
+  }
 }

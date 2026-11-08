@@ -1,17 +1,17 @@
 import type { PermissionCheck, Result, Unit, UnitId, UnitLevel, UpdateUnitLevelInput } from '@contracts'
 import { placementTarget, unitTarget } from '@domain'
-import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useCan } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
+import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { toCreateUnitInput, toCreateUnitLevelInput, toUpdateUnitInput, type UnitFormValues } from './forms'
 import { siblingsUnder, steppedOrder, type UnitDropPlan } from './tree'
 
-// Reading and changing the unit tree. The change feed refreshes every view; a command also refreshes
-// before it answers, so the screen that asked already shows the result.
+// Reading and changing the unit tree.
 
 const LIVE = { include_archived: false }
 const WITH_ARCHIVED = { include_archived: true }
@@ -42,35 +42,18 @@ export function liveLevels(levels: readonly UnitLevel[]): UnitLevel[] {
   return levels.filter((level) => level.archived_at === null)
 }
 
-/** A command that answers once the reads it changed have been refreshed. */
-function useCommand<Input, Output>(key: QueryKey, run: (input: Input) => Promise<Result<Output>>) {
-  const client = useQueryClient()
-  const mutation = useMutation({
-    mutationFn: run,
-    onSuccess: async (result) => {
-      if (result.ok) {
-        await Promise.all([
-          client.invalidateQueries({ queryKey: key }),
-          client.invalidateQueries({ queryKey: QUERY_KEYS.can }),
-        ])
-      }
-    },
-  })
-  return { run: mutation.mutateAsync, isPending: mutation.isPending }
-}
-
 export function useUnitCommands() {
   const { data } = usePorts()
   const { units } = data.commands
 
   const create = useCommand(
-    QUERY_KEYS.units,
+    [QUERY_KEYS.units],
     ({ values, parentId, siblings }: { values: UnitFormValues; parentId: UnitId | null; siblings: readonly Unit[] }) =>
       units.create(toCreateUnitInput(values, parentId, siblings)),
   )
 
   const update = useCommand(
-    QUERY_KEYS.units,
+    [QUERY_KEYS.units],
     async ({ unit, openedVersion, values }: { unit: Unit; openedVersion: number; values: UnitFormValues }) => {
       const input = toUpdateUnitInput(unit, openedVersion, values)
       const unchanged: Result<Unit> = { ok: true, value: unit }
@@ -78,16 +61,16 @@ export function useUnitCommands() {
     },
   )
 
-  const archive = useCommand(QUERY_KEYS.units, ({ unit, openedVersion }: { unit: Unit; openedVersion: number }) =>
+  const archive = useCommand([QUERY_KEYS.units], ({ unit, openedVersion }: { unit: Unit; openedVersion: number }) =>
     units.archive({ id: unit.id, expected_version: openedVersion }),
   )
 
-  const move = useCommand(QUERY_KEYS.units, ({ unit, parentId }: { unit: Unit; parentId: UnitId | null }) =>
+  const move = useCommand([QUERY_KEYS.units], ({ unit, parentId }: { unit: Unit; parentId: UnitId | null }) =>
     units.move({ id: unit.id, expected_version: unit.version, parent_id: parentId }),
   )
 
   const step = useCommand(
-    QUERY_KEYS.units,
+    [QUERY_KEYS.units],
     async ({ unit, direction, all }: { unit: Unit; direction: -1 | 1; all: readonly Unit[] }) => {
       const order = steppedOrder(siblingsUnder(all, unit.parent_id), unit.id, direction)
       const unchanged: Result<Unit[]> = { ok: true, value: [] }
@@ -97,7 +80,7 @@ export function useUnitCommands() {
   )
 
   /** A move, then the position, when the unit should not stay last. Each is one transaction. */
-  const drop = useCommand(QUERY_KEYS.units, async ({ unit, plan }: { unit: Unit; plan: UnitDropPlan }) => {
+  const drop = useCommand([QUERY_KEYS.units], async ({ unit, plan }: { unit: Unit; plan: UnitDropPlan }) => {
     let moved = unit
     if (plan.move !== null) {
       const result = await units.move({ id: unit.id, expected_version: unit.version, parent_id: plan.move.parent_id })
@@ -124,15 +107,15 @@ export function useUnitLevelCommands() {
   const levels = data.commands.unit_levels
 
   const create = useCommand(
-    QUERY_KEYS.unitLevels,
+    [QUERY_KEYS.unitLevels],
     ({ name, existing }: { name: string; existing: readonly UnitLevel[] }) =>
       levels.create(toCreateUnitLevelInput(name, existing)),
   )
-  const update = useCommand(QUERY_KEYS.unitLevels, (input: UpdateUnitLevelInput) => levels.update(input))
-  const archive = useCommand(QUERY_KEYS.unitLevels, (level: UnitLevel) =>
+  const update = useCommand([QUERY_KEYS.unitLevels], (input: UpdateUnitLevelInput) => levels.update(input))
+  const archive = useCommand([QUERY_KEYS.unitLevels], (level: UnitLevel) =>
     levels.archive({ id: level.id, expected_version: level.version }),
   )
-  const reorder = useCommand(QUERY_KEYS.unitLevels, (order: readonly UnitLevel[]) =>
+  const reorder = useCommand([QUERY_KEYS.unitLevels], (order: readonly UnitLevel[]) =>
     levels.reorder({ items: order.map((level) => ({ id: level.id, expected_version: level.version })) }),
   )
   return { create, update, archive, reorder }

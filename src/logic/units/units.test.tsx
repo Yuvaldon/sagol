@@ -319,7 +319,7 @@ describe('the can hint (D-091)', () => {
     })
     const { result } = renderHook(() => useModuleAccess(), { wrapper: wrapperOf(fake.ports) })
     await waitFor(() => {
-      expect(result.current).toEqual({ units: true, unitLevels: false })
+      expect(result.current).toMatchObject({ units: true, unitLevels: false })
     })
   })
 })

@@ -38,3 +38,40 @@ export {
   useUnitPermissions,
   useUnits,
 } from './units/hooks'
+export {
+  fullName,
+  liveRanks,
+  matchesName,
+  openMembershipOf,
+  soldierHistory,
+  soldierRows,
+  type HistoryEntry,
+  type HistoryUnit,
+  type SoldierRow,
+} from './roster/roster'
+export {
+  moveFormIssues,
+  newSoldierIssues,
+  nextSeniority,
+  privateFormIssues,
+  rankFormIssues,
+  soldierFormIssues,
+  type MoveFormValues,
+  type NewSoldierValues,
+  type PrivateFormValues,
+  type RankFormValues,
+  type SoldierFormValues,
+} from './roster/forms'
+export {
+  useCommandRankCommands,
+  useCommandRankPermissions,
+  useCommandRanks,
+  useMemberships,
+  useRosterPermissions,
+  useSoldierCommands,
+  useSoldierPagePermissions,
+  useSoldierPrivate,
+  useSoldiers,
+  useToday,
+  useUnitsWithArchived,
+} from './roster/hooks'

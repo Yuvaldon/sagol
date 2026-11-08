@@ -13,6 +13,10 @@ export const QUERY_KEYS = {
   organization: [TABLE_SCOPE, 'organizations'],
   unitLevels: [TABLE_SCOPE, 'unit_levels'],
   units: [TABLE_SCOPE, 'units'],
+  commandRanks: [TABLE_SCOPE, 'command_ranks'],
+  soldiers: [TABLE_SCOPE, 'soldiers'],
+  soldierPrivate: [TABLE_SCOPE, 'soldier_private'],
+  unitMemberships: [TABLE_SCOPE, 'unit_memberships'],
   can: ['can'],
 } as const satisfies Record<string, QueryKey>
 
