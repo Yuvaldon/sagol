@@ -3,7 +3,7 @@ import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useCurrentOrganization, useModuleAccess, usePanel } from '@logic'
 import { Network } from 'lucide-react'
-import { UnitsDrawer } from '../modules/units/UnitsDrawer'
+import { ModuleDrawer } from './ModuleDrawer'
 import { Button } from '../primitives/Button'
 import { UserMenu } from './UserMenu'
 import { FailureScreen, LoadingScreen } from './states'
@@ -46,7 +46,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           <UserMenu identity={identity} />
         </div>
       </nav>
-      <UnitsDrawer />
+      <ModuleDrawer />
     </div>
   )
 }

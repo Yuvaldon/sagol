@@ -48,6 +48,7 @@ export const dictionary = {
     archive: 'העברה לארכיון',
     reloadItem: 'טעינת הגרסה החדשה',
     backToList: 'חזרה לרשימה',
+    sections: 'מקטעי המודול',
   },
   palette: {
     label: 'צבע',
@@ -68,7 +69,6 @@ export const dictionary = {
   units: {
     open: 'יחידות',
     title: 'יחידות',
-    sections: 'מקטעי המודול',
     tabTree: 'עץ היחידות',
     tabLevels: 'דרגים',
     listLabel: 'עץ היחידות',

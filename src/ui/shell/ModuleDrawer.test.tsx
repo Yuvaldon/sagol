@@ -10,7 +10,7 @@ import {
 } from '@tanstack/react-router'
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { UnitsDrawer } from './UnitsDrawer'
+import { ModuleDrawer } from './ModuleDrawer'
 
 // Controls follow the hints (D-076, D-091): a soldier who may only read sees names and no actions, and
 // one who may not read sees no drawer at all, even from a deep link. Sample rows, test data only.
@@ -60,7 +60,7 @@ function portsWith(allow: (check: PermissionCheck) => boolean) {
 
 async function renderDrawer(ports: LogicPorts) {
   const rootRoute = createRootRoute()
-  const route = createRoute({ getParentRoute: () => rootRoute, path: '/', component: UnitsDrawer, validateSearch: WorkspaceSearch })
+  const route = createRoute({ getParentRoute: () => rootRoute, path: '/', component: ModuleDrawer, validateSearch: WorkspaceSearch })
   const router = createRouter({
     routeTree: rootRoute.addChildren([route]),
     history: createMemoryHistory({ initialEntries: ['/?panel=units'] }),
@@ -75,7 +75,7 @@ async function renderDrawer(ports: LogicPorts) {
 
 const isView = (check: PermissionCheck) => check.permission.action === 'view'
 
-describe('units drawer: controls follow the hints', () => {
+describe('module drawer: controls follow the hints', () => {
   it('shows every control to a soldier who may do everything', async () => {
     await renderDrawer(portsWith(() => true))
     const list = await screen.findByRole('list', { name: he.units.listLabel })
