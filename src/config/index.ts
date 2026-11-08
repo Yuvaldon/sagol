@@ -14,7 +14,9 @@ export {
   type EnvVariable,
   type RawEnv,
 } from './env'
-export { INDEXED_DB_NAME, STORAGE_KEYS, type StorageKey } from './storage'
+export { CHANGE_FEED_CHANNEL, INDEXED_DB_NAME, STORAGE_KEYS, type StorageKey } from './storage'
+export { ROUTES, type RoutePath } from './routes'
+export { STARTUP_ERROR_CODES } from './startup'
 export { DEFAULT_VIEW_ID, VIEW_IDS, ViewId } from './views'
 export { SEARCH_PARAMS, type SearchParamName } from './url'
 export {

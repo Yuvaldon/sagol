@@ -7,6 +7,9 @@ const STORAGE_PREFIX = 'sagol'
 /** IndexedDB database of the local data adapter. */
 export const INDEXED_DB_NAME = STORAGE_PREFIX
 
+/** `BroadcastChannel` carrying committed writes between tabs (ChangeFeed). */
+export const CHANGE_FEED_CHANNEL = `${STORAGE_PREFIX}.changes`
+
 /** `localStorage` keys. */
 export const STORAGE_KEYS = {
   /** The signed-in identity of the local auth provider (D-006). */
