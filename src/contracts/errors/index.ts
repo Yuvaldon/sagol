@@ -56,6 +56,8 @@ const STATE_ISSUE_CODES = [
   'invalid_order',
   /** The soldier or the identity is already linked to an account. */
   'already_linked',
+  /** The unit has live sub-units, or soldiers placed today or later (D-088). */
+  'unit_not_empty',
 ] as const
 
 /** Every validation issue code: field codes, row checks (`SchemaIssue`) and state codes. */

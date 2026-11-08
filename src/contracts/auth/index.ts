@@ -4,6 +4,7 @@ import type { AsyncResult, Unsubscribe } from '../common/result'
 import { Email, label, type Timestamp } from '../common/scalars'
 import { AccountLinkRequest } from '../entities/accounts'
 import { IdentityProvider } from '../enums'
+import type { PermissionCheck } from '../permissions'
 import { DEVELOPMENT_ONLY_AUTH_MODES } from './development-modes'
 
 // Authentication and session contracts (D-005, D-006, D-048).
@@ -109,4 +110,12 @@ export interface SessionService {
   onboardingState(): AsyncResult<OnboardingState>
   /** Fires when the identity changes or the identity's account link changes. */
   subscribe(listener: (session: Session) => void): Unsubscribe
+}
+
+/**
+ * The hint behind every gated control (D-085, D-091). One answer per check, in order. It is a
+ * hint: the command decides again, whatever this answered.
+ */
+export interface SessionPermissions {
+  can(checks: readonly PermissionCheck[]): AsyncResult<boolean[]>
 }

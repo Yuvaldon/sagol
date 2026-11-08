@@ -52,7 +52,7 @@ The data layer is written as if it were the server:
   never accept an actor id from callers. In remote mode the server derives the actor from
   the token, so a client cannot claim to be someone else.
 - **Reads** are filtered by the domain policy before they leave the adapter.
-- **Writes** are validated (Zod schema → integrity → policy → domain invariants) inside one
+- **Writes** are validated (Zod schema → visibility → policy → state → integrity → domain invariants, D-090) inside one
   transaction, bump `version`, reject stale versions, and write audit events.
 - **Workflow changes are commands**, not field updates: `createLeave`, `transitionLeave`,
   `rescheduleLeave`, `grantAccess`, `revokeAccess`, `requestAccountLink`,

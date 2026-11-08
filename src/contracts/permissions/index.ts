@@ -1,6 +1,8 @@
 import { z } from 'zod'
+import { SoldierId, UnitId } from '../common/ids'
 
-// Permission vocabulary (D-003) and its valid combinations (D-040).
+// Permission vocabulary (D-003), its valid combinations (D-040) and what a pair is checked
+// against (D-053).
 
 export const PermissionResource = z.enum([
   'organization',
@@ -98,3 +100,16 @@ export const Permission = z.discriminatedUnion('resource', [
   pairOf('data_transfer'),
 ])
 export type Permission = z.infer<typeof Permission>
+
+/** What a permission is checked against (D-053). */
+export const PolicyTarget = z.discriminatedUnion('kind', [
+  /** Organization-wide data with no unit or soldier subject. */
+  z.object({ kind: z.literal('organization') }),
+  z.object({ kind: z.literal('unit'), unit_id: UnitId }),
+  z.object({ kind: z.literal('soldier'), soldier_id: SoldierId }),
+])
+export type PolicyTarget = z.infer<typeof PolicyTarget>
+
+/** One "can I?" question for the signed-in soldier (D-085, D-091). */
+export const PermissionCheck = z.object({ permission: Permission, target: PolicyTarget })
+export type PermissionCheck = z.infer<typeof PermissionCheck>

@@ -1,5 +1,5 @@
 import type { AsyncResult } from '../common/result'
-import type { IdentitySource, Session, SessionService, TimeSource } from '../auth'
+import type { IdentitySource, Session, SessionPermissions, SessionService, TimeSource } from '../auth'
 import type { AccountLinkRequest, SoldierPreferencesRecord } from '../entities/accounts'
 import type { Deployment, DeploymentMember } from '../entities/deployments'
 import type { Unit, UnitLevel } from '../entities/hierarchy'
@@ -245,7 +245,7 @@ export interface DataTransfer {
 
 /** What `app` constructs and hands to `logic`. Local (IndexedDB) now, remote in phase 8. */
 export interface DataAdapter {
-  session: SessionService
+  session: SessionService & SessionPermissions
   repositories: DataRepositories
   commands: DataCommands
   transfer: DataTransfer

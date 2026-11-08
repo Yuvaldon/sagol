@@ -8,7 +8,9 @@ import {
   PERMISSION_ACTIONS_BY_RESOURCE,
   Permission,
   PermissionAction,
+  PermissionCheck,
   PermissionResource,
+  PolicyTarget,
   RankRoleBinding,
   RolePermission,
   SchemaIssue,
@@ -104,6 +106,21 @@ describe('settings defaults (D-041)', () => {
 
   it('fills soldier preferences from the column default', () => {
     expect(SoldierPreferences.parse({})).toEqual({ create_leaves_as_approved: false })
+  })
+})
+
+describe('permission checks (D-053, D-091)', () => {
+  it('accepts a valid pair against each target kind', () => {
+    const permission = { resource: 'units', action: 'update' }
+    for (const target of [{ kind: 'organization' }, { kind: 'unit', unit_id: ID.a }, { kind: 'soldier', soldier_id: ID.b }]) {
+      expect(PermissionCheck.safeParse({ permission, target }).success).toBe(true)
+    }
+  })
+
+  it('rejects a pair outside D-040, and a target without its id', () => {
+    const target = { kind: 'organization' }
+    expect(PermissionCheck.safeParse({ permission: { resource: 'units', action: 'approve' }, target }).success).toBe(false)
+    expect(PolicyTarget.safeParse({ kind: 'unit' }).success).toBe(false)
   })
 })
 

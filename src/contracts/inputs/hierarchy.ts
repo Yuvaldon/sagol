@@ -53,7 +53,10 @@ export type ArchiveUnitInput = z.infer<typeof ArchiveUnitInput>
 export const ReorderUnitsInput = reorderInput(UnitId)
 export type ReorderUnitsInput = z.infer<typeof ReorderUnitsInput>
 
-/** `moveUnit`: re-parent a unit (NULL = top level). Domain rejects cycles (D-009). */
+/**
+ * `moveUnit`: re-parent a unit (NULL = top level). Domain rejects cycles (D-009). The unit lands
+ * after the new parent's live children (D-087).
+ */
 export const MoveUnitInput = z.strictObject({
   id: UnitId,
   expected_version: ExpectedVersion,
