@@ -9,42 +9,23 @@ import {
   SoldierId,
   type AuthIdentity,
   type BootstrapOwnerInput,
-  type ChangeFeed,
   type DataChange,
-  type DataCommands,
-  type DataRepositories,
   type Result,
   type Session,
-  type SessionService,
   type TableName,
   type TableRow,
   type Timestamp,
 } from '@contracts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { ContractAdapter, ContractHarness } from './harness'
+import { describeUnitContract } from './units'
+
+export type { ContractAdapter, ContractHarness } from './harness'
 
 // The shared repository contract suite (D-076). Every adapter passes it: local now, remote in
 // row 8.3, which is what makes the switch safe. It grows with each slice. Sample data lives here
 // and in the test files that run it, never in production code.
 
-/** What the suite exercises in this slice. */
-export interface ContractAdapter {
-  readonly session: SessionService
-  readonly repositories: Pick<DataRepositories, 'organizations'>
-  readonly commands: { readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'> }
-  readonly changes: ChangeFeed
-}
-
-/** One adapter on an empty store, and direct access to that store. */
-export interface ContractHarness {
-  readonly adapter: ContractAdapter
-  /** Who is signed in from now on. */
-  signIn(identity: AuthIdentity | null): void
-  /** Writes rows directly, skipping the commands, for states no screen creates yet. */
-  seed<T extends TableName>(table: T, rows: readonly TableRow<T>[]): Promise<void>
-  /** Reads a table directly, to prove what a refused command did not write. */
-  rows<T extends TableName>(table: T): Promise<TableRow<T>[]>
-  dispose(): Promise<void>
-}
 
 export const CONTRACT_NOW: Timestamp = '2026-11-08T10:00:00.000Z'
 
@@ -396,5 +377,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
         expect(await next).toEqual({ status: 'unlinked', identity })
       })
     })
+
+    describeUnitContract(() => harness, () => claim())
   })
 }

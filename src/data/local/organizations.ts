@@ -1,4 +1,3 @@
-import type Dexie from 'dexie'
 import {
   BootstrapOwnerInput,
   PERMISSION_ACTIONS_BY_RESOURCE,
@@ -9,37 +8,15 @@ import {
   type AuthIdentity,
   type DataCommands,
   type DataRepositories,
-  type IdentitySource,
   type RolePermission,
   type Session,
-  type SoldierId,
-  type TimeSource,
 } from '@contracts'
 import { accessManagerIssues, can, timeZoneIssues, withPathPrefix } from '@domain'
-import type { LocalChangeFeed } from './changes'
 import { tableOf } from './database'
+import { createdBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { bootstrapAllowed, requireLinked, resolveSession } from './session'
 import { POLICY_TABLES, loadPolicySnapshot } from './snapshot'
-
-interface OrganizationDependencies {
-  readonly database: Dexie
-  readonly identity: IdentitySource
-  readonly time: TimeSource
-  readonly changes: LocalChangeFeed
-}
-
-/** Audit block of a new mutable row (D-017). */
-function createdBy(actor: SoldierId, now: string) {
-  return {
-    created_at: now,
-    created_by: actor,
-    updated_at: now,
-    updated_by: actor,
-    version: 1,
-    archived_at: null,
-  }
-}
 
 /** Every valid pair (D-040, D-079). */
 function everyPermission() {
@@ -49,7 +26,7 @@ function everyPermission() {
 }
 
 async function writeBootstrap(
-  { database, time }: OrganizationDependencies,
+  { database, time }: LocalDependencies,
   identity: AuthIdentity,
   input: BootstrapOwnerInput,
 ): Promise<Session> {
@@ -143,7 +120,7 @@ export function createOrganizationRepository({
   database,
   identity,
   time,
-}: OrganizationDependencies): DataRepositories['organizations'] {
+}: LocalDependencies): DataRepositories['organizations'] {
   return {
     current: () =>
       asResult(async () => {
@@ -163,7 +140,7 @@ export function createOrganizationRepository({
 }
 
 export function createOrganizationCommands(
-  dependencies: OrganizationDependencies,
+  dependencies: LocalDependencies,
 ): Pick<DataCommands['organizations'], 'bootstrapOwner'> {
   return {
     bootstrapOwner: (raw): AsyncResult<Session> =>
