@@ -62,6 +62,7 @@ const ISSUE_MESSAGES = {
   invalid_order: 'issues.invalidOrder',
   already_linked: 'issues.alreadyLinked',
   unit_not_empty: 'issues.unitNotEmpty',
+  rank_in_use: 'issues.rankInUse',
 } as const satisfies Record<string, I18nKey>
 
 const ISSUE_KEYS: Record<IssueCode, I18nKey> = ISSUE_MESSAGES

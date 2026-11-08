@@ -180,5 +180,6 @@ export const dictionary = {
     invalidOrder: 'רשימת הסדר לא תואמת',
     alreadyLinked: 'כבר מקושר לחשבון',
     unitNotEmpty: 'אי אפשר להעביר לארכיון יחידה שיש בה יחידות משנה או חיילים משובצים',
+    rankInUse: 'אי אפשר להעביר לארכיון דרגה שיש חיילים שמחזיקים בה',
   },
 } as const
