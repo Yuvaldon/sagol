@@ -2,8 +2,9 @@ import type { EnvIssueCode } from '@config'
 import type { AppError, ErrorCode, IssueCode } from '@contracts'
 import type { I18nKey } from '@i18n'
 
-// Stable codes to i18n (D-046). Both maps are total, so a new code fails to compile until it has
-// a message.
+// Stable codes to i18n (D-046). The maps are total, so a new code fails to compile until it has a
+// message. A new issue code lands in two commits, each one layer (D-075): first its message here,
+// then the code in contracts. `ISSUE_KEYS` is checked by assignment, which allows that order.
 
 const ERROR_KEYS: Record<ErrorCode, I18nKey> = {
   validation_failed: 'errors.validationFailed',
@@ -19,7 +20,7 @@ const ERROR_KEYS: Record<ErrorCode, I18nKey> = {
   internal: 'errors.internal',
 }
 
-const ISSUE_KEYS: Record<IssueCode, I18nKey> = {
+const ISSUE_MESSAGES = {
   required: 'issues.required',
   invalid_type: 'issues.invalidType',
   invalid_format: 'issues.invalidFormat',
@@ -60,7 +61,10 @@ const ISSUE_KEYS: Record<IssueCode, I18nKey> = {
   filter_operator_invalid: 'issues.filterOperatorInvalid',
   invalid_order: 'issues.invalidOrder',
   already_linked: 'issues.alreadyLinked',
-}
+  unit_not_empty: 'issues.unitNotEmpty',
+} as const satisfies Record<string, I18nKey>
+
+const ISSUE_KEYS: Record<IssueCode, I18nKey> = ISSUE_MESSAGES
 
 const ENV_ISSUE_KEYS: Record<EnvIssueCode, I18nKey> = {
   missing: 'startup.missing',

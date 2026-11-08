@@ -109,5 +109,6 @@ export const dictionary = {
     filterOperatorInvalid: 'הסינון לא מתאים לסוג המאפיין',
     invalidOrder: 'רשימת הסדר לא תואמת',
     alreadyLinked: 'כבר מקושר לחשבון',
+    unitNotEmpty: 'אי אפשר להעביר לארכיון יחידה שיש בה יחידות משנה או חיילים משובצים',
   },
 } as const
