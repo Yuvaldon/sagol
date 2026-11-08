@@ -31,7 +31,7 @@ export interface ReferenceRow {
 export type SortableRow = ReferenceRow & { readonly sort_order: number }
 
 /** Resources written through these commands. It grows with each slice. */
-export type ReferenceResource = 'unit_levels' | 'units'
+export type ReferenceResource = 'unit_levels' | 'units' | 'command_ranks' | 'soldiers'
 
 type ReferenceAction = 'view' | 'create' | 'update' | 'delete'
 
@@ -94,21 +94,22 @@ export function requireWritable(row: ReferenceRow, expectedVersion: number): voi
   if (row.version !== expectedVersion) fail({ code: 'stale_version' })
 }
 
-function parsedCandidate<Row extends ReferenceRow>(spec: ReferenceSpec<Row>, candidate: unknown, prefix: string[]): Row {
+export function parsedCandidate<Row extends ReferenceRow>(spec: ReferenceSpec<Row>, candidate: unknown, prefix: string[]): Row {
   const parsed = spec.schema.safeParse(candidate)
   if (parsed.success) return parsed.data
   return failValidation(withPathPrefix(prefix, issuesFromSchema(parsed.error.issues, candidate)))
 }
 
-function bySortOrder(a: SortableRow, b: SortableRow): number {
+export function bySortOrder(a: SortableRow, b: SortableRow): number {
   return a.sort_order - b.sort_order || a.id.localeCompare(b.id)
 }
 
 // --------------------------------------------------------------------- reads
 
-export function createReferenceRepository<Row extends SortableRow>(
+export function createReferenceRepository<Row extends ReferenceRow>(
   dependencies: LocalDependencies,
   spec: ReferenceSpec<Row>,
+  compare: (a: Row, b: Row) => number,
 ) {
   const { database } = dependencies
   const tables = tablesOf(spec)
@@ -129,7 +130,7 @@ export function createReferenceRepository<Row extends SortableRow>(
           return rows
             .filter((row) => query.include_archived || row.archived_at === null)
             .filter((row) => holds(scope, permissionOf(spec.resource, 'view'), spec.targetOf(row)))
-            .sort(bySortOrder)
+            .sort(compare)
             .map((row) => spec.schema.parse(row))
         })
       }),
@@ -155,6 +156,8 @@ export interface ReferenceInputs<Row extends ReferenceRow, Create, Update, Archi
   readonly placementOf: (input: Create) => PolicyTarget
   /** Why this row may not be archived, on top of the shared checks. */
   readonly archiveIssues?: (database: Dexie, scope: ActorScope, row: Row) => Promise<Issue[]>
+  /** Invariants of the state after an update or an archive. A refusal undoes the write. */
+  readonly afterWrite?: (check: RowCheck<Row>) => Promise<void>
 }
 
 /** `changes` without the keys the caller left undefined. */
@@ -215,6 +218,7 @@ export function createReferenceCommands<
           const issues = await spec.rowIssues({ database, scope, row: merged, before })
           if (issues.length > 0) return failValidation(withPathPrefix(['changes'], issues))
           await tableFor(database, spec).put(merged)
+          await inputs.afterWrite?.({ database, scope, row: merged, before })
           return merged
         })
         publish(row.id)
@@ -237,6 +241,7 @@ export function createReferenceCommands<
             ...updatedBy(scope.soldier_id, scope.now, before.version),
           })
           await tableFor(database, spec).put(archived)
+          await inputs.afterWrite?.({ database, scope, row: archived, before })
           return archived
         })
         publish(row.id)

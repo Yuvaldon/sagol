@@ -1,8 +1,8 @@
 import type Dexie from 'dexie'
 import type { Organization, OrganizationId, Timestamp } from '@contracts'
-import { clockAt, createPolicyContext, type PolicyContext } from '@domain'
+import { accessManagerIssues, clockAt, createPolicyContext, type PolicyContext } from '@domain'
 import { tableOf } from './database'
-import { fail, parsedRow } from './failure'
+import { fail, failValidation, parsedRow } from './failure'
 
 // Everything the policy reads, loaded in one read transaction, so every check of a command or a
 // query sees one consistent state (D-003, D-008).
@@ -70,4 +70,14 @@ export function loadPolicySnapshot(
     )
     return { organization, context }
   })
+}
+
+/**
+ * The access-manager invariant, on the state after a write that can take permissions away (D-059,
+ * OI-021 a). Call it inside the write's transaction, so a refusal undoes the write.
+ */
+export async function requireAccessManager(database: Dexie, organizationId: OrganizationId, now: Timestamp): Promise<void> {
+  const { context } = await loadPolicySnapshot(database, organizationId, now)
+  const issues = accessManagerIssues(context)
+  if (issues.length > 0) failValidation(issues)
 }

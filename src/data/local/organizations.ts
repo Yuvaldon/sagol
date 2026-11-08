@@ -11,12 +11,12 @@ import {
   type RolePermission,
   type Session,
 } from '@contracts'
-import { accessManagerIssues, can, timeZoneIssues, withPathPrefix } from '@domain'
+import { can, timeZoneIssues, withPathPrefix } from '@domain'
 import { tableOf } from './database'
 import { createdBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { bootstrapAllowed, requireLinked, resolveSession } from './session'
-import { POLICY_TABLES, loadPolicySnapshot } from './snapshot'
+import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 
 /** Every valid pair (D-040, D-079). */
 function everyPermission() {
@@ -108,9 +108,7 @@ async function writeBootstrap(
     await tableOf(database, 'access_grants').add(grant)
 
     // Checked on the state after the write, like every write that can change permissions (D-059).
-    const { context } = await loadPolicySnapshot(database, organizationId, now)
-    const managerIssues = accessManagerIssues(context)
-    if (managerIssues.length > 0) return failValidation(managerIssues)
+    await requireAccessManager(database, organizationId, now)
 
     return { status: 'linked', identity, soldier_id: soldierId, organization_id: organizationId }
   })

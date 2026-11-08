@@ -1,0 +1,408 @@
+import type Dexie from 'dexie'
+import {
+  ArchiveSoldierInput,
+  ChangeMembershipInput,
+  CreateSoldierInput,
+  IssueCode,
+  MembershipQuery,
+  MembershipType,
+  Soldier,
+  SoldierScopedQuery,
+  UpdateSoldierInput,
+  UpdateSoldierPrivateInput,
+  type DataCommands,
+  type DataRepositories,
+  type Issue,
+  type SoldierId,
+  type SoldierPrivate,
+  type TableName,
+  type UnitId,
+  type UnitMembership,
+} from '@contracts'
+import {
+  membershipChangeIssues,
+  membershipOverlapIssues,
+  normalizePersonalId,
+  placementTarget,
+  planMembershipChange,
+  soldierTarget,
+  spansOverlap,
+  unitTarget,
+} from '@domain'
+import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
+import { propertiesIssues } from './checks'
+import { tableOf } from './database'
+import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
+import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
+import {
+  createReferenceCommands,
+  createReferenceRepository,
+  parsedCandidate,
+  permissionOf,
+  tablesOf,
+  visibleRow,
+  type ReferenceSpec,
+  type RowCheck,
+} from './reference'
+import { POLICY_TABLES, requireAccessManager } from './snapshot'
+
+// The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
+// (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097.
+
+const MEMBERSHIPS_UPDATE = { resource: 'memberships', action: 'update' } as const
+const MEMBERSHIPS_VIEW = { resource: 'memberships', action: 'view' } as const
+const PRIVATE_VIEW = { resource: 'soldier_private', action: 'view' } as const
+const PRIVATE_UPDATE = { resource: 'soldier_private', action: 'update' } as const
+
+/** A new rank must exist, be visible and be live. An unchanged one is left alone (D-095). */
+async function rankIssues({ database, scope, row, before }: RowCheck<Soldier>): Promise<Issue[]> {
+  if (row.command_rank_id === null || row.command_rank_id === before?.command_rank_id) return []
+  const rank = await tableOf(database, 'command_ranks').get(row.command_rank_id)
+  const visible =
+    rank !== undefined &&
+    rank.organization_id === scope.organization_id &&
+    holds(scope, permissionOf('command_ranks', 'view'), { kind: 'organization' })
+  if (!visible) return [{ path: ['command_rank_id'], code: IssueCode.enum.reference_not_found }]
+  if (rank.archived_at !== null) return [{ path: ['command_rank_id'], code: IssueCode.enum.reference_archived }]
+  return []
+}
+
+const SPEC: ReferenceSpec<Soldier> = {
+  table: 'soldiers',
+  resource: 'soldiers',
+  schema: Soldier,
+  checkTables: ['property_definitions'],
+  targetOf: (row) => soldierTarget(row.id),
+  rowIssues: async (check) => [
+    ...(await rankIssues(check)),
+    ...(await propertiesIssues(check.database, check.scope, 'soldier', check.before?.properties ?? null, check.row.properties)),
+  ],
+}
+
+const ROSTER_TABLES: readonly TableName[] = [...tablesOf(SPEC), 'soldier_private']
+
+/** A unit a soldier is placed in must exist, be visible and be live. */
+async function placementIssues(database: Dexie, scope: ActorScope, unitId: UnitId, path: readonly string[]): Promise<Issue[]> {
+  const unit = await tableOf(database, 'units').get(unitId)
+  const visible =
+    unit !== undefined &&
+    unit.organization_id === scope.organization_id &&
+    holds(scope, permissionOf('units', 'view'), unitTarget(unit))
+  if (!visible) return [{ path: [...path], code: IssueCode.enum.reference_not_found }]
+  if (unit.archived_at !== null) return [{ path: [...path], code: IssueCode.enum.reference_archived }]
+  return []
+}
+
+/** `uq_soldier_private_personal_id`: archived soldiers keep their number too (D-098). */
+async function personalIdIssues(
+  database: Dexie,
+  scope: ActorScope,
+  soldierId: SoldierId,
+  personalId: string | null,
+  path: readonly string[],
+): Promise<Issue[]> {
+  if (personalId === null) return []
+  const holder = await tableOf(database, 'soldier_private')
+    .where('[organization_id+personal_id]')
+    .equals([scope.organization_id, personalId])
+    .first()
+  return holder === undefined || holder.soldier_id === soldierId
+    ? []
+    : [{ path: [...path], code: IssueCode.enum.already_exists }]
+}
+
+/** A personal id is stored normalized, so the unique index sees one value per person (D-066). */
+function normalizedPersonalId(value: string | null): string | null {
+  return value === null ? null : normalizePersonalId(value)
+}
+
+function placedRow(
+  scope: ActorScope,
+  id: UnitMembership['id'],
+  soldierId: SoldierId,
+  unitId: UnitId,
+  validFrom: UnitMembership['valid_from'],
+): UnitMembership {
+  return parsedRow('unit_memberships', {
+    id,
+    organization_id: scope.organization_id,
+    soldier_id: soldierId,
+    unit_id: unitId,
+    membership_type: MembershipType.enum.primary,
+    valid_from: validFrom,
+    valid_to: null,
+    ...createdBy(scope.soldier_id, scope.now),
+  })
+}
+
+// --------------------------------------------------------------------- reads
+
+export function createSoldierRepository(dependencies: LocalDependencies): DataRepositories['soldiers'] {
+  // The order for people is `logic`'s, in Hebrew (D-094). The id only keeps this answer stable.
+  return createReferenceRepository(dependencies, SPEC, (a, b) => a.id.localeCompare(b.id))
+}
+
+export function createSoldierPrivateRepository(dependencies: LocalDependencies): DataRepositories['soldier_private'] {
+  const { database } = dependencies
+  const tables: TableName[] = [...POLICY_TABLES, 'soldier_private']
+  return {
+    get: (soldierId) =>
+      asResult(() =>
+        database.transaction('r', tables, async () => {
+          const scope = await loadActorScope(dependencies)
+          const stored = await tableOf(database, 'soldier_private').get(soldierId)
+          const visible =
+            stored !== undefined &&
+            stored.organization_id === scope.organization_id &&
+            holds(scope, PRIVATE_VIEW, soldierTarget(soldierId))
+          if (!visible) return fail({ code: 'not_found' })
+          return parsedRow('soldier_private', stored)
+        }),
+      ),
+    list: (raw) =>
+      asResult(() => {
+        const query = parseInput(SoldierScopedQuery, raw)
+        return database.transaction('r', tables, async () => {
+          const scope = await loadActorScope(dependencies)
+          const rows = await tableOf(database, 'soldier_private').where('organization_id').equals(scope.organization_id).toArray()
+          return rows
+            .filter((row) => query.soldier_ids === null || query.soldier_ids.includes(row.soldier_id))
+            .filter((row) => holds(scope, PRIVATE_VIEW, soldierTarget(row.soldier_id)))
+            .map((row) => parsedRow('soldier_private', row))
+        })
+      }),
+  }
+}
+
+export function createMembershipRepository(dependencies: LocalDependencies): DataRepositories['unit_memberships'] {
+  const { database } = dependencies
+  return {
+    get: (id) =>
+      asResult(() =>
+        database.transaction('r', POLICY_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const stored = await tableOf(database, 'unit_memberships').get(id)
+          const visible =
+            stored !== undefined &&
+            stored.organization_id === scope.organization_id &&
+            holds(scope, MEMBERSHIPS_VIEW, soldierTarget(stored.soldier_id))
+          if (!visible) return fail({ code: 'not_found' })
+          return parsedRow('unit_memberships', stored)
+        }),
+      ),
+    list: (raw) =>
+      asResult(() => {
+        const query = parseInput(MembershipQuery, raw)
+        const window =
+          query.window === null ? null : { valid_from: query.window.start_date, valid_to: query.window.end_date }
+        return database.transaction('r', POLICY_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const rows = await tableOf(database, 'unit_memberships').where('organization_id').equals(scope.organization_id).toArray()
+          return rows
+            .filter((row) => query.soldier_ids === null || query.soldier_ids.includes(row.soldier_id))
+            .filter((row) => query.unit_ids === null || query.unit_ids.includes(row.unit_id))
+            .filter((row) => window === null || spansOverlap(row, window))
+            .filter((row) => holds(scope, MEMBERSHIPS_VIEW, soldierTarget(row.soldier_id)))
+            .sort((a, b) => a.valid_from.localeCompare(b.valid_from) || a.id.localeCompare(b.id))
+            .map((row) => parsedRow('unit_memberships', row))
+        })
+      }),
+  }
+}
+
+// ------------------------------------------------------------------ commands
+
+/** What the local adapter builds of `commands.soldiers` so far. `setTags` lands in V6 (D-076). */
+export type LocalSoldierCommands = Pick<
+  DataCommands['soldiers'],
+  'create' | 'update' | 'archive' | 'updatePrivate' | 'changeMembership'
+>
+
+export function createSoldierCommands(dependencies: LocalDependencies): LocalSoldierCommands {
+  const { database, changes } = dependencies
+  const { update, archive } = createReferenceCommands(dependencies, SPEC, {
+    create: CreateSoldierInput,
+    update: UpdateSoldierInput,
+    archive: ArchiveSoldierInput,
+    placementOf: (input) => placementTarget(input.membership?.unit_id ?? null),
+    // What can take permissions away is checked on the state after the write (D-059, D-096).
+    afterWrite: async ({ database: store, scope, row, before }) => {
+      const changed =
+        before === null ||
+        row.status !== before.status ||
+        row.command_rank_id !== before.command_rank_id ||
+        row.archived_at !== before.archived_at
+      if (changed) await requireAccessManager(store, scope.organization_id, scope.now)
+    },
+  })
+
+  return {
+    update,
+    archive,
+
+    create: (raw) =>
+      asResult(async () => {
+        const input = parseInput(CreateSoldierInput, raw)
+        const { private: privateFields, membership, ...content } = input
+        const written = await database.transaction('rw', ROSTER_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const placement = placementTarget(membership?.unit_id ?? null)
+          requirePermission(scope, permissionOf('soldiers', 'create'), placement)
+          if (membership !== null) requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: membership.unit_id })
+          if (privateFields !== null) requirePermission(scope, PRIVATE_UPDATE, placement)
+
+          const soldier = parsedCandidate(
+            SPEC,
+            { ...content, organization_id: scope.organization_id, ...createdBy(scope.soldier_id, scope.now) },
+            [],
+          )
+          if ((await tableOf(database, 'soldiers').get(input.id)) !== undefined) {
+            return failValidation([{ path: ['id'], code: IssueCode.enum.already_exists }])
+          }
+          const personalId = normalizedPersonalId(privateFields?.personal_id ?? null)
+          const issues = [
+            ...(await SPEC.rowIssues({ database, scope, row: soldier, before: null })),
+            ...(membership === null ? [] : await placementIssues(database, scope, membership.unit_id, ['membership', 'unit_id'])),
+            ...(await personalIdIssues(database, scope, soldier.id, personalId, ['private', 'personal_id'])),
+          ]
+          if (issues.length > 0) return failValidation(issues)
+
+          await tableOf(database, 'soldiers').add(soldier)
+          if (membership !== null) {
+            await tableOf(database, 'unit_memberships').add(
+              placedRow(scope, membership.id, soldier.id, membership.unit_id, membership.valid_from),
+            )
+          }
+          const hasPrivate = privateFields !== null && (personalId !== null || privateFields.invite_email !== null || privateFields.phone !== null)
+          if (hasPrivate) {
+            await tableOf(database, 'soldier_private').add(
+              parsedRow('soldier_private', {
+                ...privateFields,
+                personal_id: personalId,
+                soldier_id: soldier.id,
+                organization_id: scope.organization_id,
+                ...updatedBy(scope.soldier_id, scope.now, 0),
+              }),
+            )
+          }
+          return { soldier, hasPrivate }
+        })
+        changes.publish([
+          { table: 'soldiers', ids: [written.soldier.id] },
+          ...(membership === null ? [] : [{ table: 'unit_memberships' as const, ids: [membership.id] }]),
+          ...(written.hasPrivate ? [{ table: 'soldier_private' as const, ids: [written.soldier.id] }] : []),
+        ])
+        return written.soldier
+      }),
+
+    updatePrivate: (raw) =>
+      asResult(async () => {
+        const input = parseInput(UpdateSoldierPrivateInput, raw)
+        const row = await database.transaction('rw', ROSTER_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const soldier = await visibleRow(database, SPEC, scope, input.soldier_id)
+          const target = soldierTarget(soldier.id)
+          // The answer holds the values, so writing them needs reading them (D-096).
+          requirePermission(scope, PRIVATE_VIEW, target)
+          requirePermission(scope, PRIVATE_UPDATE, target)
+          if (soldier.archived_at !== null) return failValidation([{ path: [], code: IssueCode.enum.archived }])
+
+          const stored = await tableOf(database, 'soldier_private').get(soldier.id)
+          if ((stored?.version ?? null) !== input.expected_version) return fail({ code: 'stale_version' })
+
+          const defined = Object.fromEntries(Object.entries(input.changes).filter(([, value]) => value !== undefined))
+          const merged: Omit<SoldierPrivate, 'updated_at' | 'updated_by' | 'version'> = {
+            soldier_id: soldier.id,
+            organization_id: scope.organization_id,
+            personal_id: stored?.personal_id ?? null,
+            invite_email: stored?.invite_email ?? null,
+            phone: stored?.phone ?? null,
+            ...defined,
+          }
+          const personalId = normalizedPersonalId(merged.personal_id)
+          const issues = await personalIdIssues(database, scope, soldier.id, personalId, ['changes', 'personal_id'])
+          if (issues.length > 0) return failValidation(issues)
+
+          const next = parsedRow('soldier_private', {
+            ...merged,
+            personal_id: personalId,
+            ...updatedBy(scope.soldier_id, scope.now, stored?.version ?? 0),
+          })
+          await tableOf(database, 'soldier_private').put(next)
+          return next
+        })
+        changes.publish([{ table: 'soldier_private', ids: [row.soldier_id] }])
+        return row
+      }),
+
+    changeMembership: (raw) =>
+      asResult(async () => {
+        const input = parseInput(ChangeMembershipInput, raw)
+        const newUnitId = input.new_membership?.unit_id ?? null
+        const written = await database.transaction('rw', ROSTER_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const soldier = await visibleRow(database, SPEC, scope, input.soldier_id)
+          requirePermission(scope, MEMBERSHIPS_UPDATE, soldierTarget(soldier.id))
+          if (newUnitId !== null) requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: newUnitId })
+          if (soldier.archived_at !== null) return failValidation([{ path: [], code: IssueCode.enum.archived }])
+
+          const rows = await tableOf(database, 'unit_memberships').where('soldier_id').equals(soldier.id).toArray()
+          const named = input.current_membership
+          const current = named === null ? null : (rows.find((row) => row.id === named.id) ?? null)
+          if (named !== null) {
+            if (current === null) {
+              return failValidation([{ path: ['current_membership', 'id'], code: IssueCode.enum.reference_not_found }])
+            }
+            if (current.valid_to !== null || current.version !== named.expected_version) {
+              return fail({ code: 'stale_version' })
+            }
+          }
+
+          const issues = [
+            ...(newUnitId === null ? [] : await placementIssues(database, scope, newUnitId, ['new_membership', 'unit_id'])),
+            ...membershipChangeIssues(current, input.effective_date, newUnitId),
+          ]
+          if (issues.length > 0) return failValidation(issues)
+
+          const table = tableOf(database, 'unit_memberships')
+          const answer: UnitMembership[] = []
+          const plan = planMembershipChange(current, input.effective_date, newUnitId)
+          if (plan.kind === 'correct') {
+            if (current === null) return fail({ code: 'internal' })
+            const corrected = parsedRow('unit_memberships', {
+              ...current,
+              unit_id: plan.unit_id,
+              ...updatedBy(scope.soldier_id, scope.now, current.version),
+            })
+            await table.put(corrected)
+            answer.push(corrected)
+          } else {
+            if (current !== null && plan.close_on !== null) {
+              const closed = parsedRow('unit_memberships', {
+                ...current,
+                valid_to: plan.close_on,
+                ...updatedBy(scope.soldier_id, scope.now, current.version),
+              })
+              await table.put(closed)
+              answer.push(closed)
+            }
+            if (plan.open_unit_id !== null && input.new_membership !== null) {
+              const opened = placedRow(scope, input.new_membership.id, soldier.id, plan.open_unit_id, input.effective_date)
+              const others = [...rows.filter((row) => row.id !== current?.id), ...answer]
+              const overlap = membershipOverlapIssues(others, opened)
+              if (overlap.length > 0) {
+                return failValidation(overlap.map((issue) => ({ ...issue, path: ['effective_date'] })))
+              }
+              await table.add(opened)
+              answer.push(opened)
+            }
+          }
+
+          await requireAccessManager(database, scope.organization_id, scope.now)
+          return answer
+        })
+        changes.publish([{ table: 'unit_memberships', ids: written.map((row) => row.id) }])
+        return written
+      }),
+  }
+}

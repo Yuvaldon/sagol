@@ -1,49 +1,34 @@
 import {
-  AccessGrantId,
   AuthUserId,
   PropertyDefinitionId,
-  RoleId,
-  SoldierAccountId,
   SoldierId,
   UnitId,
   UnitLevelId,
-  UnitMembershipId,
   type AuthIdentity,
   type CreateUnitInput,
   type DataChange,
   type OrganizationId,
   type Permission,
   type PermissionCheck,
-  type Result,
-  type ScopeAnchorType,
   type TableRow,
   type UnitLevel,
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
+import {
+  LATER_DATE,
+  NOW,
+  PAST_DATE,
+  errorOf,
+  issuesOf,
+  placeSoldier,
+  seedActor,
+  valueOf,
+  type ActorScopeColumns,
+} from './support'
 
 // The unit tree against the shared contract: levels, units, the `can` hint, and denial paths through
 // seeded grants, long before the roles screen exists (D-076). Sample data, test files only.
-
-const NOW = '2026-11-08T10:00:00.000Z'
-const LATER_DATE = '2027-01-01'
-const PAST_DATE = '2026-01-01'
-
-function errorOf<T>(result: Result<T>) {
-  if (result.ok) throw new Error('expected a refusal')
-  return result.error
-}
-
-function valueOf<T>(result: Result<T>): T {
-  if (!result.ok) throw new Error(`unexpected refusal: ${JSON.stringify(result.error)}`)
-  return result.value
-}
-
-function issuesOf<T>(result: Result<T>) {
-  const error = errorOf(result)
-  if (error.code !== 'validation_failed') throw new Error(`expected validation_failed, got ${error.code}`)
-  return error.issues
-}
 
 const newUnitId = () => UnitId.parse(crypto.randomUUID())
 const newLevelId = () => UnitLevelId.parse(crypto.randomUUID())
@@ -72,101 +57,15 @@ export function describeUnitContract(
   const adapter = () => harnessOf().adapter
 
   /** A second linked soldier holding `pairs` from one role, at the given scope. */
-  async function actorWith(
+  const actorWith = (
     organization_id: OrganizationId,
     pairs: readonly Permission[],
-    scope: { anchor_type: ScopeAnchorType; anchor_unit_id?: UnitId; include_descendants?: boolean },
+    scope: ActorScopeColumns,
     home?: UnitId,
-  ) {
-    const harness = harnessOf()
-    const soldierId = SoldierId.parse(crypto.randomUUID())
-    const roleId = RoleId.parse(crypto.randomUUID())
-    const identity: AuthIdentity = {
-      auth_user_id: AuthUserId.parse(crypto.randomUUID()),
-      provider: 'local',
-      email: `actor-${soldierId}@example.test`,
-      email_verified: true,
-      display_name: null,
-    }
-    const audit = { created_at: NOW, created_by: null, updated_at: NOW, updated_by: null, version: 1, archived_at: null }
-    await harness.seed('soldiers', [
-      {
-        id: soldierId,
-        organization_id,
-        first_name: 'Noa',
-        last_name: 'Cohen',
-        nickname: null,
-        command_rank_id: null,
-        status: 'active',
-        properties: {},
-        ...audit,
-      },
-    ])
-    await harness.seed('soldier_accounts', [
-      {
-        id: SoldierAccountId.parse(crypto.randomUUID()),
-        organization_id,
-        auth_user_id: identity.auth_user_id,
-        soldier_id: soldierId,
-        provider: 'local',
-        email: identity.email,
-        linked_at: NOW,
-        linked_by: null,
-        revoked_at: null,
-        revoked_by: null,
-      },
-    ])
-    await harness.seed('roles', [
-      { id: roleId, organization_id, name: 'Limited', description: null, color_key: null, ...audit },
-    ])
-    await harness.seed(
-      'role_permissions',
-      pairs.map((pair) => ({ ...pair, role_id: roleId, organization_id })),
-    )
-    await harness.seed('access_grants', [
-      {
-        id: AccessGrantId.parse(crypto.randomUUID()),
-        organization_id,
-        grantee_soldier_id: soldierId,
-        role_id: roleId,
-        anchor_type: scope.anchor_type,
-        anchor_unit_id: scope.anchor_unit_id ?? null,
-        anchor_soldier_id: null,
-        anchor_level_id: null,
-        anchor_steps: null,
-        include_descendants: scope.include_descendants ?? false,
-        subject_rank_constraint: 'any',
-        valid_from: NOW,
-        valid_to: null,
-        reason: null,
-        granted_by: null,
-        granted_at: NOW,
-        revoked_at: null,
-        revoked_by: null,
-      },
-    ])
-    if (home !== undefined) await place(organization_id, soldierId, home, null)
-    return { identity, soldierId }
-  }
+  ) => seedActor(harnessOf(), organization_id, pairs, scope, home)
 
-  async function place(organization_id: OrganizationId, soldier_id: SoldierId, unit_id: UnitId, valid_to: string | null) {
-    await harnessOf().seed('unit_memberships', [
-      {
-        id: UnitMembershipId.parse(crypto.randomUUID()),
-        organization_id,
-        soldier_id,
-        unit_id,
-        membership_type: 'primary',
-        valid_from: PAST_DATE,
-        valid_to,
-        created_at: NOW,
-        created_by: null,
-        updated_at: NOW,
-        updated_by: null,
-        version: 1,
-      },
-    ])
-  }
+  const place = (organization_id: OrganizationId, soldier_id: SoldierId, unit_id: UnitId, valid_to: string | null) =>
+    placeSoldier(harnessOf(), organization_id, soldier_id, unit_id, valid_to)
 
   /** Company > Platoon A, Platoon B, created by the owner. */
   async function sampleTree() {

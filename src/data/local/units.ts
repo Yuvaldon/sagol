@@ -25,6 +25,7 @@ import { tableOf } from './database'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, failValidation, parseInput } from './failure'
 import {
+  bySortOrder,
   createReferenceCommands,
   createReferenceRepository,
   createReorderCommand,
@@ -113,7 +114,7 @@ async function archiveIssues(database: Dexie, scope: ActorScope, unit: Unit): Pr
 }
 
 export function createUnitRepository(dependencies: LocalDependencies): DataRepositories['units'] {
-  return createReferenceRepository(dependencies, SPEC)
+  return createReferenceRepository(dependencies, SPEC, bySortOrder)
 }
 
 export function createUnitCommands(dependencies: LocalDependencies): DataCommands['units'] {

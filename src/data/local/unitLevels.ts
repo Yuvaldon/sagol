@@ -9,6 +9,7 @@ import {
 } from '@contracts'
 import type { LocalDependencies } from './dependencies'
 import {
+  bySortOrder,
   createReferenceCommands,
   createReferenceRepository,
   createReorderCommand,
@@ -28,7 +29,7 @@ const SPEC: ReferenceSpec<UnitLevel> = {
 }
 
 export function createUnitLevelRepository(dependencies: LocalDependencies): DataRepositories['unit_levels'] {
-  return createReferenceRepository(dependencies, SPEC)
+  return createReferenceRepository(dependencies, SPEC, bySortOrder)
 }
 
 export function createUnitLevelCommands(dependencies: LocalDependencies): DataCommands['unit_levels'] {

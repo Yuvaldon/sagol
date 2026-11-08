@@ -12,11 +12,16 @@ import type {
 /** What the suite exercises in this slice. */
 export interface ContractAdapter {
   readonly session: SessionService & SessionPermissions
-  readonly repositories: Pick<DataRepositories, 'organizations' | 'unit_levels' | 'units'>
+  readonly repositories: Pick<
+    DataRepositories,
+    'organizations' | 'unit_levels' | 'units' | 'command_ranks' | 'soldiers' | 'soldier_private' | 'unit_memberships'
+  >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
+    readonly command_ranks: DataCommands['command_ranks']
+    readonly soldiers: Pick<DataCommands['soldiers'], 'create' | 'update' | 'archive' | 'updatePrivate' | 'changeMembership'>
   }
   readonly changes: ChangeFeed
 }

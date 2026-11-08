@@ -10,9 +10,17 @@ import type {
 } from '@contracts'
 import { createPermissionHints } from './actor'
 import { createChangeFeed } from './changes'
+import { createCommandRankCommands, createCommandRankRepository } from './commandRanks'
 import { openDatabase } from './database'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
 import { createSessionService } from './session'
+import {
+  createMembershipRepository,
+  createSoldierCommands,
+  createSoldierPrivateRepository,
+  createSoldierRepository,
+  type LocalSoldierCommands,
+} from './soldiers'
 import { createUnitLevelCommands, createUnitLevelRepository } from './unitLevels'
 import { createUnitCommands, createUnitRepository } from './units'
 
@@ -21,11 +29,16 @@ import { createUnitCommands, createUnitRepository } from './units'
 
 export interface LocalDataAdapter {
   readonly session: SessionService & SessionPermissions
-  readonly repositories: Pick<DataRepositories, 'organizations' | 'unit_levels' | 'units'>
+  readonly repositories: Pick<
+    DataRepositories,
+    'organizations' | 'unit_levels' | 'units' | 'command_ranks' | 'soldiers' | 'soldier_private' | 'unit_memberships'
+  >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
+    readonly command_ranks: DataCommands['command_ranks']
+    readonly soldiers: LocalSoldierCommands
   }
   readonly changes: ChangeFeed
 }
@@ -56,11 +69,17 @@ export function createLocalDataAdapter(
       organizations: createOrganizationRepository(dependencies),
       unit_levels: createUnitLevelRepository(dependencies),
       units: createUnitRepository(dependencies),
+      command_ranks: createCommandRankRepository(dependencies),
+      soldiers: createSoldierRepository(dependencies),
+      soldier_private: createSoldierPrivateRepository(dependencies),
+      unit_memberships: createMembershipRepository(dependencies),
     },
     commands: {
       organizations: createOrganizationCommands(dependencies),
       unit_levels: createUnitLevelCommands(dependencies),
       units: createUnitCommands(dependencies),
+      command_ranks: createCommandRankCommands(dependencies),
+      soldiers: createSoldierCommands(dependencies),
     },
     changes,
   }
