@@ -5,6 +5,7 @@ export type { AuthPort, DataPort, LogicPorts } from './ports'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
 export { claimIssues, timeZoneChoices, type ClaimOrganizationValues } from './organization/claim'
+export type { Loaded } from './queries/loaded'
 export {
   useClaimOrganization,
   useCurrentOrganization,
@@ -13,5 +14,27 @@ export {
   useSession,
   useSignIn,
   useSignOut,
-  type Loaded,
 } from './session/hooks'
+export { useCan, useModuleAccess, type CanAnswer } from './permissions/hooks'
+export { WorkspaceSearch, usePanel, type PanelState, type PanelTarget } from './view-state/panel'
+export {
+  dropZoneAt,
+  moveCandidates,
+  planUnitDrop,
+  siblingsUnder,
+  steppedOrder,
+  unitTreeRows,
+  type UnitDropPlan,
+  type UnitDropZone,
+  type UnitTreeRow,
+} from './units/tree'
+export { formFieldIssues, unitFormIssues, unitLevelFormIssues, type UnitFormValues } from './units/forms'
+export {
+  liveLevels,
+  useUnitCommands,
+  useUnitLevelCommands,
+  useUnitLevelPermissions,
+  useUnitLevels,
+  useUnitPermissions,
+  useUnits,
+} from './units/hooks'

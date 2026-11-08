@@ -50,13 +50,14 @@ function fakePorts(initial: { session: Session; organization?: Result<Organizati
   let changeListener: ((changes: readonly DataChange[]) => void) | null = null
   const organizationReads = vi.fn(() => Promise.resolve(organization))
   const bootstrapOwner = vi.fn(() => Promise.resolve<Result<Session>>({ ok: true, value: LINKED }))
-  const ports: LogicPorts = {
+  // Only what these tests read: the unit groups have their own fakes.
+  const ports = {
     data: {
       session: {
         current: () => Promise.resolve({ ok: true, value: session }),
         onboardingState: () =>
           Promise.resolve({ ok: true, value: { bootstrap_available: true, open_request: null } }),
-        subscribe(listener) {
+        subscribe(listener: (next: Session) => void) {
           sessionListener = listener
           return () => {
             sessionListener = null
@@ -66,7 +67,7 @@ function fakePorts(initial: { session: Session; organization?: Result<Organizati
       repositories: { organizations: { current: organizationReads } },
       commands: { organizations: { bootstrapOwner } },
       changes: {
-        subscribe(listener) {
+        subscribe(listener: (changes: readonly DataChange[]) => void) {
           changeListener = listener
           return () => {
             changeListener = null
@@ -82,7 +83,7 @@ function fakePorts(initial: { session: Session; organization?: Result<Organizati
       listIdentities: () => Promise.resolve({ ok: true, value: [IDENTITY] }),
       signOut: () => Promise.resolve({ ok: true, value: null }),
     },
-  }
+  } as unknown as LogicPorts
   return {
     ports,
     organizationReads,

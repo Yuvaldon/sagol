@@ -3,6 +3,7 @@ import type {
   DataCommands,
   DataRepositories,
   LocalAuthProvider,
+  SessionPermissions,
   SessionService,
 } from '@contracts'
 
@@ -10,10 +11,12 @@ import type {
 // `logic` never imports `data`. Each slice widens these ports as it adds a group.
 
 export interface DataPort {
-  readonly session: SessionService
-  readonly repositories: Pick<DataRepositories, 'organizations'>
+  readonly session: SessionService & SessionPermissions
+  readonly repositories: Pick<DataRepositories, 'organizations' | 'unit_levels' | 'units'>
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
+    readonly unit_levels: DataCommands['unit_levels']
+    readonly units: DataCommands['units']
   }
   readonly changes: ChangeFeed
 }

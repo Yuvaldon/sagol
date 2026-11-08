@@ -1,5 +1,4 @@
 import type {
-  AppError,
   AuthIdentity,
   LocalIdentityRequest,
   OnboardingState,
@@ -10,29 +9,11 @@ import type {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toBootstrapInput, type ClaimOrganizationValues } from '../organization/claim'
 import { QUERY_KEYS } from '../queries/client'
-import { appErrorOf, unwrap } from '../queries/results'
+import { loaded, type Loaded } from '../queries/loaded'
+import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 
-// Hooks the UI reads the session through. Each read answers `loading`, `failed` with a stable
-// error code the UI maps to i18n (D-046), or `ready`.
-
-export type Loaded<T> =
-  | { readonly status: 'loading' }
-  | { readonly status: 'failed'; readonly error: AppError }
-  | { readonly status: 'ready'; readonly value: T }
-
-interface QueryState<T> {
-  readonly isPending: boolean
-  readonly isError: boolean
-  readonly error: unknown
-  readonly data: T | undefined
-}
-
-function loaded<T>(query: QueryState<T>): Loaded<T> {
-  if (query.data !== undefined) return { status: 'ready', value: query.data }
-  if (query.isError) return { status: 'failed', error: appErrorOf(query.error) }
-  return { status: 'loading' }
-}
+// Hooks the UI reads the session through.
 
 export function useSession(): Loaded<Session> {
   const { data } = usePorts()

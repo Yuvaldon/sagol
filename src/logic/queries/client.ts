@@ -11,6 +11,9 @@ export const QUERY_KEYS = {
   identities: ['identities'],
   onboarding: ['onboarding'],
   organization: [TABLE_SCOPE, 'organizations'],
+  unitLevels: [TABLE_SCOPE, 'unit_levels'],
+  units: [TABLE_SCOPE, 'units'],
+  can: ['can'],
 } as const satisfies Record<string, QueryKey>
 
 /** Queries that survive a change of identity: they describe the device, not the actor's data. */
@@ -43,6 +46,8 @@ export function invalidateChanged(client: QueryClient, changes: readonly DataCha
     void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
     if (ONBOARDING_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.onboarding })
   }
+  // Many tables feed the policy, and a hint is cheap to ask again (D-091).
+  if (changes.length > 0) void client.invalidateQueries({ queryKey: QUERY_KEYS.can })
 }
 
 /** Nothing one identity read may stay visible to the next one. */
