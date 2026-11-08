@@ -2,7 +2,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
-import { DEVELOPMENT_ONLY_AUTH_MODES } from './src/contracts/index.ts'
+import { DEVELOPMENT_ONLY_AUTH_MODES } from './src/contracts/auth/development-modes.ts'
 import { ENV_VARIABLES } from './src/config/env/names.ts'
 
 const DEVELOPMENT_ONLY: readonly string[] = DEVELOPMENT_ONLY_AUTH_MODES

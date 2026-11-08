@@ -4,6 +4,7 @@ import type { AsyncResult, Unsubscribe } from '../common/result'
 import { Email, label, type Timestamp } from '../common/scalars'
 import { AccountLinkRequest } from '../entities/accounts'
 import { IdentityProvider } from '../enums'
+import { DEVELOPMENT_ONLY_AUTH_MODES } from './development-modes'
 
 // Authentication and session contracts (D-005, D-006, D-048).
 
@@ -14,8 +15,8 @@ import { IdentityProvider } from '../enums'
 export const AuthMode = IdentityProvider
 export type AuthMode = IdentityProvider
 
-/** Auth modes a production build refuses (D-006). */
-export const DEVELOPMENT_ONLY_AUTH_MODES = ['local'] as const satisfies readonly AuthMode[]
+export { DEVELOPMENT_ONLY_AUTH_MODES }
+DEVELOPMENT_ONLY_AUTH_MODES satisfies readonly AuthMode[]
 
 /** Which data adapter the app constructs (`local` = IndexedDB, D-021; `remote` = phase 8). */
 export const DataAdapterMode = z.enum(['local', 'remote'])
