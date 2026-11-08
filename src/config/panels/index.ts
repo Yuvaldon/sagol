@@ -6,10 +6,15 @@ import { z } from 'zod'
 export const PANEL_IDS = {
   units: 'units',
   unitLevels: 'unit_levels',
+  soldiers: 'soldiers',
+  commandRanks: 'command_ranks',
 } as const
 
-export const PanelId = z.enum([PANEL_IDS.units, PANEL_IDS.unitLevels])
+export const PanelId = z.enum([PANEL_IDS.units, PANEL_IDS.unitLevels, PANEL_IDS.soldiers, PANEL_IDS.commandRanks])
 export type PanelId = z.infer<typeof PanelId>
+
+/** A long list renders only what is in sight (TanStack Virtual). The height is a first guess, then measured. */
+export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
 
 /** The `entity` value of a form for a row that does not exist yet. */
 export const NEW_ENTITY = 'new'
