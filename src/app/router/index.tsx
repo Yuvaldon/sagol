@@ -1,6 +1,6 @@
 import { ROUTES, type RoutePath } from '@config'
 import type { AuthIdentity, Session } from '@contracts'
-import { useSession } from '@logic'
+import { WorkspaceSearch, useSession } from '@logic'
 import {
   Navigate,
   Outlet,
@@ -26,7 +26,8 @@ function SessionGate() {
   if (session.status === 'loading') return <LoadingScreen />
   if (session.status === 'failed') return <FailureScreen error={session.error} />
   const destination = destinationOf(session.value)
-  if (pathname !== destination) return <Navigate to={destination} replace />
+  // The search stays, so a deep link to a panel survives signing in (D-092).
+  if (pathname !== destination) return <Navigate to={destination} search={true} replace />
   return <Outlet />
 }
 
@@ -46,7 +47,7 @@ function WorkspaceRoute() {
   return identity === null ? null : <WorkspaceScreen identity={identity} />
 }
 
-const rootRoute = createRootRoute({ component: SessionGate })
+const rootRoute = createRootRoute({ component: SessionGate, validateSearch: WorkspaceSearch })
 
 const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: ROUTES.workspace, component: WorkspaceRoute }),
