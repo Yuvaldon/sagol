@@ -18,7 +18,7 @@ am = amends, ref = refines, ext = extends.
 | Id | Topic | Layers | Changed by |
 |----|-------|--------|------------|
 | D-001 | One person entity: every user is a soldier | contracts, data, backend | |
-| D-002 | Command rank is the single user-defined level | contracts, domain, ui | ext D-029 |
+| D-002 | Command rank is the single user-defined level | contracts, domain, ui | ext D-029; ref D-095 |
 | D-003 | Permissions are data: roles, rank bindings, grants | contracts, domain, data, logic, backend | sup D-028 (scope); ref D-040, D-053, D-056, D-060 |
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
 | D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030 |
@@ -26,15 +26,15 @@ am = amends, ref = refines, ext = extends.
 | D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035 |
 | D-008 | Server-authoritative data layer | data, backend | ref D-090 |
 | D-009 | Unit hierarchy: `parent_id` only, derived ancestry | contracts, domain, data, backend | |
-| D-010 | Memberships are time-bounded rows | contracts, domain, data, backend | |
+| D-010 | Memberships are time-bounded rows | contracts, domain, data, backend | ref D-097 |
 | D-011 | Multi-tenant from day one | contracts, data, backend | |
 | D-012 | Leaves: whole days, overlaps, availability by union | contracts, domain, data, ui | ext D-032, D-049; ref D-070 |
 | D-013 | Approval behavior | domain, data, logic, ui | ref D-041, D-063, D-064; ext D-049 |
 | D-014 | Availability rules | contracts, domain, data, logic, ui | ext D-031; ref D-047, D-071, D-073 |
 | D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065 |
 | D-016 | Notion-like custom properties | contracts, domain, data, ui | ref D-065 |
-| D-017 | Soft delete and audit columns | contracts, data, backend, ui | ref D-088 |
-| D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | |
+| D-017 | Soft delete and audit columns | contracts, data, backend, ui | ref D-088, D-098 |
+| D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | ref D-096 |
 | D-019 | Derived state is never stored | all | |
 | D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
@@ -69,10 +69,10 @@ am = amends, ref = refines, ext = extends.
 | D-050 | Import and export | contracts, data | |
 | D-051 | Phase audits are separate, read-only sessions | docs | am D-078 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075 |
-| D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089 |
+| D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096 |
 | D-054 | Policy unit = primary membership today | domain, backend | |
 | D-055 | Unresolvable anchors give an empty scope | domain, backend | |
-| D-056 | Only active, linked soldiers hold permissions | domain, backend | |
+| D-056 | Only active, linked soldiers hold permissions | domain, backend | ref D-098 |
 | D-057 | Subject rank constraints with missing ranks | domain, backend | |
 | D-058 | What counts as an active permission source | domain, backend | |
 | D-059 | Access-manager invariant (no lockout) | domain, data, backend | |
@@ -91,7 +91,7 @@ am = amends, ref = refines, ext = extends.
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092 |
-| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093 |
+| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | |
 | D-078 | Audits follow milestones | docs | |
@@ -104,12 +104,19 @@ am = amends, ref = refines, ext = extends.
 | D-085 | The `can` hint moves to V1, computed by the adapter | contracts, data, logic, ui, backend | ref D-091 |
 | D-086 | V0 setup choices: dev env file, local bootstrap, time-zone picker, unsupported modes | tooling, data, ui, app | |
 | D-087 | A moved unit lands last among its new siblings | contracts, data, backend | |
-| D-088 | Archiving units and levels | contracts, domain, data, ui, backend | |
+| D-088 | Archiving units and levels | contracts, domain, data, ui, backend | ref D-095, D-099 |
 | D-089 | Permissions of the unit commands | domain, data, logic, ui, backend | |
 | D-090 | The order of checks inside a command | data, backend, docs | |
 | D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | |
-| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | |
+| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094 |
 | D-093 | A new issue code lands after its message | contracts, ui, docs | |
+| D-094 | The soldiers drawer: sections, fields, search | config, logic, ui | |
+| D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
+| D-096 | Permissions of the roster commands | domain, data, logic, ui, backend | |
+| D-097 | Changing a soldier's membership | domain, data, logic, ui, backend | |
+| D-098 | Archiving a soldier | data, ui, backend | |
+| D-099 | Unit names in a soldier's history | logic, ui | |
+| D-100 | A new required port lands in `app` before `logic` | logic, app, docs | |
 
 ---
 
@@ -1195,3 +1202,94 @@ message, then the code in contracts. The map is checked by assignment, so it may
 for a moment before the code exists, and a code without a message still fails to compile. This is
 the one exception to "contracts first".
 **Why:** the session's proposal in V1, told to the owner while building. Changeable by a later entry.
+
+## D-094 — The soldiers drawer
+2026-11-09 · accepted · extends D-092 · changes card V2
+- **Surface:** one drawer with two sections, each its own panel in the URL: `soldiers` and
+  `command_ranks`. The card named two drawers, one bar button each.
+- **Fields on screen:** first name, last name, nickname, rank, and on an existing soldier the status.
+  Private fields: personal id and phone. `invite_email` has no field until V9, because nothing uses
+  it before auto-link (D-076). A new soldier starts active.
+- **Soldier details:** the profile, the private fields and the placement are separate sections, because
+  each has its own permission and version. Creating a soldier writes them together (one command).
+- **List:** a search by name above the list. It compares names the way account matching does
+  (D-066), in first, last and nickname. `logic` sorts by last name, then first name, in Hebrew order. The
+  adapter promises no order for soldiers, so the two adapters need not agree on collation.
+**Why:** product owner approved in V2. A phone's bottom bar has no room for a third control, and a list
+of 100 or more people is not usable without a search.
+
+## D-095 — Command ranks
+2026-11-09 · accepted · refines D-002, D-088
+- The form holds `seniority` as a number, where higher means more senior, and equal values are allowed.
+  There is no drag and no reorder command. The adapter lists ranks most senior first. A new rank
+  starts one above the most senior.
+- A rank cannot be archived while a soldier who is not archived holds it: `validation_failed`, code
+  `rank_in_use`. A new reference to an archived rank answers `reference_archived`, and an unchanged one
+  is left alone.
+**Why:** product owner approved in V2. This differs from levels (D-088): a rank carries seniority and
+permissions, and an archived rank that still grants them through bindings would be invisible on
+screen.
+
+## D-096 — Permissions of the roster commands
+2026-11-09 · accepted · refines D-018, D-053
+| Command | Permission | Checked against |
+|---------|------------|-----------------|
+| `command_ranks.*` | `command_ranks:*` | `organization` |
+| `soldiers.create` | `soldiers:create` | The unit of the first placement, or `organization` without one |
+| With a placement | also `memberships:update` | That unit |
+| With private fields | also `soldier_private:update` | The unit of the first placement, or `organization` without one |
+| `soldiers.update` | `soldiers:update` | The soldier |
+| `soldiers.archive` | `soldiers:delete` | The soldier |
+| `soldiers.updatePrivate` | `soldier_private:view` and `soldier_private:update` | The soldier |
+| `soldiers.changeMembership` | `memberships:update` | The soldier, and the new unit |
+
+- `soldier_private` accepts a unit or `organization` target for creation, as `soldiers` does, because the
+  soldier does not exist yet. Reads and updates check the soldier.
+- A soldier the actor cannot see through `soldiers:view` answers `not_found` on every command.
+- `updatePrivate` needs `view` too, because its answer holds the values.
+- A personal id stored by anyone in the organization answers `already_exists` to whoever may write
+  private fields. The unique index needs it.
+- `accessManagerIssues` runs on the state after a status change, a rank change, an archive and a membership
+  change (D-059). Creating a soldier removes no permission, so it does not run there.
+- Changing a rank is not yet limited by what the actor holds. OI-038 keeps that for V10.
+**Why:** product owner approved in V2. A permission to create a soldier must not be a second way to
+place one or to write private fields (iron rule 6), and moving a soldier needs authority on both sides.
+
+## D-097 — Changing a soldier's membership
+2026-11-09 · accepted · refines D-010
+- `current_membership` names the soldier's open primary row. A row that is closed or has another version
+  answers `stale_version`, and a row of another soldier answers `reference_not_found`.
+- `effective_date` may be in the past or the future. The form starts at today. A date before the current
+  row's `valid_from` answers `range_inverted`.
+- **Same day:** a date equal to `valid_from` with a new unit corrects the row in place, with no new row and no
+  history, because a placement that lasted no day is a typing mistake. The `new_membership.id` is
+  not used then. The answer holds the one corrected row.
+- **Leaving without a unit** is allowed, because emptying a unit needs it. Leaving on the row's own first
+  day answers `range_inverted`, since a row must cover at least one day. The form asks for a later date.
+- Moving to the unit the soldier is already in answers `no_changes`.
+- With no `current_membership`, an open row or any other overlap answers `membership_overlap`.
+**Why:** product owner approved in V2.
+
+## D-098 — Archiving a soldier
+2026-11-09 · accepted · refines D-017, D-056
+Archiving changes only `archived_at`. The placement stays as it was, as history, and D-088 already ignores
+placements of archived soldiers. The account row stays, and D-056 takes the permissions away. There is no way
+back until V9 (OI-019), and the confirmation says so. The personal id stays taken, because
+`uq_soldier_private_personal_id` covers archived soldiers, so a soldier archived by mistake cannot be
+created again with the same number until then. The confirmation says that too.
+**Why:** product owner approved in V2, knowing the cost.
+
+## D-099 — Unit names in a soldier's history
+2026-11-09 · accepted · refines D-088
+A soldier's history shows an archived unit by its name, marked as archived. A unit the actor cannot see
+shows a neutral label. Everywhere else archived units stay out of sight, as D-088 says.
+**Why:** product owner approved in V2. History is the reason memberships are rows (D-010), and it is not
+readable without names.
+
+## D-100 — A new required port lands in `app` before `logic`
+2026-11-09 · accepted · refines D-075
+When `logic` starts to require a new port, `app` provides it one commit earlier, and `logic` then requires
+it. In the opposite order the `logic` commit would not compile, and a commit touches one layer.
+`TimeSource` reaches `logic` this way in V2, as D-083 planned.
+**Why:** the same conflict as D-093, between "each commit passes" and "one layer". Told to the owner in
+the V2 plan.
