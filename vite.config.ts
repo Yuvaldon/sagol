@@ -2,13 +2,12 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
+import { DEVELOPMENT_ONLY_AUTH_MODES } from './src/contracts/index.ts'
+import { ENV_VARIABLES } from './src/config/env/names.ts'
 
-// Auth modes that must never reach a production bundle (D-006). Replaced by the
-// AuthMode enum from @contracts once it exists (see docs/sessions/01-tooling.md).
-const AUTH_MODE_VARIABLE = 'VITE_AUTH_MODE'
-const DEVELOPMENT_ONLY_AUTH_MODES: readonly string[] = ['local']
+const DEVELOPMENT_ONLY: readonly string[] = DEVELOPMENT_ONLY_AUTH_MODES
 
-/** Refuses a production build whose auth mode is a development-only mode. */
+/** Refuses a production build whose auth mode is a development-only mode (D-006, OI-002). */
 function productionEnvGuard(): Plugin {
   return {
     name: 'sagol:production-env-guard',
@@ -16,10 +15,10 @@ function productionEnvGuard(): Plugin {
     config(_config, { mode }) {
       if (mode !== 'production') return
       const env = loadEnv(mode, process.cwd(), 'VITE_')
-      const authMode = env[AUTH_MODE_VARIABLE]
-      if (authMode !== undefined && DEVELOPMENT_ONLY_AUTH_MODES.includes(authMode)) {
+      const authMode = env[ENV_VARIABLES.authMode]
+      if (authMode !== undefined && DEVELOPMENT_ONLY.includes(authMode)) {
         throw new Error(
-          `${AUTH_MODE_VARIABLE}=${authMode} is development-only and is refused in a production build (D-006).`,
+          `${ENV_VARIABLES.authMode}=${authMode} is development-only and is refused in a production build (D-006).`,
         )
       }
     },

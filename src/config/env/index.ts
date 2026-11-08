@@ -1,19 +1,12 @@
 import { z } from 'zod'
 import { AuthMode, DataAdapterMode, DEVELOPMENT_ONLY_AUTH_MODES } from '@contracts'
+import { ENV_VARIABLES, type EnvVariable } from './names'
 
 // Environment contract (D-006, D-048). `app` parses `import.meta.env` through `parseEnv`
 // at startup and fails fast on any issue. Only `VITE_` variables reach the client bundle;
 // server-only secrets (`BOOTSTRAP_OWNER_EMAIL`, D-005) are never listed here.
 
-/** Name of every client variable, by the key the rest of the code uses. */
-export const ENV_VARIABLES = {
-  authMode: 'VITE_AUTH_MODE',
-  dataAdapter: 'VITE_DATA_ADAPTER',
-  remoteUrl: 'VITE_REMOTE_URL',
-  remoteAnonKey: 'VITE_REMOTE_ANON_KEY',
-} as const
-
-export type EnvVariable = (typeof ENV_VARIABLES)[keyof typeof ENV_VARIABLES]
+export { ENV_VARIABLES, type EnvVariable } from './names'
 
 const EnvVariableName = z.enum([
   ENV_VARIABLES.authMode,

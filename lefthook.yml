@@ -3,6 +3,8 @@
 pre-commit:
   parallel: true
   jobs:
+    - name: one-layer-per-commit
+      run: node scripts/check-commit-layers.ts
     - name: typecheck
       glob: "*.{ts,tsx}"
       run: npm run typecheck

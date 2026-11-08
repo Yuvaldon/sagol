@@ -4,17 +4,26 @@
 
 export const SOURCE_ROOT = 'src'
 
+/** The layer of files directly under `src/` (`src/main.tsx`, D-075). */
+export const ENTRY_POINT_LAYER = 'app'
+
+/** Layers that may share one commit (D-025, D-075). Sorted alphabetically. */
+export const ALLOWED_LAYER_PAIRS: readonly (readonly string[])[] = [['i18n', 'ui']]
+
 /** Raw colors (hex, rgb(), oklch(), ...) may appear only where theme tokens are defined. */
 export const RAW_COLOR_ALLOWED_IN: readonly string[] = ['src/ui/theme/']
 
 /**
- * The JavaScript `Date` may be used only inside the date adapter. `@internationalized/date`
- * is the only date library (D-026). Empty until the session that writes the adapter adds it.
+ * The JavaScript `Date` may be used only inside the date adapter, the one `TimeSource`
+ * (D-083). `@internationalized/date` is the only date library (D-026).
  */
-export const RAW_DATE_ALLOWED_IN: readonly string[] = []
+export const RAW_DATE_ALLOWED_IN: readonly string[] = ['src/app/time/']
 
-/** `localStorage` / `sessionStorage` allowed modules. Data lives in IndexedDB (D-021). */
-export const WEB_STORAGE_ALLOWED_IN: readonly string[] = []
+/**
+ * `localStorage` / `sessionStorage` allowed modules: only the local identity (D-006, D-074).
+ * Data lives in IndexedDB (D-021).
+ */
+export const WEB_STORAGE_ALLOWED_IN: readonly string[] = ['src/data/local/identity/']
 
 /** Folders whose files are pure engine logic: never `.tsx` (ARCHITECTURE "View engines"). */
 export const PURE_CORE_FOLDER = /(^|\/)core\//
@@ -34,8 +43,7 @@ export const USER_FACING_ATTRIBUTES: readonly string[] = [
 
 /**
  * i18n layer contract used by scripts/check-i18n.ts. The i18n entry point exports the
- * Hebrew dictionary object and the key type derived from it (D-025). Until UI session 4.1
- * creates them, the check reports zero keys and passes.
+ * Hebrew dictionary object and the key type derived from it (D-025).
  */
 export const I18N = {
   entry: 'src/i18n/index.ts',
