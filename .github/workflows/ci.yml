@@ -28,4 +28,18 @@ jobs:
         run: npm run check
       - name: Build (production env guard)
         run: npm run build
-      # Playwright (desktop + mobile, RTL, axe) is added here once the UI exists (ROADMAP 0.2).
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          LEFTHOOK: '0'
+      - run: npx playwright install --with-deps chromium
+      - name: Slice demos (desktop, mobile, RTL, axe)
+        run: npm run e2e
