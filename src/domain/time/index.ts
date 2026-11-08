@@ -38,6 +38,11 @@ export function compareInstants(a: Timestamp, b: Timestamp): number {
   return Math.sign(difference)
 }
 
+/** The calendar day before `date`. */
+export function dayBefore(date: CalendarDate): CalendarDate {
+  return parseDate(date).subtract({ days: 1 }).toString()
+}
+
 /** Inclusive calendar range; NULL `valid_to` is open-ended. */
 export interface DateSpan {
   readonly valid_from: CalendarDate

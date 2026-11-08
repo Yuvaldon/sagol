@@ -15,6 +15,7 @@ export {
 export { resolveScope, scopeCovers, type ResolvedScope, type ScopeColumns } from './scope'
 export {
   activeOverrideOn,
+  archiveRankIssues,
   effectiveSeniority,
   seniorityOverrideOverlapIssues,
   type SeniorityOverrideSpan,
@@ -23,6 +24,7 @@ export {
   TARGET_KINDS_BY_RESOURCE,
   acceptsTarget,
   placementTarget,
+  soldierTarget,
   unitTarget,
   type PolicyTargetKind,
 } from './targets'

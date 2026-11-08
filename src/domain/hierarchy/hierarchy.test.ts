@@ -9,8 +9,10 @@ import {
   depthOf,
   descendantsOf,
   isAncestorOrSelf,
+  membershipChangeIssues,
   membershipOverlapIssues,
   moveUnitIssues,
+  planMembershipChange,
   primaryUnitOn,
   type MembershipSpan,
   type UnitNode,
@@ -165,5 +167,47 @@ describe('archiving a unit (D-088)', () => {
   it('counts only placements in this unit', () => {
     const memberships = [{ unit_id: P2, valid_to: null }]
     expect(archiveUnitIssues({ units: [], memberships }, P1, TODAY)).toEqual([])
+  })
+})
+
+describe('changing a membership (D-097)', () => {
+  const open = { unit_id: P1, valid_from: '2026-11-01' }
+  const issues = (date: string, unitId: UnitId | null) =>
+    membershipChangeIssues(open, date, unitId).map((issue) => issue.code)
+
+  it('allows a later date, in the past or the future, and a first placement', () => {
+    expect(issues('2026-11-05', P2)).toEqual([])
+    expect(issues('2027-01-01', null)).toEqual([])
+    expect(membershipChangeIssues(null, '2026-01-01', P2)).toEqual([])
+  })
+
+  it('refuses a date before the open row, and leaving on its first day', () => {
+    expect(issues('2026-10-31', P2)).toEqual(['range_inverted'])
+    expect(issues('2026-11-01', null)).toEqual(['range_inverted'])
+    expect(membershipChangeIssues(open, '2026-10-31', P2)[0]?.path).toEqual(['effective_date'])
+  })
+
+  it('refuses the unit the soldier is already in, on any date', () => {
+    expect(issues('2026-11-05', P1)).toEqual(['no_changes'])
+    expect(issues('2026-11-01', P1)).toEqual(['no_changes'])
+  })
+
+  it('corrects in place on the first day, and keeps history on any other', () => {
+    expect(planMembershipChange(open, '2026-11-01', P2)).toEqual({ kind: 'correct', unit_id: P2 })
+    expect(planMembershipChange(open, '2026-11-05', P2)).toEqual({
+      kind: 'move',
+      close_on: '2026-11-04',
+      open_unit_id: P2,
+    })
+    expect(planMembershipChange(open, '2026-11-05', null)).toEqual({
+      kind: 'move',
+      close_on: '2026-11-04',
+      open_unit_id: null,
+    })
+    expect(planMembershipChange(null, '2026-11-05', P2)).toEqual({ kind: 'move', close_on: null, open_unit_id: P2 })
+  })
+
+  it('crosses a month when closing the day before', () => {
+    expect(planMembershipChange(open, '2026-12-01', P2)).toMatchObject({ close_on: '2026-11-30' })
   })
 })

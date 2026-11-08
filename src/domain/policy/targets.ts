@@ -1,4 +1,4 @@
-import type { PermissionResource, PolicyTarget, Unit, UnitId } from '@contracts'
+import type { PermissionResource, PolicyTarget, SoldierId, Unit, UnitId } from '@contracts'
 
 // Which targets a permission accepts (D-053). The target itself is a contract (D-091).
 
@@ -12,6 +12,11 @@ export function unitTarget(unit: Pick<Unit, 'id' | 'parent_id'>): PolicyTarget {
 /** The target of placing a unit under a parent: the parent, or the organization at the top (D-089). */
 export function placementTarget(parentId: UnitId | null): PolicyTarget {
   return parentId === null ? { kind: 'organization' } : { kind: 'unit', unit_id: parentId }
+}
+
+/** The target of a soldier's own rows (D-053). */
+export function soldierTarget(soldierId: SoldierId): PolicyTarget {
+  return { kind: 'soldier', soldier_id: soldierId }
 }
 
 const ORGANIZATION = ['organization'] as const satisfies readonly PolicyTargetKind[]
@@ -30,7 +35,8 @@ export const TARGET_KINDS_BY_RESOURCE = {
   seniority_overrides: SOLDIER,
   /** A soldier; on creation, the unit of the first placement, or `organization` without one. */
   soldiers: ['soldier', 'unit', 'organization'],
-  soldier_private: SOLDIER,
+  /** A soldier; on creation, the unit of the first placement, or `organization` without one (D-096). */
+  soldier_private: ['soldier', 'unit', 'organization'],
   /** The soldier, and the unit a placement points to. */
   memberships: ['soldier', 'unit'],
   tags: ORGANIZATION,

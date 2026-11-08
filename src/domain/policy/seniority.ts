@@ -1,8 +1,10 @@
 import {
   IssueCode,
   type CalendarDate,
+  type CommandRankId,
   type Issue,
   type SeniorityOverride,
+  type Soldier,
   type SoldierId,
 } from '@contracts'
 import { spanCovers, spansOverlap } from '../time'
@@ -40,6 +42,19 @@ export function effectiveSeniority(
   date: CalendarDate,
 ): number | null {
   return activeOverrideOn(overrides, soldierId, date)?.seniority ?? rankSeniority
+}
+
+/** A rank carries seniority and permissions, so it stays while a live soldier holds it (D-095). */
+export function archiveRankIssues(
+  soldiers: Iterable<Pick<Soldier, 'command_rank_id' | 'archived_at'>>,
+  rankId: CommandRankId,
+): Issue[] {
+  for (const soldier of soldiers) {
+    if (soldier.command_rank_id === rankId && soldier.archived_at === null) {
+      return [{ path: [], code: IssueCode.enum.rank_in_use }]
+    }
+  }
+  return []
 }
 
 /** At most one non-revoked override per soldier per day (schema exclusion constraint). */

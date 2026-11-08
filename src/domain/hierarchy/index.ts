@@ -12,8 +12,12 @@ export {
 } from './tree'
 export {
   archiveUnitIssues,
+  membershipChangeIssues,
   membershipOverlapIssues,
+  planMembershipChange,
   primaryUnitOn,
   type ArchiveUnitFacts,
+  type MembershipChangePlan,
   type MembershipSpan,
+  type OpenMembership,
 } from './memberships'

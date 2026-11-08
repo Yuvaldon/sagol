@@ -25,6 +25,9 @@ import {
   createPolicyContext,
   missingPermissions,
   placementTarget,
+  soldierTarget as targetOfSoldier,
+  archiveRankIssues,
+  acceptsTarget,
   seniorityOverrideOverlapIssues,
   unitTarget as targetOfUnit,
   type PolicyData,
@@ -330,6 +333,36 @@ describe('policy matrix', () => {
 
   it('lists target kinds for every resource', () => {
     for (const kinds of Object.values(TARGET_KINDS_BY_RESOURCE)) expect(kinds.length).toBeGreaterThan(0)
+  })
+})
+
+describe('private fields on creation (D-096)', () => {
+  const context = createPolicyContext(world(), CLOCK)
+
+  it('accepts a unit or organization target for private fields, and a scope must still reach it', () => {
+    expect(acceptsTarget('soldier_private', 'unit')).toBe(true)
+    expect(acceptsTarget('soldier_private', 'organization')).toBe(true)
+    expect(can(context, S.f12, p('soldier_private', 'update'), { kind: 'organization' })).toBe(false)
+    expect(can(context, S.f12, p('soldier_private', 'update'), unitTarget(UNIT.S21))).toBe(false)
+  })
+
+  it('names a soldier target', () => {
+    expect(targetOfSoldier(S.f12)).toEqual({ kind: 'soldier', soldier_id: S.f12 })
+  })
+})
+
+describe('archiving a rank (D-095)', () => {
+  const rank = CommandRankId.parse('00000000-0000-4000-8000-000000000abc')
+  const refused = [{ path: [], code: 'rank_in_use' }]
+
+  it('refuses while a live soldier holds it', () => {
+    expect(archiveRankIssues([{ command_rank_id: rank, archived_at: null }], rank)).toEqual(refused)
+  })
+
+  it('ignores archived holders and other ranks', () => {
+    expect(archiveRankIssues([{ command_rank_id: rank, archived_at: '2026-01-01T00:00:00Z' }], rank)).toEqual([])
+    expect(archiveRankIssues([{ command_rank_id: null, archived_at: null }], rank)).toEqual([])
+    expect(archiveRankIssues([], rank)).toEqual([])
   })
 })
 
