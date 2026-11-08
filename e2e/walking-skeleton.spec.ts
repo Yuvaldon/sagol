@@ -1,38 +1,14 @@
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { ORGANIZATION, OWNER, claimOrganization, expectNoAxeViolations, navigation, signIn } from './support/workspace.ts'
 
 // V0's demo: sign in, claim the organization, see the empty workspace, keep the session across a
 // reload, and see that a second identity gets no data. Each test starts on an empty browser
 // profile, so the store is empty too.
 
-const OWNER = { email: 'owner@example.test', name: 'דנה לוי' }
 const SECOND_EMAIL = 'second@example.test'
-const ORGANIZATION = 'פלוגה ב׳'
 const BOTTOM_BAR_LIMIT = 0.5
 const TOUCH_TARGET_PX = 44
-
-async function expectNoAxeViolations(page: Page) {
-  const { violations } = await new AxeBuilder({ page }).analyze()
-  expect(violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([])
-}
-
-async function signIn(page: Page, email: string, displayName = '') {
-  await page.getByLabel(he.signIn.email).fill(email)
-  if (displayName !== '') await page.getByLabel(he.signIn.displayName).fill(displayName)
-  await page.getByRole('button', { name: he.signIn.submit, exact: true }).click()
-}
-
-async function claimOrganization(page: Page) {
-  await page.getByLabel(he.onboarding.organizationName).fill(ORGANIZATION)
-  await page.getByLabel(he.onboarding.firstName).fill('דנה')
-  await page.getByLabel(he.onboarding.lastName).fill('לוי')
-  await page.getByRole('button', { name: he.onboarding.submit, exact: true }).click()
-}
-
-function navigation(page: Page) {
-  return page.getByRole('navigation', { name: he.workspace.navigation })
-}
 
 async function chooseFromUserMenu(page: Page, item: string) {
   await page.getByRole('button', { name: he.account.menu }).click()
