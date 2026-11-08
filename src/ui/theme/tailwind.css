@@ -1,13 +1,154 @@
 @import "tailwindcss";
+@import "@fontsource-variable/heebo";
 
 /*
- * Tailwind's default palette and spacing scale are reset: no `bg-red-500`, no `p-4`.
- * Only semantic tokens exist (`--color-surface`, `--color-status-pending`, ...).
- * They are defined in UI session 4.1 (light set) and phase 8.5 (dark set), and
- * `docs/Design.md` is derived from them (D-024).
+ * The design tokens of Sagol, from the Stone 3 direction (D-077, docs/Design.md). Tailwind's
+ * default palette, spacing, type, radius and shadow scales are reset: only semantic tokens exist.
+ * This file holds the Light set; the Dark set is row V17. Raw colors live only in this folder.
  */
 @theme {
   --color-*: initial;
   --spacing: initial;
   --spacing-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --container-*: initial;
+
+  --color-canvas: #edece8;
+  --color-surface: #faf9f6;
+  --color-line: #e7e5df;
+  --color-text: #1a1a18;
+  --color-text-muted: #5f5d57;
+  --color-inner: rgba(20, 20, 18, 0.05);
+  --color-action-solid: #1a1e25;
+  --color-on-action: #f4f6f8;
+  --color-focus: #1a1e25;
+  --color-status-approved: #3f7a5d;
+  --color-status-pending: #b7791f;
+  /* The pending color as text: #B7791F is 3.5:1 on the surface, this one is above 4.5:1 (OI-033). */
+  --color-status-pending-text: #8a5a12;
+  --color-status-rejected: #a8382d;
+  --color-marker: #5b45c4;
+  --color-marker-ink: #4a36b8;
+  --color-today: #2a2a26;
+
+  --font-sans: "Heebo Variable", system-ui, sans-serif;
+
+  --text-title: 24px;
+  --text-body: 15px;
+  --text-name: 13px;
+  --text-control: 12.5px;
+  --text-label: 11.5px;
+  --text-micro: 11px;
+  /* Below 16px, phones zoom the page when an input takes focus. */
+  --text-input: 16px;
+
+  --spacing-none: 0px;
+  --spacing-2xs: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-icon: 16px;
+  --spacing-control: 30px;
+  --spacing-bar: 40px;
+  /* Controls are at least this tall on mobile (OI-033). */
+  --spacing-touch: 44px;
+  --spacing-list: 240px;
+
+  --container-sheet: 420px;
+  --container-menu: 260px;
+
+  --radius-bar: 6px;
+  --radius-control: 10px;
+  --radius-panel: 16px;
+  --radius-pill: 20px;
+  --radius-sheet: 24px;
+
+  --shadow-rim: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(20, 20, 18, 0.06), 0 0 0 1px rgba(20, 20, 18, 0.06);
+  --shadow-float: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 24px rgba(20, 20, 18, 0.12), 0 0 0 1px rgba(20, 20, 18, 0.06);
+  --shadow-action: 0 12px 32px rgba(16, 19, 24, 0.28);
+}
+
+/*
+ * Inline, because React Aria sets --trigger-width on the popover itself: declared on :root, this
+ * token would resolve there, where the variable does not exist.
+ */
+@theme inline {
+  --spacing-trigger: var(--trigger-width);
+}
+
+/*
+ * Glass surfaces. Each has a solid fallback for prefers-reduced-transparency (D-077).
+ */
+@utility glass-bar {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-float);
+
+  @media (prefers-reduced-transparency: reduce) {
+    background: #ffffff;
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-card {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-rim);
+
+  @media (prefers-reduced-transparency: reduce) {
+    background: var(--color-surface);
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-menu {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-float);
+
+  @media (prefers-reduced-transparency: reduce) {
+    background: #ffffff;
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-action {
+  background: rgba(16, 19, 24, 0.7);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-action);
+  color: var(--color-on-action);
+
+  @media (prefers-reduced-transparency: reduce) {
+    background: var(--color-action-solid);
+    backdrop-filter: none;
+  }
+}
+
+/* Keeps the bottom bar above the phone's home indicator. */
+@utility bottom-safe {
+  bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom));
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    color: var(--color-text);
+    background: var(--color-canvas);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
 }

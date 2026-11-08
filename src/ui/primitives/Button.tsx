@@ -1,0 +1,20 @@
+import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react-aria-components'
+
+// The action button of Stone 3: dark glass for the primary action, quiet for everything else.
+// At least 44 px tall on mobile (OI-033).
+
+const BASE =
+  'inline-flex min-h-touch cursor-pointer items-center justify-center gap-xs rounded-pill px-md text-control font-semibold whitespace-nowrap outline-focus outline-offset-2 md:min-h-control data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
+
+const VARIANTS = {
+  primary: 'glass-action md:min-h-bar px-lg',
+  quiet: 'bg-inner text-text data-hovered:bg-line',
+} as const
+
+export interface ButtonProps extends Omit<AriaButtonProps, 'className'> {
+  readonly variant?: keyof typeof VARIANTS
+}
+
+export function Button({ variant = 'quiet', ...props }: ButtonProps) {
+  return <AriaButton {...props} className={`${BASE} ${VARIANTS[variant]}`} />
+}

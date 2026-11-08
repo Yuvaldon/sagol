@@ -205,10 +205,10 @@ src/
   config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ dates/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
-  logic/       services/ queries/ mutations/ view-state/ session/
-  ui/          theme/ primitives/ patterns/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
+  logic/       runtime/ queries/ forms/ session/ organization/ view-state/
+  ui/          theme/ primitives/ patterns/ errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
-  app/         env/ composition/ providers/ router/
+  app/         env/ time/ composition/ router/
 supabase/      migrations/ policies/ functions/ tests/   (phase 8)
 e2e/           Playwright specs
 docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md sessions/
