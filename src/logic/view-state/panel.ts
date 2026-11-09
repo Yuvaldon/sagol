@@ -1,23 +1,10 @@
-import { NEW_ENTITY, PanelId, ROUTES, SEARCH_PARAMS } from '@config'
-import { UnitId } from '@contracts'
-import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useCallback, useMemo } from 'react'
-import { z } from 'zod'
+import type { PanelId } from '@config'
+import type { UnitId } from '@contracts'
+import { useCallback } from 'react'
+import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // The open panel lives in the URL, so a deep link reopens it and the back button works (D-023,
-// D-092). A value that is not valid here counts as absent: a URL never breaks the workspace, and it
-// never gets anyone past the adapter.
-
-/** The search params of the workspace route. `app` hands this to the router. */
-export const WorkspaceSearch = z.object({
-  [SEARCH_PARAMS.panel]: PanelId.optional().catch(undefined),
-  [SEARCH_PARAMS.entity]: z
-    .union([z.literal(NEW_ENTITY), z.uuid()])
-    .optional()
-    .catch(undefined),
-  [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),
-})
-export type WorkspaceSearch = z.infer<typeof WorkspaceSearch>
+// D-092). Opening or closing it keeps the view, the window and the filter (D-103).
 
 export interface PanelTarget {
   readonly entity?: string
@@ -35,21 +22,18 @@ export interface PanelState {
 }
 
 export function usePanel(): PanelState {
-  const raw = useSearch({ strict: false })
-  const navigate = useNavigate()
-  const search = useMemo(() => WorkspaceSearch.parse(raw), [raw])
+  const search = useWorkspaceSearch()
+  const change = useChangeSearch()
 
   const open = useCallback(
     (panel: PanelId, target: PanelTarget = {}) => {
-      const next: WorkspaceSearch = { panel, entity: target.entity, parent: target.parent }
-      void navigate({ to: ROUTES.workspace, search: next })
+      change({ panel, entity: target.entity, parent: target.parent })
     },
-    [navigate],
+    [change],
   )
   const close = useCallback(() => {
-    const next: WorkspaceSearch = {}
-    void navigate({ to: ROUTES.workspace, search: next })
-  }, [navigate])
+    change({ panel: undefined, entity: undefined, parent: undefined })
+  }, [change])
 
   return {
     panel: search.panel ?? null,

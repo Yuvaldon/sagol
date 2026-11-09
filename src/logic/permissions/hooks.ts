@@ -4,6 +4,7 @@ import { useCallback } from 'react'
 import { QUERY_KEYS } from '../queries/client'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
+import { useToday } from '../session/today'
 
 // "Can I?" for gated controls (D-085, D-091). The adapter answers, because it alone sees the whole
 // policy. A pending or failed answer counts as "no", so a control stays hidden. It is a hint: the
@@ -15,8 +16,10 @@ const keyOf = (check: PermissionCheck) => JSON.stringify(check)
 
 export function useCan(checks: readonly PermissionCheck[]): CanAnswer {
   const { data } = usePorts()
+  // Policy reads today (D-053), so a new day asks again (D-107).
+  const today = useToday()
   const query = useQuery({
-    queryKey: [...QUERY_KEYS.can, checks],
+    queryKey: [...QUERY_KEYS.can, today, checks],
     queryFn: async () => {
       const answers = await unwrap(data.session.can(checks))
       return Object.fromEntries(checks.map((check, index) => [keyOf(check), answers[index] === true]))

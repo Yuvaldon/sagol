@@ -20,7 +20,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { useCan, useModuleAccess } from '../permissions/hooks'
 import type { LogicPorts } from '../ports'
 import { LogicProvider } from '../runtime/LogicProvider'
-import { WorkspaceSearch, usePanel } from '../view-state/panel'
+import { usePanel } from '../view-state/panel'
+import { WorkspaceSearch } from '../view-state/search'
 import {
   formFieldIssues,
   toCreateUnitInput,

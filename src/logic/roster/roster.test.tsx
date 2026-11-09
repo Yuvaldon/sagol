@@ -32,7 +32,8 @@ import {
   toUpdateSoldierInput,
   type NewSoldierValues,
 } from './forms'
-import { useRosterPermissions, useSoldierPagePermissions, useToday } from './hooks'
+import { useToday } from '../session/today'
+import { useRosterPermissions, useSoldierPagePermissions } from './hooks'
 import { fullName, matchesName, openMembershipOf, soldierHistory, soldierRows } from './roster'
 
 // Sample rows, test data only.

@@ -15,19 +15,59 @@ import { normalizeName, primaryUnitOn } from '@domain'
 // The roster as the drawer shows it. Rank and unit today are derived on every read, never stored
 // (D-019, D-054). Pure.
 
+/** A soldier's unit on a day, as far as the actor can know it (D-106). */
+export type UnitState =
+  | { readonly kind: 'unit'; readonly unit: Unit }
+  /** The actor reads the soldier's placements, and none covers the day. */
+  | { readonly kind: 'none' }
+  /** A placement covers the day, in a unit the actor cannot see. */
+  | { readonly kind: 'other' }
+  /** No day, or the actor may not read the soldier's placements. */
+  | { readonly kind: 'unknown' }
+
 export interface SoldierRow {
   readonly soldier: Soldier
   readonly rank: CommandRank | null
-  /** The primary unit today. NULL when the actor cannot see a placement or the unit. */
+  /** The primary unit today (D-106). */
+  readonly unitState: UnitState
+  /** The unit today, when it is one the actor sees. Replaced by `unitState`, removed once the list reads it. */
   readonly unit: Unit | null
   /** The open primary row, which the next move closes. It can start in the future (D-097). */
   readonly open: UnitMembership | null
 }
 
+/** Whether the actor may read a soldier's placements (`memberships:view`, D-102). */
+export type ReadsPlacements = (soldierId: SoldierId) => boolean
+
+/**
+ * The soldier's unit on `day`. `own` holds the soldier's placements the actor read: the adapter returns
+ * all of them or none (D-102), so a soldier with rows is readable whatever the hint says.
+ */
+export function unitStateOn(
+  own: readonly UnitMembership[],
+  unitById: ReadonlyMap<UnitId, Unit>,
+  soldierId: SoldierId,
+  day: CalendarDate | null,
+  readsPlacements: boolean,
+): UnitState {
+  if (day === null || (own.length === 0 && !readsPlacements)) return { kind: 'unknown' }
+  const unitId = primaryUnitOn(own, soldierId, day)
+  if (unitId === null) return { kind: 'none' }
+  const unit = unitById.get(unitId)
+  return unit === undefined ? { kind: 'other' } : { kind: 'unit', unit }
+}
+
+/** The actor's memberships grouped by soldier. */
+export function membershipsBySoldier(memberships: readonly UnitMembership[]): Map<SoldierId, UnitMembership[]> {
+  const bySoldier = new Map<SoldierId, UnitMembership[]>()
+  for (const row of memberships) bySoldier.set(row.soldier_id, [...(bySoldier.get(row.soldier_id) ?? []), row])
+  return bySoldier
+}
+
 const collator = new Intl.Collator(DATE_LOCALE)
 
 /** Last name, then first name, in Hebrew order (D-094). */
-function byName(a: Soldier, b: Soldier): number {
+export function byName(a: Soldier, b: Soldier): number {
   return collator.compare(a.last_name, b.last_name) || collator.compare(a.first_name, b.first_name) || a.id.localeCompare(b.id)
 }
 
@@ -46,19 +86,20 @@ export function soldierRows(
   units: readonly Unit[],
   memberships: readonly UnitMembership[],
   today: CalendarDate | null,
+  readsPlacements: ReadsPlacements = () => false,
 ): SoldierRow[] {
   const rankById = new Map<CommandRankId, CommandRank>(ranks.map((rank) => [rank.id, rank]))
   const unitById = new Map<UnitId, Unit>(units.map((unit) => [unit.id, unit]))
-  const bySoldier = new Map<SoldierId, UnitMembership[]>()
-  for (const row of memberships) bySoldier.set(row.soldier_id, [...(bySoldier.get(row.soldier_id) ?? []), row])
+  const bySoldier = membershipsBySoldier(memberships)
 
   return [...soldiers].sort(byName).map((soldier) => {
     const own = bySoldier.get(soldier.id) ?? []
-    const unitId = today === null ? null : primaryUnitOn(own, soldier.id, today)
+    const unitState = unitStateOn(own, unitById, soldier.id, today, readsPlacements(soldier.id))
     return {
       soldier,
       rank: soldier.command_rank_id === null ? null : (rankById.get(soldier.command_rank_id) ?? null),
-      unit: unitId === null ? null : (unitById.get(unitId) ?? null),
+      unitState,
+      unit: unitState.kind === 'unit' ? unitState.unit : null,
       open: openMembershipOf(own, soldier.id),
     }
   })

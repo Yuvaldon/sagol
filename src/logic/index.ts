@@ -16,7 +16,21 @@ export {
   useSignOut,
 } from './session/hooks'
 export { useCan, useModuleAccess, type CanAnswer } from './permissions/hooks'
-export { WorkspaceSearch, usePanel, type PanelState, type PanelTarget } from './view-state/panel'
+export { WorkspaceSearch, useWorkspaceSearch } from './view-state/search'
+export { usePanel, type PanelState, type PanelTarget } from './view-state/panel'
+export { dateWindowOf, shiftedWindow, useDateWindow, type DateWindow, type DateWindowState } from './view-state/window'
+export { filterUnitOf, unitFilterOf, useViewFilter, type FilterUnit, type ViewFilterState } from './view-state/filter'
+export { useActiveView, type ActiveViewState } from './view-state/view'
+export { useToday } from './session/today'
+export {
+  timelineItems,
+  type TimelineGroupItem,
+  type TimelineGroupLabel,
+  type TimelineInput,
+  type TimelineItem,
+  type TimelineSoldierItem,
+} from './timeline/rows'
+export { useTimeline, type TimelineModel } from './timeline/hooks'
 export {
   dropZoneAt,
   moveCandidates,
@@ -45,9 +59,12 @@ export {
   openMembershipOf,
   soldierHistory,
   soldierRows,
+  unitStateOn,
   type HistoryEntry,
   type HistoryUnit,
+  type ReadsPlacements,
   type SoldierRow,
+  type UnitState,
 } from './roster/roster'
 export {
   moveFormIssues,
@@ -71,7 +88,7 @@ export {
   useSoldierCommands,
   useSoldierPagePermissions,
   useSoldierPrivate,
+  usePlacementReading,
   useSoldiers,
-  useToday,
   useUnitsWithArchived,
 } from './roster/hooks'

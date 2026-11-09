@@ -1,5 +1,4 @@
 import type {
-  CalendarDate,
   CommandRank,
   Permission,
   PermissionCheck,
@@ -12,16 +11,15 @@ import type {
   UnitId,
   UnitMembership,
 } from '@contracts'
-import { placementTarget, soldierTarget, todayIn } from '@domain'
+import { placementTarget, soldierTarget } from '@domain'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useCan } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
-import { useCurrentOrganization } from '../session/hooks'
 import {
   toChangeMembershipInput,
   toCreateRankInput,
@@ -41,14 +39,6 @@ import {
 const LIVE = { include_archived: false }
 const WITH_ARCHIVED = { include_archived: true }
 const EVERY_MEMBERSHIP = { soldier_ids: null, unit_ids: null, window: null }
-
-/** Today in the organization's time zone. NULL while it loads, or for who may not view it (D-083). */
-export function useToday(): CalendarDate | null {
-  const { time } = usePorts()
-  const organization = useCurrentOrganization()
-  if (organization.status !== 'ready' || organization.value === null) return null
-  return todayIn(organization.value.timezone, time.now())
-}
 
 /** Every rank, archived ones too: a soldier keeps showing the rank they hold. */
 export function useCommandRanks(): Loaded<readonly CommandRank[]> {
@@ -206,6 +196,7 @@ export function useRosterPermissions(soldiers: readonly Soldier[], units: readon
       ...soldiers.flatMap((soldier) => [
         check(P.soldierUpdate, soldierTarget(soldier.id)),
         check(P.soldierArchive, soldierTarget(soldier.id)),
+        check(P.membershipView, soldierTarget(soldier.id)),
       ]),
     ],
     [soldiers, units],
@@ -224,8 +215,17 @@ export function useRosterPermissions(soldiers: readonly Soldier[], units: readon
       privateOnCreate: (unitId: UnitId | null) => can(check(P.privateUpdate, placementTarget(unitId))),
       update: (soldier: Soldier) => can(check(P.soldierUpdate, soldierTarget(soldier.id))),
       archive: (soldier: Soldier) => can(check(P.soldierArchive, soldierTarget(soldier.id))),
+      /** Whether "no unit" is known or only unknown (D-106). */
+      readsPlacements: (soldierId: SoldierId) => can(check(P.membershipView, soldierTarget(soldierId))),
     }
   }, [can, units])
+}
+
+/** Whether the actor may read each soldier's placements (D-102, D-106). */
+export function usePlacementReading(soldiers: readonly Soldier[]): (soldierId: SoldierId) => boolean {
+  const checks = useMemo(() => soldiers.map((soldier) => check(P.membershipView, soldierTarget(soldier.id))), [soldiers])
+  const can = useCan(checks)
+  return useCallback((soldierId: SoldierId) => can(check(P.membershipView, soldierTarget(soldierId))), [can])
 }
 
 /** What one soldier's page needs (D-096). */
