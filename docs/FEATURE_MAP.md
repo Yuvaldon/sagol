@@ -175,7 +175,7 @@ tabs stay in sync.
 - **Decisions:** D-009, D-024, D-040, D-053, D-065, D-077, D-085.
 
 #### V2 — Roster
-**Owner sees:** "Ranks" and "Soldiers" drawers: add a soldier by name, with rank and unit; edit
+**Owner sees:** a "Soldiers" drawer with a section for ranks (D-094): add a soldier by name, with rank and unit; edit
 profile and private fields (מספר אישי); move between units with history kept; archive. Archiving
 the last access manager is refused with a clear message.
 - **data:** `command_ranks`; `soldiers` (create, update, archive, `updatePrivate`,
@@ -184,7 +184,7 @@ the last access manager is refused with a clear message.
 - **logic:** soldier view model (rank and unit today, derived).
 - **ui:** virtualized list; soldier form; ranks module.
 - **Open items:** parts of OI-021 (a, c), OI-023 (b, d: normalization).
-- **Decisions:** D-002, D-010, D-018, D-029, D-030, D-054, D-057, D-059, D-065, D-066, D-069.
+- **Decisions:** D-002, D-010, D-018, D-029, D-030, D-054, D-057, D-059, D-065, D-066, D-069, D-094 … D-100.
 
 ### M2 — The board works
 

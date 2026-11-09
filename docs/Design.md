@@ -10,7 +10,8 @@ and this file says how to use them.
 - **Only tokens.** Tailwind's default palette, spacing, type, radius and shadow scales are reset. A
   value that is missing becomes a token. It never becomes an arbitrary class (`npm run check:raw-values`).
 - **Only logical direction.** `ms-`, `pe-`, `start-`, `end-`, `text-start`. The layout is RTL.
-- **Technical values read left to right.** Emails, time zones and variable names take `dir="ltr"`.
+- **Technical values read left to right.** Emails, time zones, variable names, personal numbers, phones and the
+  segments of a date take `dir="ltr"`, and they stay on the inline start of their field (`text-end` inside `ltr`).
 - **Every string comes from `@i18n`.** A component prop that takes text takes an `I18nKey`, and its name
   ends in `Key` (`titleKey`, `labelKey`). Names from the data (a unit's name) arrive as text.
 - **No dead controls (D-076).** A control appears only when its action works end to end and the actor may
@@ -95,6 +96,13 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   opened and saves with that version. A `stale_version` answer offers to continue from the new version.
 - **A refused action with no form:** `FailureNotice` at the top of the list, announced as an alert, cleared by the
   next action. The list itself does not change.
+- **A long list:** `VirtualList`, which scrolls with the drawer's body and tells a screen reader each row's place in the
+  whole list. Search goes above it, with the new-item button beside the search, because the end of the list is far away.
+- **A page of sections:** when a row has parts with their own permission and version, it opens a page with a "back to
+  list" button and one section per part (`SoldierPage`). A section appears for who may read it, and is a form for who may
+  also write it. A form holds what it opened, so a change from another tab never replaces what is being typed.
+- **A dialog with fields:** `SmallDialog` with fields inside. It shows the adapter's answer on the fields, and keeps
+  anything else in a `FailureNotice` above the actions.
 - **A question:** `SmallDialog`. An action that cannot be undone uses `alertdialog`, says so in its body, and names
   the action on the button.
 - **Empty and loading:** `EmptyNotice` says what comes next and holds the first action, if the actor may take it.
@@ -104,13 +112,16 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | Component | Where | Notes |
 |-----------|-------|-------|
 | `Button`, `IconButton` | `ui/primitives` | `primary` or `quiet`. An icon button still has a name |
-| `TextField`, `SearchSelectField`, `SelectField`, `ColorField` | `ui/primitives` | Label, value, one error. They know nothing about forms |
+| `TextField`, `SearchSelectField`, `SelectField`, `ColorField`, `DateField` | `ui/primitives` | Label, value, one error. They know nothing about forms |
 | `CenteredSheet` | `ui/patterns` | Full-screen state with a title and an optional hint |
 | `Drawer`, `SmallDialog`, `ActionMenu` | `ui/patterns` | Floating surfaces, in the order they stack |
 | `EntityForm`, `FailureNotice`, `EmptyNotice`, `LoadingNotice` | `ui/patterns` | The frame and the states of a module |
+| `VirtualList` | `ui/patterns` | A long list inside a drawer |
+| `formatDate` | `ui/patterns` | A stored day as text, from the presets in `config` |
 | `validatorResult`, `fieldError`, `formStateOf` | `ui/patterns` | Field issues (D-068) in TanStack Form |
 | `UserMenu`, `IdentityList` | `ui/shell` | Who is signed in, sign-out, dev identity switcher |
-| `UnitsDrawer`, `UnitsModule`, `UnitLevelsModule` | `ui/modules` | The first modules, and the shape of the next ones |
+| `ModuleDrawer` | `ui/shell` | The map of what opens in the drawer, with each group's sections |
+| `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
 
 Errors are shown through `ui/errors/messages.ts`, whose maps from code to i18n are total: a new code does
 not compile until it has a message.

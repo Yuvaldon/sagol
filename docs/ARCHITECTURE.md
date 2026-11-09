@@ -54,6 +54,7 @@ The data layer is written as if it were the server:
 - **Reads** are filtered by the domain policy before they leave the adapter.
 - **Writes** are validated (Zod schema → visibility → policy → state → integrity → domain invariants, D-090) inside one
   transaction, bump `version`, reject stale versions, and write audit events.
+- **What can take permissions away** is checked on the state after the write, inside its transaction (D-059, D-096).
 - **Workflow changes are commands**, not field updates: `createLeave`, `transitionLeave`,
   `rescheduleLeave`, `grantAccess`, `revokeAccess`, `requestAccountLink`,
   `reviewAccountLink`, `bootstrapOwner`, `moveUnit`, `changeMembership`, `importBatch`.
@@ -205,7 +206,7 @@ src/
   config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ dates/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
-  logic/       runtime/ queries/ forms/ session/ organization/ view-state/
+  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/
   ui/          theme/ primitives/ patterns/ errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/
