@@ -75,7 +75,7 @@ the row before an audit reminds the owner to open it.
 | # | Slice | The owner sees | Status |
 |---|-------|----------------|--------|
 | V3 | Timeline grid | Main screen with real soldiers, week navigation, unit selector | ☑ |
-| V4 | Leaves on the timeline | Leave types, new leave, bars on the timeline | ☐ |
+| V4 | Leaves on the timeline | Leave types, new leave, bars on the timeline | ☑ |
 | V5 | Approval workflow | Details drawer, approve and reject, history, comments, inbox | ☐ |
 | A3 | audit | Leave workflow, timeline engine, view state | ☐ |
 
