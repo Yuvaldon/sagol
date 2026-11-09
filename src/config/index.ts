@@ -1,6 +1,6 @@
 // Public entry point of the CONFIG layer.
 // Every non-entity constant lives here: env schema, storage keys, view ids, URL parameter
-// names, breakpoints, palette keys, date formats. Nothing is hardcoded elsewhere.
+// names, breakpoints, palette and icon keys, date formats. Nothing is hardcoded elsewhere.
 export { DOM } from './dom'
 export {
   ENV_VARIABLES,
@@ -17,7 +17,17 @@ export {
 export { CHANGE_FEED_CHANNEL, INDEXED_DB_NAME, STORAGE_KEYS, type StorageKey } from './storage'
 export { ROUTES, type RoutePath } from './routes'
 export { STARTUP_ERROR_CODES } from './startup'
-export { DATE_WINDOW, DEFAULT_VIEW_ID, TIMELINE_LAYOUT, VIEW_IDS, ViewId } from './views'
+export {
+  BAR_COLOR_MODES,
+  BarColorMode,
+  DATE_WINDOW,
+  DEFAULT_BAR_COLOR_MODE,
+  DEFAULT_VIEW_ID,
+  TIMELINE_LANES,
+  TIMELINE_LAYOUT,
+  VIEW_IDS,
+  ViewId,
+} from './views'
 export {
   DRAG_ACTIVATION_PX,
   DROP_EDGE_FRACTION,
@@ -35,4 +45,5 @@ export {
   type Breakpoint,
 } from './breakpoints'
 export { PALETTE_KEYS, PaletteKey, isPaletteKey } from './palette'
+export { ICON_KEYS, IconKeyName, isIconKey } from './icons'
 export { DATE_FORMATS, DATE_LOCALE, FIRST_DAY_OF_WEEK, type DateFormat } from './dates'

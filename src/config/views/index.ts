@@ -28,3 +28,21 @@ export const TIMELINE_LAYOUT = {
   minDayPx: 64,
   overscanRows: 10,
 } as const
+
+/** Lanes of overlapping leaves in a timeline row (D-111), in CSS pixels, from Stone 3. */
+export const TIMELINE_LANES = {
+  /** The height of a bar, and the size of a marker's round badge. */
+  barPx: 20,
+  /** Each lane beyond the first adds this much to its row: a bar and the gap above it. */
+  laneStepPx: 24,
+  /** The space between a bar and the edge of its first or last day. */
+  barInsetPx: 3,
+} as const
+
+/** What a bar's color means (D-111, D-112): its leave type, or one color for every absence. */
+export const BAR_COLOR_MODES = ['type', 'uniform'] as const
+export const BarColorMode = z.enum(BAR_COLOR_MODES)
+export type BarColorMode = z.infer<typeof BarColorMode>
+
+/** The mode when the URL names none. */
+export const DEFAULT_BAR_COLOR_MODE: BarColorMode = 'type'

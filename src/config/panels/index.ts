@@ -8,9 +8,21 @@ export const PANEL_IDS = {
   unitLevels: 'unit_levels',
   soldiers: 'soldiers',
   commandRanks: 'command_ranks',
+  leaveTypes: 'leave_types',
+  leaveTypeGroups: 'leave_type_groups',
+  /** A new leave now (D-115), and a leave's details from V5. */
+  leaves: 'leaves',
 } as const
 
-export const PanelId = z.enum([PANEL_IDS.units, PANEL_IDS.unitLevels, PANEL_IDS.soldiers, PANEL_IDS.commandRanks])
+export const PanelId = z.enum([
+  PANEL_IDS.units,
+  PANEL_IDS.unitLevels,
+  PANEL_IDS.soldiers,
+  PANEL_IDS.commandRanks,
+  PANEL_IDS.leaveTypes,
+  PANEL_IDS.leaveTypeGroups,
+  PANEL_IDS.leaves,
+])
 export type PanelId = z.infer<typeof PanelId>
 
 /** A long list renders only what is in sight (TanStack Virtual). The height is a first guess, then measured. */
