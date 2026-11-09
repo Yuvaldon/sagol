@@ -259,3 +259,10 @@ describe('the bar colors in the URL (D-112)', () => {
     expect(WorkspaceSearch.parse({ colors: 'rainbow' }).colors).toBeUndefined()
   })
 })
+
+describe('an empty date on the new-leave form', () => {
+  it('answers required, as the command would', () => {
+    const values = { ...newLeaveValues('2026-11-08'), soldier_id: YAEL, leave_type_id: LeaveTypeId.parse(uuid(30)), end_date: '' as const }
+    expect(newLeaveIssues(values, null)).toEqual([{ path: ['end_date'], code: 'required' }])
+  })
+})

@@ -14,6 +14,7 @@ import { LEAVE_PERMISSIONS, compareDates, soldierTarget } from '@domain'
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useCan } from '../permissions/hooks'
+import { byName } from '../roster/roster'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
@@ -226,9 +227,11 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
   )
   const can = useCan(checks)
   return useMemo(() => {
-    const creatable = soldiers.filter((soldier) => can(leaveCheck(LEAVE_PERMISSIONS.create, soldier.id)))
+    const creatable = soldiers
+      .filter((soldier) => can(leaveCheck(LEAVE_PERMISSIONS.create, soldier.id)))
+      .toSorted(byName)
     return {
-      /** The soldiers a leave can be created for. */
+      /** The soldiers a leave can be created for, by name (D-094). */
       soldiers: creatable,
       any: creatable.length > 0,
       canApprove: (soldierId: SoldierId) => can(leaveCheck(LEAVE_PERMISSIONS.approve, soldierId)),

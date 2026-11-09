@@ -19,8 +19,9 @@ import { formIssues } from '../forms/issues'
 export interface NewLeaveValues {
   readonly soldier_id: SoldierId | null
   readonly leave_type_id: LeaveTypeId | null
-  readonly start_date: CalendarDate
-  readonly end_date: CalendarDate
+  /** '' while the field is empty; the schema then answers. */
+  readonly start_date: CalendarDate | ''
+  readonly end_date: CalendarDate | ''
   readonly reason: string
   /** Shown only to who may approve the soldier (D-013). It starts off (D-115). */
   readonly as_approved: boolean
@@ -35,8 +36,9 @@ function createInput(values: NewLeaveValues) {
     id: LeaveId.parse(crypto.randomUUID()),
     soldier_id: values.soldier_id,
     leave_type_id: values.leave_type_id,
-    start_date: values.start_date,
-    end_date: values.end_date,
+    // An empty field is an absent value, so the schema answers `required`.
+    start_date: values.start_date === '' ? undefined : values.start_date,
+    end_date: values.end_date === '' ? undefined : values.end_date,
     availability_effect_override: null,
     reason: optionalText(values.reason),
     properties: {},
