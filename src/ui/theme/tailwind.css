@@ -36,6 +36,9 @@
   /* The column of today on the timeline, a band barely darker than the surface (Stone 3). */
   --color-today-band: rgba(26, 26, 24, 0.035);
   --color-scrim: rgba(26, 26, 24, 0.28);
+  /* One color for every absence in the uniform mode of the timeline (D-112): a fill text reads on, and its edge. */
+  --color-absence: #dcd9d1;
+  --color-absence-edge: #7a776f;
   /* The closed palette users choose from (D-074). Each passes 3:1 on the surface. Dark set: V17. */
   --color-palette-red: #c8372d;
   --color-palette-orange: #c75c10;

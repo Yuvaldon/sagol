@@ -123,3 +123,68 @@ export function SearchSelectField({ labelKey, toggleLabelKey, name, value, optio
     </ComboBox>
   )
 }
+
+export interface ComboOption {
+  readonly key: string
+  /** A name from the data. */
+  readonly label: string
+}
+
+export interface ComboFieldProps {
+  readonly labelKey: I18nKey
+  readonly toggleLabelKey: I18nKey
+  readonly name: string
+  readonly value: string | null
+  readonly options: readonly ComboOption[]
+  readonly onChange: (value: string | null) => void
+  readonly error: I18nKey | null
+}
+
+/** Pick one of many named rows by typing part of the name (a soldier). Names read right to left. */
+export function ComboField({ labelKey, toggleLabelKey, name, value, options, onChange, error }: ComboFieldProps) {
+  const { contains } = useFilter({ sensitivity: 'base' })
+  return (
+    <ComboBox
+      name={name}
+      defaultItems={options}
+      defaultFilter={contains}
+      selectedKey={value}
+      onSelectionChange={(key) => {
+        onChange(typeof key === 'string' ? key : null)
+      }}
+      isInvalid={error !== null}
+      validationBehavior="aria"
+      menuTrigger="focus"
+      className={FIELD}
+    >
+      <Label className={LABEL}>{t(labelKey)}</Label>
+      <div className="relative">
+        <Input className={`${INPUT} pe-touch`} />
+        <AriaButton
+          aria-label={t(toggleLabelKey)}
+          className="absolute inset-y-none end-none flex min-w-touch cursor-pointer items-center justify-center text-text-muted outline-focus data-focus-visible:outline-2"
+        >
+          <ChevronDown aria-hidden size={14} />
+        </AriaButton>
+      </div>
+      {error === null ? null : (
+        <Text slot="errorMessage" className={ERROR}>
+          {t(error)}
+        </Text>
+      )}
+      <Popover className="glass-menu w-trigger overflow-auto rounded-panel">
+        <ListBox<ComboOption> className="max-h-list overflow-auto p-xs outline-none">
+          {(item) => (
+            <ListBoxItem
+              id={item.key}
+              textValue={item.label}
+              className="flex min-h-touch cursor-pointer items-center rounded-control px-md text-control outline-none data-focused:bg-inner data-selected:font-semibold md:min-h-control"
+            >
+              {item.label}
+            </ListBoxItem>
+          )}
+        </ListBox>
+      </Popover>
+    </ComboBox>
+  )
+}

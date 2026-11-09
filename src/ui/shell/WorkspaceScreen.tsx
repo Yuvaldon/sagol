@@ -1,11 +1,12 @@
 import { PANEL_IDS } from '@config'
 import type { AuthIdentity } from '@contracts'
-import { t } from '@i18n'
+import { t, type I18nKey } from '@i18n'
 import { useCurrentOrganization, useModuleAccess, usePanel } from '@logic'
-import { Network, Users } from 'lucide-react'
+import { Network, Tags, Users, type LucideIcon } from 'lucide-react'
 import { useIsDesktop } from '../patterns/media'
-import { Button } from '../primitives/Button'
+import { Button, IconButton } from '../primitives/Button'
 import { ModuleDrawer } from './ModuleDrawer'
+import { NewLeaveButton } from './NewLeaveButton'
 import { FailureScreen, LoadingScreen } from './states'
 import { UnitSelector } from './UnitSelector'
 import { UserMenu } from './UserMenu'
@@ -25,30 +26,55 @@ function OrganizationName({ name }: { readonly name: string }) {
   return <h1 className="min-w-none truncate px-md text-control font-bold">{name}</h1>
 }
 
+/** A module's button: icon and name on desktop, the icon alone on a phone, its name still read aloud (D-116). */
+function ModuleButton({ Icon, labelKey, onPress }: { readonly Icon: LucideIcon; readonly labelKey: I18nKey; readonly onPress: () => void }) {
+  const isDesktop = useIsDesktop()
+  if (!isDesktop) {
+    return (
+      <IconButton labelKey={labelKey} onPress={onPress}>
+        <Icon aria-hidden size={18} />
+      </IconButton>
+    )
+  }
+  return (
+    <Button onPress={onPress}>
+      <Icon aria-hidden size={14} />
+      {t(labelKey)}
+    </Button>
+  )
+}
+
 function ModuleButtons() {
   const access = useModuleAccess()
   const panel = usePanel()
   return (
     <>
       {access.units ? (
-        <Button
+        <ModuleButton
+          Icon={Network}
+          labelKey="units.open"
           onPress={() => {
             panel.open(PANEL_IDS.units)
           }}
-        >
-          <Network aria-hidden size={14} />
-          {t('units.open')}
-        </Button>
+        />
       ) : null}
       {access.soldiers ? (
-        <Button
+        <ModuleButton
+          Icon={Users}
+          labelKey="soldiers.open"
           onPress={() => {
             panel.open(PANEL_IDS.soldiers)
           }}
-        >
-          <Users aria-hidden size={14} />
-          {t('soldiers.open')}
-        </Button>
+        />
+      ) : null}
+      {access.leaveTypes ? (
+        <ModuleButton
+          Icon={Tags}
+          labelKey="leaveTypes.open"
+          onPress={() => {
+            panel.open(PANEL_IDS.leaveTypes)
+          }}
+        />
       ) : null}
     </>
   )
@@ -104,6 +130,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
       <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
         <Viewport />
       </main>
+      <NewLeaveButton />
       {isDesktop ? <DesktopBars name={name} identity={identity} /> : <MobileBars name={name} identity={identity} />}
       <ModuleDrawer />
     </div>
