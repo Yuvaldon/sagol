@@ -10,3 +10,19 @@ export type ViewId = z.infer<typeof ViewId>
 
 /** The view shown when the URL names none (D-074). */
 export const DEFAULT_VIEW_ID: ViewId = 'timeline'
+
+/** The date window (D-103): a week by default, and at most this many days from a link. */
+export const DATE_WINDOW = { days: 7, maxDays: 62 } as const
+
+/**
+ * The timeline's density, in CSS pixels (Stone 3, D-077, D-108). Layout math and the row virtualizer read the
+ * same numbers that place the cells, so they live here rather than in the theme.
+ */
+export const TIMELINE_LAYOUT = {
+  rowPx: 36,
+  groupRowPx: 32,
+  headerPx: 28,
+  nameColumnPx: 124,
+  minDayPx: 64,
+  overscanRows: 10,
+} as const
