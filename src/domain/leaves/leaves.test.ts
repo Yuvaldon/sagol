@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   LeaveStatus,
   LeaveTransition,
+  LeaveTypeGroupId,
   LeaveTypeId,
   ReschedulePolicy,
   SoldierId,
@@ -9,6 +10,7 @@ import {
 } from '@contracts'
 import {
   COMMENT_PERMISSIONS,
+  archiveLeaveTypeGroupIssues,
   LEAVE_PERMISSIONS,
   commentChangeIssues,
   isCommentAuthor,
@@ -243,5 +245,22 @@ describe('comments', () => {
     expect(isCommentAuthor(comment, EARLIER_REVIEWER)).toBe(false)
     expect(commentChangeIssues(comment)).toEqual([])
     expect(commentChangeIssues({ ...comment, archived_at: EARLIER })).toEqual([{ path: [], code: 'archived' }])
+  })
+})
+
+describe('archiving a leave type group (D-113)', () => {
+  const group = LeaveTypeGroupId.parse(uuid(40))
+  const other = LeaveTypeGroupId.parse(uuid(41))
+  const refused = [{ path: [], code: 'group_in_use' }]
+
+  it('is refused while a live type belongs to the group', () => {
+    expect(archiveLeaveTypeGroupIssues([{ group_id: group, archived_at: null }], group)).toEqual(refused)
+  })
+
+  it('is allowed when its types are archived, belong elsewhere, or there are none', () => {
+    expect(archiveLeaveTypeGroupIssues([{ group_id: group, archived_at: EARLIER }], group)).toEqual([])
+    expect(archiveLeaveTypeGroupIssues([{ group_id: other, archived_at: null }], group)).toEqual([])
+    expect(archiveLeaveTypeGroupIssues([{ group_id: null, archived_at: null }], group)).toEqual([])
+    expect(archiveLeaveTypeGroupIssues([], group)).toEqual([])
   })
 })
