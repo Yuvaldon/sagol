@@ -64,7 +64,7 @@ Run `npm run dev` and open <http://localhost:5173>. Sign in and claim the organi
 
 - D-103 to D-108, approved in the V3 plan: the window in the URL, the unit in the shared filter, who is a row and how rows
   are grouped, the four unit states, today at midnight, and the two-bar layout.
-- **D-109, decided while building, for your confirmation:** a row is grouped by its unit on today if the soldier is in the
+- **D-109, decided while building, approved by the owner at the end of V3:** a row is grouped by its unit on today if the soldier is in the
   view today, and otherwise on the first day they are. D-105 said "today when the window holds it". Read literally, a
   soldier who left the platoon yesterday would land under a unit outside the selected one.
 - No `app` commit: the router already takes `WorkspaceSearch` from `@logic`.
