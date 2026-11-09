@@ -2,7 +2,7 @@ import { PANEL_IDS } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useCurrentOrganization, useModuleAccess, usePanel } from '@logic'
-import { Network } from 'lucide-react'
+import { Network, Users } from 'lucide-react'
 import { ModuleDrawer } from './ModuleDrawer'
 import { Button } from '../primitives/Button'
 import { UserMenu } from './UserMenu'
@@ -41,6 +41,16 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
             >
               <Network aria-hidden size={14} />
               {t('units.open')}
+            </Button>
+          ) : null}
+          {access.soldiers ? (
+            <Button
+              onPress={() => {
+                panel.open(PANEL_IDS.soldiers)
+              }}
+            >
+              <Users aria-hidden size={14} />
+              {t('soldiers.open')}
             </Button>
           ) : null}
           <UserMenu identity={identity} />

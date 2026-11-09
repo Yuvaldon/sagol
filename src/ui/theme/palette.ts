@@ -1,4 +1,4 @@
-import type { PaletteKey } from '@config'
+import { isPaletteKey, type PaletteKey } from '@config'
 import type { I18nKey } from '@i18n'
 
 // What a palette key looks like and how it is read aloud. The map is total, so a new key fails to
@@ -17,4 +17,9 @@ export const PALETTE_SWATCHES: Record<PaletteKey, { readonly className: string; 
   purple: { className: 'bg-palette-purple', labelKey: 'palette.purple' },
   pink: { className: 'bg-palette-pink', labelKey: 'palette.pink' },
   gray: { className: 'bg-palette-gray', labelKey: 'palette.gray' },
+}
+
+/** The class of a stored color key. NULL without a color, or for a key the palette no longer holds. */
+export function swatchClassOf(key: string | null): string | null {
+  return key !== null && isPaletteKey(key) ? PALETTE_SWATCHES[key].className : null
 }

@@ -3,6 +3,8 @@ import { t, type I18nKey } from '@i18n'
 import { useModuleAccess, usePanel } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { CommandRanksModule } from '../modules/command-ranks/CommandRanksModule'
+import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
 import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
@@ -35,6 +37,18 @@ const GROUPS: readonly ModuleGroup[] = [
         labelKey: 'units.tabLevels',
         isAllowed: (access) => access.unitLevels,
         Module: UnitLevelsModule,
+      },
+    ],
+  },
+  {
+    titleKey: 'soldiers.title',
+    sections: [
+      { panel: PANEL_IDS.soldiers, labelKey: 'soldiers.tabList', isAllowed: (access) => access.soldiers, Module: SoldiersModule },
+      {
+        panel: PANEL_IDS.commandRanks,
+        labelKey: 'soldiers.tabRanks',
+        isAllowed: (access) => access.commandRanks,
+        Module: CommandRanksModule,
       },
     ],
   },

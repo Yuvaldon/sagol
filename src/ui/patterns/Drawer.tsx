@@ -2,9 +2,10 @@ import { SHEET_DISMISS } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { X } from 'lucide-react'
 import { motion, useDragControls } from 'motion/react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import { IconButton } from '../primitives/Button'
+import { DrawerScrollContext } from './drawerScroll'
 
 // The floating surface every management module opens in (D-023, D-092): a modal drawer on the inline
 // end from `md`, and below it a bottom sheet that also closes by dragging its grip down. Escape, the
@@ -23,6 +24,7 @@ export interface DrawerProps {
 export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
   const dragControls = useDragControls()
   const dialog = useRef<HTMLElement>(null)
+  const [body, setBody] = useState<HTMLElement | null>(null)
 
   // When the row that held focus is removed (archived), focus falls to the body and the keyboard loses
   // the drawer. The next key brings it back, and Escape still closes. A dialog over the drawer holds
@@ -82,7 +84,9 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
             </div>
             {header}
           </header>
-          <div className="min-h-none flex-1 overflow-y-auto px-lg pb-xl">{children}</div>
+          <div ref={setBody} className="min-h-none flex-1 overflow-y-auto px-lg pb-xl">
+            <DrawerScrollContext.Provider value={body}>{children}</DrawerScrollContext.Provider>
+          </div>
         </Dialog>
       </MotionModal>
     </ModalOverlay>

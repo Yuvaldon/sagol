@@ -32,9 +32,12 @@ export interface TextFieldProps {
   readonly type?: 'text' | 'email'
   readonly autoComplete?: string
   readonly isRequired?: boolean
+  readonly inputMode?: 'numeric' | 'tel'
+  /** Numbers and technical values read left to right inside the RTL layout. */
+  readonly dir?: 'ltr'
 }
 
-export function TextField({ labelKey, error, name, type = 'text', autoComplete, isRequired, ...rest }: TextFieldProps) {
+export function TextField({ labelKey, error, name, type = 'text', autoComplete, isRequired, inputMode, dir, ...rest }: TextFieldProps) {
   return (
     <AriaTextField
       {...rest}
@@ -47,7 +50,11 @@ export function TextField({ labelKey, error, name, type = 'text', autoComplete, 
       className={FIELD}
     >
       <Label className={LABEL}>{t(labelKey)}</Label>
-      <Input className={INPUT} />
+      <Input
+        {...(inputMode === undefined ? {} : { inputMode })}
+        {...(dir === undefined ? {} : { dir })}
+        className={dir === undefined ? INPUT : `${INPUT} text-end`}
+      />
       {error === null ? null : (
         <Text slot="errorMessage" className={ERROR}>
           {t(error)}
