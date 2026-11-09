@@ -30,8 +30,6 @@ export interface SoldierRow {
   readonly rank: CommandRank | null
   /** The primary unit today (D-106). */
   readonly unitState: UnitState
-  /** The unit today, when it is one the actor sees. Replaced by `unitState`, removed once the list reads it. */
-  readonly unit: Unit | null
   /** The open primary row, which the next move closes. It can start in the future (D-097). */
   readonly open: UnitMembership | null
 }
@@ -86,7 +84,7 @@ export function soldierRows(
   units: readonly Unit[],
   memberships: readonly UnitMembership[],
   today: CalendarDate | null,
-  readsPlacements: ReadsPlacements = () => false,
+  readsPlacements: ReadsPlacements,
 ): SoldierRow[] {
   const rankById = new Map<CommandRankId, CommandRank>(ranks.map((rank) => [rank.id, rank]))
   const unitById = new Map<UnitId, Unit>(units.map((unit) => [unit.id, unit]))
@@ -94,12 +92,10 @@ export function soldierRows(
 
   return [...soldiers].sort(byName).map((soldier) => {
     const own = bySoldier.get(soldier.id) ?? []
-    const unitState = unitStateOn(own, unitById, soldier.id, today, readsPlacements(soldier.id))
     return {
       soldier,
       rank: soldier.command_rank_id === null ? null : (rankById.get(soldier.command_rank_id) ?? null),
-      unitState,
-      unit: unitState.kind === 'unit' ? unitState.unit : null,
+      unitState: unitStateOn(own, unitById, soldier.id, today, readsPlacements(soldier.id)),
       open: openMembershipOf(own, soldier.id),
     }
   })

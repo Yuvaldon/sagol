@@ -107,6 +107,8 @@ function membership(n: number, soldierN: number, unitN: number, valid_from: stri
 }
 
 const TODAY = '2026-11-08'
+/** The actor reads every soldier's placements. */
+const READS = () => true
 
 describe('the soldier view model (D-019, D-054)', () => {
   const dana = soldier(1, 'דנה', 'לוי', { command_rank_id: CommandRankId.parse(uuid(50)) })
@@ -115,25 +117,26 @@ describe('the soldier view model (D-019, D-054)', () => {
   const ranks = [rank(50, 5)]
 
   it('sorts by last name in Hebrew order, then first name', () => {
-    const rows = soldierRows([dana, ami, soldier(3, 'אורי', 'לוי')], [], [], [], TODAY)
+    const rows = soldierRows([dana, ami, soldier(3, 'אורי', 'לוי')], [], [], [], TODAY, READS)
     expect(rows.map((row) => row.soldier.first_name)).toEqual(['עמי', 'אורי', 'דנה'])
   })
 
   it('derives rank and today’s unit from the rows', () => {
-    const rows = soldierRows([dana], ranks, units, [membership(70, 1, 10, '2026-01-01', '2026-11-07'), membership(71, 1, 11, TODAY, null)], TODAY)
-    expect(rows[0]).toMatchObject({ rank: { id: uuid(50) }, unit: { id: uuid(11) }, open: { id: uuid(71) } })
+    const rows = soldierRows([dana], ranks, units, [membership(70, 1, 10, '2026-01-01', '2026-11-07'), membership(71, 1, 11, TODAY, null)], TODAY, READS)
+    expect(rows[0]).toMatchObject({ rank: { id: uuid(50) }, unitState: { kind: 'unit', unit: { id: uuid(11) } }, open: { id: uuid(71) } })
   })
 
   it('keeps the old unit today when the move starts tomorrow, and names the future row as open (D-097)', () => {
-    const rows = soldierRows([dana], ranks, units, [membership(70, 1, 10, '2026-01-01', TODAY), membership(71, 1, 11, '2026-11-09', null)], TODAY)
-    expect(rows[0]).toMatchObject({ unit: { id: uuid(10) }, open: { id: uuid(71) } })
+    const rows = soldierRows([dana], ranks, units, [membership(70, 1, 10, '2026-01-01', TODAY), membership(71, 1, 11, '2026-11-09', null)], TODAY, READS)
+    expect(rows[0]).toMatchObject({ unitState: { kind: 'unit', unit: { id: uuid(10) } }, open: { id: uuid(71) } })
   })
 
-  it('shows no unit without a placement, a known unit or today, and still finds the open row', () => {
+  it('tells another unit, no today and no placement apart (D-106), and still finds the open row', () => {
     const placed = [membership(70, 1, 99, '2026-01-01', null)]
-    expect(soldierRows([dana], [], units, placed, TODAY)[0]).toMatchObject({ rank: null, unit: null, open: { id: uuid(70) } })
-    expect(soldierRows([dana], [], units, [membership(70, 1, 10, '2026-01-01', null)], null)[0]?.unit).toBeNull()
-    expect(soldierRows([ami], [], units, placed, TODAY)[0]?.open).toBeNull()
+    expect(soldierRows([dana], [], units, placed, TODAY, READS)[0]).toMatchObject({ rank: null, unitState: { kind: 'other' }, open: { id: uuid(70) } })
+    expect(soldierRows([dana], [], units, [membership(70, 1, 10, '2026-01-01', null)], null, READS)[0]?.unitState).toEqual({ kind: 'unknown' })
+    expect(soldierRows([ami], [], units, placed, TODAY, READS)[0]).toMatchObject({ unitState: { kind: 'none' }, open: null })
+    expect(soldierRows([ami], [], units, placed, TODAY, () => false)[0]?.unitState).toEqual({ kind: 'unknown' })
   })
 
   it('finds the open row only among primary rows', () => {
