@@ -172,7 +172,7 @@ test('the tree: create, rename, color, level, reorder, move and archive', async 
     await list(page).getByRole('button', { name: 'מחלקה ב' }).click()
     await page.getByLabel(he.units.name).fill('מחלקה ג')
     await page.getByRole('radio', { name: he.palette.teal }).click({ force: true })
-    await page.locator('[aria-haspopup=listbox]').click()
+    await page.getByRole('dialog').locator('[aria-haspopup=listbox]').click()
     await page.getByRole('option', { name: 'דרג מחלקה' }).click()
     await expectNoAxeViolations(page)
     await page.getByRole('button', { name: he.common.save }).click()

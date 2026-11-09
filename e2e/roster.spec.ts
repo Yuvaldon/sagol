@@ -61,8 +61,9 @@ async function createUnits(page: Page, ...names: string[]) {
   await closeDrawer(page)
 }
 
+/** Picks from a select inside the topmost dialog. What a modal makes inert is still found by role. */
 async function choose(page: Page, label: string, option: string) {
-  await page.getByRole('button', { name: new RegExp(`${label}$`) }).click()
+  await page.getByRole('dialog').last().getByRole('button', { name: new RegExp(`${label}$`) }).click()
   await page.getByRole('option', { name: option, exact: true }).click()
 }
 
