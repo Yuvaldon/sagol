@@ -12,6 +12,8 @@ export const DATE_FORMATS = {
   day: { day: 'numeric' },
   /** Short weekday name. */
   weekdayShort: { weekday: 'short' },
+  /** The shortest weekday name, a letter in Hebrew (א׳), for the days header of the timeline. */
+  weekdayNarrow: { weekday: 'narrow' },
   /** Day and short month name. */
   dayMonth: { day: 'numeric', month: 'short' },
   /** Long month name and year. */
