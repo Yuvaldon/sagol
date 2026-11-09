@@ -26,6 +26,11 @@ Every `open` item in `docs/OPEN_ITEMS.md` targeted at this slice is in scope (D-
 
 ## Workflow
 
+- **Branches (D-110):** work never lands on `main` directly. Each session works on its own branch
+  (`v4-leaves`, `a3-audit`, `docs-<topic>`), pushes it, and ends by opening a pull request. CI runs on
+  it, and the owner merges it after CI is green and they have seen the result. Start every session
+  from an up-to-date `main` (`git pull`). Sessions may run in the cloud or locally; GitHub is the
+  only shared copy.
 - Plan before code. If a task needs a decision that is not in `DECISIONS.md`, ask.
 - No workarounds or patches: a fix goes in the layer that owns it, in its own commit in the same
   slice when the slice needs it. Otherwise it becomes an open item with a target slice.
