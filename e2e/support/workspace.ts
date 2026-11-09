@@ -7,9 +7,18 @@ import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 export const OWNER = { email: 'owner@example.test', name: 'דנה לוי' }
 export const ORGANIZATION = 'פלוגה ב׳'
 
+/**
+ * Axe measures what rests on screen. A surface that is still fading in has its text at partial
+ * opacity, which fails contrast on a slow runner only (OI-059), so the check waits for running
+ * animations to end. A failure names each element, so the next one says where it is.
+ */
 export async function expectNoAxeViolations(page: Page) {
+  await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'))
   const { violations } = await new AxeBuilder({ page }).analyze()
-  expect(violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([])
+  const found = violations.flatMap((violation) =>
+    violation.nodes.map((node) => `${violation.id}: ${node.target.join(' ')} — ${node.failureSummary ?? violation.help}`),
+  )
+  expect(found).toEqual([])
 }
 
 export async function signIn(page: Page, email: string, displayName = '') {
