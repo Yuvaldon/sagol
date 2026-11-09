@@ -42,7 +42,7 @@ export const Soldier = z.object({
   first_name: label(50),
   last_name: label(50),
   nickname: varchar(50).nullable(),
-  /** NULL only before ranks exist (bootstrap). */
+  /** NULL = no rank, a normal state (D-030, D-094). */
   command_rank_id: CommandRankId.nullable(),
   status: SoldierStatus,
   properties: PropertyValues,
