@@ -203,7 +203,7 @@ src/
   contracts/   entities/ inputs/ enums/ filters/ permissions/ repositories/ commands/ auth/ errors/
   domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/
                json/ time/
-  config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ dates/
+  config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ dates/ panels/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
   logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/

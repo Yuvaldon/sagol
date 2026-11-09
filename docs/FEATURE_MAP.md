@@ -196,7 +196,7 @@ a phone the grid scrolls sideways under the bottom bar. No bars yet.
   evaluator).
 - **ui:** registry and viewport; timeline core (pure, tested) and view with TanStack Virtual;
   adapter; floating bars; view switcher fed by the registry.
-- **Open items:** part of OI-033 (mobile timeline).
+- **Open items:** part of OI-033 (mobile timeline); OI-048, OI-057, OI-058 (from A2).
 - **Decisions:** D-023, D-054, D-067, D-077.
 - **Note:** the mock's view switcher shows four views. Here it lists only the timeline.
 
@@ -209,7 +209,7 @@ icon badge. Overlaps get lanes.
   the first leave command.
 - **logic:** leaves by window; create with optimistic update; availability context.
 - **ui:** types module; new-leave form; timeline lanes and bars; icon key map.
-- **Open items:** OI-013, OI-030; parts of OI-023 (a, b), OI-027, OI-028.
+- **Open items:** OI-013, OI-030; parts of OI-023 (a, b), OI-027, OI-028; OI-051, OI-052, OI-056 (from A2).
 - **Decisions:** D-012, D-013, D-032, D-034, D-041, D-047, D-049, D-063, D-070, D-073.
 - **Owner decision at start (OI-030):** what a bar's color means. Stone 3 colors by status, while
   D-032 gives each leave type its own `color_key`.
@@ -268,7 +268,7 @@ until V10 gives them a role, and that is correct.
   `linkEnrichment`.
 - **ui:** onboarding request form; review module.
 - **Open items:** OI-023 (d), OI-036, OI-034 and OI-019 (asked at start, OI-019 with its schema
-  note); OI-026 (decided at start, its own slice if accepted).
+  note); OI-026 (decided at start, its own slice if accepted); OI-046; OI-055 (from A2).
 - **Decisions:** D-005, D-030, D-066, D-069.
 
 #### V10 — Roles and access
@@ -279,7 +279,7 @@ squad commander their platoon, and controls follow. Lockout and escalation are r
   `accessManagerIssues`; `missingPermissions`; `accessGrantIssues`.
 - **logic:** hints across all modules.
 - **ui:** roles module; scope picker; grants module.
-- **Open items:** OI-021 (a, b, d); OI-038, OI-039, OI-040, OI-041 (asked at start).
+- **Open items:** OI-021 (a, b, d); OI-038, OI-039, OI-040, OI-041 (asked at start); OI-044; OI-047, OI-049, OI-053, OI-054 (from A2).
 - **Decisions:** D-003, D-004, D-028, D-040, D-053 … D-060.
 
 #### V11 — Soldier self-service
@@ -294,7 +294,7 @@ commander approves in the inbox; the fighter sees the result.
 **Owner sees:** upload a CSV or JSON, preview a validation report, commit; export the organization.
 - **data:** `transfer.importBatch` with `dry_run`; `exportOrganization`.
 - **ui:** import/export module.
-- **Open items:** OI-018 (restore of history, decided at start).
+- **Open items:** OI-018 (restore of history, decided at start); OI-050 (from A2).
 - **Decisions:** D-022, D-050.
 
 #### 8.1–8.4 — Backend
@@ -327,7 +327,7 @@ gets a definition and a slice when the owner wants it.
 | Audit | When | Covers |
 |-------|------|--------|
 | A1 | done, `docs/audits/A1.md` | Contracts and domain against the decisions |
-| A2 | after M1 | Server-authoritative behavior, no bypasses, first UI and Design.md |
+| A2 | done, `docs/audits/A2.md` | Server-authoritative behavior, no bypasses, first UI and Design.md |
 | A3 | after M2 | Leave workflow, timeline engine, view state |
 | A4 | after M3 | Filters and rules: UI warnings equal command results |
 | A5 | after M4 | Permissions end to end |

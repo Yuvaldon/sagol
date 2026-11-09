@@ -68,7 +68,7 @@ the row before an audit reminds the owner to open it.
 | V0 | Walking skeleton | Local sign-in, claim the organization, empty workspace in the Stone 3 look | ☑ |
 | V1 | Unit tree | Units drawer: levels, tree, move, reorder, archive | ☑ |
 | V2 | Roster | Ranks and soldiers, private fields, unit history | ☑ |
-| A2 | audit | Server-authoritative behavior, no bypasses, first UI and `Design.md` | ☐ |
+| A2 | audit | Server-authoritative behavior, no bypasses, first UI and `Design.md`. Report: `docs/audits/A2.md` | ☑ |
 
 ## M2 — The board works
 
