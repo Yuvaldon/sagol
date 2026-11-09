@@ -8,9 +8,6 @@ import { TABLE_SCHEMAS } from './index'
 /** Tables of schema.sql that intentionally have no contract. */
 const TABLES_WITHOUT_CONTRACT = new Set(['unit_closure'])
 
-/** Enum columns whose SQL column has no CHECK list (documented gaps of schema.sql). */
-const ENUM_COLUMNS_WITHOUT_CHECK = new Set(['leave_events.from_status', 'leave_events.to_status'])
-
 type SqlColumn = { name: string; type: string; length: number | null; nullable: boolean }
 type SqlTable = { columns: Map<string, SqlColumn>; checks: Map<string, string[]> }
 
@@ -180,9 +177,7 @@ describe('schema drift (D-039)', () => {
       for (const [columnName, field] of Object.entries(shape)) {
         const values = describeSchema(field).values
         const checked = table?.checks.get(columnName)
-        const key = `${tableName}.${columnName}`
         if (values === null && checked === undefined) continue
-        if (checked === undefined && ENUM_COLUMNS_WITHOUT_CHECK.has(key)) continue
         if (JSON.stringify(values) !== JSON.stringify(checked)) {
           mismatches[columnName] = { sql: checked ?? null, contract: values }
         }

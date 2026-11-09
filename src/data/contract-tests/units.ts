@@ -279,6 +279,15 @@ export function describeUnitContract(
         expect(valueOf(await adapter().repositories.units.get(platoonB.id))).toEqual(platoonB)
       })
 
+      it('stores a blank code as NULL, so blanks never collide on the unique code (D-101, OI-052)', async () => {
+        const first = valueOf(await adapter().commands.units.create(unitInput({ code: '' })))
+        const second = valueOf(await adapter().commands.units.create(unitInput({ code: '   ' })))
+        expect([first.code, second.code]).toEqual([null, null])
+        const coded = valueOf(await adapter().commands.units.update({ id: first.id, expected_version: 1, changes: { code: 'A1' } }))
+        const cleared = await adapter().commands.units.update({ id: first.id, expected_version: coded.version, changes: { code: ' ' } })
+        expect(valueOf(cleared).code).toBeNull()
+      })
+
       it('checks the color against the closed palette (D-074, OI-011)', async () => {
         expect(valueOf(await adapter().commands.units.create(unitInput({ color_key: 'teal' }))).color_key).toBe('teal')
         expect(issuesOf(await adapter().commands.units.create(unitInput({ color_key: 'magenta' })))).toEqual([
@@ -654,6 +663,12 @@ export function describeUnitContract(
         expect(errorOf(out).code).toBe('forbidden')
         const toTop = await adapter().commands.units.move({ id: squad.id, expected_version: 1, parent_id: null })
         expect(errorOf(toTop).code).toBe('forbidden')
+
+        // The destination's permission comes before the row's state (D-090, OI-051).
+        const staleOut = await adapter().commands.units.move({ id: squad.id, expected_version: 9, parent_id: platoonB.id })
+        expect(errorOf(staleOut).code).toBe('forbidden')
+        const sameParent = await adapter().commands.units.move({ id: squad.id, expected_version: 1, parent_id: platoonA.id })
+        expect(issuesOf(sameParent)).toEqual([{ path: ['parent_id'], code: 'no_changes' }])
       })
 
       it('refuses a reorder when any sibling is out of reach, and does not reveal it (D-089)', async () => {

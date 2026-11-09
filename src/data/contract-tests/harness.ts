@@ -14,7 +14,17 @@ export interface ContractAdapter {
   readonly session: SessionService & SessionPermissions
   readonly repositories: Pick<
     DataRepositories,
-    'organizations' | 'unit_levels' | 'units' | 'command_ranks' | 'soldiers' | 'soldier_private' | 'unit_memberships'
+    | 'organizations'
+    | 'unit_levels'
+    | 'units'
+    | 'command_ranks'
+    | 'soldiers'
+    | 'soldier_private'
+    | 'unit_memberships'
+    | 'leave_type_groups'
+    | 'leave_types'
+    | 'leaves'
+    | 'leave_events'
   >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
@@ -22,6 +32,9 @@ export interface ContractAdapter {
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']
     readonly soldiers: Pick<DataCommands['soldiers'], 'create' | 'update' | 'archive' | 'updatePrivate' | 'changeMembership'>
+    readonly leave_type_groups: DataCommands['leave_type_groups']
+    readonly leave_types: DataCommands['leave_types']
+    readonly leaves: Pick<DataCommands['leaves'], 'create'>
   }
   readonly changes: ChangeFeed
 }

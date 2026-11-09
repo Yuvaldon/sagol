@@ -1,20 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { AuthMode, ColorKey, DataAdapterMode } from '@contracts'
+import { AuthMode, ColorKey, DataAdapterMode, IconKey } from '@contracts'
 import {
+  BAR_COLOR_MODES,
   BREAKPOINTS_PX,
+  BarColorMode,
   DATE_FORMATS,
   DATE_LOCALE,
+  DEFAULT_BAR_COLOR_MODE,
   DEFAULT_VIEW_ID,
   DESKTOP_MEDIA_QUERY,
   ENV_VARIABLES,
+  ICON_KEYS,
   INDEXED_DB_NAME,
   PALETTE_KEYS,
   PANEL_IDS,
   PanelId,
   SEARCH_PARAMS,
   STORAGE_KEYS,
+  TIMELINE_LANES,
+  TIMELINE_LAYOUT,
   VIEW_IDS,
   ViewId,
+  isIconKey,
   isPaletteKey,
   parseEnv,
 } from './index'
@@ -135,7 +142,30 @@ describe('palette', () => {
   })
 })
 
+describe('icons (D-113)', () => {
+  it('has unique keys that satisfy the contract', () => {
+    expect(new Set(ICON_KEYS).size).toBe(ICON_KEYS.length)
+    for (const key of ICON_KEYS) expect(IconKey.safeParse(key).success).toBe(true)
+  })
+
+  it('tells members from other strings', () => {
+    expect(isIconKey('exam')).toBe(true)
+    expect(isIconKey('Exam')).toBe(false)
+    expect(isIconKey('')).toBe(false)
+  })
+})
+
 describe('views, url, storage, breakpoints, dates', () => {
+  it('has a default bar color mode that is a mode (D-112)', () => {
+    expect(BAR_COLOR_MODES).toContain(DEFAULT_BAR_COLOR_MODE)
+    expect(BarColorMode.safeParse('rainbow').success).toBe(false)
+  })
+
+  it('fits a lane step around a bar (D-111)', () => {
+    expect(TIMELINE_LANES.laneStepPx).toBeGreaterThan(TIMELINE_LANES.barPx)
+    expect(TIMELINE_LAYOUT.rowPx).toBeGreaterThan(TIMELINE_LANES.barPx)
+  })
+
   it('has a default view that is a view id', () => {
     expect(VIEW_IDS).toContain(DEFAULT_VIEW_ID)
     expect(ViewId.safeParse('gantt').success).toBe(false)

@@ -17,7 +17,7 @@ and this file says how to use them.
 - **No dead controls (D-076).** A control appears only when its action works end to end and the actor may
   use it (`useCan`, D-091). A row with no permitted action shows no menu at all.
 - **Status is carried by form as well as color** (solid, dashed, badge), so color is never the only
-  signal. Leave bars arrive in V4.
+  signal (D-111).
 
 ## Color (Light)
 
@@ -35,9 +35,12 @@ and this file says how to use them.
 | `today`, `today-band` | Today on the timeline: the dark pill around its number in the days header, and the faint band of its column |
 | `marker-ink` | Timeline markers, from V4 |
 | `scrim` | Behind a drawer or a dialog |
+| `absence`, `absence-edge` | Every absence in the uniform color mode of the timeline: the fill text reads on, and its dashed edge (D-112) |
 | `palette-<key>` | The 12 colors users choose (D-074). Each passes 3:1 on `surface`, so they are for shapes, not text |
 
-A palette key reaches the screen through `PALETTE_SWATCHES` (`ui/theme/palette.ts`), whose map is total. A
+A palette key reaches the screen through `PALETTE_SWATCHES` (`ui/theme/palette.ts`), whose map is total. A shape
+painted in a user's color takes its `PALETTE_TONES`: a solid fill, a faint fill (10%), an edge and an icon color.
+An icon key reaches the screen through `ICON_GLYPHS` (`ui/theme/icons.ts`), also total, with a name read aloud. A
 user's color says nothing by itself, so a row also has its name, and the color field reads each swatch's
 name aloud and marks the selected one with a check.
 
@@ -84,6 +87,16 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   column sticks to the inline start on `surface`, so days pass under it when the grid scrolls sideways. A group header
   row sits on `canvas`. Days a row is out of the selected unit are muted with `inner` and read aloud as ranges.
   Positions are inline offsets from the core, so RTL needs no mirroring.
+- **Leaves on the timeline (D-111, D-112):** sizes come from `TIMELINE_LANES` in `config`: bars 20 high, inset 3 inside
+  their days, a lane step of 24. A bar is its type's color: solid when approved, a 2 px dashed edge over a faint fill when
+  pending, square on a side the window cuts. A marker is a 20 px round badge on `surface` with its icon, on each day,
+  over any bar. Overlaps take lanes, and a row grows by a lane step for each lane beyond the first. In the uniform mode
+  every bar is `absence`, with a dot of the type's color and its name inside, and badges are `marker`. Each row reads
+  its leaves aloud in an `sr-only` list. Bars are not controls until V5.
+- **The floating "+" (D-115):** a 44 px round `glass-action` at the bottom inline-end corner of the board, above the
+  bottom bar on a phone. The grid ends with room for it.
+- **Module buttons (D-116):** icon and name from `md`; below it the icon alone in a 44 px `IconButton`, its name still
+  read aloud.
 - **A control with nothing to choose stays away (D-076):** the unit selector appears once a unit exists; "today" appears
   while the window does not hold today.
 - **Outside the workspace:** one `glass-card` centered on the canvas (`CenteredSheet`), at most `sheet`
@@ -120,6 +133,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   the action on the button.
 - **Empty and loading:** `EmptyNotice` says what comes next and holds the first action, if the actor may take it. Its
   heading is `h3` in a drawer and `h2` in the viewport, so headings never skip a level.
+- **A list in groups:** each group is a `section` with an `h3`, and its list is labelled by that heading
+  (`LeaveTypesModule`). Up and down in the row menu order a row inside its group.
 - **A unit the actor does not see:** `unitStateLabel` says "ללא יחידה", "יחידה אחרת" or "לא ידוע" (D-106), the same in
   every list.
 
@@ -128,7 +143,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | Component | Where | Notes |
 |-----------|-------|-------|
 | `Button`, `IconButton` | `ui/primitives` | `primary` or `quiet`. An icon button still has a name |
-| `TextField`, `SearchSelectField`, `SelectField`, `ColorField`, `DateField` | `ui/primitives` | Label, value, one error. They know nothing about forms |
+| `TextField`, `SearchSelectField`, `ComboField`, `SelectField`, `ColorField`, `IconField`, `SwitchField`, `DateField` | `ui/primitives` | Label, value, one error. They know nothing about forms. `ComboField` picks a named row by typing |
 | `CenteredSheet` | `ui/patterns` | Full-screen state with a title and an optional hint |
 | `Drawer`, `SmallDialog`, `ActionMenu` | `ui/patterns` | Floating surfaces, in the order they stack |
 | `EntityForm`, `FailureNotice`, `EmptyNotice`, `LoadingNotice` | `ui/patterns` | The frame and the states of a module |
@@ -141,6 +156,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `Viewport`, `UnitSelector`, `ViewSwitcher`, `WindowNavigator` | `ui/shell` | The engine in the middle, and the controls of the bars |
 | Engine registry, `TimelineEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter |
 | `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
+| `LeaveTypesModule`, `LeaveTypeGroupsModule`, `NewLeaveModule`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the new-leave form and its "+" |
 
 Errors are shown through `ui/errors/messages.ts`, whose maps from code to i18n are total: a new code does
 not compile until it has a message.

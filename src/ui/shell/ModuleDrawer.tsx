@@ -4,6 +4,9 @@ import { useModuleAccess, usePanel } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { CommandRanksModule } from '../modules/command-ranks/CommandRanksModule'
+import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsModule'
+import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
+import { NewLeaveModule } from '../modules/leaves/NewLeaveModule'
 import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
 import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
@@ -51,6 +54,23 @@ const GROUPS: readonly ModuleGroup[] = [
         Module: CommandRanksModule,
       },
     ],
+  },
+  {
+    titleKey: 'leaveTypes.title',
+    sections: [
+      { panel: PANEL_IDS.leaveTypes, labelKey: 'leaveTypes.tabTypes', isAllowed: (access) => access.leaveTypes, Module: LeaveTypesModule },
+      {
+        panel: PANEL_IDS.leaveTypeGroups,
+        labelKey: 'leaveTypes.tabGroups',
+        isAllowed: (access) => access.leaveTypes,
+        Module: LeaveTypeGroupsModule,
+      },
+    ],
+  },
+  {
+    titleKey: 'leaves.title',
+    // The form lists the soldiers the actor sees, so it needs soldiers:view (D-115).
+    sections: [{ panel: PANEL_IDS.leaves, labelKey: 'leaves.newTitle', isAllowed: (access) => access.soldiers, Module: NewLeaveModule }],
   },
 ]
 

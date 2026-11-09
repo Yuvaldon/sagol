@@ -9,6 +9,10 @@ const onCi = process.env.CI !== undefined
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // Every worker loads the app from the one dev server, which serves unbundled modules. Past two workers the
+  // longest demos slow down more than threefold and cross the timeout, with no race behind it (OI-061). CI
+  // runs two as well, so a local run is the run CI makes.
+  workers: 2,
   forbidOnly: onCi,
   reporter: onCi ? 'github' : 'list',
   use: {

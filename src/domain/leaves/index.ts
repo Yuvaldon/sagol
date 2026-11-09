@@ -17,3 +17,4 @@ export {
   type LeaveWorkflowStep,
 } from './workflow'
 export { COMMENT_PERMISSIONS, commentChangeIssues, isCommentAuthor } from './comments'
+export { archiveLeaveTypeGroupIssues } from './types'

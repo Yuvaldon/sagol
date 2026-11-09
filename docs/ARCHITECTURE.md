@@ -201,12 +201,12 @@ never reach the client bundle.
 ```
 src/
   contracts/   entities/ inputs/ enums/ filters/ permissions/ repositories/ commands/ auth/ errors/
-  domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/
+  domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/ text/
                json/ time/
-  config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ dates/ panels/
+  config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
-  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/
+  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ timeline/
   ui/          theme/ primitives/ patterns/ errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/

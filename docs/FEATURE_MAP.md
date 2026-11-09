@@ -213,6 +213,8 @@ icon badge. Overlaps get lanes.
 - **Decisions:** D-012, D-013, D-032, D-034, D-041, D-047, D-049, D-063, D-070, D-073.
 - **Owner decision at start (OI-030):** what a bar's color means. Stone 3 colors by status, while
   D-032 gives each leave type its own `color_key`.
+- **As built:** the type's color with status by form, plus a uniform mode (D-111, D-112); groups in their own section
+  (D-113). The availability context of `logic` moved to V6, where the first screen reads a day's status (OI-028).
 
 #### V5 — Approval workflow
 **Owner sees:** click a bar → a details drawer: approve, reject, cancel, reopen, edit dates or

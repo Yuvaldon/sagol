@@ -2,6 +2,7 @@ import { PANEL_IDS } from '@config'
 import type { CalendarDate, FilterExpression } from '@contracts'
 import { t } from '@i18n'
 import {
+  useBarColors,
   useDateWindow,
   useModuleAccess,
   usePanel,
@@ -29,6 +30,7 @@ function Centered({ children }: { readonly children: ReactNode }) {
 function Board({ model }: { readonly model: TimelineModel }) {
   const access = useModuleAccess()
   const panel = usePanel()
+  const { mode } = useBarColors()
   const open = access.soldiers
     ? (soldierId: string) => {
         panel.open(PANEL_IDS.soldiers, { entity: soldierId })
@@ -60,7 +62,12 @@ function Board({ model }: { readonly model: TimelineModel }) {
       </Centered>
     )
   }
-  return <TimelineGrid days={dayCells(model.days, model.today)} rows={timelineRows(model.items, model.days, open)} />
+  return (
+    <TimelineGrid
+      days={dayCells(model.days, model.today)}
+      rows={timelineRows(model.items, model.days, open, { leaves: model.leaves, colors: mode })}
+    />
+  )
 }
 
 function TimelineData({

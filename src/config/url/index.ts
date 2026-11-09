@@ -16,6 +16,8 @@ export const SEARCH_PARAMS = {
   entity: 'entity',
   /** Parent of a new unit (D-092). */
   parent: 'parent',
+  /** What a timeline bar's color means (`BarColorMode`, D-112). */
+  colors: 'colors',
 } as const
 
 export type SearchParamName = (typeof SEARCH_PARAMS)[keyof typeof SEARCH_PARAMS]

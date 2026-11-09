@@ -1,5 +1,5 @@
 -- =============================================================================
--- Sagol — PostgreSQL schema. Revision 3.1 (2026-11-03).
+-- Sagol — PostgreSQL schema. Revision 3.2 (2026-11-10).
 -- Single Source of Truth for entity and column names. `src/contracts` mirrors it;
 -- a drift test keeps the two identical. Decisions: docs/DECISIONS.md (D-xxx).
 --
@@ -36,6 +36,9 @@
 --   * soldier_private.personal_id optional; account_link_requests.claimed_personal_id optional (D-030)
 --   * availability_rules: priority, group_by, group_tag_category_id, NULL scope = organization (D-031)
 --   + leaves.availability_effect_override (D-032)
+--
+-- Revision 3.2 changes vs revision 3.1
+--   + CHECK lists on leave_events.from_status and to_status (OI-013)
 -- =============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "btree_gist";
@@ -137,7 +140,7 @@ CREATE TABLE IF NOT EXISTS "soldiers" (
 	"first_name" VARCHAR(50) NOT NULL,
 	"last_name" VARCHAR(50) NOT NULL,
 	"nickname" VARCHAR(50),
-	"command_rank_id" UUID REFERENCES "command_ranks"("id"),  -- NULL only before ranks exist (bootstrap)
+	"command_rank_id" UUID REFERENCES "command_ranks"("id"),  -- NULL = no rank, a normal state (D-030, D-094)
 	"status" VARCHAR(20) NOT NULL DEFAULT 'active',
 	"properties" JSONB NOT NULL DEFAULT '{}',
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -520,7 +523,9 @@ CREATE TABLE IF NOT EXISTS "leave_events" (
 	PRIMARY KEY("id"),
 	CONSTRAINT "leave_events_type_check" CHECK ("event_type" IN (
 		'created', 'updated', 'rescheduled', 'approved', 'rejected', 'cancelled', 'reopened'
-	))
+	)),
+	CONSTRAINT "leave_events_from_status_check" CHECK ("from_status" IS NULL OR "from_status" IN ('pending', 'approved', 'rejected', 'cancelled')),
+	CONSTRAINT "leave_events_to_status_check" CHECK ("to_status" IS NULL OR "to_status" IN ('pending', 'approved', 'rejected', 'cancelled'))
 );
 
 CREATE TABLE IF NOT EXISTS "leave_comments" (

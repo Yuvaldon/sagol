@@ -24,6 +24,7 @@ const SPEC: ReferenceSpec<UnitLevel> = {
   resource: 'unit_levels',
   schema: UnitLevel,
   checkTables: [],
+  optionalText: [],
   targetOf: () => ({ kind: 'organization' }),
   rowIssues: () => Promise.resolve([]),
 }

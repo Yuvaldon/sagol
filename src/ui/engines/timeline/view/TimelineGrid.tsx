@@ -1,11 +1,12 @@
-import { TIMELINE_LAYOUT } from '@config'
+import { TIMELINE_LANES, TIMELINE_LAYOUT } from '@config'
 import { t } from '@i18n'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { useIsDesktop } from '../../../patterns/media'
+import { badgeStart, barSpan, laneTop, rowHeightFor } from '../core/lanes'
 import { dayOffset, gridLayout, spansOf, type GridLayout } from '../core/layout'
-import type { TimelineDayCell, TimelineGroupRow, TimelineResourceRow, TimelineRowModel } from './model'
+import type { TimelineDayCell, TimelineGroupRow, TimelineMark, TimelineResourceRow, TimelineRowModel } from './model'
 
 // The timeline grid of Stone 3 (D-077, D-108): a days header that floats under the bars, a name column
 // that stays at the inline start, and rows that exist in the page only while in sight. Positions come from
@@ -90,7 +91,57 @@ function GroupRow({ row, layout }: { readonly row: TimelineGroupRow; readonly la
   )
 }
 
-function ResourceRow({ row, layout }: { readonly row: TimelineResourceRow; readonly layout: GridLayout }) {
+/** A bar over its days: solid when approved, a dashed edge over a faint fill when pending (D-111). */
+function Bar({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonly layout: GridLayout; readonly baseRowPx: number }) {
+  const { startPx, widthPx } = barSpan(layout, mark, mark.cut, TIMELINE_LANES)
+  const form = mark.dashed ? `border-2 border-dashed ${mark.tone.edge} ${mark.tone.faint}` : mark.tone.fill
+  const ends = `${mark.cut.start ? '' : 'rounded-s-bar'} ${mark.cut.end ? '' : 'rounded-e-bar'}`
+  return (
+    <div
+      aria-hidden
+      className={`absolute z-1 flex items-center gap-xs overflow-hidden px-xs ${form} ${ends}`}
+      style={{
+        insetInlineStart: startPx,
+        width: widthPx,
+        top: laneTop(baseRowPx, mark.lane, TIMELINE_LANES),
+        height: TIMELINE_LANES.barPx,
+      }}
+    >
+      {mark.dot === null ? null : <span className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
+      {mark.caption === null ? null : <span className="truncate text-micro font-medium text-text">{mark.caption}</span>}
+    </div>
+  )
+}
+
+/** A marker: a round badge with its icon on each of its days, over any bar (D-111). */
+function Badges({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonly layout: GridLayout; readonly baseRowPx: number }) {
+  const Icon = mark.Icon
+  return Array.from({ length: mark.length }, (_, offset) => (
+    <div
+      key={offset}
+      aria-hidden
+      className={`absolute z-1 flex items-center justify-center rounded-pill bg-surface shadow-rim ${mark.dashed ? 'border border-dashed' : 'border'} ${mark.tone.edge} ${mark.tone.ink}`}
+      style={{
+        insetInlineStart: badgeStart(layout, mark.start + offset, TIMELINE_LANES),
+        top: laneTop(baseRowPx, mark.lane, TIMELINE_LANES),
+        width: TIMELINE_LANES.barPx,
+        height: TIMELINE_LANES.barPx,
+      }}
+    >
+      {Icon === null ? null : <Icon size={12} strokeWidth={2.6} />}
+    </div>
+  ))
+}
+
+function ResourceRow({
+  row,
+  layout,
+  baseRowPx,
+}: {
+  readonly row: TimelineResourceRow
+  readonly layout: GridLayout
+  readonly baseRowPx: number
+}) {
   const name = (
     <span className="flex min-w-none items-baseline gap-xs">
       <span className="truncate text-name font-medium text-text">{row.name}</span>
@@ -119,9 +170,23 @@ function ResourceRow({ row, layout }: { readonly row: TimelineResourceRow; reado
           </AriaButton>
         )}
       </div>
+      {row.marks.map((mark) =>
+        mark.kind === 'bar' ? (
+          <Bar key={mark.key} mark={mark} layout={layout} baseRowPx={baseRowPx} />
+        ) : (
+          <Badges key={mark.key} mark={mark} layout={layout} baseRowPx={baseRowPx} />
+        ),
+      )}
       {/* A hairline of its own, so the name keeps the whole height of the row as a touch target. */}
       <div aria-hidden className="absolute inset-x-none bottom-none z-3 h-hairline bg-line" />
       {row.offText === null ? null : <span className="sr-only">{row.offText}</span>}
+      {row.marksText.length === 0 ? null : (
+        <ul aria-label={t('leaves.ofRow')} className="sr-only">
+          {row.marksText.map((text) => (
+            <li key={text}>{text}</li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -149,7 +214,11 @@ export function TimelineGrid({ days, rows }: TimelineGridProps) {
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scroller,
-    estimateSize: (index) => (rows[index]?.kind === 'group' ? TIMELINE_LAYOUT.groupRowPx : rowPx),
+    estimateSize: (index) => {
+      const row = rows[index]
+      if (row === undefined || row.kind === 'group') return TIMELINE_LAYOUT.groupRowPx
+      return rowHeightFor(rowPx, row.lanes, TIMELINE_LANES)
+    },
     overscan: TIMELINE_LAYOUT.overscanRows,
     scrollMargin: listTop,
     getItemKey: (index) => rows[index]?.key ?? index,
@@ -158,7 +227,7 @@ export function TimelineGrid({ days, rows }: TimelineGridProps) {
   // Sizes are cached by the virtualizer, so a screen that crosses the breakpoint lays the rows out again.
   useLayoutEffect(() => {
     virtualizer.measure()
-  }, [virtualizer, rowPx])
+  }, [virtualizer, rowPx, rows])
 
   return (
     <div
@@ -185,12 +254,17 @@ export function TimelineGrid({ days, rows }: TimelineGridProps) {
                 className="absolute inset-x-none top-none"
                 style={{ height: item.size, transform: `translateY(${String(item.start - listTop)}px)` }}
               >
-                {row.kind === 'group' ? <GroupRow row={row} layout={layout} /> : <ResourceRow row={row} layout={layout} />}
+                {row.kind === 'group' ? (
+                  <GroupRow row={row} layout={layout} />
+                ) : (
+                  <ResourceRow row={row} layout={layout} baseRowPx={rowPx} />
+                )}
               </li>
             )
           })}
         </ul>
-        <div aria-hidden className="h-above-bottom-bar md:h-lg" />
+        {/* Room for the bottom bar on a phone, and for the floating "+" everywhere (D-115). */}
+        <div aria-hidden className="h-above-bottom-bar" />
       </div>
     </div>
   )

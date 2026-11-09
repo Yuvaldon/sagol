@@ -9,7 +9,7 @@ import {
   type TableName,
   type Timestamp,
 } from '@contracts'
-import { issuesFromSchema, withPathPrefix } from '@domain'
+import { issuesFromSchema, withOptionalText, withPathPrefix } from '@domain'
 import type { z } from 'zod'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
@@ -31,7 +31,7 @@ export interface ReferenceRow {
 export type SortableRow = ReferenceRow & { readonly sort_order: number }
 
 /** Resources written through these commands. It grows with each slice. */
-export type ReferenceResource = 'unit_levels' | 'units' | 'command_ranks' | 'soldiers'
+export type ReferenceResource = 'unit_levels' | 'units' | 'command_ranks' | 'soldiers' | 'leave_types'
 
 type ReferenceAction = 'view' | 'create' | 'update' | 'delete'
 
@@ -53,6 +53,8 @@ export interface ReferenceSpec<Row extends ReferenceRow> {
   readonly schema: z.ZodType<Row>
   /** Tables the row checks read, beyond this one and the policy tables. */
   readonly checkTables: readonly TableName[]
+  /** Optional text columns: blank is stored as NULL (D-101). */
+  readonly optionalText: readonly (keyof Row)[]
   /** What the row's permissions are checked against. */
   readonly targetOf: (row: Row) => PolicyTarget
   /** References and uniques. Paths are relative to the row (D-065). */
@@ -92,6 +94,12 @@ export async function visibleRow<Row extends ReferenceRow>(
 export function requireWritable(row: ReferenceRow, expectedVersion: number): void {
   if (row.archived_at !== null) failValidation([{ path: [], code: IssueCode.enum.archived }])
   if (row.version !== expectedVersion) fail({ code: 'stale_version' })
+}
+
+/** A candidate row with its optional text columns blank-as-NULL (D-101), before it is parsed. */
+export function withSpecOptionalText<Row extends ReferenceRow>(spec: ReferenceSpec<Row>, candidate: object): object {
+  // The candidate is not parsed yet, so it is only shaped like the row; the parse decides.
+  return withOptionalText(candidate as Row, spec.optionalText)
 }
 
 export function parsedCandidate<Row extends ReferenceRow>(spec: ReferenceSpec<Row>, candidate: unknown, prefix: string[]): Row {
@@ -186,7 +194,11 @@ export function createReferenceCommands<
           requirePermission(scope, permissionOf(spec.resource, 'create'), inputs.placementOf(input))
           const candidate = parsedCandidate(
             spec,
-            { ...input, organization_id: scope.organization_id, ...createdBy(scope.soldier_id, scope.now) },
+            withSpecOptionalText(spec, {
+              ...input,
+              organization_id: scope.organization_id,
+              ...createdBy(scope.soldier_id, scope.now),
+            }),
             [],
           )
           if ((await tableFor(database, spec).get(input.id)) !== undefined) {
@@ -212,7 +224,11 @@ export function createReferenceCommands<
           // D-045: the changes merge into the stored row, and the merged row is what gets parsed.
           const merged = parsedCandidate(
             spec,
-            { ...before, ...definedChanges(input.changes), ...updatedBy(scope.soldier_id, scope.now, before.version) },
+            withSpecOptionalText(spec, {
+              ...before,
+              ...definedChanges(input.changes),
+              ...updatedBy(scope.soldier_id, scope.now, before.version),
+            }),
             ['changes'],
           )
           const issues = await spec.rowIssues({ database, scope, row: merged, before })
