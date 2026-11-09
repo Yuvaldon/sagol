@@ -19,14 +19,18 @@ export function EmptyNotice({
   titleKey,
   bodyKey,
   children,
+  headingLevel = 3,
 }: {
   readonly titleKey: I18nKey
   readonly bodyKey: I18nKey
   readonly children?: ReactNode
+  /** 3 inside a drawer, 2 in the viewport, so headings never skip a level. */
+  readonly headingLevel?: 2 | 3
 }) {
+  const Heading = headingLevel === 2 ? 'h2' : 'h3'
   return (
     <div className="flex flex-col items-center gap-sm py-2xl text-center">
-      <h3 className="text-body font-bold">{t(titleKey)}</h3>
+      <Heading className="text-body font-bold">{t(titleKey)}</Heading>
       <p className="text-name text-text-muted">{t(bodyKey)}</p>
       {children}
     </div>

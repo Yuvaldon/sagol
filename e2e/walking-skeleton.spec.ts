@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { ORGANIZATION, OWNER, claimOrganization, expectNoAxeViolations, navigation, signIn } from './support/workspace.ts'
+import { ORGANIZATION, OWNER, claimOrganization, expectNoAxeViolations, navigation, organizationHeading, signIn } from './support/workspace.ts'
 
 // V0's demo: sign in, claim the organization, see the empty workspace, keep the session across a
 // reload, and see that a second identity gets no data. Each test starts on an empty browser
@@ -56,8 +56,8 @@ test('an owner claims the empty organization and reaches the workspace', async (
   await test.step('claiming opens the empty workspace', async () => {
     await claimOrganization(page)
     await expect(page).toHaveURL(/\/$/)
-    await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
-    await expect(page.getByRole('heading', { name: he.workspace.emptyTitle })).toBeVisible()
+    await expect(organizationHeading(page)).toBeVisible()
+    await expect(page.getByRole('region', { name: he.timeline.label }).getByText(OWNER.name)).toBeVisible()
     await expect(navigation(page).getByText(OWNER.name)).toBeVisible()
     await expectNoAxeViolations(page)
   })
@@ -72,14 +72,14 @@ test('an owner claims the empty organization and reaches the workspace', async (
 
   await test.step('a reload keeps the session and the data', async () => {
     await page.reload()
-    await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
+    await expect(organizationHeading(page)).toBeVisible()
     await expect(page).toHaveURL(/\/$/)
   })
 
   await test.step('a URL cannot take a linked session back to onboarding', async () => {
     await page.goto('/onboarding')
     await expect(page).toHaveURL(/\/$/)
-    await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
+    await expect(organizationHeading(page)).toBeVisible()
   })
 
   await test.step('the user menu has no axe violations when open', async () => {
@@ -94,7 +94,7 @@ test('a second identity sees no access and no data', async ({ page }) => {
   await page.goto('/')
   await signIn(page, OWNER.email, OWNER.name)
   await claimOrganization(page)
-  await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
+  await expect(organizationHeading(page)).toBeVisible()
 
   await test.step('after sign-out the app returns to sign-in', async () => {
     await chooseFromUserMenu(page, he.account.signOut)
@@ -119,7 +119,7 @@ test('a second identity sees no access and no data', async ({ page }) => {
 
   await test.step('the identity switcher returns to the owner, with the real policy', async () => {
     await page.getByRole('button', { name: new RegExp(OWNER.email) }).click()
-    await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
+    await expect(organizationHeading(page)).toBeVisible()
   })
 
   await test.step('the user menu switches back to the second identity', async () => {
@@ -138,8 +138,8 @@ test('a claim in one tab moves the other tab too', async ({ page, context }) => 
   await expect(otherTab.getByRole('heading', { name: he.onboarding.title })).toBeVisible()
 
   await claimOrganization(page)
-  await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
-  await expect(navigation(otherTab).getByText(ORGANIZATION)).toBeVisible()
+  await expect(organizationHeading(page)).toBeVisible()
+  await expect(organizationHeading(otherTab)).toBeVisible()
 })
 
 test('every control is a 44 px touch target on mobile', async ({ page }, testInfo) => {
@@ -160,6 +160,6 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   await expect(page.getByRole('heading', { name: he.onboarding.title })).toBeVisible()
   await expectTouchTargets()
   await claimOrganization(page)
-  await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
+  await expect(organizationHeading(page)).toBeVisible()
   await expectTouchTargets()
 })

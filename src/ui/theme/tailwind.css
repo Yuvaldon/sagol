@@ -33,6 +33,8 @@
   --color-marker: #5b45c4;
   --color-marker-ink: #4a36b8;
   --color-today: #2a2a26;
+  /* The column of today on the timeline, a band barely darker than the surface (Stone 3). */
+  --color-today-band: rgba(26, 26, 24, 0.035);
   --color-scrim: rgba(26, 26, 24, 0.28);
   /* The closed palette users choose from (D-074). Each passes 3:1 on the surface. Dark set: V17. */
   --color-palette-red: #c8372d;
@@ -76,10 +78,16 @@
   --spacing-dot: 10px;
   --spacing-grip: 36px;
   --spacing-sheet-height: 88dvh;
+  /* Where content starts under the floating top bar: its offset, its height and a gap (D-108). */
+  --spacing-under-bars: 66px;
+  --spacing-under-bars-md: 52px;
+  /* Room for the bottom bar on mobile, so the last row can scroll above it. */
+  --spacing-above-bottom-bar: 80px;
 
   --container-sheet: 420px;
   --container-menu: 260px;
   --container-drawer: 440px;
+  --container-unit-picker: 200px;
 
   --radius-bar: 6px;
   --radius-control: 10px;

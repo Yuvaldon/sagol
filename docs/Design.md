@@ -17,7 +17,7 @@ and this file says how to use them.
 - **No dead controls (D-076).** A control appears only when its action works end to end and the actor may
   use it (`useCan`, D-091). A row with no permitted action shows no menu at all.
 - **Status is carried by form as well as color** (solid, dashed, badge), so color is never the only
-  signal. Timeline bars arrive in V4.
+  signal. Leave bars arrive in V4.
 
 ## Color (Light)
 
@@ -32,7 +32,8 @@ and this file says how to use them.
 | `status-approved`, `status-pending`, `status-rejected` | Status. `status-rejected` is also field errors and refusals |
 | `status-pending-text` | Pending as text. `status-pending` is below 4.5:1 and is for borders only (OI-033) |
 | `marker` | The drop line of a drag; on the timeline from V4 |
-| `marker-ink`, `today` | Timeline, from V3 and V4 |
+| `today`, `today-band` | Today on the timeline: the dark pill around its number in the days header, and the faint band of its column |
+| `marker-ink` | Timeline markers, from V4 |
 | `scrim` | Behind a drawer or a dialog |
 | `palette-<key>` | The 12 colors users choose (D-074). Each passes 3:1 on `surface`, so they are for shapes, not text |
 
@@ -71,8 +72,20 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Layout
 
-- **Workspace (D-023):** a `surface` panel on the `canvas`. One glass bar floats over it, at the bottom
-  on mobile and at the top from `md`. Controls join the bar as their slices build them.
+- **Workspace (D-023, D-108):** a `surface` panel on the `canvas`, filled by the active engine. Glass bars float over
+  it. From `md`, two bars at the top: on the inline start the organization's name (the page's `h1`), the unit selector
+  and the view switcher; on the inline end the week, "today", the modules and the user menu. Below `md`, the week, the
+  unit and the view at the top, and the name, the modules and the user at the bottom. Content starts under the top bar
+  (`under-bars`, `under-bars-md`), ends above the bottom bar (`above-bottom-bar`), and scrolls under the glass. A
+  structure that differs by screen uses `useIsDesktop`; anything else is CSS.
+- **Timeline (D-108):** sizes come from `TIMELINE_LAYOUT` in `config`, because the geometry and the virtualizer need the
+  same numbers: rows 36 (44 on mobile, where a name is a touch target), group rows 32, the days header 28, names 124,
+  days at least 64 and sharing any extra width. The days header is a glass pill that sticks under the bars. The name
+  column sticks to the inline start on `surface`, so days pass under it when the grid scrolls sideways. A group header
+  row sits on `canvas`. Days a row is out of the selected unit are muted with `inner` and read aloud as ranges.
+  Positions are inline offsets from the core, so RTL needs no mirroring.
+- **A control with nothing to choose stays away (D-076):** the unit selector appears once a unit exists; "today" appears
+  while the window does not hold today.
 - **Outside the workspace:** one `glass-card` centered on the canvas (`CenteredSheet`), at most `sheet`
   420 wide.
 - **Management modules (D-092):** `Drawer`, one surface in two forms. From `md` it is modal, at most `drawer`
@@ -105,7 +118,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   anything else in a `FailureNotice` above the actions.
 - **A question:** `SmallDialog`. An action that cannot be undone uses `alertdialog`, says so in its body, and names
   the action on the button.
-- **Empty and loading:** `EmptyNotice` says what comes next and holds the first action, if the actor may take it.
+- **Empty and loading:** `EmptyNotice` says what comes next and holds the first action, if the actor may take it. Its
+  heading is `h3` in a drawer and `h2` in the viewport, so headings never skip a level.
+- **A unit the actor does not see:** `unitStateLabel` says "ללא יחידה", "יחידה אחרת" or "לא ידוע" (D-106), the same in
+  every list.
 
 ## Components so far
 
@@ -117,10 +133,13 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `Drawer`, `SmallDialog`, `ActionMenu` | `ui/patterns` | Floating surfaces, in the order they stack |
 | `EntityForm`, `FailureNotice`, `EmptyNotice`, `LoadingNotice` | `ui/patterns` | The frame and the states of a module |
 | `VirtualList` | `ui/patterns` | A long list inside a drawer |
-| `formatDate` | `ui/patterns` | A stored day as text, from the presets in `config` |
+| `formatDate`, `formatDateRange` | `ui/patterns` | A stored day, or two as one range (`8–14 בנוב׳`), from the presets in `config` |
+| `useIsDesktop`, `unitStateLabel` | `ui/patterns` | The breakpoint as a value; the label of a unit the actor does not see |
 | `validatorResult`, `fieldError`, `formStateOf` | `ui/patterns` | Field issues (D-068) in TanStack Form |
 | `UserMenu`, `IdentityList` | `ui/shell` | Who is signed in, sign-out, dev identity switcher |
 | `ModuleDrawer` | `ui/shell` | The map of what opens in the drawer, with each group's sections |
+| `Viewport`, `UnitSelector`, `ViewSwitcher`, `WindowNavigator` | `ui/shell` | The engine in the middle, and the controls of the bars |
+| Engine registry, `TimelineEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter |
 | `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
 
 Errors are shown through `ui/errors/messages.ts`, whose maps from code to i18n are total: a new code does

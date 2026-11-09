@@ -7,7 +7,15 @@ import { DateFormatter, parseDate } from '@internationalized/date'
 
 const NEUTRAL_ZONE = 'UTC'
 
+function formatterOf(format: DateFormat): DateFormatter {
+  return new DateFormatter(DATE_LOCALE, { ...DATE_FORMATS[format], timeZone: NEUTRAL_ZONE })
+}
+
 export function formatDate(date: CalendarDate, format: DateFormat = 'numeric'): string {
-  const formatter = new DateFormatter(DATE_LOCALE, { ...DATE_FORMATS[format], timeZone: NEUTRAL_ZONE })
-  return formatter.format(parseDate(date).toDate(NEUTRAL_ZONE))
+  return formatterOf(format).format(parseDate(date).toDate(NEUTRAL_ZONE))
+}
+
+/** Two stored days as one range, the way the locale writes it (`8–14 בנוב׳`). */
+export function formatDateRange(from: CalendarDate, to: CalendarDate, format: DateFormat = 'dayMonth'): string {
+  return formatterOf(format).formatRange(parseDate(from).toDate(NEUTRAL_ZONE), parseDate(to).toDate(NEUTRAL_ZONE))
 }

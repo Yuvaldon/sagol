@@ -38,10 +38,15 @@ export function navigation(page: Page) {
   return page.getByRole('navigation', { name: he.workspace.navigation })
 }
 
+/** The organization's name is the page's one heading, in a bar (D-108). */
+export function organizationHeading(page: Page, name = ORGANIZATION) {
+  return page.getByRole('heading', { level: 1, name })
+}
+
 /** A new owner on an empty store, in the workspace. */
 export async function enterAsOwner(page: Page) {
   await page.goto('/')
   await signIn(page, OWNER.email, OWNER.name)
   await claimOrganization(page)
-  await expect(navigation(page).getByText(ORGANIZATION)).toBeVisible()
+  await expect(organizationHeading(page)).toBeVisible()
 }

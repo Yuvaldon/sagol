@@ -21,6 +21,7 @@ import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
+import { unitStateLabel } from '../../patterns/units'
 import { VirtualList } from '../../patterns/VirtualList'
 import { Button } from '../../primitives/Button'
 import { TextField } from '../../primitives/fields'
@@ -45,7 +46,7 @@ function SoldierRowView({ row, actions }: { readonly row: SoldierRow; readonly a
         <span className="max-w-full truncate text-name font-semibold">{fullName(row.soldier)}</span>
         <span className="flex max-w-full gap-sm truncate text-micro text-text-muted">
           {row.rank === null ? null : <span>{row.rank.title}</span>}
-          <span>{row.unit?.name ?? t('soldiers.noUnit')}</span>
+          <span>{unitStateLabel(row.unitState)}</span>
           {row.soldier.status === 'inactive' ? <span>{t('soldiers.statusInactive')}</span> : null}
         </span>
       </AriaButton>
@@ -74,7 +75,11 @@ function SoldiersContent({
   const [query, setQuery] = useState('')
   const [failure, setFailure] = useState<AppError | null>(null)
   const [archiving, setArchiving] = useState<Soldier | null>(null)
-  const rows = useMemo(() => soldierRows(soldiers, ranks, units, memberships, today), [soldiers, ranks, units, memberships, today])
+  const { readsPlacements } = permissions
+  const rows = useMemo(
+    () => soldierRows(soldiers, ranks, units, memberships, today, readsPlacements),
+    [soldiers, ranks, units, memberships, today, readsPlacements],
+  )
   const shown = useMemo(() => rows.filter((row) => matchesName(row.soldier, query)), [rows, query])
 
   const newSoldier = () => {
