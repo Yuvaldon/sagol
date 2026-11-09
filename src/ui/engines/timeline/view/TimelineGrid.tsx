@@ -98,7 +98,7 @@ function ResourceRow({ row, layout }: { readonly row: TimelineResourceRow; reado
     </span>
   )
   return (
-    <div className="relative h-full border-b border-line" style={{ width: layout.widthPx }}>
+    <div className="relative h-full" style={{ width: layout.widthPx }}>
       {spansOf(row.offDays, true).map((span) => (
         <div
           key={span.start}
@@ -119,6 +119,8 @@ function ResourceRow({ row, layout }: { readonly row: TimelineResourceRow; reado
           </AriaButton>
         )}
       </div>
+      {/* A hairline of its own, so the name keeps the whole height of the row as a touch target. */}
+      <div aria-hidden className="absolute inset-x-none bottom-none z-3 h-hairline bg-line" />
       {row.offText === null ? null : <span className="sr-only">{row.offText}</span>}
     </div>
   )

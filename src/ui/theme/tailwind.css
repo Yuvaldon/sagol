@@ -76,6 +76,7 @@
   --spacing-touch: 44px;
   --spacing-list: 240px;
   --spacing-dot: 10px;
+  --spacing-hairline: 1px;
   --spacing-grip: 36px;
   --spacing-sheet-height: 88dvh;
   /* Where content starts under the floating top bar: its offset, its height and a gap (D-108). */
