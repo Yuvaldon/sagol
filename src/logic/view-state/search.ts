@@ -1,10 +1,10 @@
-import { NEW_ENTITY, PanelId, ROUTES, SEARCH_PARAMS, ViewId } from '@config'
+import { BarColorMode, NEW_ENTITY, PanelId, ROUTES, SEARCH_PARAMS, ViewId } from '@config'
 import { CalendarDate, FilterExpression, UnitId } from '@contracts'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
 import { z } from 'zod'
 
-// All view state lives in the URL (D-023): the view, the date window, the filter and the open panel. A
+// All view state lives in the URL (D-023): the view, the date window, the filter, the bar colors and the open panel. A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
 
@@ -20,6 +20,7 @@ export const WorkspaceSearch = z.object({
     .optional()
     .catch(undefined),
   [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),
+  [SEARCH_PARAMS.colors]: BarColorMode.optional().catch(undefined),
 })
 export type WorkspaceSearch = z.infer<typeof WorkspaceSearch>
 

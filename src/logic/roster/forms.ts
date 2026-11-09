@@ -17,13 +17,15 @@ import {
   type UnitId,
   type UnitMembership,
 } from '@contracts'
+import { optionalText } from '@domain'
 import { formIssues } from '../forms/issues'
 import { formFieldIssues } from '../units/forms'
 
 // Between the forms and the command inputs. Ids are generated here, by the caller (D-044). Optional
 // text fields hold '' on screen and NULL in a row, so emptiness has one stored form.
 
-const blankToNull = (value: string): string | null => (value.trim() === '' ? null : value)
+/** The rule the commands follow too (D-101). */
+const blankToNull = (value: string): string | null => optionalText(value)
 
 // ---------------------------------------------------------------------- ranks
 
