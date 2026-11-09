@@ -60,6 +60,8 @@ const STATE_ISSUE_CODES = [
   'unit_not_empty',
   /** A soldier who is not archived holds the rank (D-095). */
   'rank_in_use',
+  /** A leave type group holds a type that is not archived (D-113). */
+  'group_in_use',
 ] as const
 
 /** Every validation issue code: field codes, row checks (`SchemaIssue`) and state codes. */
