@@ -165,6 +165,21 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   await test.step('a name opens the soldier, and closing keeps the board as it was', async () => {
     await board(page).getByRole('button', { name: /נועם לב/ }).click()
     await expect(page.getByRole('heading', { name: 'נועם לב', exact: true })).toBeVisible()
+    // The drawer and its scrim lie over the bars, not under them. The modal makes the bars inert, and hit
+    // testing skips what is inert, so the test lifts it for the moment of the check.
+    const covered = await page.evaluate(() => {
+      const inert = [...document.querySelectorAll('[inert]')]
+      for (const element of inert) element.removeAttribute('inert')
+      const bars = [...document.querySelectorAll('nav')].filter((bar) => bar.closest('[role="dialog"]') === null)
+      const answer = bars.every((bar) => {
+        const box = bar.getBoundingClientRect()
+        const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+        return top !== null && !bar.contains(top)
+      })
+      for (const element of inert) element.setAttribute('inert', '')
+      return answer
+    })
+    expect(covered).toBe(true)
     await expect(page).toHaveURL(/panel=soldiers/)
     await expect(page).toHaveURL(/from=2026-11-15/)
     await closeDrawer(page)
