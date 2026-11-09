@@ -31,7 +31,7 @@ export interface ReferenceRow {
 export type SortableRow = ReferenceRow & { readonly sort_order: number }
 
 /** Resources written through these commands. It grows with each slice. */
-export type ReferenceResource = 'unit_levels' | 'units' | 'command_ranks' | 'soldiers'
+export type ReferenceResource = 'unit_levels' | 'units' | 'command_ranks' | 'soldiers' | 'leave_types'
 
 type ReferenceAction = 'view' | 'create' | 'update' | 'delete'
 
