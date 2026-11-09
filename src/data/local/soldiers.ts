@@ -28,6 +28,7 @@ import {
   soldierTarget,
   spansOverlap,
   unitTarget,
+  withOptionalText,
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { propertiesIssues } from './checks'
@@ -41,6 +42,7 @@ import {
   permissionOf,
   tablesOf,
   visibleRow,
+  withSpecOptionalText,
   type ReferenceSpec,
   type RowCheck,
 } from './reference'
@@ -72,6 +74,7 @@ const SPEC: ReferenceSpec<Soldier> = {
   resource: 'soldiers',
   schema: Soldier,
   checkTables: ['property_definitions'],
+  optionalText: ['nickname'],
   targetOf: (row) => soldierTarget(row.id),
   rowIssues: async (check) => [
     ...(await rankIssues(check)),
@@ -80,6 +83,20 @@ const SPEC: ReferenceSpec<Soldier> = {
 }
 
 const ROSTER_TABLES: readonly TableName[] = [...tablesOf(SPEC), 'soldier_private']
+
+/** Optional private text: blank is stored as NULL (D-101). The personal id has its own normalization (D-066). */
+const PRIVATE_OPTIONAL_TEXT = ['invite_email', 'phone'] as const
+
+/**
+ * The private fields of a raw input with blanks as NULL, before the input is parsed: a blank email would otherwise
+ * fail its format, while D-101 says blank means "no value". The parse that follows still decides the rest.
+ */
+function blankPrivateText<Raw>(raw: Raw, key: 'private' | 'changes'): Raw {
+  if (typeof raw !== 'object' || raw === null || !(key in raw)) return raw
+  const fields: unknown = (raw as Record<string, unknown>)[key]
+  if (typeof fields !== 'object' || fields === null) return raw
+  return { ...raw, [key]: withOptionalText(fields as Record<string, unknown>, PRIVATE_OPTIONAL_TEXT) }
+}
 
 /** A unit a soldier is placed in must exist, be visible and be live. */
 async function placementIssues(database: Dexie, scope: ActorScope, unitId: UnitId, path: readonly string[]): Promise<Issue[]> {
@@ -242,7 +259,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): LocalSol
 
     create: (raw) =>
       asResult(async () => {
-        const input = parseInput(CreateSoldierInput, raw)
+        const input = parseInput(CreateSoldierInput, blankPrivateText(raw, 'private'))
         const { private: privateFields, membership, ...content } = input
         const written = await database.transaction('rw', ROSTER_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
@@ -253,7 +270,11 @@ export function createSoldierCommands(dependencies: LocalDependencies): LocalSol
 
           const soldier = parsedCandidate(
             SPEC,
-            { ...content, organization_id: scope.organization_id, ...createdBy(scope.soldier_id, scope.now) },
+            withSpecOptionalText(SPEC, {
+              ...content,
+              organization_id: scope.organization_id,
+              ...createdBy(scope.soldier_id, scope.now),
+            }),
             [],
           )
           if ((await tableOf(database, 'soldiers').get(input.id)) !== undefined) {
@@ -297,7 +318,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): LocalSol
 
     updatePrivate: (raw) =>
       asResult(async () => {
-        const input = parseInput(UpdateSoldierPrivateInput, raw)
+        const input = parseInput(UpdateSoldierPrivateInput, blankPrivateText(raw, 'changes'))
         const row = await database.transaction('rw', ROSTER_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const soldier = await visibleRow(database, SPEC, scope, input.soldier_id)

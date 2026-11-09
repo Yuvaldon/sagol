@@ -20,6 +20,7 @@ const SPEC: ReferenceSpec<CommandRank> = {
   resource: 'command_ranks',
   schema: CommandRank,
   checkTables: [],
+  optionalText: ['short_title'],
   targetOf: () => ({ kind: 'organization' }),
   rowIssues: ({ before, row }) => Promise.resolve(colorKeyIssues(before?.color_key, row.color_key)),
 }

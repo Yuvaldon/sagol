@@ -132,6 +132,18 @@ export function describeRosterContract(
         expect(errorOf(stale).code).toBe('stale_version')
       })
 
+      it('stores a blank short title as NULL (D-101, OI-052)', async () => {
+        const rank = valueOf(await adapter().commands.command_ranks.create(rankInput({ short_title: ' ' })))
+        expect(rank.short_title).toBeNull()
+        const titled = valueOf(
+          await adapter().commands.command_ranks.update({ id: rank.id, expected_version: 1, changes: { short_title: 'סמ"ר' } }),
+        )
+        const cleared = valueOf(
+          await adapter().commands.command_ranks.update({ id: rank.id, expected_version: titled.version, changes: { short_title: '' } }),
+        )
+        expect(cleared.short_title).toBeNull()
+      })
+
       it('checks the color against the palette (D-074)', async () => {
         const result = await adapter().commands.command_ranks.create(rankInput({ color_key: 'magenta' }))
         expect(issuesOf(result)).toEqual([{ path: ['color_key'], code: 'invalid_value' }])
@@ -218,6 +230,23 @@ export function describeRosterContract(
       it('writes no private row for empty private fields', async () => {
         valueOf(await adapter().commands.soldiers.create(soldierInput({ private: emptyPrivate })))
         expect(await harnessOf().rows('soldier_private')).toEqual([])
+      })
+
+      it('stores blank optional text as NULL, and writes no private row of blanks (D-101, OI-052)', async () => {
+        const created = valueOf(
+          await adapter().commands.soldiers.create(
+            soldierInput({ nickname: '  ', private: { personal_id: ' ', invite_email: ' ', phone: '' } }),
+          ),
+        )
+        expect(created.nickname).toBeNull()
+        expect(await harnessOf().rows('soldier_private')).toEqual([])
+        const named = valueOf(
+          await adapter().commands.soldiers.update({ id: created.id, expected_version: 1, changes: { nickname: 'Yuli' } }),
+        )
+        const cleared = valueOf(
+          await adapter().commands.soldiers.update({ id: created.id, expected_version: named.version, changes: { nickname: ' ' } }),
+        )
+        expect(cleared.nickname).toBeNull()
       })
 
       it('answers field codes from the schema (D-068), and an id that is taken (D-044)', async () => {
@@ -444,6 +473,11 @@ export function describeRosterContract(
         expect(errorOf(await write({ phone: '051' }, null)).code).toBe('stale_version')
         valueOf(await write({ phone: '051' }, 1))
         expect(errorOf(await write({ phone: '052' }, 1)).code).toBe('stale_version')
+      })
+
+      it('stores a blank phone as NULL (D-101, OI-052)', async () => {
+        valueOf(await write({ phone: '050' }, null))
+        expect(valueOf(await write({ phone: '   ' }, 1)).phone).toBeNull()
       })
 
       it('stores no id when only separators remain (D-066)', async () => {

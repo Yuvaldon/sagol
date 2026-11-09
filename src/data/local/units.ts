@@ -84,6 +84,7 @@ const SPEC: ReferenceSpec<Unit> = {
   resource: 'units',
   schema: Unit,
   checkTables: ['unit_levels', 'property_definitions'],
+  optionalText: ['code'],
   targetOf: unitTarget,
   rowIssues: async (check) => {
     const { database, scope, row, before } = check
