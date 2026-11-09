@@ -20,6 +20,8 @@ export const DATE_WINDOW = { days: 7, maxDays: 62 } as const
  */
 export const TIMELINE_LAYOUT = {
   rowPx: 36,
+  /** A row on mobile, where its name is a 44 px touch target (OI-033). */
+  rowTouchPx: 44,
   groupRowPx: 32,
   headerPx: 28,
   nameColumnPx: 124,
