@@ -39,7 +39,7 @@ am = amends, ref = refines, ext = extends.
 | D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
 | D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050 |
-| D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092 |
+| D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108 |
 | D-024 | First designed component | ui | ref D-077 |
 | D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075 |
 | D-026 | Libraries | all | ext D-034, D-077, D-080 |
@@ -70,7 +70,7 @@ am = amends, ref = refines, ext = extends.
 | D-051 | Phase audits are separate, read-only sessions | docs | am D-078 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075 |
 | D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096 |
-| D-054 | Policy unit = primary membership today | domain, backend | |
+| D-054 | Policy unit = primary membership today | domain, backend | ref D-105 |
 | D-055 | Unresolvable anchors give an empty scope | domain, backend | |
 | D-056 | Only active, linked soldiers hold permissions | domain, backend | ref D-098 |
 | D-057 | Subject rank constraints with missing ranks | domain, backend | |
@@ -83,23 +83,23 @@ am = amends, ref = refines, ext = extends.
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | |
 | D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069 |
-| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | |
+| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105 |
 | D-068 | Schema issue mapping | domain, data, logic | |
 | D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
 | D-070 | Availability of a soldier on a day | domain, data, logic, ui, backend | |
 | D-071 | Rule targets, populations and thresholds | domain, data, logic, ui, backend | |
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | |
-| D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092 |
+| D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104 |
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085 |
-| D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | |
+| D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108 |
 | D-078 | Audits follow milestones | docs | |
 | D-079 | The bootstrap owner role holds every valid permission pair | data, backend | |
 | D-080 | `fake-indexeddb` for data tests | data, tooling | |
 | D-081 | Start-of-session reading follows the slice | docs | |
 | D-082 | Go-live before completion features | data, backend, docs | |
-| D-083 | One source of the current time: `TimeSource` | contracts, data, logic, app, tooling | |
+| D-083 | One source of the current time: `TimeSource` | contracts, data, logic, app, tooling | ref D-107 |
 | D-084 | Domain validates the organization time zone | domain, data, logic, ui | |
 | D-085 | The `can` hint moves to V1, computed by the adapter | contracts, data, logic, ui, backend | ref D-091 |
 | D-086 | V0 setup choices: dev env file, local bootstrap, time-zone picker, unsupported modes | tooling, data, ui, app | |
@@ -107,18 +107,24 @@ am = amends, ref = refines, ext = extends.
 | D-088 | Archiving units and levels | contracts, domain, data, ui, backend | ref D-095, D-099 |
 | D-089 | Permissions of the unit commands | domain, data, logic, ui, backend | |
 | D-090 | The order of checks inside a command | data, backend, docs | |
-| D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | |
-| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094 |
+| D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | ref D-107 |
+| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108 |
 | D-093 | A new issue code lands after its message | contracts, ui, docs | |
 | D-094 | The soldiers drawer: sections, fields, search | config, logic, ui | |
 | D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
 | D-096 | Permissions of the roster commands | domain, data, logic, ui, backend | ref D-102 |
 | D-097 | Changing a soldier's membership | domain, data, logic, ui, backend | |
 | D-098 | Archiving a soldier | data, ui, backend | |
-| D-099 | Unit names in a soldier's history | logic, ui | |
+| D-099 | Unit names in a soldier's history | logic, ui | ref D-106 |
 | D-100 | A new required port lands in `app` before `logic` | logic, app, docs | |
 | D-101 | Commands store blank optional text as NULL | contracts, data, logic, backend | |
 | D-102 | Reading private fields and placements needs only their own `view` | data, logic, ui, backend | |
+| D-103 | The date window in the URL | logic, ui | |
+| D-104 | The unit selector writes the filter | config, logic, ui | |
+| D-105 | The rows of the timeline | logic, ui | |
+| D-106 | What a row knows about its unit | logic, ui | |
+| D-107 | Today follows the organization's day | domain, logic | |
+| D-108 | The workspace bars and the timeline surface | config, ui | |
 
 ---
 
@@ -1313,3 +1319,73 @@ enough to read their placements, without `soldiers:view`. That is how the adapte
 D-096: a soldier the actor cannot see through `soldiers:view` answers `not_found` on every command.
 **Why:** product owner decision in the A2 review. A personal number is personal but not classified, and in the field
 someone is often asked to make a list (who signed for what) without managing the soldiers on it.
+
+## D-103 — The date window in the URL
+2026-11-09 · accepted · refines D-023, D-074
+- `from` and `to` hold the first and last day of the window, inclusive. A pair that is inverted, longer than
+  `MAX_WINDOW_DAYS` (config), or has only one side counts as absent, like any invalid value (a URL never breaks the
+  workspace).
+- **Absent means "this week":** the week that holds today in the organization's time zone, starting on
+  `FIRST_DAY_OF_WEEK`. It follows the clock, so an open screen moves to the new week at midnight (D-107).
+- **Week navigation** moves both by the window's length and writes them. "Today" removes them, so the window
+  follows the clock again. It shows only while the window does not hold today (D-076).
+- Opening or closing a panel keeps `view`, `from`, `to` and `filter`. Until V3 a panel replaced the whole search.
+**Why:** product owner approved the V3 plan. A link to a week shows that week; a screen left open shows the current
+one.
+
+## D-104 — The unit selector writes the filter
+2026-11-09 · accepted · refines D-067, D-074
+- `filter` holds a `FilterExpression` (D-067) as JSON, the router's own encoding. An invalid value counts as absent.
+  Absent means the whole organization.
+- In V3 only the unit selector writes it: `{ where: { kind: 'unit', unit_ids: [id], include_descendants: true } }`.
+  V6 builds the other conditions on the same parameter, with the same meaning everywhere.
+- The selector offers "the whole organization" and the live units the actor can see, in tree order. A unit in the URL
+  that the actor cannot see shows a neutral label and matches nobody.
+**Why:** product owner approved the V3 plan. The card puts the unit in the shared filter encoding (FEATURE_MAP,
+"Filter encoding in the URL: V3 (unit), V6 (all)").
+
+## D-105 — The rows of the timeline
+2026-11-09 · accepted · refines D-054, D-067
+- A row is an active soldier, not archived, who matches the filter on at least one day of the window, each day
+  evaluated on its own (D-067). The days on which the row does not match are muted. Inactive soldiers stay in the
+  soldiers drawer; a V6 filter can bring them back.
+- Rows are grouped by unit, one header per unit, in tree order. A row's unit is its primary unit on the reference day:
+  today when the window holds it, otherwise the first day the row matches. A header names the unit by its path below
+  the selected unit (`מחלקה א · כיתה 1`), so two units with the same name stay apart.
+- Without a unit filter, soldiers whose unit is not a visible unit form the last groups, by D-106: no unit, another
+  unit, unknown.
+- Inside a group: the most senior rank first (no rank last), then last name and first name in Hebrew order (D-094).
+**Why:** product owner chose in the V3 plan: everyone who served in the unit that week, grouped like the unit is.
+
+## D-106 — What a row knows about its unit
+2026-11-09 · accepted · refines D-099 · from audit A2, OI-048
+A soldier's unit on a day is one of four states, and each has its own label wherever a unit is shown:
+- **a unit** the actor can see;
+- **none:** the actor may read the soldier's placements (`memberships:view`) and none covers the day ("ללא יחידה");
+- **another unit:** a placement covers the day, and its unit is not one the actor can see (the neutral label of
+  D-099, "יחידה אחרת");
+- **unknown:** there is no day (no `organization:view`), or the actor may not read the soldier's placements
+  ("לא ידוע").
+**Why:** the A2 finding: "ללא יחידה" told something false in the last two states. The adapter filters placements per
+soldier (D-102), so a soldier's rows are either all readable or none are, and the states are exact.
+
+## D-107 — Today follows the organization's day
+2026-11-09 · accepted · refines D-083, D-091 · from audit A2, OI-057
+`logic` keeps one "today" for the screen. At the next midnight in the organization's time zone it moves to the new
+day, and the permission hints are asked again, because policy reads today (D-053). Domain gives the time left until
+the next day starts; `logic` sets one timer from the `TimeSource` (D-083). The command still decides with its own day.
+**Why:** the A2 finding. The timeline marks today, so a screen left open overnight must not show yesterday.
+
+## D-108 — The workspace bars and the timeline surface
+2026-11-09 · accepted · refines D-023, D-077, D-092
+- **Desktop:** two floating bars at the top, as in Stone 3. On the inline start: the organization's name, the unit
+  selector, the view switcher. On the inline end: week navigation, "today", the module buttons and the user menu.
+- **Mobile:** a top bar with week navigation, "today", the unit selector and the view switcher; the bottom bar keeps the
+  organization's name, the module buttons and the user menu.
+- **The view switcher** lists what the engine registry holds, so in V3 it holds only "ציר זמן" (card V3).
+- **The grid:** the name column sticks to the inline start, and the days header floats under the top bars. Day columns
+  are at least the day density token wide and share any extra width. Below that width the grid scrolls sideways, as
+  on a phone. Rows are virtualized.
+- A soldier's name opens their page in the soldiers drawer, for who may open it (D-094). The drawer leaves the name
+  column in sight (D-092).
+**Why:** product owner chose the two-bar layout in the V3 plan.
