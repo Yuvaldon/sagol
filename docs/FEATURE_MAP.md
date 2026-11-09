@@ -196,7 +196,7 @@ a phone the grid scrolls sideways under the bottom bar. No bars yet.
   evaluator).
 - **ui:** registry and viewport; timeline core (pure, tested) and view with TanStack Virtual;
   adapter; floating bars; view switcher fed by the registry.
-- **Open items:** part of OI-033 (mobile timeline); OI-048, OI-057, OI-058 (from A2).
+- **Open items:** part of OI-033 (mobile timeline); OI-048, OI-057, OI-058, OI-059 (from A2; OI-059 first, CI is red).
 - **Decisions:** D-023, D-054, D-067, D-077.
 - **Note:** the mock's view switcher shows four views. Here it lists only the timeline.
 

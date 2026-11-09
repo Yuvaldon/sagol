@@ -11,7 +11,9 @@ questions, the same session recorded them. No code changed.
 - **`docs/audits/A2.md`** (new): 13 findings, the owner's answers, what was checked.
 - **`DECISIONS.md`:** D-101 (commands store blank optional text as NULL), D-102 (private fields and placements
   are read with their own `view`). Index rows for D-018, D-045 and D-096 updated.
-- **`OPEN_ITEMS.md`:** OI-047 to OI-058 opened. OI-008 updated: the owner chose to set up the remote now.
+- **`OPEN_ITEMS.md`:** OI-047 to OI-059 opened. OI-008 closed.
+- **Remote (OI-008):** `gh` installed, the owner signed in, private repository `Yuvaldon/sagol` created, `main`
+  pushed. First CI run: `check` and build green, `e2e` red on one axe step (OI-059).
 - **`FEATURE_MAP.md`:** cards V3, V4, V9, V10, V12 and the audit table.
 - **`ARCHITECTURE.md`:** `config/panels` in the folder list (note 11).
 - **`ROADMAP.md`:** A2 ☑.
@@ -26,14 +28,14 @@ Read `docs/audits/A2.md`. Nothing on screen changed.
 
 ## Open items
 
-- Opened: OI-047 … OI-058. Updated: OI-008.
+- Opened: OI-047 … OI-059. Closed: OI-008.
 
 ## Input for the next session
 
 - **Next: V3, timeline grid.** Its card now also holds OI-048 (what "no unit" means on a row), OI-057
   (midnight) and OI-058 (reduced motion).
-- **OI-008:** the remote is set up after this commit, if the owner created the empty repository. The first CI
-  run closes it, in the session that sees it.
+- **Start with OI-059:** CI is red on one axe step of the unit-tree demo. Fix it first, in its own commit, so
+  V3 ends on a green CI. `gh` is installed at `C:\Program Files\GitHub CLI\gh.exe` and signed in.
 
 ## Recommendation for the next session (D-052)
 
