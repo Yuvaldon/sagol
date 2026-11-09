@@ -1,4 +1,4 @@
-import { parseAbsolute, parseDate, toCalendarDate } from '@internationalized/date'
+import { parseAbsolute, parseDate, toCalendarDate, toZoned } from '@internationalized/date'
 import { IssueCode, type CalendarDate, type Issue, type Timestamp } from '@contracts'
 
 // Calendar and instant arithmetic shared by every domain module (D-035, D-042).
@@ -41,6 +41,41 @@ export function compareInstants(a: Timestamp, b: Timestamp): number {
 /** The calendar day before `date`. */
 export function dayBefore(date: CalendarDate): CalendarDate {
   return parseDate(date).subtract({ days: 1 }).toString()
+}
+
+/** `date` moved by a whole number of days, forward or back. */
+export function addDays(date: CalendarDate, days: number): CalendarDate {
+  return parseDate(date).add({ days }).toString()
+}
+
+/** Days from `from` to `to`: 0 on the same day, negative when `to` comes first. */
+export function daysBetween(from: CalendarDate, to: CalendarDate): number {
+  return parseDate(to).compare(parseDate(from))
+}
+
+/** A known Sunday, so weekdays need no locale. */
+const A_SUNDAY: CalendarDate = '1970-01-04'
+const DAYS_IN_WEEK = 7
+
+/** The day of the week: 0 = Sunday … 6 = Saturday, the numbering of `FIRST_DAY_OF_WEEK` (D-074). */
+export function weekdayOf(date: CalendarDate): number {
+  return ((daysBetween(A_SUNDAY, date) % DAYS_IN_WEEK) + DAYS_IN_WEEK) % DAYS_IN_WEEK
+}
+
+/** The first day of the week that holds `date`, for a week starting on `firstDayOfWeek` (0 = Sunday). */
+export function startOfWeek(date: CalendarDate, firstDayOfWeek: number): CalendarDate {
+  const offset = (weekdayOf(date) - firstDayOfWeek + DAYS_IN_WEEK) % DAYS_IN_WEEK
+  return addDays(date, -offset)
+}
+
+/**
+ * Milliseconds from `now` until the next day starts in `timezone` (D-107). A day that starts at an
+ * hour other than midnight, because of a clock change, starts when the time zone says it does.
+ */
+export function millisecondsUntilNextDay(timezone: string, now: Timestamp): number {
+  const current = parseAbsolute(now, timezone)
+  const nextDay = toZoned(toCalendarDate(current).add({ days: 1 }), timezone)
+  return nextDay.compare(current)
 }
 
 /** Inclusive calendar range; NULL `valid_to` is open-ended. */
