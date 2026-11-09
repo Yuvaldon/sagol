@@ -136,12 +136,13 @@ export function createUnitCommands(dependencies: LocalDependencies): DataCommand
         const moved = await database.transaction('rw', tablesOf(SPEC), async () => {
           const scope = await loadActorScope(dependencies)
           const before = await visibleRow(database, SPEC, scope, input.id)
+          // Policy on both sides comes before the row's state (D-090, OI-051).
           requirePermission(scope, permissionOf('units', 'update'), unitTarget(before))
+          requirePermission(scope, permissionOf('units', 'update'), placementTarget(input.parent_id))
           requireWritable(before, input.expected_version)
           if (before.parent_id === input.parent_id) {
             return failValidation([{ path: ['parent_id'], code: IssueCode.enum.no_changes }])
           }
-          requirePermission(scope, permissionOf('units', 'update'), placementTarget(input.parent_id))
 
           const units = await organizationUnits(database, scope)
           const issues = [

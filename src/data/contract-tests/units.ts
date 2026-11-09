@@ -654,6 +654,12 @@ export function describeUnitContract(
         expect(errorOf(out).code).toBe('forbidden')
         const toTop = await adapter().commands.units.move({ id: squad.id, expected_version: 1, parent_id: null })
         expect(errorOf(toTop).code).toBe('forbidden')
+
+        // The destination's permission comes before the row's state (D-090, OI-051).
+        const staleOut = await adapter().commands.units.move({ id: squad.id, expected_version: 9, parent_id: platoonB.id })
+        expect(errorOf(staleOut).code).toBe('forbidden')
+        const sameParent = await adapter().commands.units.move({ id: squad.id, expected_version: 1, parent_id: platoonA.id })
+        expect(issuesOf(sameParent)).toEqual([{ path: ['parent_id'], code: 'no_changes' }])
       })
 
       it('refuses a reorder when any sibling is out of reach, and does not reveal it (D-089)', async () => {
