@@ -56,7 +56,7 @@ function ModuleButtons() {
 
 function DesktopBars({ name, identity }: { readonly name: string; readonly identity: AuthIdentity }) {
   return (
-    <div className="pointer-events-none absolute inset-x-lg top-lg z-10 flex justify-between gap-sm">
+    <div className="pointer-events-none absolute inset-x-lg top-lg flex justify-between gap-sm">
       <nav aria-label={t('workspace.viewBar')} className={BAR}>
         <OrganizationName name={name} />
         <UnitSelector />
@@ -74,14 +74,14 @@ function DesktopBars({ name, identity }: { readonly name: string; readonly ident
 function MobileBars({ name, identity }: { readonly name: string; readonly identity: AuthIdentity }) {
   return (
     <>
-      <nav aria-label={t('workspace.viewBar')} className={`${BAR} absolute inset-x-lg top-lg z-10 justify-between`}>
+      <nav aria-label={t('workspace.viewBar')} className={`${BAR} absolute inset-x-lg top-lg justify-between`}>
         <WindowNavigator />
         <div className="flex min-w-none items-center gap-xs">
           <UnitSelector />
           <ViewSwitcher />
         </div>
       </nav>
-      <nav aria-label={t('workspace.navigation')} className={`${BAR} bottom-safe absolute inset-x-lg z-10 justify-between`}>
+      <nav aria-label={t('workspace.navigation')} className={`${BAR} bottom-safe absolute inset-x-lg justify-between`}>
         <OrganizationName name={name} />
         <div className="flex shrink-0 items-center gap-xs">
           <ModuleButtons />
@@ -101,7 +101,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
 
   return (
     <div className="relative h-dvh bg-canvas p-sm">
-      <main className="h-full overflow-hidden rounded-panel border border-line bg-surface">
+      <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
         <Viewport />
       </main>
       {isDesktop ? <DesktopBars name={name} identity={identity} /> : <MobileBars name={name} identity={identity} />}
