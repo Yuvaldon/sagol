@@ -209,7 +209,7 @@ icon badge. Overlaps get lanes.
   the first leave command.
 - **logic:** leaves by window; create with optimistic update; availability context.
 - **ui:** types module; new-leave form; timeline lanes and bars; icon key map.
-- **Open items:** OI-013, OI-030; parts of OI-023 (a, b), OI-027, OI-028; OI-051, OI-052, OI-056 (from A2).
+- **Open items:** OI-013, OI-030; parts of OI-023 (a, b), OI-027, OI-028; OI-051, OI-052, OI-056 (from A2); OI-061 (from V3).
 - **Decisions:** D-012, D-013, D-032, D-034, D-041, D-047, D-049, D-063, D-070, D-073.
 - **Owner decision at start (OI-030):** what a bar's color means. Stone 3 colors by status, while
   D-032 gives each leave type its own `color_key`.
@@ -279,7 +279,7 @@ squad commander their platoon, and controls follow. Lockout and escalation are r
   `accessManagerIssues`; `missingPermissions`; `accessGrantIssues`.
 - **logic:** hints across all modules.
 - **ui:** roles module; scope picker; grants module.
-- **Open items:** OI-021 (a, b, d); OI-038, OI-039, OI-040, OI-041 (asked at start); OI-044; OI-047, OI-049, OI-053, OI-054 (from A2).
+- **Open items:** OI-021 (a, b, d); OI-038, OI-039, OI-040, OI-041 (asked at start); OI-044; OI-047, OI-049, OI-053, OI-054 (from A2); OI-060 (from V3).
 - **Decisions:** D-003, D-004, D-028, D-040, D-053 … D-060.
 
 #### V11 — Soldier self-service

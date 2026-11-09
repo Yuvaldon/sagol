@@ -121,10 +121,11 @@ am = amends, ref = refines, ext = extends.
 | D-102 | Reading private fields and placements needs only their own `view` | data, logic, ui, backend | |
 | D-103 | The date window in the URL | logic, ui | |
 | D-104 | The unit selector writes the filter | config, logic, ui | |
-| D-105 | The rows of the timeline | logic, ui | |
+| D-105 | The rows of the timeline | logic, ui | ref D-109 |
 | D-106 | What a row knows about its unit | logic, ui | |
 | D-107 | Today follows the organization's day | domain, logic | |
 | D-108 | The workspace bars and the timeline surface | config, ui | |
+| D-109 | The reference day of a timeline row | logic | |
 
 ---
 
@@ -1389,3 +1390,11 @@ the next day starts; `logic` sets one timer from the `TimeSource` (D-083). The c
 - A soldier's name opens their page in the soldiers drawer, for who may open it (D-094). The drawer leaves the name
   column in sight (D-092).
 **Why:** product owner chose the two-bar layout in the V3 plan.
+
+## D-109 — The reference day of a timeline row
+2026-11-09 · accepted · refines D-105
+A row's group comes from its unit on today when the soldier is in the view today, and otherwise on the first day of the
+window they are in it. D-105 said "today when the window holds it", which would place a soldier who left the selected
+unit before today under a unit outside it.
+**Why:** found while building V3. It is what D-105 meant: a row is grouped by a day on which it belongs to the view.
+Told to the owner at the end of V3.
