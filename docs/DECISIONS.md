@@ -126,6 +126,7 @@ am = amends, ref = refines, ext = extends.
 | D-107 | Today follows the organization's day | domain, logic | |
 | D-108 | The workspace bars and the timeline surface | config, ui | |
 | D-109 | The reference day of a timeline row | logic | |
+| D-110 | A branch and a pull request per session | docs, tooling | |
 
 ---
 
@@ -1398,3 +1399,20 @@ window they are in it. D-105 said "today when the window holds it", which would 
 unit before today under a unit outside it.
 **Why:** found while building V3. It is what D-105 meant: a row is grouped by a day on which it belongs to the view.
 Told to the owner at the end of V3.
+
+## D-110 — A branch and a pull request per session
+2026-11-09 · accepted · refines D-075
+- Every session (slice, audit or docs track) works on its own branch, named after its roadmap row or topic, and never
+  commits to `main` directly.
+- It ends by pushing the branch and opening a pull request whose description is the handoff summary. CI runs on it.
+  When CI is green the session merges it itself, keeping the commits, and deletes the branch. When CI is red the session
+  fixes it, or reports to the owner and leaves it unmerged. The owner still gets the screenshots, and a change they want
+  becomes an open item.
+- A session that finds a pull request still open merges it (CI green) or reports it before starting its own work.
+- A session starts from an up-to-date `main`. It may run in the cloud or on the owner's computer: GitHub is the only
+  shared copy, so neither holds work the other lacks once the branch is pushed.
+- One commit = one layer (D-075) holds inside the branch as before. Merges keep the commits (no squash), so history stays
+  layer by layer.
+**Why:** product owner decision after V3. The owner works from a phone with the computer off, so work runs in cloud
+sessions. A pull request lets CI check the slice before it reaches `main`. The owner chose not to approve each merge: they
+do not review code, and a merge waiting on them would leave `main` behind the work, which is what they wanted to avoid.
