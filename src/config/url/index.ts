@@ -22,7 +22,7 @@ export const SEARCH_PARAMS = {
   leaves: 'leaves',
   /** "Only who is missing" (D-133). */
   missing: 'missing',
-  /** The day of the present and absent lists (D-134). */
+  /** The day of the present and absent lists (D-134), and of the broken rules in the rules panel (D-141). */
   day: 'day',
 } as const
 

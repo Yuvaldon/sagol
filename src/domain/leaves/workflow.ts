@@ -8,6 +8,7 @@ import {
   type LeaveTransition,
   type LeaveType,
   type Permission,
+  type Soldier,
   type SoldierId,
   type Timestamp,
 } from '@contracts'
@@ -153,8 +154,31 @@ export function planLeaveCreation(
   }
 }
 
-/** `updateLeave` (details) or `rescheduleLeave` (dates). */
+/** The event of an edit: `rescheduled` when only the dates changed, otherwise `updated` (D-123). */
 export type LeaveEditKind = 'update' | 'reschedule'
+
+const DATE_COLUMNS: readonly string[] = ['start_date', 'end_date']
+
+/** The kind of an edit from the columns it changed (D-123). */
+export function leaveEditKind(changedColumns: Iterable<string>): LeaveEditKind {
+  const changed = [...changedColumns]
+  return changed.length > 0 && changed.every((column) => DATE_COLUMNS.includes(column)) ? 'reschedule' : 'update'
+}
+
+/** A step on a leave: a transition, or an edit (`leaves.update`). */
+export type LeaveStep = LeaveTransition | 'update'
+
+/** The only step a leave of an archived soldier takes (D-124). */
+export const ARCHIVED_SOLDIER_STEPS: readonly LeaveStep[] = ['cancel']
+
+/**
+ * A leave of an archived soldier can only be cancelled (D-124): every other step answers `archived`, at the state
+ * step of the command's order. An inactive soldier is not archived. `path` is where the command names the step.
+ */
+export function archivedSoldierIssues(soldier: Pick<Soldier, 'archived_at'>, step: LeaveStep, path: Issue['path']): Issue[] {
+  if (soldier.archived_at === null || ARCHIVED_SOLDIER_STEPS.includes(step)) return []
+  return [{ path, code: IssueCode.enum.archived }]
+}
 
 export interface LeaveEdit {
   readonly kind: LeaveEditKind
@@ -200,22 +224,15 @@ export function planLeaveEdit(
   }
 }
 
-type MaterialColumns = Pick<Leave, 'leave_type_id' | 'availability_effect_override'>
+type MaterialColumns = Pick<Leave, 'leave_type_id' | 'availability_effect_override' | 'start_date' | 'end_date'>
 
-/** An update is material when it changes the type or the effect override (D-064). */
+/** An edit is material when it moves a date or changes the type or the effect override (D-064, D-123). */
 export function isMaterialLeaveUpdate(current: MaterialColumns, changes: Partial<MaterialColumns>): boolean {
+  const differs = <K extends keyof MaterialColumns>(column: K) =>
+    changes[column] !== undefined && changes[column] !== current[column]
   return (
-    (changes.leave_type_id !== undefined && changes.leave_type_id !== current.leave_type_id) ||
-    (changes.availability_effect_override !== undefined &&
-      changes.availability_effect_override !== current.availability_effect_override)
+    differs('leave_type_id') || differs('availability_effect_override') || differs('start_date') || differs('end_date')
   )
-}
-
-type LeaveDates = Pick<Leave, 'start_date' | 'end_date'>
-
-/** A reschedule is material when either date moves. */
-export function isMaterialReschedule(current: LeaveDates, next: LeaveDates): boolean {
-  return current.start_date !== next.start_date || current.end_date !== next.end_date
 }
 
 /** A leave type with `requires_reason` needs a non-blank reason (`reason_required`). */

@@ -30,6 +30,7 @@ export interface ContractAdapter {
     | 'leaves'
     | 'leave_events'
     | 'leave_comments'
+    | 'availability_rules'
   >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
@@ -42,8 +43,9 @@ export interface ContractAdapter {
     readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
-    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'reschedule' | 'transition'>
+    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
     readonly leave_comments: DataCommands['leave_comments']
+    readonly availability_rules: DataCommands['availability_rules']
   }
   readonly changes: ChangeFeed
 }

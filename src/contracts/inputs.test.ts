@@ -19,7 +19,6 @@ import {
   IssueCode,
   OrganizationExport,
   ReorderTagsInput,
-  RescheduleLeaveInput,
   ReviewAccountLinkInput,
   SchemaIssue,
   Session,
@@ -148,7 +147,6 @@ const INPUT_TABLES: Record<string, Target> = {
   CreateLeaveBatchInput: { table: 'leaves', nested: { batch: 'leave_batches', leaves: 'leaves' } },
   DuplicateLeaveInput: { table: 'leaves', nested: { copies: 'leaves' } },
   UpdateLeaveInput: { table: 'leaves' },
-  RescheduleLeaveInput: { table: 'leaves' },
   TransitionLeaveInput: { table: 'leaves', nested: { comment: 'leave_comments' } },
   AddLeaveCommentInput: { table: 'leave_comments' },
   EditLeaveCommentInput: { table: 'leave_comments' },
@@ -297,15 +295,14 @@ describe('strict inputs', () => {
 // --------------------------------------------------------------- row checks
 
 describe('row checks on inputs', () => {
-  it('rejects inverted leave dates on create and reschedule', () => {
+  it('rejects inverted leave dates on create and update', () => {
     const inverted = { start_date: '2026-11-12', end_date: '2026-11-10' }
     expect(messages(CreateLeaveInput.safeParse({ ...leave, ...inverted }))).toEqual([
       SchemaIssue.enum.range_inverted,
     ])
-    const reschedule = { id: ID.a, expected_version: 2, acknowledged_rule_ids: [], ...inverted }
-    expect(messages(RescheduleLeaveInput.safeParse(reschedule))).toEqual([
-      SchemaIssue.enum.range_inverted,
-    ])
+    const update = { id: ID.a, expected_version: 2, acknowledged_rule_ids: [], changes: inverted }
+    expect(messages(UpdateLeaveInput.safeParse(update))).toEqual([SchemaIssue.enum.range_inverted])
+    expect(UpdateLeaveInput.safeParse({ ...update, changes: { end_date: inverted.end_date } }).success).toBe(true)
   })
 
   it('checks grant scope arguments; a NULL start means now', () => {
@@ -449,7 +446,7 @@ describe('error model (D-046)', () => {
       scope_unit_id: null,
       group: { group_by: 'tag', tag_id: ID.b },
       bound: 'min',
-      days: [{ date: '2026-11-10', required: 2, actual: 1 }],
+      days: [{ date: '2026-11-10', required: 2, actual: 1, unavailable: [{ id: ID.c, first_name: 'דנה', last_name: 'לוי' }] }],
     }
     const samples: Record<ErrorCode, unknown> = {
       validation_failed: { code: 'validation_failed', issues: [issue] },

@@ -1,5 +1,6 @@
 import {
   AccessGrantId,
+  AvailabilityRuleId,
   AuthUserId,
   RoleId,
   SoldierAccountId,
@@ -10,6 +11,7 @@ import {
   type Permission,
   type Result,
   type ScopeAnchorType,
+  type TableRow,
   type UnitId,
 } from '@contracts'
 import type { ContractHarness } from './harness'
@@ -146,4 +148,43 @@ export async function seedActor(
   ])
   if (home !== undefined) await placeSoldier(harness, organization_id, soldierId, home, null)
   return { identity, soldierId, roleId }
+}
+
+/** A stored availability rule, written past the commands: by default "at least one available in the organization". */
+export async function seedRule(
+  harness: ContractHarness,
+  organization_id: OrganizationId,
+  overrides: Partial<TableRow<'availability_rules'>> = {},
+) {
+  const rule: TableRow<'availability_rules'> = {
+    id: AvailabilityRuleId.parse(crypto.randomUUID()),
+    organization_id,
+    name: 'Keep one',
+    description: null,
+    is_enabled: true,
+    priority: 0,
+    enforcement: 'soft',
+    scope_unit_id: null,
+    scope_mode: 'unit_tree',
+    scope_level_id: null,
+    population_filter: {},
+    group_by: 'none',
+    group_tag_category_id: null,
+    metric: 'count',
+    min_value: 1,
+    max_value: null,
+    effective_from: null,
+    effective_to: null,
+    deployment_id: null,
+    count_pending_as_unavailable: false,
+    created_at: NOW,
+    created_by: null,
+    updated_at: NOW,
+    updated_by: null,
+    version: 1,
+    archived_at: null,
+    ...overrides,
+  }
+  await harness.seed('availability_rules', [rule])
+  return rule.id
 }

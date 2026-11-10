@@ -23,6 +23,7 @@ import {
 } from './leaveTypes'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
 import { createAccountCommands, createSoldierPreferencesRepository, type LocalAccountCommands } from './accounts'
+import { createAvailabilityRuleCommands, createAvailabilityRuleRepository } from './rules'
 import { createSessionService } from './session'
 import {
   createMembershipRepository,
@@ -63,6 +64,7 @@ export interface LocalDataAdapter {
     | 'leaves'
     | 'leave_events'
     | 'leave_comments'
+    | 'availability_rules'
   >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
@@ -77,6 +79,7 @@ export interface LocalDataAdapter {
     readonly leave_types: DataCommands['leave_types']
     readonly leaves: LocalLeaveCommands
     readonly leave_comments: DataCommands['leave_comments']
+    readonly availability_rules: DataCommands['availability_rules']
   }
   readonly changes: ChangeFeed
 }
@@ -120,6 +123,7 @@ export function createLocalDataAdapter(
       leaves: createLeaveRepository(dependencies),
       leave_events: createLeaveEventRepository(dependencies),
       leave_comments: createLeaveCommentRepository(dependencies),
+      availability_rules: createAvailabilityRuleRepository(dependencies),
     },
     commands: {
       organizations: createOrganizationCommands(dependencies),
@@ -134,6 +138,7 @@ export function createLocalDataAdapter(
       leave_types: createLeaveTypeCommands(dependencies),
       leaves: createLeaveCommands(dependencies),
       leave_comments: createLeaveCommentCommands(dependencies),
+      availability_rules: createAvailabilityRuleCommands(dependencies),
     },
     changes,
   }

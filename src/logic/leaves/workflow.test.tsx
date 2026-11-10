@@ -1,4 +1,5 @@
 import {
+  AvailabilityRuleId,
   LeaveCommentId,
   LeaveEventId,
   LeaveId,
@@ -25,6 +26,8 @@ import { useLeaves } from './hooks'
 import {
   closedLeaves,
   editReturnsToPending,
+  editedLeaveCandidate,
+  isEditable,
   leaveAfterStep,
   leaveDayCount,
   leaveEditChanges,
@@ -45,6 +48,7 @@ const YAEL = SoldierId.parse(uuid(1))
 const DAN = SoldierId.parse(uuid(2))
 const TYPE = LeaveTypeId.parse(uuid(30))
 const OTHER_TYPE = LeaveTypeId.parse(uuid(31))
+const RULE = AvailabilityRuleId.parse(uuid(40))
 const AT = '2026-11-08T10:00:00.000Z'
 const LATER = '2026-11-08T11:00:00.000Z'
 
@@ -114,22 +118,21 @@ describe('the edit form (D-064, D-119)', () => {
   const stored = approved(1, { reason: 'Wedding' })
   const values = leaveEditValues(stored)
 
-  it('splits what changed the way the commands take it', () => {
-    expect(leaveEditChanges(stored, values)).toEqual({ dates: null, details: null })
-    expect(leaveEditChanges(stored, { ...values, end_date: '2026-11-12', reason: '  ' })).toEqual({
-      dates: { start_date: '2026-11-09', end_date: '2026-11-12' },
-      details: { reason: null },
-    })
-    expect(leaveEditChanges(stored, { ...values, leave_type_id: OTHER_TYPE }).details).toEqual({ leave_type_id: OTHER_TYPE })
-    // A missing date is the schema's to report, not a move.
-    expect(leaveEditChanges(stored, { ...values, end_date: '' }).dates).toBeNull()
+  it('sends what changed as one update, the dates and the details together (D-123)', () => {
+    expect(leaveEditChanges(stored, values)).toBeNull()
+    expect(leaveEditChanges(stored, { ...values, end_date: '2026-11-12', reason: '  ' })).toEqual({ end_date: '2026-11-12', reason: null })
+    expect(leaveEditChanges(stored, { ...values, leave_type_id: OTHER_TYPE })).toEqual({ leave_type_id: OTHER_TYPE })
+    // A missing date is the schema's to report, not a change to send.
+    expect(leaveEditChanges(stored, { ...values, end_date: '' })).toBeNull()
   })
 
-  it('answers the codes the commands answer', () => {
-    expect(leaveEditIssues(stored, { ...values, end_date: '' }, null)).toEqual([{ path: ['end_date'], code: 'required' }])
-    expect(leaveEditIssues(stored, { ...values, end_date: '2026-11-01' }, null)).toEqual([{ path: ['end_date'], code: 'range_inverted' }])
+  it('answers the codes the command answers, under changes', () => {
+    expect(leaveEditIssues(stored, { ...values, end_date: '' }, null)).toEqual([{ path: ['changes', 'end_date'], code: 'required' }])
+    expect(leaveEditIssues(stored, { ...values, end_date: '2026-11-01' }, null)).toEqual([
+      { path: ['changes', 'end_date'], code: 'range_inverted' },
+    ])
     expect(leaveEditIssues(stored, { ...values, reason: '' }, { requires_reason: true })).toEqual([
-      { path: ['reason'], code: 'reason_required' },
+      { path: ['changes', 'reason'], code: 'reason_required' },
     ])
     // The reason is checked only when the type or the reason changes (D-117).
     expect(leaveEditIssues(leave(2), leaveEditValues(leave(2)), { requires_reason: true })).toEqual([])
@@ -216,7 +219,6 @@ const WINDOW: DateWindow = { from: '2026-11-08', to: '2026-11-14', days: [], fol
 interface Fakes {
   readonly stored: Leave[]
   readonly transition?: (input: unknown) => Promise<Result<Leave>>
-  readonly reschedule?: (input: unknown) => Promise<Result<Leave>>
   readonly update?: (input: unknown) => Promise<Result<Leave>>
   readonly can?: (checks: readonly PermissionCheck[]) => Promise<Result<boolean[]>>
   readonly preferences?: SoldierPreferencesRecord | null
@@ -242,7 +244,7 @@ function portsWith(fakes: Fakes): LogicPorts {
       soldier_preferences: { mine: () => Promise.resolve({ ok: true, value: fakes.preferences ?? null }) },
     },
     commands: {
-      leaves: { transition: fakes.transition, reschedule: fakes.reschedule, update: fakes.update },
+      leaves: { transition: fakes.transition, update: fakes.update },
       accounts: { updateMyPreferences: fakes.updateMyPreferences },
     },
     now: () => AT,
@@ -337,42 +339,66 @@ describe('a step with an optimistic update (D-119)', () => {
   })
 })
 
-describe('the two commands of the edit form (D-119)', () => {
+describe('the one command of the edit form (D-123, OI-076)', () => {
   const stored = leave(1)
   const values = leaveEditValues(stored)
 
-  it('moves the dates first, then updates the details at the version that answered', async () => {
-    const reschedule = vi.fn(() => Promise.resolve<Result<Leave>>({ ok: true, value: leave(1, { end_date: '2026-11-12', version: 2 }) }))
-    const update = vi.fn(() => Promise.resolve<Result<Leave>>({ ok: true, value: leave(1, { reason: 'Flu', version: 3 }) }))
-    const { result } = renderHook(() => useEditLeave(), { wrapper: wrapperOf(portsWith({ stored: [stored], reschedule, update })) })
+  it('sends the dates and the details in one update, with the acknowledged rules', async () => {
+    const update = vi.fn(() => Promise.resolve<Result<Leave>>({ ok: true, value: leave(1, { reason: 'Flu', version: 2 }) }))
+    const { result } = renderHook(() => useEditLeave(), { wrapper: wrapperOf(portsWith({ stored: [stored], update })) })
     let answer: Result<Leave> | null = null
     await act(async () => {
-      answer = await result.current.run(stored, { ...values, end_date: '2026-11-12', reason: 'Flu' })
+      answer = await result.current.run(stored, { ...values, end_date: '2026-11-12', reason: 'Flu' }, [RULE])
     })
-    expect(reschedule).toHaveBeenCalledWith({
+    expect(update).toHaveBeenCalledTimes(1)
+    expect(update).toHaveBeenCalledWith({
       id: stored.id,
       expected_version: 1,
-      start_date: '2026-11-09',
-      end_date: '2026-11-12',
-      acknowledged_rule_ids: [],
+      changes: { end_date: '2026-11-12', reason: 'Flu' },
+      acknowledged_rule_ids: [RULE],
     })
-    expect(update).toHaveBeenCalledWith({ id: stored.id, expected_version: 2, changes: { reason: 'Flu' }, acknowledged_rule_ids: [] })
-    expect(answer).toMatchObject({ ok: true, value: { version: 3 } })
+    expect(answer).toMatchObject({ ok: true, value: { version: 2 } })
   })
 
-  it('sends nothing when nothing changed, and stops at a refusal', async () => {
-    const reschedule = vi.fn(() => Promise.resolve<Result<Leave>>({ ok: false, error: { code: 'stale_version' } }))
-    const update = vi.fn()
-    const { result } = renderHook(() => useEditLeave(), { wrapper: wrapperOf(portsWith({ stored: [stored], reschedule, update })) })
+  it('sends nothing when nothing changed, and a refused edit leaves nothing half done', async () => {
+    const update = vi.fn(() => Promise.resolve<Result<Leave>>({ ok: false, error: { code: 'stale_version' } }))
+    const { result } = renderHook(() => useEditLeave(), { wrapper: wrapperOf(portsWith({ stored: [stored], update })) })
     await act(async () => {
       expect(await result.current.run(stored, values)).toEqual({ ok: true, value: stored })
     })
-    expect(reschedule).not.toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
     await act(async () => {
       const refused = await result.current.run(stored, { ...values, end_date: '2026-11-12', reason: 'Flu' })
       expect(refused).toEqual({ ok: false, error: { code: 'stale_version' } })
     })
-    expect(update).not.toHaveBeenCalled()
+    // One command: its refusal is the whole answer, with no second command to send and no first one saved.
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the live warning of an edit (D-142)', () => {
+  it('judges the leave with the status the edit leaves it in', () => {
+    const stored = approved(1)
+    const moved = { ...leaveEditValues(stored), end_date: '2026-11-12' }
+    expect(editedLeaveCandidate(stored, moved, true)).toMatchObject({ status: 'pending', end_date: '2026-11-12' })
+    expect(editedLeaveCandidate(stored, moved, false)).toMatchObject({ status: 'approved' })
+    expect(editedLeaveCandidate(stored, { ...moved, end_date: '' }, false)).toBeNull()
+  })
+})
+
+describe('a leave of an archived soldier (D-124, OI-077)', () => {
+  const archived = { archived_at: AT }
+
+  it('offers only cancel, and no edit', () => {
+    expect([...leaveSteps(leave(1), ACTOR, AT, archived).keys()]).toEqual(['cancel'])
+    expect([...leaveSteps(approved(1), ACTOR, AT, archived).keys()]).toEqual(['cancel'])
+    expect(isEditable(leave(1), archived)).toBe(false)
+    expect(isEditable(leave(1))).toBe(true)
+  })
+
+  it('edits only the statuses domain names (OI-083)', () => {
+    expect(isEditable(leave(1, { status: 'rejected' }))).toBe(false)
+    expect(isEditable(approved(1))).toBe(true)
   })
 })
 

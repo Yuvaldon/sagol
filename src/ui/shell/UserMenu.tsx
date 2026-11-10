@@ -1,7 +1,8 @@
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useKnownIdentities, useMyPreferences, useSignIn, useSignOut, useUpdateMyPreferences } from '@logic'
-import { Check, ChevronDown, LogOut } from 'lucide-react'
+import { Check, ChevronDown, CircleUser, LogOut } from 'lucide-react'
+import { useIsDesktop } from '../patterns/media'
 import { useInboxAccess } from './inboxAccess'
 import {
   Button as AriaButton,
@@ -26,6 +27,8 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   const approves = useInboxAccess()
   const preferences = useMyPreferences()
   const savePreferences = useUpdateMyPreferences()
+  // On a phone the bottom bar holds every module, so the menu shows its icon and still reads the name (D-116).
+  const isDesktop = useIsDesktop()
   const approveNow = preferences.status === 'ready' && preferences.value.create_leaves_as_approved
   const others =
     identities.status === 'ready'
@@ -35,11 +38,12 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   return (
     <MenuTrigger>
       <AriaButton
-        className="inline-flex min-h-touch cursor-pointer items-center gap-xs rounded-pill bg-inner px-md text-control font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2"
+        className={`inline-flex min-h-touch cursor-pointer items-center gap-xs rounded-pill bg-inner text-control ${isDesktop ? 'px-md' : 'min-w-touch justify-center'} font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2`}
       >
         <span className="sr-only">{t('account.menu')}</span>
-        <span className="max-w-menu truncate">{identity.display_name ?? identity.email}</span>
-        <ChevronDown aria-hidden size={12} />
+        {isDesktop ? null : <CircleUser aria-hidden size={18} />}
+        <span className={isDesktop ? 'max-w-menu truncate' : 'sr-only'}>{identity.display_name ?? identity.email}</span>
+        {isDesktop ? <ChevronDown aria-hidden size={12} /> : null}
       </AriaButton>
       <Popover className="glass-menu min-w-trigger rounded-panel p-xs">
         <Menu className="flex max-w-menu flex-col gap-2xs outline-none">

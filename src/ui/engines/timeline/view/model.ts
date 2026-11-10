@@ -70,3 +70,17 @@ export interface TimelineMark {
   /** Opens what the mark stands for. */
   readonly onOpen: () => void
 }
+
+/**
+ * A day of the heat row (D-141): how many rules break that day, and the worst of them by form and color. A day with
+ * none is empty and opens nothing.
+ */
+export interface TimelineHeatCell {
+  readonly key: string
+  readonly tone: 'hard' | 'soft' | 'none'
+  /** The number shown in the cell; NULL when nothing breaks. */
+  readonly count: string | null
+  /** The day, the count and the worst, read aloud. */
+  readonly label: string
+  readonly onOpen: (() => void) | null
+}

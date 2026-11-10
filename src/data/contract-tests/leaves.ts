@@ -1,5 +1,4 @@
 import {
-  AvailabilityRuleId,
   LeaveCommentId,
   LeaveId,
   LeaveTypeGroupId,
@@ -15,11 +14,10 @@ import {
   type OrganizationId,
   type Permission,
   type RuleEnforcement,
-  type TableRow,
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, errorOf, issuesOf, seedActor, valueOf } from './support'
+import { NOW, errorOf, issuesOf, seedActor, seedRule as seedSharedRule, valueOf } from './support'
 
 // Leave types, their groups and creating a leave against the shared contract (D-113, D-114), with the rule gate
 // tested on seeded rules long before the rules screen exists (D-076, OI-027). Sample data, test files only.
@@ -442,39 +440,8 @@ export function describeLeaveContract(
 
     describe('the rule gate (D-047, D-073, OI-027)', () => {
       /** "At least one available in the organization", counting pending leaves. */
-      async function seedRule(enforcement: RuleEnforcement) {
-        const id = AvailabilityRuleId.parse(crypto.randomUUID())
-        const rule: TableRow<'availability_rules'> = {
-          id,
-          organization_id: organization,
-          name: 'Keep one',
-          description: null,
-          is_enabled: true,
-          priority: 0,
-          enforcement,
-          scope_unit_id: null,
-          scope_mode: 'unit_tree',
-          scope_level_id: null,
-          population_filter: {},
-          group_by: 'none',
-          group_tag_category_id: null,
-          metric: 'count',
-          min_value: 1,
-          max_value: null,
-          effective_from: null,
-          effective_to: null,
-          deployment_id: null,
-          count_pending_as_unavailable: true,
-          created_at: NOW,
-          created_by: null,
-          updated_at: NOW,
-          updated_by: null,
-          version: 1,
-          archived_at: null,
-        }
-        await harnessOf().seed('availability_rules', [rule])
-        return id
-      }
+      const seedRule = (enforcement: RuleEnforcement) =>
+        seedSharedRule(harnessOf(), organization, { enforcement, count_pending_as_unavailable: true })
 
       async function lastSoldierStanding() {
         const type = await createType()
@@ -502,6 +469,30 @@ export function describeLeaveContract(
         const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { acknowledged_rule_ids: [ruleId] })))
         const [event] = valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))
         expect(event?.acknowledged_rule_ids).toEqual([ruleId])
+      })
+
+      it('names who is unavailable each day, a soldier the actor cannot see included (D-138, OI-075)', async () => {
+        const type = await createType()
+        const platoonA = await unit('A')
+        const platoonB = await unit('B')
+        const yael = await soldier(platoonA.id)
+        const hidden = await soldier(platoonB.id, { first_name: 'Omer', last_name: 'Tal' })
+        valueOf(await adapter().commands.leaves.create(leaveInput(hidden.id, type.id, { as_approved: true })))
+        const ruleId = await seedSharedRule(harnessOf(), organization, { min_value: 2, count_pending_as_unavailable: true })
+        const { identity } = await actorWith([VIEW_SOLDIERS, VIEW_TYPES, CREATE_LEAVES], {
+          anchor_type: 'unit',
+          anchor_unit_id: platoonA.id,
+        })
+        harnessOf().signIn(identity)
+        const asked = errorOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))
+        const unavailable = [
+          { id: yael.id, first_name: 'Yael', last_name: 'Bar' },
+          { id: hidden.id, first_name: 'Omer', last_name: 'Tal' },
+        ].sort((a, b) => (a.id < b.id ? -1 : 1))
+        expect(asked).toMatchObject({
+          code: 'rule_acknowledgment_required',
+          violations: [{ rule_id: ruleId, days: [{ date: TODAY, required: 2, actual: 0, unavailable }, { date: TOMORROW, unavailable }] }],
+        })
       })
 
       it('lets a marker through, because the soldier stays available (D-032)', async () => {

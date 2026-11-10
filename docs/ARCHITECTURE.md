@@ -134,7 +134,17 @@ effective and the others show as overridden. At equal priority all apply. Min/ma
 are reported as configuration errors (D-031). Commands that change leaves get the
 violations the change makes worse (`leaveChangeViolations`) and `ruleGate` turns them into
 the answer: soft violations need an acknowledgment stored in `leave_events`, hard
-violations are rejected by the adapter/server (D-047, D-073).
+violations are rejected by the adapter/server (D-047, D-073). A violation names, per day, who
+is unavailable, also soldiers the actor cannot see (D-138).
+
+The current state (D-128):
+
+- **Rule commands** (`availability_rules`): a rule is a unit target, or an organization target when global; moving it
+  needs `update` on both ends; references, the population filter and the rows it names are checked (D-139).
+- **`logic/rules`** evaluates over what the actor reads, with the commands' domain functions: the heat row, the broken
+  rules of a day, the window's conflicts and the live warning of a form (D-141, D-142). Deployments join in V15 (OI-096).
+- **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
+  (D-141); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
 ## Filters (shared model)
 
@@ -170,10 +180,10 @@ The current state, in short (D-128). The entries hold the reasons.
 - **State machine (domain):** which steps each status allows, the permission each needs, the review columns and the event
   (D-063). Rejected and cancelled leaves are closed until reopened. Commands check the permissions with `can()` on the
   leave's soldier.
-- **Commands:** `leaves.create` (D-114), `transition`, `update` and `reschedule` (D-117), in the order of D-090, each in
-  one transaction with the rule gate (D-073). A material edit of an approved leave (dates, type, effect) follows
-  `reschedule_policy` (D-064). Decided, built in V7: one `update` takes the dates too and `reschedule` goes (D-123,
-  OI-076); on a leave of an archived soldier only `cancel` (D-124, OI-077).
+- **Commands:** `leaves.create` (D-114), `transition` and `update` (D-117, D-123), in the order of D-090, each in one
+  transaction with the rule gate (D-073). `update` takes the dates and the details together, one event per edit
+  (`rescheduled` for dates alone). A material edit of an approved leave (dates, type, effect) follows
+  `reschedule_policy` (D-064). On a leave of an archived soldier only `cancel`; the hints follow (D-124).
 - **Comments:** shared or internal; each is read and written with its own pair over the leave's soldier, and only the
   author edits or archives (D-118).
 - **Screens:** a bar or badge opens the leave in the `leaves` panel (D-119, D-129): details, the actions the state and the
@@ -240,7 +250,7 @@ src/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
   logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ timeline/
-               tags/ filters/ presence/ testing/ (test-only helpers, D-135)
+               tags/ filters/ presence/ rules/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/

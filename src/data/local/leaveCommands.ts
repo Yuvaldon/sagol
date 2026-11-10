@@ -3,7 +3,6 @@ import {
   CreateLeaveInput,
   IssueCode,
   LeaveEventId,
-  RescheduleLeaveInput,
   TABLE_SCHEMAS,
   TransitionLeaveInput,
   UpdateLeaveInput,
@@ -19,9 +18,10 @@ import {
 import {
   COMMENT_PERMISSIONS,
   LEAVE_PERMISSIONS,
+  archivedSoldierIssues,
   isMaterialLeaveUpdate,
-  isMaterialReschedule,
   issuesFromSchema,
+  leaveEditKind,
   leaveChangeViolations,
   leaveReasonIssues,
   optionalText,
@@ -31,7 +31,6 @@ import {
   ruleGate,
   soldierTarget,
   withPathPrefix,
-  type LeaveEditKind,
   type LeaveReviewState,
   type LeaveWorkflowEvent,
 } from '@domain'
@@ -42,12 +41,19 @@ import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { LEAVE_TABLES, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } from './leaves'
 
-// The leave commands (D-063, D-064, D-114, D-117). Each plans its step with the state machine, checks every
-// permission the plan names on the leave's soldier, and passes the availability rules' gate (D-047, D-073), all in
-// one transaction that also writes the event and the comment.
+// The leave commands (D-063, D-064, D-114, D-117, D-123, D-124). Each plans its step with the state machine, checks
+// every permission the plan names on the leave's soldier, and passes the availability rules' gate (D-047, D-073), all
+// in one transaction that also writes the event and the comment.
 
 /** What the local adapter builds of `commands.leaves` so far. The rest lands in V15 (D-076). */
-export type LocalLeaveCommands = Pick<DataCommands['leaves'], 'create' | 'update' | 'reschedule' | 'transition'>
+export type LocalLeaveCommands = Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
+
+/** A leave of an archived soldier can only be cancelled (D-124): the state step, after the version. */
+async function requireOpenSoldier(database: Dexie, leave: Leave, issues: (soldier: { archived_at: string | null }) => Issue[]) {
+  const soldier = await tableOf(database, 'soldiers').get(leave.soldier_id)
+  const found = soldier === undefined ? [] : issues(soldier)
+  if (found.length > 0) failValidation(found)
+}
 
 /** A comment written with a leave command needs the pair of its visibility over the soldier. */
 function requireCommentPermission(scope: ActorScope, comment: CommentDraft | null, soldierId: SoldierId): void {
@@ -122,7 +128,7 @@ async function writeLeave(database: Dexie, scope: ActorScope, write: LeaveWrite)
   return written
 }
 
-/** The columns `update` and `reschedule` set. */
+/** The columns `update` sets (D-123). */
 const EDITED_COLUMNS = [
   'leave_type_id',
   'availability_effect_override',
@@ -158,20 +164,15 @@ function editedLeave(scope: ActorScope, before: Leave, columns: LeaveEditColumns
   return parsed.success ? parsed.data : issuesFromSchema(parsed.error.issues, candidate)
 }
 
-interface LeaveEditInput {
-  readonly id: Leave['id']
-  readonly expected_version: number
-  readonly acknowledged_rule_ids: readonly AvailabilityRuleId[]
-}
-
 export function createLeaveCommands(dependencies: LocalDependencies): LocalLeaveCommands {
   const { database, changes } = dependencies
 
   /**
-   * The steps `update` and `reschedule` share, in the order of D-117. `prefix` is where the command's input holds
-   * the columns, so issues point at the fields the caller sent.
+   * One edit in one transaction, in the order of D-117 (D-123): the dates and the details are judged together, so
+   * everything is saved or nothing is. Issues point at the fields under `changes`.
    */
-  function edit(kind: LeaveEditKind, input: LeaveEditInput, columns: LeaveEditColumns, prefix: string[]) {
+  function edit(input: UpdateLeaveInput, columns: LeaveEditColumns) {
+    const prefix = ['changes']
     return database.transaction('rw', LEAVE_TABLES, async () => {
       const scope = await loadActorScope(dependencies)
       const before = await visibleLeave(database, scope, input.id)
@@ -179,8 +180,9 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
       requirePermission(scope, LEAVE_PERMISSIONS.update, target)
       if (before.version !== input.expected_version) return fail({ code: 'stale_version' })
 
-      const material =
-        kind === 'update' ? isMaterialLeaveUpdate(before, columns) : isMaterialReschedule(before, { ...before, ...columns })
+      const requested = EDITED_COLUMNS.filter((column) => column in columns && !sameValue(before[column], columns[column]))
+      const kind = leaveEditKind(requested)
+      const material = isMaterialLeaveUpdate(before, columns)
       const plan = planLeaveEdit(
         before,
         {
@@ -193,6 +195,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
         scope.now,
       )
       if (!plan.allowed) return failValidation(plan.issues)
+      await requireOpenSoldier(database, before, (soldier) => archivedSoldierIssues(soldier, 'update', []))
 
       const after = editedLeave(scope, before, columns, plan.next)
       if (Array.isArray(after)) return failValidation(withPathPrefix(prefix, after))
@@ -285,24 +288,17 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
     update: (raw) =>
       asResult(async () => {
         const input = parseInput(UpdateLeaveInput, raw)
-        const { leave_type_id, availability_effect_override, reason, properties } = input.changes
+        const { start_date, end_date, leave_type_id, availability_effect_override, reason, properties } = input.changes
         // Keys the caller left out are not changes (D-045), and a blank reason is no reason (D-101).
         const columns: LeaveEditColumns = {
+          ...(start_date === undefined ? {} : { start_date }),
+          ...(end_date === undefined ? {} : { end_date }),
           ...(leave_type_id === undefined ? {} : { leave_type_id }),
           ...(availability_effect_override === undefined ? {} : { availability_effect_override }),
           ...(reason === undefined ? {} : { reason: optionalText(reason) }),
           ...(properties === undefined ? {} : { properties }),
         }
-        const { leave, written } = await edit('update', input, columns, ['changes'])
-        changes.publish(written)
-        return leave
-      }),
-
-    reschedule: (raw) =>
-      asResult(async () => {
-        const input = parseInput(RescheduleLeaveInput, raw)
-        const columns = { start_date: input.start_date, end_date: input.end_date }
-        const { leave, written } = await edit('reschedule', input, columns, [])
+        const { leave, written } = await edit(input, columns)
         changes.publish(written)
         return leave
       }),
@@ -322,6 +318,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
           }
           if (before.version !== input.expected_version) return fail({ code: 'stale_version' })
           if (!plan.allowed) return failValidation(plan.issues)
+          await requireOpenSoldier(database, before, (soldier) => archivedSoldierIssues(soldier, input.transition, ['transition']))
           const issues = await commentIdIssues(database, comment)
           if (issues.length > 0) return failValidation(issues)
 

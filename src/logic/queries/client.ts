@@ -26,6 +26,7 @@ export const QUERY_KEYS = {
   leaves: [TABLE_SCOPE, 'leaves'],
   leaveEvents: [TABLE_SCOPE, 'leave_events'],
   leaveComments: [TABLE_SCOPE, 'leave_comments'],
+  availabilityRules: [TABLE_SCOPE, 'availability_rules'],
   can: ['can'],
 } as const satisfies Record<string, QueryKey>
 

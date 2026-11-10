@@ -11,11 +11,12 @@ import {
 import {
   COMMENT_PERMISSIONS,
   archiveLeaveTypeGroupIssues,
+  archivedSoldierIssues,
   LEAVE_PERMISSIONS,
   commentChangeIssues,
   isCommentAuthor,
   isMaterialLeaveUpdate,
-  isMaterialReschedule,
+  leaveEditKind,
   leaveReasonIssues,
   planLeaveCreation,
   planLeaveEdit,
@@ -203,9 +204,12 @@ describe('planLeaveEdit', () => {
 describe('material changes (D-064)', () => {
   const TYPE_A = LeaveTypeId.parse(uuid(11))
   const TYPE_B = LeaveTypeId.parse(uuid(12))
-  const current = { leave_type_id: TYPE_A, availability_effect_override: null }
+  const current = { leave_type_id: TYPE_A, availability_effect_override: null, start_date: '2026-11-10', end_date: '2026-11-12' }
 
-  it('type or effect override changes are material; reason and properties are not', () => {
+  it('type, effect override and date changes are material; reason and properties are not (D-123)', () => {
+    expect(isMaterialLeaveUpdate(current, { end_date: '2026-11-13' })).toBe(true)
+    expect(isMaterialLeaveUpdate(current, { start_date: '2026-11-09' })).toBe(true)
+    expect(isMaterialLeaveUpdate(current, { start_date: current.start_date, end_date: current.end_date })).toBe(false)
     expect(isMaterialLeaveUpdate(current, { leave_type_id: TYPE_B })).toBe(true)
     expect(isMaterialLeaveUpdate(current, { availability_effect_override: 'available' })).toBe(true)
     expect(
@@ -213,13 +217,6 @@ describe('material changes (D-064)', () => {
     ).toBe(true)
     expect(isMaterialLeaveUpdate(current, { leave_type_id: TYPE_A, availability_effect_override: null })).toBe(false)
     expect(isMaterialLeaveUpdate(current, {})).toBe(false)
-  })
-
-  it('a reschedule is material when a date moves', () => {
-    const dates = { start_date: '2026-11-10', end_date: '2026-11-12' }
-    expect(isMaterialReschedule(dates, { ...dates })).toBe(false)
-    expect(isMaterialReschedule(dates, { ...dates, end_date: '2026-11-13' })).toBe(true)
-    expect(isMaterialReschedule(dates, { ...dates, start_date: '2026-11-09' })).toBe(true)
   })
 })
 
@@ -262,5 +259,33 @@ describe('archiving a leave type group (D-113)', () => {
     expect(archiveLeaveTypeGroupIssues([{ group_id: other, archived_at: null }], group)).toEqual([])
     expect(archiveLeaveTypeGroupIssues([{ group_id: null, archived_at: null }], group)).toEqual([])
     expect(archiveLeaveTypeGroupIssues([], group)).toEqual([])
+  })
+})
+
+describe('one edit command (D-123)', () => {
+  it('an edit of the dates alone is a reschedule; anything else is an update', () => {
+    expect(leaveEditKind(['start_date'])).toBe('reschedule')
+    expect(leaveEditKind(['start_date', 'end_date'])).toBe('reschedule')
+    expect(leaveEditKind(['end_date', 'reason'])).toBe('update')
+    expect(leaveEditKind(['leave_type_id'])).toBe('update')
+  })
+})
+
+describe('a leave of an archived soldier (D-124)', () => {
+  const archived = { archived_at: '2026-11-01T08:00:00Z' }
+  const serving = { archived_at: null }
+
+  it('can only be cancelled', () => {
+    expect(archivedSoldierIssues(archived, 'cancel', ['transition'])).toEqual([])
+    for (const step of ['approve', 'reject', 'reopen'] as const) {
+      expect(archivedSoldierIssues(archived, step, ['transition'])).toEqual([{ path: ['transition'], code: 'archived' }])
+    }
+    expect(archivedSoldierIssues(archived, 'update', [])).toEqual([{ path: [], code: 'archived' }])
+  })
+
+  it('leaves every step to a soldier who is not archived', () => {
+    for (const step of ['approve', 'reject', 'reopen', 'cancel', 'update'] as const) {
+      expect(archivedSoldierIssues(serving, step, [])).toEqual([])
+    }
   })
 })

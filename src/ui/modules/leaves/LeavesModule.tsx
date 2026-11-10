@@ -3,6 +3,7 @@ import type { CalendarDate, LeaveType, LeaveTypeGroup, LeaveTypeId, Soldier, Sol
 import { t } from '@i18n'
 import {
   fullName,
+  newLeaveCandidate,
   newLeaveIssues,
   newLeaveValues,
   useCreateLeave,
@@ -18,7 +19,7 @@ import {
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { Tags } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -27,6 +28,8 @@ import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
+import { RuleGateDialog, RuleWarnings } from '../rules/RuleGate'
+import { useRuleGate } from '../rules/ruleAnswer'
 import { leaveTypeOptions } from './typeOptions'
 import { LeaveDetails } from './LeaveDetails'
 
@@ -56,6 +59,7 @@ function NewLeaveForm({
 }) {
   const panel = usePanel()
   const create = useCreateLeave()
+  const gate = useRuleGate()
   const [state, setState] = useState(CLEAN_FORM)
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
@@ -66,14 +70,26 @@ function NewLeaveForm({
       setState(CLEAN_FORM)
       // Only who may approve the soldier sends "approve now"; the command checks again (D-013).
       const asApproved = value.as_approved && value.soldier_id !== null && canApprove(value.soldier_id)
-      const result = await create.run({ ...value, as_approved: asApproved })
-      if (result.ok) panel.close()
-      else setState(formStateOf(result.error, LEAVE_FIELDS))
+      // A rule the command names opens the dialog, and acknowledging sends it again (D-047, D-142).
+      await gate.run(
+        (acknowledged) => create.run({ ...value, as_approved: asApproved }, acknowledged),
+        (result) => {
+          if (result.ok) panel.close()
+          else setState(formStateOf(result.error, LEAVE_FIELDS))
+        },
+      )
     },
   })
   const soldierId = useStore(form.store, (current) => current.values.soldier_id)
   const typeId = useStore(form.store, (current) => current.values.leave_type_id)
   const reasonRequired = typeOf(typeId)?.requires_reason === true
+  const values = useStore(form.store, (current) => current.values)
+  const approving = values.as_approved && values.soldier_id !== null && canApprove(values.soldier_id)
+  // While the leave is sent it is already on the board; judging the form too would count it twice.
+  const candidate = useMemo(
+    () => (create.isPending ? null : newLeaveCandidate({ ...values, as_approved: approving })),
+    [create.isPending, values, approving],
+  )
 
   return (
     <EntityForm
@@ -155,6 +171,8 @@ function NewLeaveForm({
           {(field) => <SwitchField labelKey="leaves.approveNow" name={field.name} value={field.state.value} onChange={field.handleChange} />}
         </form.Field>
       ) : null}
+      <RuleWarnings candidate={candidate} />
+      <RuleGateDialog gate={gate} isPending={create.isPending} />
     </EntityForm>
   )
 }

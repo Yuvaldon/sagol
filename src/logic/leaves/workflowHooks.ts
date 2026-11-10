@@ -1,6 +1,7 @@
 import {
   LeaveCommentId,
   LeaveId,
+  type AvailabilityRuleId,
   type CommentVisibility,
   type Leave,
   type LeaveComment,
@@ -19,6 +20,7 @@ import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
+import { useSoldiersWithArchived } from '../roster/hooks'
 import { useCurrentOrganization, useSession } from '../session/hooks'
 import { cachedLeaves, leaveKey, leaveListKey, restoreLeaves, showLeave } from './cache'
 import {
@@ -27,12 +29,14 @@ import {
   PENDING_QUERY,
   closedLeaves,
   editReturnsToPending,
+  isEditable,
   leaveAfterStep,
-  leaveEditChanges,
   leaveSteps,
   leaveThread,
   pendingRequests,
   toTransitionInput,
+  toUpdateLeaveInput,
+  type LeaveSoldierState,
   type LeaveEditValues,
   type ThreadEntry,
 } from './workflow'
@@ -92,9 +96,13 @@ export function useLeaveActions(leave: Leave) {
   const { time } = usePorts()
   const actor = useActor()
   const organization = useCurrentOrganization()
+  const soldier = useLeaveSoldier(leave)
   const steps = useMemo(
-    () => (actor === null ? new Map<LeaveTransition, PermissionCheck['permission']>() : leaveSteps(leave, actor.soldier_id, time.now())),
-    [leave, actor, time],
+    () =>
+      actor === null
+        ? new Map<LeaveTransition, PermissionCheck['permission']>()
+        : leaveSteps(leave, actor.soldier_id, time.now(), soldier),
+    [leave, actor, time, soldier],
   )
   const checks = useMemo(
     () => [
@@ -119,8 +127,8 @@ export function useLeaveActions(leave: Leave) {
       reject: step('reject'),
       cancel: step('cancel'),
       reopen: step('reopen'),
-      /** Only pending and approved leaves are edited (D-064). */
-      edit: (leave.status === 'pending' || leave.status === 'approved') && can(checkOn(EDIT_PERMISSION, leave.soldier_id)),
+      /** Only pending and approved leaves of a soldier who is not archived are edited (D-064, D-124). */
+      edit: isEditable(leave, soldier) && can(checkOn(EDIT_PERMISSION, leave.soldier_id)),
       comment: {
         shared: can(checkOn(COMMENT_PERMISSIONS.shared.create, leave.soldier_id)),
         internal: can(checkOn(COMMENT_PERMISSIONS.internal.create, leave.soldier_id)),
@@ -129,7 +137,15 @@ export function useLeaveActions(leave: Leave) {
       returnsToPending: (values: LeaveEditValues) =>
         actor !== null && policy !== null && editReturnsToPending(leave, values, policy, mayApprove, actor.soldier_id, time.now()),
     }
-  }, [steps, can, leave, organization, actor, time])
+  }, [steps, can, leave, organization, actor, time, soldier])
+}
+
+/** Whether the leave's soldier is archived, as far as the actor sees them (D-124). */
+function useLeaveSoldier(leave: Leave): LeaveSoldierState {
+  const soldiers = useSoldiersWithArchived()
+  const archivedAt =
+    soldiers.status === 'ready' ? (soldiers.value.find((soldier) => soldier.id === leave.soldier_id)?.archived_at ?? null) : null
+  return useMemo(() => ({ archived_at: archivedAt }), [archivedAt])
 }
 
 // ------------------------------------------------------------------- commands
@@ -147,8 +163,17 @@ export function useLeaveTransition() {
   const client = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ leave, transition, note }: { leave: Leave; transition: LeaveTransition; note: string }): Promise<Result<Leave>> =>
-      data.commands.leaves.transition(toTransitionInput(leave, transition, note)),
+    mutationFn: ({
+      leave,
+      transition,
+      note,
+      acknowledged,
+    }: {
+      leave: Leave
+      transition: LeaveTransition
+      note: string
+      acknowledged: readonly AvailabilityRuleId[]
+    }): Promise<Result<Leave>> => data.commands.leaves.transition(toTransitionInput(leave, transition, note, acknowledged)),
     onMutate: async ({ leave, transition }) => {
       await client.cancelQueries({ queryKey: QUERY_KEYS.leaves })
       const previous = cachedLeaves(client)
@@ -162,42 +187,42 @@ export function useLeaveTransition() {
     },
   })
   return {
-    run: (leave: Leave, transition: LeaveTransition, note = '') => mutation.mutateAsync({ leave, transition, note }),
+    /** `acknowledged` are the soft rules the actor agreed to break, sent again after the dialog (D-047, D-142). */
+    run: (leave: Leave, transition: LeaveTransition, note = '', acknowledged: readonly AvailabilityRuleId[] = []) =>
+      mutation.mutateAsync({ leave, transition, note, acknowledged }),
     isPending: mutation.isPending,
   }
 }
 
 /**
- * The edit form's two commands (D-119): changed dates go to `reschedule` and changed details to `update`, the
- * dates first, the second at the version the first answered. Nothing changed answers the leave as it is. A
- * refusal of the second leaves the first stored, and the reads that follow show it.
+ * The edit form's one command (D-123): the dates and the details in one `leaves.update`, so the edit is saved whole
+ * or not at all. Nothing changed answers the leave as it is.
  */
 export function useEditLeave() {
   const { data } = usePorts()
   const client = useQueryClient()
   const mutation = useMutation({
-    mutationFn: async ({ leave, values }: { leave: Leave; values: LeaveEditValues }): Promise<Result<Leave>> => {
-      const { dates, details } = leaveEditChanges(leave, values)
-      let current: Result<Leave> = { ok: true, value: leave }
-      if (dates !== null) {
-        current = await data.commands.leaves.reschedule({
-          id: leave.id,
-          expected_version: leave.version,
-          ...dates,
-          acknowledged_rule_ids: [],
-        })
-      }
-      if (!current.ok || details === null) return current
-      return data.commands.leaves.update({
-        id: leave.id,
-        expected_version: current.value.version,
-        changes: details,
-        acknowledged_rule_ids: [],
-      })
+    mutationFn: async ({
+      leave,
+      values,
+      acknowledged,
+    }: {
+      leave: Leave
+      values: LeaveEditValues
+      acknowledged: readonly AvailabilityRuleId[]
+    }): Promise<Result<Leave>> => {
+      const input = toUpdateLeaveInput(leave, values, acknowledged)
+      const unchanged: Result<Leave> = { ok: true, value: leave }
+      return input === null ? unchanged : data.commands.leaves.update(input)
     },
     onSettled: () => Promise.all(AFTER_A_LEAVE_COMMAND.map((queryKey) => client.invalidateQueries({ queryKey }))),
   })
-  return { run: (leave: Leave, values: LeaveEditValues) => mutation.mutateAsync({ leave, values }), isPending: mutation.isPending }
+  return {
+    /** `acknowledged` are the soft rules the actor agreed to break, sent again after the dialog (D-047, D-142). */
+    run: (leave: Leave, values: LeaveEditValues, acknowledged: readonly AvailabilityRuleId[] = []) =>
+      mutation.mutateAsync({ leave, values, acknowledged }),
+    isPending: mutation.isPending,
+  }
 }
 
 /** Writing in a leave's thread (D-118). Only the author's own comments take `edit` and `archive`. */

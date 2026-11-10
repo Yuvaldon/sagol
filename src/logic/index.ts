@@ -37,9 +37,11 @@ export {
   useLeaveConditions,
   useOnlyMissing,
   usePresenceDay,
+  useRulesDay,
   type LeaveConditionsState,
   type OnlyMissingState,
   type PresenceDayState,
+  type RulesDayState,
 } from './view-state/board'
 export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
 export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
@@ -70,7 +72,7 @@ export {
   type LeaveTypeFormValues,
   type LeaveTypeSection,
 } from './leaves/leaveTypes'
-export { newLeaveIssues, newLeaveValues, type NewLeaveValues } from './leaves/forms'
+export { newLeaveCandidate, newLeaveIssues, newLeaveValues, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
 export {
   useCreateLeave,
   useLeaveCreation,
@@ -82,6 +84,7 @@ export {
   useLeaves,
 } from './leaves/hooks'
 export {
+  editedLeaveCandidate,
   leaveDayCount,
   leaveEditIssues,
   leaveEditValues,
@@ -178,6 +181,27 @@ export {
   useTags,
   type SetSoldierTagsRequest,
 } from './tags/hooks'
+export {
+  EVERYONE,
+  NEW_RULE_VALUES,
+  liveRules,
+  ruleFormIssues,
+  ruleFormValues,
+  rulePopulationFilter,
+  rulePopulationOf,
+  type RuleFormValues,
+  type RulePopulation,
+} from './rules/rules'
+export { acknowledgedRuleIds, type HeatDay, type WindowConflict } from './rules/evaluation'
+export {
+  useAvailabilityRules,
+  useDayViolations,
+  useHeatRow,
+  useLeaveRuleWarnings,
+  useRuleCommands,
+  useRuleConflicts,
+  useRulePermissions,
+} from './rules/hooks'
 export {
   useCommandRankCommands,
   useCommandRankPermissions,

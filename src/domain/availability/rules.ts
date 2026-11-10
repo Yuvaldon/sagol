@@ -33,7 +33,10 @@ import { createAvailabilityContext, type AvailabilityContext, type AvailabilityD
 // only re-counts availability on the same targets.
 
 export type RuleUnit = Pick<Unit, 'id' | 'parent_id' | 'unit_level_id' | 'archived_at' | 'valid_from' | 'valid_to'>
-export type RuleSoldier = Pick<Soldier, 'id' | 'command_rank_id' | 'status' | 'properties' | 'archived_at'>
+export type RuleSoldier = Pick<
+  Soldier,
+  'id' | 'first_name' | 'last_name' | 'command_rank_id' | 'status' | 'properties' | 'archived_at'
+>
 export type RuleCommandRank = Pick<CommandRank, 'id' | 'seniority' | 'archived_at'>
 export type RuleTag = Pick<Tag, 'id' | 'category_id' | 'archived_at'>
 export type RuleDeployment = Pick<Deployment, 'id' | 'start_date' | 'end_date' | 'archived_at'>
@@ -91,6 +94,8 @@ export interface RuleTargetResult extends RuleTarget {
   readonly members: readonly SoldierId[]
   /** How many members are available. */
   readonly available: number
+  /** The members who are not available that day, by id. */
+  readonly unavailable: readonly SoldierId[]
   /** At least this many must be available; NULL = no minimum. */
   readonly required_min: number | null
   /** At most this many may be available; NULL = no maximum. */
@@ -429,7 +434,8 @@ function resolvePriority(targets: readonly PlannedTarget[]): RuleConflict[] {
 
 function measure(target: PlannedTarget, availability: AvailabilityContext): RuleTargetResult {
   const options = { count_pending_as_unavailable: target.rule.count_pending_as_unavailable }
-  const available = target.members.filter((id) => availability.isAvailable(id, target.date, options)).length
+  const unavailable = target.members.filter((id) => !availability.isAvailable(id, target.date, options))
+  const available = target.members.length - unavailable.length
   const { required_min, allowed_max } = target.thresholds
   const broken: RuleBound[] = []
   if (required_min !== null && available < required_min) broken.push(RuleBound.enum.min)
@@ -444,6 +450,7 @@ function measure(target: PlannedTarget, availability: AvailabilityContext): Rule
     date: target.date,
     members: target.members,
     available,
+    unavailable: sortedIds(unavailable),
     required_min,
     allowed_max,
     broken,

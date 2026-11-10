@@ -261,6 +261,9 @@ hard rule refuses it.
 - **Open items:** OI-042 (asked at start); OI-066 (from V5); OI-071, OI-075, OI-091; OI-076, OI-077, OI-083,
   OI-084, OI-085 (from A3).
 - **Decisions:** D-014, D-031, D-047, D-067, D-071, D-072, D-073, D-117, D-123, D-124.
+- **As built:** D-137 to D-142. The owner kept OI-042 (D-137) and chose that a violation names who is unavailable (D-138).
+  The population uses the filter bar's check lists; live warnings run over what the actor reads (OI-094 for V10);
+  deployments reach the rule data in V15 (OI-096).
 
 #### V8 — Timeline drag
 **Owner sees:** drag to create, move and resize, with live rule and conflict feedback, plus a

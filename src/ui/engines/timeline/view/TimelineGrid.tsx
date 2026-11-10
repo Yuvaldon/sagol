@@ -6,7 +6,14 @@ import { Button as AriaButton } from 'react-aria-components'
 import { useIsDesktop } from '../../../patterns/media'
 import { badgeStart, barSpan, laneTop, rowHeightFor } from '../core/lanes'
 import { dayOffset, gridLayout, spansOf, type GridLayout } from '../core/layout'
-import type { TimelineDayCell, TimelineGroupRow, TimelineMark, TimelineResourceRow, TimelineRowModel } from './model'
+import type {
+  TimelineDayCell,
+  TimelineGroupRow,
+  TimelineHeatCell,
+  TimelineMark,
+  TimelineResourceRow,
+  TimelineRowModel,
+} from './model'
 
 // The timeline grid of Stone 3 (D-077, D-108): a days header that floats under the bars, a name column
 // that stays at the inline start, and rows that exist in the page only while in sight. Positions come from
@@ -28,12 +35,61 @@ function useWidthOf(element: HTMLElement | null): number {
   return width
 }
 
-function DaysHeader({ days, layout }: { readonly days: readonly TimelineDayCell[]; readonly layout: GridLayout }) {
+const HEAT_TONES: Record<TimelineHeatCell['tone'], string> = {
+  hard: 'bg-status-rejected text-on-action',
+  soft: 'border-2 border-dashed border-status-pending bg-surface text-status-pending-text',
+  none: '',
+}
+
+/**
+ * The heat row under the days (D-141): a cell per day with the number of broken rules, solid when a hard rule breaks
+ * and dashed when only soft ones do. A cell with something to show opens the rules of its day.
+ */
+function HeatRow({ cells, layout, heightPx }: { readonly cells: readonly TimelineHeatCell[]; readonly layout: GridLayout; readonly heightPx: number }) {
+  return (
+    <div role="group" aria-label={t('rules.heatRow')} className="relative" style={{ height: heightPx, width: layout.widthPx }}>
+      <div
+        className="sticky start-none z-4 flex h-full items-center bg-surface ps-md text-label font-semibold text-text-muted"
+        style={{ width: layout.nameColumnPx }}
+      >
+        {t('rules.heatLabel')}
+      </div>
+      {cells.map((cell, index) => {
+        const place = { insetInlineStart: dayOffset(layout, index) + TIMELINE_LANES.barInsetPx, width: layout.dayPx - 2 * TIMELINE_LANES.barInsetPx }
+        if (cell.onOpen === null) return null
+        return (
+          <AriaButton
+            key={cell.key}
+            aria-label={cell.label}
+            onPress={cell.onOpen}
+            className={`absolute inset-y-2xs flex cursor-pointer items-center justify-center rounded-bar text-label font-bold tabular-nums outline-focus outline-offset-1 data-focus-visible:outline-2 ${HEAT_TONES[cell.tone]}`}
+            style={place}
+          >
+            {cell.count}
+          </AriaButton>
+        )
+      })}
+    </div>
+  )
+}
+
+function DaysHeader({
+  days,
+  layout,
+  heat,
+  heatPx,
+}: {
+  readonly days: readonly TimelineDayCell[]
+  readonly layout: GridLayout
+  readonly heat: readonly TimelineHeatCell[] | null
+  readonly heatPx: number
+}) {
   return (
     <div
-      className="sticky top-under-bars z-3 md:top-under-bars-md"
-      style={{ height: TIMELINE_LAYOUT.headerPx, width: layout.widthPx }}
+      className="sticky top-under-bars z-3 bg-surface md:top-under-bars-md"
+      style={{ height: TIMELINE_LAYOUT.headerPx + (heat === null ? 0 : heatPx), width: layout.widthPx }}
     >
+      <div className="relative" style={{ height: TIMELINE_LAYOUT.headerPx, width: layout.widthPx }}>
       <div
         className="sticky start-none z-4 flex h-full items-center bg-surface ps-md text-label font-semibold text-text-muted"
         style={{ width: layout.nameColumnPx }}
@@ -58,6 +114,8 @@ function DaysHeader({ days, layout }: { readonly days: readonly TimelineDayCell[
           </div>
         ))}
       </div>
+      </div>
+      {heat === null ? null : <HeatRow cells={heat} layout={layout} heightPx={heatPx} />}
     </div>
   )
 }
@@ -201,9 +259,11 @@ function ResourceRow({
 export interface TimelineGridProps {
   readonly days: readonly TimelineDayCell[]
   readonly rows: readonly TimelineRowModel[]
+  /** The heat row (D-141); NULL when the actor sees no rule. */
+  readonly heat: readonly TimelineHeatCell[] | null
 }
 
-export function TimelineGrid({ days, rows }: TimelineGridProps) {
+export function TimelineGrid({ days, rows, heat }: TimelineGridProps) {
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
   const list = useRef<HTMLUListElement>(null)
   const [listTop, setListTop] = useState(0)
@@ -211,10 +271,11 @@ export function TimelineGrid({ days, rows }: TimelineGridProps) {
   // A name is a touch target on mobile, so the row grows there (OI-033).
   const rowPx = useIsDesktop() ? TIMELINE_LAYOUT.rowPx : TIMELINE_LAYOUT.rowTouchPx
 
-  // Where the rows start inside what scrolls: under the bars and the days header.
+  // Where the rows start inside what scrolls: under the bars and the days header, which grows with the heat row.
+  const hasHeat = heat !== null
   useLayoutEffect(() => {
     if (list.current !== null) setListTop(list.current.offsetTop)
-  }, [scroller])
+  }, [scroller, hasHeat, rowPx])
 
   // TanStack Virtual hands out new functions each render, and nothing here memoizes them.
   // oxlint-disable-next-line react/incompatible-library
@@ -247,7 +308,7 @@ export function TimelineGrid({ days, rows }: TimelineGridProps) {
     >
       <div className="relative min-w-full" style={{ width: layout.widthPx }}>
         <div aria-hidden className="h-under-bars md:h-under-bars-md" />
-        <DaysHeader days={days} layout={layout} />
+        <DaysHeader days={days} layout={layout} heat={heat} heatPx={rowPx} />
         <ul ref={list} aria-label={t('timeline.names')} className="relative" style={{ height: virtualizer.getTotalSize() }}>
           <Columns days={days} layout={layout} />
           {virtualizer.getVirtualItems().map((item) => {
