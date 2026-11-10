@@ -95,6 +95,8 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     // The profile opens again on the soldier's new version, so saving it still works (D-130).
     await page.getByLabel(he.soldiers.nickname).fill('יעלי')
     await drawer(page).getByRole('button', { name: he.common.save, exact: true }).first().click()
+    // A saved profile goes back to the list; a refusal would stay on the page with an alert.
+    await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel })).toContainText('יעל שחר')
     await expect(page.getByRole('alert')).toHaveCount(0)
     await closeDrawer(page)
   })
