@@ -29,8 +29,14 @@ import {
   createSoldierCommands,
   createSoldierPrivateRepository,
   createSoldierRepository,
-  type LocalSoldierCommands,
 } from './soldiers'
+import {
+  createSoldierTagRepository,
+  createTagCategoryCommands,
+  createTagCategoryRepository,
+  createTagCommands,
+  createTagRepository,
+} from './tags'
 import { createUnitLevelCommands, createUnitLevelRepository } from './unitLevels'
 import { createUnitCommands, createUnitRepository } from './units'
 
@@ -49,6 +55,9 @@ export interface LocalDataAdapter {
     | 'soldier_private'
     | 'unit_memberships'
     | 'soldier_preferences'
+    | 'tag_categories'
+    | 'tags'
+    | 'soldier_tags'
     | 'leave_type_groups'
     | 'leave_types'
     | 'leaves'
@@ -61,7 +70,9 @@ export interface LocalDataAdapter {
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']
-    readonly soldiers: LocalSoldierCommands
+    readonly soldiers: DataCommands['soldiers']
+    readonly tag_categories: DataCommands['tag_categories']
+    readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
     readonly leaves: LocalLeaveCommands
@@ -101,6 +112,9 @@ export function createLocalDataAdapter(
       soldier_private: createSoldierPrivateRepository(dependencies),
       unit_memberships: createMembershipRepository(dependencies),
       soldier_preferences: createSoldierPreferencesRepository(dependencies),
+      tag_categories: createTagCategoryRepository(dependencies),
+      tags: createTagRepository(dependencies),
+      soldier_tags: createSoldierTagRepository(dependencies),
       leave_type_groups: createLeaveTypeGroupRepository(dependencies),
       leave_types: createLeaveTypeRepository(dependencies),
       leaves: createLeaveRepository(dependencies),
@@ -114,6 +128,8 @@ export function createLocalDataAdapter(
       units: createUnitCommands(dependencies),
       command_ranks: createCommandRankCommands(dependencies),
       soldiers: createSoldierCommands(dependencies),
+      tag_categories: createTagCategoryCommands(dependencies),
+      tags: createTagCommands(dependencies),
       leave_type_groups: createLeaveTypeGroupCommands(dependencies),
       leave_types: createLeaveTypeCommands(dependencies),
       leaves: createLeaveCommands(dependencies),

@@ -6,6 +6,7 @@ import {
   IssueCode,
   MembershipQuery,
   MembershipType,
+  SetSoldierTagsInput,
   Soldier,
   SoldierScopedQuery,
   UpdateSoldierInput,
@@ -40,6 +41,7 @@ import {
   createReferenceRepository,
   parsedCandidate,
   permissionOf,
+  requireWritable,
   tablesOf,
   visibleRow,
   withSpecOptionalText,
@@ -47,9 +49,11 @@ import {
   type RowCheck,
 } from './reference'
 import { POLICY_TABLES, requireAccessManager } from './snapshot'
+import { SOLDIER_TAG_TABLES, soldierTagIssues } from './tags'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
-// (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097.
+// (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097. A soldier's tags
+// are a set written with `soldiers:update` (D-130).
 
 const MEMBERSHIPS_UPDATE = { resource: 'memberships', action: 'update' } as const
 const MEMBERSHIPS_VIEW = { resource: 'memberships', action: 'view' } as const
@@ -229,13 +233,7 @@ export function createMembershipRepository(dependencies: LocalDependencies): Dat
 
 // ------------------------------------------------------------------ commands
 
-/** What the local adapter builds of `commands.soldiers` so far. `setTags` lands in V6 (D-076). */
-export type LocalSoldierCommands = Pick<
-  DataCommands['soldiers'],
-  'create' | 'update' | 'archive' | 'updatePrivate' | 'changeMembership'
->
-
-export function createSoldierCommands(dependencies: LocalDependencies): LocalSoldierCommands {
+export function createSoldierCommands(dependencies: LocalDependencies): DataCommands['soldiers'] {
   const { database, changes } = dependencies
   const { update, archive } = createReferenceCommands(dependencies, SPEC, {
     create: CreateSoldierInput,
@@ -256,6 +254,48 @@ export function createSoldierCommands(dependencies: LocalDependencies): LocalSol
   return {
     update,
     archive,
+
+    // D-130: the whole set, guarded by the soldier's version, which it bumps (D-045).
+    setTags: (raw) =>
+      asResult(async () => {
+        const input = parseInput(SetSoldierTagsInput, raw)
+        const rows = await database.transaction('rw', [...ROSTER_TABLES, ...SOLDIER_TAG_TABLES], async () => {
+          const scope = await loadActorScope(dependencies)
+          const soldier = await visibleRow(database, SPEC, scope, input.soldier_id)
+          requirePermission(scope, permissionOf('soldiers', 'update'), soldierTarget(soldier.id))
+          requireWritable(soldier, input.expected_version)
+
+          const table = tableOf(database, 'soldier_tags')
+          const held = await table.where('soldier_id').equals(soldier.id).toArray()
+          const issues = await soldierTagIssues(database, scope, held.map((row) => row.tag_id), input.tag_ids)
+          if (issues.length > 0) return failValidation(issues)
+
+          const next = new Set(input.tag_ids)
+          const heldById = new Map(held.map((row) => [row.tag_id, row]))
+          await table.bulkDelete(held.filter((row) => !next.has(row.tag_id)).map((row) => [row.soldier_id, row.tag_id]))
+          const answer = input.tag_ids.map(
+            (tagId) =>
+              heldById.get(tagId) ??
+              parsedRow('soldier_tags', {
+                soldier_id: soldier.id,
+                tag_id: tagId,
+                organization_id: scope.organization_id,
+                created_at: scope.now,
+                created_by: scope.soldier_id,
+              }),
+          )
+          await table.bulkAdd(answer.filter((row) => !heldById.has(row.tag_id)))
+          await tableOf(database, 'soldiers').put(
+            SPEC.schema.parse({ ...soldier, ...updatedBy(scope.soldier_id, scope.now, soldier.version) }),
+          )
+          return answer.map((row) => parsedRow('soldier_tags', row))
+        })
+        changes.publish([
+          { table: 'soldier_tags', ids: [input.soldier_id] },
+          { table: 'soldiers', ids: [input.soldier_id] },
+        ])
+        return rows
+      }),
 
     create: (raw) =>
       asResult(async () => {
