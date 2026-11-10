@@ -8,12 +8,25 @@ export const OWNER = { email: 'owner@example.test', name: 'דנה לוי' }
 export const ORGANIZATION = 'פלוגה ב׳'
 
 /**
+ * Waits until what is on screen rests: no animation runs, and no overlay is still hidden while it prepares to enter.
+ * react-aria hides an overlay with `opacity: 0` and a clip until its enter animation is ready, and Playwright counts
+ * that as visible, so a check of what covers what made during that moment fails on a slow runner only.
+ */
+export async function waitForSettledScreen(page: Page) {
+  await page.waitForFunction(
+    () =>
+      document.getAnimations().every((animation) => animation.playState !== 'running') &&
+      [...document.querySelectorAll<HTMLElement>('[data-rac]')].every((element) => element.style.clipPath !== 'inset(50%)'),
+  )
+}
+
+/**
  * Axe measures what rests on screen. A surface that is still fading in has its text at partial
  * opacity, which fails contrast on a slow runner only (OI-059), so the check waits for running
  * animations to end. A failure names each element, so the next one says where it is.
  */
 export async function expectNoAxeViolations(page: Page) {
-  await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== 'running'))
+  await waitForSettledScreen(page)
   const { violations } = await new AxeBuilder({ page }).analyze()
   const found = violations.flatMap((violation) =>
     violation.nodes.map((node) => `${violation.id}: ${node.target.join(' ')} — ${node.failureSummary ?? violation.help}`),

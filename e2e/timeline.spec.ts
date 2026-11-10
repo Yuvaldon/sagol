@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, typeDate } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, waitForSettledScreen } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
 // axe. Sample data, tests only.
@@ -144,8 +144,9 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   await test.step('a name opens the soldier, and closing keeps the board as it was', async () => {
     await board(page).getByRole('button', { name: /נועם לב/ }).click()
     await expect(page.getByRole('heading', { name: 'נועם לב', exact: true })).toBeVisible()
-    // The drawer and its scrim lie over the bars, not under them. The modal makes the bars inert, and hit
-    // testing skips what is inert, so the test lifts it for the moment of the check.
+    // The drawer and its scrim lie over the bars, not under them, once the drawer has entered. The modal makes the
+    // bars inert, and hit testing skips what is inert, so the test lifts it for the moment of the check.
+    await waitForSettledScreen(page)
     const covered = await page.evaluate(() => {
       const inert = [...document.querySelectorAll('[inert]')]
       for (const element of inert) element.removeAttribute('inert')
