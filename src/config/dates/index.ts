@@ -22,6 +22,8 @@ export const DATE_FORMATS = {
   numeric: { day: '2-digit', month: '2-digit', year: 'numeric' },
   /** Long weekday, day, month and year. */
   full: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+  /** Day, short month and the time of day, for a moment in a leave's history (D-119). */
+  dayMonthTime: { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>
 
 export type DateFormat = keyof typeof DATE_FORMATS
