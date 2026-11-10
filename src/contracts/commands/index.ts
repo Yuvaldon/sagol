@@ -53,7 +53,6 @@ import type {
   EditLeaveCommentInput,
   ReorderLeaveTypeGroupsInput,
   ReorderLeaveTypesInput,
-  RescheduleLeaveInput,
   TransitionLeaveInput,
   UpdateLeaveInput,
   UpdateLeaveTypeGroupInput,
@@ -205,8 +204,8 @@ export interface DataCommands {
     create: Command<CreateLeaveInput, Leave>
     createBatch: Command<CreateLeaveBatchInput, { batch: LeaveBatch; leaves: Leave[] }>
     duplicate: Command<DuplicateLeaveInput, Leave[]>
+    /** The dates and the details in one command and one event (D-123). */
     update: Command<UpdateLeaveInput, Leave>
-    reschedule: Command<RescheduleLeaveInput, Leave>
     transition: Command<TransitionLeaveInput, Leave>
   }
   leave_comments: {

@@ -19,7 +19,6 @@ import {
   IssueCode,
   OrganizationExport,
   ReorderTagsInput,
-  RescheduleLeaveInput,
   ReviewAccountLinkInput,
   SchemaIssue,
   Session,
@@ -148,7 +147,6 @@ const INPUT_TABLES: Record<string, Target> = {
   CreateLeaveBatchInput: { table: 'leaves', nested: { batch: 'leave_batches', leaves: 'leaves' } },
   DuplicateLeaveInput: { table: 'leaves', nested: { copies: 'leaves' } },
   UpdateLeaveInput: { table: 'leaves' },
-  RescheduleLeaveInput: { table: 'leaves' },
   TransitionLeaveInput: { table: 'leaves', nested: { comment: 'leave_comments' } },
   AddLeaveCommentInput: { table: 'leave_comments' },
   EditLeaveCommentInput: { table: 'leave_comments' },
@@ -297,13 +295,9 @@ describe('strict inputs', () => {
 // --------------------------------------------------------------- row checks
 
 describe('row checks on inputs', () => {
-  it('rejects inverted leave dates on create and reschedule', () => {
+  it('rejects inverted leave dates on create and update', () => {
     const inverted = { start_date: '2026-11-12', end_date: '2026-11-10' }
     expect(messages(CreateLeaveInput.safeParse({ ...leave, ...inverted }))).toEqual([
-      SchemaIssue.enum.range_inverted,
-    ])
-    const reschedule = { id: ID.a, expected_version: 2, acknowledged_rule_ids: [], ...inverted }
-    expect(messages(RescheduleLeaveInput.safeParse(reschedule))).toEqual([
       SchemaIssue.enum.range_inverted,
     ])
     const update = { id: ID.a, expected_version: 2, acknowledged_rule_ids: [], changes: inverted }

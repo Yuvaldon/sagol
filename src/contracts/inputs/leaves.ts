@@ -172,22 +172,6 @@ export const UpdateLeaveInput = z.strictObject({
 })
 export type UpdateLeaveInput = z.infer<typeof UpdateLeaveInput>
 
-/**
- * `rescheduleLeave` (event `rescheduled`). An approved leave stays approved or returns to
- * pending according to `reschedule_policy` (D-013, D-041).
- */
-export const RescheduleLeaveInput = z
-  .strictObject({
-    id: LeaveId,
-    expected_version: ExpectedVersion,
-    ...leaveDates,
-    acknowledged_rule_ids: AcknowledgedRuleIds,
-  })
-  .superRefine((input, ctx) => {
-    checkDateRange(ctx, input.start_date, input.end_date, 'end_date')
-  })
-export type RescheduleLeaveInput = z.infer<typeof RescheduleLeaveInput>
-
 /** Status transitions. Which ones are allowed from which status is domain's state machine. */
 export const LeaveTransition = z.enum(['approve', 'reject', 'cancel', 'reopen'])
 export type LeaveTransition = z.infer<typeof LeaveTransition>
