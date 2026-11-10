@@ -7,24 +7,12 @@ import {
   type Result,
   type RuleViolation,
   type SoldierId,
+  type ViolationSoldier,
 } from '@contracts'
 import { compareCodeUnits } from '../json'
 import { compareDates, eachDay } from '../time'
 import type { AvailabilityLeave } from './days'
-import { evaluateBeforeAfter, type RuleData, type RuleShape, type RuleSoldier, type RuleTargetResult } from './rules'
-
-/** The name of a soldier a violation lists (D-138). */
-export type ViolationSoldier = Pick<RuleSoldier, 'id' | 'first_name' | 'last_name'>
-
-/** A day of a violation, with who is unavailable (D-138). Contracts' `RuleViolation` gains the field next. */
-interface ViolationDay {
-  readonly date: CalendarDate
-  readonly required: number
-  readonly actual: number
-  readonly unavailable: ViolationSoldier[]
-}
-
-type GateViolation = Omit<RuleViolation, 'days'> & { days: ViolationDay[] }
+import { evaluateBeforeAfter, type RuleData, type RuleShape, type RuleTargetResult } from './rules'
 
 // What commands do with rule evaluation (D-047, D-073): a leave change is checked against
 // the effective rules on the days and targets it touches, and only what the change makes
@@ -47,10 +35,10 @@ function violationKey(target: RuleTargetResult, bound: RuleBound): string {
 function collectViolations(
   broken: Iterable<{ target: RuleTargetResult; bound: RuleBound }>,
   soldiers: Iterable<ViolationSoldier>,
-): GateViolation[] {
+): RuleViolation[] {
   const names = new Map<SoldierId, ViolationSoldier>()
   for (const { id, first_name, last_name } of soldiers) names.set(id, { id, first_name, last_name })
-  const byKey = new Map<string, GateViolation>()
+  const byKey = new Map<string, RuleViolation>()
   for (const { target, bound } of broken) {
     const key = violationKey(target, bound)
     const required = bound === RuleBound.enum.min ? target.required_min : target.allowed_max
