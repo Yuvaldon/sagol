@@ -11,7 +11,7 @@ reasons → `docs/DECISIONS.md`. Build order and dependencies → `docs/FEATURE_
 
 1. **Layer separation.** Data, Logic and UI are fully separate. A session builds one feature
    across the layers (one vertical slice), and each commit touches one layer, written against
-   the public API of the layer below it (D-075).
+   the public API of the layer below it, and passes `npm run check` (D-075, D-127).
 2. **Communication only through APIs.** A layer talks to a neighbour only through that
    neighbour's public API (`index.ts`). No layer touches another layer's internals.
 3. **No hardcoded values.** Not strings, colors, sizes, keys, statuses, breakpoints, date
@@ -144,12 +144,25 @@ evaluated per soldier per day (unit and seniority on that day), negative operato
 complements, and text compares case-insensitively. Rules compare populations by a
 structural canonical key (D-067).
 
-## Leave workflow (D-013, D-063, D-064)
+## Leave workflow (D-013, D-063, D-064, D-114 … D-125)
 
-Domain owns the leave state machine: which transitions each status allows, the permission
-each one needs, the review columns and the event. Rejected and cancelled leaves are closed
-until reopened. A material edit of an approved leave (dates, type, effect) follows
-`reschedule_policy`. Commands check the returned permissions with `can()`.
+The current state, in short (D-128). The entries hold the reasons.
+
+- **State machine (domain):** which steps each status allows, the permission each needs, the review columns and the event
+  (D-063). Rejected and cancelled leaves are closed until reopened. Commands check the permissions with `can()` on the
+  leave's soldier.
+- **Commands:** `leaves.create` (D-114), `transition`, `update` and `reschedule` (D-117), in the order of D-090, each in
+  one transaction with the rule gate (D-073). A material edit of an approved leave (dates, type, effect) follows
+  `reschedule_policy` (D-064). Decided, built in V7: one `update` takes the dates too and `reschedule` goes (D-123,
+  OI-076); on a leave of an archived soldier only `cancel` (D-124, OI-077).
+- **Comments:** shared or internal; each is read and written with its own pair over the leave's soldier, and only the
+  author edits or archives (D-118).
+- **Screens:** a bar or badge opens the leave in the `leaves` panel (D-119, D-129): details, the actions the state and the
+  hints allow, one edit form, one thread of events and comments. The "+" opens the new-leave form in the same panel
+  (D-115); until V6 it offers active soldiers only (D-125, OI-078). The requests inbox lists pending leaves the actor may
+  approve and closed leaves to reopen (D-120). The "approve now" default is a switch in the user menu (D-121).
+- **Optimistic updates:** a step shows at once and is taken back on a refusal; `stale_version` shows the stored leave
+  again (D-119).
 
 ## Workspace, routing and view state (D-023)
 
@@ -172,7 +185,8 @@ Each engine (timeline, calendar, list, table/agenda) is a self-contained module:
    into that model.
 
 A registry maps view ids (from `config`) to engines. The central viewport is a pluggable
-container that passes the same query and filter state to whichever engine is active.
+container that mounts whichever engine is active; each engine reads the same view state (window, filter, colors) from the
+URL through `logic`, so switching engines keeps it.
 Replacing an engine replaces one registry entry. Engines never call each other.
 
 ## Design system
@@ -212,8 +226,8 @@ src/
   app/         env/ time/ composition/ router/
 supabase/      migrations/ policies/ functions/ tests/   (phase 8)
 e2e/           Playwright specs
-docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md sessions/
-               audits/
+docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md OPEN_ITEMS.md
+               OPEN_ITEMS_ARCHIVE.md sessions/ audits/
 ```
 
 ## Quality gates

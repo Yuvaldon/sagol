@@ -11,8 +11,8 @@ Every `open` item in `docs/OPEN_ITEMS.md` targeted at this slice is in scope (D-
 ## Iron rules
 
 1. One session = one vertical slice of `docs/FEATURE_MAP.md` (or one non-code track).
-   One commit = one layer, in dependency order. `i18n` with `ui` is the one allowed pair
-   (D-025, D-075).
+   One commit = one layer, and every commit passes `npm run check`. `i18n` with `ui` is the one
+   allowed pair (D-025, D-075, D-127).
 2. Layers talk only through each other's `index.ts`, via aliases (`@contracts`, `@domain`, ...).
 3. No hardcoded values: strings → `i18n`; constants → `config`; entity names and
    vocabularies → `contracts`; colors/sizes → theme tokens; identities → environment.
@@ -35,12 +35,17 @@ Every `open` item in `docs/OPEN_ITEMS.md` targeted at this slice is in scope (D-
 - Plan before code. If a task needs a decision that is not in `DECISIONS.md`, ask.
 - No workarounds or patches: a fix goes in the layer that owns it, in its own commit in the same
   slice when the slice needs it. Otherwise it becomes an open item with a target slice.
-- Finish a slice with `npm run check` and `npm run build` green, its demo running in Playwright
-  (desktop, mobile, RTL, axe), Conventional Commits, and a handoff note in
-  `docs/sessions/NN-<name>.md`: done, how to see it, decisions, open items, input for the next
-  session.
-- Anything left for another session goes into `docs/OPEN_ITEMS.md` (new id, target slice). Close
-  resolved items there. Handoffs refer to items by id, never copy them.
+- Finish a slice with `npm run check`, `npm run build` and the whole Playwright suite green (desktop,
+  mobile, RTL, axe; the CI worker count), Conventional Commits, a read-only review of the branch's own
+  diff (the `code-review` skill or a fresh subagent; fix what is in the slice, open items for the rest),
+  and a handoff note in `docs/sessions/NN-<name>.md`: done, how to see it, decisions, checks and the
+  review, open items, input for the next session. The slice is done when its pull request merges with
+  CI green (D-126).
+- Anything left for another session goes into `docs/OPEN_ITEMS.md` (new id, one target slice). Close
+  resolved items and move their rows to `docs/OPEN_ITEMS_ARCHIVE.md`, which is not read at the start
+  (D-128). Handoffs refer to items by id, never copy them.
+- Keep the current state current: a slice that changes an area updates its lines in
+  `docs/ARCHITECTURE.md` and its screens in `docs/Design.md` (D-128).
 - Update the status column in `docs/ROADMAP.md`.
 - **Audits (D-051, D-078):** never run an audit inside an execution session. If the next roadmap
   row is an audit (`A1` … `A7`), end by telling the owner to open a separate audit session with

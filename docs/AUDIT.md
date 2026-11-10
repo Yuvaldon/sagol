@@ -12,10 +12,11 @@ intent, in places the automated checks cannot see. It never fixes anything (D-05
 - An execution session that starts while an earlier audit row is still `☐` reminds the
   owner and asks whether to continue without it. It does not run the audit itself. A1 may run
   alongside V0 without asking (D-078).
-- **The audit session** reads and reports only. It writes no file and makes no commit.
+- **The audit session** reads and reports only. It writes no file and makes no commit. It reads
+  `main`, which holds only slices merged with CI green (D-126).
 - **The owner** decides which findings matter.
 - **A following docs session** records the accepted findings as items in
-  `docs/OPEN_ITEMS.md` (each with a target slice), writes the audit report to
+  `docs/OPEN_ITEMS.md` (each with one target slice, D-128), writes the audit report to
   `docs/audits/A<n>.md`, and marks the audit row `☑`. Fixes happen in the target slice, in the
   owning layer's commit, under the normal rules.
 
