@@ -23,6 +23,7 @@ export { filterUnitOf, unitFilterOf, useViewFilter, type FilterUnit, type ViewFi
 export { useActiveView, type ActiveViewState } from './view-state/view'
 export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useToday } from './session/today'
+export { useMyPreferences, useUpdateMyPreferences } from './session/preferences'
 export {
   timelineItems,
   type TimelineGroupItem,
@@ -56,6 +57,24 @@ export {
   useLeaveTypes,
   useLeaves,
 } from './leaves/hooks'
+export {
+  leaveDayCount,
+  leaveEditIssues,
+  leaveEditValues,
+  type LeaveEditValues,
+  type ThreadEntry,
+} from './leaves/workflow'
+export {
+  useClosedLeaves,
+  useEditLeave,
+  useIsOwnComment,
+  useLeave,
+  useLeaveActions,
+  useLeaveCommentCommands,
+  useLeaveThread,
+  useLeaveTransition,
+  usePendingRequests,
+} from './leaves/workflowHooks'
 export {
   dropZoneAt,
   moveCandidates,
@@ -115,5 +134,6 @@ export {
   useSoldierPrivate,
   usePlacementReading,
   useSoldiers,
+  useSoldiersWithArchived,
   useUnitsWithArchived,
 } from './roster/hooks'

@@ -1,6 +1,6 @@
 import type { PermissionCheck } from '@contracts'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { QUERY_KEYS } from '../queries/client'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
@@ -14,7 +14,18 @@ export type CanAnswer = (check: PermissionCheck) => boolean
 
 const keyOf = (check: PermissionCheck) => JSON.stringify(check)
 
+export interface CanAnswers {
+  readonly can: CanAnswer
+  /** Whether the adapter has answered this check, or failed to. Until then `can` says "no" without knowing. */
+  readonly known: CanAnswer
+}
+
 export function useCan(checks: readonly PermissionCheck[]): CanAnswer {
+  return useCanAnswers(checks).can
+}
+
+/** The hints, and which of them have an answer yet: a state may wait for one, a control never does (D-122). */
+export function useCanAnswers(checks: readonly PermissionCheck[]): CanAnswers {
   const { data } = usePorts()
   // Policy reads today (D-053), so a new day asks again (D-107).
   const today = useToday()
@@ -28,8 +39,11 @@ export function useCan(checks: readonly PermissionCheck[]): CanAnswer {
     // Answers are keyed by check, so a list that grows keeps the answers it already has.
     placeholderData: keepPreviousData,
   })
-  const answers = query.isError ? undefined : query.data
-  return useCallback((check) => answers?.[keyOf(check)] === true, [answers])
+  const failed = query.isError
+  const answers = failed ? undefined : query.data
+  const can = useCallback<CanAnswer>((check) => answers?.[keyOf(check)] === true, [answers])
+  const known = useCallback<CanAnswer>((check) => failed || answers?.[keyOf(check)] !== undefined, [answers, failed])
+  return useMemo(() => ({ can, known }), [can, known])
 }
 
 /** Which modules the signed-in soldier may open (D-053). */

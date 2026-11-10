@@ -1,7 +1,7 @@
 import {
-  LeaveQuery,
   type CreateLeaveInput,
   type Leave,
+  type LeaveQuery,
   type LeaveStatus,
   type LeaveType,
   type LeaveTypeGroup,
@@ -10,10 +10,11 @@ import {
   type Soldier,
   type SoldierId,
 } from '@contracts'
-import { LEAVE_PERMISSIONS, compareDates, soldierTarget } from '@domain'
-import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { LEAVE_PERMISSIONS, soldierTarget } from '@domain'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useCan } from '../permissions/hooks'
+import { cachedLeaves, leaveListKey, restoreLeaves, showLeave } from './cache'
 import { byName } from '../roster/roster'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
@@ -71,28 +72,9 @@ export function useLeaves(window: DateWindow): Loaded<readonly Leave[]> {
   const query = useMemo(() => leaveQueryOf(window), [window])
   return loaded(
     useQuery({
-      queryKey: [...QUERY_KEYS.leaves, query],
+      queryKey: leaveListKey(query),
       queryFn: () => unwrap(data.repositories.leaves.list(query)),
     }),
-  )
-}
-
-/** The query a cached list of leaves asked for, read back from its key. */
-function queryOfKey(key: QueryKey): LeaveQuery | null {
-  const parsed = LeaveQuery.safeParse(key[QUERY_KEYS.leaves.length])
-  return parsed.success ? parsed.data : null
-}
-
-/** Whether the list a query asked for holds this leave: its dates, its soldier and its status. */
-function listHolds(query: LeaveQuery, leave: Leave): boolean {
-  const { window } = query
-  const inWindow =
-    window === null ||
-    (compareDates(leave.start_date, window.end_date) <= 0 && compareDates(window.start_date, leave.end_date) <= 0)
-  return (
-    inWindow &&
-    (query.soldier_ids === null || query.soldier_ids.includes(leave.soldier_id)) &&
-    (query.statuses === null || query.statuses.includes(leave.status))
   )
 }
 
@@ -110,20 +92,16 @@ export function useCreateLeave() {
     mutationFn: (input: CreateLeaveInput): Promise<Result<Leave>> => data.commands.leaves.create(input),
     onMutate: async (input) => {
       await client.cancelQueries({ queryKey: QUERY_KEYS.leaves })
-      const previous = client.getQueriesData<readonly Leave[]>({ queryKey: QUERY_KEYS.leaves })
+      const previous = cachedLeaves(client)
       if (actor !== null) {
         const leave = optimisticLeave(input, actor, time.now())
-        for (const [key, rows] of previous) {
-          const query = queryOfKey(key)
-          if (rows === undefined || query === null || !listHolds(query, leave)) continue
-          client.setQueryData<readonly Leave[]>(key, [...rows, leave])
-        }
+        showLeave(client, leave)
       }
       return { previous }
     },
     onSettled: async (result, _error, _input, context) => {
       if (result?.ok !== true && context !== undefined) {
-        for (const [key, rows] of context.previous) client.setQueryData(key, rows)
+        restoreLeaves(client, context.previous)
       }
       await Promise.all(
         [QUERY_KEYS.leaves, QUERY_KEYS.can].map((queryKey) => client.invalidateQueries({ queryKey })),
@@ -243,6 +221,8 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
       /** The soldiers a leave can be created for, by name (D-094). */
       soldiers: creatable,
       any: creatable.length > 0,
+      /** Whether the actor may approve anyone they see: who the inbox is for (D-120). */
+      approvesAny: soldiers.some((soldier) => can(leaveCheck(LEAVE_PERMISSIONS.approve, soldier.id))),
       canApprove: (soldierId: SoldierId) => can(leaveCheck(LEAVE_PERMISSIONS.approve, soldierId)),
     }
   }, [can, soldiers])
