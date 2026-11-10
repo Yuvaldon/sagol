@@ -122,6 +122,13 @@ module.exports = {
       },
     },
     {
+      name: 'testing-helpers-for-tests-only',
+      comment: "A layer's testing/ folder holds test-only helpers (D-135): only test files and other helpers import it.",
+      severity: 'error',
+      from: { path: '^src/', pathNot: ['\\.test\\.tsx?$', '^src/[^/]+/testing/'] },
+      to: { path: '^src/[^/]+/testing/' },
+    },
+    {
       name: 'entry-point-uses-app-only',
       comment: 'src/main.tsx is a one-line entry point that talks to app only.',
       severity: 'error',

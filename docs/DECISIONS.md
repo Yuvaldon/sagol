@@ -52,7 +52,7 @@ am = amends, ref = refines, ext = extends.
 | D-033 | Simple first-run setup wizard | ui | |
 | D-034 | Icons: lucide-react, semantic icon keys | ui | ref D-113 |
 | D-035 | domain may import `@internationalized/date` | domain, tooling | am D-061 (tests) |
-| D-036 | Type assertions only in adapters and tests | all, tooling | |
+| D-036 | Type assertions only in adapters and tests | all, tooling | ext D-135 |
 | D-037 | Node 24 LTS and exact dependency versions | tooling | |
 | D-038 | Contract field names are schema column names | all | |
 | D-039 | Schema drift test lives in contracts | contracts, tooling | |
@@ -151,6 +151,7 @@ am = amends, ref = refines, ext = extends.
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | |
 | D-134 | Present and absent lists of a day | config, logic, ui | |
+| D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
 
 ---
 
@@ -1773,3 +1774,12 @@ absence certain.
   marker shows as an annotation on the entry.
 - **The presence button** in the bar shows how many are missing today and opens the panel on today.
 **Why:** the V6 card (present and absent counts and lists for a day), with D-133's meaning of "missing".
+
+## D-135 — Shared test helpers live in a layer's `testing/` folder
+2026-11-10 · accepted · extends D-036 · OI-086
+- A layer may keep test-only helpers in `src/<layer>/testing/` (fake ports, sample builders). Only test files and other
+  helpers import them, which `.dependency-cruiser.cjs` enforces, so they never reach the bundle.
+- Type assertions are allowed there as in test files (D-036), because a fake stands in for a contract it implements only
+  in part. Sample data stays in tests and their helpers (iron rule 4).
+**Why:** OI-086. Seven logic test files built their own fake ports; one helper needs the latitude test files already
+have, and a folder rule keeps it out of production code.
