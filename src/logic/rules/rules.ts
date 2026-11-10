@@ -30,6 +30,10 @@ export type RulePopulation =
 
 export const EVERYONE: RulePopulation = { kind: 'conditions', tagSets: [], rankIds: [] }
 
+/**
+ * The form's fields. The population is held as the bar's conditions, never as a filter: a filter the form does not read
+ * stays on the stored rule until it is cleared, so the values stay plain data for the form library.
+ */
 export interface RuleFormValues {
   readonly name: string
   readonly description: string
@@ -39,7 +43,11 @@ export interface RuleFormValues {
   readonly scope_mode: RuleScopeMode
   /** Only with `each_descendant_at_level`. */
   readonly scope_level_id: UnitLevelId | null
-  readonly population: RulePopulation
+  /** One set per tag category, each matching any of its tags. With the ranks, who the rule counts; none = everyone. */
+  readonly tag_sets: readonly (readonly TagId[])[]
+  readonly rank_ids: readonly CommandRankId[]
+  /** The stored rule counts with a filter the form does not read, kept as it is until cleared. */
+  readonly other_population: boolean
   readonly group_by: RuleGroupBy
   /** Only with `group_by = tag`; NULL = every category. */
   readonly group_tag_category_id: TagCategoryId | null
@@ -61,7 +69,9 @@ export const NEW_RULE_VALUES: RuleFormValues = {
   scope_unit_id: null,
   scope_mode: RuleScopeMode.enum.unit_tree,
   scope_level_id: null,
-  population: EVERYONE,
+  tag_sets: [],
+  rank_ids: [],
+  other_population: false,
   group_by: RuleGroupBy.enum.none,
   group_tag_category_id: null,
   metric: RuleMetric.enum.count,
@@ -92,6 +102,7 @@ export function rulePopulationFilter(population: RulePopulation): FilterExpressi
 const textOf = (value: number | null) => (value === null ? '' : String(value))
 
 export function ruleFormValues(rule: AvailabilityRule): RuleFormValues {
+  const population = rulePopulationOf(rule.population_filter)
   return {
     name: rule.name,
     description: rule.description ?? '',
@@ -99,7 +110,9 @@ export function ruleFormValues(rule: AvailabilityRule): RuleFormValues {
     scope_unit_id: rule.scope_unit_id,
     scope_mode: rule.scope_mode,
     scope_level_id: rule.scope_level_id,
-    population: rulePopulationOf(rule.population_filter),
+    tag_sets: population.kind === 'conditions' ? population.tagSets : [],
+    rank_ids: population.kind === 'conditions' ? population.rankIds : [],
+    other_population: population.kind === 'other',
     group_by: rule.group_by,
     group_tag_category_id: rule.group_tag_category_id,
     metric: rule.metric,
@@ -121,8 +134,11 @@ function numberOf(text: string): number | null | string {
   return Number.isFinite(value) ? value : trimmed
 }
 
-/** The columns of the form, as the commands take them. A field the mode does not use is NULL. */
-function ruleContent(values: RuleFormValues) {
+/**
+ * The columns of the form, as the commands take them. A field the mode does not use is NULL. `stored` is the filter
+ * of the rule being edited, kept while the form does not read it.
+ */
+function ruleContent(values: RuleFormValues, stored: FilterExpression | null) {
   const atLevel = values.scope_mode === RuleScopeMode.enum.each_descendant_at_level
   const byTag = values.group_by === RuleGroupBy.enum.tag
   const priority = numberOf(values.priority)
@@ -135,7 +151,10 @@ function ruleContent(values: RuleFormValues) {
     scope_unit_id: values.scope_unit_id,
     scope_mode: values.scope_mode,
     scope_level_id: atLevel ? values.scope_level_id : null,
-    population_filter: rulePopulationFilter(values.population),
+    population_filter:
+      values.other_population && stored !== null
+        ? stored
+        : rulePopulationFilter({ kind: 'conditions', tagSets: values.tag_sets, rankIds: values.rank_ids }),
     group_by: values.group_by,
     group_tag_category_id: byTag ? values.group_tag_category_id : null,
     metric: values.metric,
@@ -148,8 +167,8 @@ function ruleContent(values: RuleFormValues) {
   }
 }
 
-function createInput(values: RuleFormValues) {
-  return { id: AvailabilityRuleId.parse(crypto.randomUUID()), ...ruleContent(values) }
+function createInput(values: RuleFormValues, stored: FilterExpression | null = null) {
+  return { id: AvailabilityRuleId.parse(crypto.randomUUID()), ...ruleContent(values, stored) }
 }
 
 /** The codes the command answers on the row (D-068): the schema and the row checks of `schema.sql`. */
@@ -169,7 +188,7 @@ export function toUpdateRuleInput(
   openedVersion: number,
   values: RuleFormValues,
 ): UpdateAvailabilityRuleInput | null {
-  const content = CreateAvailabilityRuleInput.parse(createInput(values))
+  const content = CreateAvailabilityRuleInput.parse(createInput(values, rule.population_filter))
   const stored: Readonly<Record<string, unknown>> = rule
   const changes = Object.fromEntries(
     Object.entries(content).filter(([column, value]) => column !== 'id' && !sameValue(value, stored[column])),

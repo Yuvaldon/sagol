@@ -66,6 +66,9 @@ export function toCreateLeaveInput(values: NewLeaveValues, acknowledged: readonl
   return CreateLeaveInput.parse(createInput(values, acknowledged))
 }
 
+/** A leave as rules see it, before the command writes it (D-142). */
+export type LeaveCandidate = AvailabilityLeave
+
 /** A leave id no row has: the leave a form would create, before it has one, for its live warning (D-142). */
 const CANDIDATE_ID = LeaveId.parse('00000000-0000-4000-8000-000000000000')
 
@@ -73,7 +76,7 @@ const CANDIDATE_ID = LeaveId.parse('00000000-0000-4000-8000-000000000000')
  * The leave the form would create, as rules see it (D-142): pending, or approved when "approve now" is on. NULL until
  * the soldier, the type and valid dates are chosen.
  */
-export function newLeaveCandidate(values: NewLeaveValues): AvailabilityLeave | null {
+export function newLeaveCandidate(values: NewLeaveValues): LeaveCandidate | null {
   const { soldier_id, leave_type_id, start_date, end_date } = values
   if (soldier_id === null || leave_type_id === null || start_date === '' || end_date === '') return null
   if (compareDates(start_date, end_date) > 0) return null

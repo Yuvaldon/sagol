@@ -23,7 +23,6 @@ import type { FilterSource } from '../filters/source'
 import { newLeaveCandidate, newLeaveValues } from '../leaves/forms'
 import { acknowledgedRuleIds, dayViolations, heatRow, leaveViolations, ruleDataOf, windowConflicts } from './evaluation'
 import {
-  EVERYONE,
   NEW_RULE_VALUES,
   ruleFormIssues,
   ruleFormValues,
@@ -165,7 +164,7 @@ const dataWith = (leaves: readonly Leave[]) =>
 const MEDICS = { kind: 'conditions', tagSets: [[MEDIC]], rankIds: [] } as const
 
 describe('the rule form (D-140)', () => {
-  const filled: RuleFormValues = { ...NEW_RULE_VALUES, name: 'Two medics', min_value: '2', population: MEDICS }
+  const filled: RuleFormValues = { ...NEW_RULE_VALUES, name: 'Two medics', min_value: '2', tag_sets: [[MEDIC]] }
 
   it('answers the codes the command answers on the row', () => {
     expect(ruleFormIssues(NEW_RULE_VALUES)).toEqual([
@@ -186,11 +185,20 @@ describe('the rule form (D-140)', () => {
   it('writes the population with the bar conditions, and reads it back', () => {
     const input = toCreateRuleInput(filled)
     expect(input.population_filter).toEqual({ where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } })
-    expect(toCreateRuleInput({ ...filled, population: EVERYONE }).population_filter).toEqual({})
+    expect(toCreateRuleInput({ ...filled, tag_sets: [] }).population_filter).toEqual({})
     expect(rulePopulationOf(input.population_filter)).toEqual(MEDICS)
     // A unit or a status in a stored filter is a population the form does not write.
     const other: FilterExpression = { where: { kind: 'soldier_status', statuses: ['active'] } }
     expect(rulePopulationOf(other)).toEqual({ kind: 'other', filter: other })
+  })
+
+  it('keeps a stored filter it does not read until it is cleared', () => {
+    const other: FilterExpression = { where: { kind: 'soldier_status', statuses: ['active'] } }
+    const stored = rule(2, { population_filter: other })
+    const values = ruleFormValues(stored)
+    expect(values).toMatchObject({ other_population: true, tag_sets: [], rank_ids: [] })
+    expect(toUpdateRuleInput(stored, 1, values)).toBeNull()
+    expect(toUpdateRuleInput(stored, 1, { ...values, other_population: false })?.changes).toEqual({ population_filter: {} })
   })
 
   it('drops a level or a category the chosen mode does not use', () => {

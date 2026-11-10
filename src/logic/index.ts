@@ -72,7 +72,7 @@ export {
   type LeaveTypeFormValues,
   type LeaveTypeSection,
 } from './leaves/leaveTypes'
-export { newLeaveCandidate, newLeaveIssues, newLeaveValues, type NewLeaveValues } from './leaves/forms'
+export { newLeaveCandidate, newLeaveIssues, newLeaveValues, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
 export {
   useCreateLeave,
   useLeaveCreation,
