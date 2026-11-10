@@ -1,4 +1,5 @@
 import type { CalendarDate, LeaveTypeId } from '@contracts'
+import { PANEL_IDS } from '@config'
 import { addDays } from '@domain'
 import { useCallback } from 'react'
 import { useToday } from '../session/today'
@@ -63,6 +64,8 @@ export interface PresenceDayState {
   readonly today: CalendarDate | null
   shift(step: -1 | 1): void
   goToToday(): void
+  /** Opens the presence panel on today, in one step of the history (D-134). */
+  openToday(): void
 }
 
 /** The day of the presence lists (D-134): the URL's, else today. */
@@ -80,5 +83,8 @@ export function usePresenceDay(): PresenceDayState {
   const goToToday = useCallback(() => {
     change({ day: undefined })
   }, [change])
-  return { day, today, shift, goToToday }
+  const openToday = useCallback(() => {
+    change({ panel: PANEL_IDS.presence, entity: undefined, parent: undefined, day: undefined })
+  }, [change])
+  return { day, today, shift, goToToday, openToday }
 }

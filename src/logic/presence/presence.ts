@@ -22,7 +22,7 @@ export interface PresenceEntry {
   readonly rank: CommandRank | null
   /** The types of the leaves that make the soldier absent. NULL where the actor may not read the type. */
   readonly absences: readonly (LeaveType | null)[]
-  /** A pending leave would make the soldier absent if approved. */
+  /** A present soldier has a pending leave that would make them absent if approved (D-134). */
   readonly pending: boolean
   /** Markers covering the day, as annotations (D-032). */
   readonly markers: readonly (LeaveType | null)[]
@@ -52,7 +52,7 @@ function entryOf(day: SoldierDay, soldier: Soldier, rank: CommandRank | null, ty
     soldier,
     rank,
     absences: day.leaves.filter((leave) => leave.counted).map((leave) => typeOf(leave.leave_id)),
-    pending: day.leaves.some((leave) => leave.status === 'pending' && leave.effect === 'unavailable'),
+    pending: day.status === 'available' && day.leaves.some((leave) => leave.status === 'pending' && leave.effect === 'unavailable'),
     markers: day.leaves.filter((leave) => leave.effect === 'available').map((leave) => typeOf(leave.leave_id)),
   }
 }

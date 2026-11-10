@@ -210,11 +210,15 @@ describe('present and absent lists (D-134, OI-090)', () => {
     leave(81, 2, home.id, 'pending'),
     leave(82, 3, exam.id, 'approved'),
     leave(83, 4, home.id, 'approved'),
+    leave(84, 1, home.id, 'pending'),
   ]
 
   it('splits who the filter selects into two lists, each soldier once, approved leaves only', () => {
     const lists = presenceLists({ source, filter: null, leaves, types: [home, exam], day: DAY })
-    expect(lists.absent.map((entry) => [entry.soldier.first_name, entry.absences.map((type) => type?.name)])).toEqual([['F1', ['T70']]])
+    // A pending request on an absent day adds nothing: "ממתין" is for who is present (D-134).
+    expect(lists.absent.map((entry) => [entry.soldier.first_name, entry.absences.map((type) => type?.name), entry.pending])).toEqual([
+      ['F1', ['T70'], false],
+    ])
     expect(lists.present.map((entry) => [entry.soldier.first_name, entry.pending, entry.markers.map((type) => type?.name)])).toEqual([
       ['F2', true, []],
       ['F3', false, ['T71']],

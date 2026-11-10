@@ -31,6 +31,7 @@ import { useToday } from '../session/today'
 import { filterUnitOf, unitFilterOf, useViewFilter } from '../view-state/filter'
 import { usePanel } from '../view-state/panel'
 import { WorkspaceSearch, useWorkspaceSearch } from '../view-state/search'
+import { usePresenceDay } from '../view-state/board'
 import { useActiveView } from '../view-state/view'
 import { dateWindowOf, shiftedWindow, useDateWindow } from '../view-state/window'
 import { timelineItems, type TimelineInput, type TimelineItem } from './rows'
@@ -425,6 +426,7 @@ describe('view state in the URL (D-103, D-104)', () => {
     const window = useDateWindow()
     const filter = useViewFilter()
     const view = useActiveView(['timeline'])
+    const presence = usePresenceDay()
     return (
       <div>
         <p data-testid="search">{JSON.stringify(search)}</p>
@@ -434,6 +436,7 @@ describe('view state in the URL (D-103, D-104)', () => {
         <button type="button" data-testid="next" onClick={() => { window.shift(1) }} />
         <button type="button" data-testid="today" onClick={window.goToToday} />
         <button type="button" data-testid="unit" onClick={() => { filter.selectUnit(PLATOON) }} />
+        <button type="button" data-testid="presence" onClick={presence.openToday} />
       </div>
     )
   }
@@ -502,6 +505,14 @@ describe('view state in the URL (D-103, D-104)', () => {
     press('open')
     await waitFor(() => {
       expect(read('search')).toEqual({ panel: 'soldiers', leaves: { statuses: ['pending'] }, missing: true, day: '2026-11-12' })
+    })
+  })
+
+  it('opens the presence lists on today, whatever day they showed last (D-134)', async () => {
+    await renderAt('/?day=2026-11-20&panel=soldiers&entity=new')
+    press('presence')
+    await waitFor(() => {
+      expect(read('search')).toEqual({ panel: 'presence' })
     })
   })
 
