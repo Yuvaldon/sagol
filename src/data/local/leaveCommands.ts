@@ -3,7 +3,6 @@ import {
   CreateLeaveInput,
   IssueCode,
   LeaveEventId,
-  RescheduleLeaveInput,
   TABLE_SCHEMAS,
   TransitionLeaveInput,
   UpdateLeaveInput,
@@ -47,7 +46,7 @@ import { LEAVE_TABLES, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } fro
 // in one transaction that also writes the event and the comment.
 
 /** What the local adapter builds of `commands.leaves` so far. The rest lands in V15 (D-076). */
-export type LocalLeaveCommands = Pick<DataCommands['leaves'], 'create' | 'update' | 'reschedule' | 'transition'>
+export type LocalLeaveCommands = Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
 
 /** A leave of an archived soldier can only be cancelled (D-124): the state step, after the version. */
 async function requireOpenSoldier(database: Dexie, leave: Leave, issues: (soldier: { archived_at: string | null }) => Issue[]) {
@@ -129,12 +128,6 @@ async function writeLeave(database: Dexie, scope: ActorScope, write: LeaveWrite)
   return written
 }
 
-interface LeaveEditInput {
-  readonly id: Leave['id']
-  readonly expected_version: number
-  readonly acknowledged_rule_ids: readonly AvailabilityRuleId[]
-}
-
 /** The columns `update` sets (D-123). */
 const EDITED_COLUMNS = [
   'leave_type_id',
@@ -176,10 +169,10 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
 
   /**
    * One edit in one transaction, in the order of D-117 (D-123): the dates and the details are judged together, so
-   * everything is saved or nothing is. `prefix` is where the input holds the columns, so issues point at the fields
-   * the caller sent. `reschedule` shares it until it leaves the contract (D-123).
+   * everything is saved or nothing is. Issues point at the fields under `changes`.
    */
-  function edit(input: LeaveEditInput, columns: LeaveEditColumns, prefix: string[]) {
+  function edit(input: UpdateLeaveInput, columns: LeaveEditColumns) {
+    const prefix = ['changes']
     return database.transaction('rw', LEAVE_TABLES, async () => {
       const scope = await loadActorScope(dependencies)
       const before = await visibleLeave(database, scope, input.id)
@@ -305,16 +298,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
           ...(reason === undefined ? {} : { reason: optionalText(reason) }),
           ...(properties === undefined ? {} : { properties }),
         }
-        const { leave, written } = await edit(input, columns, ['changes'])
-        changes.publish(written)
-        return leave
-      }),
-
-    reschedule: (raw) =>
-      asResult(async () => {
-        const input = parseInput(RescheduleLeaveInput, raw)
-        const columns = { start_date: input.start_date, end_date: input.end_date }
-        const { leave, written } = await edit(input, columns, [])
+        const { leave, written } = await edit(input, columns)
         changes.publish(written)
         return leave
       }),
