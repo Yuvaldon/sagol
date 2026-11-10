@@ -1844,8 +1844,8 @@ needs authority on both ends.
   its enforcement, and marks a disabled rule. A section "התנגשויות" lists the configuration conflicts (D-072) on the
   days of the board's window, each with its unit, group, the rules and the bounds.
 - **Form:** name; description; enforcement (soft or hard); scope: the whole organization or a unit, and the mode (the unit
-  and below, each direct child, each unit at a level); population: tag and rank conditions with the filter bar's chips
-  (D-131), none = everyone; group by none, tag (optionally one category) or rank; metric count or percent; minimum and
+  and below, each direct child, each unit at a level); population: tag and rank conditions with the filter bar's check lists
+  (D-131), none = everyone, and a stored filter the form does not read shown as "סינון מותאם" until cleared; group by none, tag (optionally one category) or rank; metric count or percent; minimum and
   maximum; valid from and to; "ממתינים נספרים כחסרים"; priority; enabled. A deployment has no field until V15 (D-076).
 - Archive asks for confirmation. Archived rules have no way back on screen (D-088).
 **Why:** the V7 card: a builder on the shared filter UI, and conflicts in the rules module.
@@ -1853,8 +1853,9 @@ needs authority on both ends.
 ## D-141 — The heat row
 2026-11-10 · accepted · refines D-014, D-108, D-134 · OI-091
 - One row under the days header of the timeline, shown when the actor sees at least one rule.
-- **A day's cell** judges the effective targets of that day that count at least one soldier placed that day in the
-  selected unit's tree (the whole organization without a unit). Each rule counts pending leaves by its own setting. The
+- **A day's cell** judges the effective targets of that day evaluated inside the selected unit's tree, or counting at
+  least one soldier placed there that day (the whole organization without a unit). A target inside the unit counts even
+  with nobody in it, as D-072 judges an empty selected group. Each rule counts pending leaves by its own setting. The
   cell shows the number of broken targets, and its form and color say the worst: hard (refused color, solid), soft
   (pending color, dashed), none (empty). Color is never the only signal: the number and an accessible name say it too.
 - **Pressing a cell** opens the `rules` panel on that day (search param `day`, as D-134): the day's broken targets, each

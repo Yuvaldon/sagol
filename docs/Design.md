@@ -172,6 +172,16 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   that opens it, and beside it either its quick steps or its `StatusChip`.
 - **A choice in a menu:** a `MenuSection` with a heading and checkable items, each with a small box that holds a check
   (the user's "approve now" default, D-121).
+- **Rule answers (D-142):** a form warns while filled in a box above its actions: dashed `status-pending` for a soft
+  rule, a `status-rejected` edge for a hard one. The command's answer opens one `alertdialog` with the broken rules:
+  "שמירה בכל זאת" for soft rules, only "סגירה" for a hard one.
+- **Broken rules (D-138):** `RuleViolations` lists each rule with an enforcement chip (`קשיח` solid `status-rejected`,
+  `רך` dashed `status-pending`), a quiet line of its unit and group, and per day the bound, how many are available and
+  who is missing. A name the actor may not read is "לא ידוע".
+- **The heat row (D-141):** under the days header, inside its sticky frame, a row the height of a timeline row with the
+  label "כללים" and one cell per day: empty, a dashed `status-pending` cell, or a solid `status-rejected` one, with the
+  count. A cell is a button named by its day, its count and the worst rule.
+- **On a phone** the user menu shows its icon only, its name still read aloud, so the bottom bar keeps every module (OI-095).
 - **A unit the actor does not see:** `unitStateLabel` says "ללא יחידה", "יחידה אחרת" or "לא ידוע" (D-106), the same in
   every list.
 
@@ -200,6 +210,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
 | `FilterBar` | `ui/shell` | Chips, "+", "only who is missing" and the presence pill |
 | `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
+| `RulesModule`, `RuleForm`, `RuleViolations`, `RuleGateDialog`, `RuleWarnings` | `ui/modules/rules` | Rules, conflicts and a day's broken rules; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`) |
 
 Errors are shown through `ui/errors/messages.ts`, whose maps from code to i18n are total: a new code does
 not compile until it has a message.
