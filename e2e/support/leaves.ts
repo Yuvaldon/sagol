@@ -34,8 +34,8 @@ export async function choose(page: Page, label: string, option: string) {
   await page.getByRole('option', { name: option, exact: true }).click()
 }
 
-/** A radio or a switch is a hidden input inside its label: a person presses the label. */
-export async function press(page: Page, role: 'radio' | 'switch', name: string) {
+/** A radio, a switch or a checkbox is a hidden input inside its label: a person presses the label. */
+export async function press(page: Page, role: 'radio' | 'switch' | 'checkbox', name: string) {
   await drawer(page).locator('label').filter({ has: page.getByRole(role, { name, exact: true }) }).click()
 }
 

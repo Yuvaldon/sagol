@@ -1,19 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { NOW, board, choose, closeDrawer, typeDate } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
 // axe. Sample data, tests only.
 
 const TOUCH_TARGET_PX = 44
-/** Wednesday 11 November 2026, noon in Israel, so the week is 8–14 November whatever day the test runs. */
-const NOW = new Date('2026-11-11T10:00:00Z')
 const THIS_WEEK = '8–14 בנוב׳'
 const NEXT_WEEK = '15–21 בנוב׳'
-
-function board(page: Page) {
-  return page.getByRole('region', { name: he.timeline.label })
-}
 
 function boardRows(page: Page): Locator {
   return board(page).getByRole('list', { name: he.timeline.names }).getByRole('listitem')
@@ -26,10 +21,6 @@ function groupHeading(page: Page, label: string) {
 /** The window as the bar writes it, announced when it changes. */
 function windowLabel(page: Page) {
   return page.locator('p[aria-live="polite"]')
-}
-
-async function closeDrawer(page: Page) {
-  await page.getByRole('button', { name: he.common.close }).click()
 }
 
 function unitRow(page: Page, name: string) {
@@ -53,18 +44,6 @@ async function buildUnits(page: Page) {
     await expect(unitRow(page, name)).toBeVisible()
   }
   await closeDrawer(page)
-}
-
-/** Picks from a select inside the topmost dialog. What a modal makes inert is still found by role. */
-async function choose(page: Page, label: string, option: string) {
-  await page.getByRole('dialog').last().getByRole('button', { name: new RegExp(`${label}$`) }).click()
-  await page.getByRole('option', { name: option, exact: true }).click()
-}
-
-async function typeDate(page: Page, label: string, day: string, month: string, year: string) {
-  const field = page.getByRole('group', { name: label })
-  await field.getByRole('spinbutton').first().click()
-  await page.keyboard.type(`${day}${month}${year}`)
 }
 
 async function createPlacedSoldier(page: Page, firstName: string, lastName: string, unit: string) {
