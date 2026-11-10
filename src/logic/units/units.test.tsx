@@ -15,11 +15,9 @@ import {
   createRouter,
 } from '@tanstack/react-router'
 import { act, renderHook, screen, render, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { useCan, useModuleAccess } from '../permissions/hooks'
-import type { LogicPorts } from '../ports'
-import { LogicProvider } from '../runtime/LogicProvider'
+import { fakePorts as portsOf, wrapperOf } from '../testing/ports'
 import { usePanel } from '../view-state/panel'
 import { WorkspaceSearch } from '../view-state/search'
 import {
@@ -232,26 +230,19 @@ function fakePorts(overrides: {
   const reorder = vi.fn((input: { items: readonly { id: string; expected_version: number }[] }) =>
     Promise.resolve<Result<Unit[]>>({ ok: true, value: input.items.map((_, index) => unit(index + 1, null, index)) }),
   )
-  const ports = {
-    data: {
-      session: {
-        current: () => Promise.resolve({ ok: true, value: { status: 'signed_out' } }),
-        subscribe: () => () => undefined,
-        can,
-      },
-      repositories: { units: { list } },
-      commands: { units: { move, reorder } },
-      changes: {
-        subscribe(listener: typeof changeListener) {
-          changeListener = listener
-          return () => {
-            changeListener = null
-          }
-        },
+  const ports = portsOf({
+    session: { current: () => Promise.resolve({ ok: true, value: { status: 'signed_out' } }), can },
+    repositories: { units: { list } },
+    commands: { units: { move, reorder } },
+    changes: {
+      subscribe(listener: typeof changeListener) {
+        changeListener = listener
+        return () => {
+          changeListener = null
+        }
       },
     },
-    auth: {},
-  } as unknown as LogicPorts
+  })
   return {
     ports,
     can,
@@ -262,10 +253,6 @@ function fakePorts(overrides: {
       changeListener?.([{ table, ids: [] }])
     },
   }
-}
-
-function wrapperOf(ports: LogicPorts) {
-  return ({ children }: { children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>
 }
 
 const VIEW: PermissionCheck = { permission: { resource: 'units', action: 'view' }, target: { kind: 'organization' } }

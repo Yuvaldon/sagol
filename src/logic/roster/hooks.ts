@@ -14,6 +14,7 @@ import type {
 import { placementTarget, soldierTarget } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
+import { checkOf } from '../permissions/checks'
 import { useCan, useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
@@ -174,7 +175,7 @@ const P = {
   membershipUpdate: { resource: 'memberships', action: 'update' },
 } as const satisfies Record<string, Permission>
 
-const check = (permission: Permission, target: PolicyTarget): PermissionCheck => ({ permission, target })
+const check = checkOf
 
 const ORGANIZATION: PolicyTarget = { kind: 'organization' }
 

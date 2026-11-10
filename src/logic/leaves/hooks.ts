@@ -10,9 +10,10 @@ import {
   type Soldier,
   type SoldierId,
 } from '@contracts'
-import { LEAVE_PERMISSIONS, soldierTarget } from '@domain'
+import { LEAVE_PERMISSIONS } from '@domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { checkOn } from '../permissions/checks'
 import { useCan } from '../permissions/hooks'
 import { cachedLeaves, leaveListKey, restoreLeaves, showLeave } from './cache'
 import { byName } from '../roster/roster'
@@ -32,7 +33,7 @@ import {
   typesOfGroup,
   liveGroups,
   type LeaveTypeFormValues,
-} from './types'
+} from './leaveTypes'
 
 // Reading and changing leave types and leaves (D-113, D-114, D-115).
 
@@ -191,11 +192,6 @@ export function useLeaveTypePermissions() {
   return { create: can(TYPE_CHECKS.create), update: can(TYPE_CHECKS.update), archive: can(TYPE_CHECKS.archive) }
 }
 
-const leaveCheck = (permission: PermissionCheck['permission'], soldierId: SoldierId): PermissionCheck => ({
-  permission,
-  target: soldierTarget(soldierId),
-})
-
 /**
  * Who the actor may create a leave for, and approve now, among the soldiers they see (D-114, D-115). The form offers
  * active soldiers only (D-125); the command still takes an inactive one. A hint: the command decides again.
@@ -204,8 +200,8 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
   const checks = useMemo(
     () =>
       soldiers.flatMap((soldier) => [
-        leaveCheck(LEAVE_PERMISSIONS.create, soldier.id),
-        leaveCheck(LEAVE_PERMISSIONS.approve, soldier.id),
+        checkOn(LEAVE_PERMISSIONS.create, soldier.id),
+        checkOn(LEAVE_PERMISSIONS.approve, soldier.id),
       ]),
     [soldiers],
   )
@@ -213,15 +209,15 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
   return useMemo(() => {
     const creatable = soldiers
       .filter((soldier) => soldier.status === 'active' && soldier.archived_at === null)
-      .filter((soldier) => can(leaveCheck(LEAVE_PERMISSIONS.create, soldier.id)))
+      .filter((soldier) => can(checkOn(LEAVE_PERMISSIONS.create, soldier.id)))
       .toSorted(byName)
     return {
       /** The soldiers a leave can be created for, by name (D-094). */
       soldiers: creatable,
       any: creatable.length > 0,
       /** Whether the actor may approve anyone they see: who the inbox is for (D-120). */
-      approvesAny: soldiers.some((soldier) => can(leaveCheck(LEAVE_PERMISSIONS.approve, soldier.id))),
-      canApprove: (soldierId: SoldierId) => can(leaveCheck(LEAVE_PERMISSIONS.approve, soldierId)),
+      approvesAny: soldiers.some((soldier) => can(checkOn(LEAVE_PERMISSIONS.approve, soldier.id))),
+      canApprove: (soldierId: SoldierId) => can(checkOn(LEAVE_PERMISSIONS.approve, soldierId)),
     }
   }, [can, soldiers])
 }

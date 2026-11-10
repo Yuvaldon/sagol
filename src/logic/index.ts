@@ -69,7 +69,7 @@ export {
   typesOfGroup,
   type LeaveTypeFormValues,
   type LeaveTypeSection,
-} from './leaves/types'
+} from './leaves/leaveTypes'
 export { newLeaveIssues, newLeaveValues, type NewLeaveValues } from './leaves/forms'
 export {
   useCreateLeave,

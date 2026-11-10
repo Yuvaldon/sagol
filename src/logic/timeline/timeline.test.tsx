@@ -21,13 +21,12 @@ import {
   createRouter,
 } from '@tanstack/react-router'
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { useCan } from '../permissions/hooks'
-import type { LogicPorts } from '../ports'
 import { usePlacementHints } from '../roster/hooks'
 import { soldierRows, unitStateOn } from '../roster/roster'
 import { LogicProvider } from '../runtime/LogicProvider'
+import { allowEverything, fakePorts, organizationIn, wrapperOf } from '../testing/ports'
 import { useToday } from '../session/today'
 import { filterUnitOf, unitFilterOf, useViewFilter } from '../view-state/filter'
 import { usePanel } from '../view-state/panel'
@@ -367,7 +366,7 @@ describe('the board waits for the placement hints once (D-122, OI-082)', () => {
     const ports = portsAt({ now: '2026-11-11T10:00:00.000Z' }, can)
     const { result, rerender } = renderHook(({ soldiers }: { soldiers: readonly Soldier[] }) => usePlacementHints(soldiers), {
       initialProps: { soldiers: [soldier(1, 'אבי', 'כהן')] },
-      wrapper: ({ children }: { children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>,
+      wrapper: wrapperOf(ports),
     })
     await waitFor(() => {
       expect(result.current.settled).toBe(true)
@@ -385,17 +384,8 @@ describe('the board waits for the placement hints once (D-122, OI-082)', () => {
 
 // ------------------------------------------------------------ hooks over the URL and the clock
 
-function portsAt(clock: { now: string }, can = vi.fn((checks: readonly PermissionCheck[]) => Promise.resolve<Result<boolean[]>>({ ok: true, value: checks.map(() => true) }))) {
-  return {
-    data: {
-      session: { can, subscribe: () => () => undefined },
-      repositories: { organizations: { current: () => Promise.resolve({ ok: true, value: { timezone: 'Asia/Jerusalem' } }) } },
-      commands: {},
-      changes: { subscribe: () => () => undefined },
-    },
-    auth: {},
-    time: { now: () => clock.now },
-  } as unknown as LogicPorts
+function portsAt(clock: { now: string }, can = vi.fn(allowEverything)) {
+  return fakePorts({ session: { can }, repositories: { organizations: organizationIn() }, now: () => clock.now })
 }
 
 describe('today turns at midnight (D-107, OI-057)', () => {
@@ -406,7 +396,7 @@ describe('today turns at midnight (D-107, OI-057)', () => {
     const check: PermissionCheck = { permission: { resource: 'soldiers', action: 'view' }, target: { kind: 'organization' } }
     const checks = [check]
     const { result } = renderHook(() => ({ today: useToday(), can: useCan(checks) }), {
-      wrapper: ({ children }: { children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>,
+      wrapper: wrapperOf(ports),
     })
     await waitFor(() => {
       expect(result.current.today).toBe('2026-11-11')

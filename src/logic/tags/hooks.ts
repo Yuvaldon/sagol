@@ -8,7 +8,7 @@ import type {
   TagCategoryId,
   TagId,
 } from '@contracts'
-import { soldierTarget } from '@domain'
+import { checkOn } from '../permissions/checks'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { steppedItems } from '../forms/order'
@@ -168,7 +168,7 @@ export function useTagPermissions() {
 /** Whoever may update the soldier may set their tags (D-130). */
 export function useCanSetTags(soldier: Soldier): boolean {
   const checks = useMemo(
-    (): PermissionCheck[] => [{ permission: { resource: 'soldiers', action: 'update' }, target: soldierTarget(soldier.id) }],
+    (): PermissionCheck[] => [checkOn({ resource: 'soldiers', action: 'update' }, soldier.id)],
     [soldier.id],
   )
   const can = useCan(checks)
