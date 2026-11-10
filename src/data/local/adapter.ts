@@ -12,12 +12,9 @@ import { createPermissionHints } from './actor'
 import { createChangeFeed } from './changes'
 import { createCommandRankCommands, createCommandRankRepository } from './commandRanks'
 import { openDatabase } from './database'
-import {
-  createLeaveCommands,
-  createLeaveEventRepository,
-  createLeaveRepository,
-  type LocalLeaveCommands,
-} from './leaves'
+import { createLeaveCommands, type LocalLeaveCommands } from './leaveCommands'
+import { createLeaveCommentCommands, createLeaveCommentRepository } from './leaveComments'
+import { createLeaveEventRepository, createLeaveRepository } from './leaves'
 import {
   createLeaveTypeCommands,
   createLeaveTypeGroupCommands,
@@ -25,6 +22,7 @@ import {
   createLeaveTypeRepository,
 } from './leaveTypes'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
+import { createAccountCommands, createSoldierPreferencesRepository, type LocalAccountCommands } from './preferences'
 import { createSessionService } from './session'
 import {
   createMembershipRepository,
@@ -50,13 +48,16 @@ export interface LocalDataAdapter {
     | 'soldiers'
     | 'soldier_private'
     | 'unit_memberships'
+    | 'soldier_preferences'
     | 'leave_type_groups'
     | 'leave_types'
     | 'leaves'
     | 'leave_events'
+    | 'leave_comments'
   >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
+    readonly accounts: LocalAccountCommands
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']
@@ -64,6 +65,7 @@ export interface LocalDataAdapter {
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
     readonly leaves: LocalLeaveCommands
+    readonly leave_comments: DataCommands['leave_comments']
   }
   readonly changes: ChangeFeed
 }
@@ -98,13 +100,16 @@ export function createLocalDataAdapter(
       soldiers: createSoldierRepository(dependencies),
       soldier_private: createSoldierPrivateRepository(dependencies),
       unit_memberships: createMembershipRepository(dependencies),
+      soldier_preferences: createSoldierPreferencesRepository(dependencies),
       leave_type_groups: createLeaveTypeGroupRepository(dependencies),
       leave_types: createLeaveTypeRepository(dependencies),
       leaves: createLeaveRepository(dependencies),
       leave_events: createLeaveEventRepository(dependencies),
+      leave_comments: createLeaveCommentRepository(dependencies),
     },
     commands: {
       organizations: createOrganizationCommands(dependencies),
+      accounts: createAccountCommands(dependencies),
       unit_levels: createUnitLevelCommands(dependencies),
       units: createUnitCommands(dependencies),
       command_ranks: createCommandRankCommands(dependencies),
@@ -112,6 +117,7 @@ export function createLocalDataAdapter(
       leave_type_groups: createLeaveTypeGroupCommands(dependencies),
       leave_types: createLeaveTypeCommands(dependencies),
       leaves: createLeaveCommands(dependencies),
+      leave_comments: createLeaveCommentCommands(dependencies),
     },
     changes,
   }

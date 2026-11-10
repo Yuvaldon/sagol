@@ -21,20 +21,24 @@ export interface ContractAdapter {
     | 'soldiers'
     | 'soldier_private'
     | 'unit_memberships'
+    | 'soldier_preferences'
     | 'leave_type_groups'
     | 'leave_types'
     | 'leaves'
     | 'leave_events'
+    | 'leave_comments'
   >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
+    readonly accounts: Pick<DataCommands['accounts'], 'updateMyPreferences'>
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']
     readonly soldiers: Pick<DataCommands['soldiers'], 'create' | 'update' | 'archive' | 'updatePrivate' | 'changeMembership'>
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
-    readonly leaves: Pick<DataCommands['leaves'], 'create'>
+    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'reschedule' | 'transition'>
+    readonly leave_comments: DataCommands['leave_comments']
   }
   readonly changes: ChangeFeed
 }
