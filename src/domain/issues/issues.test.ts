@@ -103,10 +103,10 @@ describe('issuesFromSchema', () => {
       { path: ['organization_id'], code: 'unknown_field' },
     ])
     expect(
-      issuesOf(UpdateLeaveInput, { id: uuid(2), expected_version: 1, changes: { start_date: '2026-11-11' }, acknowledged_rule_ids: [] }),
+      issuesOf(UpdateLeaveInput, { id: uuid(2), expected_version: 1, changes: { status: 'approved' }, acknowledged_rule_ids: [] }),
     ).toEqual([
-      { path: ['changes', 'start_date'], code: 'unknown_field' },
-      // Dates are not updatable here, so no updatable field was set.
+      { path: ['changes', 'status'], code: 'unknown_field' },
+      // The status changes only through a transition, so no updatable field was set.
       { path: ['changes'], code: 'no_changes' },
     ])
   })
