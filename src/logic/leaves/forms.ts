@@ -1,6 +1,8 @@
 import {
   CreateLeaveInput,
   LeaveId,
+  LeaveStatus,
+  type AvailabilityRuleId,
   type CalendarDate,
   type Issue,
   type Leave,
@@ -10,7 +12,7 @@ import {
   type SoldierId,
   type Timestamp,
 } from '@contracts'
-import { leaveReasonIssues, optionalText, planLeaveCreation } from '@domain'
+import { compareDates, leaveReasonIssues, optionalText, planLeaveCreation, type AvailabilityLeave } from '@domain'
 import { formIssues } from '../forms/issues'
 
 // The new-leave form (D-115), between its fields and `leaves.create`. Ids are generated here (D-044), and a
@@ -32,7 +34,7 @@ export function newLeaveValues(today: CalendarDate, approveNow = false): NewLeav
   return { soldier_id: null, leave_type_id: null, start_date: today, end_date: today, reason: '', as_approved: approveNow }
 }
 
-function createInput(values: NewLeaveValues) {
+function createInput(values: NewLeaveValues, acknowledged: readonly AvailabilityRuleId[] = []) {
   return {
     id: LeaveId.parse(crypto.randomUUID()),
     soldier_id: values.soldier_id,
@@ -44,7 +46,7 @@ function createInput(values: NewLeaveValues) {
     reason: optionalText(values.reason),
     properties: {},
     as_approved: values.as_approved,
-    acknowledged_rule_ids: [],
+    acknowledged_rule_ids: [...acknowledged],
     comment: null,
   }
 }
@@ -60,8 +62,30 @@ export function newLeaveIssues(values: NewLeaveValues, type: Pick<LeaveType, 're
   ]
 }
 
-export function toCreateLeaveInput(values: NewLeaveValues): CreateLeaveInput {
-  return CreateLeaveInput.parse(createInput(values))
+export function toCreateLeaveInput(values: NewLeaveValues, acknowledged: readonly AvailabilityRuleId[] = []): CreateLeaveInput {
+  return CreateLeaveInput.parse(createInput(values, acknowledged))
+}
+
+/** A leave id no row has: the leave a form would create, before it has one, for its live warning (D-142). */
+const CANDIDATE_ID = LeaveId.parse('00000000-0000-4000-8000-000000000000')
+
+/**
+ * The leave the form would create, as rules see it (D-142): pending, or approved when "approve now" is on. NULL until
+ * the soldier, the type and valid dates are chosen.
+ */
+export function newLeaveCandidate(values: NewLeaveValues): AvailabilityLeave | null {
+  const { soldier_id, leave_type_id, start_date, end_date } = values
+  if (soldier_id === null || leave_type_id === null || start_date === '' || end_date === '') return null
+  if (compareDates(start_date, end_date) > 0) return null
+  return {
+    id: CANDIDATE_ID,
+    soldier_id,
+    leave_type_id,
+    start_date,
+    end_date,
+    status: values.as_approved ? LeaveStatus.enum.approved : LeaveStatus.enum.pending,
+    availability_effect_override: null,
+  }
 }
 
 /**

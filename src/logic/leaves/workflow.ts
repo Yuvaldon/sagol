@@ -1,8 +1,10 @@
 import {
+  IssueCode,
   LeaveCommentId,
   LeaveStatus,
   LeaveTransition,
-  RescheduleLeaveInput,
+  UpdateLeaveInput,
+  type AvailabilityRuleId,
   type CalendarDate,
   type Issue,
   type Leave,
@@ -16,19 +18,20 @@ import {
   type SoldierId,
   type Timestamp,
   type TransitionLeaveInput,
-  type UpdateLeaveInput,
 } from '@contracts'
 import {
+  EDITABLE_LEAVE_STATUSES,
   LEAVE_PERMISSIONS,
+  archivedSoldierIssues,
   compareDates,
   compareInstants,
   daysBetween,
   isMaterialLeaveUpdate,
-  isMaterialReschedule,
   leaveReasonIssues,
   optionalText,
   planLeaveEdit,
   planLeaveTransition,
+  type AvailabilityLeave,
 } from '@domain'
 import { formIssues } from '../forms/issues'
 
@@ -38,15 +41,36 @@ import { formIssues } from '../forms/issues'
 
 // ----------------------------------------------------------------------- steps
 
-/** The steps a leave's status allows, each with the permission its command checks (D-063, OI-024). */
-export function leaveSteps(leave: Leave, actorId: SoldierId, now: Timestamp): ReadonlyMap<LeaveTransition, Permission> {
+/** Whether the leave's soldier is archived. Unknown counts as not: the command decides (D-124). */
+export interface LeaveSoldierState {
+  readonly archived_at: Timestamp | null
+}
+
+const SERVING: LeaveSoldierState = { archived_at: null }
+
+/**
+ * The steps a leave's status allows, each with the permission its command checks (D-063, OI-024). A leave of an
+ * archived soldier takes only `cancel` (D-124).
+ */
+export function leaveSteps(
+  leave: Leave,
+  actorId: SoldierId,
+  now: Timestamp,
+  soldier: LeaveSoldierState = SERVING,
+): ReadonlyMap<LeaveTransition, Permission> {
   const steps = new Map<LeaveTransition, Permission>()
   for (const transition of LeaveTransition.options) {
+    if (archivedSoldierIssues(soldier, transition, []).length > 0) continue
     const plan = planLeaveTransition(leave, transition, actorId, now)
     const [permission] = plan.allowed ? plan.permissions : []
     if (permission !== undefined) steps.set(transition, permission)
   }
   return steps
+}
+
+/** Whether the leave takes an edit: an editable status (D-064, OI-083), and a soldier who is not archived (D-124). */
+export function isEditable(leave: Leave, soldier: LeaveSoldierState = SERVING): boolean {
+  return EDITABLE_LEAVE_STATUSES.includes(leave.status) && archivedSoldierIssues(soldier, 'update', []).length === 0
 }
 
 /** The leave as the step will leave it, shown before the command answers. NULL when the status refuses it. */
@@ -57,14 +81,19 @@ export function leaveAfterStep(leave: Leave, transition: LeaveTransition, actorI
   return { ...leave, status, reviewed_by, reviewed_at, updated_at: now, updated_by: actorId, version: leave.version + 1 }
 }
 
-/** A blank note sends no comment. A note written with a step is shared (D-119). */
-export function toTransitionInput(leave: Leave, transition: LeaveTransition, note: string): TransitionLeaveInput {
+/** A blank note sends no comment. A note written with a step is shared (D-119). `acknowledged` follow D-047. */
+export function toTransitionInput(
+  leave: Leave,
+  transition: LeaveTransition,
+  note: string,
+  acknowledged: readonly AvailabilityRuleId[] = [],
+): TransitionLeaveInput {
   const body = optionalText(note)
   return {
     id: leave.id,
     expected_version: leave.version,
     transition,
-    acknowledged_rule_ids: [],
+    acknowledged_rule_ids: [...acknowledged],
     comment: body === null ? null : { id: LeaveCommentId.parse(crypto.randomUUID()), body, visibility: 'shared' },
   }
 }
@@ -84,41 +113,64 @@ export function leaveEditValues(leave: Leave): LeaveEditValues {
   return { leave_type_id: leave.leave_type_id, start_date: leave.start_date, end_date: leave.end_date, reason: leave.reason ?? '' }
 }
 
-interface LeaveEditChanges {
-  /** NULL when the dates did not move, or a date is missing. */
-  readonly dates: { readonly start_date: CalendarDate; readonly end_date: CalendarDate } | null
-  /** NULL when neither the type nor the reason changed. */
-  readonly details: UpdateLeaveInput['changes'] | null
-}
-
-/** What the form changed, split the way the commands take it: dates to `reschedule`, the rest to `update`. */
-export function leaveEditChanges(leave: Leave, values: LeaveEditValues): LeaveEditChanges {
-  const { start_date, end_date } = values
-  const moved =
-    start_date !== '' && end_date !== '' && isMaterialReschedule(leave, { start_date, end_date }) ? { start_date, end_date } : null
+/**
+ * What the form changed, as `leaves.update` takes it (D-123): the dates and the details together. NULL when nothing
+ * differs from the leave, or the form does not parse (its issues say why).
+ */
+export function leaveEditChanges(leave: Leave, values: LeaveEditValues): UpdateLeaveInput['changes'] | null {
   const reason = optionalText(values.reason)
-  const details = {
+  const changes = {
+    ...(values.start_date === leave.start_date ? {} : { start_date: values.start_date }),
+    ...(values.end_date === leave.end_date ? {} : { end_date: values.end_date }),
     ...(values.leave_type_id === leave.leave_type_id ? {} : { leave_type_id: values.leave_type_id }),
     ...(reason === leave.reason ? {} : { reason }),
   }
-  return { dates: moved, details: Object.keys(details).length === 0 ? null : details }
+  if (Object.keys(changes).length === 0) return null
+  const parsed = UpdateLeaveInput.shape.changes.safeParse(changes)
+  return parsed.success ? parsed.data : null
 }
 
 /**
- * The codes the commands answer: the schema's on the dates (D-068), and the reason the type asks for when the type
- * or the reason changes (D-117). The commands stay the authority.
+ * The codes the command answers: the schema's on the dates (D-068), and the reason the type asks for when the type
+ * or the reason changes (D-117), under `changes` as the command answers them. The command stays the authority.
  */
 export function leaveEditIssues(leave: Leave, values: LeaveEditValues, type: Pick<LeaveType, 'requires_reason'> | null): Issue[] {
-  const dates = formIssues(RescheduleLeaveInput, {
+  const dates = formIssues(UpdateLeaveInput, {
     id: leave.id,
     expected_version: leave.version,
-    start_date: values.start_date === '' ? undefined : values.start_date,
-    end_date: values.end_date === '' ? undefined : values.end_date,
+    changes: {
+      start_date: values.start_date === '' ? undefined : values.start_date,
+      end_date: values.end_date === '' ? undefined : values.end_date,
+      leave_type_id: values.leave_type_id,
+    },
     acknowledged_rule_ids: [],
   })
-  const { details } = leaveEditChanges(leave, values)
-  const reason = details === null || type === null ? [] : leaveReasonIssues(type, optionalText(values.reason))
-  return [...dates, ...reason]
+  // An update may leave a date out, while the form always holds both: an empty one is missing.
+  const missing: Issue[] = (["start_date", "end_date"] as const)
+    .filter((column) => values[column] === "")
+    .map((column) => ({ path: ["changes", column], code: IssueCode.enum.required }))
+  const reason = optionalText(values.reason)
+  const asked = values.leave_type_id !== leave.leave_type_id || reason !== leave.reason
+  const reasonIssues = !asked || type === null ? [] : leaveReasonIssues(type, reason)
+  return [...missing, ...dates, ...reasonIssues.map((issue) => ({ ...issue, path: ['changes', ...issue.path] }))]
+}
+
+/** `leaves.update` of the form's changes, or NULL when nothing changed (D-123). */
+export function toUpdateLeaveInput(
+  leave: Leave,
+  values: LeaveEditValues,
+  acknowledged: readonly AvailabilityRuleId[] = [],
+): UpdateLeaveInput | null {
+  const changes = leaveEditChanges(leave, values)
+  if (changes === null) return null
+  return { id: leave.id, expected_version: leave.version, changes, acknowledged_rule_ids: [...acknowledged] }
+}
+
+/** The leave as the edit would leave it, as rules see it, for the live warning (D-142). NULL while a date is wrong. */
+export function editedLeaveCandidate(leave: Leave, values: LeaveEditValues): AvailabilityLeave | null {
+  const { start_date, end_date } = values
+  if (start_date === '' || end_date === '' || compareDates(start_date, end_date) > 0) return null
+  return { ...leave, start_date, end_date, leave_type_id: values.leave_type_id }
 }
 
 /**
@@ -134,13 +186,16 @@ export function editReturnsToPending(
   now: Timestamp,
 ): boolean {
   if (leave.status !== LeaveStatus.enum.approved) return false
-  const { dates } = leaveEditChanges(leave, values)
-  const material = dates !== null || isMaterialLeaveUpdate(leave, { leave_type_id: values.leave_type_id })
+  const material = isMaterialLeaveUpdate(leave, {
+    leave_type_id: values.leave_type_id,
+    ...(values.start_date === '' ? {} : { start_date: values.start_date }),
+    ...(values.end_date === '' ? {} : { end_date: values.end_date }),
+  })
   const plan = planLeaveEdit(leave, { kind: 'update', material, policy, actor_can_approve: actorCanApprove }, actorId, now)
   return plan.allowed && plan.next.status === LeaveStatus.enum.pending
 }
 
-/** The permission both edit commands check. */
+/** The permission the edit command checks. */
 export const EDIT_PERMISSION: Permission = LEAVE_PERMISSIONS.update
 
 // ---------------------------------------------------------------------- thread

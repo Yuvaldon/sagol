@@ -1,4 +1,5 @@
 import {
+  type AvailabilityRuleId,
   type CreateLeaveInput,
   type Leave,
   type LeaveQuery,
@@ -64,12 +65,15 @@ export function useLeaveTypes(): Loaded<readonly LeaveType[]> {
   )
 }
 
-function leaveQueryOf(window: DateWindow): LeaveQuery {
+/** The days a leave list covers: the board's window, or the days a form judges. */
+type LeaveSpan = Pick<DateWindow, 'from' | 'to'>
+
+function leaveQueryOf(window: LeaveSpan): LeaveQuery {
   return { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: DRAWN_STATUSES }
 }
 
 /** The pending and approved leaves the actor may see that overlap the window. Loading while there is no window. */
-export function useLeaves(window: DateWindow | null): Loaded<readonly Leave[]> {
+export function useLeaves(window: LeaveSpan | null): Loaded<readonly Leave[]> {
   const { data } = usePorts()
   const query = useMemo(() => (window === null ? null : leaveQueryOf(window)), [window])
   return loaded(
@@ -96,6 +100,7 @@ export function useCreateLeave() {
 
   const mutation = useMutation({
     mutationFn: (input: CreateLeaveInput): Promise<Result<Leave>> => data.commands.leaves.create(input),
+    // Pending, and the board, show the leave at once; a rule that asks for an acknowledgment takes it back (D-142).
     onMutate: async (input) => {
       await client.cancelQueries({ queryKey: QUERY_KEYS.leaves })
       const previous = cachedLeaves(client)
@@ -115,7 +120,9 @@ export function useCreateLeave() {
     },
   })
   return {
-    run: (values: NewLeaveValues) => mutation.mutateAsync(toCreateLeaveInput(values)),
+    /** `acknowledged` are the soft rules the actor agreed to break, sent again after the dialog (D-047, D-142). */
+    run: (values: NewLeaveValues, acknowledged: readonly AvailabilityRuleId[] = []) =>
+      mutation.mutateAsync(toCreateLeaveInput(values, acknowledged)),
     isPending: mutation.isPending,
   }
 }

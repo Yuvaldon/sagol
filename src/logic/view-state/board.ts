@@ -88,3 +88,28 @@ export function usePresenceDay(): PresenceDayState {
   }, [change])
   return { day, today, shift, goToToday, openToday }
 }
+
+export interface RulesDayState {
+  /** The day whose broken rules the rules panel shows (D-141); NULL shows none. */
+  readonly day: CalendarDate | null
+  /** Opens the rules panel on a day of the heat row, in one step of the history. */
+  openOn(day: CalendarDate): void
+  /** Opens the rules panel without a day. */
+  open(): void
+}
+
+/** The rules panel and its day (D-140, D-141): the same `day` param as the presence lists (D-134). */
+export function useRulesDay(): RulesDayState {
+  const search = useWorkspaceSearch()
+  const change = useChangeSearch()
+  const openOn = useCallback(
+    (day: CalendarDate) => {
+      change({ panel: PANEL_IDS.rules, entity: undefined, parent: undefined, day })
+    },
+    [change],
+  )
+  const open = useCallback(() => {
+    change({ panel: PANEL_IDS.rules, entity: undefined, parent: undefined, day: undefined })
+  }, [change])
+  return { day: search.day ?? null, openOn, open }
+}
