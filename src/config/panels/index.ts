@@ -20,6 +20,8 @@ export const PANEL_IDS = {
   tagCategories: 'tag_categories',
   /** Present and absent lists of a day (D-134). */
   presence: 'presence',
+  /** Availability rules, their conflicts, and the broken rules of a day (D-140, D-141). */
+  rules: 'rules',
 } as const
 
 export const PanelId = z.enum([
@@ -35,6 +37,7 @@ export const PanelId = z.enum([
   PANEL_IDS.tags,
   PANEL_IDS.tagCategories,
   PANEL_IDS.presence,
+  PANEL_IDS.rules,
 ])
 export type PanelId = z.infer<typeof PanelId>
 
