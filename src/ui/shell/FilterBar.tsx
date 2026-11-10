@@ -1,11 +1,11 @@
-import { PANEL_IDS } from '@config'
 import {
+  CommandRankId,
   LeaveTypeId,
   SoldierStatus,
   TagId,
   type CommandRank,
-  type CommandRankId,
   type LeaveType,
+  type LeaveTypeGroup,
   type Tag,
   type TagCategory,
   type TagCategoryId,
@@ -24,8 +24,8 @@ import {
   useLeaveTypes,
   useModuleAccess,
   useOnlyMissing,
-  usePanel,
   usePresence,
+  usePresenceDay,
   useTagCategories,
   useTags,
   useToday,
@@ -125,13 +125,25 @@ interface Condition {
  * "+": the conditions not on the bar yet, then the values of the one picked. A picked condition stays open after its
  * first value makes it a chip, so more values can be checked.
  */
-function AddCondition({ conditions, all }: { readonly conditions: readonly Condition[]; readonly all: readonly Condition[] }) {
+function AddCondition({
+  conditions,
+  all,
+  isOpen,
+  onOpenChange,
+}: {
+  readonly conditions: readonly Condition[]
+  readonly all: readonly Condition[]
+  readonly isOpen: boolean
+  readonly onOpenChange: (isOpen: boolean) => void
+}) {
   const [picked, setPicked] = useState<string | null>(null)
   const open = all.find((condition) => condition.key === picked)
   return (
     <DialogTrigger
-      onOpenChange={(isOpen) => {
-        if (!isOpen) setPicked(null)
+      isOpen={isOpen}
+      onOpenChange={(next) => {
+        if (!next) setPicked(null)
+        onOpenChange(next)
       }}
     >
       <AriaButton
@@ -217,7 +229,71 @@ function tagCondition(
   }
 }
 
-function useConditions(): { readonly shown: readonly Condition[]; readonly addable: readonly Condition[] } {
+interface ConditionSets {
+  readonly shown: readonly Condition[]
+  readonly addable: readonly Condition[]
+}
+
+/** The leave conditions (D-132), which live in their own param, whatever the soldier filter is. */
+function leaveConditionsOf(
+  leaves: ReturnType<typeof useLeaveConditions>,
+  allTypes: readonly LeaveType[],
+  groups: readonly LeaveTypeGroup[],
+): ConditionSets {
+  const shown: Condition[] = []
+  const addable: Condition[] = []
+  // Leave conditions (D-132).
+  const LEAVE_STATUS_KEYS: Record<BoardLeaveStatus, I18nKey> = { pending: 'leaves.statusPending', approved: 'leaves.statusApproved' }
+  const statuses = leaves.conditions.statuses ?? []
+  const leaveStatus: Condition = {
+    key: 'leaveStatus',
+    name: t('filters.leaveStatus'),
+    values: statuses.map((value) => t(LEAVE_STATUS_KEYS[value])),
+    onRemove: () => {
+      leaves.setStatuses([])
+    },
+    choices: {
+      label: named('filters.leaveStatus'),
+      choices: BoardLeaveStatus.options.map((value) => ({ key: value, label: named(LEAVE_STATUS_KEYS[value]) })),
+      selected: statuses,
+      onChange: (keys) => {
+        leaves.setStatuses(BoardLeaveStatus.options.filter((value) => keys.includes(value)))
+      },
+    },
+  }
+  if (statuses.length > 0) shown.push(leaveStatus)
+  else addable.push(leaveStatus)
+
+  const liveTypes = orderedLeaveTypes(groups, allTypes)
+  const typeIds = leaves.conditions.type_ids ?? []
+  const typeName = (id: LeaveTypeId) => allTypes.find((type) => type.id === id)?.name ?? t('filters.unavailable')
+  const typeChoices: Choice[] = [
+    ...liveTypes.map((type) => ({ key: type.id, label: { text: type.name }, dot: toneOf(type.color_key).fill })),
+    ...typeIds.filter((id) => !liveTypes.some((type) => type.id === id)).map((id) => ({ key: id, label: { text: typeName(id) } })),
+  ]
+  const leaveType: Condition = {
+    key: 'leaveType',
+    name: t('filters.leaveType'),
+    values: typeIds.map(typeName),
+    onRemove: () => {
+      leaves.setTypes([])
+    },
+    choices: {
+      label: named('filters.leaveType'),
+      choices: typeChoices,
+      selected: typeIds,
+      onChange: (keys) => {
+        leaves.setTypes(typeChoices.filter((choice) => keys.includes(choice.key)).map((choice) => LeaveTypeId.parse(choice.key)))
+      },
+    },
+  }
+  if (typeIds.length > 0) shown.push(leaveType)
+  else if (typeChoices.length > 0) addable.push(leaveType)
+
+  return { shown, addable }
+}
+
+function useConditions(): ConditionSets {
   const filter = useViewFilter()
   const leaves = useLeaveConditions()
   const categories = useTagCategories()
@@ -226,10 +302,15 @@ function useConditions(): { readonly shown: readonly Condition[]; readonly addab
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
 
+  const leave = leaveConditionsOf(
+    leaves,
+    types.status === 'ready' ? types.value : [],
+    groups.status === 'ready' ? groups.value : [],
+  )
   if (filter.read.kind === 'other') {
     return {
-      shown: [{ key: 'other', name: t('filters.other'), values: [], onRemove: filter.clear, choices: null }],
-      addable: [],
+      shown: [{ key: 'other', name: t('filters.other'), values: [], onRemove: filter.clear, choices: null }, ...leave.shown],
+      addable: leave.addable,
     }
   }
   const conditions = filter.read.conditions
@@ -256,11 +337,12 @@ function useConditions(): { readonly shown: readonly Condition[]; readonly addab
       return
     }
     usedCategories.add(category.id)
-    shown.push(
-      tagCondition(category, allCategories, allTags, set, (tagIds) => {
+    shown.push({
+      ...tagCondition(category, allCategories, allTags, set, (tagIds) => {
         write(withTagChip(conditions, categoryOf, category.id, tagIds))
       }),
-    )
+      key: `tags:${String(index)}`,
+    })
   })
   for (const category of liveCategories(allCategories)) {
     if (usedCategories.has(category.id) || tagsOfCategory(allTags, category.id).length === 0) continue
@@ -290,7 +372,7 @@ function useConditions(): { readonly shown: readonly Condition[]; readonly addab
       choices: rankChoices,
       selected: conditions.rankIds,
       onChange: (keys) => {
-        write({ ...conditions, rankIds: allRanks.filter((row) => keys.includes(row.id)).map((row) => row.id) })
+        write({ ...conditions, rankIds: rankChoices.filter((choice) => keys.includes(choice.key)).map((choice) => CommandRankId.parse(choice.key)) })
       },
     },
   }
@@ -318,56 +400,7 @@ function useConditions(): { readonly shown: readonly Condition[]; readonly addab
   if (conditions.statuses.length > 0) shown.push(status)
   else addable.push(status)
 
-  // Leave conditions (D-132).
-  const LEAVE_STATUS_KEYS: Record<BoardLeaveStatus, I18nKey> = { pending: 'leaves.statusPending', approved: 'leaves.statusApproved' }
-  const statuses = leaves.conditions.statuses ?? []
-  const leaveStatus: Condition = {
-    key: 'leaveStatus',
-    name: t('filters.leaveStatus'),
-    values: statuses.map((value) => t(LEAVE_STATUS_KEYS[value])),
-    onRemove: () => {
-      leaves.setStatuses([])
-    },
-    choices: {
-      label: named('filters.leaveStatus'),
-      choices: BoardLeaveStatus.options.map((value) => ({ key: value, label: named(LEAVE_STATUS_KEYS[value]) })),
-      selected: statuses,
-      onChange: (keys) => {
-        leaves.setStatuses(BoardLeaveStatus.options.filter((value) => keys.includes(value)))
-      },
-    },
-  }
-  if (statuses.length > 0) shown.push(leaveStatus)
-  else addable.push(leaveStatus)
-
-  const allTypes: readonly LeaveType[] = types.status === 'ready' ? types.value : []
-  const liveTypes = orderedLeaveTypes(groups.status === 'ready' ? groups.value : [], allTypes)
-  const typeIds = leaves.conditions.type_ids ?? []
-  const typeName = (id: LeaveTypeId) => allTypes.find((type) => type.id === id)?.name ?? t('filters.unavailable')
-  const typeChoices: Choice[] = [
-    ...liveTypes.map((type) => ({ key: type.id, label: { text: type.name }, dot: toneOf(type.color_key).fill })),
-    ...typeIds.filter((id) => !liveTypes.some((type) => type.id === id)).map((id) => ({ key: id, label: { text: typeName(id) } })),
-  ]
-  const leaveType: Condition = {
-    key: 'leaveType',
-    name: t('filters.leaveType'),
-    values: typeIds.map(typeName),
-    onRemove: () => {
-      leaves.setTypes([])
-    },
-    choices: {
-      label: named('filters.leaveType'),
-      choices: typeChoices,
-      selected: typeIds,
-      onChange: (keys) => {
-        leaves.setTypes(typeChoices.filter((choice) => keys.includes(choice.key)).map((choice) => LeaveTypeId.parse(choice.key)))
-      },
-    },
-  }
-  if (typeIds.length > 0) shown.push(leaveType)
-  else if (typeChoices.length > 0) addable.push(leaveType)
-
-  return { shown, addable }
+  return { shown: [...shown, ...leave.shown], addable: [...addable, ...leave.addable] }
 }
 
 function OnlyMissingSwitch() {
@@ -387,13 +420,11 @@ function PresenceButton() {
   const today = useToday()
   const { filter } = useViewFilter()
   const presence = usePresence(today, filter)
-  const panel = usePanel()
+  const { openToday } = usePresenceDay()
   if (presence.status !== 'ready') return null
   return (
     <AriaButton
-      onPress={() => {
-        panel.open(PANEL_IDS.presence)
-      }}
+      onPress={openToday}
       className={`${PILL} gap-xs px-md ${PRESS}`}
     >
       <UserX aria-hidden size={14} />
@@ -406,6 +437,8 @@ function PresenceButton() {
 export function FilterBar() {
   const access = useModuleAccess()
   const { shown, addable } = useConditions()
+  // "+" stays while its popover is open, so the condition picked there keeps its values in sight after it becomes a chip.
+  const [adding, setAdding] = useState(false)
   return (
     <search
       aria-label={t('filters.bar')}
@@ -418,7 +451,9 @@ export function FilterBar() {
           {condition.choices === null ? null : <CheckList {...condition.choices} autoFocus />}
         </Chip>
       ))}
-      {addable.length === 0 ? null : <AddCondition conditions={addable} all={[...shown, ...addable]} />}
+      {addable.length === 0 && !adding ? null : (
+        <AddCondition conditions={addable} all={[...shown, ...addable]} isOpen={adding} onOpenChange={setAdding} />
+      )}
       <OnlyMissingSwitch />
       {access.soldiers ? <PresenceButton /> : null}
     </search>
