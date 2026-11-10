@@ -62,10 +62,13 @@ function Board({ model }: { readonly model: TimelineModel }) {
       </Centered>
     )
   }
+  const openLeave = (leaveId: string) => {
+    panel.open(PANEL_IDS.leaves, { entity: leaveId })
+  }
   return (
     <TimelineGrid
       days={dayCells(model.days, model.today)}
-      rows={timelineRows(model.items, model.days, open, { leaves: model.leaves, colors: mode })}
+      rows={timelineRows(model.items, model.days, open, { leaves: model.leaves, colors: mode, openLeave })}
     />
   )
 }

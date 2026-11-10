@@ -91,15 +91,21 @@ function GroupRow({ row, layout }: { readonly row: TimelineGroupRow; readonly la
   )
 }
 
+// A mark is a control that opens its leave (D-119). Its hit area fills the gap between lanes, so lanes never
+// take each other's presses.
+const MARK_BUTTON =
+  'absolute z-1 cursor-pointer outline-focus outline-offset-1 before:absolute before:inset-x-none before:-inset-y-2xs data-focus-visible:outline-2'
+
 /** A bar over its days: solid when approved, a dashed edge over a faint fill when pending (D-111). */
 function Bar({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonly layout: GridLayout; readonly baseRowPx: number }) {
   const { startPx, widthPx } = barSpan(layout, mark, mark.cut, TIMELINE_LANES)
   const form = mark.dashed ? `border-2 border-dashed ${mark.tone.edge} ${mark.tone.faint}` : mark.tone.fill
   const ends = `${mark.cut.start ? '' : 'rounded-s-bar'} ${mark.cut.end ? '' : 'rounded-e-bar'}`
   return (
-    <div
-      aria-hidden
-      className={`absolute z-1 flex items-center gap-xs overflow-hidden px-xs ${form} ${ends}`}
+    <AriaButton
+      aria-label={mark.label}
+      onPress={mark.onOpen}
+      className={`${MARK_BUTTON} flex items-center gap-xs px-xs ${form} ${ends}`}
       style={{
         insetInlineStart: startPx,
         width: widthPx,
@@ -107,20 +113,28 @@ function Bar({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonl
         height: TIMELINE_LANES.barPx,
       }}
     >
-      {mark.dot === null ? null : <span className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
-      {mark.caption === null ? null : <span className="truncate text-micro font-medium text-text">{mark.caption}</span>}
-    </div>
+      {mark.dot === null ? null : <span aria-hidden className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
+      {mark.caption === null ? null : (
+        <span aria-hidden className="truncate text-micro font-medium text-text">
+          {mark.caption}
+        </span>
+      )}
+    </AriaButton>
   )
 }
 
-/** A marker: a round badge with its icon on each of its days, over any bar (D-111). */
+/**
+ * A marker: a round badge with its icon on each of its days, over any bar (D-111). Every badge opens the leave by
+ * pointer; the first one alone is in the tab order and read aloud, so a marker of five days is one control.
+ */
 function Badges({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonly layout: GridLayout; readonly baseRowPx: number }) {
   const Icon = mark.Icon
   return Array.from({ length: mark.length }, (_, offset) => (
-    <div
+    <AriaButton
       key={offset}
-      aria-hidden
-      className={`absolute z-1 flex items-center justify-center rounded-pill bg-surface shadow-rim ${mark.dashed ? 'border border-dashed' : 'border'} ${mark.tone.edge} ${mark.tone.ink}`}
+      {...(offset === 0 ? { 'aria-label': mark.label } : { 'aria-hidden': true, excludeFromTabOrder: true })}
+      onPress={mark.onOpen}
+      className={`${MARK_BUTTON} flex items-center justify-center rounded-pill bg-surface shadow-rim ${mark.dashed ? 'border border-dashed' : 'border'} ${mark.tone.edge} ${mark.tone.ink}`}
       style={{
         insetInlineStart: badgeStart(layout, mark.start + offset, TIMELINE_LANES),
         top: laneTop(baseRowPx, mark.lane, TIMELINE_LANES),
@@ -128,8 +142,8 @@ function Badges({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; read
         height: TIMELINE_LANES.barPx,
       }}
     >
-      {Icon === null ? null : <Icon size={12} strokeWidth={2.6} />}
-    </div>
+      {Icon === null ? null : <Icon aria-hidden size={12} strokeWidth={2.6} />}
+    </AriaButton>
   ))
 }
 
@@ -180,13 +194,6 @@ function ResourceRow({
       {/* A hairline of its own, so the name keeps the whole height of the row as a touch target. */}
       <div aria-hidden className="absolute inset-x-none bottom-none z-3 h-hairline bg-line" />
       {row.offText === null ? null : <span className="sr-only">{row.offText}</span>}
-      {row.marksText.length === 0 ? null : (
-        <ul aria-label={t('leaves.ofRow')} className="sr-only">
-          {row.marksText.map((text) => (
-            <li key={text}>{text}</li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }

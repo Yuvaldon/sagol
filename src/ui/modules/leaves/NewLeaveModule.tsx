@@ -12,6 +12,7 @@ import {
   useLeaveTypePermissions,
   useLeaveTypes,
   useModuleAccess,
+  useMyPreferences,
   usePanel,
   useSoldiers,
   useToday,
@@ -27,9 +28,11 @@ import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
+import { LeaveDetails } from './LeaveDetails'
 
 // A new leave (D-115): who, what kind, which days, and why when the type asks. "Approve now" is there only for
-// who may approve that soldier, and starts off. The bar is on the board as soon as it is sent.
+// who may approve that soldier, and starts from their own default (D-121). The bar is on the board as soon as it is
+// sent.
 
 const LEAVE_FIELDS: readonly string[] = ['soldier_id', 'leave_type_id', 'start_date', 'end_date', 'reason']
 
@@ -50,12 +53,14 @@ function NewLeaveForm({
   groups,
   types,
   today,
+  approveNow,
 }: {
   readonly soldiers: readonly Soldier[]
   readonly canApprove: (soldierId: SoldierId) => boolean
   readonly groups: readonly LeaveTypeGroup[]
   readonly types: readonly LeaveType[]
   readonly today: CalendarDate
+  readonly approveNow: boolean
 }) {
   const panel = usePanel()
   const create = useCreateLeave()
@@ -63,7 +68,7 @@ function NewLeaveForm({
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
   const form = useForm({
-    defaultValues: newLeaveValues(today),
+    defaultValues: newLeaveValues(today, approveNow),
     validators: { onSubmit: ({ value }) => validatorResult(newLeaveIssues(value, typeOf(value.leave_type_id))) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
@@ -171,12 +176,13 @@ function NewLeave() {
   const soldiers = useSoldiers()
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
+  const preferences = useMyPreferences()
   const creation = useLeaveCreation(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
 
-  for (const loaded of [soldiers, types, groups]) {
+  for (const loaded of [soldiers, types, groups, preferences]) {
     if (loaded.status === 'failed') return <FailureNotice error={loaded.error} />
   }
-  if (soldiers.status !== 'ready' || types.status !== 'ready' || groups.status !== 'ready' || today === null) {
+  if (soldiers.status !== 'ready' || types.status !== 'ready' || groups.status !== 'ready' || preferences.status !== 'ready' || today === null) {
     return <LoadingNotice />
   }
 
@@ -207,22 +213,16 @@ function NewLeave() {
       groups={groups.value}
       types={liveTypes}
       today={today}
+      approveNow={preferences.value.create_leaves_as_approved}
     />
   )
 }
 
 const NO_SOLDIERS: readonly never[] = []
 
-/** The `leaves` panel: a new leave in V4. V5 opens a leave's details here. */
-export function NewLeaveModule() {
+/** The `leaves` panel: the new-leave form, or the details of the leave `entity` names (D-115, D-119). */
+export function LeavesModule() {
   const panel = usePanel()
-  if (panel.entity !== null && panel.entity !== NEW_ENTITY) {
-    return (
-      <div className="flex flex-col items-center gap-md py-xl text-center">
-        <p className="text-name text-text-muted">{t('leaves.notFound')}</p>
-        <Button onPress={panel.close}>{t('common.close')}</Button>
-      </div>
-    )
-  }
+  if (panel.entity !== null && panel.entity !== NEW_ENTITY) return <LeaveDetails key={panel.entity} id={panel.entity} />
   return <NewLeave />
 }

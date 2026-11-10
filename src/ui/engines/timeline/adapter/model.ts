@@ -50,6 +50,8 @@ function offTextOf(days: readonly CalendarDate[], offDays: readonly boolean[]): 
 export interface TimelineMarkOptions {
   readonly leaves: ReadonlyMap<SoldierId, readonly TimelineLeave[]>
   readonly colors: BarColorMode
+  /** Opens a leave's details: every mark is a control (D-119). */
+  readonly openLeave: (leaveId: string) => void
 }
 
 interface Placed {
@@ -81,7 +83,7 @@ function typeName(leave: TimelineLeave): string {
   return leave.type?.name ?? t('leaves.unknownType')
 }
 
-function markOf({ leave, start, length, cut }: Placed, lane: number, colors: BarColorMode): TimelineMark {
+function markOf({ leave, start, length, cut }: Placed, lane: number, { colors, openLeave }: TimelineMarkOptions): TimelineMark {
   const badge = leave.effect === 'available'
   const uniform = colors === 'uniform'
   const typeTone = toneOf(leave.type?.color_key ?? null)
@@ -97,10 +99,14 @@ function markOf({ leave, start, length, cut }: Placed, lane: number, colors: Bar
     Icon: badge ? (iconOf(leave.type?.icon_key ?? null) ?? ICON_GLYPHS.other.Icon) : null,
     dot: uniform && !badge && leave.type !== null ? typeTone.fill : null,
     caption: uniform && !badge ? typeName(leave) : null,
+    label: markText(leave),
+    onOpen: () => {
+      openLeave(leave.id)
+    },
   }
 }
 
-/** A mark read aloud: the type, marker or absence, the status, and the days of the leave itself. */
+/** A mark's name: the type, marker or absence, the status, and the days of the leave itself. */
 function markText(leave: TimelineLeave): string {
   const parts = [
     typeName(leave),
@@ -112,7 +118,7 @@ function markText(leave: TimelineLeave): string {
 }
 
 /** Bars and badges take lanes apart: a badge sits over a bar, as in Stone 3 (D-111). */
-function marksOf(leaves: readonly TimelineLeave[], days: readonly CalendarDate[], colors: BarColorMode) {
+function marksOf(leaves: readonly TimelineLeave[], days: readonly CalendarDate[], options: TimelineMarkOptions) {
   const placed = leaves.flatMap((leave) => {
     const at = placeInWindow(leave, days)
     return at === null ? [] : [at]
@@ -122,14 +128,10 @@ function marksOf(leaves: readonly TimelineLeave[], days: readonly CalendarDate[]
   const barLanes = assignLanes(bars)
   const badgeLanes = assignLanes(badges)
   const marks = [
-    ...bars.map((item, index) => markOf(item, barLanes.lanes[index] ?? 0, colors)),
-    ...badges.map((item, index) => markOf(item, badgeLanes.lanes[index] ?? 0, colors)),
+    ...bars.map((item, index) => markOf(item, barLanes.lanes[index] ?? 0, options)),
+    ...badges.map((item, index) => markOf(item, badgeLanes.lanes[index] ?? 0, options)),
   ]
-  return {
-    marks,
-    lanes: Math.max(barLanes.count, badgeLanes.count),
-    marksText: placed.map((item) => markText(item.leave)),
-  }
+  return { marks, lanes: Math.max(barLanes.count, badgeLanes.count) }
 }
 
 export function timelineRows(
@@ -154,7 +156,7 @@ export function timelineRows(
           : () => {
               open(item.soldier.id)
             },
-      ...marksOf(options.leaves.get(item.soldier.id) ?? [], days, options.colors),
+      ...marksOf(options.leaves.get(item.soldier.id) ?? [], days, options),
     }
   })
 }

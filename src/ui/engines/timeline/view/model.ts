@@ -34,8 +34,6 @@ export interface TimelineResourceRow {
   readonly marks: readonly TimelineMark[]
   /** How many lanes the row needs, at least one. */
   readonly lanes: number
-  /** Each mark read aloud: what, its status and its days. */
-  readonly marksText: readonly string[]
 }
 
 export type TimelineRowModel = TimelineGroupRow | TimelineResourceRow
@@ -67,4 +65,8 @@ export interface TimelineMark {
   /** The uniform mode's dot of the type's color, and the type's name inside the bar (D-112). */
   readonly dot: string | null
   readonly caption: string | null
+  /** The mark's name as a control: what, its status and its days (D-119). */
+  readonly label: string
+  /** Opens what the mark stands for. */
+  readonly onOpen: () => void
 }
