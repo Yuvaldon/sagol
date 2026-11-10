@@ -26,6 +26,7 @@ import { useLeaves } from './hooks'
 import {
   closedLeaves,
   editReturnsToPending,
+  editedLeaveCandidate,
   isEditable,
   leaveAfterStep,
   leaveDayCount,
@@ -372,6 +373,16 @@ describe('the one command of the edit form (D-123, OI-076)', () => {
     })
     // One command: its refusal is the whole answer, with no second command to send and no first one saved.
     expect(update).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the live warning of an edit (D-142)', () => {
+  it('judges the leave with the status the edit leaves it in', () => {
+    const stored = approved(1)
+    const moved = { ...leaveEditValues(stored), end_date: '2026-11-12' }
+    expect(editedLeaveCandidate(stored, moved, true)).toMatchObject({ status: 'pending', end_date: '2026-11-12' })
+    expect(editedLeaveCandidate(stored, moved, false)).toMatchObject({ status: 'approved' })
+    expect(editedLeaveCandidate(stored, { ...moved, end_date: '' }, false)).toBeNull()
   })
 })
 

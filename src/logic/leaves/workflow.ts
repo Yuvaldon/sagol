@@ -166,11 +166,15 @@ export function toUpdateLeaveInput(
   return { id: leave.id, expected_version: leave.version, changes, acknowledged_rule_ids: [...acknowledged] }
 }
 
-/** The leave as the edit would leave it, as rules see it, for the live warning (D-142). NULL while a date is wrong. */
-export function editedLeaveCandidate(leave: Leave, values: LeaveEditValues): AvailabilityLeave | null {
+/**
+ * The leave as the edit would leave it, as rules see it, for the live warning (D-142): with its new dates and type, and
+ * pending when the edit returns it there (`editReturnsToPending`, D-064). NULL while a date is wrong.
+ */
+export function editedLeaveCandidate(leave: Leave, values: LeaveEditValues, returnsToPending: boolean): AvailabilityLeave | null {
   const { start_date, end_date } = values
   if (start_date === '' || end_date === '' || compareDates(start_date, end_date) > 0) return null
-  return { ...leave, start_date, end_date, leave_type_id: values.leave_type_id }
+  const status = returnsToPending ? LeaveStatus.enum.pending : leave.status
+  return { ...leave, start_date, end_date, leave_type_id: values.leave_type_id, status }
 }
 
 /**

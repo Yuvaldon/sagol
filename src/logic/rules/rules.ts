@@ -146,7 +146,8 @@ function ruleContent(values: RuleFormValues, stored: FilterExpression | null) {
     name: values.name,
     description: optionalText(values.description),
     is_enabled: values.is_enabled,
-    priority: priority ?? 0,
+    // An empty priority is the schema's to refuse, as every other number of the form.
+    priority,
     enforcement: values.enforcement,
     scope_unit_id: values.scope_unit_id,
     scope_mode: values.scope_mode,
@@ -188,7 +189,8 @@ export function toUpdateRuleInput(
   openedVersion: number,
   values: RuleFormValues,
 ): UpdateAvailabilityRuleInput | null {
-  const content = CreateAvailabilityRuleInput.parse(createInput(values, rule.population_filter))
+  // The form has no deployment field before V15: the rule keeps its own (OI-096).
+  const content = CreateAvailabilityRuleInput.parse({ ...createInput(values, rule.population_filter), deployment_id: rule.deployment_id })
   const stored: Readonly<Record<string, unknown>> = rule
   const changes = Object.fromEntries(
     Object.entries(content).filter(([column, value]) => column !== 'id' && !sameValue(value, stored[column])),

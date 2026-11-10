@@ -201,6 +201,10 @@ describe('the rule form (D-140)', () => {
     expect(toUpdateRuleInput(stored, 1, { ...values, other_population: false })?.changes).toEqual({ population_filter: {} })
   })
 
+  it('refuses an empty priority, as the command would', () => {
+    expect(ruleFormIssues({ ...filled, priority: ' ' })).toEqual([{ path: ['priority'], code: 'required' }])
+  })
+
   it('drops a level or a category the chosen mode does not use', () => {
     const level = UnitLevelId.parse(uuid(40))
     const input = toCreateRuleInput({ ...filled, scope_level_id: level, group_tag_category_id: CATEGORY })
