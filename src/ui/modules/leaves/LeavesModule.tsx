@@ -19,7 +19,7 @@ import {
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { Tags } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -85,6 +85,11 @@ function NewLeaveForm({
   const reasonRequired = typeOf(typeId)?.requires_reason === true
   const values = useStore(form.store, (current) => current.values)
   const approving = values.as_approved && values.soldier_id !== null && canApprove(values.soldier_id)
+  // While the leave is sent it is already on the board; judging the form too would count it twice.
+  const candidate = useMemo(
+    () => (create.isPending ? null : newLeaveCandidate({ ...values, as_approved: approving })),
+    [create.isPending, values, approving],
+  )
 
   return (
     <EntityForm
@@ -166,7 +171,7 @@ function NewLeaveForm({
           {(field) => <SwitchField labelKey="leaves.approveNow" name={field.name} value={field.state.value} onChange={field.handleChange} />}
         </form.Field>
       ) : null}
-      <RuleWarnings candidate={newLeaveCandidate({ ...values, as_approved: approving })} />
+      <RuleWarnings candidate={candidate} />
       <RuleGateDialog gate={gate} isPending={create.isPending} />
     </EntityForm>
   )

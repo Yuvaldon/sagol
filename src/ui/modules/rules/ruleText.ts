@@ -1,13 +1,16 @@
-import type {
-  AvailabilityRule,
-  AvailabilityRuleId,
-  CommandRank,
-  RuleGroupValue,
-  Tag,
-  Unit,
-  UnitId,
-  UnitLevel,
-  UnitLevelId,
+import {
+  RuleGroupBy,
+  RuleMetric,
+  RuleScopeMode,
+  type AvailabilityRule,
+  type AvailabilityRuleId,
+  type CommandRank,
+  type RuleGroupValue,
+  type Tag,
+  type Unit,
+  type UnitId,
+  type UnitLevel,
+  type UnitLevelId,
 } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
@@ -26,6 +29,7 @@ import { useMemo } from 'react'
 
 const PART_SEPARATOR = ' · '
 const WORD_SEPARATOR = ' '
+const LIST_SEPARATOR = ', '
 
 export interface RuleNames {
   rule(id: AvailabilityRuleId): string
@@ -63,7 +67,7 @@ export function useRuleNames(): RuleNames {
       rule: (id) => ruleById.get(id)?.name ?? t('rules.unknownRule'),
       unit: (id) => (id === null ? t('rules.wholeOrganization') : (unitById.get(id)?.name ?? t('rules.unknownUnit'))),
       level: (id) => (id === null ? t('rules.unknownUnit') : (levelById.get(id)?.name ?? t('rules.unknownUnit'))),
-      group: (group) => (group.group_by === 'tag' ? tag(group.tag_id) : rank(group.command_rank_id)),
+      group: (group) => (group.group_by === RuleGroupBy.enum.tag ? tag(group.tag_id) : rank(group.command_rank_id)),
       tag,
       rank,
     }
@@ -79,7 +83,7 @@ export function boundText(boundKey: I18nKey, value: number, percent: boolean): s
 
 /** What a rule asks, as its row in the list says it (D-140): the bounds, who, and where. */
 export function ruleSummary(rule: AvailabilityRule, names: RuleNames): string {
-  const percent = rule.metric === 'percent'
+  const percent = rule.metric === RuleMetric.enum.percent
   const bounds = [
     ...(rule.min_value === null ? [] : [boundText('rules.min', rule.min_value, percent)]),
     ...(rule.max_value === null ? [] : [boundText('rules.max', rule.max_value, percent)]),
@@ -88,18 +92,18 @@ export function ruleSummary(rule: AvailabilityRule, names: RuleNames): string {
   const who =
     population.kind === 'other'
       ? t('rules.otherPopulation')
-      : [...population.tagSets.flat().map(names.tag), ...population.rankIds.map(names.rank)].join(', ') || t('rules.everyone')
+      : [...population.tagSets.flat().map(names.tag), ...population.rankIds.map(names.rank)].join(LIST_SEPARATOR) || t('rules.everyone')
   return [...bounds, who, scopeText(rule, names)].join(PART_SEPARATOR)
 }
 
 function scopeText(rule: AvailabilityRule, names: RuleNames): string {
   const unit = names.unit(rule.scope_unit_id)
   switch (rule.scope_mode) {
-    case 'unit_tree':
+    case RuleScopeMode.enum.unit_tree:
       return unit
-    case 'each_child':
+    case RuleScopeMode.enum.each_child:
       return join(t('rules.eachChild'), unit)
-    case 'each_descendant_at_level':
+    case RuleScopeMode.enum.each_descendant_at_level:
       return rule.scope_unit_id === null
         ? join(t('rules.eachAtLevel'), names.level(rule.scope_level_id))
         : join(t('rules.eachAtLevel'), names.level(rule.scope_level_id), t('rules.under'), unit)

@@ -1,5 +1,5 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
-import type { AppError, AvailabilityRule, CalendarDate, UnitId } from '@contracts'
+import { RuleEnforcement, type AppError, type AvailabilityRule, type CalendarDate, type UnitId } from '@contracts'
 import { t } from '@i18n'
 import {
   liveRules,
@@ -20,7 +20,7 @@ import {
   type WindowConflict,
 } from '@logic'
 import { Archive, Plus, X } from 'lucide-react'
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useMemo, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
@@ -109,7 +109,7 @@ function ConflictsSection({ conflicts }: { readonly conflicts: readonly WindowCo
 function RuleRow({ rule, canUpdate, actions }: { readonly rule: AvailabilityRule; readonly canUpdate: boolean; readonly actions: readonly RowAction[] }) {
   const panel = usePanel()
   const names = useRuleNames()
-  const hard = rule.enforcement === 'hard'
+  const hard = rule.enforcement === RuleEnforcement.enum.hard
   const content = (
     <span className="flex min-w-none flex-col gap-2xs">
       <span className="flex items-center gap-sm">
@@ -169,8 +169,8 @@ export function RulesModule() {
   const rulesDay = useRulesDay()
   const conflicts = useRuleConflicts(window)
   const commands = useRuleCommands()
-  const liveUnits = units.status === 'ready' ? units.value.filter((row) => row.archived_at === null) : NO_ROWS
-  const live = rules.status === 'ready' ? liveRules(rules.value) : NO_ROWS
+  const liveUnits = useMemo(() => (units.status === 'ready' ? units.value.filter((row) => row.archived_at === null) : NO_ROWS), [units])
+  const live = useMemo(() => (rules.status === 'ready' ? liveRules(rules.value) : NO_ROWS), [rules])
   const permissions = useRulePermissions(liveUnits, live)
   const [failure, setFailure] = useState<AppError | null>(null)
   const [archiving, setArchiving] = useState<AvailabilityRule | null>(null)

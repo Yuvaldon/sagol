@@ -1,4 +1,4 @@
-import type { RuleViolation } from '@contracts'
+import { RuleBound, RuleEnforcement, type RuleViolation } from '@contracts'
 import { t } from '@i18n'
 import { fullName } from '@logic'
 import { formatDate } from '../../patterns/dates'
@@ -14,7 +14,7 @@ const NAME_SEPARATOR = ', '
 const LABEL_SEPARATOR = ': '
 
 function EnforcementChip({ enforcement }: { readonly enforcement: RuleViolation['enforcement'] }) {
-  const hard = enforcement === 'hard'
+  const hard = enforcement === RuleEnforcement.enum.hard
   return (
     <span
       className={`shrink-0 rounded-pill px-sm text-micro font-semibold ${hard ? 'bg-status-rejected text-on-action' : 'border border-dashed border-status-pending text-status-pending-text'}`}
@@ -44,7 +44,7 @@ export function RuleViolations({ violations }: { readonly violations: readonly R
                   <span className="tabular-nums">
                     {[
                       formatDate(day.date, 'dayMonth'),
-                      boundText(violation.bound === 'min' ? 'rules.min' : 'rules.max', day.required, false),
+                      boundText(violation.bound === RuleBound.enum.min ? 'rules.min' : 'rules.max', day.required, false),
                       [t('rules.available'), String(day.actual)].join(WORD_SEPARATOR),
                     ].join(PART_SEPARATOR)}
                   </span>

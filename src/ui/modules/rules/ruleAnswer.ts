@@ -26,7 +26,10 @@ export function useRuleGate(): RuleGate {
   const [asked, setAsked] = useState<RuleGate['asked']>(null)
   async function run<T>(send: (acknowledged: readonly AvailabilityRuleId[]) => Promise<Result<T>>, onAnswer: (result: Result<T>) => void) {
     const attempt: Retry = async (acknowledged) => {
-      const result = await send(acknowledged)
+      // Commands answer with a result; anything thrown still reaches the form, so a closed dialog never hides it.
+      const result = await Promise.resolve()
+        .then(() => send(acknowledged))
+        .catch((): Result<T> => ({ ok: false, error: { code: 'internal' } }))
       if (!result.ok && isRuleError(result.error)) setAsked({ error: result.error, retry: attempt })
       else onAnswer(result)
     }

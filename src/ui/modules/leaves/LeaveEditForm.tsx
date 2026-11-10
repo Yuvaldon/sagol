@@ -2,7 +2,7 @@ import type { Leave, LeaveType, LeaveTypeGroup, LeaveTypeId } from '@contracts'
 import { t } from '@i18n'
 import { editedLeaveCandidate, leaveEditIssues, leaveEditValues, useEditLeave, useLeaveActions } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
 import { DateField } from '../../primitives/DateField'
@@ -70,6 +70,12 @@ export function LeaveEditForm({
   })
   const values = useStore(form.store, (current) => current.values)
   const reasonRequired = typeOf(values.leave_type_id)?.requires_reason === true
+  const returnsToPending = actions.returnsToPending(values)
+  // While the edit is sent, the board already moves; judging the form too would count the leave twice.
+  const candidate = useMemo(
+    () => (edit.isPending ? null : editedLeaveCandidate(opened, values, returnsToPending)),
+    [edit.isPending, opened, values, returnsToPending],
+  )
 
   return (
     <EntityForm
@@ -132,12 +138,12 @@ export function LeaveEditForm({
           />
         )}
       </form.Field>
-      {actions.returnsToPending(values) ? (
+      {returnsToPending ? (
         <p role="status" className="rounded-control border border-dashed border-status-pending p-md text-name text-status-pending-text">
           {t('leaves.returnsToPending')}
         </p>
       ) : null}
-      <RuleWarnings candidate={editedLeaveCandidate(opened, values)} stored={opened} />
+      <RuleWarnings candidate={candidate} stored={opened} />
       <RuleGateDialog gate={gate} isPending={edit.isPending} />
     </EntityForm>
   )

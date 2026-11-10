@@ -1,16 +1,20 @@
 import { PANEL_IDS } from '@config'
-import type {
-  AvailabilityRule,
-  CommandRank,
-  CommandRankId,
-  Tag,
-  TagCategory,
-  TagCategoryId,
-  TagId,
-  Unit,
-  UnitId,
-  UnitLevel,
-  UnitLevelId,
+import {
+  RuleEnforcement,
+  RuleGroupBy,
+  RuleMetric,
+  RuleScopeMode,
+  type AvailabilityRule,
+  type CommandRank,
+  type CommandRankId,
+  type Tag,
+  type TagCategory,
+  type TagCategoryId,
+  type TagId,
+  type Unit,
+  type UnitId,
+  type UnitLevel,
+  type UnitLevelId,
 } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -58,29 +62,29 @@ const RULE_FIELDS: readonly string[] = [
 ]
 
 const ENFORCEMENTS: SelectOption<RuleFormValues['enforcement']>[] = [
-  { key: 'soft', label: { key: 'rules.enforcementSoft' }, value: 'soft' },
-  { key: 'hard', label: { key: 'rules.enforcementHard' }, value: 'hard' },
+  { key: RuleEnforcement.enum.soft, label: { key: 'rules.enforcementSoft' }, value: RuleEnforcement.enum.soft },
+  { key: RuleEnforcement.enum.hard, label: { key: 'rules.enforcementHard' }, value: RuleEnforcement.enum.hard },
 ]
 
 const MODES: SelectOption<RuleFormValues['scope_mode']>[] = [
-  { key: 'unit_tree', label: { key: 'rules.modeTree' }, value: 'unit_tree' },
-  { key: 'each_child', label: { key: 'rules.modeChild' }, value: 'each_child' },
-  { key: 'each_descendant_at_level', label: { key: 'rules.modeLevel' }, value: 'each_descendant_at_level' },
+  { key: RuleScopeMode.enum.unit_tree, label: { key: 'rules.modeTree' }, value: RuleScopeMode.enum.unit_tree },
+  { key: RuleScopeMode.enum.each_child, label: { key: 'rules.modeChild' }, value: RuleScopeMode.enum.each_child },
+  { key: RuleScopeMode.enum.each_descendant_at_level, label: { key: 'rules.modeLevel' }, value: RuleScopeMode.enum.each_descendant_at_level },
 ]
 
 const GROUPINGS: SelectOption<RuleFormValues['group_by']>[] = [
-  { key: 'none', label: { key: 'rules.groupNone' }, value: 'none' },
-  { key: 'tag', label: { key: 'rules.groupTag' }, value: 'tag' },
-  { key: 'command_rank', label: { key: 'rules.groupRank' }, value: 'command_rank' },
+  { key: RuleGroupBy.enum.none, label: { key: 'rules.groupNone' }, value: RuleGroupBy.enum.none },
+  { key: RuleGroupBy.enum.tag, label: { key: 'rules.groupTag' }, value: RuleGroupBy.enum.tag },
+  { key: RuleGroupBy.enum.command_rank, label: { key: 'rules.groupRank' }, value: RuleGroupBy.enum.command_rank },
 ]
 
 const METRICS: SelectOption<RuleFormValues['metric']>[] = [
-  { key: 'count', label: { key: 'rules.metricCount' }, value: 'count' },
-  { key: 'percent', label: { key: 'rules.metricPercent' }, value: 'percent' },
+  { key: RuleMetric.enum.count, label: { key: 'rules.metricCount' }, value: RuleMetric.enum.count },
+  { key: RuleMetric.enum.percent, label: { key: 'rules.metricPercent' }, value: RuleMetric.enum.percent },
 ]
 
 const ORGANIZATION_OPTION: SelectOption<UnitId | null> = { key: 'organization', label: { key: 'rules.wholeOrganization' }, value: null }
-const CHOOSE_LEVEL: SelectOption<UnitLevelId | null> = { key: 'none', label: { key: 'rules.chooseLevel' }, value: null }
+const CHOOSE_LEVEL: SelectOption<UnitLevelId | null> = { key: RuleGroupBy.enum.none, label: { key: 'rules.chooseLevel' }, value: null }
 const ANY_CATEGORY: SelectOption<TagCategoryId | null> = { key: 'any', label: { key: 'rules.anyCategory' }, value: null }
 
 /** The population's lists: one per tag category, and the ranks. A filter the form does not read can only be cleared. */
@@ -322,7 +326,7 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, placeab
           />
         )}
       </form.Field>
-      {mode === 'each_descendant_at_level' ? (
+      {mode === RuleScopeMode.enum.each_descendant_at_level ? (
         <form.Field name="scope_level_id">
           {(field) => (
             <SelectField
@@ -348,7 +352,7 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, placeab
           />
         )}
       </form.Field>
-      {groupBy === 'tag' ? (
+      {groupBy === RuleGroupBy.enum.tag ? (
         <form.Field name="group_tag_category_id">
           {(field) => (
             <SelectField

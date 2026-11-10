@@ -1,4 +1,4 @@
-import type { Leave, RuleViolation } from '@contracts'
+import { RuleEnforcement, type Leave, type RuleViolation } from '@contracts'
 import { t } from '@i18n'
 import { acknowledgedRuleIds, useLeaveRuleWarnings, type LeaveCandidate } from '@logic'
 import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
@@ -66,7 +66,7 @@ export function RuleGateDialog({ gate, isPending }: { readonly gate: RuleGate; r
 export function RuleWarnings({ candidate, stored = null }: { readonly candidate: LeaveCandidate | null; readonly stored?: Leave | null }) {
   const violations: readonly RuleViolation[] = useLeaveRuleWarnings(candidate, stored)
   if (violations.length === 0) return null
-  const hard = violations.some((violation) => violation.enforcement === 'hard')
+  const hard = violations.some((violation) => violation.enforcement === RuleEnforcement.enum.hard)
   return (
     <section
       role="status"

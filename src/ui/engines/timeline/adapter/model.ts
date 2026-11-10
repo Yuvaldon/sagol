@@ -1,5 +1,5 @@
 import type { BarColorMode } from '@config'
-import type { CalendarDate, SoldierId } from '@contracts'
+import { RuleEnforcement, type CalendarDate, type SoldierId } from '@contracts'
 import { t } from '@i18n'
 import { fullName, type HeatDay, type TimelineGroupLabel, type TimelineItem, type TimelineLeave } from '@logic'
 import { formatDate, formatDateRange } from '../../../patterns/dates'
@@ -179,7 +179,7 @@ export function heatCells(
 ): TimelineHeatCell[] {
   return heat.map((day) => {
     const tone = day.worst ?? 'none'
-    const worstKey = day.worst === 'hard' ? 'rules.heatHard' : 'rules.heatSoft'
+    const worstKey = day.worst === RuleEnforcement.enum.hard ? 'rules.heatHard' : 'rules.heatSoft'
     return {
       key: day.date,
       tone,
