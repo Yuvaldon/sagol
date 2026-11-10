@@ -235,13 +235,6 @@ export function isMaterialLeaveUpdate(current: MaterialColumns, changes: Partial
   )
 }
 
-type LeaveDates = Pick<Leave, 'start_date' | 'end_date'>
-
-/** A reschedule is material when either date moves. */
-export function isMaterialReschedule(current: LeaveDates, next: LeaveDates): boolean {
-  return current.start_date !== next.start_date || current.end_date !== next.end_date
-}
-
 /** A leave type with `requires_reason` needs a non-blank reason (`reason_required`). */
 export function leaveReasonIssues(
   leaveType: Pick<LeaveType, 'requires_reason'>,

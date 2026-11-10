@@ -16,7 +16,6 @@ import {
   commentChangeIssues,
   isCommentAuthor,
   isMaterialLeaveUpdate,
-  isMaterialReschedule,
   leaveEditKind,
   leaveReasonIssues,
   planLeaveCreation,
@@ -218,13 +217,6 @@ describe('material changes (D-064)', () => {
     ).toBe(true)
     expect(isMaterialLeaveUpdate(current, { leave_type_id: TYPE_A, availability_effect_override: null })).toBe(false)
     expect(isMaterialLeaveUpdate(current, {})).toBe(false)
-  })
-
-  it('a reschedule is material when a date moves', () => {
-    const dates = { start_date: '2026-11-10', end_date: '2026-11-12' }
-    expect(isMaterialReschedule(dates, { ...dates })).toBe(false)
-    expect(isMaterialReschedule(dates, { ...dates, end_date: '2026-11-13' })).toBe(true)
-    expect(isMaterialReschedule(dates, { ...dates, start_date: '2026-11-09' })).toBe(true)
   })
 })
 

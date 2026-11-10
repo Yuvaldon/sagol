@@ -4,7 +4,6 @@ export {
   LEAVE_PERMISSIONS,
   LEAVE_TRANSITIONS,
   isMaterialLeaveUpdate,
-  isMaterialReschedule,
   archivedSoldierIssues,
   leaveEditKind,
   leaveReasonIssues,
