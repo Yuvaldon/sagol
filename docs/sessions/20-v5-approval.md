@@ -79,7 +79,10 @@ leave:
 
 - `npm run check`: green (722 tests). `npm run build`: green, with the size warning of OI-045.
 - Playwright: 53 passed and 3 skipped (mobile-only checks on desktop), two workers.
-- CI: on the pull request of this branch.
+- CI: on the pull request of this branch. Its first run failed: V4's leaves demo crossed Playwright's default 30 s on
+  the runner, and other demos passed only on retry. The two longest demos take 22 s here with two workers, spread over
+  7-8 steps of 1.5-5 s each, with no race and no slow step (measured step by step, and three repeats in a row). The
+  test budget is now 60 s in `playwright.config.ts` (`DEMO_TIMEOUT_MS`), for a demo's length.
 - New tests:
   - Contract: every transition and its permission, `stale_version` before the state, edits and their effect on approval
     under both policies, type and reason checks, the gate on approve and on a move, comments by visibility and author,
