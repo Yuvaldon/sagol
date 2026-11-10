@@ -155,11 +155,19 @@ export const DuplicateLeaveInput = z.strictObject({
 })
 export type DuplicateLeaveInput = z.infer<typeof DuplicateLeaveInput>
 
-/** `updateLeave`: details other than dates and status (event `updated`). */
+/**
+ * `updateLeave`: the dates and the details, never the status, in one command and one event (D-123). An approved leave
+ * whose dates, type or effect change stays approved or returns to pending by `reschedule_policy` (D-064). Inverted
+ * dates are refused here when both are sent, and on the merged row otherwise.
+ */
 export const UpdateLeaveInput = z.strictObject({
   id: LeaveId,
   expected_version: ExpectedVersion,
-  changes: changesOf(leaveDetails),
+  changes: changesOf({ ...leaveDates, ...leaveDetails }).superRefine((changes, ctx) => {
+    if (changes.start_date !== undefined && changes.end_date !== undefined) {
+      checkDateRange(ctx, changes.start_date, changes.end_date, "end_date")
+    }
+  }),
   acknowledged_rule_ids: AcknowledgedRuleIds,
 })
 export type UpdateLeaveInput = z.infer<typeof UpdateLeaveInput>

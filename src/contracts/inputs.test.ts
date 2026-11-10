@@ -306,6 +306,9 @@ describe('row checks on inputs', () => {
     expect(messages(RescheduleLeaveInput.safeParse(reschedule))).toEqual([
       SchemaIssue.enum.range_inverted,
     ])
+    const update = { id: ID.a, expected_version: 2, acknowledged_rule_ids: [], changes: inverted }
+    expect(messages(UpdateLeaveInput.safeParse(update))).toEqual([SchemaIssue.enum.range_inverted])
+    expect(UpdateLeaveInput.safeParse({ ...update, changes: { end_date: inverted.end_date } }).success).toBe(true)
   })
 
   it('checks grant scope arguments; a NULL start means now', () => {
