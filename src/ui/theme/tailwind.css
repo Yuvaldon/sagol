@@ -82,9 +82,14 @@
   --spacing-hairline: 1px;
   --spacing-grip: 36px;
   --spacing-sheet-height: 88dvh;
-  /* Where content starts under the floating top bar: its offset, its height and a gap (D-108). */
-  --spacing-under-bars: 66px;
-  --spacing-under-bars-md: 52px;
+  /* Where the filter row floats: under the top bar and a gap (D-131). */
+  --spacing-filter-row: 76px;
+  --spacing-filter-row-md: 62px;
+  /* Where content starts under the floating top bar and the filter row: their offset, heights and a gap (D-108, D-131). */
+  --spacing-under-bars: 118px;
+  --spacing-under-bars-md: 90px;
+  /* The remove button of a filter chip, from Stone 3. */
+  --spacing-chip-close: 22px;
   /* Room for the bottom bar on mobile, so the last row can scroll above it. */
   --spacing-above-bottom-bar: 80px;
 

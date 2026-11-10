@@ -47,6 +47,15 @@ describe('the timeline adapter', () => {
     expect(rows[2]).toMatchObject({ label: he.soldiers.unknownUnit })
   })
 
+  it('mutes and reads aloud the days "only who is missing" finds present (D-133)', () => {
+    const items: TimelineItem[] = [
+      { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [false, true, true], present: [false, true, false] },
+    ]
+    const [row] = timelineRows(items, DAYS, null, NO_LEAVES)
+    expect(row).toMatchObject({ offDays: [true, true, false] })
+    expect(row?.kind === 'resource' ? row.offText : null).toBe(`${he.timeline.outOfScope}: 8 בנוב׳, ${he.timeline.present}: 9 בנוב׳`)
+  })
+
   it('opens a soldier only when the actor may (D-076)', () => {
     const open = vi.fn()
     const [row] = timelineRows([{ kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [true, true, true] }], DAYS, open, NO_LEAVES)

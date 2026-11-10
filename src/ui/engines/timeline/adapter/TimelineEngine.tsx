@@ -2,32 +2,50 @@ import { PANEL_IDS } from '@config'
 import type { CalendarDate, FilterExpression } from '@contracts'
 import { t } from '@i18n'
 import {
+  hasLeaveConditions,
   useBarColors,
   useDateWindow,
+  useLeaveConditions,
   useModuleAccess,
+  useOnlyMissing,
   usePanel,
   useTimeline,
   useViewFilter,
+  type BoardConditions,
   type DateWindow,
+  type ReadFilter,
   type TimelineModel,
 } from '@logic'
 import { Users } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../../patterns/Notices'
 import { Button } from '../../../primitives/Button'
 import { TimelineGrid } from '../view/TimelineGrid'
 import { dayCells, timelineRows } from './model'
 
 // The timeline as the viewport shows it. The adapter is the only part that meets the domain (model.ts).
-// Window and filter come from the URL through
-// `logic`, the same state every engine reads (D-103, D-104).
+// Window, filter and the board's own conditions come from the URL through
+// `logic`, the same state every engine reads (D-103, D-104, D-131 to D-133).
 
 /** A state of the board, in the middle of the viewport, clear of the bars. */
 function Centered({ children }: { readonly children: ReactNode }) {
   return <div className="flex h-full items-center justify-center px-lg">{children}</div>
 }
 
-function Board({ model }: { readonly model: TimelineModel }) {
+/** Why the board is empty when soldiers exist: what the bar asks for, or the unit and the week (D-131 to D-133). */
+function emptyKeys(board: BoardConditions, read: ReadFilter) {
+  if (board.onlyMissing) return { titleKey: 'timeline.emptyMissingTitle', bodyKey: 'timeline.emptyMissingBody' } as const
+  const chips =
+    read.kind === 'other' ||
+    read.conditions.tagSets.length > 0 ||
+    read.conditions.rankIds.length > 0 ||
+    read.conditions.statuses.length > 0 ||
+    hasLeaveConditions(board.leaves)
+  if (chips) return { titleKey: 'timeline.emptyFilterTitle', bodyKey: 'timeline.emptyFilterBody' } as const
+  return { titleKey: 'timeline.emptyScopeTitle', bodyKey: 'timeline.emptyScopeBody' } as const
+}
+
+function Board({ model, empty }: { readonly model: TimelineModel; readonly empty: ReturnType<typeof emptyKeys> }) {
   const access = useModuleAccess()
   const panel = usePanel()
   const { mode } = useBarColors()
@@ -58,7 +76,7 @@ function Board({ model }: { readonly model: TimelineModel }) {
   if (model.soldierCount === 0) {
     return (
       <Centered>
-        <EmptyNotice titleKey="timeline.emptyScopeTitle" bodyKey="timeline.emptyScopeBody" headingLevel={2} />
+        <EmptyNotice titleKey={empty.titleKey} bodyKey={empty.bodyKey} headingLevel={2} />
       </Centered>
     )
   }
@@ -77,12 +95,16 @@ function TimelineData({
   window,
   today,
   filter,
+  read,
+  board,
 }: {
   readonly window: DateWindow
   readonly today: CalendarDate
   readonly filter: FilterExpression | null
+  readonly read: ReadFilter
+  readonly board: BoardConditions
 }) {
-  const model = useTimeline(window, today, filter)
+  const model = useTimeline(window, today, filter, board)
   if (model.status === 'loading') {
     return (
       <Centered>
@@ -97,13 +119,16 @@ function TimelineData({
       </Centered>
     )
   }
-  return <Board model={model.value} />
+  return <Board model={model.value} empty={emptyKeys(board, read)} />
 }
 
 /** The timeline engine. The viewport shows it only once today is known. */
 export function TimelineEngine() {
   const { window, today } = useDateWindow()
-  const { filter } = useViewFilter()
+  const { filter, read } = useViewFilter()
+  const { conditions } = useLeaveConditions()
+  const missing = useOnlyMissing()
+  const board = useMemo((): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on }), [conditions, missing.on])
   if (window === null || today === null) return null
-  return <TimelineData window={window} today={today} filter={filter} />
+  return <TimelineData window={window} today={today} filter={filter} read={read} board={board} />
 }

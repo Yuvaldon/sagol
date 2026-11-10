@@ -8,6 +8,9 @@ import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsMod
 import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
 import { ClosedLeavesModule, PendingRequestsModule } from '../modules/leaves/LeaveInboxModule'
 import { LeavesModule } from '../modules/leaves/NewLeaveModule'
+import { PresenceModule } from '../modules/presence/PresenceModule'
+import { TagCategoriesModule } from '../modules/tags/TagCategoriesModule'
+import { TagsModule } from '../modules/tags/TagsModule'
 import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
 import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
@@ -56,6 +59,17 @@ const GROUPS: readonly ModuleGroup[] = [
         Module: CommandRanksModule,
       },
     ],
+  },
+  {
+    titleKey: 'tags.title',
+    sections: [
+      { panel: PANEL_IDS.tags, labelKey: 'tags.tabTags', isAllowed: (access) => access.tags, Module: TagsModule },
+      { panel: PANEL_IDS.tagCategories, labelKey: 'tags.tabCategories', isAllowed: (access) => access.tags, Module: TagCategoriesModule },
+    ],
+  },
+  {
+    titleKey: 'presence.title',
+    sections: [{ panel: PANEL_IDS.presence, labelKey: 'presence.title', isAllowed: (access) => access.soldiers, Module: PresenceModule }],
   },
   {
     titleKey: 'leaveTypes.title',
