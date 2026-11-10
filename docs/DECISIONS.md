@@ -1561,7 +1561,8 @@ order of D-114.
 - **One edit form** holds the type, the dates and the reason. Changed dates send `reschedule` and changed details send
   `update`, the dates first, so each has its own event. When the edit would return an approved leave to pending
   (D-064), the form says so before it is sent. The effect override has no field (D-076).
-- **One thread** holds the events and the comments, oldest first, with the comment box under it. An internal comment
+- **One thread** holds the events and the comments, oldest first, with the comment box under it. A line shows its day
+  and time in the organization's time zone, from a seventh date preset in `config`, `dayMonthTime` (D-074). An internal comment
   carries a label, and its choice shows only to who may write one. The author's own comments have "edit" and "delete".
 - **Optimistic updates:** a transition shows at once and is taken back on a refusal. `stale_version` tells the actor
   the leave changed meanwhile, and the drawer shows the stored leave again.
