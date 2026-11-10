@@ -1,8 +1,8 @@
 import { PANEL_IDS } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t, type I18nKey } from '@i18n'
-import { useCurrentOrganization, useDateWindow, useModuleAccess, usePanel } from '@logic'
-import { Network, Tag, Tags, Users, type LucideIcon } from 'lucide-react'
+import { useCurrentOrganization, useDateWindow, useModuleAccess, usePanel, useRulesDay } from '@logic'
+import { Network, Scale, Tag, Tags, Users, type LucideIcon } from 'lucide-react'
 import { useIsDesktop } from '../patterns/media'
 import { Button, IconButton } from '../primitives/Button'
 import { InboxButton } from './InboxButton'
@@ -49,6 +49,7 @@ function ModuleButton({ Icon, labelKey, onPress }: { readonly Icon: LucideIcon; 
 function ModuleButtons() {
   const access = useModuleAccess()
   const panel = usePanel()
+  const rules = useRulesDay()
   return (
     <>
       <InboxButton />
@@ -79,6 +80,7 @@ function ModuleButtons() {
           }}
         />
       ) : null}
+      {access.rules ? <ModuleButton Icon={Scale} labelKey='rules.open' onPress={rules.open} /> : null}
       {access.leaveTypes ? (
         <ModuleButton
           Icon={Tags}

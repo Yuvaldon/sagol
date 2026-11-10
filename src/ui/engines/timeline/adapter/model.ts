@@ -1,14 +1,14 @@
 import type { BarColorMode } from '@config'
 import type { CalendarDate, SoldierId } from '@contracts'
 import { t } from '@i18n'
-import { fullName, type TimelineGroupLabel, type TimelineItem, type TimelineLeave } from '@logic'
+import { fullName, type HeatDay, type TimelineGroupLabel, type TimelineItem, type TimelineLeave } from '@logic'
 import { formatDate, formatDateRange } from '../../../patterns/dates'
 import { UNIT_STATE_KEYS } from '../../../patterns/units'
 import { ICON_GLYPHS, iconOf } from '../../../theme/icons'
 import { MARKER_TONE, UNIFORM_TONE, toneOf } from '../../../theme/palette'
 import { assignLanes } from '../core/lanes'
 import { spansOf } from '../core/layout'
-import type { TimelineDayCell, TimelineMark, TimelineRowModel } from '../view/model'
+import type { TimelineDayCell, TimelineHeatCell, TimelineMark, TimelineRowModel } from '../view/model'
 
 // The translation from the domain to the neutral model of the view: soldiers become rows, units become
 // group headers, days become header cells, and leaves become bars and badges (ARCHITECTURE "View engines").
@@ -167,6 +167,30 @@ export function timelineRows(
               open(item.soldier.id)
             },
       ...marksOf(options.leaves.get(item.soldier.id) ?? [], days, options),
+    }
+  })
+}
+
+
+/** The heat row's cells (D-141). A day with nothing broken is empty; any other opens the rules of its day. */
+export function heatCells(
+  heat: readonly HeatDay[],
+  openDay: (day: CalendarDate) => void,
+): TimelineHeatCell[] {
+  return heat.map((day) => {
+    const tone = day.worst ?? 'none'
+    const worstKey = day.worst === 'hard' ? 'rules.heatHard' : 'rules.heatSoft'
+    return {
+      key: day.date,
+      tone,
+      count: day.broken === 0 ? null : String(day.broken),
+      label: [formatDate(day.date, 'dayMonth'), `${String(day.broken)} ${t('rules.heatBroken')}`, t(worstKey)].join(TEXT_SEPARATOR),
+      onOpen:
+        day.broken === 0
+          ? null
+          : () => {
+              openDay(day.date)
+            },
     }
   })
 }

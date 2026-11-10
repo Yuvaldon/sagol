@@ -15,6 +15,8 @@ import { Button as AriaButton } from 'react-aria-components'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { VirtualList } from '../../patterns/VirtualList'
 import { Button } from '../../primitives/Button'
+import { RuleGateDialog } from '../rules/RuleGate'
+import { useRuleGate } from '../rules/ruleAnswer'
 import { LeaveStepDialog } from './LeaveStepDialog'
 import { StatusChip, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, personNames, typeNameOf } from './leaveText'
@@ -85,6 +87,7 @@ function RequestList({
   const soldiers = useSoldiersWithArchived()
   const types = useLeaveTypes()
   const transition = useLeaveTransition()
+  const gate = useRuleGate()
   const [rejecting, setRejecting] = useState<Leave | null>(null)
   const [failure, setFailure] = useState<AppError | null>(null)
 
@@ -99,8 +102,12 @@ function RequestList({
 
   async function approve(leave: Leave) {
     setFailure(null)
-    const result = await transition.run(leave, 'approve')
-    if (!result.ok) setFailure(result.error)
+    await gate.run(
+      (acknowledged) => transition.run(leave, 'approve', '', acknowledged),
+      (result) => {
+        if (!result.ok) setFailure(result.error)
+      },
+    )
   }
 
   return (
@@ -133,6 +140,7 @@ function RequestList({
           />
         )}
       />
+      <RuleGateDialog gate={gate} isPending={transition.isPending} />
       {rejecting === null ? null : (
         <LeaveStepDialog
           leave={rejecting}

@@ -2,13 +2,16 @@ import { PANEL_IDS } from '@config'
 import type { CalendarDate, FilterExpression } from '@contracts'
 import { t } from '@i18n'
 import {
+  filterUnitOf,
   hasLeaveConditions,
   useBarColors,
   useDateWindow,
+  useHeatRow,
   useLeaveConditions,
   useModuleAccess,
   useOnlyMissing,
   usePanel,
+  useRulesDay,
   useTimeline,
   useViewFilter,
   type BoardConditions,
@@ -21,7 +24,7 @@ import { useMemo, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../../patterns/Notices'
 import { Button } from '../../../primitives/Button'
 import { TimelineGrid } from '../view/TimelineGrid'
-import { dayCells, timelineRows } from './model'
+import { dayCells, heatCells, timelineRows } from './model'
 
 // The timeline as the viewport shows it. The adapter is the only part that meets the domain (model.ts).
 // Window, filter and the board's own conditions come from the URL through
@@ -45,10 +48,23 @@ function emptyKeys(board: BoardConditions, read: ReadFilter) {
   return { titleKey: 'timeline.emptyScopeTitle', bodyKey: 'timeline.emptyScopeBody' } as const
 }
 
-function Board({ model, empty }: { readonly model: TimelineModel; readonly empty: ReturnType<typeof emptyKeys> }) {
+function Board({
+  model,
+  empty,
+  window,
+  filter,
+}: {
+  readonly model: TimelineModel
+  readonly empty: ReturnType<typeof emptyKeys>
+  readonly window: DateWindow
+  readonly filter: FilterExpression | null
+}) {
   const access = useModuleAccess()
   const panel = usePanel()
   const { mode } = useBarColors()
+  const rulesDay = useRulesDay()
+  const unit = filterUnitOf(filter)
+  const heat = useHeatRow(window, unit.kind === 'unit' ? unit.unitId : null)
   const open = access.soldiers
     ? (soldierId: string) => {
         panel.open(PANEL_IDS.soldiers, { entity: soldierId })
@@ -87,6 +103,7 @@ function Board({ model, empty }: { readonly model: TimelineModel; readonly empty
     <TimelineGrid
       days={dayCells(model.days, model.today)}
       rows={timelineRows(model.items, model.days, open, { leaves: model.leaves, colors: mode, openLeave })}
+      heat={heat.status === 'ready' && heat.value !== null ? heatCells(heat.value, rulesDay.openOn) : null}
     />
   )
 }
@@ -119,7 +136,7 @@ function TimelineData({
       </Centered>
     )
   }
-  return <Board model={model.value} empty={emptyKeys(board, read)} />
+  return <Board model={model.value} empty={emptyKeys(board, read)} window={window} filter={filter} />
 }
 
 /** The timeline engine. The viewport shows it only once today is known. */

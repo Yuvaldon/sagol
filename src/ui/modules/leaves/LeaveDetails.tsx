@@ -15,6 +15,8 @@ import { useState, type ReactNode } from 'react'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatInstant } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
+import { RuleGateDialog } from '../rules/RuleGate'
+import { useRuleGate } from '../rules/ruleAnswer'
 import { LeaveEditForm } from './LeaveEditForm'
 import { LeaveStepDialog, type ClosingStep } from './LeaveStepDialog'
 import { LeaveThread } from './LeaveThread'
@@ -48,6 +50,7 @@ function LeaveView({
 }) {
   const actions = useLeaveActions(leave)
   const transition = useLeaveTransition()
+  const gate = useRuleGate()
   const organization = useCurrentOrganization()
   const [editing, setEditing] = useState<number | null>(null)
   const [asking, setAsking] = useState<ClosingStep | null>(null)
@@ -58,8 +61,12 @@ function LeaveView({
 
   async function step(next: LeaveTransition) {
     setFailure(null)
-    const result = await transition.run(leave, next)
-    if (!result.ok) setFailure(result.error)
+    await gate.run(
+      (acknowledged) => transition.run(leave, next, '', acknowledged),
+      (result) => {
+        if (!result.ok) setFailure(result.error)
+      },
+    )
   }
 
   if (editing !== null) {
@@ -162,6 +169,7 @@ function LeaveView({
         </div>
       </section>
       <LeaveThread leave={leave} types={types} nameOf={nameOf} />
+      <RuleGateDialog gate={gate} isPending={transition.isPending} />
       {asking === null ? null : (
         <LeaveStepDialog
           leave={leave}
