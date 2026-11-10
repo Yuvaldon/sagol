@@ -8,8 +8,8 @@ import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patt
 import { DateField } from '../../primitives/DateField'
 import { SelectField } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
-import { RuleGateDialog, RuleWarnings } from '../rules/RuleGate'
-import { useRuleGate } from '../rules/ruleAnswer'
+import { RuleGateDialog, RuleWarnings } from '../../patterns/rules/RuleGate'
+import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { leaveTypeOptions } from './typeOptions'
 
 // The one edit form of a leave (D-119): its type, its days and its reason. It holds the leave as it was when

@@ -28,8 +28,8 @@ import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notice
 import { formatDate } from '../../patterns/dates'
 import { Button, IconButton } from '../../primitives/Button'
 import { RuleForm, type RuleFormProps } from './RuleForm'
-import { RuleViolations } from './RuleViolations'
-import { boundText, ruleSummary, useRuleNames } from './ruleText'
+import { RuleViolations } from '../../patterns/rules/RuleViolations'
+import { boundText, ruleSummary, useRuleNames } from '../../patterns/rules/ruleText'
 
 // The rules drawer (D-140, D-141): the broken rules of a day pressed on the heat row, the configuration conflicts on
 // the board's days, and the rules themselves, by priority then name.

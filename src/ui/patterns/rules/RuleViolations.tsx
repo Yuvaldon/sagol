@@ -1,7 +1,7 @@
 import { RuleBound, RuleEnforcement, type RuleViolation } from '@contracts'
 import { t } from '@i18n'
 import { fullName } from '@logic'
-import { formatDate } from '../../patterns/dates'
+import { formatDate } from '../dates'
 import { boundText, useRuleNames } from './ruleText'
 
 // The broken rules of a change or of a day (D-138): each rule with its unit, its group and its bound, and for each

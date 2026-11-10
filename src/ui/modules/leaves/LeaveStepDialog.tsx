@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { FailureNotice } from '../../patterns/Notices'
 import { TextAreaField } from '../../primitives/TextAreaField'
-import { RuleGateDialog } from '../rules/RuleGate'
-import { useRuleGate } from '../rules/ruleAnswer'
+import { RuleGateDialog } from '../../patterns/rules/RuleGate'
+import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 
 // Rejecting or cancelling a leave asks first (D-119): the leave closes and leaves the board. The note is optional
 // and becomes a shared comment, so its field shows only to who may write one.
