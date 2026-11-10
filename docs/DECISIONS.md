@@ -141,7 +141,7 @@ am = amends, ref = refines, ext = extends.
 | D-122 | The board waits for the permission hints | logic, ui | |
 | D-123 | Editing a leave is one command | contracts, domain, data, logic, ui, backend | |
 | D-124 | A leave of an archived soldier can only be cancelled | domain, data, logic, ui, backend | |
-| D-125 | The new-leave form offers active soldiers only, until V6 | logic, ui | |
+| D-125 | The new-leave form offers active soldiers only, until V6 | logic, ui | ref D-136 |
 | D-126 | A slice is done when it is merged with CI green | docs, tooling | |
 | D-127 | One commit = one layer, and every commit passes | all, tooling, docs | |
 | D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | |
@@ -152,6 +152,7 @@ am = amends, ref = refines, ext = extends.
 | D-133 | "Only who is missing" | config, logic, ui | |
 | D-134 | Present and absent lists of a day | config, logic, ui | |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
+| D-136 | The new-leave form stays with active soldiers | logic, ui | |
 
 ---
 
@@ -1783,3 +1784,10 @@ absence certain.
   in part. Sample data stays in tests and their helpers (iron rule 4).
 **Why:** OI-086. Seven logic test files built their own fake ports; one helper needs the latitude test files already
 have, and a folder rule keeps it out of production code.
+
+## D-136 — The new-leave form stays with active soldiers
+2026-11-10 · accepted · refines D-125 · resolves OI-078
+The new-leave form offers active soldiers only, also when a status chip brings inactive soldiers to the board (D-131).
+The command keeps D-114 and still takes an inactive soldier.
+**Why:** the owner's answer at the end of V6. A leave is planned for who serves; a soldier who comes back is made active
+first.

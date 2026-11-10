@@ -144,6 +144,25 @@ evaluated per soldier per day (unit and seniority on that day), negative operato
 complements, and text compares case-insensitively. Rules compare populations by a
 structural canonical key (D-067).
 
+The current state (D-128):
+
+- **One source of filter data** in `logic/filters` (`useFilterSource`, `filterContextOf`): soldiers, ranks, units,
+  memberships and soldier tags; seniority overrides join with V15 and property values with V14 (D-131, OI-080, OI-081).
+  The board and the presence lists read it, and V7's rules will.
+- **Who a view starts from:** soldiers not archived, active only unless the filter has a status condition (D-105, D-131).
+- **The filter bar** reads and writes `filter` as one top-level `and` of a unit (the selector), one `tag any` per
+  category, ranks and statuses (D-131); anything else is "a filter the bar does not read". Leave conditions (statuses,
+  types) are a separate param, `leaves`, never part of `FilterExpression` (D-132). `missing` keeps soldiers absent on a
+  day of the window, approved leaves only (D-133).
+- **Presence lists** of a day (`day`) partition who the soldier filter selects that day, approved leaves only (D-134).
+
+## Tags (D-015, D-065, D-130)
+
+Categories and tags are organization data (`tags:*` at `organization`). `soldiers.setTags` replaces a soldier's set with
+`soldiers:update` over the soldier, checks only the tags it adds, keeps one tag of a `single` category, and bumps the
+soldier's version (D-045). A category in use is not archived; switching to `single` is refused while a soldier holds two
+of its tags.
+
 ## Leave workflow (D-013, D-063, D-064, D-114 … D-125)
 
 The current state, in short (D-128). The entries hold the reasons.
@@ -159,7 +178,7 @@ The current state, in short (D-128). The entries hold the reasons.
   author edits or archives (D-118).
 - **Screens:** a bar or badge opens the leave in the `leaves` panel (D-119, D-129): details, the actions the state and the
   hints allow, one edit form, one thread of events and comments. The "+" opens the new-leave form in the same panel
-  (D-115); until V6 it offers active soldiers only (D-125, OI-078). The requests inbox lists pending leaves the actor may
+  (D-115); it offers active soldiers only (D-125, D-136). The requests inbox lists pending leaves the actor may
   approve and closed leaves to reopen (D-120). The "approve now" default is a switch in the user menu (D-121).
 - **Optimistic updates:** a step shows at once and is taken back on a refusal; `stale_version` shows the stored leave
   again (D-119).
@@ -221,6 +240,7 @@ src/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
   logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ timeline/
+               tags/ filters/ presence/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/

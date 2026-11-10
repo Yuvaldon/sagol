@@ -86,7 +86,7 @@ the row before an audit reminds the owner to open it.
 
 | # | Slice | The owner sees | Status |
 |---|-------|----------------|--------|
-| V6 | Tags and filters | Tags, filter chips, "only who is missing", present and absent lists | ◐ |
+| V6 | Tags and filters | Tags, filter chips, "only who is missing", present and absent lists | ☑ |
 | V7 | Availability rules | Rule builder, heat row, soft-rule acknowledgment, hard-rule refusal | ☐ |
 | V8 | Timeline drag | Drag to create, move and resize, with live feedback | ☐ |
 | A4 | audit | Filters and rules: UI warnings equal command results | ☐ |
