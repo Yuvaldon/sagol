@@ -150,12 +150,13 @@ export function createLeaveRepository(dependencies: LocalDependencies): DataRepo
     list: (raw) =>
       asResult(() => {
         const query = parseInput(LeaveQuery, raw)
-        const { start_date, end_date } = query.window
+        // No window means any dates (D-120).
+        const { window } = query
         return database.transaction('r', READ_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const rows = await tableOf(database, 'leaves').where('organization_id').equals(scope.organization_id).toArray()
           return rows
-            .filter((row) => row.start_date <= end_date && row.end_date >= start_date)
+            .filter((row) => window === null || (row.start_date <= window.end_date && row.end_date >= window.start_date))
             .filter((row) => query.soldier_ids === null || query.soldier_ids.includes(row.soldier_id))
             .filter((row) => query.statuses === null || query.statuses.includes(row.status))
             .filter((row) => canView(scope, row))
