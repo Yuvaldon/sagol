@@ -157,7 +157,27 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await expect(page).toHaveURL(/day=2026-11-13/)
     await drawer(page).getByRole('button', { name: he.presence.today, exact: true }).click()
     await expect(absent.getByRole('listitem')).toHaveCount(1)
+    // Left on another day, the lists open again on today from the pill (D-134).
+    await drawer(page).getByRole('button', { name: he.presence.nextDay }).click()
+    await expect(page).toHaveURL(/day=/)
     await closeDrawer(page)
+    await button.click()
+    await expect(page).not.toHaveURL(/day=/)
+    await expect(absent.getByRole('listitem')).toHaveCount(1)
+    await closeDrawer(page)
+  })
+
+  await test.step('a filter the bar does not read keeps its leave chips beside it', async () => {
+    const filter = encodeURIComponent(JSON.stringify({ where: { kind: 'or', nodes: [{ kind: 'soldier_status', statuses: ['active'] }] } }))
+    const leaves = encodeURIComponent(JSON.stringify({ statuses: ['approved'] }))
+    await page.goto(`/?filter=${filter}&leaves=${leaves}`)
+    await expect(filterBar(page).getByText(he.filters.other)).toBeVisible()
+    await expect(chip(page, he.filters.leaveStatus, he.leaves.statusApproved)).toBeVisible()
+    await expect(rowNames(page)).toHaveText([OWNER.name])
+    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.other}` }).click()
+    await expect(chip(page, he.filters.leaveStatus, he.leaves.statusApproved)).toBeVisible()
+    await expectNoAxeViolations(page)
+    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.leaveStatus}` }).click()
   })
 
   if (testInfo.project.name === 'mobile') {
