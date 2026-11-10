@@ -22,7 +22,7 @@ import {
   createLeaveTypeRepository,
 } from './leaveTypes'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
-import { createAccountCommands, createSoldierPreferencesRepository, type LocalAccountCommands } from './preferences'
+import { createAccountCommands, createSoldierPreferencesRepository, type LocalAccountCommands } from './accounts'
 import { createSessionService } from './session'
 import {
   createMembershipRepository,
