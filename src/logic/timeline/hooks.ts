@@ -2,7 +2,7 @@ import type { CalendarDate, FilterExpression, SoldierId } from '@contracts'
 import { useMemo } from 'react'
 import type { Loaded } from '../queries/loaded'
 import { useLeaves, useLeaveTypes } from '../leaves/hooks'
-import { useCommandRanks, useMemberships, usePlacementReading, useSoldiers } from '../roster/hooks'
+import { useCommandRanks, useMemberships, usePlacementHints, useSoldiers } from '../roster/hooks'
 import { useUnits } from '../units/hooks'
 import { filterUnitOf } from '../view-state/filter'
 import type { DateWindow } from '../view-state/window'
@@ -31,7 +31,7 @@ export function useTimeline(window: DateWindow, today: CalendarDate, filter: Fil
   const memberships = useMemberships()
   const leaves = useLeaves(window)
   const leaveTypes = useLeaveTypes()
-  const readsPlacements = usePlacementReading(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
+  const placements = usePlacementHints(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
 
   return useMemo((): Loaded<TimelineModel> => {
     if (soldiers.status !== 'ready') return soldiers
@@ -40,6 +40,8 @@ export function useTimeline(window: DateWindow, today: CalendarDate, filter: Fil
     if (memberships.status !== 'ready') return memberships
     if (leaves.status !== 'ready') return leaves
     if (leaveTypes.status !== 'ready') return leaveTypes
+    // What a row says about its unit waits for the hints (D-122).
+    if (!placements.settled) return { status: 'loading' }
     const unit = filterUnitOf(filter)
     const items = timelineItems({
       soldiers: soldiers.value,
@@ -50,13 +52,13 @@ export function useTimeline(window: DateWindow, today: CalendarDate, filter: Fil
       today,
       filter,
       scopeUnitId: unit.kind === 'unit' ? unit.unitId : null,
-      readsPlacements,
+      readsPlacements: placements.reads,
     })
     const soldierCount = items.filter((item) => item.kind === 'soldier').length
     const rosterCount = soldiers.value.length
     const drawn = timelineLeaves(leaves.value, leaveTypes.value)
     return { status: 'ready', value: { days: window.days, today, items, leaves: drawn, soldierCount, rosterCount } }
-  }, [soldiers, ranks, units, memberships, leaves, leaveTypes, window, today, filter, readsPlacements])
+  }, [soldiers, ranks, units, memberships, leaves, leaveTypes, window, today, filter, placements])
 }
 
 const NO_SOLDIERS: readonly never[] = []

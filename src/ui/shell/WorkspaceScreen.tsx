@@ -5,6 +5,7 @@ import { useCurrentOrganization, useModuleAccess, usePanel } from '@logic'
 import { Network, Tags, Users, type LucideIcon } from 'lucide-react'
 import { useIsDesktop } from '../patterns/media'
 import { Button, IconButton } from '../primitives/Button'
+import { InboxButton } from './InboxButton'
 import { ModuleDrawer } from './ModuleDrawer'
 import { NewLeaveButton } from './NewLeaveButton'
 import { FailureScreen, LoadingScreen } from './states'
@@ -49,6 +50,7 @@ function ModuleButtons() {
   const panel = usePanel()
   return (
     <>
+      <InboxButton />
       {access.units ? (
         <ModuleButton
           Icon={Network}

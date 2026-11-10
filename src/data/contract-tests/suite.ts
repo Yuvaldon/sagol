@@ -21,6 +21,7 @@ import type { ContractAdapter, ContractHarness } from './harness'
 import { describeLeaveContract } from './leaves'
 import { describeRosterContract } from './roster'
 import { describeUnitContract } from './units'
+import { describeLeaveWorkflowContract } from './workflow'
 
 export type { ContractAdapter, ContractHarness } from './harness'
 
@@ -383,5 +384,6 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
     describeUnitContract(() => harness, () => claim())
     describeRosterContract(() => harness, () => claim())
     describeLeaveContract(() => harness, () => claim())
+    describeLeaveWorkflowContract(() => harness, () => claim())
   })
 }

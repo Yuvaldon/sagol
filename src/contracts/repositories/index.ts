@@ -78,9 +78,9 @@ export const DateWindow = z
   })
 export type DateWindow = z.infer<typeof DateWindow>
 
-/** Leaves overlapping the window. */
+/** Leaves overlapping the window; a NULL window means any dates (D-120). */
 export const LeaveQuery = z.strictObject({
-  window: DateWindow,
+  window: DateWindow.nullable(),
   soldier_ids: z.array(SoldierId).nullable(),
   statuses: z.array(LeaveStatus).nullable(),
 })

@@ -23,7 +23,7 @@ const dana: Soldier = {
   archived_at: null,
 }
 const DAYS = ['2026-11-08', '2026-11-09', '2026-11-10']
-const NO_LEAVES = { leaves: new Map(), colors: 'type' } as const
+const NO_LEAVES = { leaves: new Map(), colors: 'type', openLeave: () => undefined } as const
 
 describe('the timeline adapter', () => {
   it('writes each day as a narrow weekday and a number, and marks today', () => {
@@ -85,8 +85,12 @@ describe('leaves on a row (D-111, D-112)', () => {
     ...overrides,
   })
   const item: TimelineItem = { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [true, true, true] }
+  const opened: string[] = []
+  const openLeave = (leaveId: string) => {
+    opened.push(leaveId)
+  }
   const rowWith = (leaves: TimelineLeave[], colors: 'type' | 'uniform' = 'type') => {
-    const [row] = timelineRows([item], DAYS, null, { leaves: new Map([[dana.id, leaves]]), colors })
+    const [row] = timelineRows([item], DAYS, null, { leaves: new Map([[dana.id, leaves]]), colors, openLeave })
     if (row?.kind !== 'resource') throw new Error('no row')
     return row
   }
@@ -99,14 +103,16 @@ describe('leaves on a row (D-111, D-112)', () => {
     expect(row.lanes).toBe(1)
   })
 
-  it('dashes a pending leave, gives overlaps their own lane, and reads each leave aloud', () => {
+  it('dashes a pending leave, gives overlaps their own lane, and names each mark as a control (D-119)', () => {
     const row = rowWith([leave(1, '2026-11-08', '2026-11-09'), leave(2, '2026-11-09', '2026-11-10', { status: 'pending' })])
     expect(row.marks.map((mark) => [mark.lane, mark.dashed])).toEqual([
       [0, false],
       [1, true],
     ])
     expect(row.lanes).toBe(2)
-    expect(row.marksText[1]).toBe(`רגילה, ${he.leaves.statusPending}, 9–10 בנוב׳`)
+    expect(row.marks[1]?.label).toBe(`רגילה, ${he.leaves.statusPending}, 9–10 בנוב׳`)
+    row.marks[1]?.onOpen()
+    expect(opened).toEqual([leave(2, '', '').id])
   })
 
   it('draws a marker as badges over the bars, with its icon, in their own lanes', () => {
@@ -117,7 +123,7 @@ describe('leaves on a row (D-111, D-112)', () => {
     ])
     expect(row.marks[1]?.Icon).not.toBeNull()
     expect(row.lanes).toBe(1)
-    expect(row.marksText[1]).toContain(he.leaves.marker)
+    expect(row.marks[1]?.label).toContain(he.leaves.marker)
   })
 
   it('paints every absence one color in the uniform mode, with the type as a dot and a caption', () => {

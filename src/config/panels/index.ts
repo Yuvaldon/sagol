@@ -10,8 +10,11 @@ export const PANEL_IDS = {
   commandRanks: 'command_ranks',
   leaveTypes: 'leave_types',
   leaveTypeGroups: 'leave_type_groups',
-  /** A new leave now (D-115), and a leave's details from V5. */
+  /** A new leave (D-115) and a leave's details (D-119). */
   leaves: 'leaves',
+  /** The requests inbox: pending requests, and closed ones (D-120). */
+  leaveInbox: 'leave_inbox',
+  leaveClosed: 'leave_closed',
 } as const
 
 export const PanelId = z.enum([
@@ -22,6 +25,8 @@ export const PanelId = z.enum([
   PANEL_IDS.leaveTypes,
   PANEL_IDS.leaveTypeGroups,
   PANEL_IDS.leaves,
+  PANEL_IDS.leaveInbox,
+  PANEL_IDS.leaveClosed,
 ])
 export type PanelId = z.infer<typeof PanelId>
 

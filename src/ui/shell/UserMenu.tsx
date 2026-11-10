@@ -1,7 +1,8 @@
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useKnownIdentities, useSignIn, useSignOut } from '@logic'
-import { ChevronDown, LogOut } from 'lucide-react'
+import { useKnownIdentities, useMyPreferences, useSignIn, useSignOut, useUpdateMyPreferences } from '@logic'
+import { Check, ChevronDown, LogOut } from 'lucide-react'
+import { useInboxAccess } from './inboxAccess'
 import {
   Button as AriaButton,
   Header,
@@ -15,11 +16,17 @@ import {
 const ITEM =
   'flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-md text-control outline-none data-focused:bg-inner md:min-h-control'
 
-/** Who is signed in, the dev identity switcher (D-006) and sign-out. */
+const APPROVE_NOW = 'approve-now'
+
+/** Who is signed in, the dev identity switcher (D-006), the actor's own default (D-121) and sign-out. */
 export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   const identities = useKnownIdentities()
   const { signIn } = useSignIn()
   const { signOut } = useSignOut()
+  const approves = useInboxAccess()
+  const preferences = useMyPreferences()
+  const savePreferences = useUpdateMyPreferences()
+  const approveNow = preferences.status === 'ready' && preferences.value.create_leaves_as_approved
   const others =
     identities.status === 'ready'
       ? identities.value.filter((known) => known.auth_user_id !== identity.auth_user_id)
@@ -58,6 +65,24 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
               ))}
             </MenuSection>
           )}
+          {approves && preferences.status === 'ready' ? (
+            <MenuSection
+              selectionMode="multiple"
+              selectedKeys={approveNow ? [APPROVE_NOW] : []}
+              onSelectionChange={(keys) => {
+                void savePreferences.run({ create_leaves_as_approved: keys === 'all' || keys.has(APPROVE_NOW) })
+              }}
+              className="flex flex-col gap-2xs border-b border-line pb-xs"
+            >
+              <Header className="px-md py-xs text-label font-semibold text-text-muted">{t('account.preferences')}</Header>
+              <MenuItem id={APPROVE_NOW} textValue={t('account.approveNowDefault')} className={ITEM}>
+                <span className="flex size-icon shrink-0 items-center justify-center rounded-bar border border-line">
+                  {approveNow ? <Check aria-hidden size={12} strokeWidth={3} /> : null}
+                </span>
+                {t('account.approveNowDefault')}
+              </MenuItem>
+            </MenuSection>
+          ) : null}
           <MenuItem
             id="sign-out"
             textValue={t('account.signOut')}

@@ -23,12 +23,13 @@ export interface NewLeaveValues {
   readonly start_date: CalendarDate | ''
   readonly end_date: CalendarDate | ''
   readonly reason: string
-  /** Shown only to who may approve the soldier (D-013). It starts off (D-115). */
+  /** Shown only to who may approve the soldier (D-013). */
   readonly as_approved: boolean
 }
 
-export function newLeaveValues(today: CalendarDate): NewLeaveValues {
-  return { soldier_id: null, leave_type_id: null, start_date: today, end_date: today, reason: '', as_approved: false }
+/** "Approve now" starts from the actor's own default (D-121). */
+export function newLeaveValues(today: CalendarDate, approveNow = false): NewLeaveValues {
+  return { soldier_id: null, leave_type_id: null, start_date: today, end_date: today, reason: '', as_approved: approveNow }
 }
 
 function createInput(values: NewLeaveValues) {

@@ -6,17 +6,19 @@ import { Button as AriaButton } from 'react-aria-components'
 import { CommandRanksModule } from '../modules/command-ranks/CommandRanksModule'
 import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsModule'
 import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
-import { NewLeaveModule } from '../modules/leaves/NewLeaveModule'
+import { ClosedLeavesModule, PendingRequestsModule } from '../modules/leaves/LeaveInboxModule'
+import { LeavesModule } from '../modules/leaves/NewLeaveModule'
 import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
 import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
+import { useInboxAccess } from './inboxAccess'
 
 // The map of what opens in the drawer (D-092). A drawer holds one or more sections, and each section is
 // its own panel in the URL. A section appears only for who may read it, and a deep link to one they
 // may not read opens nothing (D-046).
 
-type ModuleAccess = ReturnType<typeof useModuleAccess>
+type ModuleAccess = ReturnType<typeof useModuleAccess> & { readonly inbox: boolean }
 
 interface ModuleSection {
   readonly panel: PanelId
@@ -69,14 +71,21 @@ const GROUPS: readonly ModuleGroup[] = [
   },
   {
     titleKey: 'leaves.title',
-    // The form lists the soldiers the actor sees, so it needs soldiers:view (D-115).
-    sections: [{ panel: PANEL_IDS.leaves, labelKey: 'leaves.newTitle', isAllowed: (access) => access.soldiers, Module: NewLeaveModule }],
+    // A leave opens for whoever may read it, and the form says so when there is nobody to ask for (D-115, D-119).
+    sections: [{ panel: PANEL_IDS.leaves, labelKey: 'leaves.newTitle', isAllowed: () => true, Module: LeavesModule }],
+  },
+  {
+    titleKey: 'inbox.title',
+    sections: [
+      { panel: PANEL_IDS.leaveInbox, labelKey: 'inbox.tabPending', isAllowed: (access) => access.inbox, Module: PendingRequestsModule },
+      { panel: PANEL_IDS.leaveClosed, labelKey: 'inbox.tabClosed', isAllowed: (access) => access.inbox, Module: ClosedLeavesModule },
+    ],
   },
 ]
 
 export function ModuleDrawer() {
   const panel = usePanel()
-  const access = useModuleAccess()
+  const access = { ...useModuleAccess(), inbox: useInboxAccess() }
   const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []
   const open = sections.find((section) => section.panel === panel.panel)

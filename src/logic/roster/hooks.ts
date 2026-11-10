@@ -14,7 +14,7 @@ import type {
 import { placementTarget, soldierTarget } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { useCan } from '../permissions/hooks'
+import { useCan, useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
@@ -57,6 +57,17 @@ export function useSoldiers(): Loaded<readonly Soldier[]> {
     useQuery({
       queryKey: [...QUERY_KEYS.soldiers, LIVE],
       queryFn: () => unwrap(data.repositories.soldiers.list(LIVE)),
+    }),
+  )
+}
+
+/** Soldiers archived ones too, for names in a leave's history (D-119), as units keep theirs (D-099). */
+export function useSoldiersWithArchived(): Loaded<readonly Soldier[]> {
+  const { data } = usePorts()
+  return loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.soldiers, WITH_ARCHIVED],
+      queryFn: () => unwrap(data.repositories.soldiers.list(WITH_ARCHIVED)),
     }),
   )
 }
@@ -223,9 +234,19 @@ export function useRosterPermissions(soldiers: readonly Soldier[], units: readon
 
 /** Whether the actor may read each soldier's placements (D-102, D-106). */
 export function usePlacementReading(soldiers: readonly Soldier[]): (soldierId: SoldierId) => boolean {
+  return usePlacementHints(soldiers).reads
+}
+
+/**
+ * The same, with whether every soldier's hint has answered. What a row says about its unit waits for that, so
+ * "unknown" is never said before the adapter has spoken (D-122).
+ */
+export function usePlacementHints(soldiers: readonly Soldier[]) {
   const checks = useMemo(() => soldiers.map((soldier) => check(P.membershipView, soldierTarget(soldier.id))), [soldiers])
-  const can = useCan(checks)
-  return useCallback((soldierId: SoldierId) => can(check(P.membershipView, soldierTarget(soldierId))), [can])
+  const { can, known } = useCanAnswers(checks)
+  const reads = useCallback((soldierId: SoldierId) => can(check(P.membershipView, soldierTarget(soldierId))), [can])
+  const settled = useMemo(() => checks.every(known), [checks, known])
+  return useMemo(() => ({ reads, settled }), [reads, settled])
 }
 
 /** What one soldier's page needs (D-096). */

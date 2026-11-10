@@ -225,6 +225,9 @@ another tab gets a clear message.
 - **ui:** leave details; inbox; comments; confirm dialogs.
 - **Open items:** OI-031; parts of OI-023 (a), OI-024, OI-027.
 - **Decisions:** D-013, D-041, D-047, D-049, D-063, D-064.
+- **As built:** D-117 to D-122. One edit form sends up to two commands; one thread holds events and comments; the inbox
+  has a closed section, which is the way to reopen a leave; the "approve now" default is a switch in the user menu.
+  The rule acknowledgment dialog stays with V7 (OI-066). The owner chose M3 after M2 (OI-031).
 
 **End of M2: one commander runs a real leave board. Audit A3 follows, and the owner picks M3 or M4
 (OI-031).**
