@@ -31,12 +31,24 @@ export interface ReferenceRow {
 export type SortableRow = ReferenceRow & { readonly sort_order: number }
 
 /** Resources written through these commands. It grows with each slice. */
-export type ReferenceResource = 'unit_levels' | 'units' | 'command_ranks' | 'soldiers' | 'leave_types' | 'tags'
+export type ReferenceResource =
+  | 'unit_levels'
+  | 'units'
+  | 'command_ranks'
+  | 'soldiers'
+  | 'leave_types'
+  | 'tags'
+  | 'availability_rules'
 
 type ReferenceAction = 'view' | 'create' | 'update' | 'delete'
 
+/** Each reference resource with each of its actions: a member of `Permission`, which the next line proves (D-040). */
+type ReferencePermission = { [R in ReferenceResource]: { resource: R; action: ReferenceAction } }[ReferenceResource]
+const REFERENCE_PAIRS_ARE_PERMISSIONS: ReferencePermission extends Permission ? true : never = true
+
 export function permissionOf(resource: ReferenceResource, action: ReferenceAction): Permission {
-  return { resource, action }
+  // TypeScript compares a pair of unions only up to 25 combinations; the type above proves the pair valid.
+  return REFERENCE_PAIRS_ARE_PERMISSIONS && ({ resource, action } as ReferencePermission)
 }
 
 /** What the row checks of a table get. `before` is NULL when the row is being created. */
@@ -162,6 +174,8 @@ export interface ReferenceInputs<Row extends ReferenceRow, Create, Update, Archi
   readonly archive: z.ZodType<Archive>
   /** What creating this row is checked against. */
   readonly placementOf: (input: Create) => PolicyTarget
+  /** Further targets an update needs `update` over, beside the stored row's (a rule moved to another unit). */
+  readonly updateTargetsOf?: (input: Update, before: Row) => readonly PolicyTarget[]
   /** Why this row may not be archived, on top of the shared checks. */
   readonly archiveIssues?: (database: Dexie, scope: ActorScope, row: Row) => Promise<Issue[]>
   /** Invariants of the state after an update or an archive. A refusal undoes the write. */
@@ -220,6 +234,9 @@ export function createReferenceCommands<
           const scope = await loadActorScope(dependencies)
           const before = await visibleRow(database, spec, scope, input.id)
           requirePermission(scope, permissionOf(spec.resource, 'update'), spec.targetOf(before))
+          for (const target of inputs.updateTargetsOf?.(input, before) ?? []) {
+            requirePermission(scope, permissionOf(spec.resource, 'update'), target)
+          }
           requireWritable(before, input.expected_version)
           // D-045: the changes merge into the stored row, and the merged row is what gets parsed.
           const merged = parsedCandidate(

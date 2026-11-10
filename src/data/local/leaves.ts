@@ -68,7 +68,7 @@ export async function visibleSoldier(database: Dexie, scope: ActorScope, id: Sol
 
 /**
  * Everything the rules count, read without the actor's filter: a rule counts soldiers the actor may not see
- * (OI-027). Nothing of it reaches the actor but the violations, which name no soldier.
+ * (OI-027). Nothing of it reaches the actor but the violations, which name only who is unavailable (D-138).
  */
 export async function ruleData(database: Dexie, organizationId: OrganizationId) {
   const rowsOf = <T extends Exclude<TableName, 'organizations'>>(table: T) =>

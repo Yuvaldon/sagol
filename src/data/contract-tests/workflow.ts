@@ -1,5 +1,4 @@
 import {
-  AvailabilityRuleId,
   LeaveCommentId,
   LeaveId,
   LeaveTypeId,
@@ -17,11 +16,10 @@ import {
   type OrganizationId,
   type Permission,
   type RuleEnforcement,
-  type TableRow,
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, PAST_DATE, errorOf, issuesOf, seedActor, valueOf } from './support'
+import { NOW, PAST_DATE, errorOf, issuesOf, seedActor, seedRule as seedSharedRule, valueOf } from './support'
 
 // The approval workflow against the shared contract (D-063, D-064, D-117 … D-121): transitions, edits and their
 // effect on approval, comments by visibility, the rule gate on a step, and a soldier's own preferences. Sample
@@ -259,14 +257,8 @@ export function describeLeaveWorkflowContract(
         const leave = await leaveOf()
         const blank = await leaves().update({ id: leave.id, expected_version: 1, changes: { reason: '   ' }, acknowledged_rule_ids: [] })
         expect(issuesOf(blank)).toEqual([{ path: ['changes'], code: 'no_changes' }])
-        const same = await leaves().reschedule({
-          id: leave.id,
-          expected_version: 1,
-          start_date: leave.start_date,
-          end_date: leave.end_date,
-          acknowledged_rule_ids: [],
-        })
-        expect(issuesOf(same)).toEqual([{ path: [], code: 'no_changes' }])
+        const same = await leaves().update({ id: leave.id, expected_version: 1, changes: { start_date: leave.start_date, end_date: leave.end_date }, acknowledged_rule_ids: [] })
+        expect(issuesOf(same)).toEqual([{ path: ['changes'], code: 'no_changes' }])
         expect(await eventsOf(leave)).toHaveLength(1)
       })
 
@@ -274,7 +266,7 @@ export function describeLeaveWorkflowContract(
         const leave = await leaveOf({ as_approved: true })
         const { soldierId } = await actorWith([VIEW_LEAVES, UPDATE_LEAVES, APPROVE_LEAVES])
         const moved = valueOf(
-          await leaves().reschedule({ id: leave.id, expected_version: 1, start_date: TOMORROW, end_date: NEXT_WEEK, acknowledged_rule_ids: [] }),
+          await leaves().update({ id: leave.id, expected_version: 1, changes: { start_date: TOMORROW, end_date: NEXT_WEEK }, acknowledged_rule_ids: [] }),
         )
         expect(moved).toMatchObject({ status: 'approved', reviewed_by: soldierId, start_date: TOMORROW, end_date: NEXT_WEEK })
         expect(await eventOf(leave, 'rescheduled')).toMatchObject({
@@ -290,7 +282,7 @@ export function describeLeaveWorkflowContract(
         const second = await leaveOf({ as_approved: true })
         await actorWith([VIEW_LEAVES, UPDATE_LEAVES])
         const moved = valueOf(
-          await leaves().reschedule({ id: first.id, expected_version: 1, start_date: TODAY, end_date: NEXT_WEEK, acknowledged_rule_ids: [] }),
+          await leaves().update({ id: first.id, expected_version: 1, changes: { start_date: TODAY, end_date: NEXT_WEEK }, acknowledged_rule_ids: [] }),
         )
         expect(moved).toMatchObject({ status: 'pending', reviewed_by: null, reviewed_at: null })
         expect(await eventOf(first, 'rescheduled')).toMatchObject({ from_status: 'approved', to_status: 'pending' })
@@ -298,7 +290,7 @@ export function describeLeaveWorkflowContract(
         harnessOf().signIn(owner)
         await setReschedulePolicy('always_pending')
         const byOwner = valueOf(
-          await leaves().reschedule({ id: second.id, expected_version: 1, start_date: TODAY, end_date: NEXT_WEEK, acknowledged_rule_ids: [] }),
+          await leaves().update({ id: second.id, expected_version: 1, changes: { start_date: TODAY, end_date: NEXT_WEEK }, acknowledged_rule_ids: [] }),
         )
         expect(byOwner.status).toBe('pending')
       })
@@ -347,16 +339,10 @@ export function describeLeaveWorkflowContract(
       it('edits only pending and approved leaves, with leaves:update, at the stored version', async () => {
         const leave = await leaveOf()
         const move = (expected_version: number) =>
-          leaves().reschedule({ id: leave.id, expected_version, start_date: TODAY, end_date: NEXT_WEEK, acknowledged_rule_ids: [] })
+          leaves().update({ id: leave.id, expected_version, changes: { start_date: TODAY, end_date: NEXT_WEEK }, acknowledged_rule_ids: [] })
         expect(errorOf(await move(7)).code).toBe('stale_version')
-        const inverted = await leaves().reschedule({
-          id: leave.id,
-          expected_version: 1,
-          start_date: TOMORROW,
-          end_date: TODAY,
-          acknowledged_rule_ids: [],
-        })
-        expect(issuesOf(inverted)).toEqual([{ path: ['end_date'], code: 'range_inverted' }])
+        const inverted = await leaves().update({ id: leave.id, expected_version: 1, changes: { start_date: TOMORROW, end_date: TODAY }, acknowledged_rule_ids: [] })
+        expect(issuesOf(inverted)).toEqual([{ path: ['changes', 'end_date'], code: 'range_inverted' }])
 
         await actorWith([VIEW_LEAVES, APPROVE_LEAVES])
         expect(errorOf(await move(1)).code).toBe('forbidden')
@@ -373,39 +359,7 @@ export function describeLeaveWorkflowContract(
 
     describe('the rule gate on a step (D-073, D-117, OI-027)', () => {
       /** "At least one available in the organization", counting approved leaves only. */
-      async function seedRule(enforcement: RuleEnforcement) {
-        const id = AvailabilityRuleId.parse(crypto.randomUUID())
-        const rule: TableRow<'availability_rules'> = {
-          id,
-          organization_id: organization,
-          name: 'Keep one',
-          description: null,
-          is_enabled: true,
-          priority: 0,
-          enforcement,
-          scope_unit_id: null,
-          scope_mode: 'unit_tree',
-          scope_level_id: null,
-          population_filter: {},
-          group_by: 'none',
-          group_tag_category_id: null,
-          metric: 'count',
-          min_value: 1,
-          max_value: null,
-          effective_from: null,
-          effective_to: null,
-          deployment_id: null,
-          count_pending_as_unavailable: false,
-          created_at: NOW,
-          created_by: null,
-          updated_at: NOW,
-          updated_by: null,
-          version: 1,
-          archived_at: null,
-        }
-        await harnessOf().seed('availability_rules', [rule])
-        return id
-      }
+      const seedRule = (enforcement: RuleEnforcement) => seedSharedRule(harnessOf(), organization, { enforcement })
 
       async function lastSoldierStanding() {
         const platoon = valueOf(
@@ -454,22 +408,107 @@ export function describeLeaveWorkflowContract(
         const approved = valueOf(await step(leave, 'approve'))
         await seedRule('hard')
         // The days it already covers are no worse; a longer leave is (D-073).
-        const longer = await leaves().reschedule({
-          id: leave.id,
-          expected_version: approved.version,
-          start_date: TODAY,
-          end_date: NEXT_WEEK,
-          acknowledged_rule_ids: [],
-        })
+        const longer = await leaves().update({ id: leave.id, expected_version: approved.version, changes: { start_date: TODAY, end_date: NEXT_WEEK }, acknowledged_rule_ids: [] })
         expect(errorOf(longer).code).toBe('rule_violation')
-        const shorter = await leaves().reschedule({
+        const shorter = await leaves().update({ id: leave.id, expected_version: approved.version, changes: { start_date: TODAY, end_date: TODAY }, acknowledged_rule_ids: [] })
+        expect(valueOf(shorter).end_date).toBe(TODAY)
+      })
+
+      it('gates a reopen that counts again (OI-084)', async () => {
+        const leave = await lastSoldierStanding()
+        const rejected = valueOf(await step(leave, 'reject'))
+        const ruleId = await seedSharedRule(harnessOf(), organization, { enforcement: 'hard', count_pending_as_unavailable: true })
+        expect(errorOf(await step(rejected, 'reopen'))).toMatchObject({ code: 'rule_violation', violations: [{ rule_id: ruleId }] })
+        expect(valueOf(await adapter().repositories.leaves.get(leave.id)).status).toBe('rejected')
+      })
+
+      it('gates an update whose new type makes the soldier absent (OI-084)', async () => {
+        const marker = await createType({ name: 'Exam', availability_effect: 'available' })
+        const absence = await createType({ name: 'Home' })
+        const platoon = valueOf(
+          await adapter().commands.units.create({
+            id: UnitId.parse(crypto.randomUUID()),
+            parent_id: null,
+            sort_order: 0,
+            name: 'Platoon',
+            code: null,
+            unit_level_id: null,
+            kind: 'standing',
+            valid_from: null,
+            valid_to: null,
+            color_key: null,
+            properties: {},
+          }),
+        )
+        const leave = await leaveOf({ as_approved: true, leave_type_id: marker.id, soldier_id: (await soldier(platoon.id)).id })
+        const ruleId = await seedRule('soft')
+        const retype = (acknowledged_rule_ids: typeof ruleId[]) =>
+          leaves().update({ id: leave.id, expected_version: 1, changes: { leave_type_id: absence.id }, acknowledged_rule_ids })
+        expect(errorOf(await retype([]))).toMatchObject({ code: 'rule_acknowledgment_required', violations: [{ rule_id: ruleId }] })
+        expect(valueOf(await retype([ruleId])).leave_type_id).toBe(absence.id)
+        expect(await eventOf(leave, 'updated')).toMatchObject({ acknowledged_rule_ids: [ruleId] })
+      })
+    })
+
+    describe('one edit command (D-123, OI-076)', () => {
+      it('saves the dates and the details of one edit together, as one updated event', async () => {
+        const leave = await leaveOf()
+        const edited = valueOf(
+          await leaves().update({
+            id: leave.id,
+            expected_version: 1,
+            changes: { end_date: NEXT_WEEK, reason: 'Wedding' },
+            acknowledged_rule_ids: [],
+          }),
+        )
+        expect(edited).toMatchObject({ end_date: NEXT_WEEK, reason: 'Wedding', version: 2 })
+        expect((await eventsOf(leave)).map((event) => event.event_type).sort()).toEqual(['created', 'updated'])
+        expect((await eventOf(leave, 'updated'))?.changes).toEqual({
+          end_date: { before: TOMORROW, after: NEXT_WEEK },
+          reason: { before: null, after: 'Wedding' },
+        })
+      })
+
+      it('saves nothing of an edit it refuses, the dates included', async () => {
+        const strict = await createType({ name: 'Sick', requires_reason: true })
+        const leave = await leaveOf()
+        const refused = await leaves().update({
           id: leave.id,
-          expected_version: approved.version,
-          start_date: TODAY,
-          end_date: TODAY,
+          expected_version: 1,
+          changes: { end_date: NEXT_WEEK, leave_type_id: strict.id },
           acknowledged_rule_ids: [],
         })
-        expect(valueOf(shorter).end_date).toBe(TODAY)
+        expect(issuesOf(refused)).toEqual([{ path: ['changes', 'reason'], code: 'reason_required' }])
+        expect(valueOf(await adapter().repositories.leaves.get(leave.id))).toMatchObject({ end_date: TOMORROW, version: 1 })
+        expect(await eventsOf(leave)).toHaveLength(1)
+      })
+    })
+
+    describe('a leave of an archived soldier (D-124, OI-077)', () => {
+      async function archivedSoldiersLeave() {
+        const leave = await leaveOf()
+        const stored = valueOf(await adapter().repositories.soldiers.get(leave.soldier_id))
+        valueOf(await adapter().commands.soldiers.archive({ id: stored.id, expected_version: stored.version }))
+        return leave
+      }
+
+      it('can only be cancelled; every other step and an edit answer archived', async () => {
+        const leave = await archivedSoldiersLeave()
+        expect(issuesOf(await step(leave, 'approve'))).toEqual([{ path: ['transition'], code: 'archived' }])
+        expect(issuesOf(await step(leave, 'reject'))).toEqual([{ path: ['transition'], code: 'archived' }])
+        const edit = await leaves().update({ id: leave.id, expected_version: 1, changes: { reason: 'x' }, acknowledged_rule_ids: [] })
+        expect(issuesOf(edit)).toEqual([{ path: [], code: 'archived' }])
+        const cancelled = valueOf(await step(leave, 'cancel'))
+        expect(cancelled.status).toBe('cancelled')
+        expect(issuesOf(await step(cancelled, 'reopen'))).toEqual([{ path: ['transition'], code: 'archived' }])
+        expect(valueOf(await comments().add({ id: newCommentId(), leave_id: leave.id, body: 'Left', visibility: 'shared' })).body).toBe('Left')
+      })
+
+      it('checks the permission and the version first', async () => {
+        const leave = await archivedSoldiersLeave()
+        expect(errorOf(await step(leave, 'approve', { expected_version: 9 })).code).toBe('stale_version')
+        await actorWith([VIEW_LEAVES])
+        expect(errorOf(await step(leave, 'approve')).code).toBe('forbidden')
       })
     })
 
