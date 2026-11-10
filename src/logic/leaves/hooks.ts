@@ -10,13 +10,15 @@ import {
   type Soldier,
   type SoldierId,
 } from '@contracts'
-import { LEAVE_PERMISSIONS, soldierTarget } from '@domain'
+import { LEAVE_PERMISSIONS } from '@domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { checkOn } from '../permissions/checks'
 import { useCan } from '../permissions/hooks'
 import { cachedLeaves, leaveListKey, restoreLeaves, showLeave } from './cache'
 import { byName } from '../roster/roster'
 import { QUERY_KEYS } from '../queries/client'
+import { steppedItems } from '../forms/order'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
@@ -31,7 +33,7 @@ import {
   typesOfGroup,
   liveGroups,
   type LeaveTypeFormValues,
-} from './types'
+} from './leaveTypes'
 
 // Reading and changing leave types and leaves (D-113, D-114, D-115).
 
@@ -66,17 +68,21 @@ function leaveQueryOf(window: DateWindow): LeaveQuery {
   return { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: DRAWN_STATUSES }
 }
 
-/** The pending and approved leaves the actor may see that overlap the window. */
-export function useLeaves(window: DateWindow): Loaded<readonly Leave[]> {
+/** The pending and approved leaves the actor may see that overlap the window. Loading while there is no window. */
+export function useLeaves(window: DateWindow | null): Loaded<readonly Leave[]> {
   const { data } = usePorts()
-  const query = useMemo(() => leaveQueryOf(window), [window])
+  const query = useMemo(() => (window === null ? null : leaveQueryOf(window)), [window])
   return loaded(
     useQuery({
-      queryKey: leaveListKey(query),
-      queryFn: () => unwrap(data.repositories.leaves.list(query)),
+      queryKey: leaveListKey(query ?? NO_WINDOW_QUERY),
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.leaves.list(query))),
+      enabled: query !== null,
     }),
   )
 }
+
+/** Never asked: the key of a list that waits for its window. */
+const NO_WINDOW_QUERY: LeaveQuery = { window: null, soldier_ids: [], statuses: DRAWN_STATUSES }
 
 /**
  * `leaves.create` with an optimistic update (D-115): the leave joins every cached window it overlaps at once,
@@ -135,13 +141,9 @@ export function useLeaveTypeCommands() {
   const step = useCommand(
     keys,
     async ({ type, direction, all }: { type: LeaveType; direction: -1 | 1; all: readonly LeaveType[] }) => {
-      const group = typesOfGroup(all, type.group_id)
-      const from = group.findIndex((row) => row.id === type.id)
-      const other = group[from + direction]
+      const items = steppedItems(typesOfGroup(all, type.group_id), type, direction)
       const unchanged: Result<LeaveType[]> = { ok: true, value: [] }
-      if (from < 0 || other === undefined) return unchanged
-      const order = group.map((row, index) => (index === from ? other : index === from + direction ? type : row))
-      return types.reorder({ items: order.map((row) => ({ id: row.id, expected_version: row.version })) })
+      return items === null ? unchanged : types.reorder({ items })
     },
   )
   return { create, update, archive, step }
@@ -166,13 +168,9 @@ export function useLeaveTypeGroupCommands() {
   const step = useCommand(
     keys,
     async ({ group, direction, all }: { group: LeaveTypeGroup; direction: -1 | 1; all: readonly LeaveTypeGroup[] }) => {
-      const live = liveGroups(all)
-      const from = live.findIndex((row) => row.id === group.id)
-      const other = live[from + direction]
+      const items = steppedItems(liveGroups(all), group, direction)
       const unchanged: Result<LeaveTypeGroup[]> = { ok: true, value: [] }
-      if (from < 0 || other === undefined) return unchanged
-      const order = live.map((row, index) => (index === from ? other : index === from + direction ? group : row))
-      return groups.reorder({ items: order.map((row) => ({ id: row.id, expected_version: row.version })) })
+      return items === null ? unchanged : groups.reorder({ items })
     },
   )
   return { create, rename, archive, step }
@@ -194,36 +192,32 @@ export function useLeaveTypePermissions() {
   return { create: can(TYPE_CHECKS.create), update: can(TYPE_CHECKS.update), archive: can(TYPE_CHECKS.archive) }
 }
 
-const leaveCheck = (permission: PermissionCheck['permission'], soldierId: SoldierId): PermissionCheck => ({
-  permission,
-  target: soldierTarget(soldierId),
-})
-
 /**
- * Who the actor may create a leave for, and approve now, among the soldiers they see (D-114, D-115). A hint:
- * the command decides again.
+ * Who the actor may create a leave for, and approve now, among the soldiers they see (D-114, D-115). The form offers
+ * active soldiers only (D-125); the command still takes an inactive one. A hint: the command decides again.
  */
 export function useLeaveCreation(soldiers: readonly Soldier[]) {
   const checks = useMemo(
     () =>
       soldiers.flatMap((soldier) => [
-        leaveCheck(LEAVE_PERMISSIONS.create, soldier.id),
-        leaveCheck(LEAVE_PERMISSIONS.approve, soldier.id),
+        checkOn(LEAVE_PERMISSIONS.create, soldier.id),
+        checkOn(LEAVE_PERMISSIONS.approve, soldier.id),
       ]),
     [soldiers],
   )
   const can = useCan(checks)
   return useMemo(() => {
     const creatable = soldiers
-      .filter((soldier) => can(leaveCheck(LEAVE_PERMISSIONS.create, soldier.id)))
+      .filter((soldier) => soldier.status === 'active' && soldier.archived_at === null)
+      .filter((soldier) => can(checkOn(LEAVE_PERMISSIONS.create, soldier.id)))
       .toSorted(byName)
     return {
       /** The soldiers a leave can be created for, by name (D-094). */
       soldiers: creatable,
       any: creatable.length > 0,
       /** Whether the actor may approve anyone they see: who the inbox is for (D-120). */
-      approvesAny: soldiers.some((soldier) => can(leaveCheck(LEAVE_PERMISSIONS.approve, soldier.id))),
-      canApprove: (soldierId: SoldierId) => can(leaveCheck(LEAVE_PERMISSIONS.approve, soldierId)),
+      approvesAny: soldiers.some((soldier) => can(checkOn(LEAVE_PERMISSIONS.approve, soldier.id))),
+      canApprove: (soldierId: SoldierId) => can(checkOn(LEAVE_PERMISSIONS.approve, soldierId)),
     }
   }, [can, soldiers])
 }

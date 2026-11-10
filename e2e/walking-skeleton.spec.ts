@@ -148,7 +148,8 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   async function expectTouchTargets() {
     const heights = await page
       .locator('button:visible, input:visible')
-      .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height))
+      // A switch or a box hides its input inside its label, and the label is what a finger presses.
+      .evaluateAll((elements) => elements.map((element) => (element.closest('label') ?? element).getBoundingClientRect().height))
     expect(heights.length).toBeGreaterThan(0)
     for (const height of heights) expect(height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
   }

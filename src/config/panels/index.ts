@@ -15,6 +15,11 @@ export const PANEL_IDS = {
   /** The requests inbox: pending requests, and closed ones (D-120). */
   leaveInbox: 'leave_inbox',
   leaveClosed: 'leave_closed',
+  /** Tags by category, and the categories (D-130). */
+  tags: 'tags',
+  tagCategories: 'tag_categories',
+  /** Present and absent lists of a day (D-134). */
+  presence: 'presence',
 } as const
 
 export const PanelId = z.enum([
@@ -27,6 +32,9 @@ export const PanelId = z.enum([
   PANEL_IDS.leaves,
   PANEL_IDS.leaveInbox,
   PANEL_IDS.leaveClosed,
+  PANEL_IDS.tags,
+  PANEL_IDS.tagCategories,
+  PANEL_IDS.presence,
 ])
 export type PanelId = z.infer<typeof PanelId>
 

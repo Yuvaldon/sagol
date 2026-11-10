@@ -22,10 +22,11 @@ import { Button } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SoldierPrivateForm, SoldierProfileForm } from './SoldierForms'
+import { SoldierTagsSection } from './SoldierTags'
 import { unitOptions } from './unitOptions'
 
-// One soldier: the profile, the private fields and the placement. Each section has its own permission
-// (D-094, D-096), so each appears on its own.
+// One soldier: the profile, the tags, the private fields and the placement. Each section has its own permission
+// (D-094, D-096, D-130), so each appears on its own.
 
 const NO_SELECTION = 'none'
 const MOVE_FIELDS: readonly string[] = ['new_membership.unit_id', 'new_membership', 'effective_date']
@@ -242,6 +243,14 @@ export function SoldierPage({
   const liveUnits = units.filter((unit) => unit.archived_at === null)
   const permissions = useSoldierPagePermissions(soldier, liveUnits)
   const rank = ranks.find((candidate) => candidate.id === soldier.command_rank_id) ?? null
+  // Saving tags moves the soldier's version (D-130), so the profile form opens again on the new one once it arrives:
+  // the change came from this page, not from another tab.
+  const [profileGeneration, setProfileGeneration] = useState(0)
+  const [reopenAfter, setReopenAfter] = useState<number | null>(null)
+  if (reopenAfter !== null && soldier.version > reopenAfter) {
+    setReopenAfter(null)
+    setProfileGeneration((current) => current + 1)
+  }
 
   return (
     <div className="flex flex-col gap-xl">
@@ -257,10 +266,14 @@ export function SoldierPage({
         <h2 className="truncate text-body font-bold">{fullName(soldier)}</h2>
       </div>
       {permissions.update ? (
-        <SoldierProfileForm soldier={soldier} ranks={ranks} />
+        <SoldierProfileForm key={profileGeneration} soldier={soldier} ranks={ranks} />
       ) : (
         <ReadOnlyProfile soldier={soldier} rank={rank} />
       )}
+      <SoldierTagsSection
+        soldier={soldier}
+        onSaved={setReopenAfter}
+      />
       {permissions.viewPrivate ? <PrivateSection soldier={soldier} canUpdate={permissions.updatePrivate} /> : null}
       {permissions.viewMemberships ? (
         <PlacementSection

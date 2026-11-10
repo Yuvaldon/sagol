@@ -1,13 +1,14 @@
 import { PANEL_IDS } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t, type I18nKey } from '@i18n'
-import { useCurrentOrganization, useModuleAccess, usePanel } from '@logic'
-import { Network, Tags, Users, type LucideIcon } from 'lucide-react'
+import { useCurrentOrganization, useDateWindow, useModuleAccess, usePanel } from '@logic'
+import { Network, Tag, Tags, Users, type LucideIcon } from 'lucide-react'
 import { useIsDesktop } from '../patterns/media'
 import { Button, IconButton } from '../primitives/Button'
 import { InboxButton } from './InboxButton'
 import { ModuleDrawer } from './ModuleDrawer'
 import { NewLeaveButton } from './NewLeaveButton'
+import { FilterBar } from './FilterBar'
 import { FailureScreen, LoadingScreen } from './states'
 import { UnitSelector } from './UnitSelector'
 import { UserMenu } from './UserMenu'
@@ -69,6 +70,15 @@ function ModuleButtons() {
           }}
         />
       ) : null}
+      {access.tags ? (
+        <ModuleButton
+          Icon={Tag}
+          labelKey="tags.open"
+          onPress={() => {
+            panel.open(PANEL_IDS.tags)
+          }}
+        />
+      ) : null}
       {access.leaveTypes ? (
         <ModuleButton
           Icon={Tags}
@@ -82,20 +92,34 @@ function ModuleButtons() {
   )
 }
 
+/** The filter row under the bars (D-131). It needs a day, as every engine does. */
+function FilterRow() {
+  const { window } = useDateWindow()
+  if (window === null) return null
+  return (
+    <div className="pointer-events-none absolute inset-x-lg top-filter-row flex md:top-filter-row-md">
+      <FilterBar />
+    </div>
+  )
+}
+
 function DesktopBars({ name, identity }: { readonly name: string; readonly identity: AuthIdentity }) {
   return (
-    <div className="pointer-events-none absolute inset-x-lg top-lg flex justify-between gap-sm">
-      <nav aria-label={t('workspace.viewBar')} className={BAR}>
-        <OrganizationName name={name} />
-        <UnitSelector />
-        <ViewSwitcher />
-      </nav>
-      <nav aria-label={t('workspace.navigation')} className={BAR}>
-        <WindowNavigator />
-        <ModuleButtons />
-        <UserMenu identity={identity} />
-      </nav>
-    </div>
+    <>
+      <div className="pointer-events-none absolute inset-x-lg top-lg flex justify-between gap-sm">
+        <nav aria-label={t('workspace.viewBar')} className={BAR}>
+          <OrganizationName name={name} />
+          <UnitSelector />
+          <ViewSwitcher />
+        </nav>
+        <nav aria-label={t('workspace.navigation')} className={BAR}>
+          <WindowNavigator />
+          <ModuleButtons />
+          <UserMenu identity={identity} />
+        </nav>
+      </div>
+      <FilterRow />
+    </>
   )
 }
 
@@ -109,6 +133,7 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
           <ViewSwitcher />
         </div>
       </nav>
+      <FilterRow />
       <nav aria-label={t('workspace.navigation')} className={`${BAR} bottom-safe absolute inset-x-lg justify-between`}>
         <OrganizationName name={name} />
         <div className="flex shrink-0 items-center gap-xs">

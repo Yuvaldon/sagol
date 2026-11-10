@@ -8,11 +8,11 @@ import {
   type LeaveTransition,
   type PermissionCheck,
   type Result,
-  type SoldierId,
 } from '@contracts'
-import { COMMENT_PERMISSIONS, LEAVE_PERMISSIONS, soldierTarget } from '@domain'
+import { COMMENT_PERMISSIONS, LEAVE_PERMISSIONS } from '@domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { checkOn } from '../permissions/checks'
 import { useCan } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
@@ -83,11 +83,6 @@ export function useLeaveThread(leaveId: LeaveId): Loaded<readonly ThreadEntry[]>
 }
 
 // ---------------------------------------------------------------------- hints
-
-const checkOn = (permission: PermissionCheck['permission'], soldierId: SoldierId): PermissionCheck => ({
-  permission,
-  target: soldierTarget(soldierId),
-})
 
 /**
  * What the actor may do with this leave now (OI-024): the steps its status allows, each with the permission the

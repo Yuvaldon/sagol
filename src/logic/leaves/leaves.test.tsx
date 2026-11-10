@@ -8,19 +8,19 @@ import {
   type LeaveQuery,
   type LeaveType,
   type LeaveTypeGroup,
+  type PermissionCheck,
   type Result,
 } from '@contracts'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import type { LogicPorts } from '../ports'
-import { LogicProvider } from '../runtime/LogicProvider'
+import { fakePorts, organizationIn, wrapperOf } from '../testing/ports'
 import { timelineLeaves } from '../timeline/leaves'
 import { WorkspaceSearch } from '../view-state/search'
 import type { DateWindow } from '../view-state/window'
 import { newLeaveIssues, newLeaveValues, optimisticLeave, toCreateLeaveInput } from './forms'
-import { useCreateLeave, useLeaves } from './hooks'
-import { NEW_LEAVE_TYPE_VALUES, leaveTypeFormValues, leaveTypeSections, toUpdateLeaveTypeInput } from './types'
+import { useCreateLeave, useLeaveCreation, useLeaves } from './hooks'
+import { NEW_LEAVE_TYPE_VALUES, leaveTypeFormValues, leaveTypeSections, toUpdateLeaveTypeInput } from './leaveTypes'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -186,16 +186,12 @@ describe('creating a leave with an optimistic update (D-115)', () => {
   function portsWith(create: () => Promise<Result<Leave>>) {
     const list = vi.fn((_query: LeaveQuery) => Promise.resolve<Result<Leave[]>>({ ok: true, value: [] }))
     const session = { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION }
-    const ports = {
-      data: {
-        session: { current: () => Promise.resolve({ ok: true, value: session }), subscribe: () => () => undefined },
-        repositories: { leaves: { list } },
-        commands: { leaves: { create } },
-        changes: { subscribe: () => () => undefined },
-      },
-      auth: {},
-      time: { now: () => AT },
-    } as unknown as LogicPorts
+    const ports = fakePorts({
+      session: { current: () => Promise.resolve({ ok: true, value: session }) },
+      repositories: { leaves: { list } },
+      commands: { leaves: { create } },
+      now: () => AT,
+    })
     return { ports, list }
   }
 
@@ -208,7 +204,7 @@ describe('creating a leave with an optimistic update (D-115)', () => {
   function render(ports: LogicPorts) {
     return renderHook(
       () => ({ week: useLeaves(WINDOW), other: useLeaves(OTHER_WEEK), create: useCreateLeave() }),
-      { wrapper: ({ children }: { children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider> },
+      { wrapper: wrapperOf(ports) },
     )
   }
 
@@ -264,5 +260,36 @@ describe('an empty date on the new-leave form', () => {
   it('answers required, as the command would', () => {
     const values = { ...newLeaveValues('2026-11-08'), soldier_id: YAEL, leave_type_id: LeaveTypeId.parse(uuid(30)), end_date: '' as const }
     expect(newLeaveIssues(values, null)).toEqual([{ path: ['end_date'], code: 'required' }])
+  })
+})
+
+describe('who the new-leave form offers (D-125, OI-078)', () => {
+  it('offers active soldiers only, while approving still looks at everyone', async () => {
+    const person = (n: number, status: 'active' | 'inactive') => ({
+      id: SoldierId.parse(uuid(n)),
+      organization_id: ORGANIZATION,
+      first_name: `F${n}`,
+      last_name: `L${n}`,
+      nickname: null,
+      command_rank_id: null,
+      status,
+      properties: {},
+      ...audit,
+    })
+    const active = person(1, 'active')
+    const inactive = person(2, 'inactive')
+    // The actor may create a leave for both, and approve only the inactive one.
+    const can = vi.fn((checks: readonly PermissionCheck[]) =>
+      Promise.resolve<Result<boolean[]>>({
+        ok: true,
+        value: checks.map((check) => check.permission.action === 'create' || check.target.kind !== 'soldier' || check.target.soldier_id === inactive.id),
+      }),
+    )
+    const ports = fakePorts({ session: { can }, repositories: { organizations: organizationIn() }, now: () => AT })
+    const { result } = renderHook(() => useLeaveCreation([active, inactive]), { wrapper: wrapperOf(ports) })
+    await waitFor(() => {
+      expect(result.current.approvesAny).toBe(true)
+    })
+    expect(result.current.soldiers.map((soldier) => soldier.id)).toEqual([active.id])
   })
 })

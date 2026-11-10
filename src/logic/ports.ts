@@ -23,6 +23,9 @@ export interface DataPort {
     | 'soldier_private'
     | 'unit_memberships'
     | 'soldier_preferences'
+    | 'tag_categories'
+    | 'tags'
+    | 'soldier_tags'
     | 'leave_type_groups'
     | 'leave_types'
     | 'leaves'
@@ -35,7 +38,9 @@ export interface DataPort {
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']
-    readonly soldiers: Pick<DataCommands['soldiers'], 'create' | 'update' | 'archive' | 'updatePrivate' | 'changeMembership'>
+    readonly soldiers: DataCommands['soldiers']
+    readonly tag_categories: DataCommands['tag_categories']
+    readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
     readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'reschedule' | 'transition'>

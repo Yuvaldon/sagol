@@ -13,11 +13,9 @@ import {
   type UnitMembership,
 } from '@contracts'
 import { renderHook, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { useModuleAccess } from '../permissions/hooks'
-import type { LogicPorts } from '../ports'
-import { LogicProvider } from '../runtime/LogicProvider'
+import { fakePorts, organizationIn, wrapperOf } from '../testing/ports'
 import {
   moveFormIssues,
   newSoldierIssues,
@@ -286,24 +284,14 @@ describe('soldier forms', () => {
 // ------------------------------------------------------------ hooks over fake ports
 
 function portsWith(allow: (check: PermissionCheck) => boolean, timezone = 'Asia/Jerusalem') {
-  return {
-    data: {
-      session: {
-        current: () => Promise.resolve({ ok: true, value: { status: 'signed_out' } }),
-        subscribe: () => () => undefined,
-        can: vi.fn((checks: readonly PermissionCheck[]) => Promise.resolve<Result<boolean[]>>({ ok: true, value: checks.map(allow) })),
-      },
-      repositories: { organizations: { current: () => Promise.resolve({ ok: true, value: { timezone } }) } },
-      commands: {},
-      changes: { subscribe: () => () => undefined },
+  return fakePorts({
+    session: {
+      current: () => Promise.resolve({ ok: true, value: { status: 'signed_out' } }),
+      can: vi.fn((checks: readonly PermissionCheck[]) => Promise.resolve<Result<boolean[]>>({ ok: true, value: checks.map(allow) })),
     },
-    auth: {},
-    time: { now: () => '2026-11-08T22:30:00.000Z' },
-  } as unknown as LogicPorts
-}
-
-function wrapperOf(ports: LogicPorts) {
-  return ({ children }: { children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>
+    repositories: { organizations: organizationIn(timezone) },
+    now: () => '2026-11-08T22:30:00.000Z',
+  })
 }
 
 describe('roster hints (D-091, D-096)', () => {

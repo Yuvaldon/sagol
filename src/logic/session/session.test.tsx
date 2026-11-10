@@ -11,12 +11,10 @@ import {
   type Session,
 } from '@contracts'
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { claimIssues, timeZoneChoices, toBootstrapInput } from '../organization/claim'
 import { fieldNameOf, formIssues } from '../forms/issues'
-import type { LogicPorts } from '../ports'
-import { LogicProvider } from '../runtime/LogicProvider'
+import { fakePorts as portsOf, wrapperOf } from '../testing/ports'
 import {
   useClaimOrganization,
   useCurrentOrganization,
@@ -51,28 +49,25 @@ function fakePorts(initial: { session: Session; organization?: Result<Organizati
   const organizationReads = vi.fn(() => Promise.resolve(organization))
   const bootstrapOwner = vi.fn(() => Promise.resolve<Result<Session>>({ ok: true, value: LINKED }))
   // Only what these tests read: the unit groups have their own fakes.
-  const ports = {
-    data: {
-      session: {
-        current: () => Promise.resolve({ ok: true, value: session }),
-        onboardingState: () =>
-          Promise.resolve({ ok: true, value: { bootstrap_available: true, open_request: null } }),
-        subscribe(listener: (next: Session) => void) {
-          sessionListener = listener
-          return () => {
-            sessionListener = null
-          }
-        },
+  const ports = portsOf({
+    session: {
+      current: () => Promise.resolve({ ok: true, value: session }),
+      onboardingState: () => Promise.resolve({ ok: true, value: { bootstrap_available: true, open_request: null } }),
+      subscribe(listener: (next: Session) => void) {
+        sessionListener = listener
+        return () => {
+          sessionListener = null
+        }
       },
-      repositories: { organizations: { current: organizationReads } },
-      commands: { organizations: { bootstrapOwner } },
-      changes: {
-        subscribe(listener: (changes: readonly DataChange[]) => void) {
-          changeListener = listener
-          return () => {
-            changeListener = null
-          }
-        },
+    },
+    repositories: { organizations: { current: organizationReads } },
+    commands: { organizations: { bootstrapOwner } },
+    changes: {
+      subscribe(listener: (changes: readonly DataChange[]) => void) {
+        changeListener = listener
+        return () => {
+          changeListener = null
+        }
       },
     },
     auth: {
@@ -83,7 +78,7 @@ function fakePorts(initial: { session: Session; organization?: Result<Organizati
       listIdentities: () => Promise.resolve({ ok: true, value: [IDENTITY] }),
       signOut: () => Promise.resolve({ ok: true, value: null }),
     },
-  } as unknown as LogicPorts
+  })
   return {
     ports,
     organizationReads,
@@ -99,10 +94,6 @@ function fakePorts(initial: { session: Session; organization?: Result<Organizati
       changeListener?.(changes)
     },
   }
-}
-
-function wrapperOf(ports: LogicPorts) {
-  return ({ children }: { children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>
 }
 
 function failure(error: AppError): Result<Organization> {

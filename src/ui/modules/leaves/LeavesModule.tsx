@@ -5,7 +5,6 @@ import {
   fullName,
   newLeaveIssues,
   newLeaveValues,
-  orderedLeaveTypes,
   useCreateLeave,
   useLeaveCreation,
   useLeaveTypeGroups,
@@ -28,6 +27,7 @@ import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
+import { leaveTypeOptions } from './typeOptions'
 import { LeaveDetails } from './LeaveDetails'
 
 // A new leave (D-115): who, what kind, which days, and why when the type asks. "Approve now" is there only for
@@ -38,14 +38,6 @@ const LEAVE_FIELDS: readonly string[] = ['soldier_id', 'leave_type_id', 'start_d
 
 /** What the type field holds until a type is chosen. It leaves the list once one is. */
 const CHOOSE_TYPE: SelectOption<LeaveTypeId | null> = { key: 'none', label: { key: 'leaves.chooseType' }, value: null }
-
-function typeOptions(groups: readonly LeaveTypeGroup[], types: readonly LeaveType[]): SelectOption<LeaveTypeId | null>[] {
-  const groupName = new Map(groups.map((group) => [group.id, group.name]))
-  return orderedLeaveTypes(groups, types).map((type) => {
-    const group = type.group_id === null ? undefined : groupName.get(type.group_id)
-    return { key: type.id, label: { text: group === undefined ? type.name : `${group} · ${type.name}` }, value: type.id }
-  })
-}
 
 function NewLeaveForm({
   soldiers,
@@ -115,7 +107,7 @@ function NewLeaveForm({
             labelKey="leaves.type"
             name={field.name}
             value={field.state.value}
-            options={field.state.value === null ? [CHOOSE_TYPE, ...typeOptions(groups, types)] : typeOptions(groups, types)}
+            options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
           />

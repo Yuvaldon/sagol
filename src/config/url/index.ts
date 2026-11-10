@@ -18,6 +18,12 @@ export const SEARCH_PARAMS = {
   parent: 'parent',
   /** What a timeline bar's color means (`BarColorMode`, D-112). */
   colors: 'colors',
+  /** The board's leave conditions: statuses and types (D-132). */
+  leaves: 'leaves',
+  /** "Only who is missing" (D-133). */
+  missing: 'missing',
+  /** The day of the present and absent lists (D-134). */
+  day: 'day',
 } as const
 
 export type SearchParamName = (typeof SEARCH_PARAMS)[keyof typeof SEARCH_PARAMS]

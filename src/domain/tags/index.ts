@@ -67,3 +67,17 @@ export function selectionModeChangeIssues(
   }
   return []
 }
+
+/**
+ * A category stays while a live tag belongs to it, so no live tag sits under a name nobody can see (D-130, as
+ * D-113 for leave type groups).
+ */
+export function archiveTagCategoryIssues(
+  tags: Iterable<Pick<Tag, 'category_id' | 'archived_at'>>,
+  categoryId: TagCategoryId,
+): Issue[] {
+  for (const tag of tags) {
+    if (tag.category_id === categoryId && tag.archived_at === null) return [{ path: [], code: IssueCode.enum.group_in_use }]
+  }
+  return []
+}

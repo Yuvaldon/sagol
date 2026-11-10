@@ -101,6 +101,16 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   requests waiting as a small dark pill, read aloud with the button's name.
 - **Module buttons (D-116):** icon and name from `md`; below it the icon alone in a 44 px `IconButton`, its name still
   read aloud.
+- **The filter bar (D-131 to D-134):** a `search` landmark under the top bars: from `md` under the bar with the unit
+  selector (`top-filter-row-md`), below `md` under the top bar (`top-filter-row`), scrolling sideways. It holds the chips,
+  a dashed round "+", the "רק מי שחסר" switch and the presence pill ("חסרים היום" and today's count). Each is a `glass-bar`
+  pill, `control` high from `md` and `touch` below; only the pills take presses, so the board stays pressable around
+  them. The board starts under it (`under-bars`, `under-bars-md`).
+- **A chip:** the condition muted, then every value bold, cut by width, as one button that opens a popover of its values;
+  beside it a round "x" (`chip-close` 22 from `md`, 44 below) named "הסרת סינון" and the condition. "+" lists the conditions
+  not on the bar, then the values of the one picked, which stay open after the first value makes it a chip. A filter the bar does not read is one chip,
+  "סינון מותאם", which can only be removed; the leave chips stay beside it.
+- **"Only who is missing" mutes the days a row is present,** like days out of the unit, and reads them aloud as "נוכח".
 - **A control with nothing to choose stays away (D-076):** the unit selector appears once a unit exists; "today" appears
   while the window does not hold today.
 - **Outside the workspace:** one `glass-card` centered on the canvas (`CenteredSheet`), at most `sheet`
@@ -143,6 +153,13 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   `dl` of what it is; one `role="group"` of the steps the actor may take now, the primary one first; then its thread.
   A step with no question acts at once and shows before the command answers. A step that closes something asks in a
   `SmallDialog` with an optional note. A refusal shows in a `FailureNotice` above the steps, over the row as stored.
+- **A list of choices:** `CheckList` (many) or `RadioList` (one, with "ללא"), each row a box that carries a check, the
+  name, an optional dot of its color and a quiet note ("בארכיון"). A soldier's tags and the filter chips use them.
+- **Tags on a soldier's page (D-130):** a section with the tags held, each a pill on `inner` with its color's dot, under
+  its category; "עריכת תגיות" opens a `SmallDialog` with a list per category.
+- **Present and absent lists (D-134):** the day as a heading between "יום קודם" and "יום הבא", "היום" while another day
+  shows, a hint, then "חסרים" and "נוכחים", each an `h3` with its count and a list: the name and rank, a quiet line of why
+  (the types, "ממתין לאישור", markers), and a dot of the absence's color.
 - **A thread:** an `ol`, oldest first, of what happened and what was written. A line has a bold title, its day and time
   in the organization's time zone (`formatInstant`), quiet lines of what changed (`before ← after`), and who did it.
   A comment's title is its author. Only the author's own comments have an `ActionMenu`. The box for a new line sits
@@ -179,6 +196,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the new-leave form and its "+" |
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |
 | `PendingRequestsModule`, `ClosedLeavesModule`, `InboxButton` | `ui/modules/leaves`, `ui/shell` | The requests inbox and its button |
+| `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
+| `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
+| `FilterBar` | `ui/shell` | Chips, "+", "only who is missing" and the presence pill |
+| `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
 
 Errors are shown through `ui/errors/messages.ts`, whose maps from code to i18n are total: a new code does
 not compile until it has a message.

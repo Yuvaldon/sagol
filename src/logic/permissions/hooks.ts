@@ -53,6 +53,7 @@ const MODULE_CHECKS = {
   soldiers: { permission: { resource: 'soldiers', action: 'view' }, target: { kind: 'organization' } },
   commandRanks: { permission: { resource: 'command_ranks', action: 'view' }, target: { kind: 'organization' } },
   leaveTypes: { permission: { resource: 'leave_types', action: 'view' }, target: { kind: 'organization' } },
+  tags: { permission: { resource: 'tags', action: 'view' }, target: { kind: 'organization' } },
 } as const satisfies Record<string, PermissionCheck>
 
 const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
@@ -65,5 +66,6 @@ export function useModuleAccess() {
     soldiers: can(MODULE_CHECKS.soldiers),
     commandRanks: can(MODULE_CHECKS.commandRanks),
     leaveTypes: can(MODULE_CHECKS.leaveTypes),
+    tags: can(MODULE_CHECKS.tags),
   }
 }

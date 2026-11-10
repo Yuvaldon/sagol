@@ -14,11 +14,10 @@ import {
   type SoldierPreferencesRecord,
 } from '@contracts'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { useCanAnswers } from '../permissions/hooks'
 import type { LogicPorts } from '../ports'
-import { LogicProvider } from '../runtime/LogicProvider'
+import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
 import { useMyPreferences, useUpdateMyPreferences } from '../session/preferences'
 import type { DateWindow } from '../view-state/window'
 import { newLeaveValues } from './forms'
@@ -235,33 +234,20 @@ function portsWith(fakes: Fakes): LogicPorts {
     const found = fakes.stored.find((row) => row.id === id)
     return Promise.resolve<Result<Leave>>(found === undefined ? { ok: false, error: { code: 'not_found' } } : { ok: true, value: found })
   }
-  return {
-    data: {
-      session: {
-        current: () => Promise.resolve({ ok: true, value: session }),
-        subscribe: () => () => undefined,
-        can: fakes.can ?? ((checks: readonly PermissionCheck[]) => Promise.resolve({ ok: true, value: checks.map(() => true) })),
-      },
-      repositories: {
-        leaves: { list, get },
-        organizations: { current: () => Promise.resolve({ ok: false, error: { code: 'not_found' } }) },
-        soldier_preferences: { mine: () => Promise.resolve({ ok: true, value: fakes.preferences ?? null }) },
-      },
-      commands: {
-        leaves: { transition: fakes.transition, reschedule: fakes.reschedule, update: fakes.update },
-        accounts: { updateMyPreferences: fakes.updateMyPreferences },
-      },
-      changes: { subscribe: () => () => undefined },
+  return fakePorts({
+    session: { current: () => Promise.resolve({ ok: true, value: session }), can: fakes.can ?? allowEverything },
+    repositories: {
+      leaves: { list, get },
+      organizations: { current: () => Promise.resolve({ ok: false, error: { code: 'not_found' } }) },
+      soldier_preferences: { mine: () => Promise.resolve({ ok: true, value: fakes.preferences ?? null }) },
     },
-    auth: {},
-    time: { now: () => AT },
-  } as unknown as LogicPorts
+    commands: {
+      leaves: { transition: fakes.transition, reschedule: fakes.reschedule, update: fakes.update },
+      accounts: { updateMyPreferences: fakes.updateMyPreferences },
+    },
+    now: () => AT,
+  })
 }
-
-const wrapperOf = (ports: LogicPorts) =>
-  function Wrapper({ children }: { children: ReactNode }) {
-    return <LogicProvider ports={ports}>{children}</LogicProvider>
-  }
 
 const statusesOf = (state: { status: string; value?: readonly Leave[] }) => state.value?.map((row) => row.status) ?? null
 

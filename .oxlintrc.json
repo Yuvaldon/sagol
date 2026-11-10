@@ -16,6 +16,7 @@
       "files": [
         "src/data/**",
         "src/ui/engines/*/adapter/**",
+        "src/*/testing/**",
         "**/*.test.ts",
         "**/*.test.tsx"
       ],
