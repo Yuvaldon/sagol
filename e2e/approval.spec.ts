@@ -67,7 +67,7 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
     await expect(thread(page)).toContainText(he.leaves.eventApproved)
   })
 
-  await test.step('one form edits the days, the type and the reason, each with its own line in the history', async () => {
+  await test.step('one form edits the days, the type and the reason, as one line in the history (D-123)', async () => {
     await action(page, he.leaves.edit).click()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.editTitle })).toBeVisible()
     await typeDate(page, he.leaves.to, '12', '11', '2026')
@@ -83,8 +83,8 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
     await expect(details.getByText('שפעת', { exact: true })).toBeVisible()
     // The owner may approve, so the edited leave stays approved (D-064).
     await expect(details.getByText(he.leaves.statusApproved, { exact: true })).toBeVisible()
-    await expect(thread(page)).toContainText(he.leaves.eventRescheduled)
     await expect(thread(page)).toContainText(he.leaves.eventUpdated)
+    await expect(thread(page)).not.toContainText(he.leaves.eventRescheduled)
     await expect(thread(page)).toContainText('רגילה ← מחלה')
   })
 
