@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SoldierId, TagCategoryId, TagId } from '@contracts'
-import { selectionModeChangeIssues, tagSelectionIssues } from './index'
+import { archiveTagCategoryIssues, selectionModeChangeIssues, tagSelectionIssues } from './index'
 
 // Test data only (iron rule 4).
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -61,5 +61,18 @@ describe('selectionModeChangeIssues', () => {
       { soldier_id: A, tag_id: TAG.single },
     ]
     expect(selectionModeChangeIssues(CATEGORY.skills, 'single', TAGS, soldierTags)).toEqual([])
+  })
+})
+
+describe('archiveTagCategoryIssues (D-130)', () => {
+  const live = (id: TagId, category_id: TagCategoryId) => ({ id, category_id, archived_at: null })
+  it('refuses a category that holds a live tag', () => {
+    expect(archiveTagCategoryIssues([live(TAG.medic, CATEGORY.skills)], CATEGORY.skills)).toEqual([
+      { path: [], code: 'group_in_use' },
+    ])
+  })
+  it('allows a category whose tags are all archived, or that has none', () => {
+    const archived = { ...live(TAG.medic, CATEGORY.skills), archived_at: '2026-11-08T10:00:00.000Z' }
+    expect(archiveTagCategoryIssues([archived, live(TAG.single, CATEGORY.marital)], CATEGORY.skills)).toEqual([])
   })
 })
