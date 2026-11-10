@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { AvailabilityRuleId, CommandRankId, TagId, UnitId } from '../common/ids'
+import { AvailabilityRuleId, CommandRankId, SoldierId, TagId, UnitId } from '../common/ids'
 import { SchemaIssue } from '../common/issues'
-import { CalendarDate } from '../common/scalars'
+import { CalendarDate, label } from '../common/scalars'
 import { RuleEnforcement } from '../enums'
 
 // Error model of every command and query (D-046). Errors are values with stable codes;
@@ -86,7 +86,14 @@ export const RuleGroupValue = z.discriminatedUnion('group_by', [
 ])
 export type RuleGroupValue = z.infer<typeof RuleGroupValue>
 
-/** A rule broken on one target, with the days it fails (D-014, D-031). */
+/** A soldier a violation names: unavailable on a day of a broken target (D-138). */
+export const ViolationSoldier = z.object({ id: SoldierId, first_name: label(50), last_name: label(50) })
+export type ViolationSoldier = z.infer<typeof ViolationSoldier>
+
+/**
+ * A rule broken on one target, with the days it fails (D-014, D-031). Each day names the target's unavailable soldiers,
+ * also those the actor cannot see (D-138).
+ */
 export const RuleViolation = z.object({
   rule_id: AvailabilityRuleId,
   enforcement: RuleEnforcement,
@@ -95,7 +102,14 @@ export const RuleViolation = z.object({
   group: RuleGroupValue.nullable(),
   bound: RuleBound,
   days: z
-    .array(z.object({ date: CalendarDate, required: z.number(), actual: z.number() }))
+    .array(
+      z.object({
+        date: CalendarDate,
+        required: z.number(),
+        actual: z.number(),
+        unavailable: z.array(ViolationSoldier),
+      }),
+    )
     .min(1),
 })
 export type RuleViolation = z.infer<typeof RuleViolation>

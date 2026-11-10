@@ -452,7 +452,7 @@ describe('error model (D-046)', () => {
       scope_unit_id: null,
       group: { group_by: 'tag', tag_id: ID.b },
       bound: 'min',
-      days: [{ date: '2026-11-10', required: 2, actual: 1 }],
+      days: [{ date: '2026-11-10', required: 2, actual: 1, unavailable: [{ id: ID.c, first_name: 'דנה', last_name: 'לוי' }] }],
     }
     const samples: Record<ErrorCode, unknown> = {
       validation_failed: { code: 'validation_failed', issues: [issue] },
