@@ -77,14 +77,23 @@ export function useLeaves(window: DateWindow): Loaded<readonly Leave[]> {
   )
 }
 
-/** The window a cached leaves query asked for, read back from its key. */
-function windowOfKey(key: QueryKey): LeaveQuery['window'] | null {
+/** The query a cached list of leaves asked for, read back from its key. */
+function queryOfKey(key: QueryKey): LeaveQuery | null {
   const parsed = LeaveQuery.safeParse(key[QUERY_KEYS.leaves.length])
-  return parsed.success ? parsed.data.window : null
+  return parsed.success ? parsed.data : null
 }
 
-function overlaps(leave: Pick<Leave, 'start_date' | 'end_date'>, window: LeaveQuery['window']): boolean {
-  return compareDates(leave.start_date, window.end_date) <= 0 && compareDates(window.start_date, leave.end_date) <= 0
+/** Whether the list a query asked for holds this leave: its dates, its soldier and its status. */
+function listHolds(query: LeaveQuery, leave: Leave): boolean {
+  const { window } = query
+  const inWindow =
+    window === null ||
+    (compareDates(leave.start_date, window.end_date) <= 0 && compareDates(window.start_date, leave.end_date) <= 0)
+  return (
+    inWindow &&
+    (query.soldier_ids === null || query.soldier_ids.includes(leave.soldier_id)) &&
+    (query.statuses === null || query.statuses.includes(leave.status))
+  )
 }
 
 /**
@@ -105,8 +114,8 @@ export function useCreateLeave() {
       if (actor !== null) {
         const leave = optimisticLeave(input, actor, time.now())
         for (const [key, rows] of previous) {
-          const window = windowOfKey(key)
-          if (rows === undefined || window === null || !overlaps(leave, window)) continue
+          const query = queryOfKey(key)
+          if (rows === undefined || query === null || !listHolds(query, leave)) continue
           client.setQueryData<readonly Leave[]>(key, [...rows, leave])
         }
       }
