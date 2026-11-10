@@ -33,4 +33,4 @@ export {
   type RuleThresholds,
   type RuleUnit,
 } from './rules'
-export { leaveChangeViolations, ruleGate, ruleViolations } from './gate'
+export { leaveChangeViolations, ruleGate, ruleViolations, type ViolationSoldier } from './gate'

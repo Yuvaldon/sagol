@@ -15,6 +15,7 @@ import {
   type FilterExpression,
   type RuleViolation,
 } from '@contracts'
+import { compareCodeUnits } from '../json'
 import { eachDay } from '../time'
 import {
   createRuleContext,
@@ -70,6 +71,9 @@ const S = Object.fromEntries(SOLDIER_NAMES.map((name, index) => [name, SoldierId
   SoldierName,
   SoldierId
 >
+/** A soldier's name as a violation lists it (D-138). */
+const nameOf = (name: SoldierName) => ({ id: S[name], first_name: name, last_name: name.toUpperCase() })
+const byId = (a: { id: string }, b: { id: string }) => compareCodeUnits(a.id, b.id)
 const TYPE = { vacation: LeaveTypeId.parse(uuid(71)), exam: LeaveTypeId.parse(uuid(72)) }
 const DEPLOYMENT = { alert: DeploymentId.parse(uuid(81)), archived: DeploymentId.parse(uuid(82)) }
 const ARCHIVED_AT = '2026-11-01T08:00:00Z'
@@ -106,7 +110,7 @@ function world(leaves: AvailabilityLeave[] = []): World {
     ['y', TAG.medic], ['z', TAG.medic],
   ]
   const soldier = (name: SoldierName, rank: CommandRankId, extra: Partial<World['soldiers'][number]> = {}) => ({
-    id: S[name],
+    ...nameOf(name),
     command_rank_id: rank,
     status: 'active' as const,
     properties: {},
@@ -533,6 +537,9 @@ describe('rule priority and conflicts (D-031)', () => {
 
 // ============================================================================ violations and the command gate
 
+/** A violation's day, without who is unavailable; one test below checks the names (D-138). */
+const day = (date: CalendarDate, required: number, actual: number) => expect.objectContaining({ date, required, actual })
+
 describe('rule violations and the command gate (D-047, D-073)', () => {
   const p1Min3 = rule({ scope_unit_id: UNIT.P1, min_value: 3, enforcement: 'hard' })
 
@@ -540,7 +547,7 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
     const data = world([leave('a1', D[0], D[1])])
     const overriddenRule = rule({ scope_unit_id: UNIT.P1, min_value: 4, priority: -1 })
     const { targets } = evaluate([p1Min3, overriddenRule], data, [D[1], D[0]])
-    expect(ruleViolations([...targets].reverse())).toEqual([
+    expect(ruleViolations([...targets].reverse(), data.soldiers)).toEqual([
       {
         rule_id: p1Min3.id,
         enforcement: 'hard',
@@ -548,10 +555,20 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
         group: null,
         bound: 'min',
         days: [
-          { date: D[0], required: 3, actual: 2 },
-          { date: D[1], required: 3, actual: 2 },
+          { date: D[0], required: 3, actual: 2, unavailable: [nameOf('a1')] },
+          { date: D[1], required: 3, actual: 2, unavailable: [nameOf('a1')] },
         ],
       },
+    ])
+  })
+
+  it('names the soldiers of the target who are unavailable each day, also those the actor cannot see (D-138)', () => {
+    const away = leave('a2', D[0], D[1])
+    const newLeave = leave('a1', D[1], D[1])
+    expect(leaveChangeViolations(world([away]), [p1Min3], [newLeave])).toEqual([
+      expect.objectContaining({
+        days: [{ date: D[1], required: 3, actual: 1, unavailable: [nameOf('a1'), nameOf('a2')].sort(byId) }],
+      }),
     ])
   })
 
@@ -563,8 +580,8 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
         rule_id: p1Min3.id,
         bound: 'min',
         days: [
-          { date: D[0], required: 3, actual: 2 },
-          { date: D[1], required: 3, actual: 2 },
+          day(D[0], 3, 2),
+          day(D[1], 3, 2),
         ],
       }),
     ])
@@ -575,7 +592,7 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
     const data = world([absent])
     const newLeave = leave('a2', D[0], D[0])
     expect(leaveChangeViolations(data, [p1Min3], [newLeave])).toEqual([
-      expect.objectContaining({ days: [{ date: D[0], required: 3, actual: 1 }] }),
+      expect.objectContaining({ days: [day(D[0], 3, 1)] }),
     ])
     // Cancelling on a broken day, a marker, and a soldier outside the target never worsen.
     expect(leaveChangeViolations(data, [p1Min3], [{ ...absent, status: 'cancelled' }])).toEqual([])
@@ -588,7 +605,7 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
     const data = world([stored, leave('a2', D[0], D[0]), leave('a2', D[3], D[3])])
     expect(leaveChangeViolations(data, [p1Min3], [{ ...stored, start_date: D[3], end_date: D[3] }])).toEqual([
       // D4: a1 and a2 away, m arrived on D3, so 2 of 4 remain.
-      expect.objectContaining({ days: [{ date: D[3], required: 3, actual: 2 }] }),
+      expect.objectContaining({ days: [day(D[3], 3, 2)] }),
     ])
   })
 
@@ -596,7 +613,7 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
     const away = leave('b1', D[0], D[0])
     const atMostTwo = rule({ scope_unit_id: UNIT.P2, min_value: null, max_value: 2 })
     expect(leaveChangeViolations(world([away]), [atMostTwo], [{ ...away, status: 'cancelled' }])).toEqual([
-      expect.objectContaining({ rule_id: atMostTwo.id, bound: 'max', days: [{ date: D[0], required: 2, actual: 3 }] }),
+      expect.objectContaining({ rule_id: atMostTwo.id, bound: 'max', days: [day(D[0], 2, 3)] }),
     ])
   })
 
@@ -609,7 +626,7 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
     const away = leave('b1', D[0], D[0])
     const atMostTwo = rule({ scope_unit_id: UNIT.P2, min_value: null, max_value: 2 })
     expect(leaveChangeViolations(world([away]), [atMostTwo], [{ ...away, start_date: D[1], end_date: D[1] }])).toEqual([
-      expect.objectContaining({ bound: 'max', days: [{ date: D[0], required: 2, actual: 3 }] }),
+      expect.objectContaining({ bound: 'max', days: [day(D[0], 2, 3)] }),
     ])
   })
 
@@ -625,7 +642,7 @@ describe('rule violations and the command gate (D-047, D-073)', () => {
       scope_unit_id: UNIT.P1,
       group: null,
       bound: 'min',
-      days: [{ date: D[0], required: 3, actual: 2 }],
+      days: [day(D[0], 3, 2)],
     })
     const [r1, r2, r3] = [rule().id, rule().id, rule().id]
     const hard = violation(r3, 'hard')

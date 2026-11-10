@@ -11,7 +11,20 @@ import {
 import { compareCodeUnits } from '../json'
 import { compareDates, eachDay } from '../time'
 import type { AvailabilityLeave } from './days'
-import { evaluateBeforeAfter, type RuleData, type RuleShape, type RuleTargetResult } from './rules'
+import { evaluateBeforeAfter, type RuleData, type RuleShape, type RuleSoldier, type RuleTargetResult } from './rules'
+
+/** The name of a soldier a violation lists (D-138). */
+export type ViolationSoldier = Pick<RuleSoldier, 'id' | 'first_name' | 'last_name'>
+
+/** A day of a violation, with who is unavailable (D-138). Contracts' `RuleViolation` gains the field next. */
+interface ViolationDay {
+  readonly date: CalendarDate
+  readonly required: number
+  readonly actual: number
+  readonly unavailable: ViolationSoldier[]
+}
+
+type GateViolation = Omit<RuleViolation, 'days'> & { days: ViolationDay[] }
 
 // What commands do with rule evaluation (D-047, D-073): a leave change is checked against
 // the effective rules on the days and targets it touches, and only what the change makes
@@ -27,14 +40,26 @@ function violationKey(target: RuleTargetResult, bound: RuleBound): string {
   return JSON.stringify([target.rule_id, target.scope_unit_id, group, bound])
 }
 
-/** Broken bounds of effective targets, one violation per rule × unit × group × bound. */
-function collectViolations(broken: Iterable<{ target: RuleTargetResult; bound: RuleBound }>): RuleViolation[] {
-  const byKey = new Map<string, RuleViolation>()
+/**
+ * Broken bounds of effective targets, one violation per rule × unit × group × bound. Each day names the target's
+ * unavailable soldiers, also those the actor cannot see (D-138).
+ */
+function collectViolations(
+  broken: Iterable<{ target: RuleTargetResult; bound: RuleBound }>,
+  soldiers: Iterable<ViolationSoldier>,
+): GateViolation[] {
+  const names = new Map<SoldierId, ViolationSoldier>()
+  for (const { id, first_name, last_name } of soldiers) names.set(id, { id, first_name, last_name })
+  const byKey = new Map<string, GateViolation>()
   for (const { target, bound } of broken) {
     const key = violationKey(target, bound)
     const required = bound === RuleBound.enum.min ? target.required_min : target.allowed_max
     if (required === null) continue
-    const day = { date: target.date, required, actual: target.available }
+    const unavailable = target.unavailable.flatMap((id) => {
+      const soldier = names.get(id)
+      return soldier === undefined ? [] : [soldier]
+    })
+    const day = { date: target.date, required, actual: target.available, unavailable }
     const existing = byKey.get(key)
     if (existing !== undefined) {
       existing.days.push(day)
@@ -54,14 +79,14 @@ function collectViolations(broken: Iterable<{ target: RuleTargetResult; bound: R
   return violations
 }
 
-/** Every broken bound of an effective rule; overridden targets never violate (D-031). */
-export function ruleViolations(targets: Iterable<RuleTargetResult>): RuleViolation[] {
+/** Every broken bound of an effective rule; overridden targets never violate (D-031). `soldiers` names them. */
+export function ruleViolations(targets: Iterable<RuleTargetResult>, soldiers: Iterable<ViolationSoldier>): RuleViolation[] {
   const broken: { target: RuleTargetResult; bound: RuleBound }[] = []
   for (const target of targets) {
     if (target.overridden_by.length > 0) continue
     for (const bound of target.broken) broken.push({ target, bound })
   }
-  return collectViolations(broken)
+  return collectViolations(broken, soldiers)
 }
 
 /**
@@ -102,7 +127,7 @@ export function leaveChangeViolations(
       if (worse) worsened.push({ target, bound })
     }
   })
-  return collectViolations(worsened)
+  return collectViolations(worsened, data.soldiers)
 }
 
 /**
