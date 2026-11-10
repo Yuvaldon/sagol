@@ -1,31 +1,20 @@
 import type { Leave, LeaveType, LeaveTypeGroup, LeaveTypeId } from '@contracts'
 import { t } from '@i18n'
-import { leaveEditIssues, leaveEditValues, orderedLeaveTypes, useEditLeave, useLeaveActions } from '@logic'
+import { leaveEditIssues, leaveEditValues, useEditLeave, useLeaveActions } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
 import { DateField } from '../../primitives/DateField'
-import { SelectField, type SelectOption } from '../../primitives/SelectField'
+import { SelectField } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
+import { leaveTypeOptions } from './typeOptions'
 
 // The one edit form of a leave (D-119): its type, its days and its reason. It holds the leave as it was when
 // opened and saves at that version. Before it is sent it says when an approved leave will wait for approval again.
 
 /** What the adapter's answers are placed on: `update` answers under `changes`, `reschedule` at the root. */
 const EDIT_FIELDS: readonly string[] = ['leave_type_id', 'start_date', 'end_date', 'reason']
-
-/** Live types in their order, and the leave's own type first when it is archived: the leave keeps it (D-113). */
-function typeOptions(leave: Leave, groups: readonly LeaveTypeGroup[], types: readonly LeaveType[]): SelectOption<LeaveTypeId>[] {
-  const groupName = new Map(groups.map((group) => [group.id, group.name]))
-  const live = orderedLeaveTypes(groups, types)
-  const own = types.find((type) => type.id === leave.leave_type_id)
-  const listed = own === undefined || live.some((type) => type.id === own.id) ? live : [own, ...live]
-  return listed.map((type) => {
-    const group = type.group_id === null ? undefined : groupName.get(type.group_id)
-    return { key: type.id, label: { text: group === undefined ? type.name : `${group} · ${type.name}` }, value: type.id }
-  })
-}
 
 export function LeaveEditForm({
   leave,
@@ -88,7 +77,7 @@ export function LeaveEditForm({
             labelKey="leaves.type"
             name={field.name}
             value={field.state.value}
-            options={typeOptions(opened, groups, types)}
+            options={leaveTypeOptions(groups, types, opened.leave_type_id)}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
           />
