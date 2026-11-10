@@ -6,12 +6,14 @@ session:
 
 1. starts with the reading rule in `CLAUDE.md` (D-081) and takes in scope every open item
    targeted at it (D-043);
-2. commits layer by layer, in dependency order, through each layer's public API;
-3. ends with `npm run check` and `npm run build` green, the slice's demo running in Playwright,
-   `docs/OPEN_ITEMS.md` updated, and a handoff note `docs/sessions/NN-<name>.md` (done / how to
-   see it / decisions / open item ids / next input).
+2. commits one layer per commit, each commit green, through each layer's public API (D-127);
+3. ends with `npm run check`, `npm run build` and the whole Playwright suite green, a read-only
+   review of its own diff, `docs/OPEN_ITEMS.md` updated (closed rows to its archive) and a handoff
+   note `docs/sessions/NN-<name>.md` (done / how to see it / decisions / open item ids / next
+   input), then merges its pull request with CI green (D-110, D-126, D-128).
 
-Status: ☐ pending · ◐ in progress · ☑ done
+Status: ☐ pending · ◐ in progress · ☑ done. A row's ☑ reaches `main` only through a merge with CI
+green, so on `main` it means merged and green (D-126).
 
 Rows `A1` … `A7` are **audit sessions** (D-051, D-078): read-only, opened by the product owner,
 following `docs/AUDIT.md`. An execution session never runs an audit. The session that finishes
@@ -29,6 +31,7 @@ the row before an audit reminds the owner to open it.
 | 0.6 | docs | `personal_id` = military personal number (D-069); invite links opened as OI-026 | ☑ |
 | 0.7 | docs | Move to vertical slices: `docs/FEATURE_MAP.md`, Stone 3 direction (D-075 … D-082) | ☑ |
 | 0.8 | docs | Record audit A1: `docs/audits/A1.md`, OI-034 … OI-042, D-083, D-084 | ☑ |
+| 0.9 | docs | Record audit A3: `docs/audits/A3.md`, OI-068 … OI-091, D-123 … D-129, open-items archive | ☑ |
 
 ### Session 0.2 guardrails
 
@@ -77,7 +80,7 @@ the row before an audit reminds the owner to open it.
 | V3 | Timeline grid | Main screen with real soldiers, week navigation, unit selector | ☑ |
 | V4 | Leaves on the timeline | Leave types, new leave, bars on the timeline | ☑ |
 | V5 | Approval workflow | Details drawer, approve and reject, history, comments, inbox | ☑ |
-| A3 | audit | Leave workflow, timeline engine, view state | ☐ |
+| A3 | audit | Leave workflow, timeline engine, view state. Report: `docs/audits/A3.md` | ☑ |
 
 ## M3 — Who is missing
 

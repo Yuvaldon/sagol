@@ -25,9 +25,9 @@ already hold most of the hard rules, so slices are mostly wiring, screens and st
 
 **One session = one slice. One commit = one layer.**
 
-1. **Order inside a slice:** `docs/contracts` (only when the model changes) → `domain` →
-   `config` → `data` → `logic` → `i18n` + `ui` → `app` → `e2e`. Each layer is written against
-   the public API of the one below it.
+1. **Order inside a slice:** a model change comes first (`docs` and `contracts` together). After
+   that, the order is whatever keeps every commit green, which usually follows the dependencies
+   (D-127). Each layer is written against the public API of the one below it.
 2. **Every commit passes `npm run check`** and touches one layer. A pre-commit guard
    (`scripts/check-commit-layers.ts`, added in V0) rejects a commit whose `src/` files cross
    layers. `i18n` with `ui` is the one allowed pair (D-025). Files outside `src/` are not a
@@ -52,7 +52,10 @@ already hold most of the hard rules, so slices are mostly wiring, screens and st
 - `npm run check` and `npm run build` are green;
 - its demo runs in Playwright, desktop and mobile, RTL, with axe;
 - the owner can follow the demo steps in the handoff in a real browser;
-- `OPEN_ITEMS.md`, `ROADMAP.md` and the handoff are updated (D-043, D-052).
+- `OPEN_ITEMS.md` (closed rows moved to its archive), `ROADMAP.md`, the current state in
+  `ARCHITECTURE.md` and `Design.md`, and the handoff are updated (D-043, D-052, D-128);
+- the whole Playwright suite ran locally with the CI worker count, the session reviewed its own
+  diff read-only, and the pull request merged with CI green (D-110, D-126).
 
 If a slice will not fit one session, split it at a smaller demo and record the split here.
 
@@ -225,7 +228,7 @@ another tab gets a clear message.
 - **ui:** leave details; inbox; comments; confirm dialogs.
 - **Open items:** OI-031; parts of OI-023 (a), OI-024, OI-027.
 - **Decisions:** D-013, D-041, D-047, D-049, D-063, D-064.
-- **As built:** D-117 to D-122. One edit form sends up to two commands; one thread holds events and comments; the inbox
+- **As built:** D-117 to D-122. One edit form sends up to two commands (one command from V7: D-123, OI-076); one thread holds events and comments; the inbox
   has a closed section, which is the way to reopen a leave; the "approve now" default is a switch in the user menu.
   The rule acknowledgment dialog stays with V7 (OI-066). The owner chose M3 after M2 (OI-031).
 
@@ -243,25 +246,29 @@ in the URL.
 - **logic:** filter state and URL encoding; `partitionAvailability`.
 - **ui:** filter bar, chips, present/absent panel.
 - **Open items:** OI-012 (the mock's "status" chip is a leave filter, which is that question);
-  parts of OI-023 (b), OI-028.
-- **Decisions:** D-015, D-032, D-065, D-067, D-070.
+  OI-070, OI-090; OI-078 (asked at the end of the slice), OI-079, OI-082, OI-086, OI-087, OI-089 (from A3).
+- **Decisions:** D-015, D-032, D-065, D-067, D-070, D-105, D-125.
 
 #### V7 — Availability rules
 **Owner sees:** a rule builder ("at least 2 medics in each platoon"), a heat row on the timeline,
 conflicts in the rules module. A leave that breaks a soft rule asks for acknowledgment, and a
 hard rule refuses it.
 - **data:** `availability_rules`; `filterIssues`, `filterReferences`; what a violation reveals
-  about invisible soldiers (OI-027).
+  about invisible soldiers (OI-075); one edit command (D-123); an archived soldier's leave can only
+  be cancelled (D-124).
 - **logic:** evaluation for a window; live warnings equal to the command result.
 - **ui:** rules module on the shared filter UI; heat row; acknowledgment dialog.
-- **Open items:** OI-023 (c), OI-027, OI-028, OI-042 (asked at start).
-- **Decisions:** D-014, D-031, D-047, D-067, D-071, D-072, D-073.
+- **Open items:** OI-042 (asked at start); OI-066 (from V5); OI-071, OI-075, OI-091; OI-076, OI-077, OI-083,
+  OI-084, OI-085 (from A3).
+- **Decisions:** D-014, D-031, D-047, D-067, D-071, D-072, D-073, D-117, D-123, D-124.
 
 #### V8 — Timeline drag
 **Owner sees:** drag to create, move and resize, with live rule and conflict feedback, plus a
 touch path on mobile.
-- **ui:** drag math in the pure core, tested; interactions through the V4 and V5 commands.
-- **Decisions:** D-064, D-073.
+- **ui:** drag math in the pure core, tested; interactions through `leaves.create` and `leaves.update`
+  (a move or a resize sends the dates, D-123).
+- **Open items:** OI-067 (from V5).
+- **Decisions:** D-064, D-073, D-123.
 
 ### M4 — Everyone has the right access
 
@@ -272,7 +279,7 @@ until V10 gives them a role, and that is correct.
 - **data:** `accounts` commands; `autoLinkSoldier`; `linkCandidates`; `canReviewLinkRequest`;
   `linkEnrichment`.
 - **ui:** onboarding request form; review module.
-- **Open items:** OI-023 (d), OI-036, OI-034 and OI-019 (asked at start, OI-019 with its schema
+- **Open items:** OI-072, OI-036, OI-034 and OI-019 (asked at start, OI-019 with its schema
   note); OI-026 (decided at start, its own slice if accepted); OI-046; OI-055 (from A2).
 - **Decisions:** D-005, D-030, D-066, D-069.
 
@@ -284,7 +291,7 @@ squad commander their platoon, and controls follow. Lockout and escalation are r
   `accessManagerIssues`; `missingPermissions`; `accessGrantIssues`.
 - **logic:** hints across all modules.
 - **ui:** roles module; scope picker; grants module.
-- **Open items:** OI-021 (a, b, d); OI-038, OI-039, OI-040, OI-041 (asked at start); OI-044; OI-047, OI-049, OI-053, OI-054 (from A2); OI-060 (from V3).
+- **Open items:** OI-068; OI-038, OI-039, OI-040, OI-041 (asked at start); OI-044; OI-047, OI-049, OI-053, OI-054 (from A2); OI-060 (from V3).
 - **Decisions:** D-003, D-004, D-028, D-040, D-053 … D-060.
 
 #### V11 — Soldier self-service
@@ -321,8 +328,8 @@ database; remote adapter passing the same contract suite; Google auth, environme
 | V17 Dark Mode | Second token set (was row 8.5) | D-024, D-077 |
 
 From M6 on, each slice also updates the remote adapter and server functions, and the contract
-suite holds both to the same behavior (D-082). V14 and V15 also close the last parts of OI-021,
-OI-023 and OI-027, and V14 closes OI-037.
+suite holds both to the same behavior (D-082). Open items: V13 OI-088; V14 OI-037, OI-073, OI-080;
+V15 OI-069, OI-074, OI-081.
 
 **Not assigned yet:** focus mode (the mock's "מצב מיקוד") has no decision behind it (OI-032). It
 gets a definition and a slice when the owner wants it.
@@ -333,7 +340,7 @@ gets a definition and a slice when the owner wants it.
 |-------|------|--------|
 | A1 | done, `docs/audits/A1.md` | Contracts and domain against the decisions |
 | A2 | done, `docs/audits/A2.md` | Server-authoritative behavior, no bypasses, first UI and Design.md |
-| A3 | after M2 | Leave workflow, timeline engine, view state |
+| A3 | done, `docs/audits/A3.md` | Leave workflow, timeline engine, view state |
 | A4 | after M3 | Filters and rules: UI warnings equal command results |
 | A5 | after M4 | Permissions end to end |
 | A6 | after M5 | Production readiness, RLS against the policy matrix |
