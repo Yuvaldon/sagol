@@ -61,6 +61,19 @@ export {
 export { useTimeline, type BoardConditions, type TimelineModel } from './timeline/hooks'
 export { timelineLeaves, type TimelineLeave } from './timeline/leaves'
 export {
+  datesOfRange,
+  dayRangeOf,
+  movedLeaveValues,
+  newLeaveDraft,
+  sameDates,
+  useTimelineEditing,
+  type DayRange,
+  type LeaveDates,
+  type LeaveMove,
+  type TimelineEditing,
+} from './timeline/editing'
+export { NewLeaveDraft } from './view-state/draft'
+export {
   NEW_LEAVE_TYPE_VALUES,
   leaveTypeFormIssues,
   leaveTypeFormValues,
