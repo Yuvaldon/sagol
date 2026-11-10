@@ -24,6 +24,8 @@ import { useMemo, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../../patterns/Notices'
 import { Button } from '../../../primitives/Button'
 import { TimelineGrid } from '../view/TimelineGrid'
+import { useBoardDrag } from './boardDrag'
+import { DragOverlay } from './DragOverlay'
 import { dayCells, heatCells, timelineRows } from './model'
 
 // The timeline as the viewport shows it. The adapter is the only part that meets the domain (model.ts).
@@ -65,6 +67,8 @@ function Board({
   const rulesDay = useRulesDay()
   const unit = filterUnitOf(filter)
   const heat = useHeatRow(window, unit.kind === 'unit' ? unit.unitId : null)
+  const soldiers = useMemo(() => model.items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier] : [])), [model.items])
+  const drag = useBoardDrag(window, soldiers)
   const open = access.soldiers
     ? (soldierId: string) => {
         panel.open(PANEL_IDS.soldiers, { entity: soldierId })
@@ -100,11 +104,21 @@ function Board({
     panel.open(PANEL_IDS.leaves, { entity: leaveId })
   }
   return (
-    <TimelineGrid
-      days={dayCells(model.days, model.today)}
-      rows={timelineRows(model.items, model.days, open, { leaves: model.leaves, colors: mode, openLeave })}
-      heat={heat.status === 'ready' && heat.value !== null ? heatCells(heat.value, rulesDay.openOn) : null}
-    />
+    <>
+      <TimelineGrid
+        days={dayCells(model.days, model.today)}
+        rows={timelineRows(model.items, model.days, open, {
+          leaves: model.leaves,
+          colors: mode,
+          openLeave,
+          movable: drag.movable,
+          creatable: drag.creatable,
+        })}
+        heat={heat.status === 'ready' && heat.value !== null ? heatCells(heat.value, rulesDay.openOn) : null}
+        drag={drag.props}
+      />
+      <DragOverlay drag={drag} />
+    </>
   )
 }
 

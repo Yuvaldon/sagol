@@ -67,6 +67,9 @@ export const dictionary = {
     emptyMissingTitle: 'אף אחד לא חסר בשבוע הזה',
     emptyMissingBody: 'כל מי שמתאים לסינון נוכח בכל ימי השבוע.',
     soldiersInGroup: 'חיילים בקבוצה',
+    dragMove: 'הזזת בקשה',
+    dragNew: 'בקשה חדשה',
+    dragNewHint: 'בשחרור ייפתח טופס לבחירת סוג ההיעדרות.',
   },
   common: {
     close: 'סגירה',

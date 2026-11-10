@@ -1,19 +1,24 @@
-import { TIMELINE_LANES, TIMELINE_LAYOUT } from '@config'
+import { TIMELINE_DRAG, TIMELINE_LANES, TIMELINE_LANES_TOUCH, TIMELINE_LAYOUT } from '@config'
 import { t } from '@i18n'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { useIsDesktop } from '../../../patterns/media'
-import { badgeStart, barSpan, laneTop, rowHeightFor } from '../core/lanes'
+import { rangeInWindow } from '../core/drag'
+import { badgeStart, barSpan, laneTop, rowHeightFor, type LaneSizes } from '../core/lanes'
 import { dayOffset, gridLayout, spansOf, type GridLayout } from '../core/layout'
 import type {
   TimelineDayCell,
+  TimelineDrag,
+  TimelineDragProps,
+  TimelineDragTone,
   TimelineGroupRow,
   TimelineHeatCell,
   TimelineMark,
   TimelineResourceRow,
   TimelineRowModel,
 } from './model'
+import { useDrag, type DragGesture } from './useDrag'
 
 // The timeline grid of Stone 3 (D-077, D-108): a days header that floats under the bars, a name column
 // that stays at the inline start, and rows that exist in the page only while in sight. Positions come from
@@ -150,25 +155,64 @@ function GroupRow({ row, layout }: { readonly row: TimelineGroupRow; readonly la
 }
 
 // A mark is a control that opens its leave (D-119). Its hit area fills the gap between lanes, so lanes never
-// take each other's presses.
+// take each other's presses: 24 px high from `md`, and 44 on a phone, where a badge is 44 wide too (D-144).
 const MARK_BUTTON =
-  'absolute z-1 cursor-pointer outline-focus outline-offset-1 before:absolute before:inset-x-none before:-inset-y-2xs data-focus-visible:outline-2'
+  'absolute z-1 cursor-pointer outline-focus outline-offset-1 before:absolute before:inset-x-none before:-inset-y-sm md:before:-inset-y-2xs data-focus-visible:outline-2'
+const BADGE_HIT = 'before:-inset-x-sm md:before:inset-x-none'
 
-/** A bar over its days: solid when approved, a dashed edge over a faint fill when pending (D-111). */
-function Bar({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonly layout: GridLayout; readonly baseRowPx: number }) {
-  const { startPx, widthPx } = barSpan(layout, mark, mark.cut, TIMELINE_LANES)
-  const form = mark.dashed ? `border-2 border-dashed ${mark.tone.edge} ${mark.tone.faint}` : mark.tone.fill
-  const ends = `${mark.cut.start ? '' : 'rounded-s-bar'} ${mark.cut.end ? '' : 'rounded-e-bar'}`
+/** The edge of a drag's ghost: what the change would break (D-143). */
+const GHOST_TONES: Record<TimelineDragTone, string> = {
+  ok: 'outline-2 outline-marker',
+  soft: 'outline-2 outline-dashed outline-status-pending',
+  hard: 'outline-2 outline-status-rejected',
+}
+
+/** How a mark is filled: solid when approved, a dashed edge over a faint fill when pending (D-111). */
+function barForm(mark: TimelineMark): string {
+  return mark.dashed ? `border-2 border-dashed ${mark.tone.edge} ${mark.tone.faint}` : mark.tone.fill
+}
+
+function barEnds(cut: TimelineMark['cut']): string {
+  return `${cut.start ? '' : 'rounded-s-bar'} ${cut.end ? '' : 'rounded-e-bar'}`
+}
+
+/** What a mark needs from the board around it. */
+interface Place {
+  readonly layout: GridLayout
+  readonly baseRowPx: number
+  readonly lanes: LaneSizes
+  /** Whether a press just ended a drag, so it must not open the mark. */
+  readonly pressIsDrag: () => boolean
+}
+
+/** The inner ends of a bar that move its first or last day (D-143): a resize cursor, nothing to read. */
+function Handles({ mark }: { readonly mark: TimelineMark }) {
+  if (mark.drag?.resize !== true) return null
+  const width = { width: TIMELINE_DRAG.handlePx }
+  return (
+    <>
+      {mark.cut.start ? null : <span aria-hidden className="absolute inset-y-none start-none cursor-ew-resize" style={width} />}
+      {mark.cut.end ? null : <span aria-hidden className="absolute inset-y-none end-none cursor-ew-resize" style={width} />}
+    </>
+  )
+}
+
+/** A bar over its days (D-111). One that moves says so by its cursor (D-143). */
+function Bar({ mark, place, dimmed }: { readonly mark: TimelineMark; readonly place: Place; readonly dimmed: boolean }) {
+  const { startPx, widthPx } = barSpan(place.layout, mark, mark.cut, place.lanes)
   return (
     <AriaButton
       aria-label={mark.label}
-      onPress={mark.onOpen}
-      className={`${MARK_BUTTON} flex items-center gap-xs px-xs ${form} ${ends}`}
+      data-mark={mark.key}
+      onPress={() => {
+        if (!place.pressIsDrag()) mark.onOpen()
+      }}
+      className={`${MARK_BUTTON} flex select-none items-center gap-xs px-xs ${barForm(mark)} ${barEnds(mark.cut)} ${dimmed ? 'opacity-50' : ''}`}
       style={{
         insetInlineStart: startPx,
         width: widthPx,
-        top: laneTop(baseRowPx, mark.lane, TIMELINE_LANES),
-        height: TIMELINE_LANES.barPx,
+        top: laneTop(place.baseRowPx, mark.lane, place.lanes),
+        height: place.lanes.barPx,
       }}
     >
       {mark.dot === null ? null : <span aria-hidden className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
@@ -177,51 +221,134 @@ function Bar({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonl
           {mark.caption}
         </span>
       )}
+      <Handles mark={mark} />
     </AriaButton>
   )
 }
+
+const ICON_SIZE = 12
 
 /**
  * A marker: a round badge with its icon on each of its days, over any bar (D-111). Every badge opens the leave by
  * pointer; the first one alone is in the tab order and read aloud, so a marker of five days is one control.
  */
-function Badges({ mark, layout, baseRowPx }: { readonly mark: TimelineMark; readonly layout: GridLayout; readonly baseRowPx: number }) {
+function Badges({ mark, place, dimmed }: { readonly mark: TimelineMark; readonly place: Place; readonly dimmed: boolean }) {
   const Icon = mark.Icon
   return Array.from({ length: mark.length }, (_, offset) => (
     <AriaButton
       key={offset}
       {...(offset === 0 ? { 'aria-label': mark.label } : { 'aria-hidden': true, excludeFromTabOrder: true })}
-      onPress={mark.onOpen}
-      className={`${MARK_BUTTON} flex items-center justify-center rounded-pill bg-surface shadow-rim ${mark.dashed ? 'border border-dashed' : 'border'} ${mark.tone.edge} ${mark.tone.ink}`}
+      data-mark={mark.key}
+      onPress={() => {
+        if (!place.pressIsDrag()) mark.onOpen()
+      }}
+      className={`${MARK_BUTTON} ${BADGE_HIT} flex select-none items-center justify-center rounded-pill bg-surface shadow-rim ${mark.dashed ? 'border border-dashed' : 'border'} ${mark.tone.edge} ${mark.tone.ink} ${dimmed ? 'opacity-50' : ''}`}
       style={{
-        insetInlineStart: badgeStart(layout, mark.start + offset, TIMELINE_LANES),
-        top: laneTop(baseRowPx, mark.lane, TIMELINE_LANES),
-        width: TIMELINE_LANES.barPx,
-        height: TIMELINE_LANES.barPx,
+        insetInlineStart: badgeStart(place.layout, mark.start + offset, place.lanes),
+        top: laneTop(place.baseRowPx, mark.lane, place.lanes),
+        width: place.lanes.barPx,
+        height: place.lanes.barPx,
       }}
     >
-      {Icon === null ? null : <Icon aria-hidden size={12} strokeWidth={2.6} />}
+      {Icon === null ? null : <Icon aria-hidden size={ICON_SIZE} strokeWidth={2.6} />}
     </AriaButton>
   ))
 }
 
+/**
+ * Where a drag puts a mark, or the days it marks for a new one (D-143): the mark's own form at its new days with an
+ * edge that says what it would break, or a dashed box. Seen only: the adapter's card says it aloud.
+ */
+function Ghost({
+  drag,
+  mark,
+  place,
+  tone,
+}: {
+  readonly drag: TimelineDrag
+  readonly mark: TimelineMark | null
+  readonly place: Place
+  readonly tone: TimelineDragTone
+}) {
+  const shown = rangeInWindow(drag.range, place.layout.dayCount)
+  if (shown === null) return null
+  const top = laneTop(place.baseRowPx, mark?.lane ?? 0, place.lanes)
+  const edge = GHOST_TONES[tone]
+  if (mark === null) {
+    const { startPx, widthPx } = barSpan(place.layout, shown, NOT_CUT, place.lanes)
+    return (
+      <div
+        aria-hidden
+        className="pointer-events-none absolute z-2 rounded-bar border-2 border-dashed border-marker bg-inner"
+        style={{ insetInlineStart: startPx, width: widthPx, top, height: place.lanes.barPx }}
+      />
+    )
+  }
+  if (mark.kind === 'badge') {
+    return Array.from({ length: shown.length }, (_, offset) => (
+      <div
+        key={offset}
+        aria-hidden
+        className={`pointer-events-none absolute z-2 rounded-pill bg-surface outline-offset-1 ${mark.dashed ? 'border border-dashed' : 'border'} ${mark.tone.edge} ${edge}`}
+        style={{
+          insetInlineStart: badgeStart(place.layout, shown.start + offset, place.lanes),
+          top,
+          width: place.lanes.barPx,
+          height: place.lanes.barPx,
+        }}
+      />
+    ))
+  }
+  const { startPx, widthPx } = barSpan(place.layout, shown, shown.cut, place.lanes)
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute z-2 outline-offset-1 ${barForm(mark)} ${barEnds(shown.cut)} ${edge}`}
+      style={{ insetInlineStart: startPx, width: widthPx, top, height: place.lanes.barPx }}
+    />
+  )
+}
+
+const NOT_CUT = { start: false, end: false } as const
+
 function ResourceRow({
   row,
-  layout,
-  baseRowPx,
+  place,
+  drag,
+  tone,
+  gesture,
 }: {
   readonly row: TimelineResourceRow
-  readonly layout: GridLayout
-  readonly baseRowPx: number
+  readonly place: Place
+  /** The drag on this row, or the drop it waits on. */
+  readonly drag: TimelineDrag | null
+  readonly tone: TimelineDragTone
+  readonly gesture: DragGesture | null
 }) {
+  const { layout } = place
   const name = (
     <span className="flex min-w-none items-baseline gap-xs">
       <span className="truncate text-name font-medium text-text">{row.name}</span>
       {row.detail === null ? null : <span className="shrink-0 text-micro text-text-muted">{row.detail}</span>}
     </span>
   )
+  const dragged = drag === null ? null : (row.marks.find((mark) => mark.key === drag.markKey) ?? null)
   return (
-    <div className="relative h-full" style={{ width: layout.widthPx }}>
+    <div
+      className="relative h-full"
+      style={{ width: layout.widthPx }}
+      onPointerDown={
+        gesture === null
+          ? undefined
+          : (event) => {
+              gesture.start(event, row)
+            }
+      }
+      onContextMenu={(event) => {
+        // A finger held on the board picks up what it is on; the browser's menu would take the press instead.
+        if (gesture?.isHolding() === true) event.preventDefault()
+      }}
+    >
       {spansOf(row.offDays, true).map((span) => (
         <div
           key={span.start}
@@ -230,7 +357,7 @@ function ResourceRow({
           style={{ insetInlineStart: dayOffset(layout, span.start), width: layout.dayPx * span.length }}
         />
       ))}
-      <div className="sticky start-none z-2 flex h-full items-center bg-surface" style={{ width: layout.nameColumnPx }}>
+      <div className="sticky start-none z-3 flex h-full items-center bg-surface" style={{ width: layout.nameColumnPx }}>
         {row.onOpen === null ? (
           <span className="flex min-w-none px-md">{name}</span>
         ) : (
@@ -244,11 +371,12 @@ function ResourceRow({
       </div>
       {row.marks.map((mark) =>
         mark.kind === 'bar' ? (
-          <Bar key={mark.key} mark={mark} layout={layout} baseRowPx={baseRowPx} />
+          <Bar key={mark.key} mark={mark} place={place} dimmed={mark === dragged} />
         ) : (
-          <Badges key={mark.key} mark={mark} layout={layout} baseRowPx={baseRowPx} />
+          <Badges key={mark.key} mark={mark} place={place} dimmed={mark === dragged} />
         ),
       )}
+      {drag === null ? null : <Ghost drag={drag} mark={dragged} place={place} tone={tone} />}
       {/* A hairline of its own, so the name keeps the whole height of the row as a touch target. */}
       <div aria-hidden className="absolute inset-x-none bottom-none z-3 h-hairline bg-line" />
       {row.offText === null ? null : <span className="sr-only">{row.offText}</span>}
@@ -261,15 +389,23 @@ export interface TimelineGridProps {
   readonly rows: readonly TimelineRowModel[]
   /** The heat row (D-141); NULL when the actor sees no rule. */
   readonly heat: readonly TimelineHeatCell[] | null
+  /** Dragging marks and days (D-143); NULL when nothing on the board moves. */
+  readonly drag: TimelineDragProps | null
 }
 
-export function TimelineGrid({ days, rows, heat }: TimelineGridProps) {
+export function TimelineGrid({ days, rows, heat, drag }: TimelineGridProps) {
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
+  const [content, setContent] = useState<HTMLDivElement | null>(null)
   const list = useRef<HTMLUListElement>(null)
   const [listTop, setListTop] = useState(0)
   const layout = gridLayout(useWidthOf(scroller), days.length, TIMELINE_LAYOUT)
-  // A name is a touch target on mobile, so the row grows there (OI-033).
-  const rowPx = useIsDesktop() ? TIMELINE_LAYOUT.rowPx : TIMELINE_LAYOUT.rowTouchPx
+  // A name is a touch target on mobile, so the row grows there (OI-033), and so do the lanes (D-144).
+  const isDesktop = useIsDesktop()
+  const rowPx = isDesktop ? TIMELINE_LAYOUT.rowPx : TIMELINE_LAYOUT.rowTouchPx
+  const lanes = isDesktop ? TIMELINE_LANES : TIMELINE_LANES_TOUCH
+  const gesture = useDrag(layout, { scroller, content }, drag)
+  const shown = gesture.active ?? drag?.held ?? null
+  const place: Place = { layout, baseRowPx: rowPx, lanes, pressIsDrag: gesture.pressIsDrag }
 
   // Where the rows start inside what scrolls: under the bars and the days header, which grows with the heat row.
   const hasHeat = heat !== null
@@ -285,7 +421,7 @@ export function TimelineGrid({ days, rows, heat }: TimelineGridProps) {
     estimateSize: (index) => {
       const row = rows[index]
       if (row === undefined || row.kind === 'group') return TIMELINE_LAYOUT.groupRowPx
-      return rowHeightFor(rowPx, row.lanes, TIMELINE_LANES)
+      return rowHeightFor(rowPx, row.lanes, lanes)
     },
     overscan: TIMELINE_LAYOUT.overscanRows,
     scrollMargin: listTop,
@@ -306,7 +442,7 @@ export function TimelineGrid({ days, rows, heat }: TimelineGridProps) {
       tabIndex={0}
       className="h-full overflow-auto overscroll-contain outline-focus -outline-offset-2 focus-visible:outline-2"
     >
-      <div className="relative min-w-full" style={{ width: layout.widthPx }}>
+      <div ref={setContent} className={`relative min-w-full ${gesture.active === null ? '' : 'select-none'}`} style={{ width: layout.widthPx }}>
         <div aria-hidden className="h-under-bars md:h-under-bars-md" />
         <DaysHeader days={days} layout={layout} heat={heat} heatPx={rowPx} />
         <ul ref={list} aria-label={t('timeline.names')} className="relative" style={{ height: virtualizer.getTotalSize() }}>
@@ -325,7 +461,13 @@ export function TimelineGrid({ days, rows, heat }: TimelineGridProps) {
                 {row.kind === 'group' ? (
                   <GroupRow row={row} layout={layout} />
                 ) : (
-                  <ResourceRow row={row} layout={layout} baseRowPx={rowPx} />
+                  <ResourceRow
+                    row={row}
+                    place={place}
+                    drag={shown !== null && shown.rowKey === row.key ? shown : null}
+                    tone={drag?.tone ?? 'ok'}
+                    gesture={drag === null ? null : gesture}
+                  />
                 )}
               </li>
             )
