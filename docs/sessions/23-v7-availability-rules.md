@@ -72,7 +72,11 @@ Run `npm run dev` and open <http://localhost:5173>. Sign in and claim the organi
 - Playwright, the whole suite with two workers: 54 passed, 3 failed. Two were `approval.spec.ts`, which still expected two
   history lines per edit; it now expects one (D-123) and passes. One was the desktop drag test of `unit-tree.spec.ts`
   (code this slice does not touch); it passed twice in a row on rerun. The rules, leaves and filters demos pass after the
-  review fixes. CI's run is in the pull request.
+  review fixes.
+- CI then failed once, on the mobile timeline demo: it hit-tested the bars while react-aria still hid the entering
+  drawer (opacity 0, a clip), which Playwright counts as visible. V7's extra work on the board made that moment long
+  enough on a slow runner; it reproduced at 3x CPU throttling (6 of 8) and not on main. The test now waits for a settled
+  screen, shared with the axe check: 8 of 8 throttled, and the whole suite 57 passed with two workers.
 
 ## Review (D-126)
 
