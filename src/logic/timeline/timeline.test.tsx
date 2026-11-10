@@ -3,6 +3,7 @@ import {
   CommandRankId,
   OrganizationId,
   SoldierId,
+  TagId,
   UnitId,
   UnitMembershipId,
   type CommandRank,
@@ -24,6 +25,7 @@ import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { useCan } from '../permissions/hooks'
 import type { LogicPorts } from '../ports'
+import { usePlacementHints } from '../roster/hooks'
 import { soldierRows, unitStateOn } from '../roster/roster'
 import { LogicProvider } from '../runtime/LogicProvider'
 import { useToday } from '../session/today'
@@ -136,7 +138,7 @@ describe('the date window (D-103)', () => {
   })
 })
 
-describe('the unit filter (D-104)', () => {
+describe('the unit filter (D-104, D-131)', () => {
   const PLATOON = UnitId.parse(uuid(11))
 
   it('writes one unit with its sub-units, and nothing for the whole organization', () => {
@@ -149,7 +151,9 @@ describe('the unit filter (D-104)', () => {
     expect(filterUnitOf(null)).toEqual({ kind: 'organization' })
     expect(filterUnitOf({})).toEqual({ kind: 'organization' })
     expect(filterUnitOf({ where: { kind: 'unit', unit_ids: [PLATOON], include_descendants: false } })).toEqual({ kind: 'other' })
-    expect(filterUnitOf({ where: { kind: 'soldier_status', statuses: ['active'] } })).toEqual({ kind: 'other' })
+    // A chip of the bar beside no unit is the whole organization (D-131); what the bar does not read is other.
+    expect(filterUnitOf({ where: { kind: 'soldier_status', statuses: ['active'] } })).toEqual({ kind: 'organization' })
+    expect(filterUnitOf({ where: { kind: 'not', node: { kind: 'soldier_status', statuses: ['active'] } } })).toEqual({ kind: 'other' })
   })
 })
 
@@ -188,11 +192,14 @@ describe('the rows of the timeline (D-105)', () => {
     ranks,
     units,
     memberships: [],
+    soldierTags: [],
     days: WEEK,
     today: TODAY,
     filter: null,
     scopeUnitId: null,
     readsPlacements: () => true,
+    marked: null,
+    absent: null,
     ...overrides,
   })
 
@@ -301,6 +308,78 @@ describe('the rows of the timeline (D-105)', () => {
     expect(describeItems(timelineItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships, days: nextWeek })))[0]).toBe(
       '# פלוגה · מחלקה א (1)',
     )
+  })
+
+  const MEDIC = TagId.parse(uuid(40))
+  const everyoneInA = [membership(70, 1, 11, '2026-01-01', null), membership(71, 2, 11, '2026-01-01', null), membership(72, 3, 11, '2026-01-01', null)]
+  const three = [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן', { status: 'inactive' }), soldier(3, 'גיל', 'כהן')]
+  const names = (items: readonly TimelineItem[]) => items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier.first_name] : []))
+
+  it('reads soldier tags, and a status condition brings inactive soldiers back (D-131)', () => {
+    const tagged = { soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, organization_id: ORGANIZATION, created_at: AT, created_by: null }
+    const medics = timelineItems(
+      base({ soldiers: three, memberships: everyoneInA, soldierTags: [tagged], filter: { where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } } }),
+    )
+    expect(names(medics)).toEqual(['גיל'])
+    expect(names(timelineItems(base({ soldiers: three, memberships: everyoneInA })))).toEqual(['אבי', 'גיל'])
+    const inactive = timelineItems(
+      base({ soldiers: three, memberships: everyoneInA, filter: { where: { kind: 'soldier_status', statuses: ['inactive'] } } }),
+    )
+    expect(names(inactive)).toEqual(['בני'])
+  })
+
+  it('keeps only rows with a matching mark under a leave condition (D-132)', () => {
+    const marked = (id: SoldierId) => id === SoldierId.parse(uuid(1))
+    expect(names(timelineItems(base({ soldiers: three, memberships: everyoneInA, marked })))).toEqual(['אבי'])
+  })
+
+  it('keeps who is absent on a day in the view, and mutes the days they are present (D-133)', () => {
+    // אבי is away on Monday and Tuesday; גיל is away on Saturday, after he left the platoon on Friday.
+    const absentOn = new Map([
+      [SoldierId.parse(uuid(1)), [false, true, true, false, false, false, false]],
+      [SoldierId.parse(uuid(3)), [false, false, false, false, false, false, true]],
+    ])
+    const memberships = [membership(70, 1, 11, '2026-01-01', null), membership(72, 3, 11, '2026-01-01', '2026-11-13')]
+    const items = timelineItems(
+      base({
+        soldiers: three,
+        memberships,
+        filter: { where: { kind: 'unit', unit_ids: [PLATOON_A], include_descendants: true } },
+        absent: (id) => absentOn.get(id) ?? WEEK.map(() => false),
+      }),
+    )
+    expect(names(items)).toEqual(['אבי'])
+    const [row] = items.filter((item) => item.kind === 'soldier')
+    expect(row?.kind === 'soldier' ? row.present : null).toEqual([true, false, false, true, true, true, true])
+  })
+})
+
+describe('the board waits for the placement hints once (D-122, OI-082)', () => {
+  it('stays settled when a soldier is added and their hint is still asked', async () => {
+    let answer: (value: Result<boolean[]>) => void = () => undefined
+    const can = vi.fn((checks: readonly PermissionCheck[]) =>
+      checks.length > 1
+        ? new Promise<Result<boolean[]>>((resolve) => {
+            answer = resolve
+          })
+        : Promise.resolve<Result<boolean[]>>({ ok: true, value: checks.map(() => true) }),
+    )
+    const ports = portsAt({ now: '2026-11-11T10:00:00.000Z' }, can)
+    const { result, rerender } = renderHook(({ soldiers }: { soldiers: readonly Soldier[] }) => usePlacementHints(soldiers), {
+      initialProps: { soldiers: [soldier(1, 'אבי', 'כהן')] },
+      wrapper: ({ children }: { children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>,
+    })
+    await waitFor(() => {
+      expect(result.current.settled).toBe(true)
+    })
+    rerender({ soldiers: [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן')] })
+    expect(result.current.settled).toBe(true)
+    act(() => {
+      answer({ ok: true, value: [true, true] })
+    })
+    await waitFor(() => {
+      expect(result.current.reads(SoldierId.parse(uuid(2)))).toBe(true)
+    })
   })
 })
 
@@ -424,6 +503,23 @@ describe('view state in the URL (D-103, D-104)', () => {
     press('close')
     await waitFor(() => {
       expect(read('search')).toEqual({ from: '2026-12-06', to: '2026-12-12', filter: unitFilterOf(PLATOON) })
+    })
+  })
+
+  it('keeps the leave conditions, "only who is missing" and the day when a panel opens (D-132 to D-134)', async () => {
+    const leaves = encodeURIComponent(JSON.stringify({ statuses: ['pending'] }))
+    await renderAt(`/?leaves=${leaves}&missing=true&day=2026-11-12`)
+    press('open')
+    await waitFor(() => {
+      expect(read('search')).toEqual({ panel: 'soldiers', leaves: { statuses: ['pending'] }, missing: true, day: '2026-11-12' })
+    })
+  })
+
+  it('counts invalid leave conditions, "missing" and day as absent', async () => {
+    const leaves = encodeURIComponent(JSON.stringify({ statuses: ['rejected'] }))
+    await renderAt(`/?leaves=${leaves}&missing=false&day=soon`)
+    await waitFor(() => {
+      expect(read('search')).toEqual({})
     })
   })
 

@@ -10,6 +10,7 @@ import {
   type UpdateLeaveTypeInput,
 } from '@contracts'
 import { formIssues } from '../forms/issues'
+import { bySortOrder, nextSortOrder } from '../forms/order'
 
 // Leave types and their groups, between the store and the drawer (D-113). Pure.
 
@@ -18,9 +19,6 @@ export interface LeaveTypeSection {
   readonly group: LeaveTypeGroup | null
   readonly types: readonly LeaveType[]
 }
-
-const bySortOrder = <Row extends { id: string; sort_order: number }>(a: Row, b: Row) =>
-  a.sort_order - b.sort_order || a.id.localeCompare(b.id)
 
 /**
  * Live groups in their order, each with its live types in theirs, then the types with no live group. A group
@@ -42,11 +40,6 @@ export function leaveTypeSections(groups: readonly LeaveTypeGroup[], types: read
 /** The live types, in the order the drawer shows them. */
 export function orderedLeaveTypes(groups: readonly LeaveTypeGroup[], types: readonly LeaveType[]): LeaveType[] {
   return leaveTypeSections(groups, types).flatMap((section) => section.types)
-}
-
-/** After the last live row of the same group: `sort_order` is set at creation and by reorder (D-045). */
-function nextSortOrder(rows: readonly { sort_order: number }[]): number {
-  return Math.max(-1, ...rows.map((row) => row.sort_order)) + 1
 }
 
 // ----------------------------------------------------------------------- types

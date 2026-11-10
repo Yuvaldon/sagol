@@ -19,7 +19,31 @@ export { useCan, useModuleAccess, type CanAnswer } from './permissions/hooks'
 export { WorkspaceSearch, useWorkspaceSearch } from './view-state/search'
 export { usePanel, type PanelState, type PanelTarget } from './view-state/panel'
 export { dateWindowOf, shiftedWindow, useDateWindow, type DateWindow, type DateWindowState } from './view-state/window'
-export { filterUnitOf, unitFilterOf, useViewFilter, type FilterUnit, type ViewFilterState } from './view-state/filter'
+export {
+  NO_CONDITIONS,
+  filterUnitOf,
+  readFilter,
+  unitFilterOf,
+  useViewFilter,
+  withTagChip,
+  writeFilter,
+  type FilterUnit,
+  type ReadFilter,
+  type SoldierConditions,
+  type ViewFilterState,
+} from './view-state/filter'
+export { BoardLeaveStatus, LeaveConditions, hasLeaveConditions, leaveMatches } from './view-state/conditions'
+export {
+  useLeaveConditions,
+  useOnlyMissing,
+  usePresenceDay,
+  type LeaveConditionsState,
+  type OnlyMissingState,
+  type PresenceDayState,
+} from './view-state/board'
+export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
+export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
+export { usePresence } from './presence/hooks'
 export { useActiveView, type ActiveViewState } from './view-state/view'
 export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useToday } from './session/today'
@@ -32,7 +56,7 @@ export {
   type TimelineItem,
   type TimelineSoldierItem,
 } from './timeline/rows'
-export { useTimeline, type TimelineModel } from './timeline/hooks'
+export { useTimeline, type BoardConditions, type TimelineModel } from './timeline/hooks'
 export { timelineLeaves, type TimelineLeave } from './timeline/leaves'
 export {
   NEW_LEAVE_TYPE_VALUES,
@@ -123,6 +147,37 @@ export {
   type RankFormValues,
   type SoldierFormValues,
 } from './roster/forms'
+export {
+  NEW_TAG_CATEGORY_VALUES,
+  liveCategories,
+  newTagValues,
+  soldierTagGroups,
+  tagCategoryFormIssues,
+  tagCategoryFormValues,
+  tagColorOf,
+  tagFormIssues,
+  tagFormValues,
+  tagSections,
+  tagsBySoldier,
+  tagsOfCategory,
+  toggledTags,
+  type SoldierTagGroup,
+  type TagCategoryFormValues,
+  type TagChoice,
+  type TagFormValues,
+  type TagSection,
+} from './tags/tags'
+export {
+  useCanSetTags,
+  useSetSoldierTags,
+  useSoldierTags,
+  useTagCategories,
+  useTagCategoryCommands,
+  useTagCommands,
+  useTagPermissions,
+  useTags,
+  type SetSoldierTagsRequest,
+} from './tags/hooks'
 export {
   useCommandRankCommands,
   useCommandRankPermissions,

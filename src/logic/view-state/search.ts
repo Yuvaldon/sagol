@@ -3,8 +3,10 @@ import { CalendarDate, FilterExpression, UnitId } from '@contracts'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
 import { z } from 'zod'
+import { LeaveConditions } from './conditions'
 
-// All view state lives in the URL (D-023): the view, the date window, the filter, the bar colors and the open panel. A
+// All view state lives in the URL (D-023): the view, the date window, the filter and the board's own conditions
+// (D-132, D-133), the bar colors, the open panel and the presence day (D-134). A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
 
@@ -21,6 +23,9 @@ export const WorkspaceSearch = z.object({
     .catch(undefined),
   [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),
   [SEARCH_PARAMS.colors]: BarColorMode.optional().catch(undefined),
+  [SEARCH_PARAMS.leaves]: LeaveConditions.optional().catch(undefined),
+  [SEARCH_PARAMS.missing]: z.literal(true).optional().catch(undefined),
+  [SEARCH_PARAMS.day]: CalendarDate.optional().catch(undefined),
 })
 export type WorkspaceSearch = z.infer<typeof WorkspaceSearch>
 

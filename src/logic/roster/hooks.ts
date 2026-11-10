@@ -13,7 +13,7 @@ import type {
 } from '@contracts'
 import { placementTarget, soldierTarget } from '@domain'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useCan, useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
@@ -238,14 +238,18 @@ export function usePlacementReading(soldiers: readonly Soldier[]): (soldierId: S
 }
 
 /**
- * The same, with whether every soldier's hint has answered. What a row says about its unit waits for that, so
- * "unknown" is never said before the adapter has spoken (D-122).
+ * The same, with whether the hints have answered once. What a row says about its unit waits for that, so
+ * "unknown" is never said before the adapter has spoken (D-122). Once settled it stays settled: a soldier added
+ * later does not send the board back to loading while their own hint is asked (OI-082).
  */
 export function usePlacementHints(soldiers: readonly Soldier[]) {
   const checks = useMemo(() => soldiers.map((soldier) => check(P.membershipView, soldierTarget(soldier.id))), [soldiers])
   const { can, known } = useCanAnswers(checks)
   const reads = useCallback((soldierId: SoldierId) => can(check(P.membershipView, soldierTarget(soldierId))), [can])
-  const settled = useMemo(() => checks.every(known), [checks, known])
+  const answered = useMemo(() => checks.every(known), [checks, known])
+  const [hasSettled, setHasSettled] = useState(false)
+  if (answered && !hasSettled) setHasSettled(true)
+  const settled = answered || hasSettled
   return useMemo(() => ({ reads, settled }), [reads, settled])
 }
 
