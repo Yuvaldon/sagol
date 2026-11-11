@@ -35,6 +35,7 @@ import { ComboField } from '../../primitives/fields'
 import { ScopeFields } from './ScopeFields'
 import { scopeText } from './scopeText'
 import { useScopeNames } from './useScopeNames'
+import { GRANT_STATE_KEYS } from './labels'
 
 // Personal access grants (D-028, D-165, D-166): a role given to one soldier, in a scope, for a window of days. A grant
 // is not edited; it is revoked and given again.
@@ -232,7 +233,7 @@ function GrantList({
               <span className="flex min-h-touch min-w-none flex-1 flex-col justify-center p-xs md:min-h-control">
                 <span className="flex items-center gap-xs">
                   <span className="truncate text-name font-semibold">{nameOf(row)}</span>
-                  <span className="shrink-0 rounded-pill bg-inner px-xs text-micro">{t(`grants.states.${row.state}`)}</span>
+                  <span className="shrink-0 rounded-pill bg-inner px-xs text-micro">{t(GRANT_STATE_KEYS[row.state])}</span>
                 </span>
                 <span className="truncate text-micro text-text-muted">
                   {[roleOf(row), scopeText(row.grant, names), daysText(row.grant, timezone)].join(' · ')}

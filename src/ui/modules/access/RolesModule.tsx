@@ -33,6 +33,7 @@ import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { TextAreaField } from '../../primitives/TextAreaField'
 import { TextField } from '../../primitives/fields'
 import { toneOf } from '../../theme/palette'
+import { ACTION_KEYS, RESOURCE_KEYS } from './labels'
 
 // The roles section (D-165): the baseline role, the list of roles, and a role's form with the grid of D-040's valid
 // pairs. Roles are the `roles` resource at organization scope; the baseline is the organization's (D-003).
@@ -57,8 +58,8 @@ function PermissionGrid({
           <CheckList
             key={row.resource}
             inline
-            label={{ key: `permissionLabels.resources.${row.resource}` }}
-            choices={row.actions.map((action) => ({ key: action, label: { key: `permissionLabels.actions.${action}` } }))}
+            label={{ key: RESOURCE_KEYS[row.resource] }}
+            choices={row.actions.map((action) => ({ key: action, label: { key: ACTION_KEYS[action] } }))}
             selected={held.map((permission) => permission.action)}
             onChange={(keys) => {
               const others = permissions.filter((permission) => permission.resource !== row.resource)

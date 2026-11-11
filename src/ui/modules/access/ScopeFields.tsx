@@ -5,19 +5,20 @@ import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
 import { unitOptions } from '../soldiers/unitOptions'
+import { ANCHOR_KEYS, RANK_CONSTRAINT_KEYS } from './labels'
 
 // The scope picker of a rank binding or a grant (D-028, D-165): the anchor, only the fields it needs, and the rank
 // constraint.
 
 const ANCHOR_OPTIONS: readonly SelectOption<ScopeAnchorType>[] = ScopeAnchorType.options.map((anchor) => ({
   key: anchor,
-  label: { key: `scope.anchors.${anchor}` },
+  label: { key: ANCHOR_KEYS[anchor] },
   value: anchor,
 }))
 
 const RANK_OPTIONS: readonly SelectOption<SubjectRankConstraint>[] = SubjectRankConstraint.options.map((constraint) => ({
   key: constraint,
-  label: { key: `scope.ranks.${constraint}` },
+  label: { key: RANK_CONSTRAINT_KEYS[constraint] },
   value: constraint,
 }))
 

@@ -1,6 +1,7 @@
 import type { Soldier, Unit, UnitLevel } from '@contracts'
 import { t } from '@i18n'
 import { fullName, type ScopeFormValues } from '@logic'
+import { ANCHOR_KEYS, RANK_CONSTRAINT_KEYS } from './labels'
 
 // A scope in words for a list row (D-028): the anchor, its argument, and the rank constraint when it limits.
 
@@ -32,8 +33,8 @@ function argumentOf(scope: ScopeFormValues, names: ScopeNames): string | null {
 export function scopeText(scope: ScopeFormValues, names: ScopeNames): string {
   const argument = argumentOf(scope, names)
   return [
-    argument === null ? t(`scope.anchors.${scope.anchor_type}`) : `${t(`scope.anchors.${scope.anchor_type}`)}: ${argument}`,
+    argument === null ? t(ANCHOR_KEYS[scope.anchor_type]) : `${t(ANCHOR_KEYS[scope.anchor_type])}: ${argument}`,
     ...(scope.include_descendants ? [t('scope.descendants')] : []),
-    ...(scope.subject_rank_constraint === 'any' ? [] : [t(`scope.ranks.${scope.subject_rank_constraint}`)]),
+    ...(scope.subject_rank_constraint === 'any' ? [] : [t(RANK_CONSTRAINT_KEYS[scope.subject_rank_constraint])]),
   ].join(' · ')
 }
