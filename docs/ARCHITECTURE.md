@@ -100,6 +100,11 @@ The data layer is written as if it were the server:
   presence and live warnings leave out what the actor cannot read in full (D-161, D-162). A grant's window is whole days
   in the organization's zone (D-166). Screens: the roles module (roles, rank bindings, the baseline) and the grants
   module, with a "more" menu on a phone (D-165).
+- **Self-service, as built (V11, D-167 to D-169):** "my requests" reads the actor's own leaves (open and history) through
+  the same `leaves` permissions, and its "new request" opens the new-leave form with the only soldier the actor may pick
+  already chosen (D-167). An identity whose last link request was rejected is told so on the onboarding screen, without
+  saying what matched (D-168). The grants list re-renders at the next start or end of a grant while it is on screen
+  (D-169).
 - **Bootstrap:** the first sign-in on an empty organization becomes owner only if its
   verified email matches the server secret `BOOTSTRAP_OWNER_EMAIL`. Atomic server function.
   Locally, the same flow makes the developer the owner.

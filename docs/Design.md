@@ -144,9 +144,18 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   a `SmallDialog`; the new soldier is an `EntityForm` (rank, unit, date placed).
 - A linked soldier with no access sees the board's notice that the account is linked and has no access yet.
 
+## Self-service (V11, D-167, D-168)
+
+- **"My requests"** (`ui/modules/leaves/MyLeavesModule.tsx`): the first module button for a linked soldier who may view
+  their own leaves. A primary "new request" button on top (when they may create), then "open" as a list and "history" as
+  a `VirtualList`. A row is the type's mark and name, the dates and days, and the status chip; it opens the leave's
+  details. With no leave at all, an `EmptyNotice` holds the button.
+- **The onboarding notice** (`ui/shell/OnboardingScreen.tsx`): with no open request and a rejected last one, a
+  `role="status"` box above the form says the request was not approved and that a new one can be sent.
+
 ## Roles and access (V10, D-165, D-166)
 
-- **Module buttons** (`ui/shell/ModuleButtons.tsx`): one ordered list of the modules the actor may open (inbox, account
+- **Module buttons** (`ui/shell/ModuleButtons.tsx`): one ordered list of the modules the actor may open (my requests, inbox, account
   links, units, soldiers, tags, rules, leave types, roles, grants). Desktop shows them all. A phone shows the first
   `PHONE_BAR_MODULES` and a "more" `IconButton` whose `Menu` lists the rest with their icons and counts; when only one
   would be left over it stays in the bar.
@@ -247,6 +256,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the new-leave form and its "+" |
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |
 | `PendingRequestsModule`, `ClosedLeavesModule` | `ui/modules/leaves` | The requests inbox |
+| `MyLeavesModule` | `ui/modules/leaves` | The actor's own requests, open and history (D-167) |
 | `ModuleButtons` | `ui/shell` | The bar's module buttons, with "more" on a phone (D-165) |
 | `RolesModule`, `RankBindingsModule`, `GrantsModule`, `ScopeFields` | `ui/modules/access` | Roles, their rank bindings, personal grants, and the scope picker |
 | `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
