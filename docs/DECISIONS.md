@@ -30,7 +30,7 @@ am = amends, ref = refines, ext = extends.
 | D-011 | Multi-tenant from day one | contracts, data, backend | |
 | D-012 | Leaves: whole days, overlaps, availability by union | contracts, domain, data, ui | ext D-032, D-049; ref D-070; ref D-111 |
 | D-013 | Approval behavior | domain, data, logic, ui | ref D-041, D-063, D-064; ext D-049; ref D-114, D-115; ref D-117, D-121 |
-| D-014 | Availability rules | contracts, domain, data, logic, ui | ext D-031; ref D-047, D-071, D-073; ref D-139, D-140, D-141 |
+| D-014 | Availability rules | contracts, domain, data, logic, ui | ext D-031; ref D-047, D-071, D-073; ref D-139, D-140, D-141; ref D-145 |
 | D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130 |
 | D-016 | Notion-like custom properties | contracts, domain, data, ui | ref D-065 |
 | D-017 | Soft delete and audit columns | contracts, data, backend, ui | ref D-088, D-098 |
@@ -83,13 +83,13 @@ am = amends, ref = refines, ext = extends.
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130 |
 | D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069 |
-| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131 |
+| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147 |
 | D-068 | Schema issue mapping | domain, data, logic | |
 | D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
 | D-070 | Availability of a soldier on a day | domain, data, logic, ui, backend | ref D-133, D-134 |
 | D-071 | Rule targets, populations and thresholds | domain, data, logic, ui, backend | |
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
-| D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142 |
+| D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142; ref D-146 |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132 |
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order) |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085 |
@@ -147,10 +147,10 @@ am = amends, ref = refines, ext = extends.
 | D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | |
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | |
-| D-131 | The filter bar: soldier conditions | config, logic, ui | |
+| D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | |
-| D-134 | Present and absent lists of a day | config, logic, ui | ref D-141 |
+| D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147 |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
 | D-136 | The new-leave form stays with active soldiers | logic, ui | |
 | D-137 | Pending leaves counted by a rule: the requester acknowledges | domain, data | |
@@ -158,9 +158,12 @@ am = amends, ref = refines, ext = extends.
 | D-139 | The availability rule commands | domain, data, logic, backend | |
 | D-140 | The rules module | config, logic, ui | |
 | D-141 | The heat row | config, logic, ui | |
-| D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143 |
+| D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143; ref D-145, D-146 |
 | D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144 |
 | D-144 | The touch path of the timeline, and its lanes on a phone | config, ui | |
+| D-145 | Approving shows the rules' answer, not a live warning | logic, ui | |
+| D-146 | A live warning lists hard and soft rules together | logic, ui | |
+| D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | |
 
 ---
 
@@ -1915,3 +1918,29 @@ cannot give. Recommended options taken without asking, under the owner's instruc
   44 high; each more lane adds 44.
 **Why:** OI-067 asked for 44 px touch targets on the board; taller lanes keep every mark on the board, where a list per
 row would hide them. A hold before a drag keeps scrolling by finger, which a phone needs most.
+
+## D-145 — Approving shows the rules' answer, not a live warning
+2026-11-11 · accepted · refines D-014, D-142 · from audit A4
+The approve buttons of the details drawer and the inbox show no live rule warning. Pressing one sends the step, and the
+command's answer opens the acknowledgment dialog of D-142; the heat row gives the context beforehand. D-014's "warnings
+while approving" is met by that dialog.
+**Why:** audit A4 question 1, answered with its recommendation under the owner's instruction of 2026-11-11 to work fully
+autonomously. A warning beside every approve in a list would cost one evaluation per row for what the dialog already says.
+
+## D-146 — A live warning lists hard and soft rules together
+2026-11-11 · accepted · refines D-073, D-142 · from audit A4
+While a form is filled or a bar dragged, the live warning lists every rule the change breaks, hard and soft. The command
+keeps D-073: a hard rule refuses with the hard ones only, and once the change no longer breaks it, the soft ones ask for
+their acknowledgment, as the warning already showed.
+**Why:** audit A4 question 2, answered with its recommendation under the owner's instruction of 2026-11-11. The person
+filling the form sees the whole cost of the change at once.
+
+## D-147 — "A unit and below" counts archived sub-units on the days served; the chip of an unread filter
+2026-11-11 · accepted · refines D-067, D-131, D-134 · from audit A4
+- A unit condition with descendants means the same everywhere: on a day, a soldier whose primary membership that day is
+  in the unit's tree counts, also when that sub-unit was archived later. The board, the bar and the presence lists read
+  the tree with archived units, as rules and commands already do (OI-098).
+- The chip of a filter the bar does not read says "סינון מותאם", the words the UI and D-140 use; D-131's "סינון אחר" is
+  replaced.
+**Why:** audit A4 finding 1 and question 3, answered with its recommendation under the owner's instruction of
+2026-11-11 (one meaning of a filter, D-067), and finding 5 on the words.

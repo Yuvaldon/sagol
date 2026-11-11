@@ -347,7 +347,7 @@ gets a definition and a slice when the owner wants it.
 | A1 | done, `docs/audits/A1.md` | Contracts and domain against the decisions |
 | A2 | done, `docs/audits/A2.md` | Server-authoritative behavior, no bypasses, first UI and Design.md |
 | A3 | done, `docs/audits/A3.md` | Leave workflow, timeline engine, view state |
-| A4 | after M3 | Filters and rules: UI warnings equal command results |
+| A4 | done, `docs/audits/A4.md` | Filters and rules: UI warnings equal command results |
 | A5 | after M4 | Permissions end to end |
 | A6 | after M5 | Production readiness, RLS against the policy matrix |
 | A7 | after M6 | Whole product |
