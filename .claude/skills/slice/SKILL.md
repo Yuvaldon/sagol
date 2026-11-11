@@ -39,4 +39,7 @@ State lives in git and in the docs, not in handoff files. One slice = one branch
    `npm run dev`) · decisions · checks and review · open items by id · next row with a model and effort
    recommendation and a one-line reason.
 5. When CI is green: `gh pr merge --merge --delete-branch`. When it is red: fix it, or report it and leave the PR open.
-6. Several slices may run in one session. Run `/clear` between them, so each starts from a small context.
+6. Several slices may run in one session (D-154). Nothing carries over between slices except git and the docs:
+   start each one again from step 1 of "Start", and don't rely on earlier conversation. The context stays small
+   through auto-compact at 200k tokens, or the owner's `/clear`. Start a fresh session only when a slice needs a
+   different model or effort.
