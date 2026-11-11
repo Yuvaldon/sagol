@@ -92,9 +92,19 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   pending, square on a side the window cuts. A marker is a 20 px round badge on `surface` with its icon, on each day,
   over any bar. Overlaps take lanes, and a row grows by a lane step for each lane beyond the first. In the uniform mode
   every bar is `absence`, with a dot of the type's color and its name inside, and badges are `marker`.
+- **Lanes on a phone (D-144, OI-067):** `TIMELINE_LANES_TOUCH` makes bars 28 high with a lane step of 44, so a bar's hit
+  area is 44 high and a badge's 44 wide; a row of one lane stays 44.
 - **A mark is a control (D-119):** a bar is a button named by its type, its status and its days, and it opens the leave.
-  Its hit area fills the gap to the next lane (24 px high in all), so lanes never take each other's presses. A marker of
+  Its hit area fills the gap to the next lane (24 px high from `md`, 44 on a phone), so lanes never take each other's presses. A marker of
   several days is one control: the first badge is in the tab order and read aloud, and the others open by pointer only.
+- **Dragging on the board (D-143, D-144):** a mark that moves keeps its form; a bar's inner ends (`TIMELINE_DRAG.handlePx`)
+  show a resize cursor. While dragging, the stored mark fades and a ghost in its form sits at the new days with an edge
+  that says the worst rule it breaks: `marker` for none, a dashed `status-pending` for a soft rule, `status-rejected` for a
+  hard one. Days marked for a new leave are a dashed `marker` box on `inner`. A `glass-menu` card floats above the bottom
+  bar (bottom on desktop), in a live region: what, the soldier, the days and their count, "returns to pending" and
+  `RuleBrief`. A refused drop shows a `FailureNotice` in the same place with "סגירה". On touch a finger holds
+  `TIMELINE_DRAG.holdMs` first, and a finger that moves still scrolls. Every drag has a way without one: the edit form
+  and the "+".
 - **The floating "+" (D-115):** a 44 px round `glass-action` at the bottom inline-end corner of the board, above the
   bottom bar on a phone. The grid ends with room for it.
 - **The inbox button (D-120):** first among the module buttons, for who may approve someone. It carries the number of
@@ -210,7 +220,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
 | `FilterBar` | `ui/shell` | Chips, "+", "only who is missing" and the presence pill |
 | `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
-| `RulesModule`, `RuleForm`, `RuleViolations`, `RuleGateDialog`, `RuleWarnings` | `ui/modules/rules` | Rules, conflicts and a day's broken rules; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`) |
+| `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
+| `RuleViolations`, `RuleBrief`, `RuleGateDialog`, `RuleWarnings` | `ui/patterns/rules` | Broken rules in full and in brief; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`), shared by modules and the timeline (D-143) |
+| `DragOverlay`, `useBoardDrag`, `useDrag` | `ui/engines/timeline` | A drag on the board: its card, its refusal and its gate (adapter), and the pointer (view) |
 
 Errors are shown through `ui/errors/messages.ts`, whose maps from code to i18n are total: a new code does
 not compile until it has a message.
