@@ -18,6 +18,7 @@ import {
 } from '@contracts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ContractAdapter, ContractHarness } from './harness'
+import { describeAccountContract } from './accounts'
 import { describeLeaveContract } from './leaves'
 import { describeRosterContract } from './roster'
 import { describeRuleContract } from './rules'
@@ -386,6 +387,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
     describeUnitContract(() => harness, () => claim())
     describeRosterContract(() => harness, () => claim())
     describeTagContract(() => harness, () => claim())
+    describeAccountContract(() => harness, () => claim())
     describeLeaveContract(() => harness, () => claim())
     describeLeaveWorkflowContract(() => harness, () => claim())
     describeRuleContract(() => harness, () => claim())

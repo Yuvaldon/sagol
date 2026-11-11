@@ -55,7 +55,7 @@ import { SOLDIER_TAG_TABLES, soldierTagIssues } from './tags'
 // (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097. A soldier's tags
 // are a set written with `soldiers:update` (D-130).
 
-const MEMBERSHIPS_UPDATE = { resource: 'memberships', action: 'update' } as const
+export const MEMBERSHIPS_UPDATE = { resource: 'memberships', action: 'update' } as const
 const MEMBERSHIPS_VIEW = { resource: 'memberships', action: 'view' } as const
 const PRIVATE_VIEW = { resource: 'soldier_private', action: 'view' } as const
 const PRIVATE_UPDATE = { resource: 'soldier_private', action: 'update' } as const
@@ -86,7 +86,7 @@ const SPEC: ReferenceSpec<Soldier> = {
   ],
 }
 
-const ROSTER_TABLES: readonly TableName[] = [...tablesOf(SPEC), 'soldier_private']
+export const ROSTER_TABLES: readonly TableName[] = [...tablesOf(SPEC), 'soldier_private']
 
 /** Optional private text: blank is stored as NULL (D-101). The personal id has its own normalization (D-066). */
 const PRIVATE_OPTIONAL_TEXT = ['invite_email', 'phone'] as const
@@ -115,7 +115,7 @@ async function placementIssues(database: Dexie, scope: ActorScope, unitId: UnitI
 }
 
 /** `uq_soldier_private_personal_id`: archived soldiers keep their number too (D-098). */
-async function personalIdIssues(
+export async function personalIdIssues(
   database: Dexie,
   scope: ActorScope,
   soldierId: SoldierId,
@@ -137,7 +137,7 @@ function normalizedPersonalId(value: string | null): string | null {
   return value === null ? null : normalizePersonalId(value)
 }
 
-function placedRow(
+export function placedRow(
   scope: ActorScope,
   id: UnitMembership['id'],
   soldierId: SoldierId,
@@ -154,6 +154,64 @@ function placedRow(
     valid_to: null,
     ...createdBy(scope.soldier_id, scope.now),
   })
+}
+
+/** What a new soldier is made of: the row, its first placement and its private fields (D-094). */
+export interface NewSoldier {
+  readonly content: Omit<CreateSoldierInput, 'private' | 'membership'>
+  readonly membership: CreateSoldierInput['membership']
+  readonly private: CreateSoldierInput['private']
+}
+
+/**
+ * The checks and the writes of a new soldier, once the caller has checked the permissions it needs. `prefix` says where
+ * the input sits in the caller's input, so a refusal names the caller's field. A new soldier from a link review (D-149)
+ * and `soldiers.create` write it one way.
+ */
+export async function insertSoldier(
+  database: Dexie,
+  scope: ActorScope,
+  input: NewSoldier,
+  prefix: readonly string[],
+): Promise<{ soldier: Soldier; hasPrivate: boolean }> {
+  const { content, membership, private: privateFields } = input
+  const soldier = parsedCandidate(
+    SPEC,
+    withSpecOptionalText(SPEC, {
+      ...content,
+      organization_id: scope.organization_id,
+      ...createdBy(scope.soldier_id, scope.now),
+    }),
+    [...prefix],
+  )
+  if ((await tableOf(database, 'soldiers').get(content.id)) !== undefined) {
+    return failValidation([{ path: [...prefix, 'id'], code: IssueCode.enum.already_exists }])
+  }
+  const personalId = normalizedPersonalId(privateFields?.personal_id ?? null)
+  const issues = [
+    ...(await SPEC.rowIssues({ database, scope, row: soldier, before: null })),
+    ...(membership === null ? [] : await placementIssues(database, scope, membership.unit_id, [...prefix, 'membership', 'unit_id'])),
+    ...(await personalIdIssues(database, scope, soldier.id, personalId, [...prefix, 'private', 'personal_id'])),
+  ]
+  if (issues.length > 0) return failValidation(issues)
+
+  await tableOf(database, 'soldiers').add(soldier)
+  if (membership !== null) {
+    await tableOf(database, 'unit_memberships').add(placedRow(scope, membership.id, soldier.id, membership.unit_id, membership.valid_from))
+  }
+  const hasPrivate = privateFields !== null && (personalId !== null || privateFields.invite_email !== null || privateFields.phone !== null)
+  if (hasPrivate) {
+    await tableOf(database, 'soldier_private').add(
+      parsedRow('soldier_private', {
+        ...privateFields,
+        personal_id: personalId,
+        soldier_id: soldier.id,
+        organization_id: scope.organization_id,
+        ...updatedBy(scope.soldier_id, scope.now, 0),
+      }),
+    )
+  }
+  return { soldier, hasPrivate }
 }
 
 // --------------------------------------------------------------------- reads
@@ -307,46 +365,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
           requirePermission(scope, permissionOf('soldiers', 'create'), placement)
           if (membership !== null) requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: membership.unit_id })
           if (privateFields !== null) requirePermission(scope, PRIVATE_UPDATE, placement)
-
-          const soldier = parsedCandidate(
-            SPEC,
-            withSpecOptionalText(SPEC, {
-              ...content,
-              organization_id: scope.organization_id,
-              ...createdBy(scope.soldier_id, scope.now),
-            }),
-            [],
-          )
-          if ((await tableOf(database, 'soldiers').get(input.id)) !== undefined) {
-            return failValidation([{ path: ['id'], code: IssueCode.enum.already_exists }])
-          }
-          const personalId = normalizedPersonalId(privateFields?.personal_id ?? null)
-          const issues = [
-            ...(await SPEC.rowIssues({ database, scope, row: soldier, before: null })),
-            ...(membership === null ? [] : await placementIssues(database, scope, membership.unit_id, ['membership', 'unit_id'])),
-            ...(await personalIdIssues(database, scope, soldier.id, personalId, ['private', 'personal_id'])),
-          ]
-          if (issues.length > 0) return failValidation(issues)
-
-          await tableOf(database, 'soldiers').add(soldier)
-          if (membership !== null) {
-            await tableOf(database, 'unit_memberships').add(
-              placedRow(scope, membership.id, soldier.id, membership.unit_id, membership.valid_from),
-            )
-          }
-          const hasPrivate = privateFields !== null && (personalId !== null || privateFields.invite_email !== null || privateFields.phone !== null)
-          if (hasPrivate) {
-            await tableOf(database, 'soldier_private').add(
-              parsedRow('soldier_private', {
-                ...privateFields,
-                personal_id: personalId,
-                soldier_id: soldier.id,
-                organization_id: scope.organization_id,
-                ...updatedBy(scope.soldier_id, scope.now, 0),
-              }),
-            )
-          }
-          return { soldier, hasPrivate }
+          return insertSoldier(database, scope, { content, membership, private: privateFields }, [])
         })
         changes.publish([
           { table: 'soldiers', ids: [written.soldier.id] },
