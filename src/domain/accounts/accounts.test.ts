@@ -199,10 +199,8 @@ describe('autoLinkSoldier', () => {
     expect(autoLinkSoldier({ personal_id: '3333333', verified_email: 'dana@example.com' }, data)).toBeNull()
   })
 
-  it('links again a soldier whose account was revoked (D-156)', () => {
-    expect(autoLinkSoldier({ personal_id: '2222222', verified_email: 'dana@example.com' }, matchData())).toBe(
-      S.revokedAccount,
-    )
+  it('leaves a soldier whose account was revoked to review, so a revoke holds (D-157)', () => {
+    expect(autoLinkSoldier({ personal_id: '2222222', verified_email: 'dana@example.com' }, matchData())).toBeNull()
   })
 
   it('does not link when two soldiers match (ids stored before normalization)', () => {

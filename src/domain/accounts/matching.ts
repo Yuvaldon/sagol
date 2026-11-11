@@ -81,13 +81,16 @@ export interface AutoLinkClaim {
 /**
  * The soldier a sign-in links to without review (D-005, D-030): exactly one linkable soldier
  * whose personal id matches AND whose invite email equals the verified email. Otherwise
- * NULL, and onboarding creates a pending request.
+ * NULL, and onboarding creates a pending request. A soldier whose account was revoked is
+ * linked again only by review, so a revoke is not undone by signing in again (D-157).
  */
 export function autoLinkSoldier(claim: AutoLinkClaim, data: LinkMatchData): SoldierId | null {
   const claimedId = claim.personal_id === null ? null : normalizePersonalId(claim.personal_id)
   if (claimedId === null) return null
   const email = normalizeEmail(claim.verified_email)
-  const linkableIds = new Set(linkable(data).map((soldier) => soldier.id))
+  const revoked = new Set<SoldierId>()
+  for (const account of data.soldier_accounts) if (account.revoked_at !== null) revoked.add(account.soldier_id)
+  const linkableIds = new Set(linkable(data).map((soldier) => soldier.id).filter((id) => !revoked.has(id)))
   const matches = [...data.soldier_private].filter(
     (row) =>
       linkableIds.has(row.soldier_id) &&
