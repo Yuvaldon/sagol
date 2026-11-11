@@ -30,6 +30,7 @@
     "paths": {
       "@contracts": ["./src/contracts/index.ts"],
       "@domain": ["./src/domain/index.ts"],
+      "@domain/testing": ["./src/domain/testing/index.ts"],
       "@config": ["./src/config/index.ts"],
       "@data": ["./src/data/index.ts"],
       "@logic": ["./src/logic/index.ts"],

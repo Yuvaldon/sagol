@@ -113,19 +113,19 @@ module.exports = {
     },
     {
       name: 'public-api-only',
-      comment: 'Other layers may import a layer only through its index.ts.',
+      comment: "Other layers may import a layer only through its index.ts, or its testing/index.ts (D-203).",
       severity: 'error',
       from: { path: '^src/([^/]+)/' },
       to: {
         path: '^src/[^/]+/',
-        pathNot: ['^src/$1/', '^src/[^/]+/index\\.ts$'],
+        pathNot: ['^src/$1/', '^src/[^/]+/index\\.ts$', '^src/[^/]+/testing/index\\.ts$'],
       },
     },
     {
       name: 'testing-helpers-for-tests-only',
       comment: "A layer's testing/ folder holds test-only helpers (D-135): only test files and other helpers import it.",
       severity: 'error',
-      from: { path: '^src/', pathNot: ['\\.test\\.tsx?$', '^src/[^/]+/testing/'] },
+      from: { path: '^src/', pathNot: ['\\.test\\.tsx?$', '\\.dbtest\\.ts$', '^src/[^/]+/testing/'] },
       to: { path: '^src/[^/]+/testing/' },
     },
     {
