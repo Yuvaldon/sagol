@@ -141,7 +141,7 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
       <nav aria-label={t('workspace.navigation')} className={`${BAR} bottom-safe absolute inset-x-lg justify-between`}>
         <OrganizationName name={name} />
         <div className="flex min-w-none items-center gap-xs">
-          {/* The modules scroll sideways when they outgrow the bar, so the bar never widens the page (D-154). Their room
+          {/* The modules scroll sideways when they outgrow the bar, so the bar never widens the page (D-155). Their room
               around them, the bar's own padding, keeps a focused module's outline whole. */}
           <div className="-m-xs flex min-w-none items-center gap-xs overflow-x-auto p-xs">
             <ModuleButtons />

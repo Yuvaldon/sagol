@@ -269,7 +269,7 @@ src/
 supabase/      migrations/ policies/ functions/ tests/   (phase 8)
 e2e/           Playwright specs
 docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md OPEN_ITEMS.md
-               OPEN_ITEMS_ARCHIVE.md sessions/ audits/
+               OPEN_ITEMS_ARCHIVE.md
 ```
 
 ## Quality gates

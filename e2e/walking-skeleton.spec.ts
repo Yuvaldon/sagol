@@ -70,7 +70,7 @@ test('an owner claims the empty organization and reaches the workspace', async (
     expect(inUpperHalf).toBe(testInfo.project.name === 'desktop')
   })
 
-  await test.step('the bars, with every module, keep the page as wide as the screen, so a phone never zooms out (D-154)', async () => {
+  await test.step('the bars, with every module, keep the page as wide as the screen, so a phone never zooms out (D-155)', async () => {
     await expect(navigation(page).getByRole('button', { name: he.accountLinks.open })).toHaveCount(1)
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('the page has no viewport')

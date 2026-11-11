@@ -67,8 +67,8 @@ am = amends, ref = refines, ext = extends.
 | D-048 | Auth and session contracts | contracts, data, logic, app | ref D-076, D-083 |
 | D-049 | Leave command set | contracts, domain, data | ref D-063, D-064; ref D-117, D-118; am D-123 |
 | D-050 | Import and export | contracts, data | |
-| D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126 |
-| D-052 | Next-session model and effort recommendation | docs | ref D-075 |
+| D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154 |
+| D-052 | Next-session model and effort recommendation | docs | ref D-075; sup D-154 |
 | D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096 |
 | D-054 | Policy unit = primary membership today | domain, backend | ref D-105 |
 | D-055 | Unresolvable anchors give an empty scope | domain, backend | |
@@ -91,13 +91,13 @@ am = amends, ref = refines, ext = extends.
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142; ref D-146 |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132 |
-| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order) |
+| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111 |
 | D-078 | Audits follow milestones | docs | |
 | D-079 | The bootstrap owner role holds every valid permission pair | data, backend | |
 | D-080 | `fake-indexeddb` for data tests | data, tooling | |
-| D-081 | Start-of-session reading follows the slice | docs | |
+| D-081 | Start-of-session reading follows the slice | docs | sup D-154 |
 | D-082 | Go-live before completion features | data, backend, docs | |
 | D-083 | One source of the current time: `TimeSource` | contracts, data, logic, app, tooling | ref D-107 |
 | D-084 | Domain validates the organization time zone | domain, data, logic, ui | |
@@ -126,7 +126,7 @@ am = amends, ref = refines, ext = extends.
 | D-107 | Today follows the organization's day | domain, logic | |
 | D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154 |
 | D-109 | The reference day of a timeline row | logic | |
-| D-110 | A branch and a pull request per session | docs, tooling | ref D-126 |
+| D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
 | D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | |
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
@@ -142,9 +142,9 @@ am = amends, ref = refines, ext = extends.
 | D-123 | Editing a leave is one command | contracts, domain, data, logic, ui, backend | |
 | D-124 | A leave of an archived soldier can only be cancelled | domain, data, logic, ui, backend | |
 | D-125 | The new-leave form offers active soldiers only, until V6 | logic, ui | ref D-136 |
-| D-126 | A slice is done when it is merged with CI green | docs, tooling | |
+| D-126 | A slice is done when it is merged with CI green | docs, tooling | ref D-154 |
 | D-127 | One commit = one layer, and every commit passes | all, tooling, docs | |
-| D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | |
+| D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | ref D-154 |
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147 |
@@ -170,7 +170,8 @@ am = amends, ref = refines, ext = extends.
 | D-151 | The onboarding of an identity with no account | logic, ui | |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | |
 | D-153 | The invite email field | logic, ui | |
-| D-154 | The phone's module buttons scroll inside the bottom bar | ui | |
+| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | |
+| D-155 | The phone's module buttons scroll inside the bottom bar | ui | |
 
 ---
 
@@ -2023,7 +2024,26 @@ not grow the slice.
 read), beside the personal number and the phone, with the same permissions (D-096). Auto-link reads it (D-148).
 **Why:** OI-046: it is the field auto-link matches, so without it auto-link has nothing to link.
 
-## D-154 — The phone's module buttons scroll inside the bottom bar
+## D-154 — The Claude Code harness replaces the session rituals
+2026-11-11 · accepted · supersedes D-052, D-081 · refines D-051, D-075, D-110, D-126, D-128
+- What a prose rule asked of every session is enforced by the harness in `.claude/settings.json`: hooks block pushes to
+  main, commits on main, force pushes, history rewrites, skipped git hooks and `.env` files; a lint hook runs after each
+  edit; a stop hook runs `npm run check` before a turn may end with uncommitted code.
+- `CLAUDE.md` keeps only commands, where the docs are, and the rules no tool checks. The slice workflow is the `slice`
+  skill and the audit is the `/audit` skill (owner-invoked, read-only); `docs/AUDIT.md` moves into it.
+- No start-of-session reading list (D-081): a session reads the slice card, the decisions it names (index first, then
+  the entries by grep), its open items and its tables, on demand.
+- No handoff files: the pull request's description carries done, how to see it, decisions, checks and the review, open
+  items by id, and the next row with a model and effort recommendation (replaces D-052's handoff part). The
+  audit reports go in the description of the docs pull request that records them. `docs/sessions/`,
+  `docs/audits/` and `docs/AUDIT.md` move to `.claude/archive/`, unchanged.
+- One slice is still one branch and one pull request (D-110, D-126), but a session may run several slices in a row,
+  with `/clear` between them (D-075).
+**Why:** the owner's instruction of 2026-11-11 to cut usage and enforce quality through the harness. A fresh session per
+slice and a fixed reading list re-paid a context of about 100k tokens every time, and rules in prose were
+re-read on every turn but enforced by nothing.
+
+## D-155 — The phone's module buttons scroll inside the bottom bar
 2026-11-11 · accepted · refines D-108, D-116 · OI-095 · decided under the owner's autonomy instruction of 2026-11-11
 On a phone, the bottom bar's module buttons sit in a row that shrinks with the bar and scrolls sideways when they do not
 fit, as the filter row does (D-131); the organization's name and the user menu stay in place. No bar may be wider than

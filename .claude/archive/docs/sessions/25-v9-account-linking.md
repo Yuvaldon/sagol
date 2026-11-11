@@ -49,7 +49,7 @@ D-148 (asking, auto-link, withdrawing), D-149 (who a review may name, what appro
 - **CI fix after the PR opened:** the e2e job failed on five mobile tests, each a press intercepted by another element.
   The account-links button made the phone's bottom bar's fixed-width module row (seven icons and the user menu) wider than
   the bar, the page grew to 429 px on a 412 px screen, and the phone zoomed out. The module row now shrinks and scrolls
-  sideways in the bar (D-154, `fix(ui)`), and the walking skeleton checks the page stays as wide as the screen
+  sideways in the bar (D-155, `fix(ui)`), and the walking skeleton checks the page stays as wide as the screen
   (`test(e2e)`). A local run with two workers failed the same way before the fix and passes after it (63 passed,
   5 skipped by design).
 

@@ -205,7 +205,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   count. A cell is a button named by its day, its count and the worst rule.
 - **On a phone** the user menu shows its icon only, its name still read aloud, so the bottom bar keeps every module (OI-095).
 - **The phone's bottom bar** never widens the page: its module icons scroll sideways in their own row when they outgrow it,
-  the organization's name and the user menu staying in place (D-154).
+  the organization's name and the user menu staying in place (D-155).
 - **A unit the actor does not see:** `unitStateLabel` says "ללא יחידה", "יחידה אחרת" or "לא ידוע" (D-106), the same in
   every list.
 

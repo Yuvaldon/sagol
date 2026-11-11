@@ -51,9 +51,9 @@ already hold most of the hard rules, so slices are mostly wiring, screens and st
 
 - `npm run check` and `npm run build` are green;
 - its demo runs in Playwright, desktop and mobile, RTL, with axe;
-- the owner can follow the demo steps in the handoff in a real browser;
+- the owner can follow the demo steps in the pull request description in a real browser;
 - `OPEN_ITEMS.md` (closed rows moved to its archive), `ROADMAP.md`, the current state in
-  `ARCHITECTURE.md` and `Design.md`, and the handoff are updated (D-043, D-052, D-128);
+  `ARCHITECTURE.md` and `Design.md`, and the pull request description are updated (D-043, D-128, D-154);
 - the whole Playwright suite ran locally with the CI worker count, the session reviewed its own
   diff read-only, and the pull request merged with CI green (D-110, D-126).
 
@@ -346,10 +346,10 @@ gets a definition and a slice when the owner wants it.
 
 | Audit | When | Covers |
 |-------|------|--------|
-| A1 | done, `docs/audits/A1.md` | Contracts and domain against the decisions |
-| A2 | done, `docs/audits/A2.md` | Server-authoritative behavior, no bypasses, first UI and Design.md |
-| A3 | done, `docs/audits/A3.md` | Leave workflow, timeline engine, view state |
-| A4 | done, `docs/audits/A4.md` | Filters and rules: UI warnings equal command results |
+| A1 | done, `.claude/archive/docs/audits/A1.md` | Contracts and domain against the decisions |
+| A2 | done, `.claude/archive/docs/audits/A2.md` | Server-authoritative behavior, no bypasses, first UI and Design.md |
+| A3 | done, `.claude/archive/docs/audits/A3.md` | Leave workflow, timeline engine, view state |
+| A4 | done, `.claude/archive/docs/audits/A4.md` | Filters and rules: UI warnings equal command results |
 | A5 | after M4 | Permissions end to end |
 | A6 | after M5 | Production readiness, RLS against the policy matrix |
 | A7 | after M6 | Whole product |
