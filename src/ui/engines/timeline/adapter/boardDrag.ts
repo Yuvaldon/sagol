@@ -55,6 +55,8 @@ export function useBoardDrag(window: DateWindow, soldiers: readonly Soldier[]): 
   const gate = useRuleGate()
   const [drag, setDrag] = useState<TimelineDrag | null>(null)
   const [held, setHeld] = useState<TimelineDrag | null>(null)
+  /** What the held drop would break, so its ghost keeps the edge it had while it was dragged. */
+  const [heldTone, setHeldTone] = useState<TimelineDragTone>('ok')
   const [failure, setFailure] = useState<AppError | null>(null)
 
   const dates = drag === null ? null : datesOfRange(window.from, drag.range)
@@ -71,6 +73,7 @@ export function useBoardDrag(window: DateWindow, soldiers: readonly Soldier[]): 
   const soldierOf = (rowKey: string) => soldiers.find((soldier) => soldier.id === rowKey) ?? null
 
   const drop = (dropped: TimelineDrag) => {
+    setHeldTone(toneOf(warnings))
     setDrag(null)
     setFailure(null)
     const next = datesOfRange(window.from, dropped.range)
@@ -108,7 +111,7 @@ export function useBoardDrag(window: DateWindow, soldiers: readonly Soldier[]): 
         setDrag(next)
       },
       onDrop: drop,
-      tone: toneOf(warnings),
+      tone: drag === null ? heldTone : toneOf(warnings),
       held,
     },
     card:

@@ -101,9 +101,13 @@ export function useDrag(layout: GridLayout, elements: Elements, handlers: Timeli
     (event: ReactPointerEvent, row: TimelineResourceRow) => {
       const { handlers: drag, elements: found, layout: grid } = latest.current
       const content = found.content
-      if (drag === null || content === null || gesture.current !== null) return
+      // One drag at a time: a drop that waits for its answer holds the board.
+      if (drag === null || drag.held !== null || content === null || gesture.current !== null) return
       if (event.pointerType === 'mouse' && event.button !== 0) return
       const rtl = isRtl(content)
+      // The names stay in sight over days the board scrolled under them: a press there is on a name, never a day.
+      const scroller = found.scroller
+      if (scroller !== null && inlineOffset(event.clientX, scroller.getBoundingClientRect(), rtl) < grid.nameColumnPx) return
       const at = inlineOffset(event.clientX, content.getBoundingClientRect(), rtl)
       const target = markElementOf(event.target)
       let markKey: string | null = null
@@ -211,19 +215,23 @@ export function useDrag(layout: GridLayout, elements: Elements, handlers: Timeli
         if (ended.pointerId === current.pointerId) finish(false)
       }
       const onKey = (key: KeyboardEvent) => {
-        if (key.key === 'Escape') finish(false)
+        if (key.key !== 'Escape') return
+        // Escape ends the drag only, not the drawer or dialog under it.
+        key.preventDefault()
+        key.stopPropagation()
+        finish(false)
       }
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', onUp)
       window.addEventListener('pointercancel', onCancel)
-      window.addEventListener('keydown', onKey)
+      window.addEventListener('keydown', onKey, true)
       teardown.current = () => {
         window.clearTimeout(hold)
         window.cancelAnimationFrame(frame)
         window.removeEventListener('pointermove', onMove)
         window.removeEventListener('pointerup', onUp)
         window.removeEventListener('pointercancel', onCancel)
-        window.removeEventListener('keydown', onKey)
+        window.removeEventListener('keydown', onKey, true)
         document.removeEventListener('touchmove', holdScroll)
         teardown.current = () => undefined
       }
