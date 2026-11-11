@@ -6,6 +6,8 @@ import {
   IssueCode,
   RequestAccountLinkInput,
   ReviewAccountLinkInput,
+  RevokeAccountLinkInput,
+  SoldierScopedQuery,
   SoldierStatus,
   UpdateMyPreferencesInput,
   type AccountLinkOutcome,
@@ -31,14 +33,16 @@ import {
   normalizePersonalId,
   placementTarget,
   reviewableCandidates,
+  soldierTarget,
   type LinkMatchData,
 } from '@domain'
-import { loadActorScope, requirePermission, type ActorScope } from './actor'
+import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { tableOf } from './database'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { permissionOf } from './reference'
 import { requireLinked, resolveSession } from './session'
+import { POLICY_TABLES, requireAccessManager } from './snapshot'
 import { MEMBERSHIPS_UPDATE, ROSTER_TABLES, insertSoldier, personalIdIssues } from './soldiers'
 
 // Account linking (D-005, D-030, D-066, D-148, D-149) and the signed-in soldier's own preferences (D-041, D-121).
@@ -135,6 +139,41 @@ export function createAccountLinkRequestRepository(
   }
 }
 
+/** A link is read with `accounts:view` on its soldier (D-163). */
+function accountVisible(scope: ActorScope, row: TableRow<'soldier_accounts'>): boolean {
+  return row.organization_id === scope.organization_id && holds(scope, ACCOUNT_VIEW, soldierTarget(row.soldier_id))
+}
+
+const ACCOUNT_VIEW = { resource: 'accounts', action: 'view' } as const
+
+export function createSoldierAccountRepository(dependencies: LocalDependencies): DataRepositories['soldier_accounts'] {
+  const { database } = dependencies
+  return {
+    get: (id) =>
+      asResult(() =>
+        database.transaction('r', POLICY_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const stored = await tableOf(database, 'soldier_accounts').get(id)
+          if (stored === undefined || !accountVisible(scope, stored)) return fail({ code: 'not_found' })
+          return parsedRow('soldier_accounts', stored)
+        }),
+      ),
+    list: (raw) =>
+      asResult(() => {
+        const query = parseInput(SoldierScopedQuery, raw)
+        return database.transaction('r', POLICY_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const rows = await tableOf(database, 'soldier_accounts').where('organization_id').equals(scope.organization_id).toArray()
+          return rows
+            .filter((row) => query.soldier_ids === null || query.soldier_ids.includes(row.soldier_id))
+            .filter((row) => accountVisible(scope, row))
+            .sort((a, b) => a.linked_at.localeCompare(b.linked_at) || a.id.localeCompare(b.id))
+            .map((row) => parsedRow('soldier_accounts', row))
+        })
+      }),
+  }
+}
+
 // --------------------------------------------------------------------- commands
 
 /** What the local adapter builds of `commands.accounts`. */
@@ -148,10 +187,16 @@ function requireIdentity({ identity }: LocalDependencies): AuthIdentity {
   return identity.current() ?? fail({ code: 'unauthenticated' })
 }
 
-/** The identity already holds an account row, a revoked one included: the schema allows one (D-066). */
-async function holdsAccount(database: Dexie, organizationId: OrganizationId, authUserId: AuthIdentity['auth_user_id']) {
+/** The identity's live link: links are unique among those not revoked (D-163). */
+async function holdsLiveLink(database: Dexie, organizationId: OrganizationId, authUserId: AuthIdentity['auth_user_id']) {
   const rows = await tableOf(database, 'soldier_accounts').where('auth_user_id').equals(authUserId).toArray()
-  return rows.some((row) => row.organization_id === organizationId)
+  return rows.some((row) => row.organization_id === organizationId && row.revoked_at === null)
+}
+
+/** The soldier's live link (D-163). */
+async function soldierLinked(database: Dexie, soldierId: SoldierId) {
+  const rows = await tableOf(database, 'soldier_accounts').where('soldier_id').equals(soldierId).toArray()
+  return rows.some((row) => row.revoked_at === null)
 }
 
 function accountRow(
@@ -243,7 +288,7 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
           if ((await tableOf(database, 'soldier_accounts').get(input.account_id)) !== undefined) {
             return alreadyExists(['account_id'])
           }
-          if (await holdsAccount(database, organization.id, identity.auth_user_id)) return fail({ code: 'forbidden' })
+          // A revoked identity may ask again (D-163); a live link answered `forbidden` above.
 
           const claimedId = input.claimed_personal_id === null ? null : normalizePersonalId(input.claimed_personal_id)
           const data = await matchDataOf(database, organization.id)
@@ -334,7 +379,10 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
           let resolved: SoldierId | null = null
 
           if (resolution.kind !== 'reject') {
-            if (await holdsAccount(database, scope.organization_id, request.auth_user_id)) return alreadyExists(['id'])
+            if (await holdsLiveLink(database, scope.organization_id, request.auth_user_id)) return alreadyExists(['id'])
+            if (resolution.kind === 'link' && (await soldierLinked(database, resolution.soldier_id))) {
+              return failValidation([{ path: ['resolution', 'soldier_id'], code: IssueCode.enum.already_linked }])
+            }
             if ((await tableOf(database, 'soldier_accounts').get(resolution.account_id)) !== undefined) {
               return alreadyExists(['resolution', 'account_id'])
             }
@@ -406,6 +454,28 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
         })
         changes.publish(result.touched)
         return result.row
+      }),
+
+    // D-163: ends a link; the soldier and the identity can be linked again.
+    revokeLink: (raw) =>
+      asResult(async () => {
+        const input = parseInput(RevokeAccountLinkInput, raw)
+        const row = await database.transaction('rw', POLICY_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const accounts = tableOf(database, 'soldier_accounts')
+          const stored = await accounts.get(input.id)
+          // A link the actor may not read answers as if it did not exist (D-046).
+          if (stored === undefined || !accountVisible(scope, stored)) return fail({ code: 'not_found' })
+          requirePermission(scope, ACCOUNT_REVIEW_PERMISSION, soldierTarget(stored.soldier_id))
+          if (stored.soldier_id === scope.soldier_id) return fail({ code: 'forbidden' })
+          if (stored.revoked_at !== null) return failValidation([{ path: ['id'], code: IssueCode.enum.archived }])
+          const revoked = parsedRow('soldier_accounts', { ...stored, revoked_at: scope.now, revoked_by: scope.soldier_id })
+          await accounts.put(revoked)
+          await requireAccessManager(database, scope.organization_id, scope.now)
+          return revoked
+        })
+        changes.publish([{ table: 'soldier_accounts', ids: [row.id] }])
+        return row
       }),
   }
 }

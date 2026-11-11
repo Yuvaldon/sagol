@@ -6,7 +6,10 @@ import type { TableName, TableRow } from '@contracts'
 // names are schema.sql names (D-038). Primary keys and uniques mirror it where IndexedDB can: a
 // compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL".
 
-const DATABASE_VERSION = 1
+const DATABASE_VERSION = 2
+
+/** Version 1 indexed the account links as unique; version 2 checks that among links not revoked, in code (D-163). */
+const VERSION_1_ACCOUNTS = 'id, organization_id, auth_user_id, &[organization_id+auth_user_id], &soldier_id'
 
 export const STORES = {
   organizations: 'id',
@@ -17,7 +20,7 @@ export const STORES = {
   soldier_private: 'soldier_id, organization_id, &[organization_id+personal_id]',
   seniority_overrides: 'id, organization_id, soldier_id',
   unit_memberships: 'id, organization_id, soldier_id, unit_id',
-  soldier_accounts: 'id, organization_id, auth_user_id, &[organization_id+auth_user_id], &soldier_id',
+  soldier_accounts: 'id, organization_id, auth_user_id, soldier_id',
   account_link_requests: 'id, organization_id, auth_user_id',
   soldier_preferences: 'soldier_id, organization_id',
   roles: 'id, organization_id',
@@ -41,6 +44,7 @@ export const STORES = {
 
 export function openDatabase(name: string): Dexie {
   const database = new Dexie(name)
+  database.version(1).stores({ ...STORES, soldier_accounts: VERSION_1_ACCOUNTS })
   database.version(DATABASE_VERSION).stores(STORES)
   return database
 }

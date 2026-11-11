@@ -32,9 +32,14 @@ export interface ContractAdapter {
     | 'leave_events'
     | 'leave_comments'
     | 'availability_rules'
+    | 'soldier_accounts'
+    | 'roles'
+    | 'role_permissions'
+    | 'rank_role_bindings'
+    | 'access_grants'
   >
   readonly commands: {
-    readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
+    readonly organizations: DataCommands['organizations']
     readonly accounts: DataCommands['accounts']
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
@@ -47,6 +52,9 @@ export interface ContractAdapter {
     readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
+    readonly roles: DataCommands['roles']
+    readonly rank_role_bindings: DataCommands['rank_role_bindings']
+    readonly access_grants: DataCommands['access_grants']
   }
   readonly changes: ChangeFeed
 }

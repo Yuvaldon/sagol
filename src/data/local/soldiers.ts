@@ -21,6 +21,7 @@ import {
   type UnitMembership,
 } from '@contracts'
 import {
+  can,
   membershipChangeIssues,
   membershipOverlapIssues,
   normalizePersonalId,
@@ -48,7 +49,8 @@ import {
   type ReferenceSpec,
   type RowCheck,
 } from './reference'
-import { POLICY_TABLES, requireAccessManager } from './snapshot'
+import { rolePairs, requireHeld } from './permissions'
+import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 import { SOLDIER_TAG_TABLES, soldierTagIssues } from './tags'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
@@ -70,7 +72,22 @@ async function rankIssues({ database, scope, row, before }: RowCheck<Soldier>): 
     holds(scope, permissionOf('command_ranks', 'view'), { kind: 'organization' })
   if (!visible) return [{ path: ['command_rank_id'], code: IssueCode.enum.reference_not_found }]
   if (rank.archived_at !== null) return [{ path: ['command_rank_id'], code: IssueCode.enum.reference_archived }]
+  // D-156: a rank gives the pairs of every live role bound to it.
+  const bindings = await tableOf(database, 'rank_role_bindings').where('command_rank_id').equals(rank.id).toArray()
+  const roleIds = new Set(bindings.filter((binding) => binding.archived_at === null).map((binding) => binding.role_id))
+  const pairs = []
+  for (const roleId of roleIds) {
+    const role = await tableOf(database, 'roles').get(roleId)
+    if (role !== undefined && role.archived_at === null) pairs.push(...(await rolePairs(database, roleId)))
+  }
+  requireHeld(scope, pairs)
   return []
+}
+
+/** D-157: a rank write passes the permission check on the soldier as stored after the write too. */
+async function requireAfterRankWrite(database: Dexie, scope: ActorScope, action: 'create' | 'update', soldierId: SoldierId) {
+  const { context } = await loadPolicySnapshot(database, scope.organization_id, scope.now)
+  if (!can(context, scope.soldier_id, permissionOf('soldiers', action), soldierTarget(soldierId))) fail({ code: 'forbidden' })
 }
 
 const SPEC: ReferenceSpec<Soldier> = {
@@ -306,6 +323,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
         row.command_rank_id !== before.command_rank_id ||
         row.archived_at !== before.archived_at
       if (changed) await requireAccessManager(store, scope.organization_id, scope.now)
+      if (row.command_rank_id !== before?.command_rank_id) await requireAfterRankWrite(store, scope, 'update', row.id)
     },
   })
 
@@ -365,7 +383,9 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
           requirePermission(scope, permissionOf('soldiers', 'create'), placement)
           if (membership !== null) requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: membership.unit_id })
           if (privateFields !== null) requirePermission(scope, PRIVATE_UPDATE, placement)
-          return insertSoldier(database, scope, { content, membership, private: privateFields }, [])
+          const inserted = await insertSoldier(database, scope, { content, membership, private: privateFields }, [])
+          if (inserted.soldier.command_rank_id !== null) await requireAfterRankWrite(database, scope, 'create', inserted.soldier.id)
+          return inserted
         })
         changes.publish([
           { table: 'soldiers', ids: [written.soldier.id] },

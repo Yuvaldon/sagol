@@ -21,10 +21,20 @@ import {
   createLeaveTypeGroupRepository,
   createLeaveTypeRepository,
 } from './leaveTypes'
+import {
+  createAccessGrantCommands,
+  createAccessGrantRepository,
+  createRankRoleBindingCommands,
+  createRankRoleBindingRepository,
+  createRoleCommands,
+  createRolePermissionRepository,
+  createRoleRepository,
+} from './permissions'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
 import {
   createAccountCommands,
   createAccountLinkRequestRepository,
+  createSoldierAccountRepository,
   createSoldierPreferencesRepository,
   type LocalAccountCommands,
 } from './accounts'
@@ -62,6 +72,11 @@ export interface LocalDataAdapter {
     | 'unit_memberships'
     | 'soldier_preferences'
     | 'account_link_requests'
+    | 'soldier_accounts'
+    | 'roles'
+    | 'role_permissions'
+    | 'rank_role_bindings'
+    | 'access_grants'
     | 'tag_categories'
     | 'tags'
     | 'soldier_tags'
@@ -73,12 +88,15 @@ export interface LocalDataAdapter {
     | 'availability_rules'
   >
   readonly commands: {
-    readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
+    readonly organizations: DataCommands['organizations']
     readonly accounts: LocalAccountCommands
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']
     readonly soldiers: DataCommands['soldiers']
+    readonly roles: DataCommands['roles']
+    readonly rank_role_bindings: DataCommands['rank_role_bindings']
+    readonly access_grants: DataCommands['access_grants']
     readonly tag_categories: DataCommands['tag_categories']
     readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
@@ -122,6 +140,11 @@ export function createLocalDataAdapter(
       unit_memberships: createMembershipRepository(dependencies),
       soldier_preferences: createSoldierPreferencesRepository(dependencies),
       account_link_requests: createAccountLinkRequestRepository(dependencies),
+      soldier_accounts: createSoldierAccountRepository(dependencies),
+      roles: createRoleRepository(dependencies),
+      role_permissions: createRolePermissionRepository(dependencies),
+      rank_role_bindings: createRankRoleBindingRepository(dependencies),
+      access_grants: createAccessGrantRepository(dependencies),
       tag_categories: createTagCategoryRepository(dependencies),
       tags: createTagRepository(dependencies),
       soldier_tags: createSoldierTagRepository(dependencies),
@@ -139,6 +162,9 @@ export function createLocalDataAdapter(
       units: createUnitCommands(dependencies),
       command_ranks: createCommandRankCommands(dependencies),
       soldiers: createSoldierCommands(dependencies),
+      roles: createRoleCommands(dependencies),
+      rank_role_bindings: createRankRoleBindingCommands(dependencies),
+      access_grants: createAccessGrantCommands(dependencies),
       tag_categories: createTagCategoryCommands(dependencies),
       tags: createTagCommands(dependencies),
       leave_type_groups: createLeaveTypeGroupCommands(dependencies),
