@@ -92,6 +92,7 @@ const INPUT_TABLES: Record<string, Target> = {
   RequestAccountLinkInput: { table: 'account_link_requests' },
   CancelAccountLinkRequestInput: { table: 'account_link_requests' },
   ReviewAccountLinkInput: { table: 'account_link_requests' },
+  RevokeAccountLinkInput: { table: 'soldier_accounts' },
   UpdateMyPreferencesInput: { table: 'soldier_preferences' },
   CreateUnitLevelInput: { table: 'unit_levels' },
   UpdateUnitLevelInput: { table: 'unit_levels' },
