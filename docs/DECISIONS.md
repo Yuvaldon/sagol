@@ -2231,15 +2231,21 @@ recommendations, which already follow the recorded decisions and the product's d
   (and their tags), roles, rank bindings, access grants, tag categories, tags, leave type groups, leave types, leaves and
   availability rules. Seniority overrides, leave batches, deployments and property definitions join with the slice that
   builds their command (D-076).
-- **The run.** The whole input is parsed first. If an operation is malformed, nothing runs and every operation is
+- **The run.** `data_transfer:import` is checked before anything else, so who may not import learns nothing of the
+  input's form. The whole input is parsed next. If an operation is malformed, nothing runs and every operation is
   reported on its form alone. Otherwise the operations run in order through the same commands as the UI, in one
-  transaction; `data_transfer:import` is checked first, then each command checks its own permissions. The first refused
+  transaction; each command checks its own permissions. The first refused
   operation ends the run: the results stop at it, with its error. A dry run, or a run with a refusal, writes nothing and
   announces no change; a committed run announces its changes once, after the commit.
 - **The file.** A JSON file of `{ "operations": [...] }`, or a CSV of soldiers whose header names columns from
-  `SOLDIER_CSV_COLUMNS`; each CSV row is one `create_soldier` with a new id and no placement. The owner sees the dry
-  run's report, then commits it.
+  `SOLDIER_CSV_COLUMNS` (in any letter case); each CSV row is one `create_soldier` with a new id and no placement. The
+  CSV is read as UTF-8: a file in another encoding is refused by name ("save it as CSV UTF-8"), not imported with
+  broken letters. Rows are numbered by data row, the header not counted. The owner sees the dry run's report, then
+  commits it; the dry run refreshes nothing, and only the last file picked is shown. The export's file name carries
+  the day on the organization's clock.
 - **Export** is one JSON file, downloaded, of every table as stored (D-050), gated by `data_transfer:export`.
+- **Where.** Import and export open from the account menu, as a drawer panel, for who may import or export. They are
+  not a module button: the bar is already full on a desktop (OI-110), and this is an occasional task.
 - **OI-018: no privileged restore in the app.** Import re-creates rows through commands, so leave history, audit columns
   and account links of an export are not carried over by it. Moving local data to the backend loads the export file once,
   on the server, in 8.3 (OI-109).
