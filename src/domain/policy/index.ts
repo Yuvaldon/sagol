@@ -5,14 +5,14 @@ export {
   type PolicyContext,
   type PolicyData,
 } from './context'
-export { can, missingPermissions } from './can'
+export { can, canUnconstrained, missingPermissions, withinReach, type GrantLimits } from './can'
 export {
   ACCESS_MANAGEMENT_PERMISSIONS,
   accessGrantIssues,
   accessManagerIssues,
   accessManagers,
 } from './invariants'
-export { resolveScope, scopeCovers, type ResolvedScope, type ScopeColumns } from './scope'
+export { resolveScope, scopeCovers, scopeWithin, type ResolvedScope, type ScopeColumns } from './scope'
 export {
   activeOverrideOn,
   archiveRankIssues,
@@ -25,6 +25,7 @@ export {
   acceptsTarget,
   placementTarget,
   soldierTarget,
+  EVERY_SOLDIER,
   unitTarget,
   type PolicyTargetKind,
 } from './targets'

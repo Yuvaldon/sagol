@@ -44,12 +44,15 @@ export interface CheckListProps {
   readonly selected: readonly string[]
   readonly onChange: (keys: string[]) => void
   readonly autoFocus?: boolean
+  /** The choices side by side, wrapping, for short names such as the actions of the permission grid. */
+  readonly inline?: boolean
 }
 
-export function CheckList({ label, choices, selected, onChange, autoFocus = false }: CheckListProps) {
+export function CheckList({ label, choices, selected, onChange, autoFocus = false, inline = false }: CheckListProps) {
   return (
     <CheckboxGroup value={[...selected]} onChange={onChange} className="flex flex-col gap-2xs">
       <Label className="text-label font-semibold text-text-muted">{textOf(label)}</Label>
+      <div className={inline ? 'flex flex-wrap gap-x-sm' : 'contents'}>
       {choices.map((choice, index) => (
         <Checkbox key={choice.key} value={choice.key} autoFocus={autoFocus && index === 0} className={ROW}>
           {({ isSelected }) => (
@@ -62,6 +65,7 @@ export function CheckList({ label, choices, selected, onChange, autoFocus = fals
           )}
         </Checkbox>
       ))}
+      </div>
     </CheckboxGroup>
   )
 }

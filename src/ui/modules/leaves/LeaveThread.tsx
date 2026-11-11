@@ -1,7 +1,7 @@
 import type { AppError, CommentVisibility, Leave, LeaveComment, LeaveEvent, LeaveType, SoldierId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
-  useCurrentOrganization,
+  useTimezone,
   useIsOwnComment,
   useLeaveActions,
   useLeaveCommentCommands,
@@ -162,8 +162,7 @@ export function LeaveThread({
   const thread = useLeaveThread(leave.id)
   const actions = useLeaveActions(leave)
   const isOwn = useIsOwnComment()
-  const organization = useCurrentOrganization()
-  const timezone = organization.status === 'ready' && organization.value !== null ? organization.value.timezone : null
+  const timezone = useTimezone()
   const [dialog, setDialog] = useState<{ readonly comment: LeaveComment; readonly mode: 'edit' | 'delete' } | null>(null)
 
   return (

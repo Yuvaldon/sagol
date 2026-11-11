@@ -1,10 +1,10 @@
-import { IssueCode, type AccessGrant, type Issue, type Permission, type SoldierId } from '@contracts'
+import { IssueCode, SubjectRankConstraint, type AccessGrant, type Issue, type Permission, type SoldierId } from '@contracts'
 import { compareInstants } from '../time'
 import type { PolicyContext } from './context'
 
 // Invariants of the permission data (D-004, D-059) and of access grants (OI-009).
 
-/** What makes a soldier an access manager, at organization scope without expiry (D-059). */
+/** What makes a soldier an access manager, at organization scope with `any`, without expiry (D-059, D-158). */
 export const ACCESS_MANAGEMENT_PERMISSIONS = [
   { resource: 'access_grants', action: 'create' },
   { resource: 'access_grants', action: 'delete' },
@@ -14,7 +14,12 @@ export const ACCESS_MANAGEMENT_PERMISSIONS = [
 function isAccessManager(context: PolicyContext, soldierId: SoldierId): boolean {
   const lasting = context
     .permissionsOf(soldierId)
-    .filter((permission) => permission.scope.kind === 'organization' && permission.expires_at === null)
+    .filter(
+      (permission) =>
+        permission.scope.kind === 'organization' &&
+        permission.expires_at === null &&
+        permission.subject_rank_constraint === SubjectRankConstraint.enum.any,
+    )
   return ACCESS_MANAGEMENT_PERMISSIONS.every((required) =>
     lasting.some(
       (permission) => permission.resource === required.resource && permission.action === required.action,

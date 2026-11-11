@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
 
 // V1's demo: the units drawer, from levels to archive, on desktop and mobile, RTL, with axe.
 
@@ -28,7 +28,7 @@ async function depthOf(page: Page, name: string): Promise<string> {
 }
 
 async function openUnits(page: Page) {
-  await navigation(page).getByRole('button', { name: he.units.open }).click()
+  await openModule(page, he.units.open)
   await expect(page.getByRole('heading', { name: he.units.title, exact: true })).toBeVisible()
 }
 

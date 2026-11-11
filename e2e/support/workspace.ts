@@ -63,3 +63,25 @@ export async function enterAsOwner(page: Page) {
   await claimOrganization(page)
   await expect(organizationHeading(page)).toBeVisible()
 }
+
+/**
+ * Opens a module from the bar, or from the "more" menu when a phone has no room for it (D-165). The bar fills while
+ * access loads, so the place of a module can still change: the whole step retries.
+ */
+export async function openModule(page: Page, name: string | RegExp) {
+  await expect(async () => {
+    // A try that opened "more" while the bar was still filling leaves the menu over the bar: close it first.
+    const more = page.getByRole('menu', { name: he.more.open })
+    if (await more.isVisible()) {
+      await page.keyboard.press('Escape')
+      await expect(more).toBeHidden({ timeout: 1_000 })
+    }
+    const inBar = navigation(page).getByRole('button', { name })
+    if (await inBar.isVisible()) {
+      await inBar.click({ timeout: 1_000 })
+      return
+    }
+    await navigation(page).getByRole('button', { name: he.more.open }).click({ timeout: 1_000 })
+    await page.getByRole('menuitem', { name }).click({ timeout: 1_000 })
+  }).toPass({ timeout: 10_000 })
+}

@@ -21,8 +21,12 @@ export interface FilterSource {
   readonly soldierTags: readonly SoldierTag[]
 }
 
+/**
+ * The filter context of a source. A unit or rank the actor does not see matches nobody (D-104, D-131, OI-101):
+ * a link may name an archived unit or one outside the actor's scope, and the evaluator would match its id directly.
+ */
 export function filterContextOf(source: FilterSource): FilterContext {
-  return createFilterContext({
+  const context = createFilterContext({
     units: source.units,
     soldiers: source.soldiers,
     soldier_tags: source.soldierTags,
@@ -31,6 +35,42 @@ export function filterContextOf(source: FilterSource): FilterContext {
     unit_memberships: source.memberships,
     property_definitions: [],
   })
+  const seenOnly = seenOnlyOf(source)
+  const guarded = new WeakMap<FilterExpression, FilterExpression>()
+  const guard = (expression: FilterExpression) => {
+    const known = guarded.get(expression)
+    if (known !== undefined) return known
+    const result = expression.where === undefined ? expression : { ...expression, where: seenOnly(expression.where) }
+    guarded.set(expression, result)
+    return result
+  }
+  return {
+    soldierIds: context.soldierIds,
+    matches: (expression, soldierId, date) => context.matches(guard(expression), soldierId, date),
+    select: (expression, date) => context.select(guard(expression), date),
+  }
+}
+
+/** Drops the units and ranks the actor does not see from a filter, so a condition on them alone matches nobody. */
+function seenOnlyOf(source: FilterSource): (node: FilterNode) => FilterNode {
+  const units = new Set<string>(source.units.map((unit) => unit.id))
+  const ranks = new Set<string>(source.ranks.map((rank) => rank.id))
+  const seenOnly = (node: FilterNode): FilterNode => {
+    switch (node.kind) {
+      case 'and':
+      case 'or':
+        return { ...node, nodes: node.nodes.map(seenOnly) }
+      case 'not':
+        return { ...node, node: seenOnly(node.node) }
+      case 'unit':
+        return { ...node, unit_ids: node.unit_ids.filter((id) => units.has(id)) }
+      case 'command_rank':
+        return { ...node, command_rank_ids: node.command_rank_ids.filter((id) => ranks.has(id)) }
+      default:
+        return node
+    }
+  }
+  return seenOnly
 }
 
 export function useFilterSource(): Loaded<FilterSource> {

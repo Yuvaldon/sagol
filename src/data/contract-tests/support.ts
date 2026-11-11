@@ -9,6 +9,7 @@ import {
   type AuthIdentity,
   type OrganizationId,
   type Permission,
+  type PermissionCheck,
   type Result,
   type ScopeAnchorType,
   type TableRow,
@@ -37,6 +38,27 @@ export function issuesOf<T>(result: Result<T>) {
   const error = errorOf(result)
   if (error.code !== 'validation_failed') throw new Error(`expected validation_failed, got ${error.code}`)
   return error.issues
+}
+
+/**
+ * Asks the `can` hint, then runs the command it stands for, and fails unless they agree (D-091): the command
+ * succeeds exactly when every check is true, and otherwise answers `forbidden` or `not_found`. Returns the hint.
+ */
+export async function hintAndCommand(
+  harness: ContractHarness,
+  checks: readonly PermissionCheck[],
+  command: () => Promise<Result<unknown>>,
+): Promise<boolean[]> {
+  const hint = valueOf(await harness.adapter.session.can(checks))
+  const result = await command()
+  const allowed = hint.every(Boolean)
+  if (result.ok !== allowed) {
+    throw new Error(`the hint ${JSON.stringify(hint)} disagrees with the command: ${JSON.stringify(result)}`)
+  }
+  if (!result.ok && result.error.code !== 'forbidden' && result.error.code !== 'not_found') {
+    throw new Error(`expected a permission refusal, got ${result.error.code}`)
+  }
+  return hint
 }
 
 export interface ActorScopeColumns {

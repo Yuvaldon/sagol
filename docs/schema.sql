@@ -231,10 +231,13 @@ CREATE TABLE IF NOT EXISTS "soldier_accounts" (
 	"revoked_at" TIMESTAMPTZ,
 	"revoked_by" UUID REFERENCES "soldiers"("id"),
 	PRIMARY KEY("id"),
-	CONSTRAINT "soldier_accounts_provider_check" CHECK ("provider" IN ('google', 'local')),
-	CONSTRAINT "uq_soldier_accounts_auth_user" UNIQUE ("organization_id", "auth_user_id"),
-	CONSTRAINT "uq_soldier_accounts_soldier" UNIQUE ("soldier_id")
+	CONSTRAINT "soldier_accounts_provider_check" CHECK ("provider" IN ('google', 'local'))
 );
+-- Unique among links that are not revoked, so a soldier and an identity can be linked again (D-163).
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_soldier_accounts_auth_user"
+	ON "soldier_accounts"("organization_id", "auth_user_id") WHERE "revoked_at" IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_soldier_accounts_soldier"
+	ON "soldier_accounts"("soldier_id") WHERE "revoked_at" IS NULL;
 
 CREATE TABLE IF NOT EXISTS "account_link_requests" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),

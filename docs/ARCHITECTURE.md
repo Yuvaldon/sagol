@@ -91,7 +91,15 @@ The data layer is written as if it were the server:
   `cancelLinkRequest` (the asker), `reviewLink` (link to a candidate, create a soldier, reject). A reviewer reads, and may
   name, only the candidates over which they hold `accounts:approve` (`reviewableCandidates`); approval fills a missing
   personal number. Candidates are computed on each read. Screens: the request form and waiting notice of onboarding, and
-  the account-links module in the bar. Not built: invite links, revoking a link (D-152).
+  the account-links module in the bar. Not built: invite links (D-152).
+- **Access, as built (V10, D-156 to D-166):** `roles` (with their permission set), `rank_role_bindings`, `access_grants`
+  (grant and revoke) and `organizations.baseline_role_id`. Every way of giving a role is guarded: the writer must hold
+  the pairs given, a grant's scope stays within the writer's reach, and the post-write state keeps an access manager
+  (D-156, D-158). A holder without seniority gets only `any` (D-157); `self` sees its own unit chain (D-159).
+  `accounts.revokeLink` ends a link (D-163). Who cannot view the organization counts days on the device's zone (D-160);
+  presence and live warnings leave out what the actor cannot read in full (D-161, D-162). A grant's window is whole days
+  in the organization's zone (D-166). Screens: the roles module (roles, rank bindings, the baseline) and the grants
+  module, with a "more" menu on a phone (D-165).
 - **Bootstrap:** the first sign-in on an empty organization becomes owner only if its
   verified email matches the server secret `BOOTSTRAP_OWNER_EMAIL`. Atomic server function.
   Locally, the same flow makes the developer the owner.

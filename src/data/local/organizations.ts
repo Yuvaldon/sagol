@@ -1,5 +1,6 @@
 import {
   BootstrapOwnerInput,
+  UpdateOrganizationInput,
   PERMISSION_ACTIONS_BY_RESOURCE,
   ScopeAnchorType,
   SoldierStatus,
@@ -9,12 +10,15 @@ import {
   type DataCommands,
   type DataRepositories,
   type RolePermission,
+  type Organization,
   type Session,
 } from '@contracts'
 import { can, timeZoneIssues, withPathPrefix } from '@domain'
 import { tableOf } from './database'
 import { createdBy, type LocalDependencies } from './dependencies'
+import { holds, loadActorScope, requirePermission } from './actor'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
+import { liveRoleIssues, requireHeld, rolePairs } from './permissions'
 import { bootstrapAllowed, requireLinked, resolveSession } from './session'
 import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 
@@ -139,8 +143,47 @@ export function createOrganizationRepository({
 
 export function createOrganizationCommands(
   dependencies: LocalDependencies,
-): Pick<DataCommands['organizations'], 'bootstrapOwner'> {
+): DataCommands['organizations'] {
+  const { database, changes } = dependencies
   return {
+    // The baseline role gives its pairs to everyone, so it is guarded by D-156 and checked by D-059.
+    update: (raw): AsyncResult<Organization> =>
+      asResult(async () => {
+        const input = parseInput(UpdateOrganizationInput, raw)
+        const row = await database.transaction('rw', POLICY_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const target = { kind: 'organization' } as const
+          if (!holds(scope, { resource: 'organization', action: 'view' }, target)) return fail({ code: 'not_found' })
+          requirePermission(scope, { resource: 'organization', action: 'update' }, target)
+          const before = scope.organization
+          if (before.version !== input.expected_version) return fail({ code: 'stale_version' })
+
+          const { timezone, baseline_role_id: baseline } = input.changes
+          const baselineChanged = baseline !== undefined && baseline !== before.baseline_role_id
+          const issues = [
+            ...(timezone === undefined ? [] : withPathPrefix(['changes'], timeZoneIssues(timezone))),
+            ...(baselineChanged && baseline !== null
+              ? await liveRoleIssues(database, scope, baseline, ['changes', 'baseline_role_id'])
+              : []),
+          ]
+          if (issues.length > 0) return failValidation(issues)
+          if (baselineChanged && baseline !== null) requireHeld(scope, await rolePairs(database, baseline))
+
+          const defined = Object.fromEntries(Object.entries(input.changes).filter(([, value]) => value !== undefined))
+          const next = parsedRow('organizations', {
+            ...before,
+            ...defined,
+            updated_at: scope.now,
+            version: before.version + 1,
+          })
+          await tableOf(database, 'organizations').put(next)
+          if (baselineChanged) await requireAccessManager(database, scope.organization_id, scope.now)
+          return next
+        })
+        changes.publish([{ table: 'organizations', ids: [row.id] }])
+        return row
+      }),
+
     bootstrapOwner: (raw): AsyncResult<Session> =>
       asResult(async () => {
         const identity = dependencies.identity.current()

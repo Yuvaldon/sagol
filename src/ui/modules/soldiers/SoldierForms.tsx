@@ -81,7 +81,8 @@ export function SoldierCreateForm({
     validators: { onSubmit: ({ value }) => validatorResult(newSoldierIssues(value)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
-      const result = await create.run(value)
+      // Private fields hidden by the placement are not sent: what the actor cannot see, they did not type (D-096).
+      const result = await create.run(allowPrivate(value.membership.unit_id) ? value : { ...value, private: initial.private })
       if (result.ok) backToList()
       else setState(formStateOf(result.error, NEW_FIELDS))
     },

@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, typeDate } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, waitForSettledScreen } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
 // axe. Sample data, tests only.
@@ -32,7 +32,7 @@ function unitRow(page: Page, name: string) {
 
 /** A company with two platoons. */
 async function buildUnits(page: Page) {
-  await navigation(page).getByRole('button', { name: he.units.open }).click()
+  await openModule(page, he.units.open)
   await page.getByRole('button', { name: he.units.new }).first().click()
   await page.getByLabel(he.units.name).fill('פלוגה')
   await page.getByRole('button', { name: he.common.create }).click()
@@ -58,7 +58,7 @@ async function createPlacedSoldier(page: Page, firstName: string, lastName: stri
 
 /** Two soldiers in two platoons; the first moves to the second platoon today, Wednesday. */
 async function buildRoster(page: Page) {
-  await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+  await openModule(page, he.soldiers.open)
   await createPlacedSoldier(page, 'יעל', 'שחר', 'מחלקה א')
   await createPlacedSoldier(page, 'נועם', 'לב', 'מחלקה ב')
   await page.getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: /יעל שחר/ }).click()
@@ -200,12 +200,12 @@ test('the drawer and its scrim do not move for who asks for less motion (OI-058)
     })
 
   await enterAsOwner(page)
-  await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+  await openModule(page, he.soldiers.open)
   expect(await animationsOf(page)).not.toEqual(['none', 'none'])
   await closeDrawer(page)
 
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+  await openModule(page, he.soldiers.open)
   expect(await animationsOf(page)).toEqual(['none', 'none'])
   await expectNoAxeViolations(page)
 })

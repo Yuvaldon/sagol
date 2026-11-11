@@ -56,6 +56,8 @@ const MODULE_CHECKS = {
   tags: { permission: { resource: 'tags', action: 'view' }, target: { kind: 'organization' } },
   /** A global rule is organization data, so any scope of `view` opens the module (D-053, D-140). */
   rules: { permission: { resource: 'availability_rules', action: 'view' }, target: { kind: 'organization' } },
+  /** Roles and their bindings are organization data (D-028, D-165). */
+  roles: { permission: { resource: 'roles', action: 'view' }, target: { kind: 'organization' } },
 } as const satisfies Record<string, PermissionCheck>
 
 const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
@@ -70,5 +72,6 @@ export function useModuleAccess() {
     leaveTypes: can(MODULE_CHECKS.leaveTypes),
     tags: can(MODULE_CHECKS.tags),
     rules: can(MODULE_CHECKS.rules),
+    roles: can(MODULE_CHECKS.roles),
   }
 }

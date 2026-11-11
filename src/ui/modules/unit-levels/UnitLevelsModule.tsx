@@ -268,10 +268,11 @@ export function UnitLevelsModule() {
     panel.open(PANEL_IDS.unitLevels, { entity: NEW_ENTITY })
   }
 
-  if (panel.entity === NEW_ENTITY) return <LevelEditor level={null} levels={levels.value} />
+  // A deep link opens only what the actor may use; anything else reads as not found (D-076).
+  if (panel.entity === NEW_ENTITY && permissions.create) return <LevelEditor level={null} levels={levels.value} />
   if (panel.entity !== null) {
     const level = live.find((candidate) => candidate.id === panel.entity)
-    if (level === undefined) {
+    if (level === undefined || !permissions.update) {
       return (
         <div className="flex flex-col items-center gap-md py-xl text-center">
           <p className="text-name text-text-muted">{t('unitLevels.notFound')}</p>

@@ -1,7 +1,7 @@
 import type { AppError, Leave, LeaveTransition, LeaveType, LeaveTypeGroup, Soldier } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
-  useCurrentOrganization,
+  useTimezone,
   useLeave,
   useLeaveActions,
   useLeaveTransition,
@@ -51,13 +51,12 @@ function LeaveView({
   const actions = useLeaveActions(leave)
   const transition = useLeaveTransition()
   const gate = useRuleGate()
-  const organization = useCurrentOrganization()
   const [editing, setEditing] = useState<number | null>(null)
   const [asking, setAsking] = useState<ClosingStep | null>(null)
   const [failure, setFailure] = useState<AppError | null>(null)
   const nameOf = personNames(soldiers)
   const type = types.find((candidate) => candidate.id === leave.leave_type_id) ?? null
-  const timezone = organization.status === 'ready' && organization.value !== null ? organization.value.timezone : null
+  const timezone = useTimezone()
 
   async function step(next: LeaveTransition) {
     setFailure(null)

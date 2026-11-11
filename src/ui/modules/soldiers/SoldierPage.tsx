@@ -31,11 +31,22 @@ import { unitOptions } from './unitOptions'
 const NO_SELECTION = 'none'
 const MOVE_FIELDS: readonly string[] = ['new_membership.unit_id', 'new_membership', 'effective_date']
 
-function ReadOnlyField({ labelKey, value }: { readonly labelKey: I18nKey; readonly value: string }) {
+function ReadOnlyField({
+  labelKey,
+  value,
+  isLtr = false,
+}: {
+  readonly labelKey: I18nKey
+  readonly value: string
+  /** Numbers and addresses read left to right, as their inputs do (Design.md). */
+  readonly isLtr?: boolean
+}) {
   return (
     <div className="flex flex-col gap-xs">
       <dt className="text-label font-semibold text-text-muted">{t(labelKey)}</dt>
-      <dd className="text-control">{value === '' ? t('soldiers.emptyValue') : value}</dd>
+      <dd className="text-start text-control" dir={isLtr && value !== '' ? 'ltr' : undefined}>
+        {value === '' ? t('soldiers.emptyValue') : value}
+      </dd>
     </div>
   )
 }
@@ -67,9 +78,9 @@ function PrivateSection({ soldier, canUpdate }: { readonly soldier: Soldier; rea
     <section className="flex flex-col gap-md">
       <h3 className="text-body font-bold">{t('soldiers.privateTitle')}</h3>
       <dl className="flex flex-col gap-md">
-        <ReadOnlyField labelKey="soldiers.personalId" value={row.value?.personal_id ?? ''} />
-        <ReadOnlyField labelKey="soldiers.inviteEmail" value={row.value?.invite_email ?? ''} />
-        <ReadOnlyField labelKey="soldiers.phone" value={row.value?.phone ?? ''} />
+        <ReadOnlyField labelKey="soldiers.personalId" value={row.value?.personal_id ?? ''} isLtr />
+        <ReadOnlyField labelKey="soldiers.inviteEmail" value={row.value?.invite_email ?? ''} isLtr />
+        <ReadOnlyField labelKey="soldiers.phone" value={row.value?.phone ?? ''} isLtr />
       </dl>
     </section>
   )

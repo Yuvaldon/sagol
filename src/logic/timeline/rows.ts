@@ -11,7 +11,7 @@ import type {
   UnitMembership,
 } from '@contracts'
 import { filterContextOf, populationOf } from '../filters/source'
-import { byName, membershipsBySoldier, unitStateOn, type ReadsPlacements, type UnitState } from '../roster/roster'
+import { byName, membershipsBySoldier, unitStateOn, type UnitState } from '../roster/roster'
 import { unitTreeRows } from '../units/tree'
 
 // The rows of the timeline (D-105): who served in the selected unit during the window, grouped by
@@ -33,7 +33,11 @@ export interface TimelineInput {
   readonly filter: FilterExpression | null
   /** The selected unit, whose name starts no path below it. */
   readonly scopeUnitId: UnitId | null
-  readonly readsPlacements: ReadsPlacements
+  /**
+   * Whether the actor may read the soldier's placements; NULL while that hint has not answered. A soldier with no
+   * placement read yet waits out of the board until it does, so their row never says "unknown" early (D-122, OI-093).
+   */
+  readonly readsPlacements: (soldierId: SoldierId) => boolean | null
   /** With leave conditions: whether the soldier has a matching mark in the window (D-132). NULL without them. */
   readonly marked: ((soldierId: SoldierId) => boolean) | null
   /** With "only who is missing": whether the soldier is unavailable, one flag per day (D-133). NULL when off. */
@@ -129,7 +133,9 @@ export function timelineItems(input: TimelineInput): TimelineItem[] {
     // Today when the soldier is in the view today, otherwise the first day they are (D-105).
     const referenceDay = todayIndex >= 0 && inScope[todayIndex] === true ? today : (days[firstMatch] ?? null)
     const own = bySoldier.get(soldier.id) ?? []
-    const state = unitStateOn(own, unitById, soldier.id, referenceDay, input.readsPlacements(soldier.id))
+    const reads = input.readsPlacements(soldier.id)
+    if (reads === null && own.length === 0) continue
+    const state = unitStateOn(own, unitById, soldier.id, referenceDay, reads === true)
     const key = groupKeyOf(state)
     const label: TimelineGroupLabel =
       state.kind === 'unit' ? { kind: 'unit', path: pathOf(state.unit.id, unitById, input.scopeUnitId) } : { kind: state.kind }

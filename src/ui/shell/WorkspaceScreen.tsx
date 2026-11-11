@@ -1,12 +1,8 @@
-import { PANEL_IDS } from '@config'
 import type { AuthIdentity } from '@contracts'
-import { t, type I18nKey } from '@i18n'
-import { useCurrentOrganization, useDateWindow, useModuleAccess, usePanel, useRulesDay } from '@logic'
-import { Network, Scale, Tag, Tags, Users, type LucideIcon } from 'lucide-react'
+import { t } from '@i18n'
+import { useCurrentOrganization, useDateWindow } from '@logic'
 import { useIsDesktop } from '../patterns/media'
-import { Button, IconButton } from '../primitives/Button'
-import { AccountLinksButton } from './AccountLinksButton'
-import { InboxButton } from './InboxButton'
+import { ModuleButtons } from './ModuleButtons'
 import { ModuleDrawer } from './ModuleDrawer'
 import { NewLeaveButton } from './NewLeaveButton'
 import { FilterBar } from './FilterBar'
@@ -27,73 +23,6 @@ const BAR = 'glass-bar pointer-events-auto flex min-w-none items-center gap-xs r
 
 function OrganizationName({ name }: { readonly name: string }) {
   return <h1 className="min-w-none truncate px-md text-control font-bold">{name}</h1>
-}
-
-/** A module's button: icon and name on desktop, the icon alone on a phone, its name still read aloud (D-116). */
-function ModuleButton({ Icon, labelKey, onPress }: { readonly Icon: LucideIcon; readonly labelKey: I18nKey; readonly onPress: () => void }) {
-  const isDesktop = useIsDesktop()
-  if (!isDesktop) {
-    return (
-      <IconButton labelKey={labelKey} onPress={onPress}>
-        <Icon aria-hidden size={18} />
-      </IconButton>
-    )
-  }
-  return (
-    <Button onPress={onPress}>
-      <Icon aria-hidden size={14} />
-      {t(labelKey)}
-    </Button>
-  )
-}
-
-function ModuleButtons() {
-  const access = useModuleAccess()
-  const panel = usePanel()
-  const rules = useRulesDay()
-  return (
-    <>
-      <InboxButton />
-      <AccountLinksButton />
-      {access.units ? (
-        <ModuleButton
-          Icon={Network}
-          labelKey="units.open"
-          onPress={() => {
-            panel.open(PANEL_IDS.units)
-          }}
-        />
-      ) : null}
-      {access.soldiers ? (
-        <ModuleButton
-          Icon={Users}
-          labelKey="soldiers.open"
-          onPress={() => {
-            panel.open(PANEL_IDS.soldiers)
-          }}
-        />
-      ) : null}
-      {access.tags ? (
-        <ModuleButton
-          Icon={Tag}
-          labelKey="tags.open"
-          onPress={() => {
-            panel.open(PANEL_IDS.tags)
-          }}
-        />
-      ) : null}
-      {access.rules ? <ModuleButton Icon={Scale} labelKey='rules.open' onPress={rules.open} /> : null}
-      {access.leaveTypes ? (
-        <ModuleButton
-          Icon={Tags}
-          labelKey="leaveTypes.open"
-          onPress={() => {
-            panel.open(PANEL_IDS.leaveTypes)
-          }}
-        />
-      ) : null}
-    </>
-  )
 }
 
 /** The filter row under the bars (D-131). It needs a day, as every engine does. */

@@ -21,6 +21,8 @@ import {
   type UnitMembership,
 } from '@contracts'
 import {
+  can,
+  canUnconstrained,
   membershipChangeIssues,
   membershipOverlapIssues,
   normalizePersonalId,
@@ -48,7 +50,8 @@ import {
   type ReferenceSpec,
   type RowCheck,
 } from './reference'
-import { POLICY_TABLES, requireAccessManager } from './snapshot'
+import { rolePairs, requireHeld } from './permissions'
+import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 import { SOLDIER_TAG_TABLES, soldierTagIssues } from './tags'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
@@ -70,7 +73,26 @@ async function rankIssues({ database, scope, row, before }: RowCheck<Soldier>): 
     holds(scope, permissionOf('command_ranks', 'view'), { kind: 'organization' })
   if (!visible) return [{ path: ['command_rank_id'], code: IssueCode.enum.reference_not_found }]
   if (rank.archived_at !== null) return [{ path: ['command_rank_id'], code: IssueCode.enum.reference_archived }]
+  // D-156: a rank gives the pairs of every live role bound to it.
+  const bindings = await tableOf(database, 'rank_role_bindings').where('command_rank_id').equals(rank.id).toArray()
+  const roleIds = new Set(bindings.filter((binding) => binding.archived_at === null).map((binding) => binding.role_id))
+  const pairs = []
+  for (const roleId of roleIds) {
+    const role = await tableOf(database, 'roles').get(roleId)
+    if (role !== undefined && role.archived_at === null) pairs.push(...(await rolePairs(database, roleId)))
+  }
+  requireHeld(scope, pairs)
   return []
+}
+
+/** D-157: a rank write passes the permission check on the soldier as stored after the write too. */
+async function requireAfterRankWrite(database: Dexie, scope: ActorScope, action: 'create' | 'update', soldierId: SoldierId) {
+  const { context } = await loadPolicySnapshot(database, scope.organization_id, scope.now)
+  const permission = permissionOf('soldiers', action)
+  const target = soldierTarget(soldierId)
+  if (!can(context, scope.soldier_id, permission, target)) fail({ code: 'forbidden' })
+  // One's own rank changes only through an unconstrained source: a higher rank widens what the constrained ones reach.
+  if (soldierId === scope.soldier_id && !canUnconstrained(context, scope.soldier_id, permission, target)) fail({ code: 'forbidden' })
 }
 
 const SPEC: ReferenceSpec<Soldier> = {
@@ -211,6 +233,8 @@ export async function insertSoldier(
       }),
     )
   }
+  // D-157, for every way a soldier is created (the roster and a link request alike).
+  if (soldier.command_rank_id !== null) await requireAfterRankWrite(database, scope, 'create', soldier.id)
   return { soldier, hasPrivate }
 }
 
@@ -306,6 +330,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
         row.command_rank_id !== before.command_rank_id ||
         row.archived_at !== before.archived_at
       if (changed) await requireAccessManager(store, scope.organization_id, scope.now)
+      if (row.command_rank_id !== before?.command_rank_id) await requireAfterRankWrite(store, scope, 'update', row.id)
     },
   })
 

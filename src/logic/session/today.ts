@@ -4,15 +4,28 @@ import { useEffect, useState } from 'react'
 import { usePorts } from '../runtime/context'
 import { useCurrentOrganization } from './hooks'
 
+/** The device's time zone: the day of who may not view the organization (D-160). */
+function deviceTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone
+}
+
 /**
- * Today in the organization's time zone (D-083), and it moves at midnight with the screen open (D-107).
- * NULL while it loads, or for who may not view the organization. A timer that fires early sets the next
- * one, so the day never turns late or twice.
+ * The time zone the screens count days in: the organization's (D-083), or the device's for who may not view the
+ * organization (D-160). NULL while it loads or when it fails.
+ */
+export function useTimezone(): string | null {
+  const organization = useCurrentOrganization()
+  if (organization.status !== 'ready') return null
+  return organization.value === null ? deviceTimezone() : organization.value.timezone
+}
+
+/**
+ * Today in the screens' time zone, and it moves at midnight with the screen open (D-107). NULL while it loads. A
+ * timer that fires early sets the next one, so the day never turns late or twice.
  */
 export function useToday(): CalendarDate | null {
   const { time } = usePorts()
-  const organization = useCurrentOrganization()
-  const timezone = organization.status === 'ready' && organization.value !== null ? organization.value.timezone : null
+  const timezone = useTimezone()
   const [turns, setTurns] = useState(0)
 
   useEffect(() => {
