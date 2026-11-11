@@ -4,9 +4,9 @@ import {
   fullName,
   useCurrentOrganization,
   useLinkCandidates,
+  useLinkCreatePlacements,
   useLinkRequests,
   useReviewLink,
-  useRosterPermissions,
   useSoldiers,
   useToday,
   useUnits,
@@ -49,10 +49,10 @@ function CreateSoldierDialog({
   readonly isPending: boolean
   readonly onClose: () => void
 }) {
-  const permissions = useRosterPermissions(soldiers, units)
+  const placements = useLinkCreatePlacements(soldiers, units)
   const options: SelectOption<UnitId | null>[] = [
-    ...(permissions.createWithoutUnit ? [{ key: NO_SELECTION, label: { key: 'soldiers.noUnit' as const }, value: null }] : []),
-    ...unitOptions(units, permissions.placeIn),
+    ...(placements.withoutUnit ? [{ key: NO_SELECTION, label: { key: 'soldiers.noUnit' as const }, value: null }] : []),
+    ...unitOptions(units, placements.placeIn),
   ]
   const [unitId, setUnitId] = useState<UnitId | null>(options[0]?.value ?? null)
   const [date, setDate] = useState<CalendarDate | ''>(today ?? '')
@@ -144,7 +144,7 @@ function RequestCard({
   readonly timezone: string | null
 }) {
   const candidates = useLinkCandidates(request.id)
-  const permissions = useRosterPermissions(soldiers, units)
+  const placements = useLinkCreatePlacements(soldiers, units)
   const reviewLink = useReviewLink()
   const [dialog, setDialog] = useState<'create' | 'reject' | null>(null)
   const [failure, setFailure] = useState<AppError | null>(null)
@@ -206,7 +206,7 @@ function RequestCard({
         >
           {t('accounts.reject')}
         </Button>
-        {permissions.create ? (
+        {placements.any ? (
           <Button
             onPress={() => {
               setFailure(null)
