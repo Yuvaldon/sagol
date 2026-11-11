@@ -683,12 +683,14 @@ CREATE INDEX IF NOT EXISTS "idx_deployments_unit_id"        ON "deployments"("un
 CREATE INDEX IF NOT EXISTS "idx_availability_rules_scope"   ON "availability_rules"("scope_unit_id") WHERE "archived_at" IS NULL;
 
 -- -----------------------------------------------------------------------------
--- Server-side objects specified here, implemented in phase 8 (supabase/migrations)
+-- Server-side objects, implemented in supabase/migrations (D-201, D-202)
 -- -----------------------------------------------------------------------------
--- Triggers:  unit_closure maintenance + cycle rejection; soldier_tags single-select;
---            version bump + updated_at; leave_events append-only; last-admin guard.
--- Functions: bootstrap_owner, request_account_link, review_account_link,
---            create_leave, transition_leave, reschedule_leave, grant_access,
---            revoke_access, has_permission(resource, action, target) used by RLS.
+-- Triggers:  unit_closure maintenance + cycle and cross-organization rejection;
+--            soldier_tags single-select; version guard (+1); leave_events append-only
+--            and ordered (D-202).
+-- Commands:  one server function, the command gateway, runs the adapter's command
+--            code in a SERIALIZABLE transaction (D-201): bootstrap, account links,
+--            leaves, grants and the last-admin check (D-059) included.
+--            has_permission(resource, action, target), used by RLS, comes with 8.2.
 -- RLS:       enabled on every table; policies call has_permission(). Verified by the
 --            same table-driven test matrix that tests the domain policy (D-007).
