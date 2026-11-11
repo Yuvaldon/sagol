@@ -5,7 +5,7 @@ export {
   type PolicyContext,
   type PolicyData,
 } from './context'
-export { can, missingPermissions, withinReach, type GrantLimits } from './can'
+export { can, canUnconstrained, missingPermissions, withinReach, type GrantLimits } from './can'
 export {
   ACCESS_MANAGEMENT_PERMISSIONS,
   accessGrantIssues,

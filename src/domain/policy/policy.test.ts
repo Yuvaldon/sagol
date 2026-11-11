@@ -25,6 +25,7 @@ import {
   accessManagerIssues,
   accessManagers,
   can,
+  canUnconstrained,
   createPolicyContext,
   missingPermissions,
   scopeWithin,
@@ -575,6 +576,13 @@ describe('grant reach (D-156)', () => {
     expect(withinReach(context, S.pc1, create, unit(UNIT.P2, false), open)).toBe(false)
     expect(withinReach(context, S.pc1, create, org, open)).toBe(false)
     expect(withinReach(context, S.sc11, create, unit(UNIT.S11, false), open)).toBe(false)
+  })
+
+  it('counts only unconstrained sources for a change of one\'s own rank (D-157)', () => {
+    const approve = p('leaves', 'approve')
+    expect(can(context, S.pc2, approve, soldierTarget('pc2'))).toBe(true)
+    expect(canUnconstrained(context, S.pc2, approve, soldierTarget('pc2'))).toBe(false)
+    expect(canUnconstrained(context, S.cc, approve, soldierTarget('cc'))).toBe(true)
   })
 
   it('never widens the granter\'s rank constraint, nor outlasts its source', () => {

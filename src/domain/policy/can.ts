@@ -64,6 +64,26 @@ export function can(
 }
 
 /**
+ * `can` through a source without a rank constraint only. A holder changes their own rank this way alone: `junior_or_equal`
+ * covers their own record, and a higher rank would widen what their constrained sources reach (D-157).
+ */
+export function canUnconstrained(
+  context: PolicyContext,
+  actorId: SoldierId,
+  permission: Permission,
+  target: PolicyTarget,
+): boolean {
+  if (!acceptsTarget(permission.resource, target.kind)) return false
+  return context
+    .permissionsOf(actorId)
+    .some(
+      (held) =>
+        held.subject_rank_constraint === SubjectRankConstraint.enum.any &&
+        grants(context, actorId, held, permission.resource, permission.action, target),
+    )
+}
+
+/**
  * The pairs of `permissions` the actor does not hold at any non-empty scope. Granting a
  * role or adding pairs to a role needs this to be empty (D-060); otherwise `forbidden`.
  */
