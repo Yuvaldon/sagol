@@ -21,11 +21,12 @@ import { fieldError, formStateOf } from '../../patterns/forms'
 import { Button } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
+import { SoldierAccountSection } from './SoldierAccount'
 import { SoldierPrivateForm, SoldierProfileForm } from './SoldierForms'
 import { SoldierTagsSection } from './SoldierTags'
 import { unitOptions } from './unitOptions'
 
-// One soldier: the profile, the tags, the private fields and the placement. Each section has its own permission
+// One soldier: the profile, the tags, the private fields, the login account and the placement. Each section has its own permission
 // (D-094, D-096, D-130), so each appears on its own.
 
 const NO_SELECTION = 'none'
@@ -68,6 +69,7 @@ function PrivateSection({ soldier, canUpdate }: { readonly soldier: Soldier; rea
       <h3 className="text-body font-bold">{t('soldiers.privateTitle')}</h3>
       <dl className="flex flex-col gap-md">
         <ReadOnlyField labelKey="soldiers.personalId" value={row.value?.personal_id ?? ''} />
+        <ReadOnlyField labelKey="soldiers.inviteEmail" value={row.value?.invite_email ?? ''} />
         <ReadOnlyField labelKey="soldiers.phone" value={row.value?.phone ?? ''} />
       </dl>
     </section>
@@ -275,6 +277,7 @@ export function SoldierPage({
         onSaved={setReopenAfter}
       />
       {permissions.viewPrivate ? <PrivateSection soldier={soldier} canUpdate={permissions.updatePrivate} /> : null}
+      <SoldierAccountSection soldier={soldier} />
       {permissions.viewMemberships ? (
         <PlacementSection
           soldier={soldier}

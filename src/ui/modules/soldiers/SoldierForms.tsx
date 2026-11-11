@@ -30,10 +30,11 @@ const NEW_FIELDS: readonly string[] = [
   'membership.unit_id',
   'membership.valid_from',
   'private.personal_id',
+  'private.invite_email',
   'private.phone',
 ]
 const PROFILE_FIELDS: readonly string[] = ['first_name', 'last_name', 'nickname', 'command_rank_id', 'status']
-const PRIVATE_FIELDS: readonly string[] = ['personal_id', 'phone']
+const PRIVATE_FIELDS: readonly string[] = ['personal_id', 'invite_email', 'phone']
 
 function rankOptions(ranks: readonly CommandRank[], current: CommandRankId | null): SelectOption<CommandRankId | null>[] {
   // An archived rank stays selectable only on the soldier who already holds it (D-095).
@@ -80,7 +81,7 @@ export function SoldierCreateForm({
     nickname: '',
     command_rank_id: null,
     membership: { unit_id: placements[0]?.value ?? null, valid_from: today ?? '' },
-    private: { personal_id: '', phone: '' },
+    private: { personal_id: '', invite_email: '', phone: '' },
   }
 
   const form = useForm({
@@ -191,6 +192,21 @@ export function SoldierCreateForm({
                       labelKey="soldiers.personalId"
                       name={field.name}
                       inputMode="numeric"
+                      dir="ltr"
+                      value={field.state.value}
+                      onChange={field.handleChange}
+                      onBlur={field.handleBlur}
+                      error={fieldError(field.state.meta.errors, field.name, state.answered)}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="private.invite_email">
+                  {(field) => (
+                    <TextField
+                      labelKey="soldiers.inviteEmail"
+                      name={field.name}
+                      type="email"
+                      autoComplete="off"
                       dir="ltr"
                       value={field.state.value}
                       onChange={field.handleChange}
@@ -368,7 +384,11 @@ function PrivateFields({
   }
 
   const form = useForm({
-    defaultValues: { personal_id: opened?.personal_id ?? '', phone: opened?.phone ?? '' },
+    defaultValues: {
+      personal_id: opened?.personal_id ?? '',
+      invite_email: opened?.invite_email ?? '',
+      phone: opened?.phone ?? '',
+    },
     validators: { onSubmit: ({ value }) => validatorResult(privateFormIssues(soldier.id, value)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
@@ -396,6 +416,21 @@ function PrivateFields({
             labelKey="soldiers.personalId"
             name={field.name}
             inputMode="numeric"
+            dir="ltr"
+            value={field.state.value}
+            onChange={field.handleChange}
+            onBlur={field.handleBlur}
+            error={fieldError(field.state.meta.errors, field.name, state.answered)}
+          />
+        )}
+      </form.Field>
+      <form.Field name="invite_email">
+        {(field) => (
+          <TextField
+            labelKey="soldiers.inviteEmail"
+            name={field.name}
+            type="email"
+            autoComplete="off"
             dir="ltr"
             value={field.state.value}
             onChange={field.handleChange}

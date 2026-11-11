@@ -3,6 +3,7 @@ import { t, type I18nKey } from '@i18n'
 import { useModuleAccess, usePanel } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { AccountRequestsModule } from '../modules/accounts/AccountRequestsModule'
 import { CommandRanksModule } from '../modules/command-ranks/CommandRanksModule'
 import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsModule'
 import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
@@ -16,13 +17,14 @@ import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
 import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
+import { useAccountRequestsAccess } from './accountRequestsAccess'
 import { useInboxAccess } from './inboxAccess'
 
 // The map of what opens in the drawer (D-092). A drawer holds one or more sections, and each section is
 // its own panel in the URL. A section appears only for who may read it, and a deep link to one they
 // may not read opens nothing (D-046).
 
-type ModuleAccess = ReturnType<typeof useModuleAccess> & { readonly inbox: boolean }
+type ModuleAccess = ReturnType<typeof useModuleAccess> & { readonly inbox: boolean; readonly accountRequests: boolean }
 
 interface ModuleSection {
   readonly panel: PanelId
@@ -58,6 +60,12 @@ const GROUPS: readonly ModuleGroup[] = [
         labelKey: 'soldiers.tabRanks',
         isAllowed: (access) => access.commandRanks,
         Module: CommandRanksModule,
+      },
+      {
+        panel: PANEL_IDS.accountRequests,
+        labelKey: 'soldiers.tabRequests',
+        isAllowed: (access) => access.accountRequests,
+        Module: AccountRequestsModule,
       },
     ],
   },
@@ -104,7 +112,7 @@ const GROUPS: readonly ModuleGroup[] = [
 
 export function ModuleDrawer() {
   const panel = usePanel()
-  const access = { ...useModuleAccess(), inbox: useInboxAccess() }
+  const access = { ...useModuleAccess(), inbox: useInboxAccess(), accountRequests: useAccountRequestsAccess() }
   const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []
   const open = sections.find((section) => section.panel === panel.panel)
