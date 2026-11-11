@@ -13,11 +13,12 @@ import {
   type DataChange,
   type OrganizationId,
   type Permission,
+  type PermissionCheck,
   type RuleEnforcement,
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, errorOf, issuesOf, seedActor, seedRule as seedSharedRule, valueOf } from './support'
+import { NOW, errorOf, hintAndCommand, issuesOf, seedActor, seedRule as seedSharedRule, valueOf } from './support'
 
 // Leave types, their groups and creating a leave against the shared contract (D-113, D-114), with the rule gate
 // tested on seeded rules long before the rules screen exists (D-076, OI-027). Sample data, test files only.
@@ -54,6 +55,8 @@ const VIEW_LEAVES: Permission = { resource: 'leaves', action: 'view' }
 const CREATE_LEAVES: Permission = { resource: 'leaves', action: 'create' }
 const APPROVE_LEAVES: Permission = { resource: 'leaves', action: 'approve' }
 const CREATE_COMMENTS: Permission = { resource: 'leave_comments', action: 'create' }
+const UPDATE_LEAVES: Permission = { resource: 'leaves', action: 'update' }
+const CREATE_INTERNAL: Permission = { resource: 'internal_comments', action: 'create' }
 
 export function describeLeaveContract(
   harnessOf: () => ContractHarness,
@@ -500,6 +503,84 @@ export function describeLeaveContract(
         await seedRule('hard')
         const marker = await createType({ availability_effect: 'available' })
         valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, marker.id)))
+      })
+    })
+
+    describe('the can hint agrees with the commands (D-091, D-114, OI-049)', () => {
+      const ALL_PAIRS = [VIEW_SOLDIERS, VIEW_TYPES, VIEW_LEAVES, CREATE_LEAVES, UPDATE_LEAVES, APPROVE_LEAVES, CREATE_COMMENTS]
+      const on = (soldier_id: SoldierId, ...permissions: Permission[]): PermissionCheck[] =>
+        permissions.map((permission) => ({ permission, target: { kind: 'soldier', soldier_id } }))
+      let typeId: LeaveTypeId
+      let inA: SoldierId
+      let inB: SoldierId
+      let actor: AuthIdentity
+
+      /** The actor holds `pairs` on platoon A only, and nothing on platoon B. */
+      async function signInOnPlatoonA(pairs: readonly Permission[] = ALL_PAIRS) {
+        harnessOf().signIn(owner)
+        const company = await unit('Company')
+        const platoonA = await unit('Platoon A', company.id)
+        const platoonB = await unit('Platoon B', company.id)
+        inA = (await soldier(platoonA.id)).id
+        inB = (await soldier(platoonB.id)).id
+        actor = (await actorWith(pairs, { anchor_type: 'unit', anchor_unit_id: platoonA.id })).identity
+        harnessOf().signIn(actor)
+      }
+
+      /** A pending leave of the soldier, created by the owner. */
+      async function pendingOf(soldier_id: SoldierId) {
+        harnessOf().signIn(owner)
+        const leave = valueOf(await adapter().commands.leaves.create(leaveInput(soldier_id, typeId)))
+        harnessOf().signIn(actor)
+        return leave
+      }
+
+      beforeEach(async () => {
+        typeId = (await createType()).id
+      })
+
+      it('creates a leave, and approves it in one step, where the pairs hold on the soldier', async () => {
+        await signInOnPlatoonA()
+        const create = (soldier_id: SoldierId, as_approved = false) => () =>
+          adapter().commands.leaves.create(leaveInput(soldier_id, typeId, { as_approved }))
+        expect(await hintAndCommand(harnessOf(), on(inA, CREATE_LEAVES), create(inA))).toEqual([true])
+        expect(await hintAndCommand(harnessOf(), on(inB, CREATE_LEAVES), create(inB))).toEqual([false])
+        expect(await hintAndCommand(harnessOf(), on(inA, CREATE_LEAVES, APPROVE_LEAVES), create(inA, true))).toEqual([true, true])
+
+        await signInOnPlatoonA([VIEW_SOLDIERS, VIEW_TYPES, CREATE_LEAVES])
+        expect(await hintAndCommand(harnessOf(), on(inA, CREATE_LEAVES, APPROVE_LEAVES), create(inA, true))).toEqual([true, false])
+      })
+
+      it('edits and approves a leave where leaves:update and leaves:approve hold on its soldier', async () => {
+        const edit = (id: LeaveId) => () =>
+          adapter().commands.leaves.update({ id, expected_version: 1, changes: { end_date: NEXT_WEEK }, acknowledged_rule_ids: [] })
+        const approve = (id: LeaveId) => () =>
+          adapter().commands.leaves.transition({ id, expected_version: 1, transition: 'approve', acknowledged_rule_ids: [], comment: null })
+
+        await signInOnPlatoonA([VIEW_SOLDIERS, VIEW_TYPES, VIEW_LEAVES, CREATE_LEAVES])
+        const held = await pendingOf(inA)
+        expect(await hintAndCommand(harnessOf(), on(inA, UPDATE_LEAVES), edit(held.id))).toEqual([false])
+        expect(await hintAndCommand(harnessOf(), on(inA, APPROVE_LEAVES), approve(held.id))).toEqual([false])
+
+        await signInOnPlatoonA()
+        const mine = await pendingOf(inA)
+        const foreign = await pendingOf(inB)
+        expect(await hintAndCommand(harnessOf(), on(inB, UPDATE_LEAVES), edit(foreign.id))).toEqual([false])
+        expect(await hintAndCommand(harnessOf(), on(inB, APPROVE_LEAVES), approve(foreign.id))).toEqual([false])
+        expect(await hintAndCommand(harnessOf(), on(inA, APPROVE_LEAVES), approve(mine.id))).toEqual([true])
+        const other = await pendingOf(inA)
+        expect(await hintAndCommand(harnessOf(), on(inA, UPDATE_LEAVES), edit(other.id))).toEqual([true])
+      })
+
+      it('adds a comment where the create pair of its visibility holds on the soldier (D-118)', async () => {
+        const add = (leave_id: LeaveId, visibility: 'shared' | 'internal') => () =>
+          adapter().commands.leave_comments.add({ id: LeaveCommentId.parse(crypto.randomUUID()), leave_id, body: 'Note', visibility })
+        await signInOnPlatoonA()
+        const mine = await pendingOf(inA)
+        const foreign = await pendingOf(inB)
+        expect(await hintAndCommand(harnessOf(), on(inA, CREATE_COMMENTS), add(mine.id, 'shared'))).toEqual([true])
+        expect(await hintAndCommand(harnessOf(), on(inA, CREATE_INTERNAL), add(mine.id, 'internal'))).toEqual([false])
+        expect(await hintAndCommand(harnessOf(), on(inB, CREATE_COMMENTS), add(foreign.id, 'shared'))).toEqual([false])
       })
     })
   })

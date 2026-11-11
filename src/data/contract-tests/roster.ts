@@ -10,11 +10,12 @@ import {
   type DataChange,
   type OrganizationId,
   type Permission,
+  type PolicyTarget,
   type TableRow,
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, PAST_DATE, errorOf, issuesOf, placeSoldier, seedActor, valueOf } from './support'
+import { NOW, PAST_DATE, errorOf, hintAndCommand, issuesOf, placeSoldier, seedActor, valueOf } from './support'
 
 // The roster against the shared contract: ranks, soldiers, private fields and memberships, with denial
 // paths through seeded grants, long before the roles screen exists (D-076, D-096). Sample data, test
@@ -72,6 +73,11 @@ const VIEW_MEMBERSHIPS: Permission = { resource: 'memberships', action: 'view' }
 const VIEW_PRIVATE: Permission = { resource: 'soldier_private', action: 'view' }
 const UPDATE_PRIVATE: Permission = { resource: 'soldier_private', action: 'update' }
 const VIEW_UNITS: Permission = { resource: 'units', action: 'view' }
+const DELETE_SOLDIERS: Permission = { resource: 'soldiers', action: 'delete' }
+
+const ON_ORGANIZATION: PolicyTarget = { kind: 'organization' }
+const onUnit = (unit_id: UnitId): PolicyTarget => ({ kind: 'unit', unit_id })
+const onSoldier = (soldier_id: SoldierId): PolicyTarget => ({ kind: 'soldier', soldier_id })
 
 export function describeRosterContract(
   harnessOf: () => ContractHarness,
@@ -723,6 +729,149 @@ export function describeRosterContract(
           }),
         )
         expect((await membershipsOf(ownerId)).map((row) => row.unit_id)).toEqual([units.platoonA.id, units.platoonB.id])
+      })
+    })
+
+    describe('the can hint agrees with the commands (D-091, D-096, OI-049)', () => {
+      const ALL_PAIRS = [
+        VIEW_SOLDIERS,
+        CREATE_SOLDIERS,
+        UPDATE_SOLDIERS,
+        DELETE_SOLDIERS,
+        UPDATE_MEMBERSHIPS,
+        VIEW_PRIVATE,
+        UPDATE_PRIVATE,
+        VIEW_UNITS,
+      ]
+      let units: Awaited<ReturnType<typeof sampleUnits>>
+      let squad: UnitId
+      let inA: SoldierId
+      let inB: SoldierId
+
+      /** Platoon A holds a squad; the actor holds `pairs` on platoon A and below, and nothing on platoon B. */
+      async function signInOnPlatoonA(pairs: readonly Permission[] = ALL_PAIRS) {
+        harnessOf().signIn(owner)
+        const { identity } = await actorWith(pairs, {
+          anchor_type: 'unit',
+          anchor_unit_id: units.platoonA.id,
+          include_descendants: true,
+        })
+        harnessOf().signIn(identity)
+      }
+
+      beforeEach(async () => {
+        units = await sampleUnits()
+        squad = valueOf(await adapter().commands.units.create(unitInput('Squad', units.platoonA.id))).id
+        inA = valueOf(await adapter().commands.soldiers.create(soldierInput({ membership: placement(units.platoonA.id) }))).id
+        inB = valueOf(await adapter().commands.soldiers.create(soldierInput({ membership: placement(units.platoonB.id) }))).id
+      })
+
+      const creating = (unit: PolicyTarget) => [
+        { permission: CREATE_SOLDIERS, target: unit },
+        { permission: UPDATE_MEMBERSHIPS, target: unit },
+      ]
+
+      it('creates a soldier where soldiers:create and memberships:update hold on the placement', async () => {
+        await signInOnPlatoonA()
+        const create = (unit_id: UnitId | null) => () =>
+          adapter().commands.soldiers.create(soldierInput({ membership: unit_id === null ? null : placement(unit_id) }))
+        expect(await hintAndCommand(harnessOf(), creating(onUnit(squad)), create(squad))).toEqual([true, true])
+        expect(await hintAndCommand(harnessOf(), creating(onUnit(units.platoonB.id)), create(units.platoonB.id))).toEqual([
+          false,
+          false,
+        ])
+        expect(await hintAndCommand(harnessOf(), [{ permission: CREATE_SOLDIERS, target: ON_ORGANIZATION }], create(null))).toEqual([
+          false,
+        ])
+      })
+
+      it('writes private fields on creation where soldier_private:update holds on the unit of the placement', async () => {
+        const create = (unit_id: UnitId | null) => () =>
+          adapter().commands.soldiers.create(
+            soldierInput({
+              private: { ...emptyPrivate, phone: '050' },
+              membership: unit_id === null ? null : placement(unit_id),
+            }),
+          )
+        const withPrivate = (unit: PolicyTarget) => [...creating(unit), { permission: UPDATE_PRIVATE, target: unit }]
+        await signInOnPlatoonA()
+        expect(await hintAndCommand(harnessOf(), withPrivate(onUnit(squad)), create(squad))).toEqual([true, true, true])
+        expect(await hintAndCommand(harnessOf(), withPrivate(onUnit(units.platoonB.id)), create(units.platoonB.id))).toEqual([
+          false,
+          false,
+          false,
+        ])
+        expect(
+          await hintAndCommand(
+            harnessOf(),
+            [
+              { permission: CREATE_SOLDIERS, target: ON_ORGANIZATION },
+              { permission: UPDATE_PRIVATE, target: ON_ORGANIZATION },
+            ],
+            create(null),
+          ),
+        ).toEqual([false, false])
+
+        await signInOnPlatoonA(ALL_PAIRS.filter((pair) => pair !== UPDATE_PRIVATE))
+        expect(await hintAndCommand(harnessOf(), withPrivate(onUnit(squad)), create(squad))).toEqual([true, true, false])
+        expect((await harnessOf().rows('soldier_private')).length).toBe(1)
+      })
+
+      it('edits and archives the soldier where soldiers:update and soldiers:delete hold on them', async () => {
+        const update = (id: SoldierId) => () => adapter().commands.soldiers.update({ id, expected_version: 1, changes: { nickname: 'X' } })
+        const archive = (id: SoldierId, expected_version: number) => () =>
+          adapter().commands.soldiers.archive({ id, expected_version })
+        await signInOnPlatoonA([VIEW_SOLDIERS])
+        expect(await hintAndCommand(harnessOf(), [{ permission: UPDATE_SOLDIERS, target: onSoldier(inA) }], update(inA))).toEqual([false])
+        expect(await hintAndCommand(harnessOf(), [{ permission: DELETE_SOLDIERS, target: onSoldier(inA) }], archive(inA, 1))).toEqual([
+          false,
+        ])
+
+        await signInOnPlatoonA()
+        expect(await hintAndCommand(harnessOf(), [{ permission: UPDATE_SOLDIERS, target: onSoldier(inA) }], update(inA))).toEqual([true])
+        expect(await hintAndCommand(harnessOf(), [{ permission: UPDATE_SOLDIERS, target: onSoldier(inB) }], update(inB))).toEqual([false])
+        expect(await hintAndCommand(harnessOf(), [{ permission: DELETE_SOLDIERS, target: onSoldier(inB) }], archive(inB, 1))).toEqual([
+          false,
+        ])
+        expect(await hintAndCommand(harnessOf(), [{ permission: DELETE_SOLDIERS, target: onSoldier(inA) }], archive(inA, 2))).toEqual([
+          true,
+        ])
+      })
+
+      it('writes private fields where soldier_private:view and :update hold on the soldier', async () => {
+        const checks = (soldier_id: SoldierId) => [
+          { permission: VIEW_PRIVATE, target: onSoldier(soldier_id) },
+          { permission: UPDATE_PRIVATE, target: onSoldier(soldier_id) },
+        ]
+        const write = (soldier_id: SoldierId) => () =>
+          adapter().commands.soldiers.updatePrivate({ soldier_id, expected_version: null, changes: { phone: '050' } })
+        await signInOnPlatoonA([VIEW_SOLDIERS, UPDATE_PRIVATE])
+        expect(await hintAndCommand(harnessOf(), checks(inA), write(inA))).toEqual([false, true])
+
+        await signInOnPlatoonA()
+        expect(await hintAndCommand(harnessOf(), checks(inB), write(inB))).toEqual([false, false])
+        expect(await hintAndCommand(harnessOf(), checks(inA), write(inA))).toEqual([true, true])
+      })
+
+      it('moves a soldier where memberships:update holds on the soldier and on the new unit', async () => {
+        const checks = (soldier_id: SoldierId, unit_id: UnitId) => [
+          { permission: UPDATE_MEMBERSHIPS, target: onSoldier(soldier_id) },
+          { permission: UPDATE_MEMBERSHIPS, target: onUnit(unit_id) },
+        ]
+        const move = (soldier_id: SoldierId, unit_id: UnitId) => async () => {
+          const current = (await membershipsOf(soldier_id)).find((row) => row.valid_to === null)
+          if (current === undefined) throw new Error('no open row')
+          return adapter().commands.soldiers.changeMembership({
+            soldier_id,
+            effective_date: TOMORROW,
+            current_membership: { id: current.id, expected_version: current.version },
+            new_membership: { id: newMembershipId(), unit_id },
+          })
+        }
+        await signInOnPlatoonA()
+        expect(await hintAndCommand(harnessOf(), checks(inA, units.platoonB.id), move(inA, units.platoonB.id))).toEqual([true, false])
+        expect(await hintAndCommand(harnessOf(), checks(inB, squad), move(inB, squad))).toEqual([false, true])
+        expect(await hintAndCommand(harnessOf(), checks(inA, squad), move(inA, squad))).toEqual([true, true])
       })
     })
   })
