@@ -78,6 +78,11 @@ export function millisecondsUntilNextDay(timezone: string, now: Timestamp): numb
   return nextDay.compare(current)
 }
 
+/** How long from `now` until `then`: negative when `then` has passed (D-169). */
+export function millisecondsUntil(now: Timestamp, then: Timestamp): number {
+  return parseAbsolute(then, INSTANT_COMPARISON_ZONE).compare(parseAbsolute(now, INSTANT_COMPARISON_ZONE))
+}
+
 /**
  * The instant `date` starts in `timezone`: a grant's window is days in the organization's time zone, stored as
  * instants (D-166). A day that starts at an hour other than midnight starts when the time zone says it does.

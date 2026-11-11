@@ -400,18 +400,28 @@ export function describeAccountContract(
       })
 
       describe('reviewing: reject', () => {
-        it('closes the request without an account, and the asker sees no request', async () => {
+        it('closes the request without an account, and the asker is told when (D-168)', async () => {
           const asker = stranger('asker@example.test')
           const { input } = await ask(asker)
           const accounts = (await harness().rows('soldier_accounts')).length
-          expect(valueOf(await review(owner, input.id, { kind: 'reject' }))).toMatchObject({
-            status: 'rejected',
-            resolved_soldier_id: null,
-            reviewed_by: ownerId,
-          })
+          const rejected = valueOf(await review(owner, input.id, { kind: 'reject' }))
+          expect(rejected).toMatchObject({ status: 'rejected', resolved_soldier_id: null, reviewed_by: ownerId })
           expect((await harness().rows('soldier_accounts')).length).toBe(accounts)
           harness().signIn(asker)
-          expect(valueOf(await adapter().session.onboardingState()).open_request).toBeNull()
+          const state = valueOf(await adapter().session.onboardingState())
+          expect(state.open_request).toBeNull()
+          expect(state.last_rejected_at).toBe(rejected.reviewed_at)
+        })
+
+        it('is not told once a new request is pending', async () => {
+          const asker = stranger('again@example.test')
+          const { input } = await ask(asker)
+          valueOf(await review(owner, input.id, { kind: 'reject' }))
+          await ask(asker)
+          harness().signIn(asker)
+          const state = valueOf(await adapter().session.onboardingState())
+          expect(state.open_request).not.toBeNull()
+          expect(state.last_rejected_at).toBeNull()
         })
       })
 

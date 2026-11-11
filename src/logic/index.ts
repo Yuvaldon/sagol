@@ -102,6 +102,7 @@ export {
   leaveEditIssues,
   leaveEditValues,
   type LeaveEditValues,
+  type MyLeaves,
   type ThreadEntry,
 } from './leaves/workflow'
 export {
@@ -113,6 +114,8 @@ export {
   useLeaveCommentCommands,
   useLeaveThread,
   useLeaveTransition,
+  useMyLeaves,
+  useMyLeavesAccess,
   usePendingRequests,
 } from './leaves/workflowHooks'
 export {

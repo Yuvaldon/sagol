@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, daysBetween, millisecondsUntilNextDay, startOfDay, startOfWeek, weekdayOf } from './index'
+import { addDays, daysBetween, millisecondsUntil, millisecondsUntilNextDay, startOfDay, startOfWeek, weekdayOf } from './index'
 
 const HOUR_MS = 3_600_000
 
@@ -31,6 +31,11 @@ describe('weeks and days', () => {
     expect(millisecondsUntilNextDay('UTC', '2026-11-09T00:00:00Z')).toBe(24 * HOUR_MS)
     // The night the clocks move back in Israel lasts 25 hours.
     expect(millisecondsUntilNextDay('Asia/Jerusalem', '2026-10-24T21:00:00Z')).toBe(25 * HOUR_MS)
+  })
+
+  it('counts the time between two instants, whatever their offsets', () => {
+    expect(millisecondsUntil('2026-11-09T21:00:00Z', '2026-11-10T00:00:00+02:00')).toBe(HOUR_MS)
+    expect(millisecondsUntil('2026-11-10T00:00:00Z', '2026-11-09T23:00:00Z')).toBe(-HOUR_MS)
   })
 
   it('names the instant a day starts in a time zone', () => {

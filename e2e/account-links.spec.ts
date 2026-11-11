@@ -190,6 +190,9 @@ test.describe('account linking', () => {
       await signIn(page, DANA.email)
       await expect(page.getByLabel(he.linkRequest.firstName)).toBeVisible()
       await expect(page.getByText(he.linkRequest.waitingTitle)).toHaveCount(0)
+      // The form says the earlier request was not approved (D-168).
+      await expect(page.getByRole('status').getByText(he.linkRequest.rejectedTitle)).toBeVisible()
+      await expectNoAxeViolations(page)
     })
   })
 })

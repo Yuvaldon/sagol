@@ -24,6 +24,7 @@ import {
   grantDaysOf,
   grantFormIssues,
   grantStateAt,
+  nextGrantBoundary,
   hasPermission,
   liveBindingsOf,
   liveRoles,
@@ -217,5 +218,13 @@ describe('access grants (D-166)', () => {
       active.id,
       scheduled.id,
     ])
+  })
+  it('finds the next start or end of a live grant, and none past the last', () => {
+    const now = Timestamp.parse('2026-11-10T00:00:00.000Z')
+    const ending = grant(25, { valid_to: Timestamp.parse('2026-11-15T00:00:00.000Z') })
+    const starting = grant(26, { valid_from: Timestamp.parse('2026-11-12T00:00:00.000Z') })
+    const revoked = grant(27, { valid_from: Timestamp.parse('2026-11-11T00:00:00.000Z'), revoked_at: Timestamp.parse(AT) })
+    expect(nextGrantBoundary([ending, starting, revoked], now)).toBe('2026-11-12T00:00:00.000Z')
+    expect(nextGrantBoundary([grant(21)], now)).toBeNull()
   })
 })

@@ -1,6 +1,6 @@
 import { PANEL_IDS, type PanelId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useLinkReviewAccess, useModuleAccess, usePanel } from '@logic'
+import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { AccountLinksModule } from '../modules/account-links/AccountLinksModule'
@@ -12,6 +12,7 @@ import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsMod
 import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
 import { ClosedLeavesModule, PendingRequestsModule } from '../modules/leaves/LeaveInboxModule'
 import { LeavesModule } from '../modules/leaves/LeavesModule'
+import { MyLeavesModule } from '../modules/leaves/MyLeavesModule'
 import { PresenceModule } from '../modules/presence/PresenceModule'
 import { RulesModule } from '../modules/rules/RulesModule'
 import { TagCategoriesModule } from '../modules/tags/TagCategoriesModule'
@@ -30,6 +31,7 @@ type ModuleAccess = ReturnType<typeof useModuleAccess> & {
   readonly inbox: boolean
   readonly accountLinks: boolean
   readonly grants: boolean
+  readonly myLeaves: boolean
 }
 
 interface ModuleSection {
@@ -102,6 +104,10 @@ const GROUPS: readonly ModuleGroup[] = [
     sections: [{ panel: PANEL_IDS.leaves, labelKey: 'leaves.newTitle', isAllowed: () => true, Module: LeavesModule }],
   },
   {
+    titleKey: 'myLeaves.title',
+    sections: [{ panel: PANEL_IDS.myLeaves, labelKey: 'myLeaves.title', isAllowed: (access) => access.myLeaves, Module: MyLeavesModule }],
+  },
+  {
     titleKey: 'inbox.title',
     sections: [
       { panel: PANEL_IDS.leaveInbox, labelKey: 'inbox.tabPending', isAllowed: (access) => access.inbox, Module: PendingRequestsModule },
@@ -144,6 +150,7 @@ export function ModuleDrawer() {
     inbox: useInboxAccess(),
     accountLinks: useLinkReviewAccess().allowed,
     grants: useGrantsAccess(),
+    myLeaves: useMyLeavesAccess()?.view === true,
   }
   const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []
