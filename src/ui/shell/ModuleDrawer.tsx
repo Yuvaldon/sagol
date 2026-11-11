@@ -4,6 +4,9 @@ import { useLinkReviewAccess, useModuleAccess, usePanel } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { AccountLinksModule } from '../modules/account-links/AccountLinksModule'
+import { GrantsModule } from '../modules/access/GrantsModule'
+import { RankBindingsModule } from '../modules/access/RankBindingsModule'
+import { RolesModule } from '../modules/access/RolesModule'
 import { CommandRanksModule } from '../modules/command-ranks/CommandRanksModule'
 import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsModule'
 import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
@@ -17,13 +20,17 @@ import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
 import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
-import { useInboxAccess } from './inboxAccess'
+import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
 // The map of what opens in the drawer (D-092). A drawer holds one or more sections, and each section is
 // its own panel in the URL. A section appears only for who may read it, and a deep link to one they
 // may not read opens nothing (D-046).
 
-type ModuleAccess = ReturnType<typeof useModuleAccess> & { readonly inbox: boolean; readonly accountLinks: boolean }
+type ModuleAccess = ReturnType<typeof useModuleAccess> & {
+  readonly inbox: boolean
+  readonly accountLinks: boolean
+  readonly grants: boolean
+}
 
 interface ModuleSection {
   readonly panel: PanelId
@@ -112,11 +119,32 @@ const GROUPS: readonly ModuleGroup[] = [
       },
     ],
   },
+  {
+    titleKey: 'roles.title',
+    sections: [
+      { panel: PANEL_IDS.roles, labelKey: 'roles.tabRoles', isAllowed: (access) => access.roles, Module: RolesModule },
+      {
+        panel: PANEL_IDS.rankBindings,
+        labelKey: 'roles.tabBindings',
+        isAllowed: (access) => access.roles,
+        Module: RankBindingsModule,
+      },
+    ],
+  },
+  {
+    titleKey: 'grants.title',
+    sections: [{ panel: PANEL_IDS.accessGrants, labelKey: 'grants.title', isAllowed: (access) => access.grants, Module: GrantsModule }],
+  },
 ]
 
 export function ModuleDrawer() {
   const panel = usePanel()
-  const access = { ...useModuleAccess(), inbox: useInboxAccess(), accountLinks: useLinkReviewAccess().allowed }
+  const access = {
+    ...useModuleAccess(),
+    inbox: useInboxAccess(),
+    accountLinks: useLinkReviewAccess().allowed,
+    grants: useGrantsAccess(),
+  }
   const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []
   const open = sections.find((section) => section.panel === panel.panel)

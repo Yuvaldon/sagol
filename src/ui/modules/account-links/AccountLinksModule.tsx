@@ -1,5 +1,5 @@
 import { PANEL_IDS } from '@config'
-import type { AccountLinkRequest, AppError, CalendarDate, CommandRank, SoldierId, Unit } from '@contracts'
+import type { AccountLinkRequest, AppError, SoldierAccount, CalendarDate, CommandRank, SoldierId, Unit } from '@contracts'
 import { t } from '@i18n'
 import {
   candidateRows,
@@ -8,7 +8,6 @@ import {
   reviewFormError,
   soldierRows,
   useCommandRanks,
-  useCurrentOrganization,
   useLinkCandidates,
   useLinkPlacements,
   useLinkReviewCommands,
@@ -17,6 +16,10 @@ import {
   usePendingLinkRequests,
   usePlacementReading,
   useSoldiers,
+  useRevokeLink,
+  useRevokeLinkHints,
+  useSoldierAccounts,
+  useTimezone,
   useToday,
   useUnitsWithArchived,
   type CandidateRow,
@@ -46,8 +49,7 @@ const NO_SELECTION = 'none'
 const CREATE_FIELDS: readonly string[] = ['command_rank_id', 'membership.unit_id', 'membership.valid_from']
 
 function useRequestTime() {
-  const organization = useCurrentOrganization()
-  const timezone = organization.status === 'ready' && organization.value !== null ? organization.value.timezone : null
+  const timezone = useTimezone()
   return (request: AccountLinkRequest) => (timezone === null ? '' : formatInstant(request.created_at, timezone))
 }
 
@@ -388,13 +390,101 @@ export function AccountLinksModule() {
     return <RequestPage key={request.id} request={request} />
   }
 
-  if (requests.value.length === 0) return <EmptyNotice titleKey="accountLinks.emptyTitle" bodyKey="accountLinks.emptyBody" />
   return (
-    <VirtualList
-      labelKey="accountLinks.listLabel"
-      items={requests.value}
-      keyOf={(request) => request.id}
-      renderRow={(request) => <RequestRow request={request} sentAt={sentAt(request)} />}
-    />
+    <div className="flex flex-col gap-lg">
+      <section className="flex flex-col gap-xs">
+        <h3 className="text-control font-semibold">{t('accountLinks.requestsTitle')}</h3>
+        {requests.value.length === 0 ? (
+          <EmptyNotice titleKey="accountLinks.emptyTitle" bodyKey="accountLinks.emptyBody" />
+        ) : (
+          <VirtualList
+            labelKey="accountLinks.listLabel"
+            items={requests.value}
+            keyOf={(request) => request.id}
+            renderRow={(request) => <RequestRow request={request} sentAt={sentAt(request)} />}
+          />
+        )}
+      </section>
+      <LinkedAccounts />
+    </div>
+  )
+}
+
+/** The live links the actor reads, each with "unlink" for who may review its soldier (D-163, OI-103). */
+function LinkedAccounts() {
+  const accounts = useSoldierAccounts()
+  const soldiers = useSoldiers()
+  const timezone = useTimezone()
+  const live = useMemo(
+    () => (accounts.status === 'ready' ? accounts.value.filter((account) => account.revoked_at === null) : []),
+    [accounts],
+  )
+  const canRevoke = useRevokeLinkHints(live)
+  const revoke = useRevokeLink()
+  const [revoking, setRevoking] = useState<SoldierAccount | null>(null)
+  const [failure, setFailure] = useState<AppError | null>(null)
+  if (accounts.status === 'failed') return <FailureNotice error={accounts.error} />
+  if (accounts.status === 'loading') return <LoadingNotice />
+  const nameOf = (account: SoldierAccount) => {
+    const soldier = soldiers.status === 'ready' ? soldiers.value.find((candidate) => candidate.id === account.soldier_id) : undefined
+    return soldier === undefined ? t('accountLinks.unknownSoldier') : fullName(soldier)
+  }
+
+  return (
+    <section className="flex flex-col gap-xs">
+      <h3 className="text-control font-semibold">{t('accountLinks.linkedTitle')}</h3>
+      {failure === null ? null : <FailureNotice error={failure} />}
+      {live.length === 0 ? (
+        <p className="text-name text-text-muted">{t('accountLinks.linkedEmpty')}</p>
+      ) : (
+        <ul aria-label={t('accountLinks.linkedLabel')} className="flex flex-col">
+          {live.map((account) => (
+            <li key={account.id} className="flex items-center gap-sm border-b border-line bg-surface p-xs">
+              <span className="flex min-w-none flex-1 flex-col">
+                <span className="truncate text-name font-semibold">{nameOf(account)}</span>
+                <span dir="ltr" className="truncate text-start text-micro text-text-muted">
+                  {account.email}
+                </span>
+                {timezone === null ? null : (
+                  <span className="truncate text-micro text-text-muted">
+                    {t('accountLinks.linkedAt')} {formatInstant(account.linked_at, timezone)}
+                  </span>
+                )}
+              </span>
+              {canRevoke(account) ? (
+                <Button
+                  onPress={() => {
+                    setFailure(null)
+                    setRevoking(account)
+                  }}
+                >
+                  {t('accountLinks.unlink')}
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {revoking === null ? null : (
+        <SmallDialog
+          role="alertdialog"
+          titleKey="accountLinks.unlinkTitle"
+          hintKey="accountLinks.unlinkHint"
+          confirmKey="accountLinks.unlinkConfirm"
+          isPending={revoke.isPending}
+          onCancel={() => {
+            setRevoking(null)
+          }}
+          onConfirm={() => {
+            void revoke.run(revoking).then((result) => {
+              setRevoking(null)
+              if (!result.ok) setFailure(result.error)
+            })
+          }}
+        >
+          <p className="text-name font-semibold">{nameOf(revoking)}</p>
+        </SmallDialog>
+      )}
+    </section>
   )
 }

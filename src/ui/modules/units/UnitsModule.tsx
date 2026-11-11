@@ -22,7 +22,9 @@ function UnitsContent({ units, levels }: { readonly units: readonly Unit[]; read
     panel.open(PANEL_IDS.units, { entity: NEW_ENTITY })
   }
 
-  if (panel.entity === NEW_ENTITY) {
+  // A deep link opens only what the actor may use; anything else reads as not found (D-076).
+  const canCreate = canCreateTop || units.some((unit) => permissions.createUnder(unit.id))
+  if (panel.entity === NEW_ENTITY && canCreate) {
     return (
       <UnitCreateForm
         units={units}
@@ -34,7 +36,7 @@ function UnitsContent({ units, levels }: { readonly units: readonly Unit[]; read
   }
   if (panel.entity !== null) {
     const unit = units.find((candidate) => candidate.id === panel.entity)
-    if (unit === undefined) {
+    if (unit === undefined || !permissions.update(unit)) {
       return (
         <div className="flex flex-col items-center gap-md py-xl text-center">
           <p className="text-name text-text-muted">{t('units.notFound')}</p>

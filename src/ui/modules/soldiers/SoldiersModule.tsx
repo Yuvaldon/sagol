@@ -87,7 +87,8 @@ function SoldiersContent({
     panel.open(PANEL_IDS.soldiers, { entity: NEW_ENTITY })
   }
 
-  if (panel.entity === NEW_ENTITY) {
+  // A deep link opens only what the actor may use; anything else reads as not found (D-076).
+  if (panel.entity === NEW_ENTITY && permissions.create) {
     return (
       <SoldierCreateForm
         ranks={ranks}

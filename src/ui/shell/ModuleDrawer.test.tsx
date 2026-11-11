@@ -1,4 +1,5 @@
 import { OrganizationId, UnitId, type PermissionCheck, type Result, type Unit } from '@contracts'
+import { NEW_ENTITY } from '@config'
 import { dictionary as he } from '@i18n'
 import { LogicProvider, WorkspaceSearch, type LogicPorts } from '@logic'
 import {
@@ -58,12 +59,12 @@ function portsWith(allow: (check: PermissionCheck) => boolean) {
   } as unknown as LogicPorts
 }
 
-async function renderDrawer(ports: LogicPorts) {
+async function renderDrawer(ports: LogicPorts, entry = '/?panel=units') {
   const rootRoute = createRootRoute()
   const route = createRoute({ getParentRoute: () => rootRoute, path: '/', component: ModuleDrawer, validateSearch: WorkspaceSearch })
   const router = createRouter({
     routeTree: rootRoute.addChildren([route]),
-    history: createMemoryHistory({ initialEntries: ['/?panel=units'] }),
+    history: createMemoryHistory({ initialEntries: [entry] }),
   })
   render(
     <LogicProvider ports={ports}>
@@ -98,5 +99,17 @@ describe('module drawer: controls follow the hints', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.queryByText(UNIT.name)).toBeNull()
+  })
+
+  it('opens no form from a deep link the soldier may not use (D-076)', async () => {
+    await renderDrawer(portsWith(isView), `/?panel=units&entity=${NEW_ENTITY}`)
+    expect(await screen.findByText(he.units.notFound)).toBeTruthy()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('opens no edit form from a deep link to a row the soldier may only read (D-076)', async () => {
+    await renderDrawer(portsWith(isView), `/?panel=units&entity=${UNIT.id}`)
+    expect(await screen.findByText(he.units.notFound)).toBeTruthy()
+    expect(screen.queryByRole('textbox')).toBeNull()
   })
 })

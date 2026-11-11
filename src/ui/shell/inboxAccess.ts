@@ -1,4 +1,4 @@
-import { useLeaveCreation, useSoldiers } from '@logic'
+import { useGrantModuleAccess, useLeaveCreation, useSoldiers } from '@logic'
 
 const NO_SOLDIERS: readonly never[] = []
 
@@ -9,4 +9,10 @@ const NO_SOLDIERS: readonly never[] = []
 export function useInboxAccess(): boolean {
   const soldiers = useSoldiers()
   return useLeaveCreation(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS).approvesAny
+}
+
+/** Whether the grants module is for this actor: who may view the grants of at least one soldier they see (D-165). */
+export function useGrantsAccess(): boolean {
+  const soldiers = useSoldiers()
+  return useGrantModuleAccess(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
 }

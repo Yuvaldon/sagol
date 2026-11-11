@@ -38,3 +38,12 @@ export function fieldError(errors: readonly unknown[], name: string, answered: r
   const issue = answered.find((candidate) => fieldNameOf(candidate) === name)
   return issue === undefined ? null : issueKey(issue.code)
 }
+
+/**
+ * The message of a field in a form kept in local state: its own issues once submitted, then what the adapter
+ * answered.
+ */
+export function issueError(own: readonly Issue[], answered: readonly Issue[], name: string): I18nKey | null {
+  const issue = [...own, ...answered].find((candidate) => fieldNameOf(candidate) === name)
+  return issue === undefined ? null : issueKey(issue.code)
+}

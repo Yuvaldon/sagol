@@ -196,10 +196,11 @@ export function CommandRanksModule() {
     panel.open(PANEL_IDS.commandRanks, { entity: NEW_ENTITY })
   }
 
-  if (panel.entity === NEW_ENTITY) return <RankEditor rank={null} firstSeniority={firstSeniority} />
+  // A deep link opens only what the actor may use; anything else reads as not found (D-076).
+  if (panel.entity === NEW_ENTITY && permissions.create) return <RankEditor rank={null} firstSeniority={firstSeniority} />
   if (panel.entity !== null) {
     const rank = live.find((candidate) => candidate.id === panel.entity)
-    if (rank === undefined) {
+    if (rank === undefined || !permissions.update) {
       return (
         <div className="flex flex-col items-center gap-md py-xl text-center">
           <p className="text-name text-text-muted">{t('commandRanks.notFound')}</p>
