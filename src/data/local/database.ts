@@ -1,5 +1,6 @@
-import Dexie, { type Table } from 'dexie'
+import Dexie from 'dexie'
 import type { TableName, TableRow } from '@contracts'
+import type { Store, StoreTable } from './store'
 
 // The IndexedDB store of the local adapter (D-021). Every table of the schema exists from the
 // first version, because the policy snapshot reads most of them on every check. Table and column
@@ -42,14 +43,23 @@ export const STORES = {
   property_definitions: 'id, organization_id',
 } as const satisfies Record<TableName, string>
 
-export function openDatabase(name: string): Dexie {
+/** The IndexedDB store, which a test closes when it is done. */
+export interface LocalStore extends Store {
+  close(): void
+}
+
+export function openDatabase(name: string): LocalStore {
   const database = new Dexie(name)
   database.version(1).stores({ ...STORES, soldier_accounts: VERSION_1_ACCOUNTS })
   database.version(DATABASE_VERSION).stores(STORES)
-  return database
+  return {
+    transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),
+    table: (name) => database.table(name),
+    close: () => database.close(),
+  }
 }
 
 /** The typed table. Rows reach callers only after `parsedRow`. */
-export function tableOf<T extends TableName>(database: Dexie, name: T): Table<TableRow<T>, unknown> {
+export function tableOf<T extends TableName>(database: Store, name: T): StoreTable<TableRow<T>> {
   return database.table(name)
 }

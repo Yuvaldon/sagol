@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   AccessGrantQuery,
   ArchiveRankRoleBindingInput,
@@ -53,7 +53,7 @@ const GRANTS_CREATE = { resource: 'access_grants', action: 'create' } as const
 const GRANTS_DELETE = { resource: 'access_grants', action: 'delete' } as const
 
 /** The pairs of a role, as stored. */
-export async function rolePairs(database: Dexie, roleId: RoleId): Promise<Permission[]> {
+export async function rolePairs(database: Store, roleId: RoleId): Promise<Permission[]> {
   const rows = await tableOf(database, 'role_permissions').where('role_id').equals(roleId).toArray()
   return rows.map((row) => ({ resource: row.resource, action: row.action }) as Permission)
 }
@@ -64,7 +64,7 @@ export function requireHeld(scope: ActorScope, pairs: readonly Permission[]): vo
 }
 
 /** A role a row points at must exist in the organization and be live. */
-export async function liveRoleIssues(database: Dexie, scope: ActorScope, roleId: RoleId, path: readonly string[]): Promise<Issue[]> {
+export async function liveRoleIssues(database: Store, scope: ActorScope, roleId: RoleId, path: readonly string[]): Promise<Issue[]> {
   const role = await tableOf(database, 'roles').get(roleId)
   if (role === undefined || role.organization_id !== scope.organization_id) {
     return [{ path: [...path], code: IssueCode.enum.reference_not_found }]
@@ -75,7 +75,7 @@ export async function liveRoleIssues(database: Dexie, scope: ActorScope, roleId:
 
 /** The anchor a scope names must exist in the organization and be live (D-028). Unchanged anchors are left alone. */
 async function anchorIssues(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   row: ScopeColumns,
   before: ScopeColumns | null,
@@ -151,7 +151,7 @@ function pairKey(pair: Permission): string {
   return `${pair.resource}:${pair.action}`
 }
 
-async function writePairs(database: Dexie, scope: ActorScope, roleId: RoleId, pairs: readonly Permission[]): Promise<void> {
+async function writePairs(database: Store, scope: ActorScope, roleId: RoleId, pairs: readonly Permission[]): Promise<void> {
   const table = tableOf(database, 'role_permissions')
   const held = await table.where('role_id').equals(roleId).toArray()
   await table.bulkDelete(held.map((row) => [row.role_id, row.resource, row.action]))
@@ -349,7 +349,7 @@ export function createAccessGrantRepository(dependencies: LocalDependencies): Da
 }
 
 /** The grantee must exist, be visible and be live. */
-async function granteeIssues(database: Dexie, scope: ActorScope, soldierId: SoldierId): Promise<Issue[]> {
+async function granteeIssues(database: Store, scope: ActorScope, soldierId: SoldierId): Promise<Issue[]> {
   const soldier = await tableOf(database, 'soldiers').get(soldierId)
   const visible =
     soldier !== undefined &&

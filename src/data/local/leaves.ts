@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   IssueCode,
   LeaveQuery,
@@ -47,7 +47,7 @@ export function canView(scope: ActorScope, leave: Pick<Leave, 'soldier_id'>): bo
 }
 
 /** The leave, or `not_found` when it is missing or invisible to the actor (D-046). */
-export async function visibleLeave(database: Dexie, scope: ActorScope, id: string): Promise<Leave> {
+export async function visibleLeave(database: Store, scope: ActorScope, id: string): Promise<Leave> {
   const stored = await tableOf(database, 'leaves').get(id)
   if (stored === undefined || stored.organization_id !== scope.organization_id || !canView(scope, stored)) {
     return fail({ code: 'not_found' })
@@ -56,7 +56,7 @@ export async function visibleLeave(database: Dexie, scope: ActorScope, id: strin
 }
 
 /** The leave's soldier, or `not_found` when the actor cannot see them through `soldiers:view` (D-096, D-114). */
-export async function visibleSoldier(database: Dexie, scope: ActorScope, id: SoldierId): Promise<Soldier> {
+export async function visibleSoldier(database: Store, scope: ActorScope, id: SoldierId): Promise<Soldier> {
   const stored = await tableOf(database, 'soldiers').get(id)
   const visible =
     stored !== undefined &&
@@ -70,7 +70,7 @@ export async function visibleSoldier(database: Dexie, scope: ActorScope, id: Sol
  * Everything the rules count, read without the actor's filter: a rule counts soldiers the actor may not see
  * (OI-027). Nothing of it reaches the actor but the violations, which name only who is unavailable (D-138).
  */
-export async function ruleData(database: Dexie, organizationId: OrganizationId) {
+export async function ruleData(database: Store, organizationId: OrganizationId) {
   const rowsOf = <T extends Exclude<TableName, 'organizations'>>(table: T) =>
     tableOf(database, table).where('organization_id').equals(organizationId).toArray()
   const [rules, units, soldiers, command_ranks, tags, soldier_tags, seniority_overrides, unit_memberships] =
@@ -110,7 +110,7 @@ export async function ruleData(database: Dexie, organizationId: OrganizationId) 
 
 /** A type a new leave points to must exist, be visible and be live (D-113). */
 export async function leaveTypeOf(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   id: Leave['leave_type_id'],
 ): Promise<{ type: LeaveType | null; issues: Issue[] }> {

@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   ArchiveAvailabilityRuleInput,
   AvailabilityRule,
@@ -50,7 +50,7 @@ function referenceIssue(path: string, finding: ReferenceFinding): Issue[] {
   return []
 }
 
-async function scopeUnitFinding(database: Dexie, scope: ActorScope, id: UnitId): Promise<ReferenceFinding> {
+async function scopeUnitFinding(database: Store, scope: ActorScope, id: UnitId): Promise<ReferenceFinding> {
   const unit = await tableOf(database, 'units').get(id)
   if (unit === undefined || unit.organization_id !== scope.organization_id) return 'missing'
   if (!holds(scope, permissionOf('units', 'view'), unitTarget(unit))) return 'missing'
@@ -58,7 +58,7 @@ async function scopeUnitFinding(database: Dexie, scope: ActorScope, id: UnitId):
 }
 
 async function organizationRowFinding(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   table: 'unit_levels' | 'tag_categories',
   id: string,

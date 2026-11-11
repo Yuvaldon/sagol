@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   ArchiveSoldierInput,
   ChangeMembershipInput,
@@ -86,7 +86,7 @@ async function rankIssues({ database, scope, row, before }: RowCheck<Soldier>): 
 }
 
 /** D-157: a rank write passes the permission check on the soldier as stored after the write too. */
-async function requireAfterRankWrite(database: Dexie, scope: ActorScope, action: 'create' | 'update', soldierId: SoldierId) {
+async function requireAfterRankWrite(database: Store, scope: ActorScope, action: 'create' | 'update', soldierId: SoldierId) {
   const { context } = await loadPolicySnapshot(database, scope.organization_id, scope.now)
   const permission = permissionOf('soldiers', action)
   const target = soldierTarget(soldierId)
@@ -125,7 +125,7 @@ function blankPrivateText<Raw>(raw: Raw, key: 'private' | 'changes'): Raw {
 }
 
 /** A unit a soldier is placed in must exist, be visible and be live. */
-async function placementIssues(database: Dexie, scope: ActorScope, unitId: UnitId, path: readonly string[]): Promise<Issue[]> {
+async function placementIssues(database: Store, scope: ActorScope, unitId: UnitId, path: readonly string[]): Promise<Issue[]> {
   const unit = await tableOf(database, 'units').get(unitId)
   const visible =
     unit !== undefined &&
@@ -138,7 +138,7 @@ async function placementIssues(database: Dexie, scope: ActorScope, unitId: UnitI
 
 /** `uq_soldier_private_personal_id`: archived soldiers keep their number too (D-098). */
 export async function personalIdIssues(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   soldierId: SoldierId,
   personalId: string | null,
@@ -191,7 +191,7 @@ export interface NewSoldier {
  * and `soldiers.create` write it one way.
  */
 export async function insertSoldier(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   input: NewSoldier,
   prefix: readonly string[],
