@@ -42,13 +42,22 @@ const ONBOARDING_TABLES: ReadonlySet<TableName> = new Set<TableName>([
   'account_link_requests',
 ])
 
-/** Tables a request's candidates read (D-066): a change to one refreshes the requests and their candidates. */
+/**
+ * Tables a request's candidates and its visibility read (D-066, D-157): a change to one refreshes the requests
+ * and their candidates. Who may review follows the policy, so its tables are here too.
+ */
 const CANDIDATE_TABLES: ReadonlySet<TableName> = new Set<TableName>([
   'soldiers',
   'soldier_private',
   'soldier_accounts',
   'unit_memberships',
   'units',
+  'roles',
+  'role_permissions',
+  'access_grants',
+  'rank_role_bindings',
+  'command_ranks',
+  'seniority_overrides',
 ])
 
 export function createQueryClient(): QueryClient {

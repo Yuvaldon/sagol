@@ -15,7 +15,7 @@ import {
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { fakePorts, wrapperOf } from '../testing/ports'
-import { useAccountPermissions, useLinkReviewAccess, useRequestLink } from './hooks'
+import { useAccountPermissions, useLinkCreatePlacements, useLinkReviewAccess, useRequestLink } from './hooks'
 import { activeAccountOf, asLinkRequestFormError, linkRequestIssues, toRequestLinkInput, toReviewLinkInput } from './linking'
 
 // Sample data, test files only.
@@ -136,6 +136,33 @@ describe('account hooks', () => {
     await waitFor(() => {
       expect(result.current).toBe(true)
     })
+  })
+
+  it('offers to make a soldier only where the reviewer may also approve accounts (D-157)', async () => {
+    const allowed = UnitId.parse(uuid(10))
+    const denied = UnitId.parse(uuid(11))
+    const units = [{ id: allowed }, { id: denied }] as never[]
+    const ports = fakePorts({
+      session: {
+        can: (checks: readonly PermissionCheck[]) =>
+          Promise.resolve<Result<boolean[]>>({
+            ok: true,
+            value: checks.map(
+              (check) =>
+                check.target.kind === 'unit'
+                  ? check.permission.resource !== 'accounts' || check.target.unit_id === allowed
+                  : check.permission.resource !== 'accounts',
+            ),
+          }),
+      },
+    })
+    const { result } = renderHook(() => useLinkCreatePlacements([], units), { wrapper: wrapperOf(ports) })
+    await waitFor(() => {
+      expect(result.current.any).toBe(true)
+    })
+    expect(result.current.placeIn(allowed)).toBe(true)
+    expect(result.current.placeIn(denied)).toBe(false)
+    expect(result.current.withoutUnit).toBe(false)
   })
 
   it('files a request through the command', async () => {

@@ -10,8 +10,9 @@ import type {
   SoldierAccount,
   SoldierId,
   Unit,
+  UnitId,
 } from '@contracts'
-import { soldierTarget } from '@domain'
+import { placementTarget, soldierTarget } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOf } from '../permissions/checks'
@@ -20,6 +21,7 @@ import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
+import { useRosterPermissions } from '../roster/hooks'
 import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
 import { asLinkRequestFormError, toRequestLinkInput, toReviewLinkInput, type LinkRequestValues, type LinkReviewChoice } from './linking'
@@ -130,4 +132,22 @@ export function useLinkReviewAccess(units: readonly Unit[]): boolean {
   )
   const can = useCan(checks)
   return checks.some((check) => can(check))
+}
+
+/**
+ * Where a reviewer may make a soldier from a request: where they may create and place one, and approve accounts
+ * too (D-157). `any` is false when there is nowhere, and the choice is not offered.
+ */
+export function useLinkCreatePlacements(soldiers: readonly Soldier[], units: readonly Unit[]) {
+  const roster = useRosterPermissions(soldiers, units)
+  const checks = useMemo<PermissionCheck[]>(
+    () => [checkOf(APPROVE, placementTarget(null)), ...units.map((unit) => checkOf(APPROVE, placementTarget(unit.id)))],
+    [units],
+  )
+  const can = useCan(checks)
+  return useMemo(() => {
+    const withoutUnit = roster.createWithoutUnit && can(checkOf(APPROVE, placementTarget(null)))
+    const placeIn = (unitId: UnitId) => roster.placeIn(unitId) && can(checkOf(APPROVE, placementTarget(unitId)))
+    return { withoutUnit, placeIn, any: withoutUnit || units.some((unit) => placeIn(unit.id)) }
+  }, [roster, can, units])
 }

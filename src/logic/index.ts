@@ -27,6 +27,7 @@ export {
   useAccountPermissions,
   useCancelLinkRequest,
   useLinkCandidates,
+  useLinkCreatePlacements,
   useLinkRequests,
   useLinkReviewAccess,
   useRequestLink,
