@@ -24,6 +24,11 @@ export const PANEL_IDS = {
   rules: 'rules',
   /** Requests of an identity to link to a soldier, for review (D-150). */
   accountLinks: 'account_links',
+  /** Roles with their permission sets and the baseline role, and the rank bindings (D-165). */
+  roles: 'roles',
+  rankBindings: 'rank_bindings',
+  /** Access grants to one soldier (D-165). */
+  accessGrants: 'access_grants',
 } as const
 
 export const PanelId = z.enum([
@@ -41,11 +46,17 @@ export const PanelId = z.enum([
   PANEL_IDS.presence,
   PANEL_IDS.rules,
   PANEL_IDS.accountLinks,
+  PANEL_IDS.roles,
+  PANEL_IDS.rankBindings,
+  PANEL_IDS.accessGrants,
 ])
 export type PanelId = z.infer<typeof PanelId>
 
 /** A long list renders only what is in sight (TanStack Virtual). The height is a first guess, then measured. */
 export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
+
+/** How many module buttons a phone's bottom bar shows before "more" opens the rest (D-165). */
+export const PHONE_BAR_MODULES = 4
 
 /** The `entity` value of a form for a row that does not exist yet. */
 export const NEW_ENTITY = 'new'
