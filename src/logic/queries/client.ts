@@ -55,6 +55,24 @@ const LINK_REQUEST_TABLES: ReadonlySet<TableName> = new Set<TableName>([
   'access_grants',
 ])
 
+/**
+ * Tables the policy is computed from (D-053 … D-058). Every list the adapter answers is filtered by the policy, so a change
+ * to one of them can change what any list holds.
+ */
+const POLICY_TABLES: ReadonlySet<TableName> = new Set<TableName>([
+  'organizations',
+  'units',
+  'soldiers',
+  'command_ranks',
+  'seniority_overrides',
+  'unit_memberships',
+  'soldier_accounts',
+  'roles',
+  'role_permissions',
+  'rank_role_bindings',
+  'access_grants',
+])
+
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
@@ -71,6 +89,7 @@ export function createQueryClient(): QueryClient {
 }
 
 export function invalidateChanged(client: QueryClient, changes: readonly DataChange[]): void {
+  if (changes.some((change) => POLICY_TABLES.has(change.table))) void client.invalidateQueries({ queryKey: [TABLE_SCOPE] })
   for (const change of changes) {
     void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
     if (ONBOARDING_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.onboarding })

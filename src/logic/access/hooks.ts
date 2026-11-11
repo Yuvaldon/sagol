@@ -23,6 +23,7 @@ import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
+import { useSession } from '../session/hooks'
 import {
   grantStateAt,
   sortedGrants,
@@ -253,16 +254,19 @@ export function useGrantPermissionHints(soldiers: readonly Soldier[]) {
   )
 }
 
-/** Who may review a soldier's link may end it (D-163). */
+/** Who may review a soldier's link may end it, except their own (D-163). */
 export function useRevokeLinkHints(accounts: readonly SoldierAccount[]) {
+  const session = useSession()
+  const self = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null
   const checks = useMemo(
     () => accounts.map((account) => checkOn(ACCOUNT_REVIEW_PERMISSION, account.soldier_id)),
     [accounts],
   )
   const can = useCan(checks)
   return useMemo(
-    () => (account: SoldierAccount) => can(checkOn(ACCOUNT_REVIEW_PERMISSION, account.soldier_id)),
-    [can],
+    () => (account: SoldierAccount) =>
+      account.soldier_id !== self && can(checkOn(ACCOUNT_REVIEW_PERMISSION, account.soldier_id)),
+    [can, self],
   )
 }
 
