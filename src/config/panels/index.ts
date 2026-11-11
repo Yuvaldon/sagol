@@ -22,6 +22,8 @@ export const PANEL_IDS = {
   presence: 'presence',
   /** Availability rules, their conflicts, and the broken rules of a day (D-140, D-141). */
   rules: 'rules',
+  /** Requests of an identity to link to a soldier, for review (D-150). */
+  accountLinks: 'account_links',
 } as const
 
 export const PanelId = z.enum([
@@ -38,6 +40,7 @@ export const PanelId = z.enum([
   PANEL_IDS.tagCategories,
   PANEL_IDS.presence,
   PANEL_IDS.rules,
+  PANEL_IDS.accountLinks,
 ])
 export type PanelId = z.infer<typeof PanelId>
 
