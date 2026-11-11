@@ -114,7 +114,9 @@ export function useGrantRows(includeInactive: boolean): Loaded<readonly GrantRow
     if (boundary === null) return undefined
     const timer = setTimeout(
       () => {
-        setNow(time.now())
+        // A clock that reads coarsely may still be just before the boundary: the boundary itself is passed.
+        const current = time.now()
+        setNow(millisecondsUntil(current, boundary) > 0 ? boundary : current)
       },
       Math.min(Math.max(millisecondsUntil(time.now(), boundary), 0), MAX_TIMER_DELAY_MS),
     )
