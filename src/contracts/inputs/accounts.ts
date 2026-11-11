@@ -28,6 +28,10 @@ export type AccountLinkResult = z.infer<typeof AccountLinkResult>
 export const CancelAccountLinkRequestInput = z.strictObject({ id: AccountLinkRequestId })
 export type CancelAccountLinkRequestInput = z.infer<typeof CancelAccountLinkRequestInput>
 
+/** `revokeAccountLink` (D-163): ends a link; the soldier and the identity can be linked again. */
+export const RevokeAccountLinkInput = z.strictObject({ id: SoldierAccountId })
+export type RevokeAccountLinkInput = z.infer<typeof RevokeAccountLinkInput>
+
 export const AccountLinkResolution = z.enum(['link', 'create_soldier', 'reject'])
 export type AccountLinkResolution = z.infer<typeof AccountLinkResolution>
 

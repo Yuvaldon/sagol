@@ -46,7 +46,7 @@ am = amends, ref = refines, ext = extends.
 | D-027 | Backend target (**proposed**) | backend | |
 | D-028 | Unified scope model with relative anchors | contracts, domain, data, backend | ref D-053, D-054, D-055 |
 | D-029 | Effective seniority with personal overrides | contracts, domain, backend | ref D-057 |
-| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149 |
+| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149; ref D-163 |
 | D-031 | Availability rules: grouping, global scope, priority | contracts, domain, ui | ref D-067 (canonical population), D-071, D-072; ref D-139, D-140 |
 | D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070; ref D-111, D-113; ref D-134 |
 | D-033 | Simple first-run setup wizard | ui | |
@@ -69,14 +69,14 @@ am = amends, ref = refines, ext = extends.
 | D-050 | Import and export | contracts, data | |
 | D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075; sup D-154 |
-| D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096 |
+| D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096; ref D-159 |
 | D-054 | Policy unit = primary membership today | domain, backend | ref D-105 |
 | D-055 | Unresolvable anchors give an empty scope | domain, backend | |
 | D-056 | Only active, linked soldiers hold permissions | domain, backend | ref D-098 |
-| D-057 | Subject rank constraints with missing ranks | domain, backend | |
+| D-057 | Subject rank constraints with missing ranks | domain, backend | ref D-157 |
 | D-058 | What counts as an active permission source | domain, backend | |
-| D-059 | Access-manager invariant (no lockout) | domain, data, backend | |
-| D-060 | No privilege escalation | domain, data, backend | |
+| D-059 | Access-manager invariant (no lockout) | domain, data, backend | ref D-156, D-158 |
+| D-060 | No privilege escalation | domain, data, backend | ext D-156 |
 | D-061 | domain tests may import vitest | domain, tooling | ext D-074 |
 | D-062 | Decision index; read rule unchanged | docs | sup D-081 (read rule); sup D-128 (the rest) |
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | ref D-114; ref D-117, D-118; ref D-124 |
@@ -123,8 +123,8 @@ am = amends, ref = refines, ext = extends.
 | D-104 | The unit selector writes the filter | config, logic, ui | ref D-131 |
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
-| D-107 | Today follows the organization's day | domain, logic | |
-| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154 |
+| D-107 | Today follows the organization's day | domain, logic | ref D-160 |
+| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
@@ -149,8 +149,8 @@ am = amends, ref = refines, ext = extends.
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
-| D-133 | "Only who is missing" | config, logic, ui | |
-| D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147 |
+| D-133 | "Only who is missing" | config, logic, ui | ref D-161 |
+| D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161 |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
 | D-136 | The new-leave form stays with active soldiers | logic, ui | |
 | D-137 | Pending leaves counted by a rule: the requester acknowledges | domain, data | |
@@ -158,20 +158,30 @@ am = amends, ref = refines, ext = extends.
 | D-139 | The availability rule commands | domain, data, logic, backend | |
 | D-140 | The rules module | config, logic, ui | |
 | D-141 | The heat row | config, logic, ui | |
-| D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143; ref D-145, D-146 |
+| D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143; ref D-145, D-146; ref D-162 |
 | D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144 |
 | D-144 | The touch path of the timeline, and its lanes on a phone | config, ui | |
 | D-145 | Approving shows the rules' answer, not a live warning | logic, ui | |
 | D-146 | A live warning lists hard and soft rules together | logic, ui | |
 | D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | |
 | D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | |
-| D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | |
+| D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | ref D-163, D-164 |
 | D-150 | The account-links module | config, logic, ui | |
-| D-151 | The onboarding of an identity with no account | logic, ui | |
-| D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | |
+| D-151 | The onboarding of an identity with no account | logic, ui | ref D-160 |
+| D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
 | D-154 | The Claude Code harness replaces the session rituals | docs, tooling | |
-| D-155 | The phone's module buttons scroll inside the bottom bar | ui | |
+| D-155 | The phone's module buttons scroll inside the bottom bar | ui | ref D-165 |
+| D-156 | Every way of giving a role is guarded; a grant stays within the granter's reach | domain, data, backend | |
+| D-157 | A holder without seniority gets only `any`; a rank write is checked before and after | domain, data, backend | |
+| D-158 | An access manager holds the three pairs with `any` | domain, backend | |
+| D-159 | `self` lets a soldier see their own unit chain | domain, backend | |
+| D-160 | Without `organization:view` the board uses the device's day | logic, ui | |
+| D-161 | Presence lists leave out soldiers whose leaves the actor cannot read | logic, ui | |
+| D-162 | Live rule warnings only for an actor who reads everything a rule counts | logic, ui | |
+| D-163 | Revoking an account link | contracts, data, logic, ui, backend | |
+| D-164 | Link-request candidates stay computed | data | |
+| D-165 | The roles and grants modules; "more" on a phone | config, logic, ui | |
 
 ---
 
@@ -2051,3 +2061,95 @@ the screen.
 **Why:** V9's account-links button made seven 44 px modules plus the user menu, wider than a phone's bar. The bar then
 widened the page, the phone zoomed out, and presses landed beside their targets (V9's CI failed on mobile). A "more"
 menu, OI-095's lasting answer, stays with V10, which adds more modules.
+
+## D-156 — Every way of giving a role is guarded, and a grant stays within the granter's reach
+2026-11-11 · accepted · extends D-060 · refines D-059 · OI-038, OI-068 · decided under the owner's autonomy instruction of 2026-11-11
+- D-060's guard (the actor holds every pair, at a non-empty scope, or the write fails with `forbidden`) applies to every
+  write that gives pairs to someone: a grant (the role's pairs), a role's permission set (the added pairs), a rank
+  binding's create and its `role_id` change (the role's pairs), the organization's `baseline_role_id` (the new role's
+  pairs), and a soldier's `command_rank_id` (the pairs of every live role bound to the new rank).
+- A grant's scope is limited too: its scope, resolved for the grantee today (D-054), must lie within a scope at which the
+  actor holds `access_grants:create`. Organization lies only within organization; a unit with its descendants lies within
+  the same unit with descendants or any ancestor with descendants; a unit alone also within the same unit; a soldier
+  within any scope that covers that soldier. An empty scope grants nothing and is refused with `forbidden`.
+  Rank bindings and the baseline role are organization targets, so D-053 already asks organization scope for them.
+- After every write that can change permissions (grants and revokes, roles and their permission sets, archiving a role,
+  rank bindings, the baseline role, a soldier's rank, status or archive, account links and their revocation) the data
+  layer checks D-059 on the state after the write and rejects it with `last_access_manager`.
+**Why:** OI-038: a role reached through a rank binding, the baseline or a promotion bypassed D-060, and a platoon
+commander could grant a pair at organization scope. Limiting the scope by the granter's own reach is the same rule that
+already limits the pairs.
+
+## D-157 — A holder without seniority gets only `any`; a rank write is checked before and after
+2026-11-11 · accepted · refines D-057 · OI-039, OI-038 · decided under the owner's autonomy instruction of 2026-11-11
+- D-057 wins over the current code: a holder without seniority gets only `any` permissions, their own record included.
+  With seniority, `junior` excludes the holder's own record and `junior_or_equal` includes it, as before.
+- A soldier write that sets `command_rank_id` (create or update) passes the permission check on the soldier as stored
+  after the write too, so a holder limited to `junior` cannot create a soldier above them or promote one past them.
+**Why:** D-057 is the approved rule (OI-039). The check after the write closes the gap OI-038 notes: the constraint
+compared only the state before.
+
+## D-158 — An access manager holds the three pairs with `any`
+2026-11-11 · accepted · refines D-059 · OI-040 · decided under the owner's autonomy instruction of 2026-11-11
+D-059's three pairs count toward an access manager only from sources with `subject_rank_constraint = 'any'`, at
+organization scope, without expiry.
+**Why:** OI-040: a holder limited to `junior`, or without seniority, cannot manage everyone, so the invariant must not
+count them.
+
+## D-159 — `self` lets a soldier see their own unit chain
+2026-11-11 · accepted · refines D-053 · OI-041 · decided under the owner's autonomy instruction of 2026-11-11
+A `soldier` scope (`self` or a soldier anchor) also covers `view` of unit targets that are the soldier's primary unit
+today and its ancestors (D-054). Every other action on a unit target still needs a unit or organization scope.
+**Why:** OI-041: with the baseline role a soldier saw the top-level units but not their own platoon. Seeing one's own chain
+is what the baseline's `units:view` is for; sibling units stay hidden.
+
+## D-160 — Without `organization:view` the board uses the device's day
+2026-11-11 · accepted · refines D-107, D-151 · OI-060 · decided under the owner's autonomy instruction of 2026-11-11
+A linked soldier who cannot read the organization still gets the board and the new-leave form, with "today" in the
+device's time zone and only the rows they may read. Commands still compute the day in the organization's time zone.
+The "no access yet" notice of D-151 stays for a soldier who reads no soldier at all.
+**Why:** OI-060: the baseline role is the organization's choice, so the screens must not depend on it holding
+`organization:view`; the device's zone is the organization's for every real user of a one-country pilot.
+
+## D-161 — Presence lists leave out soldiers whose leaves the actor cannot read
+2026-11-11 · accepted · refines D-133, D-134 · OI-092 · decided under the owner's autonomy instruction of 2026-11-11
+The present and absent lists, their counts, the presence pill and "only who is missing" include only soldiers whose
+leaves the actor may view. The others are left out, not counted as present.
+**Why:** OI-092: counting them as present says something false; "unknown" would add a third list for no use.
+
+## D-162 — Live rule warnings only for an actor who reads everything a rule counts
+2026-11-11 · accepted · refines D-142 · OI-094 · decided under the owner's autonomy instruction of 2026-11-11
+Live warnings (D-142) run only when the actor holds `view` on soldiers, unit memberships and leaves at organization scope
+with `any`. Any other actor sees a rule only through the command's answer (`rule_violation`,
+`rule_acknowledgment_required`) and the same dialog.
+**Why:** OI-094: a warning computed from part of the data can differ from the command's; no warning is better than a wrong
+one, and the command's answer is always right.
+
+## D-163 — Revoking an account link
+2026-11-11 · accepted · refines D-030, D-149, D-152 · OI-103 · decided under the owner's autonomy instruction of 2026-11-11
+- `soldier_accounts.soldier_id` is unique only among links that are not revoked (a partial unique index
+  `WHERE revoked_at IS NULL`; the local database checks it in code), so a soldier can be linked again.
+- `accounts.revokeLink({ id })` sets `revoked_at` and `revoked_by`; it needs `accounts:approve` on the soldier, refuses the
+  actor's own link (`forbidden`) and is checked by D-156's access-manager rule. The account-links module lists linked
+  soldiers with a revoke action.
+- An identity whose link was revoked may ask again. `requestLink` answers an id that is already taken with
+  `already_exists` without telling whose it is.
+**Why:** D-152 deferred revoking to the access screens. A revoked identity asking again is the normal way back.
+
+## D-164 — Link-request candidates stay computed
+2026-11-11 · accepted · refines D-149 · OI-106 · decided under the owner's autonomy instruction of 2026-11-11
+A request's candidates are computed on read, as now. A pending request with no visible candidate still shows to a
+reviewer who could approve it as a new soldier (D-149), and a closed request lists none.
+**Why:** OI-106: stored candidates would go stale when a soldier is linked or archived, and "never store what can be
+derived" (CLAUDE.md).
+
+## D-165 — The roles and grants modules; "more" on a phone
+2026-11-11 · accepted · refines D-108, D-155 · OI-095 · decided under the owner's autonomy instruction of 2026-11-11
+- **Roles:** a list of roles with a form (name, description, color) and a permission grid of D-040's valid pairs; the
+  rank bindings of each role with a scope picker and a rank constraint; the baseline role chosen in the same module.
+- **Grants:** a list of grants (active first, inactive on request) with a form: grantee, role, scope picker, rank
+  constraint, valid from and to, reason; and revoke.
+- The scope picker offers the anchors of D-028 with only the fields the anchor needs.
+- On a phone, the bottom bar shows the first four allowed modules and a "more" button that opens the module drawer for
+  the rest.
+**Why:** the V10 card; OI-095: seven or more modules do not fit a phone's bar even scrolling (D-155).
