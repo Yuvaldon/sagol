@@ -5,6 +5,7 @@ import { useCurrentOrganization, useDateWindow, useModuleAccess, usePanel, useRu
 import { Network, Scale, Tag, Tags, Users, type LucideIcon } from 'lucide-react'
 import { useIsDesktop } from '../patterns/media'
 import { Button, IconButton } from '../primitives/Button'
+import { AccountLinksButton } from './AccountLinksButton'
 import { InboxButton } from './InboxButton'
 import { ModuleDrawer } from './ModuleDrawer'
 import { NewLeaveButton } from './NewLeaveButton'
@@ -53,6 +54,7 @@ function ModuleButtons() {
   return (
     <>
       <InboxButton />
+      <AccountLinksButton />
       {access.units ? (
         <ModuleButton
           Icon={Network}

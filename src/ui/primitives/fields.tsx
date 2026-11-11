@@ -32,7 +32,7 @@ export interface TextFieldProps {
   readonly type?: 'text' | 'email'
   readonly autoComplete?: string
   readonly isRequired?: boolean
-  readonly inputMode?: 'numeric' | 'tel'
+  readonly inputMode?: 'numeric' | 'tel' | 'email'
   /** Numbers and technical values read left to right inside the RTL layout. */
   readonly dir?: 'ltr'
 }
