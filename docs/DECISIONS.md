@@ -2233,6 +2233,8 @@ Supabase hosts the database (Postgres), authentication (Google) and the server f
 hosts the built app. Both run on their free plans: nothing that costs money is created or enabled; a step that would
 cost money becomes an open item instead. Public client values (the project URL and its anon key) live in the hosting
 provider's environment variables, and `.env.example` lists their names only; no secret is in the repository.
+The Supabase project is `sagol` (ref `etmyjbhkqoufoqsjbhev`, region `eu-central-1`, free plan); the Vercel project is
+`sagol` (Hobby plan, linked to the repository, so every push gets a preview deploy).
 **Why:** the reasons of D-027 (Postgres matches `schema.sql`, row-level security matches the policy model, Google sign-in is
 built in), and the owner's instruction to use these two providers at no cost.
 
