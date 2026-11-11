@@ -2076,6 +2076,8 @@ menu, OI-095's lasting answer, stays with V10, which adds more modules.
   actor holds `access_grants:create`. Organization lies only within organization; a unit with its descendants lies within
   the same unit with descendants or any ancestor with descendants; a unit alone also within the same unit; a soldier
   within any scope that covers that soldier. An empty scope grants nothing and is refused with `forbidden`.
+  The source that covers the scope must also be no wider in rank and no longer in time: its `subject_rank_constraint`
+  is the grant's or wider (`any` ⊇ `junior_or_equal` ⊇ `junior`), and it has no end or ends no earlier than the grant.
   Rank bindings and the baseline role are organization targets, so D-053 already asks organization scope for them.
 - After every write that can change permissions (grants and revokes, roles and their permission sets, archiving a role,
   rank bindings, the baseline role, a soldier's rank, status or archive, account links and their revocation) the data
@@ -2090,6 +2092,9 @@ already limits the pairs.
   With seniority, `junior` excludes the holder's own record and `junior_or_equal` includes it, as before.
 - A soldier write that sets `command_rank_id` (create or update) passes the permission check on the soldier as stored
   after the write too, so a holder limited to `junior` cannot create a soldier above them or promote one past them.
+  This holds for every way a soldier is created, an approved link request included. A soldier's own rank changes only
+  through a source with `any`: `junior_or_equal` covers their own record, and a higher rank would widen what their
+  constrained sources reach.
 **Why:** D-057 is the approved rule (OI-039). The check after the write closes the gap OI-038 notes: the constraint
 compared only the state before.
 
@@ -2167,4 +2172,5 @@ organization's time zone (NULL: from now); `valid_to` stores the start of the da
 is inclusive (NULL: until revoked). The list reads them back the same way. A grant's state now is active, scheduled,
 expired or revoked; active and scheduled grants come first, the others only on request.
 **Why:** an officer grants "until Thursday", never an instant; a half-open window of whole days matches how leaves are
-stored (D-107) and needs no time field on a phone.
+stored (D-107) and needs no time field on a phone. A granter who cannot read the organization gets the device's zone, as
+on the board (D-160).
