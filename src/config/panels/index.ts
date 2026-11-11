@@ -8,6 +8,8 @@ export const PANEL_IDS = {
   unitLevels: 'unit_levels',
   soldiers: 'soldiers',
   commandRanks: 'command_ranks',
+  /** Pending account link requests, for their reviewers (D-156). */
+  accountRequests: 'account_requests',
   leaveTypes: 'leave_types',
   leaveTypeGroups: 'leave_type_groups',
   /** A new leave (D-115) and a leave's details (D-119). */
@@ -29,6 +31,7 @@ export const PanelId = z.enum([
   PANEL_IDS.unitLevels,
   PANEL_IDS.soldiers,
   PANEL_IDS.commandRanks,
+  PANEL_IDS.accountRequests,
   PANEL_IDS.leaveTypes,
   PANEL_IDS.leaveTypeGroups,
   PANEL_IDS.leaves,
