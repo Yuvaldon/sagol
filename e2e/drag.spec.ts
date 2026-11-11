@@ -155,6 +155,33 @@ test('drag to create, move and resize, with what a drop would break', async ({ p
     await expect(bar(page)).toHaveAccessibleName(/12–14 בנוב׳/)
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
   })
+
+  await test.step('a hard rule refuses the drop, and the bar stays where it was (OI-107)', async () => {
+    await openModule(page, he.rules.open)
+    await drawer(page).getByRole('button', { name: he.rules.new }).first().click()
+    await page.getByLabel(he.rules.name).fill('חובה אחד')
+    await choose(page, he.rules.enforcement, he.rules.enforcementHard)
+    await page.getByLabel(he.rules.min, { exact: true }).fill('1')
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(drawer(page).getByRole('list', { name: he.rules.listLabel }).getByText('חובה אחד', { exact: true })).toBeVisible()
+    await closeDrawer(page)
+
+    const box = await bar(page).boundingBox()
+    if (box === null) throw new Error('no bar')
+    const { dayPx } = await dayPoint(page, 0)
+    const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    await mouseDrag(page, from, { x: from.x + dayPx, y: from.y }, async () => {
+      const card = page.getByRole('status').filter({ hasText: he.timeline.dragMove })
+      await expect(card).toContainText('11–13 בנוב׳')
+      await expect(card.getByRole('list', { name: he.rules.violationsLabel })).toContainText('חובה אחד')
+    })
+    const dialog = page.getByRole('alertdialog', { name: he.rules.refusedTitle })
+    await expect(dialog).toContainText('חובה אחד')
+    await expectNoAxeViolations(page)
+    await dialog.getByRole('button', { name: he.common.close }).click()
+    await expect(page.getByRole('alertdialog')).toHaveCount(0)
+    await expect(bar(page)).toHaveAccessibleName(/12–14 בנוב׳/)
+  })
 })
 
 test('on a phone, a held finger creates and moves, and a bar is a 44 px target', async ({ page, isMobile }) => {
