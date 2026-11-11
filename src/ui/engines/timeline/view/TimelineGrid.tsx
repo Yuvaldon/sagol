@@ -337,7 +337,8 @@ function ResourceRow({
     <div
       className="relative h-full"
       style={{ width: layout.widthPx }}
-      onPointerDown={
+      // In the capture phase: a mark's button stops its press from reaching the row.
+      onPointerDownCapture={
         gesture === null
           ? undefined
           : (event) => {

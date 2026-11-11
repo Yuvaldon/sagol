@@ -122,8 +122,8 @@ export function useDrag(layout: GridLayout, elements: Elements, handlers: Timeli
         markKey = mark.key
         origin = mark.range
       }
-      // A mouse press would start selecting text; react-aria still sees it, since its own handler ran first.
-      if (event.pointerType === 'mouse') event.preventDefault()
+      // A mouse press on an empty day would start selecting text. A mark's button keeps its own press.
+      if (event.pointerType === 'mouse' && markKey === null) event.preventDefault()
       suppressPress.current = false
       const current: Gesture = {
         pointerId: event.pointerId,
