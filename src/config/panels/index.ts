@@ -31,6 +31,8 @@ export const PANEL_IDS = {
   rankBindings: 'rank_bindings',
   /** Access grants to one soldier (D-165). */
   accessGrants: 'access_grants',
+  /** Import from a file, with its dry-run preview, and the organization's export (D-171). */
+  dataTransfer: 'data_transfer',
 } as const
 
 export const PanelId = z.enum([
@@ -52,6 +54,7 @@ export const PanelId = z.enum([
   PANEL_IDS.roles,
   PANEL_IDS.rankBindings,
   PANEL_IDS.accessGrants,
+  PANEL_IDS.dataTransfer,
 ])
 export type PanelId = z.infer<typeof PanelId>
 
@@ -72,3 +75,12 @@ export const DROP_EDGE_FRACTION = 0.25
 
 /** How far a pointer travels before a press on a handle becomes a drag. */
 export const DRAG_ACTIVATION_PX = 4
+
+/** The files of import and export (D-171): what the picker offers, how a CSV is told apart, and the export's name. */
+export const TRANSFER_FILES = {
+  accept: ['.json', '.csv', 'application/json', 'text/csv'],
+  csvExtension: '.csv',
+  exportName: 'sagol-export',
+  exportExtension: '.json',
+  exportMediaType: 'application/json',
+} as const
