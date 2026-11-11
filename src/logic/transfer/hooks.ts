@@ -28,12 +28,19 @@ export async function readPickedFile(file: File): Promise<ImportFile> {
   return readImportFile(file.name, await file.text(), () => SoldierId.parse(crypto.randomUUID()))
 }
 
-/** Runs the operations: a dry run for the preview, then the real run. A committed run refreshes every table. */
+/**
+ * Runs the operations: `preview` is the dry run, which writes nothing and so refreshes nothing; `commit` is the real
+ * run, which refreshes every table.
+ */
 export function useImport() {
   const { data } = usePorts()
-  return useCommand([QUERY_KEYS.tables], ({ operations, dryRun }: { operations: readonly ImportOperation[]; dryRun: boolean }) =>
-    data.transfer.importBatch({ dry_run: dryRun, operations: [...operations] }),
+  const preview = useMutation({
+    mutationFn: (operations: readonly ImportOperation[]) => data.transfer.importBatch({ dry_run: true, operations: [...operations] }),
+  })
+  const commit = useCommand([QUERY_KEYS.tables], (operations: readonly ImportOperation[]) =>
+    data.transfer.importBatch({ dry_run: false, operations: [...operations] }),
   )
+  return { preview: preview.mutateAsync, commit: commit.run, isPending: preview.isPending || commit.isPending }
 }
 
 /** Takes the export and hands it over as a file to save. */

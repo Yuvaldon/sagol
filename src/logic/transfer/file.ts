@@ -1,6 +1,6 @@
 import { TRANSFER_FILES } from '@config'
 import { ImportOperation, type ImportReport, type OrganizationExport, type SoldierId } from '@contracts'
-import { issuesFromSchema, readSoldierCsv, soldierCsvInput, type SoldierCsvProblem } from '@domain'
+import { issuesFromSchema, readSoldierCsv, soldierCsvInput, todayIn, type SoldierCsvProblem } from '@domain'
 import { z } from 'zod'
 
 // An import file as the import reads it (D-171): a CSV of soldiers, or JSON `{ "operations": [...] }`. Each operation is
@@ -63,7 +63,9 @@ export function readImportFile(name: string, text: string, newSoldierId: () => S
 
 /** The export as a file to save: its name carries the day it was taken. */
 export function exportFileOf(exported: OrganizationExport): { readonly name: string; readonly blob: Blob } {
-  const day = exported.exported_at.slice(0, 10)
+  // The day the organization sees on its clock; a file without its organization falls back to the UTC day.
+  const timezone = exported.tables.organizations[0]?.timezone
+  const day = timezone === undefined ? exported.exported_at.slice(0, 10) : todayIn(timezone, exported.exported_at)
   return {
     name: `${TRANSFER_FILES.exportName}-${day}${TRANSFER_FILES.exportExtension}`,
     blob: new Blob([JSON.stringify(exported, null, 2)], { type: TRANSFER_FILES.exportMediaType }),

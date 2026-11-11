@@ -43,22 +43,33 @@ describe('readImportFile', () => {
 
 describe('exportFileOf', () => {
   it('names the file by the day it was taken', () => {
-    const exported = { format_version: EXPORT_FORMAT_VERSION, exported_at: '2026-11-11T08:00:00.000Z', tables: {} }
+    const exported = { format_version: EXPORT_FORMAT_VERSION, exported_at: '2026-11-11T08:00:00.000Z', tables: { organizations: [] } }
     const file = exportFileOf(exported as unknown as OrganizationExport)
     expect(file.name).toBe('sagol-export-2026-11-11.json')
     expect(file.blob.type).toBe('application/json')
   })
+
+  it("takes the day on the organization's clock", () => {
+    const exported = {
+      format_version: EXPORT_FORMAT_VERSION,
+      exported_at: '2026-11-11T23:30:00.000Z',
+      tables: { organizations: [{ timezone: 'Asia/Jerusalem' }] },
+    }
+    expect(exportFileOf(exported as unknown as OrganizationExport).name).toBe('sagol-export-2026-11-12.json')
+  })
 })
 
 describe('transfer hooks', () => {
-  it('runs a dry run through the port', async () => {
+  it('previews with a dry run and commits with a real one, through the port', async () => {
     const importBatch = vi.fn(() => Promise.resolve({ ok: true, value: { committed: false, results: [] } }))
     const ports = fakePorts({ transfer: { importBatch } })
     const { result } = renderHook(() => useImport(), { wrapper: wrapperOf(ports) })
     await act(async () => {
-      await result.current.run({ operations: [], dryRun: true })
+      await result.current.preview([])
+      await result.current.commit([])
     })
-    expect(importBatch).toHaveBeenCalledWith({ dry_run: true, operations: [] })
+    expect(importBatch).toHaveBeenNthCalledWith(1, { dry_run: true, operations: [] })
+    expect(importBatch).toHaveBeenNthCalledWith(2, { dry_run: false, operations: [] })
   })
 
   it('passes an export refusal through', async () => {
