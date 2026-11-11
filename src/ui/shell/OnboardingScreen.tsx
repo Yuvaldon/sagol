@@ -138,7 +138,20 @@ export function OnboardingScreen({ identity }: { readonly identity: AuthIdentity
   }
   return (
     <CenteredSheet titleKey="noAccess.title" hintKey="noAccess.body">
-      {onboarding.value.open_request === null ? <LinkRequestForm /> : <LinkRequestWaiting request={onboarding.value.open_request} />}
+      {onboarding.value.open_request === null ? (
+        <>
+          {/* The latest request was not approved; a new one may be sent (D-168). */}
+          {onboarding.value.last_rejected_at === null ? null : (
+            <div role="status" className="flex flex-col gap-2xs rounded-control border border-status-rejected p-md">
+              <p className="text-name font-semibold text-status-rejected">{t('linkRequest.rejectedTitle')}</p>
+              <p className="text-name text-text-muted">{t('linkRequest.rejectedBody')}</p>
+            </div>
+          )}
+          <LinkRequestForm />
+        </>
+      ) : (
+        <LinkRequestWaiting request={onboarding.value.open_request} />
+      )}
       <SignOutButton />
       <IdentityList exclude={identity.auth_user_id} />
     </CenteredSheet>

@@ -68,7 +68,7 @@ function NewLeaveForm({
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
   const form = useForm({
-    defaultValues: newLeaveValues(today, approveNow, draft),
+    defaultValues: newLeaveValues(today, approveNow, draft, soldiers.length === 1 ? (soldiers[0]?.id ?? null) : null),
     validators: { onSubmit: ({ value }) => validatorResult(newLeaveIssues(value, typeOf(value.leave_type_id))) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
