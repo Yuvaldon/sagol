@@ -2049,6 +2049,9 @@ read), beside the personal number and the phone, with the same permissions (D-09
   `docs/audits/` and `docs/AUDIT.md` move to `.claude/archive/`, unchanged.
 - One slice is still one branch and one pull request (D-110, D-126), but a session may run several slices in a row,
   with `/clear` between them (D-075).
+- No GitHub branch protection or rulesets: the repository is private on a personal free plan, where they are not
+  enforced, and the owner chose not to pay for them. The harness hooks and CI are the guard; a pull request merges
+  only when CI is green.
 **Why:** the owner's instruction of 2026-11-11 to cut usage and enforce quality through the harness. A fresh session per
 slice and a fixed reading list re-paid a context of about 100k tokens every time, and rules in prose were
 re-read on every turn but enforced by nothing.
