@@ -38,7 +38,7 @@ am = amends, ref = refines, ext = extends.
 | D-019 | Derived state is never stored | all | |
 | D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
-| D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050 |
+| D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050, D-171 |
 | D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108; ref D-112, D-115; ref D-119, D-120; ref D-132 |
 | D-024 | First designed component | ui | ref D-077 |
 | D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075 |
@@ -66,7 +66,7 @@ am = amends, ref = refines, ext = extends.
 | D-047 | Soft-rule acknowledgment protocol | contracts, domain, data, ui | ref D-073; ref D-114; ref D-117; ref D-142 |
 | D-048 | Auth and session contracts | contracts, data, logic, app | ref D-076, D-083 |
 | D-049 | Leave command set | contracts, domain, data | ref D-063, D-064; ref D-117, D-118; am D-123 |
-| D-050 | Import and export | contracts, data | |
+| D-050 | Import and export | contracts, data | ref D-171 |
 | D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075; sup D-154 |
 | D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096; ref D-159 |
@@ -186,6 +186,7 @@ am = amends, ref = refines, ext = extends.
 | D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | |
 | D-168 | A rejected link request is told to its identity | contracts, data, logic, ui | |
 | D-169 | The grants list moves to the next state on its own | logic | |
+| D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | |
 
 ---
 
@@ -2205,3 +2206,26 @@ not auto-link goes to review, D-151), so telling it reveals no match; seeing the
 While grant rows are on screen, the list recomputes their states at the next instant one of them starts or ends, as well as
 when the data changes.
 **Why:** a state computed when the list was read goes stale while the screen stays open (OI-108).
+
+## D-171 — Import runs the built commands and stops at the first refusal
+2026-11-11 · accepted · refines D-022, D-050 · OI-018 · decided under the owner's autonomy instruction of 2026-11-11
+- **Operations.** `ImportOperation` holds the create commands that are built: unit levels, units, command ranks, soldiers
+  (and their tags), roles, rank bindings, access grants, tag categories, tags, leave type groups, leave types, leaves and
+  availability rules. Seniority overrides, leave batches, deployments and property definitions join with the slice that
+  builds their command (D-076).
+- **The run.** The whole input is parsed first. If an operation is malformed, nothing runs and every operation is
+  reported on its form alone. Otherwise the operations run in order through the same commands as the UI, in one
+  transaction; `data_transfer:import` is checked first, then each command checks its own permissions. The first refused
+  operation ends the run: the results stop at it, with its error. A dry run, or a run with a refusal, writes nothing and
+  announces no change; a committed run announces its changes once, after the commit.
+- **The file.** A JSON file of `{ "operations": [...] }`, or a CSV of soldiers whose header names columns from
+  `SOLDIER_CSV_COLUMNS`; each CSV row is one `create_soldier` with a new id and no placement. The owner sees the dry
+  run's report, then commits it.
+- **Export** is one JSON file, downloaded, of every table as stored (D-050), gated by `data_transfer:export`.
+- **OI-018: no privileged restore in the app.** Import re-creates rows through commands, so leave history, audit columns
+  and account links of an export are not carried over by it. Moving local data to the backend loads the export file once,
+  on the server, in 8.3 (OI-109).
+**Why:** a refusal inside a nested IndexedDB transaction aborts the whole transaction, and later operations usually
+name rows the earlier ones create, so checking them past a refusal would report errors that are not theirs. A restore
+that writes rows as stored would be a path around the commands' validation (rule 4); the one-time move to the backend
+is a server task, not a screen. A CSV of soldiers is the spreadsheet the owner already holds; everything else is JSON.
