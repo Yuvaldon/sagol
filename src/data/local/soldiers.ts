@@ -186,11 +186,6 @@ export interface NewSoldier {
   readonly private: CreateSoldierInput['private']
 }
 
-/**
- * The checks and the writes of a new soldier, once the caller has checked the permissions it needs. `prefix` says where
- * the input sits in the caller's input, so a refusal names the caller's field. A new soldier from a link review (D-149)
- * and `soldiers.create` write it one way.
- */
 /** Ids are the caller's (D-044): one already taken is `already_exists`, not a failed write (OI-050). */
 async function requireFreeMembershipId(database: Dexie, id: UnitMembershipId, path: readonly (string | number)[]): Promise<void> {
   if ((await tableOf(database, 'unit_memberships').get(id)) !== undefined) {
@@ -198,6 +193,11 @@ async function requireFreeMembershipId(database: Dexie, id: UnitMembershipId, pa
   }
 }
 
+/**
+ * The checks and the writes of a new soldier, once the caller has checked the permissions it needs. `prefix` says where
+ * the input sits in the caller's input, so a refusal names the caller's field. A new soldier from a link review (D-149)
+ * and `soldiers.create` write it one way.
+ */
 export async function insertSoldier(
   database: Dexie,
   scope: ActorScope,

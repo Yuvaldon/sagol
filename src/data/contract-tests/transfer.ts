@@ -123,6 +123,14 @@ export function describeTransferContract(
         expect(await levelNames()).toEqual([])
       })
 
+      it('without data_transfer:import, a malformed list is forbidden too: its shape is not described', async () => {
+        const actor = await seedActor(harnessOf(), organization, [CREATE_LEVELS], { anchor_type: 'organization' })
+        harnessOf().signIn(actor.identity)
+        const malformed = { dry_run: false, operations: [{ command: 'drop_all' }] } as unknown as ImportBatchInput
+        expect(errorOf(await transfer().importBatch(malformed)).code).toBe('forbidden')
+        expect(errorOf(await transfer().importBatch({ dry_run: false } as unknown as ImportBatchInput)).code).toBe('forbidden')
+      })
+
       it('import alone does not pass the commands: each operation is checked on its own permission', async () => {
         const actor = await seedActor(harnessOf(), organization, [IMPORT], { anchor_type: 'organization' })
         harnessOf().signIn(actor.identity)

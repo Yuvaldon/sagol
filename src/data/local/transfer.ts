@@ -125,6 +125,10 @@ export function createTransfer(dependencies: LocalDependencies): DataTransfer {
   return {
     importBatch: (raw) =>
       asResult(async () => {
+        // The permission comes first, so who may not import learns nothing of the input's form.
+        await database.transaction('r', EVERY_TABLE, async () => {
+          requirePermission(await loadActorScope(dependencies), IMPORT, ORGANIZATION)
+        })
         const malformed = malformedReport(raw)
         if (malformed !== null) return malformed
         const input = parseInput(ImportBatchInput, raw)
