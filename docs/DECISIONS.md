@@ -182,6 +182,7 @@ am = amends, ref = refines, ext = extends.
 | D-163 | Revoking an account link | contracts, data, logic, ui, backend | |
 | D-164 | Link-request candidates stay computed | data | |
 | D-165 | The roles and grants modules; "more" on a phone | config, logic, ui | |
+| D-166 | A grant's window is whole days in the organization's zone | logic, ui | |
 
 ---
 
@@ -2127,6 +2128,8 @@ with `any`. Any other actor sees a rule only through the command's answer (`rule
 `rule_acknowledgment_required`) and the same dialog.
 **Why:** OI-094: a warning computed from part of the data can differ from the command's; no warning is better than a wrong
 one, and the command's answer is always right.
+*Implementation note:* "organization scope with `any`" is checked as the permission holding for the `every_soldier`
+target of D-028: a grant anchored to the organization with no rank constraint.
 
 ## D-163 — Revoking an account link
 2026-11-11 · accepted · refines D-030, D-149, D-152 · OI-103 · decided under the owner's autonomy instruction of 2026-11-11
@@ -2153,6 +2156,15 @@ derived" (CLAUDE.md).
 - **Grants:** a list of grants (active first, inactive on request) with a form: grantee, role, scope picker, rank
   constraint, valid from and to, reason; and revoke.
 - The scope picker offers the anchors of D-028 with only the fields the anchor needs.
-- On a phone, the bottom bar shows the first four allowed modules and a "more" button that opens the module drawer for
-  the rest.
+- On a phone, the bottom bar shows the first `PHONE_BAR_MODULES` (four) allowed modules and a "more" button whose menu
+  lists the rest, each with its count. When only one module would be left over, it stays in the bar instead.
 **Why:** the V10 card; OI-095: seven or more modules do not fit a phone's bar even scrolling (D-155).
+
+## D-166 — A grant's window is whole days in the organization's zone
+2026-11-11 · accepted · refines D-028, D-165 · decided under the owner's autonomy instruction of 2026-11-11
+The grant form asks for a first and a last day, both optional. `valid_from` stores the start of the first day in the
+organization's time zone (NULL: from now); `valid_to` stores the start of the day after the last one, so the last day
+is inclusive (NULL: until revoked). The list reads them back the same way. A grant's state now is active, scheduled,
+expired or revoked; active and scheduled grants come first, the others only on request.
+**Why:** an officer grants "until Thursday", never an instant; a half-open window of whole days matches how leaves are
+stored (D-107) and needs no time field on a phone.

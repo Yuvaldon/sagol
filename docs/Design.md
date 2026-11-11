@@ -137,12 +137,29 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Onboarding of an identity with no account** (`ui/shell/LinkRequest.tsx`): under the "no access yet" sheet, a form with
   first name, last name and an optional personal number, or, with a pending request, a notice with the name sent and a
   "cancel request" button. Neither says whether anything matched.
-- **`AccountLinksButton`** in the bar, as the inbox button: icon and name on desktop, icon alone on a phone, with the count
-  of pending requests; shown only to who may review.
+- **The account-links button** in the bar, as the inbox button: icon and name on desktop, icon alone on a phone, with the
+  count of pending requests; shown only to who may review.
 - **`AccountLinksModule`** (`ui/modules/account-links`): a `VirtualList` of requests (name, email, when); a request shows
   its fields, its candidates (why each matches, a "link" button) and "new soldier" and "reject". Link and reject confirm in
   a `SmallDialog`; the new soldier is an `EntityForm` (rank, unit, date placed).
 - A linked soldier with no access sees the board's notice that the account is linked and has no access yet.
+
+## Roles and access (V10, D-165, D-166)
+
+- **Module buttons** (`ui/shell/ModuleButtons.tsx`): one ordered list of the modules the actor may open (inbox, account
+  links, units, soldiers, tags, rules, leave types, roles, grants). Desktop shows them all. A phone shows the first
+  `PHONE_BAR_MODULES` and a "more" `IconButton` whose `Menu` lists the rest with their icons and counts; when only one
+  would be left over it stays in the bar.
+- **`RolesModule`** (`ui/modules/access`): the roles list (name, color, count of pairs, "baseline" on the baseline role) and a form with
+  name, description, color and a permission grid, a `CheckList` per resource of D-040's valid pairs; the baseline role is
+  a select above the list. **`RankBindingsModule`**: a role select, then that role's bindings (rank and scope in words)
+  and a form with the rank (fixed once saved) and `ScopeFields`.
+- **`ScopeFields`**: the anchor select and only the fields that anchor needs (unit, soldier, level, steps, descendants),
+  plus the rank constraint.
+- **`GrantsModule`**: the grants list (name, state pill, role · scope · days), "show ended grants" switch, revoke from
+  the row's `ActionMenu` with a `SmallDialog`; the form has grantee, role, `ScopeFields`, first and last day (both
+  optional, with hints) and a reason.
+- A soldier who may not view the organization and reads no soldier still sees the "no access yet" notice (D-160).
 
 ## Patterns of a module
 
@@ -229,7 +246,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
 | `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the new-leave form and its "+" |
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |
-| `PendingRequestsModule`, `ClosedLeavesModule`, `InboxButton` | `ui/modules/leaves`, `ui/shell` | The requests inbox and its button |
+| `PendingRequestsModule`, `ClosedLeavesModule` | `ui/modules/leaves` | The requests inbox |
+| `ModuleButtons` | `ui/shell` | The bar's module buttons, with "more" on a phone (D-165) |
+| `RolesModule`, `RankBindingsModule`, `GrantsModule`, `ScopeFields` | `ui/modules/access` | Roles, their rank bindings, personal grants, and the scope picker |
 | `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
 | `FilterBar` | `ui/shell` | Chips, "+", "only who is missing" and the presence pill |
