@@ -78,6 +78,14 @@ export function millisecondsUntilNextDay(timezone: string, now: Timestamp): numb
   return nextDay.compare(current)
 }
 
+/**
+ * The instant `date` starts in `timezone`: a grant's window is days in the organization's time zone, stored as
+ * instants (D-166). A day that starts at an hour other than midnight starts when the time zone says it does.
+ */
+export function startOfDay(date: CalendarDate, timezone: string): Timestamp {
+  return toZoned(parseDate(date), timezone).toAbsoluteString()
+}
+
 /** Inclusive calendar range; NULL `valid_to` is open-ended. */
 export interface DateSpan {
   readonly valid_from: CalendarDate
