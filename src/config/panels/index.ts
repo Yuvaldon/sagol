@@ -15,6 +15,8 @@ export const PANEL_IDS = {
   /** The requests inbox: pending requests, and closed ones (D-120). */
   leaveInbox: 'leave_inbox',
   leaveClosed: 'leave_closed',
+  /** The actor's own leaves, open and history (D-167). */
+  myLeaves: 'my_leaves',
   /** Tags by category, and the categories (D-130). */
   tags: 'tags',
   tagCategories: 'tag_categories',
@@ -41,6 +43,7 @@ export const PanelId = z.enum([
   PANEL_IDS.leaves,
   PANEL_IDS.leaveInbox,
   PANEL_IDS.leaveClosed,
+  PANEL_IDS.myLeaves,
   PANEL_IDS.tags,
   PANEL_IDS.tagCategories,
   PANEL_IDS.presence,
