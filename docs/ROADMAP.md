@@ -10,9 +10,9 @@ description replaces the handoff note, merged with CI green (D-110, D-126, D-128
 Status: ☐ pending · ◐ in progress · ☑ done. A row's ☑ reaches `main` only through a merge with CI
 green, so on `main` it means merged and green (D-126).
 
-Rows `A1` … `A7` are **audit sessions** (D-051, D-078): read-only, opened by the product owner,
-run with the `/audit` skill. An execution session never runs an audit. The session that finishes
-the row before an audit reminds the owner to open it. Audit reports A1 … A4 and the old session
+Rows `A1` … `A7` are **audits** (D-051, D-078): read-only, run with the `/audit` skill's steps. Since D-170 the
+session that reaches an audit row runs it through a fresh subagent and records the findings itself, without waiting
+for the owner. Audit reports A1 … A4 and the old session
 handoffs are archived in `.claude/archive/docs/` (D-154).
 
 ## Phase 0 — Foundations
@@ -96,8 +96,8 @@ M3 and M4 do not depend on each other. The owner picks their order at the end of
 |---|-------|----------------|--------|
 | V9 | Account linking | A second identity asks to link, the owner reviews | ☑ |
 | V10 | Roles and access | Roles, rank bindings, grants; each identity sees only its own scope | ☑ |
-| V11 | Soldier self-service | A fighter requests on a phone, a commander approves | ✓ |
-| A5 | audit | Permissions end to end | ☐ |
+| V11 | Soldier self-service | A fighter requests on a phone, a commander approves | ☑ |
+| A5 | audit | Permissions end to end; deferred by the owner, runs with A6 as one combined audit (D-170) | ☐ |
 
 ## M5 — Go live
 
@@ -108,7 +108,7 @@ M3 and M4 do not depend on each other. The owner picks their order at the end of
 | 8.2 | backend | RLS policies + policy matrix run against the database | ☐ |
 | 8.3 | data | Remote adapter passing the repository contract suite | ☐ |
 | 8.4 | app | Google auth provider, env per environment (dev/staging/prod), deploy | ☐ |
-| A6 | audit | Production readiness, RLS against the policy matrix | ☐ |
+| A6 | audit | Production readiness, RLS against the policy matrix; with A5's scope, one audit (D-170) | ☐ |
 
 ## M6 — Complete
 

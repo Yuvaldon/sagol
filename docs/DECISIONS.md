@@ -67,7 +67,7 @@ am = amends, ref = refines, ext = extends.
 | D-048 | Auth and session contracts | contracts, data, logic, app | ref D-076, D-083 |
 | D-049 | Leave command set | contracts, domain, data | ref D-063, D-064; ref D-117, D-118; am D-123 |
 | D-050 | Import and export | contracts, data | |
-| D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154 |
+| D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154; ref D-170 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075; sup D-154 |
 | D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096; ref D-159 |
 | D-054 | Policy unit = primary membership today | domain, backend | ref D-105 |
@@ -170,7 +170,7 @@ am = amends, ref = refines, ext = extends.
 | D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168 |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
-| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | |
+| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-170 |
 | D-155 | The phone's module buttons scroll inside the bottom bar | ui | ref D-165 |
 | D-156 | Every way of giving a role is guarded; a grant stays within the granter's reach | domain, data, backend | |
 | D-157 | A holder without seniority gets only `any`; a rank write is checked before and after | domain, data, backend | |
@@ -186,6 +186,7 @@ am = amends, ref = refines, ext = extends.
 | D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | |
 | D-168 | A rejected link request is told to its identity | contracts, data, logic, ui | |
 | D-169 | The grants list moves to the next state on its own | logic | |
+| D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | |
 | D-202 | The database's own guarantees: triggers | backend | |
@@ -2209,8 +2210,25 @@ While grant rows are on screen, the list recomputes their states at the next ins
 when the data changes.
 **Why:** a state computed when the list was read goes stale while the screen stays open (OI-108).
 
+## D-170 — Full autonomy: Claude decides product choices and runs audits without stopping
+2026-11-11 · accepted · refines D-051, D-154
+- The owner's standing instruction of 2026-11-11: Claude runs the roadmap to the end on its own and does not stop to ask.
+  A product choice that no decision covers is decided by Claude from the decisions and the product's direction, taking
+  the option it would have recommended, and recorded as a decision whose header says "decided under D-170". Open items
+  that say "needs a product-owner decision" are decided the same way at the start of their slice.
+- An audit row (`A5` …) is run by a fresh subagent that has none of the building session's context, with the `/audit`
+  skill's steps, read-only, without waiting for a confirmation. Its findings are triaged by Claude under this decision
+  and recorded by a docs pull request, as D-051 describes, instead of waiting for the owner.
+- Claude stops only for what it cannot do itself: a credential or account only the owner holds, or a permission the
+  environment refuses. It then reports exactly what is blocked and carries on with everything else.
+- The owner's follow-up the same day: A5 is not run on its own. When the roadmap reaches A6, one combined audit covers
+  the scope of both rows (one fresh subagent, one triage, one docs pull request), so development stops once, not twice.
+- This decision was first written as D-155 on a branch that never reached `main`; that number went to another decision.
+**Why:** the owner's words of 2026-11-11: "run alone to the end, stop stopping to ask me". The owner accepts the
+recommendations, which already follow the recorded decisions and the product's direction.
+
 ## D-200 — Backend: Supabase and Vercel, free plans
-2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under the owner's autonomy instruction of 2026-11-11
+2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170
 Supabase hosts the database (Postgres), authentication (Google) and the server function (an Edge Function). Vercel
 hosts the built app. Both run on their free plans: nothing that costs money is created or enabled; a step that would
 cost money becomes an open item instead. Public client values (the project URL and its anon key) live in the hosting
