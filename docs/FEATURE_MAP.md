@@ -288,6 +288,8 @@ until V10 gives them a role, and that is correct.
 - **Open items:** OI-072, OI-036, OI-034 and OI-019 (asked at start, OI-019 with its schema
   note); OI-026 (decided at start, its own slice if accepted); OI-046; OI-055 (from A2).
 - **Decisions:** D-005, D-030, D-066, D-069.
+- **As built:** D-148 to D-153. Requests, auto-link, withdrawing and review in the local adapter; the request form, the
+  waiting notice and the account-links module; the invite email field. Invite links, revoking and restoring are open items.
 
 #### V10 — Roles and access
 **Owner sees:** roles with a permission grid, rank bindings with scope, a baseline role, individual
