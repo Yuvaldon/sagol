@@ -61,6 +61,7 @@ const ISSUE_MESSAGES = {
   filter_operator_invalid: 'issues.filterOperatorInvalid',
   invalid_order: 'issues.invalidOrder',
   already_linked: 'issues.alreadyLinked',
+  not_a_candidate: 'issues.notACandidate',
   unit_not_empty: 'issues.unitNotEmpty',
   rank_in_use: 'issues.rankInUse',
   group_in_use: 'issues.groupInUse',
