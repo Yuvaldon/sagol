@@ -124,7 +124,7 @@ am = amends, ref = refines, ext = extends.
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | |
-| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131 |
+| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
@@ -132,7 +132,7 @@ am = amends, ref = refines, ext = extends.
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143 |
-| D-116 | Module buttons on a phone show their icon | ui | ref D-120 |
+| D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154 |
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
 | D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143 |
@@ -170,6 +170,7 @@ am = amends, ref = refines, ext = extends.
 | D-151 | The onboarding of an identity with no account | logic, ui | |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | |
 | D-153 | The invite email field | logic, ui | |
+| D-154 | The phone's module buttons scroll inside the bottom bar | ui | |
 
 ---
 
@@ -2021,3 +2022,12 @@ not grow the slice.
 `soldier_private.invite_email` gets a field in the new-soldier form and in the private fields (read-only for who may only
 read), beside the personal number and the phone, with the same permissions (D-096). Auto-link reads it (D-148).
 **Why:** OI-046: it is the field auto-link matches, so without it auto-link has nothing to link.
+
+## D-154 — The phone's module buttons scroll inside the bottom bar
+2026-11-11 · accepted · refines D-108, D-116 · OI-095 · decided under the owner's autonomy instruction of 2026-11-11
+On a phone, the bottom bar's module buttons sit in a row that shrinks with the bar and scrolls sideways when they do not
+fit, as the filter row does (D-131); the organization's name and the user menu stay in place. No bar may be wider than
+the screen.
+**Why:** V9's account-links button made seven 44 px modules plus the user menu, wider than a phone's bar. The bar then
+widened the page, the phone zoomed out, and presses landed beside their targets (V9's CI failed on mobile). A "more"
+menu, OI-095's lasting answer, stays with V10, which adds more modules.
