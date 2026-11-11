@@ -22,6 +22,11 @@ describe('parseCsv', () => {
   it('is null for a quote left open', () => {
     expect(parseCsv('a,"b\n1,2')).toBeNull()
   })
+
+  it('is null for text after a closing quote', () => {
+    expect(parseCsv('"a"b,c')).toBeNull()
+    expect(parseCsv('"a",b\n"c"\n')).toEqual([['a', 'b'], ['c']])
+  })
 })
 
 describe('readSoldierCsv', () => {
@@ -35,7 +40,14 @@ describe('readSoldierCsv', () => {
     })
   })
 
+  it('reads names without case, and leaves out empty header cells at the end', () => {
+    const read = readSoldierCsv('First_Name,LAST_NAME,,\nנועה,כהן,,')
+    expect(read.ok && read.rows[0]?.first_name).toBe('נועה')
+    expect(readSoldierCsv('first_name,last_name,\nנועה,כהן,סמל')).toEqual({ ok: false, problem: { kind: 'row_length', row: 1 } })
+  })
+
   it('names the problem of a file it cannot use', () => {
+    expect(readSoldierCsv('first_name,last_name\n\uFFFD,b')).toEqual({ ok: false, problem: { kind: 'not_utf8' } })
     expect(readSoldierCsv('first_name,last_name\n')).toEqual({ ok: false, problem: { kind: 'empty' } })
     expect(readSoldierCsv('first_name,rank\na,b')).toEqual({ ok: false, problem: { kind: 'unknown_column', column: 'rank' } })
     expect(readSoldierCsv('first_name,phone\na,b')).toEqual({ ok: false, problem: { kind: 'missing_column', column: 'last_name' } })
