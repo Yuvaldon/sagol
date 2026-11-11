@@ -3,7 +3,7 @@ import type { AppError, ImportOperation, ImportReport, Result } from '@contracts
 import { t, type I18nKey } from '@i18n'
 import { readPickedFile, useExport, useImport, useTransferAccess, type ImportFile, type ImportFileProblem } from '@logic'
 import { Download, Upload } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { FileTrigger } from 'react-aria-components'
 import { failureKey } from '../../errors/messages'
 import { FailureNotice } from '../../patterns/Notices'
@@ -12,8 +12,10 @@ import { Button } from '../../primitives/Button'
 // Import and export (D-171). A file is read and checked on its form, then run as a dry run: the preview lists each
 // refused item, and "import" runs the same operations for real. The export saves the organization's rows as JSON.
 
-const PROBLEM_KEYS: Record<ImportFileProblem['kind'], I18nKey> = {
+// Checked by assignment, as `ISSUE_KEYS` is, so a new problem's message can land before the problem (D-075).
+const PROBLEM_MESSAGES = {
   unreadable: 'transfer.problemUnreadable',
+  not_utf8: 'transfer.problemNotUtf8',
   empty: 'transfer.problemEmpty',
   unknown_column: 'transfer.problemUnknownColumn',
   missing_column: 'transfer.problemMissingColumn',
@@ -21,7 +23,9 @@ const PROBLEM_KEYS: Record<ImportFileProblem['kind'], I18nKey> = {
   row_length: 'transfer.problemRowLength',
   not_json: 'transfer.problemNotJson',
   no_operations: 'transfer.problemNoOperations',
-}
+} as const satisfies Record<string, I18nKey>
+
+const PROBLEM_KEYS: Record<ImportFileProblem['kind'], I18nKey> = PROBLEM_MESSAGES
 
 const SEPARATOR = ' · '
 const SPACE = ' '
@@ -89,21 +93,39 @@ function ImportSection() {
   const importer = useImport()
   const [stage, setStage] = useState<Stage>({ kind: 'idle' })
   const [fileName, setFileName] = useState<string | null>(null)
+  // Each pick or import is a run; an answer from an earlier run is dropped, so the screen shows the last file only.
+  const latestRun = useRef(0)
+  const busy = stage.kind === 'checking' || importer.isPending
 
-  async function check(file: File) {
-    setFileName(file.name)
-    setStage({ kind: 'checking' })
-    const read: ImportFile = await readPickedFile(file)
-    if (read.status === 'unusable') return setStage({ kind: 'unusable', problem: read.problem })
-    if (read.status === 'malformed') return setStage({ kind: 'refused', report: read.report })
-    const preview = await importer.run({ operations: read.operations, dryRun: true })
-    setStage(previewStage(read.operations, preview))
+  async function step(work: () => Promise<Stage>) {
+    latestRun.current += 1
+    const run = latestRun.current
+    let next: Stage
+    try {
+      next = await work()
+    } catch {
+      next = { kind: 'failed', error: { code: 'internal' } }
+    }
+    if (run === latestRun.current) setStage(next)
   }
 
-  async function commit(operations: readonly ImportOperation[]) {
-    const result = await importer.run({ operations, dryRun: false })
-    if (!result.ok) return setStage({ kind: 'failed', error: result.error })
-    setStage(result.value.committed ? { kind: 'imported', count: operations.length } : { kind: 'refused', report: result.value })
+  function check(file: File) {
+    setFileName(file.name)
+    setStage({ kind: 'checking' })
+    void step(async () => {
+      const read: ImportFile = await readPickedFile(file)
+      if (read.status === 'unusable') return { kind: 'unusable', problem: read.problem }
+      if (read.status === 'malformed') return { kind: 'refused', report: read.report }
+      return previewStage(read.operations, await importer.preview(read.operations))
+    })
+  }
+
+  function commit(operations: readonly ImportOperation[]) {
+    void step(async () => {
+      const result = await importer.commit(operations)
+      if (!result.ok) return { kind: 'failed', error: result.error }
+      return result.value.committed ? { kind: 'imported', count: operations.length } : { kind: 'refused', report: result.value }
+    })
   }
 
   return (
@@ -117,10 +139,10 @@ function ImportSection() {
           acceptedFileTypes={[...TRANSFER_FILES.accept]}
           onSelect={(files) => {
             const file = files?.[0]
-            if (file !== undefined) void check(file)
+            if (file !== undefined) check(file)
           }}
         >
-          <Button isPending={stage.kind === 'checking'}>
+          <Button isPending={stage.kind === 'checking'} isDisabled={busy}>
             <Upload aria-hidden size={14} />
             {t('transfer.pick')}
           </Button>
@@ -150,7 +172,7 @@ function ImportSection() {
             variant="primary"
             isPending={importer.isPending}
             onPress={() => {
-              void commit(stage.operations)
+              commit(stage.operations)
             }}
           >
             {t('transfer.import')}
@@ -166,13 +188,18 @@ function ImportSection() {
   )
 }
 
+/** Saves through a link in the page; the address is released after the browser has taken the file. */
 function save(file: { readonly name: string; readonly blob: Blob }) {
   const url = URL.createObjectURL(file.blob)
   const link = document.createElement('a')
   link.href = url
   link.download = file.name
+  document.body.append(link)
   link.click()
-  URL.revokeObjectURL(url)
+  link.remove()
+  setTimeout(() => {
+    URL.revokeObjectURL(url)
+  })
 }
 
 function ExportSection() {
