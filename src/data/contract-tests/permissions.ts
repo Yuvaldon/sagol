@@ -467,6 +467,15 @@ export function describePermissionContract(
           }),
         )
         expect(kept.command_rank_id).toBe(junior.id)
+
+        // Their own record is within `junior_or_equal`, but not their own rank.
+        const self = (await harnessOf().rows('soldiers')).find((row) => row.id === soldierId) as TableRow<'soldiers'>
+        const raised = await adapter().commands.soldiers.update({
+          id: soldierId,
+          expected_version: self.version,
+          changes: { command_rank_id: senior.id },
+        })
+        expect(errorOf(raised).code).toBe('forbidden')
       })
     })
   })

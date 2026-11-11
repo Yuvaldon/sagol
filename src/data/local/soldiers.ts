@@ -22,6 +22,7 @@ import {
 } from '@contracts'
 import {
   can,
+  canUnconstrained,
   membershipChangeIssues,
   membershipOverlapIssues,
   normalizePersonalId,
@@ -87,7 +88,11 @@ async function rankIssues({ database, scope, row, before }: RowCheck<Soldier>): 
 /** D-157: a rank write passes the permission check on the soldier as stored after the write too. */
 async function requireAfterRankWrite(database: Dexie, scope: ActorScope, action: 'create' | 'update', soldierId: SoldierId) {
   const { context } = await loadPolicySnapshot(database, scope.organization_id, scope.now)
-  if (!can(context, scope.soldier_id, permissionOf('soldiers', action), soldierTarget(soldierId))) fail({ code: 'forbidden' })
+  const permission = permissionOf('soldiers', action)
+  const target = soldierTarget(soldierId)
+  if (!can(context, scope.soldier_id, permission, target)) fail({ code: 'forbidden' })
+  // One's own rank changes only through an unconstrained source: a higher rank widens what the constrained ones reach.
+  if (soldierId === scope.soldier_id && !canUnconstrained(context, scope.soldier_id, permission, target)) fail({ code: 'forbidden' })
 }
 
 const SPEC: ReferenceSpec<Soldier> = {
