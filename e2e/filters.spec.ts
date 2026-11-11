@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, press, requestLeave } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V6's demo: tag categories and tags, a soldier's tags, filter chips, leave conditions, "only who is missing" and
 // the present and absent lists, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -65,7 +65,7 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   await enterAsOwner(page)
 
   await test.step('categories and tags in their own drawer', async () => {
-    await navigation(page).getByRole('button', { name: he.tags.open }).click()
+    await openModule(page, he.tags.open)
     await expect(drawer(page).getByRole('heading', { name: he.tags.needsCategoryTitle })).toBeVisible()
     await createCategory(page, 'תפקיד', he.palette.teal)
     await createCategory(page, 'מצב משפחתי', he.palette.pink, true)
@@ -78,7 +78,7 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   })
 
   await test.step("a soldier's tags, one of a single category", async () => {
-    await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+    await openModule(page, he.soldiers.open)
     await createSoldier(page, 'יעל', 'שחר')
     await createSoldier(page, 'נועם', 'לב')
     await drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: /יעל שחר/ }).click()
@@ -115,7 +115,7 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   })
 
   await test.step('leaves, and a leave-status chip keeps who has a pending one', async () => {
-    await navigation(page).getByRole('button', { name: he.leaveTypes.open }).click()
+    await openModule(page, he.leaveTypes.open)
     await createType(page, { name: 'רגילה', color: he.palette.teal })
     await closeDrawer(page)
     await requestLeave(page, { type: 'רגילה', from: ['10', '11', '2026'], to: ['12', '11', '2026'], approveNow: true })

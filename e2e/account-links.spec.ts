@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { choose, closeDrawer, drawer } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, signIn, waitForSettledScreen } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule, signIn, waitForSettledScreen } from './support/workspace.ts'
 
 // V9's demo: a second identity asks to link and the owner reviews. Auto-link on the personal number and the invite
 // email, a link to a candidate, a new soldier from the request, a rejection, and the identity that waits. On desktop
@@ -24,7 +24,7 @@ async function signOut(page: Page) {
 }
 
 async function createUnit(page: Page, name: string) {
-  await navigation(page).getByRole('button', { name: he.units.open }).click()
+  await openModule(page, he.units.open)
   await page.getByRole('button', { name: he.units.new }).first().click()
   await page.getByLabel(he.units.name).fill(name)
   await page.getByRole('button', { name: he.common.create }).click()
@@ -34,7 +34,7 @@ async function createUnit(page: Page, name: string) {
 
 /** A soldier in the unit, with the private fields auto-link reads (D-153). */
 async function addSoldier(page: Page, first: string, last: string, privateFields?: { personalId: string; email: string }) {
-  await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+  await openModule(page, he.soldiers.open)
   await page.getByRole('button', { name: he.soldiers.new }).first().click()
   await page.getByLabel(he.soldiers.firstName).fill(first)
   await page.getByLabel(he.soldiers.lastName).fill(last)
@@ -171,7 +171,7 @@ test.describe('account linking', () => {
 
     await test.step('the new soldier is on the roster with the number of the request', async () => {
       await closeDrawer(page)
-      await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+      await openModule(page, he.soldiers.open)
       const name = `${GIL.first} ${GIL.last}`
       await page.getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: new RegExp(name) }).click()
       await expect(page.getByLabel(he.soldiers.personalId)).toHaveValue(GIL.personalId)

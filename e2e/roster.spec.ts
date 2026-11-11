@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V2's demo: ranks and soldiers, from a name to a unit history, on desktop and mobile, RTL, with axe.
 // Sample data, tests only.
@@ -29,7 +29,7 @@ function rankRow(page: Page, title: string): Locator {
 }
 
 async function openSoldiers(page: Page) {
-  await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+  await openModule(page, he.soldiers.open)
   await expect(page.getByRole('heading', { name: he.soldiers.title, exact: true })).toBeVisible()
 }
 
@@ -51,7 +51,7 @@ async function createRank(page: Page, title: string, seniority?: string) {
 }
 
 async function createUnits(page: Page, ...names: string[]) {
-  await navigation(page).getByRole('button', { name: he.units.open }).click()
+  await openModule(page, he.units.open)
   for (const name of names) {
     await page.getByRole('button', { name: he.units.new }).first().click()
     await page.getByLabel(he.units.name).fill(name)
@@ -305,7 +305,7 @@ test('an archived unit keeps its name in history, marked as archived', async ({ 
   await expect(history).toHaveCount(2)
   await closeDrawer(page)
 
-  await navigation(page).getByRole('button', { name: he.units.open }).click()
+  await openModule(page, he.units.open)
   const row = page.getByRole('list', { name: he.units.listLabel }).getByRole('listitem').filter({ hasText: 'מחלקה א' })
   await row.getByRole('button', { name: he.common.actions }).click()
   await page.getByRole('menuitem', { name: he.common.archive }).click()

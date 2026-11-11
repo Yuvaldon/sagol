@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V7's demo: a rule builder, the heat row, a soft rule that asks for an acknowledgment, a hard rule that refuses,
 // and a configuration conflict, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -9,7 +9,7 @@ import { enterAsOwner, expectNoAxeViolations, navigation } from './support/works
 const PLATOON = 'מחלקה א'
 
 async function createUnit(page: Page, name: string) {
-  await navigation(page).getByRole('button', { name: he.units.open }).click()
+  await openModule(page, he.units.open)
   await drawer(page).getByRole('button', { name: he.units.new }).first().click()
   await page.getByLabel(he.units.name).fill(name)
   await page.getByRole('button', { name: he.common.create }).click()
@@ -65,18 +65,18 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
 
   await test.step('a platoon, two soldiers in it and a leave type', async () => {
     await createUnit(page, PLATOON)
-    await navigation(page).getByRole('button', { name: he.soldiers.open }).click()
+    await openModule(page, he.soldiers.open)
     await createPlacedSoldier(page, 'יעל', 'שחר')
     await createPlacedSoldier(page, 'נועם', 'בר')
     await closeDrawer(page)
-    await navigation(page).getByRole('button', { name: he.leaveTypes.open }).click()
+    await openModule(page, he.leaveTypes.open)
     await createType(page, { name: 'בית', color: he.palette.teal })
     await closeDrawer(page)
   })
 
   await test.step('the rules drawer starts empty, and a soft rule asks for two in the platoon', async () => {
     await expect(heatRow(page)).toHaveCount(0)
-    await navigation(page).getByRole('button', { name: he.rules.open }).click()
+    await openModule(page, he.rules.open)
     await expect(drawer(page).getByRole('heading', { name: he.rules.emptyTitle })).toBeVisible()
     await expectNoAxeViolations(page)
     await createRule(page, { name: 'שניים במחלקה', min: '2' })
@@ -129,7 +129,7 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
   })
 
   await test.step('a maximum below the minimum is a conflict in the rules drawer', async () => {
-    await navigation(page).getByRole('button', { name: he.rules.open }).click()
+    await openModule(page, he.rules.open)
     await createRule(page, { name: 'לכל היותר אחד', max: '1' })
     const conflicts = drawer(page).getByRole('region', { name: he.rules.conflictsTitle })
     await expect(conflicts).toContainText('שניים במחלקה')

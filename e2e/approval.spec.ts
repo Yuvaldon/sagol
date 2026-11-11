@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press, requestLeave, typeDate } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
 
 // V5's demo: a bar opens its leave; approve, edit, comment, reject and reopen; the inbox with its pending and closed
 // lists; the "approve now" default; and an edit that another tab made stale. Desktop and mobile, RTL, with axe.
@@ -30,7 +30,7 @@ async function shot(page: Page, project: string, name: string) {
 async function setUp(page: Page) {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
-  await navigation(page).getByRole('button', { name: he.leaveTypes.open }).click()
+  await openModule(page, he.leaveTypes.open)
   await createType(page, { name: 'רגילה', color: he.palette.teal, icon: he.icons.home })
   await createType(page, { name: 'מחלה', color: he.palette.red, requiresReason: true })
   await closeDrawer(page)
