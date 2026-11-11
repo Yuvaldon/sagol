@@ -2,6 +2,7 @@ import type {
   AccountLinkRequest,
   AccountLinkRequestId,
   AccountLinkResult,
+  LinkCandidate,
   Permission,
   PermissionCheck,
   PolicyTarget,
@@ -54,7 +55,7 @@ export function usePendingLinkRequests(): Loaded<readonly AccountLinkRequest[]> 
 }
 
 /** The candidates of one request the actor may name (D-149). */
-export function useLinkCandidates(id: AccountLinkRequestId) {
+export function useLinkCandidates(id: AccountLinkRequestId): Loaded<readonly LinkCandidate[]> {
   const { data } = usePorts()
   return loaded(
     useQuery({
