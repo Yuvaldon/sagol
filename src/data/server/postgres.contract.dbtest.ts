@@ -83,6 +83,10 @@ function gatewayClient(identity: () => AuthIdentity | null): ContractAdapter {
         if (result.ok) for (const listener of [...sessionListeners]) listener(result.value as Session)
       },
     },
+    transfer: {
+      importBatch: (...args: unknown[]) => call('transfer', 'transfer', 'importBatch', args),
+      exportOrganization: () => call('transfer', 'transfer', 'exportOrganization', []),
+    },
     repositories: groups('repositories'),
     commands: groups('commands'),
     changes,

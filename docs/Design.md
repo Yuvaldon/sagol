@@ -153,6 +153,16 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **The onboarding notice** (`ui/shell/OnboardingScreen.tsx`): with no open request and a rejected last one, a
   `role="status"` box above the form says the request was not approved and that a new one can be sent.
 
+## Import and export (V12, D-171)
+
+- **Entry:** the account menu's "import and export" item, for who may import or export; it opens the `data_transfer`
+  drawer. Not a module button, so the bar does not grow (OI-110).
+- **Import** (`ui/modules/transfer/TransferModule.tsx`): a `FileTrigger` for a `.csv` or `.json` file. The file is read
+  and run as a dry run at once. An unusable file shows its reason in a `role="alert"` box; a refused one lists each
+  refused item (its number, the message and the field it names); a ready one shows the count and a primary "import".
+  After the import, a `role="status"` line gives the count saved.
+- **Export:** a button that downloads `sagol-export-<day>.json`.
+
 ## Roles and access (V10, D-165, D-166)
 
 - **Module buttons** (`ui/shell/ModuleButtons.tsx`): one ordered list of the modules the actor may open (my requests, inbox, account
@@ -248,7 +258,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `formatDate`, `formatDateRange`, `formatInstant` | `ui/patterns` | A stored day, two as one range (`8–14 בנוב׳`), or a moment in a time zone, from the presets in `config` |
 | `useIsDesktop`, `unitStateLabel` | `ui/patterns` | The breakpoint as a value; the label of a unit the actor does not see |
 | `validatorResult`, `fieldError`, `formStateOf` | `ui/patterns` | Field issues (D-068) in TanStack Form |
-| `UserMenu`, `IdentityList` | `ui/shell` | Who is signed in, sign-out, dev identity switcher |
+| `UserMenu`, `IdentityList` | `ui/shell` | Who is signed in, sign-out, dev identity switcher, import and export |
 | `ModuleDrawer` | `ui/shell` | The map of what opens in the drawer, with each group's sections |
 | `Viewport`, `UnitSelector`, `ViewSwitcher`, `WindowNavigator` | `ui/shell` | The engine in the middle, and the controls of the bars |
 | Engine registry, `TimelineEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter |
