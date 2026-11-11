@@ -86,6 +86,12 @@ The data layer is written as if it were the server:
   normalized names, in either order) to the reviewer only, and approval fills a missing
   personal ID (D-030, D-066). Personal IDs are stored normalized. Unlinked accounts see
   nothing, and requesters never learn whether a match exists.
+- **Accounts, the current state (D-128, D-156, D-157):** `accounts.requestLink`, `cancelLinkRequest`, `reviewLink`
+  (link a candidate, make a soldier, reject) and `revokeLink`. Auto-link skips unverified emails and revoked soldiers.
+  A request is visible through `accounts:approve` over a candidate, the organization when there is none, or the
+  resolved soldier; candidates are also limited to soldiers the reviewer sees. `logic/accounts` holds the hooks; the
+  requests are a tab of the soldiers drawer, the request form is the onboarding screen of an unlinked identity, and the
+  soldier page shows and revokes the link. Roles for a linked soldier come with V10.
 - **Bootstrap:** the first sign-in on an empty organization becomes owner only if its
   verified email matches the server secret `BOOTSTRAP_OWNER_EMAIL`. Atomic server function.
   Locally, the same flow makes the developer the owner.

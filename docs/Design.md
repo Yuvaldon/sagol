@@ -125,6 +125,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   while the window does not hold today.
 - **Outside the workspace:** one `glass-card` centered on the canvas (`CenteredSheet`), at most `sheet`
   420 wide.
+- **Joining (D-156, D-157):** an unlinked identity that cannot claim the organization gets a `CenteredSheet` with the
+  request form (names, optional personal number); once sent, the same sheet shows the name it was sent as and "ביטול".
+  It never says whether a soldier matched.
 - **Management modules (D-092):** `Drawer`, one surface in two forms. From `md` it is modal, at most `drawer`
   440 wide, on the inline end (the left), leaving the name column of the timeline in sight. Below `md` it is a
   bottom sheet up to 88% of the height, which also closes by dragging its grip down. Both close by Escape, the
@@ -223,6 +226,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
 | `RuleViolations`, `RuleBrief`, `RuleGateDialog`, `RuleWarnings` | `ui/patterns/rules` | Broken rules in full and in brief; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`), shared by modules and the timeline (D-143) |
 | `DragOverlay`, `useBoardDrag`, `useDrag` | `ui/engines/timeline` | A drag on the board: its card, its refusal and its gate (adapter), and the pointer (view) |
+| `AccountRequestsModule`, `SoldierAccountSection` | `ui/modules/accounts`, `ui/modules/soldiers` | Requests with their candidates and the three resolutions; a soldier's link and its revoke |
 
 Errors are shown through `ui/errors/messages.ts`, whose maps from code to i18n are total: a new code does
 not compile until it has a message.

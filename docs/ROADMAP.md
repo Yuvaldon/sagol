@@ -94,7 +94,7 @@ M3 and M4 do not depend on each other. The owner picks their order at the end of
 
 | # | Slice | The owner sees | Status |
 |---|-------|----------------|--------|
-| V9 | Account linking | A second identity asks to link, the owner reviews | ◐ |
+| V9 | Account linking | A second identity asks to link, the owner reviews | ☑ |
 | V9b | Invite links | A commander shares a link; whoever signs up through it lands in that unit's requests (D-156) | ☐ |
 | V10 | Roles and access | Roles, rank bindings, grants; each identity sees only its own scope | ☐ |
 | V11 | Soldier self-service | A fighter requests on a phone, a commander approves | ☐ |

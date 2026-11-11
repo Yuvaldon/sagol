@@ -21,7 +21,7 @@ am = amends, ref = refines, ext = extends.
 | D-002 | Command rank is the single user-defined level | contracts, domain, ui | ext D-029; ref D-095 |
 | D-003 | Permissions are data: roles, rank bindings, grants | contracts, domain, data, logic, backend | sup D-028 (scope); ref D-040, D-053, D-056, D-060 |
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
-| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030 |
+| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-157 |
 | D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
 | D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035 |
 | D-008 | Server-authoritative data layer | data, backend | ref D-090 |
@@ -166,7 +166,8 @@ am = amends, ref = refines, ext = extends.
 | D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | |
 | D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-155 |
 | D-155 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | |
-| D-156 | V9 account linking: candidates only, revoking a link, invite links as their own slice | contracts, domain, data, logic, ui, backend | |
+| D-156 | V9 account linking: candidates only, revoking a link, invite links as their own slice | contracts, domain, data, logic, ui, backend | ref D-157 |
+| D-157 | V9 account linking as built: who reviews what, what auto-link skips, where the requests live | domain, data, logic, ui, backend | |
 
 ---
 
@@ -2002,3 +2003,28 @@ recommendations, which already follow the recorded decisions and the product's d
 **Why:** D-155, with the recommendations given to the owner at the start of V9. Linking to a non-candidate would let a
 reviewer attach an identity to any soldier in their reach without a match; a revoke without re-linking would strand a
 soldier forever (OI-019); invite links change matching and the schema, which is a slice of their own.
+
+## D-157 — V9 account linking as built: who reviews what, what auto-link skips, where the requests live
+2026-11-11 · accepted · refines D-005, D-156 · decided under D-155 · OI-036, OI-046, OI-055, OI-072
+- **Requesting.** The local adapter serves its first organization. A second open request of the same identity is
+  `already_exists`; an identity already linked is `already_linked`. Auto-link (D-005) needs an email the provider
+  verified, and never picks a soldier whose account was revoked: a revoke holds until a reviewer links again.
+- **Who sees a request.** A request is visible to who holds `accounts:approve` over one of its candidates, over the
+  organization when it has none, or over the soldier it was resolved to. The candidates shown are those the reviewer
+  may both link and see (`soldiers:view`), so a reviewer never learns of a soldier outside their sight. On `link`,
+  permission is checked before candidacy, so the error order does not tell whether a soldier matched.
+- **Resolving.** The link carries the reviewer's provider. The claimed personal id fills the soldier's only when the
+  soldier has none, no other soldier holds it, and the reviewer holds `soldier_private:update` over the soldier.
+  `create_soldier` makes an active soldier with no command rank; it needs `soldiers:create` and `accounts:approve` over
+  the placement (the unit, or the organization for none), and its personal id follows the same rule.
+- **Revoking** (D-156) is never offered on one's own account; the soldier page hides it, the command refuses it.
+- **Storage.** The Dexie schema v2 indexes `account_link_requests` by identity and status and `soldier_accounts` by
+  identity and soldier, all non-unique: uniqueness among unrevoked rows is checked in the transaction (D-156).
+- **Screens.** The requests are a third tab of the soldiers drawer (`PANEL_IDS.accountRequests`), for who holds
+  `accounts:approve` over the organization or a unit they see. The request form replaces the "no access" sheet. The
+  "new soldier" choice and its placements follow the create-and-approve rule above. Refusals are mapped to form fields in
+  `logic`. Candidates refresh whenever roles, grants, bindings or seniority change, since those decide visibility.
+- **A linked soldier without a role** sees the workspace with nothing of the organization until V10 gives roles.
+**Why:** D-155. Each point closes a hole the V9 review found: a revoke undone by auto-link, private fields written
+without permission, a candidate leaked through the order of checks, a soldier made where the reviewer could not
+approve, and an empty "new soldier" dialog.
