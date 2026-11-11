@@ -17,6 +17,7 @@ import {
 import type { Clock } from '../time'
 import {
   ACCESS_MANAGEMENT_PERMISSIONS,
+  EVERY_SOLDIER,
   TARGET_KINDS_BY_RESOURCE,
   accessGrantIssues,
   accessManagerIssues,
@@ -334,6 +335,10 @@ const MATRIX: MatrixRow[] = [
   // Target kinds (D-053)
   ['tags accept organization targets only', 'admin', 'tags', 'create', soldierTarget('f11'), false],
   ['access grants accept soldier targets only', 'admin', 'access_grants', 'create', ORG, false],
+  // Every soldier (D-162)
+  ['organization scope with any covers every soldier', 'admin', 'access_grants', 'create', EVERY_SOLDIER, true],
+  ['a unit scope does not cover every soldier', 'pc1', 'access_grants', 'create', EVERY_SOLDIER, false],
+  ['tags do not accept every soldier', 'admin', 'tags', 'view', EVERY_SOLDIER, false],
 ]
 
 describe('policy matrix', () => {

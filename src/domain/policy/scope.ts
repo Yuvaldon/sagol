@@ -115,6 +115,8 @@ export function scopeCovers(
       const unitId = facts.unitOf(target.soldier_id)
       return unitId !== null && unitCovered(scope, unitId, facts.tree)
     }
+    case 'every_soldier':
+      return false
     default:
       return target satisfies never
   }

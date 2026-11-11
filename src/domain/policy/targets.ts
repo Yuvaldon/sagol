@@ -14,13 +14,16 @@ export function placementTarget(parentId: UnitId | null): PolicyTarget {
   return parentId === null ? { kind: 'organization' } : { kind: 'unit', unit_id: parentId }
 }
 
+/** Every soldier of the organization, for a question about all of them at once (D-162). */
+export const EVERY_SOLDIER: PolicyTarget = { kind: 'every_soldier' }
+
 /** The target of a soldier's own rows (D-053). */
 export function soldierTarget(soldierId: SoldierId): PolicyTarget {
   return { kind: 'soldier', soldier_id: soldierId }
 }
 
 const ORGANIZATION = ['organization'] as const satisfies readonly PolicyTargetKind[]
-const SOLDIER = ['soldier'] as const satisfies readonly PolicyTargetKind[]
+const SOLDIER = ['soldier', 'every_soldier'] as const satisfies readonly PolicyTargetKind[]
 
 /**
  * Target kinds each resource accepts. `can()` refuses any other kind, so a caller cannot
@@ -34,11 +37,11 @@ export const TARGET_KINDS_BY_RESOURCE = {
   command_ranks: ORGANIZATION,
   seniority_overrides: SOLDIER,
   /** A soldier; on creation, the unit of the first placement, or `organization` without one. */
-  soldiers: ['soldier', 'unit', 'organization'],
+  soldiers: ['soldier', 'every_soldier', 'unit', 'organization'],
   /** A soldier; on creation, the unit of the first placement, or `organization` without one (D-096). */
   soldier_private: ['soldier', 'unit', 'organization'],
   /** The soldier, and the unit a placement points to. */
-  memberships: ['soldier', 'unit'],
+  memberships: ['soldier', 'every_soldier', 'unit'],
   tags: ORGANIZATION,
   leave_types: ORGANIZATION,
   leaves: SOLDIER,

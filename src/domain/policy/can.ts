@@ -20,7 +20,10 @@ function rankAllows(
   holderId: SoldierId,
   target: PolicyTarget,
 ): boolean {
-  if (constraint === SubjectRankConstraint.enum.any || target.kind !== 'soldier') return true
+  if (constraint === SubjectRankConstraint.enum.any) return true
+  // Every soldier includes seniors and soldiers without a rank (D-162).
+  if (target.kind === 'every_soldier') return false
+  if (target.kind !== 'soldier') return true
   // A holder without seniority gets only `any`, their own record included (D-057, D-157).
   const holder = context.seniorityOf(holderId)
   if (holder === null) return false

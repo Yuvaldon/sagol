@@ -25,6 +25,7 @@ export {
   acceptsTarget,
   placementTarget,
   soldierTarget,
+  EVERY_SOLDIER,
   unitTarget,
   type PolicyTargetKind,
 } from './targets'
