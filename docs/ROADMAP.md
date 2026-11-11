@@ -10,9 +10,9 @@ description replaces the handoff note, merged with CI green (D-110, D-126, D-128
 Status: ☐ pending · ◐ in progress · ☑ done. A row's ☑ reaches `main` only through a merge with CI
 green, so on `main` it means merged and green (D-126).
 
-Rows `A1` … `A7` are **audit sessions** (D-051, D-078): read-only, opened by the product owner,
-run with the `/audit` skill. An execution session never runs an audit. The session that finishes
-the row before an audit reminds the owner to open it. Audit reports A1 … A4 and the old session
+Rows `A1` … `A7` are **audits** (D-051, D-078): read-only, run with the `/audit` skill's steps. Since D-170 the
+session that reaches an audit row runs it through a fresh subagent and records the findings itself, without waiting
+for the owner. Audit reports A1 … A4 and the old session
 handoffs are archived in `.claude/archive/docs/` (D-154).
 
 ## Phase 0 — Foundations

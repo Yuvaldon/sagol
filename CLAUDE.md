@@ -29,5 +29,6 @@ The owner writes in Hebrew: answer in Hebrew. Code, identifiers and docs are in 
    and `contracts` together, in one commit, first in the slice.
 6. No stubs and no dead controls: what is not built does not exist in a type or on screen (D-076).
 7. No workarounds: a fix goes in the layer that owns it. Otherwise it becomes an open item with one target slice.
-8. A choice not covered by `DECISIONS.md`: technical ones you decide by these rules and record;
-   product ones go to the owner in plain Hebrew with a recommendation.
+8. A choice not covered by `DECISIONS.md`: decide it yourself by these rules, the decisions and the product's
+   direction, and record it. Product choices too: do not stop to ask the owner (D-170). Stop only for a credential
+   or account only the owner holds, report it, and carry on with the rest.
