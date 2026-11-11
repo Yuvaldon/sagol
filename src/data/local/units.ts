@@ -21,7 +21,7 @@ import {
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { colorKeyIssues, propertiesIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, failValidation, parseInput } from './failure'
 import {

@@ -14,7 +14,7 @@ import {
 } from '@contracts'
 import { compareCodeUnits, filterIssues, filterReferences, unitTarget, withPathPrefix } from '@domain'
 import { holds, type ActorScope } from './actor'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { parsedRow } from './failure'
 import {

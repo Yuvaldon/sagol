@@ -14,7 +14,7 @@ import {
 import { COMMENT_PERMISSIONS, commentChangeIssues, isCommentAuthor, soldierTarget } from '@domain'
 import type { z } from 'zod'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { canView, visibleLeave } from './leaves'

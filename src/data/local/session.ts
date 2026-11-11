@@ -10,7 +10,7 @@ import type {
   SoldierId,
 } from '@contracts'
 import { compareInstants } from '@domain'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { asResult, fail, parsedRow } from './failure'
 
 // The session is derived from the identity on every call, never accepted from a caller (D-008).

@@ -2,7 +2,7 @@ import type { Store } from './store'
 import { isIconKey, isPaletteKey } from '@config'
 import { IssueCode, type Issue, type PropertyEntityType, type PropertyValues } from '@contracts'
 import { propertyValueIssues } from '@domain'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { parsedRow } from './failure'
 import type { ActorScope } from './actor'
 

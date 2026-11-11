@@ -27,7 +27,7 @@ import {
 import { accessGrantIssues, missingPermissions, resolveScope, soldierTarget, withPathPrefix, withinReach, type ScopeColumns } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { colorKeyIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import {

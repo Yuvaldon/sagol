@@ -14,7 +14,7 @@ import {
 } from '@contracts'
 import { LEAVE_PERMISSIONS, soldierTarget, type RuleData } from '@domain'
 import { holds, loadActorScope, type ActorScope } from './actor'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, fail, parseInput, parsedRow } from './failure'
 import { permissionOf } from './reference'

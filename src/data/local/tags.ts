@@ -21,7 +21,7 @@ import {
 import { archiveTagCategoryIssues, selectionModeChangeIssues, soldierTarget, tagSelectionIssues } from '@domain'
 import { holds, loadActorScope, type ActorScope } from './actor'
 import { colorKeyIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, parseInput, parsedRow } from './failure'
 import {

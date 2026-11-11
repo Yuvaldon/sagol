@@ -37,7 +37,7 @@ import {
   type LinkMatchData,
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { permissionOf } from './reference'

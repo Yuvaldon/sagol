@@ -1,7 +1,7 @@
 import type { Store } from './store'
 import type { Organization, OrganizationId, Timestamp } from '@contracts'
 import { accessManagerIssues, clockAt, createPolicyContext, type PolicyContext } from '@domain'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { fail, failValidation, parsedRow } from './failure'
 
 // Everything the policy reads, loaded in one read transaction, so every check of a command or a

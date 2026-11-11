@@ -1,0 +1,107 @@
+import { AuthIdentity, type DataChange, type Result, type TimeSource, type Unsubscribe } from '@contracts'
+import { z } from 'zod'
+import { createAdapterCore, type LocalDataAdapter } from '../local/core'
+import type { LocalChangeFeed } from '../local/changes'
+import { createPostgresStore, type SqlClient, type StoreCatalog } from './postgresStore'
+
+// The command gateway (D-201): the one server function. A request names one adapter method and
+// its arguments; the gateway runs the adapter's own code (validation, policy, state checks, write)
+// over the request's Postgres transaction, as the identity the caller's verified token names. The
+// caller never chooses the actor, and every check runs on the server, so no path skips one.
+
+const GROUP_KINDS = ['session', 'repositories', 'commands'] as const
+
+/** The session methods a client may call; `subscribe` stays on the client, over the change feed. */
+const SESSION_METHODS: readonly string[] = ['current', 'onboardingState', 'can']
+
+export const GatewayRequest = z.strictObject({
+  kind: z.enum(GROUP_KINDS),
+  group: z.string().regex(/^[a-z_]+$/),
+  method: z.string().regex(/^[a-zA-Z]+$/),
+  args: z.array(z.unknown()).max(4),
+})
+export type GatewayRequest = z.infer<typeof GatewayRequest>
+
+/** What a call answers: the method's result, and what it changed, for the caller's change feed. */
+export interface GatewayResponse {
+  readonly result: Result<unknown>
+  readonly changes: readonly DataChange[]
+}
+
+/** Runs `work` in one SERIALIZABLE transaction; a throw rolls it back. */
+export type Transact = <T>(work: (client: SqlClient) => Promise<T>) => Promise<T>
+
+export interface GatewayDependencies {
+  readonly transact: Transact
+  readonly catalog: StoreCatalog
+  readonly time: TimeSource
+}
+
+/** Tries of one request that keeps losing serialization races before it answers `unavailable`. */
+const MAX_TRIES = 4
+
+class RetryRequest extends Error {}
+
+function collectingFeed(): LocalChangeFeed & { collected: DataChange[] } {
+  const collected: DataChange[] = []
+  return {
+    collected,
+    publish(changes) {
+      collected.push(...changes)
+    },
+    subscribe: (): Unsubscribe => () => undefined,
+  }
+}
+
+type Method = (...args: unknown[]) => Promise<Result<unknown>>
+
+function methodOf(adapter: LocalDataAdapter, request: GatewayRequest): Method | null {
+  if (request.kind === 'session') {
+    return SESSION_METHODS.includes(request.method) ? (adapter.session[request.method as 'current'] as Method) : null
+  }
+  const groups: Record<string, unknown> = adapter[request.kind]
+  if (!Object.hasOwn(groups, request.group)) return null
+  const group = groups[request.group] as Record<string, unknown>
+  if (!Object.hasOwn(group, request.method)) return null
+  const method = group[request.method]
+  return typeof method === 'function' ? (method as Method) : null
+}
+
+export function createCommandGateway({ transact, catalog, time }: GatewayDependencies) {
+  /** `identity` comes from the verified token, never from the request body. */
+  return async function handle(identity: AuthIdentity | null, body: unknown): Promise<GatewayResponse> {
+    const request = GatewayRequest.safeParse(body)
+    if (!request.success) {
+      return { result: { ok: false, error: { code: 'validation_failed', issues: [{ path: [], code: 'invalid_type' }] } }, changes: [] }
+    }
+    const verified = identity === null ? null : AuthIdentity.safeParse(identity)
+    if (verified !== null && !verified.success) return { result: { ok: false, error: { code: 'internal' } }, changes: [] }
+    const actor = verified === null ? null : verified.data
+    const source = { current: () => actor, subscribe: (): Unsubscribe => () => undefined }
+    for (let attempt = 1; attempt <= MAX_TRIES; attempt += 1) {
+      try {
+        return await transact(async (client) => {
+          const store = createPostgresStore(client, catalog)
+          const changes = collectingFeed()
+          const adapter = createAdapterCore({ database: store, identity: source, time, changes })
+          const method = methodOf(adapter, request.data)
+          if (method === null) return { result: { ok: false, error: { code: 'not_found' } }, changes: [] }
+          const result = await method(...request.data.args)
+          // The method answered `unavailable` for a lost race: run the whole request again.
+          if (store.mustRetry()) throw new RetryRequest()
+          return { result, changes: result.ok ? changes.collected : [] }
+        })
+      } catch (error) {
+        if (!(error instanceof RetryRequest) && !isSerializationFailure(error)) {
+          return { result: { ok: false, error: { code: 'unavailable' } }, changes: [] }
+        }
+      }
+    }
+    return { result: { ok: false, error: { code: 'unavailable' } }, changes: [] }
+  }
+}
+
+function isSerializationFailure(error: unknown): boolean {
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''
+  return code === '40001' || code === '40P01'
+}
