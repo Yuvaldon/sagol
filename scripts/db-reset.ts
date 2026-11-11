@@ -26,6 +26,10 @@ try {
   for (const role of API_ROLES) {
     await sql.unsafe(`DO $$ BEGIN CREATE ROLE ${role} NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$`)
     await sql.unsafe(`GRANT USAGE ON SCHEMA public TO ${role}`)
+    // Supabase grants the API roles everything in `public` by default; the RLS migration must undo it.
+    for (const objects of ['TABLES', 'SEQUENCES', 'FUNCTIONS']) {
+      await sql.unsafe(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ${objects} TO ${role}`)
+    }
   }
   const files = readdirSync(MIGRATIONS)
     .filter((file) => file.endsWith('.sql'))
