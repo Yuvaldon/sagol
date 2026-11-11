@@ -1,23 +1,19 @@
 # Sagol — Roadmap
 
 Status of the work. The order, dependencies and contents of each slice are in
-`docs/FEATURE_MAP.md`. One session = one vertical slice, one commit = one layer (D-075). Every
-session:
-
-1. starts with the reading rule in `CLAUDE.md` (D-081) and takes in scope every open item
-   targeted at it (D-043);
-2. commits one layer per commit, each commit green, through each layer's public API (D-127);
-3. ends with `npm run check`, `npm run build` and the whole Playwright suite green, a read-only
-   review of its own diff, `docs/OPEN_ITEMS.md` updated (closed rows to its archive) and a handoff
-   note `docs/sessions/NN-<name>.md` (done / how to see it / decisions / open item ids / next
-   input), then merges its pull request with CI green (D-110, D-126, D-128).
+`docs/FEATURE_MAP.md`. One slice = one branch = one pull request, one commit = one layer (D-075,
+D-154). The `slice` skill holds the workflow: every open item targeted at the slice is in scope
+(D-043); each commit is green (D-127); the slice ends with `npm run check`, `npm run build` and the
+whole Playwright suite green, a review of its own diff, the docs updated, and a pull request whose
+description replaces the handoff note, merged with CI green (D-110, D-126, D-128).
 
 Status: ☐ pending · ◐ in progress · ☑ done. A row's ☑ reaches `main` only through a merge with CI
 green, so on `main` it means merged and green (D-126).
 
 Rows `A1` … `A7` are **audit sessions** (D-051, D-078): read-only, opened by the product owner,
-following `docs/AUDIT.md`. An execution session never runs an audit. The session that finishes
-the row before an audit reminds the owner to open it.
+run with the `/audit` skill. An execution session never runs an audit. The session that finishes
+the row before an audit reminds the owner to open it. Audit reports A1 … A4 and the old session
+handoffs are archived in `.claude/archive/docs/` (D-154).
 
 ## Phase 0 — Foundations
 
@@ -26,13 +22,13 @@ the row before an audit reminds the owner to open it.
 | 0.1 | docs | Decisions log (D-001 … D-033), schema rev 3.1, architecture rev 2, roadmap, CLAUDE.md | ☑ |
 | 0.2 | tooling | See guardrails below. Folder skeleton, deps pinned, env example + build guard, CI (D-034 … D-037) | ☑ |
 | 0.3 | docs | `docs/OPEN_ITEMS.md` as the single open-items log; workflow files updated (D-043) | ☑ |
-| 0.4 | docs | Audit process (`docs/AUDIT.md`, rows A1 … A8) and next-session model recommendation (D-051, D-052) | ☑ |
+| 0.4 | docs | Audit process (`AUDIT.md`, archived; rows A1 … A8) and next-session model recommendation (D-051, D-052) | ☑ |
 | 0.5 | docs | Decision index at the top of `DECISIONS.md`; OI-015 partly resolved with a new trigger (D-062) | ☑ |
 | 0.6 | docs | `personal_id` = military personal number (D-069); invite links opened as OI-026 | ☑ |
 | 0.7 | docs | Move to vertical slices: `docs/FEATURE_MAP.md`, Stone 3 direction (D-075 … D-082) | ☑ |
-| 0.8 | docs | Record audit A1: `docs/audits/A1.md`, OI-034 … OI-042, D-083, D-084 | ☑ |
-| 0.9 | docs | Record audit A3: `docs/audits/A3.md`, OI-068 … OI-091, D-123 … D-129, open-items archive | ☑ |
-| 0.10 | docs | Record audit A4: `docs/audits/A4.md`, OI-098 … OI-101, D-145 … D-147 | ☑ |
+| 0.8 | docs | Record audit A1: `.claude/archive/docs/audits/A1.md`, OI-034 … OI-042, D-083, D-084 | ☑ |
+| 0.9 | docs | Record audit A3: `.claude/archive/docs/audits/A3.md`, OI-068 … OI-091, D-123 … D-129, open-items archive | ☑ |
+| 0.10 | docs | Record audit A4: `.claude/archive/docs/audits/A4.md`, OI-098 … OI-101, D-145 … D-147 | ☑ |
 
 ### Session 0.2 guardrails
 
@@ -51,7 +47,7 @@ the row before an audit reminds the owner to open it.
 - `.env.example` and production-build guard (refuses `VITE_AUTH_MODE=local`).
 - Pre-commit hook (lefthook): typecheck + lint + layers on staged files.
 - CI workflow (GitHub Actions): `npm run check`, build, Playwright (added when UI exists).
-- `docs/sessions/` handoff template, PR/commit conventions (Conventional Commits).
+- Session handoff template (archived, D-154), PR/commit conventions (Conventional Commits).
 
 ## Phase 1 — Model
 
@@ -63,7 +59,7 @@ the row before an audit reminds the owner to open it.
 | 1.2b | domain | leave state machine, account-link candidate matching, filter evaluator + canonical form, property validation, Zod issue mapping (D-063 … D-068) | ☑ |
 | 1.3 | domain | availability (one status per soldier/day, partition invariant test) and rule evaluation (targets, group_by, priority, conflicts), with tests | ☑ |
 | 1.4 | config | env schema, storage keys, view ids, URL param names, breakpoints, palette keys, date formats | ☑ |
-| A1 | audit | Contracts and domain against the decisions (`docs/AUDIT.md`). May run alongside V0 (D-078). Report: `docs/audits/A1.md` | ☑ |
+| A1 | audit | Contracts and domain against the decisions (`/audit` skill). May run alongside V0 (D-078). Report: `.claude/archive/docs/audits/A1.md` | ☑ |
 
 ## M1 — The company exists
 
@@ -72,7 +68,7 @@ the row before an audit reminds the owner to open it.
 | V0 | Walking skeleton | Local sign-in, claim the organization, empty workspace in the Stone 3 look | ☑ |
 | V1 | Unit tree | Units drawer: levels, tree, move, reorder, archive | ☑ |
 | V2 | Roster | Ranks and soldiers, private fields, unit history | ☑ |
-| A2 | audit | Server-authoritative behavior, no bypasses, first UI and `Design.md`. Report: `docs/audits/A2.md` | ☑ |
+| A2 | audit | Server-authoritative behavior, no bypasses, first UI and `Design.md`. Report: `.claude/archive/docs/audits/A2.md` | ☑ |
 
 ## M2 — The board works
 
@@ -81,7 +77,7 @@ the row before an audit reminds the owner to open it.
 | V3 | Timeline grid | Main screen with real soldiers, week navigation, unit selector | ☑ |
 | V4 | Leaves on the timeline | Leave types, new leave, bars on the timeline | ☑ |
 | V5 | Approval workflow | Details drawer, approve and reject, history, comments, inbox | ☑ |
-| A3 | audit | Leave workflow, timeline engine, view state. Report: `docs/audits/A3.md` | ☑ |
+| A3 | audit | Leave workflow, timeline engine, view state. Report: `.claude/archive/docs/audits/A3.md` | ☑ |
 
 ## M3 — Who is missing
 
@@ -90,7 +86,7 @@ the row before an audit reminds the owner to open it.
 | V6 | Tags and filters | Tags, filter chips, "only who is missing", present and absent lists | ☑ |
 | V7 | Availability rules | Rule builder, heat row, soft-rule acknowledgment, hard-rule refusal | ☑ |
 | V8 | Timeline drag | Drag to create, move and resize, with live feedback | ☑ |
-| A4 | audit | Filters and rules: UI warnings equal command results. Report: `docs/audits/A4.md` | ☑ |
+| A4 | audit | Filters and rules: UI warnings equal command results. Report: `.claude/archive/docs/audits/A4.md` | ☑ |
 
 ## M4 — Everyone has the right access
 

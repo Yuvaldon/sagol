@@ -10,7 +10,7 @@ Handoff notes record what happened in a session. This file records what must sti
    explicitly (new target + reason in the Notes column).
 2. **End of session:** close what was resolved (status `closed`, closing session in Notes) and
    move those rows to `docs/OPEN_ITEMS_ARCHIVE.md`, unchanged (D-128). Add new items, and in the
-   handoff refer to items by id (`opened OI-016`, `closed OI-009`) instead of copying their text.
+   pull request description refer to items by id (`opened OI-016`, `closed OI-009`) instead of copying their text.
 3. **Never delete a row.** Ids are permanent and never reused. A closed row is moved to the
    archive, which is not read at the start of a session. An item that turns out to be
    unnecessary is closed with the reason.
