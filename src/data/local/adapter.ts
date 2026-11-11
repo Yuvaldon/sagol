@@ -3,6 +3,7 @@ import type {
   ChangeFeed,
   DataCommands,
   DataRepositories,
+  DataTransfer,
   IdentitySource,
   SessionPermissions,
   SessionService,
@@ -39,6 +40,7 @@ import {
   type LocalAccountCommands,
 } from './accounts'
 import { createAvailabilityRuleCommands, createAvailabilityRuleRepository } from './rules'
+import { createTransfer } from './transfer'
 import { createSessionService } from './session'
 import {
   createMembershipRepository,
@@ -105,6 +107,7 @@ export interface LocalDataAdapter {
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
   }
+  readonly transfer: DataTransfer
   readonly changes: ChangeFeed
 }
 
@@ -173,6 +176,7 @@ export function createLocalDataAdapter(
       leave_comments: createLeaveCommentCommands(dependencies),
       availability_rules: createAvailabilityRuleCommands(dependencies),
     },
+    transfer: createTransfer(dependencies),
     changes,
   }
 }
