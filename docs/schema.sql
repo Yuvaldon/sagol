@@ -231,10 +231,14 @@ CREATE TABLE IF NOT EXISTS "soldier_accounts" (
 	"revoked_at" TIMESTAMPTZ,
 	"revoked_by" UUID REFERENCES "soldiers"("id"),
 	PRIMARY KEY("id"),
-	CONSTRAINT "soldier_accounts_provider_check" CHECK ("provider" IN ('google', 'local')),
-	CONSTRAINT "uq_soldier_accounts_auth_user" UNIQUE ("organization_id", "auth_user_id"),
-	CONSTRAINT "uq_soldier_accounts_soldier" UNIQUE ("soldier_id")
+	CONSTRAINT "soldier_accounts_provider_check" CHECK ("provider" IN ('google', 'local'))
 );
+-- Unique among accounts that are not revoked: a revoked link stays as history, and the soldier
+-- and the identity can be linked again (D-156).
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_soldier_accounts_auth_user"
+	ON "soldier_accounts"("organization_id", "auth_user_id") WHERE "revoked_at" IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_soldier_accounts_soldier"
+	ON "soldier_accounts"("soldier_id") WHERE "revoked_at" IS NULL;
 
 CREATE TABLE IF NOT EXISTS "account_link_requests" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -684,7 +688,7 @@ CREATE INDEX IF NOT EXISTS "idx_availability_rules_scope"   ON "availability_rul
 -- -----------------------------------------------------------------------------
 -- Triggers:  unit_closure maintenance + cycle rejection; soldier_tags single-select;
 --            version bump + updated_at; leave_events append-only; last-admin guard.
--- Functions: bootstrap_owner, request_account_link, review_account_link,
+-- Functions: bootstrap_owner, request_account_link, review_account_link, revoke_account_link,
 --            create_leave, transition_leave, reschedule_leave, grant_access,
 --            revoke_access, has_permission(resource, action, target) used by RLS.
 -- RLS:       enabled on every table; policies call has_permission(). Verified by the

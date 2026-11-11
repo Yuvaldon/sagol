@@ -32,8 +32,9 @@ export const AccountLinkResolution = z.enum(['link', 'create_soldier', 'reject']
 export type AccountLinkResolution = z.infer<typeof AccountLinkResolution>
 
 /**
- * `reviewAccountLink` (D-030). Linking or creating fills missing soldier fields (names,
- * personal id) from the request.
+ * `reviewAccountLink` (D-030, D-156). `link` names one of the request's candidates, over which the
+ * reviewer holds `accounts:approve`; `create_soldier` also needs `soldiers:create` over the placement.
+ * Linking fills the soldier's missing personal id from the request (D-066).
  */
 export const ReviewAccountLinkInput = z.strictObject({
   id: AccountLinkRequestId,
@@ -50,6 +51,13 @@ export const ReviewAccountLinkInput = z.strictObject({
   ]),
 })
 export type ReviewAccountLinkInput = z.infer<typeof ReviewAccountLinkInput>
+
+/**
+ * `revokeLink` (D-156): ends a soldier's account link. Needs `accounts:approve` over the soldier;
+ * nobody revokes their own account. The row stays as history.
+ */
+export const RevokeAccountLinkInput = z.strictObject({ id: SoldierAccountId })
+export type RevokeAccountLinkInput = z.infer<typeof RevokeAccountLinkInput>
 
 /** The signed-in soldier's own preferences. `expected_version` is NULL while no row exists. */
 export const UpdateMyPreferencesInput = z.strictObject({

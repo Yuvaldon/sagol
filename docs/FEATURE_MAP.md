@@ -285,9 +285,19 @@ until V10 gives them a role, and that is correct.
 - **data:** `accounts` commands; `autoLinkSoldier`; `linkCandidates`; `canReviewLinkRequest`;
   `linkEnrichment`.
 - **ui:** onboarding request form; review module.
-- **Open items:** OI-072, OI-036, OI-034 and OI-019 (asked at start, OI-019 with its schema
-  note); OI-026 (decided at start, its own slice if accepted); OI-046; OI-055 (from A2).
-- **Decisions:** D-005, D-030, D-066, D-069.
+- **Open items:** OI-072, OI-036, OI-034 and OI-019 (decided in D-156); OI-026 (its own slice, V9b);
+  OI-046; OI-055 (from A2).
+- **Decisions:** D-005, D-030, D-066, D-069, D-156.
+
+#### V9b — Invite links
+**Owner sees:** a commander creates an invite link for a unit, limited by expiry and uses, and shares it; whoever signs
+up through it creates a link request attached to that unit, which goes to that unit's reviewers, and matching searches
+that unit's soldiers. A link directs, it never approves (D-030).
+- **model:** link table and the request's reference, in `schema.sql`, `DECISIONS.md` and `contracts` first.
+- **domain:** `linkCandidates` and `linkReviewTargets` limited to the link's unit.
+- **ui:** invite links module; the onboarding form reads the link.
+- **Open items:** OI-026 (its design questions decided at the start, D-155).
+- **Decisions:** D-030, D-066, D-156.
 
 #### V10 — Roles and access
 **Owner sees:** roles with a permission grid, rank bindings with scope, a baseline role, individual

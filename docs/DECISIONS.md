@@ -46,7 +46,7 @@ am = amends, ref = refines, ext = extends.
 | D-027 | Backend target (**proposed**) | backend | |
 | D-028 | Unified scope model with relative anchors | contracts, domain, data, backend | ref D-053, D-054, D-055 |
 | D-029 | Effective seniority with personal overrides | contracts, domain, backend | ref D-057 |
-| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069 |
+| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-156 |
 | D-031 | Availability rules: grouping, global scope, priority | contracts, domain, ui | ref D-067 (canonical population), D-071, D-072; ref D-139, D-140 |
 | D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070; ref D-111, D-113; ref D-134 |
 | D-033 | Simple first-run setup wizard | ui | |
@@ -67,7 +67,7 @@ am = amends, ref = refines, ext = extends.
 | D-048 | Auth and session contracts | contracts, data, logic, app | ref D-076, D-083 |
 | D-049 | Leave command set | contracts, domain, data | ref D-063, D-064; ref D-117, D-118; am D-123 |
 | D-050 | Import and export | contracts, data | |
-| D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154 |
+| D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154; ref D-155 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075; sup D-154 |
 | D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096 |
 | D-054 | Policy unit = primary membership today | domain, backend | ref D-105 |
@@ -82,7 +82,7 @@ am = amends, ref = refines, ext = extends.
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | ref D-114; ref D-117, D-118; ref D-124 |
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130 |
-| D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069 |
+| D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-156 |
 | D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147 |
 | D-068 | Schema issue mapping | domain, data, logic | |
 | D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
@@ -164,7 +164,9 @@ am = amends, ref = refines, ext = extends.
 | D-145 | Approving shows the rules' answer, not a live warning | logic, ui | |
 | D-146 | A live warning lists hard and soft rules together | logic, ui | |
 | D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | |
-| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | |
+| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-155 |
+| D-155 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | |
+| D-156 | V9 account linking: candidates only, revoking a link, invite links as their own slice | contracts, domain, data, logic, ui, backend | |
 
 ---
 
@@ -1964,3 +1966,39 @@ filling the form sees the whole cost of the change at once.
 **Why:** the owner's instruction of 2026-11-11 to cut usage and enforce quality through the harness. A fresh session per
 slice and a fixed reading list re-paid a context of about 100k tokens every time, and rules in prose were
 re-read on every turn but enforced by nothing.
+
+## D-155 — Full autonomy: Claude decides product choices and runs audits without stopping
+2026-11-11 · accepted · refines D-051, D-154
+- The owner's standing instruction of 2026-11-11: Claude runs the roadmap to the end on its own and does not stop to ask.
+  A product choice that no decision covers is decided by Claude from the decisions and the product's direction, taking
+  the option it would have recommended, and recorded as a decision whose header says "decided under D-155". Open items
+  that say "needs a product-owner decision" are decided the same way at the start of their slice.
+- An audit row (`A5` …) is run by a fresh subagent that has none of the building session's context, with the `/audit`
+  skill's steps, read-only. Its findings are triaged by Claude under this decision and recorded by a docs pull request,
+  as D-051 describes, instead of waiting for the owner.
+- Claude stops only for what it cannot do itself: a credential or account only the owner holds, or a permission the
+  environment refuses. It then reports exactly what is blocked and carries on with everything else.
+**Why:** the owner's words of 2026-11-11: "run alone to the end, stop stopping to ask me". The owner accepts the
+recommendations, which already follow the recorded decisions and the product's direction.
+
+## D-156 — V9 account linking: candidates only, revoking a link, invite links as their own slice
+2026-11-11 · accepted · refines D-030, D-066 · decided under D-155 · OI-019, OI-026, OI-034
+- **A link names a candidate (OI-034).** A `link` review must name one of the request's candidates (D-066), else the
+  issue `not_a_candidate` on `resolution.soldier_id`; the reviewer must hold `accounts:approve` over that soldier, else
+  `forbidden`. A `create_soldier` review also needs `soldiers:create` over the new soldier's placement (D-053).
+- **Revoking a link (OI-019).** `accounts.revokeLink` sets `soldier_accounts.revoked_at` and `revoked_by`. It needs
+  `accounts:approve` over the account's soldier, and nobody revokes their own account (`forbidden`), so the last owner
+  cannot lock themselves out. A revoked row stays as history. The unique keys on `soldier_id` and on
+  (`organization_id`, `auth_user_id`) hold only among accounts not revoked, so the soldier can be linked again and the
+  identity, now unlinked, can ask again. D-066 changes: a soldier whose only accounts are revoked is a candidate.
+- **Restoring archived rows (OI-019)** is not built in V9; it moves to its own open item, targeted at V12.
+- **Invite links (OI-026)** are accepted as their own slice, `V9b`, right after V9, with the design questions decided
+  at its start.
+- **The screens.** An unlinked identity that cannot claim the organization fills a request form (first name, last name,
+  military personal number, optional), then sees its pending request and may cancel it; the answer never says whether a
+  soldier matched (D-005). Reviewers get the "account requests" module: each pending request they may review, its
+  candidates with the reason of each match, and the three resolutions. A soldier's private fields and the new-soldier
+  form take the invite email (OI-046), and the soldier page shows the account and revokes it.
+**Why:** D-155, with the recommendations given to the owner at the start of V9. Linking to a non-candidate would let a
+reviewer attach an identity to any soldier in their reach without a match; a revoke without re-linking would strand a
+soldier forever (OI-019); invite links change matching and the schema, which is a slice of their own.

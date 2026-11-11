@@ -1,6 +1,6 @@
 import type { AsyncResult } from '../common/result'
 import type { IdentitySource, Session, SessionPermissions, SessionService, TimeSource } from '../auth'
-import type { AccountLinkRequest, SoldierPreferencesRecord } from '../entities/accounts'
+import type { AccountLinkRequest, SoldierAccount, SoldierPreferencesRecord } from '../entities/accounts'
 import type { Deployment, DeploymentMember } from '../entities/deployments'
 import type { Unit, UnitLevel } from '../entities/hierarchy'
 import type { Leave, LeaveBatch, LeaveComment, LeaveType, LeaveTypeGroup } from '../entities/leaves'
@@ -21,6 +21,7 @@ import type {
   CancelAccountLinkRequestInput,
   RequestAccountLinkInput,
   ReviewAccountLinkInput,
+  RevokeAccountLinkInput,
   UpdateMyPreferencesInput,
 } from '../inputs/accounts'
 import type {
@@ -136,6 +137,7 @@ export interface DataCommands {
     requestLink: Command<RequestAccountLinkInput, AccountLinkResult>
     cancelLinkRequest: Command<CancelAccountLinkRequestInput, AccountLinkRequest>
     reviewLink: Command<ReviewAccountLinkInput, AccountLinkRequest>
+    revokeLink: Command<RevokeAccountLinkInput, SoldierAccount>
     updateMyPreferences: Command<UpdateMyPreferencesInput, SoldierPreferencesRecord>
   }
   unit_levels: ReferenceCommands<

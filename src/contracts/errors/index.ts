@@ -56,6 +56,8 @@ const STATE_ISSUE_CODES = [
   'invalid_order',
   /** The soldier or the identity is already linked to an account. */
   'already_linked',
+  /** A link review names a soldier who is not one of the request's candidates (D-156). */
+  'not_a_candidate',
   /** The unit has live sub-units, or soldiers placed today or later (D-088). */
   'unit_not_empty',
   /** A soldier who is not archived holds the rank (D-095). */
