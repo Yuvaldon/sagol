@@ -383,10 +383,11 @@ export function createAccessGrantCommands(dependencies: LocalDependencies): Data
           ]
           if (issues.length > 0) return failValidation(issues)
           requireHeld(scope, await rolePairs(database, input.role_id))
-          // D-156: the scope, resolved for the grantee today, lies within the actor's own reach.
+          // D-156: the scope, resolved for the grantee today, its rank constraint and its end lie within the actor's own reach.
           const { context } = scope
           const resolved = resolveScope(input, grantee, context.unitOf(grantee), context.tree)
-          if (!withinReach(context, scope.soldier_id, GRANTS_CREATE, resolved)) return fail({ code: 'forbidden' })
+          const limits = { constraint: input.subject_rank_constraint, until: input.valid_to }
+          if (!withinReach(context, scope.soldier_id, GRANTS_CREATE, resolved, limits)) return fail({ code: 'forbidden' })
 
           const grant = parsedRow('access_grants', {
             ...input,

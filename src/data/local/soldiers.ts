@@ -228,6 +228,8 @@ export async function insertSoldier(
       }),
     )
   }
+  // D-157, for every way a soldier is created (the roster and a link request alike).
+  if (soldier.command_rank_id !== null) await requireAfterRankWrite(database, scope, 'create', soldier.id)
   return { soldier, hasPrivate }
 }
 
@@ -383,9 +385,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
           requirePermission(scope, permissionOf('soldiers', 'create'), placement)
           if (membership !== null) requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: membership.unit_id })
           if (privateFields !== null) requirePermission(scope, PRIVATE_UPDATE, placement)
-          const inserted = await insertSoldier(database, scope, { content, membership, private: privateFields }, [])
-          if (inserted.soldier.command_rank_id !== null) await requireAfterRankWrite(database, scope, 'create', inserted.soldier.id)
-          return inserted
+          return insertSoldier(database, scope, { content, membership, private: privateFields }, [])
         })
         changes.publish([
           { table: 'soldiers', ids: [written.soldier.id] },
