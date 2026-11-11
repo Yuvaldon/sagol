@@ -298,3 +298,5 @@ export {
   useSetBaselineRole,
   useSoldierAccounts,
 } from './access/hooks'
+export { exportFileOf, readImportFile, type ImportFile, type ImportFileProblem } from './transfer/file'
+export { readPickedFile, useExport, useImport, useTransferAccess } from './transfer/hooks'

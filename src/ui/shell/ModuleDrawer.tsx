@@ -1,6 +1,6 @@
 import { PANEL_IDS, type PanelId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel } from '@logic'
+import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, useTransferAccess } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { AccountLinksModule } from '../modules/account-links/AccountLinksModule'
@@ -19,6 +19,7 @@ import { TagCategoriesModule } from '../modules/tags/TagCategoriesModule'
 import { TagsModule } from '../modules/tags/TagsModule'
 import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
 import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
+import { TransferModule } from '../modules/transfer/TransferModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
@@ -32,6 +33,7 @@ type ModuleAccess = ReturnType<typeof useModuleAccess> & {
   readonly accountLinks: boolean
   readonly grants: boolean
   readonly myLeaves: boolean
+  readonly transfer: boolean
 }
 
 interface ModuleSection {
@@ -141,6 +143,11 @@ const GROUPS: readonly ModuleGroup[] = [
     titleKey: 'grants.title',
     sections: [{ panel: PANEL_IDS.accessGrants, labelKey: 'grants.title', isAllowed: (access) => access.grants, Module: GrantsModule }],
   },
+  {
+    // Opened from the account menu, not the module bar (D-171).
+    titleKey: 'transfer.title',
+    sections: [{ panel: PANEL_IDS.dataTransfer, labelKey: 'transfer.title', isAllowed: (access) => access.transfer, Module: TransferModule }],
+  },
 ]
 
 export function ModuleDrawer() {
@@ -151,6 +158,7 @@ export function ModuleDrawer() {
     accountLinks: useLinkReviewAccess().allowed,
     grants: useGrantsAccess(),
     myLeaves: useMyLeavesAccess()?.view === true,
+    transfer: useTransferAccess().any,
   }
   const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []

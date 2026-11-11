@@ -37,6 +37,7 @@ export {
   PANEL_IDS,
   PanelId,
   PHONE_BAR_MODULES,
+  TRANSFER_FILES,
   SHEET_DISMISS,
   VIRTUAL_LIST,
 } from './panels'

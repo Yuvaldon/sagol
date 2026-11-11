@@ -3,6 +3,7 @@ import type {
   ChangeFeed,
   DataCommands,
   DataRepositories,
+  DataTransfer,
   SessionPermissions,
   SessionService,
   TableName,
@@ -56,6 +57,7 @@ export interface ContractAdapter {
     readonly rank_role_bindings: DataCommands['rank_role_bindings']
     readonly access_grants: DataCommands['access_grants']
   }
+  readonly transfer: DataTransfer
   readonly changes: ChangeFeed
 }
 
