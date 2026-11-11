@@ -16,6 +16,24 @@ export {
   useSignOut,
 } from './session/hooks'
 export { useCan, useModuleAccess, type CanAnswer } from './permissions/hooks'
+export {
+  activeAccountOf,
+  asLinkRequestFormError,
+  linkRequestIssues,
+  type LinkRequestValues,
+  type LinkReviewChoice,
+} from './accounts/linking'
+export {
+  useAccountPermissions,
+  useCancelLinkRequest,
+  useLinkCandidates,
+  useLinkRequests,
+  useLinkReviewAccess,
+  useRequestLink,
+  useReviewLink,
+  useRevokeLink,
+  useSoldierAccounts,
+} from './accounts/hooks'
 export { WorkspaceSearch, useWorkspaceSearch } from './view-state/search'
 export { usePanel, type PanelState, type PanelTarget } from './view-state/panel'
 export { dateWindowOf, shiftedWindow, useDateWindow, type DateWindow, type DateWindowState } from './view-state/window'

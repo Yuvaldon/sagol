@@ -17,6 +17,8 @@ export const QUERY_KEYS = {
   soldiers: [TABLE_SCOPE, 'soldiers'],
   soldierPrivate: [TABLE_SCOPE, 'soldier_private'],
   unitMemberships: [TABLE_SCOPE, 'unit_memberships'],
+  soldierAccounts: [TABLE_SCOPE, 'soldier_accounts'],
+  accountLinkRequests: [TABLE_SCOPE, 'account_link_requests'],
   soldierPreferences: [TABLE_SCOPE, 'soldier_preferences'],
   tagCategories: [TABLE_SCOPE, 'tag_categories'],
   tags: [TABLE_SCOPE, 'tags'],
@@ -40,6 +42,15 @@ const ONBOARDING_TABLES: ReadonlySet<TableName> = new Set<TableName>([
   'account_link_requests',
 ])
 
+/** Tables a request's candidates read (D-066): a change to one refreshes the requests and their candidates. */
+const CANDIDATE_TABLES: ReadonlySet<TableName> = new Set<TableName>([
+  'soldiers',
+  'soldier_private',
+  'soldier_accounts',
+  'unit_memberships',
+  'units',
+])
+
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
@@ -59,6 +70,7 @@ export function invalidateChanged(client: QueryClient, changes: readonly DataCha
   for (const change of changes) {
     void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
     if (ONBOARDING_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.onboarding })
+    if (CANDIDATE_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.accountLinkRequests })
   }
   // Many tables feed the policy, and a hint is cheap to ask again (D-091).
   if (changes.length > 0) void client.invalidateQueries({ queryKey: QUERY_KEYS.can })

@@ -84,12 +84,12 @@ export interface SoldierFormValues {
 
 export interface NewSoldierValues extends Omit<SoldierFormValues, 'status'> {
   readonly membership: { readonly unit_id: UnitId | null; readonly valid_from: CalendarDate }
-  readonly private: { readonly personal_id: string; readonly phone: string }
+  readonly private: PrivateFormValues
 }
 
 function newSoldierInput(values: NewSoldierValues) {
-  const personalId = blankToNull(values.private.personal_id)
-  const phone = blankToNull(values.private.phone)
+  const fields = privateContent(values.private)
+  const empty = Object.values(fields).every((value) => value === null)
   return {
     id: SoldierId.parse(crypto.randomUUID()),
     first_name: values.first_name,
@@ -98,8 +98,7 @@ function newSoldierInput(values: NewSoldierValues) {
     command_rank_id: values.command_rank_id,
     status: SoldierStatus.enum.active,
     properties: {},
-    // `invite_email` has no field until V9 (D-094).
-    private: personalId === null && phone === null ? null : { personal_id: personalId, invite_email: null, phone },
+    private: empty ? null : fields,
     membership:
       values.membership.unit_id === null
         ? null
@@ -146,11 +145,17 @@ export function toUpdateSoldierInput(soldier: Soldier, openedVersion: number, va
 
 export interface PrivateFormValues {
   readonly personal_id: string
+  /** The address auto-link compares with the verified email (D-030). */
+  readonly invite_email: string
   readonly phone: string
 }
 
 function privateContent(values: PrivateFormValues) {
-  return { personal_id: blankToNull(values.personal_id), phone: blankToNull(values.phone) }
+  return {
+    personal_id: blankToNull(values.personal_id),
+    invite_email: blankToNull(values.invite_email),
+    phone: blankToNull(values.phone),
+  }
 }
 
 export function privateFormIssues(soldierId: SoldierId, values: PrivateFormValues): Issue[] {
@@ -172,6 +177,7 @@ export function toUpdatePrivateInput(
   const content = privateContent(values)
   const changes = {
     ...(content.personal_id === (opened?.personal_id ?? null) ? {} : { personal_id: content.personal_id }),
+    ...(content.invite_email === (opened?.invite_email ?? null) ? {} : { invite_email: content.invite_email }),
     ...(content.phone === (opened?.phone ?? null) ? {} : { phone: content.phone }),
   }
   if (Object.keys(changes).length === 0) return null
