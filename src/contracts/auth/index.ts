@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AuthUserId, OrganizationId, SoldierId } from '../common/ids'
 import type { AsyncResult, Unsubscribe } from '../common/result'
-import { Email, label, type Timestamp } from '../common/scalars'
+import { Email, label, Timestamp } from '../common/scalars'
 import { AccountLinkRequest } from '../entities/accounts'
 import { IdentityProvider } from '../enums'
 import type { PermissionCheck } from '../permissions'
@@ -100,6 +100,11 @@ export const OnboardingState = z.object({
   bootstrap_available: z.boolean(),
   /** The identity's own pending request, if any. Never says whether a match exists. */
   open_request: AccountLinkRequest.nullable(),
+  /**
+   * When the identity's latest request was rejected, if it was and nothing is pending (D-168). A reviewer's answer to the
+   * identity's own request: it says nothing about matches.
+   */
+  last_rejected_at: Timestamp.nullable(),
 })
 export type OnboardingState = z.infer<typeof OnboardingState>
 

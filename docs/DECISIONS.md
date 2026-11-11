@@ -167,7 +167,7 @@ am = amends, ref = refines, ext = extends.
 | D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | |
 | D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | ref D-163, D-164 |
 | D-150 | The account-links module | config, logic, ui | |
-| D-151 | The onboarding of an identity with no account | logic, ui | ref D-160 |
+| D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168 |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
 | D-154 | The Claude Code harness replaces the session rituals | docs, tooling | |
@@ -182,7 +182,10 @@ am = amends, ref = refines, ext = extends.
 | D-163 | Revoking an account link | contracts, data, logic, ui, backend | |
 | D-164 | Link-request candidates stay computed | data | |
 | D-165 | The roles and grants modules; "more" on a phone | config, logic, ui | |
-| D-166 | A grant's window is whole days in the organization's zone | logic, ui | |
+| D-166 | A grant's window is whole days in the organization's zone | logic, ui | ext D-169 |
+| D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | |
+| D-168 | A rejected link request is told to its identity | contracts, data, logic, ui | |
+| D-169 | The grants list moves to the next state on its own | logic | |
 
 ---
 
@@ -2174,3 +2177,31 @@ expired or revoked; active and scheduled grants come first, the others only on r
 **Why:** an officer grants "until Thursday", never an instant; a half-open window of whole days matches how leaves are
 stored (D-107) and needs no time field on a phone. A granter who cannot read the organization gets the device's zone, as
 on the board (D-160).
+
+## D-167 — My requests: the soldier's own leaves, open and history
+2026-11-11 · accepted · refines D-013, D-023, D-063, D-115, D-119 · decided under the owner's autonomy instruction of 2026-11-11
+- A panel, `my_leaves`, with a bar button "הבקשות שלי", for a linked actor who may read their own leaves
+  (`leaves:view` on their own soldier). On a phone it is the first module in the bar.
+- It lists the actor's own leaves in two parts: **open**, the pending ones and the approved ones whose last day is today or
+  later, the earliest first; and **history**, the rest (past approved, rejected, cancelled), the last changed first. A row
+  shows the type, the days and the status, and opens the leave's details, where the thread, the comments and the actor's own
+  steps already are (D-119).
+- "New request" sits at the top of the panel for an actor who may create a leave for themselves. The new-leave form fills
+  in the soldier when it offers only one.
+- The fighter learns of an answer by the status in this list; notifications are not in the roadmap.
+**Why:** the V11 card ("requests a leave, sees status and history, and comments ... the fighter sees the result") with
+the screens that exist: the details panel already holds the thread and the steps, so the new piece is the list. Splitting
+on what still matters to the fighter keeps the first screen short on a phone.
+
+## D-168 — A rejected link request is told to its identity
+2026-11-11 · accepted · amends D-151 · OI-105 · decided under the owner's autonomy instruction of 2026-11-11
+`OnboardingState.last_rejected_at` is the time the identity's latest request was rejected, when it was and nothing is
+pending (NULL otherwise). The form then says that the earlier request was not approved and that a new one may be sent.
+**Why:** a rejection is a reviewer's answer to the identity's own request, given whatever matched (every request that does
+not auto-link goes to review, D-151), so telling it reveals no match; seeing the same form again with no word is confusing.
+
+## D-169 — The grants list moves to the next state on its own
+2026-11-11 · accepted · extends D-166 · OI-108
+While grant rows are on screen, the list recomputes their states at the next instant one of them starts or ends, as well as
+when the data changes.
+**Why:** a state computed when the list was read goes stale while the screen stays open (OI-108).

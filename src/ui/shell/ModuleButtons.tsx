@@ -1,13 +1,13 @@
 import { PANEL_IDS, PHONE_BAR_MODULES } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useLinkReviewAccess, useModuleAccess, usePanel, usePendingRequests, useRulesDay } from '@logic'
-import { Inbox, KeyRound, MoreHorizontal, Network, Scale, Shield, Tag, Tags, UserCheck, Users, type LucideIcon } from 'lucide-react'
+import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, usePendingRequests, useRulesDay } from '@logic'
+import { ClipboardList, Inbox, KeyRound, MoreHorizontal, Network, Scale, Shield, Tag, Tags, UserCheck, Users, type LucideIcon } from 'lucide-react'
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components'
 import { useIsDesktop } from '../patterns/media'
 import { IconButton } from '../primitives/Button'
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
-// The modules in the bar (D-116, D-165): each one only for who may open it. On a phone the first few sit in the bar
+// The modules in the bar (D-116, D-165, D-167): each one only for who may open it. On a phone the first few sit in the bar
 // and the rest are listed under "more", so the bar does not outgrow the screen.
 
 interface ModuleEntry {
@@ -27,10 +27,19 @@ function useModuleEntries(): ModuleEntry[] {
   const pending = usePendingRequests()
   const links = useLinkReviewAccess()
   const grants = useGrantsAccess()
+  const mine = useMyLeavesAccess()
   const opener = (target: Parameters<typeof panel.open>[0]) => () => {
     panel.open(target)
   }
   const entries: (ModuleEntry | false)[] = [
+    // A soldier's own requests come first, so a phone keeps them in the bar (D-167).
+    mine?.view === true && {
+      id: 'myLeaves',
+      Icon: ClipboardList,
+      labelKey: 'myLeaves.open',
+      onPress: opener(PANEL_IDS.myLeaves),
+      count: null,
+    },
     inbox && {
       id: 'inbox',
       Icon: Inbox,

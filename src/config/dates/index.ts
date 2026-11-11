@@ -27,3 +27,6 @@ export const DATE_FORMATS = {
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>
 
 export type DateFormat = keyof typeof DATE_FORMATS
+
+/** The longest delay `setTimeout` keeps (2^31 − 1 ms); a later boundary waits in steps of it (D-169). */
+export const MAX_TIMER_DELAY_MS = 2_147_483_647

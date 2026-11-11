@@ -163,6 +163,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
         expect(valueOf(await adapter.session.onboardingState())).toEqual({
           bootstrap_available: true,
           open_request: null,
+          last_rejected_at: null,
         })
         expect(errorOf(await adapter.repositories.organizations.current()).code).toBe('account_not_linked')
       })
@@ -362,11 +363,13 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
         expect(valueOf(await adapter.session.onboardingState())).toEqual({
           bootstrap_available: false,
           open_request: request,
+          last_rejected_at: null,
         })
         harness.signIn(stranger)
         expect(valueOf(await adapter.session.onboardingState())).toEqual({
           bootstrap_available: false,
           open_request: null,
+          last_rejected_at: null,
         })
       })
     })

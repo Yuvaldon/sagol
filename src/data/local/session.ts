@@ -9,6 +9,7 @@ import type {
   SessionService,
   SoldierId,
 } from '@contracts'
+import { compareInstants } from '@domain'
 import { tableOf } from './database'
 import { asResult, fail, parsedRow } from './failure'
 
@@ -71,10 +72,15 @@ export function createSessionService(
             .where('auth_user_id')
             .equals(current.auth_user_id)
             .toArray()
-          const open = requests.find((row) => row.status === 'pending')
+          const own = requests.map((row) => parsedRow('account_link_requests', row))
+          const open = own.find((row) => row.status === 'pending') ?? null
+          // The latest request alone answers (D-168): a rejection followed by a withdrawn request is not told.
+          const latest = own.toSorted((a, b) => compareInstants(b.created_at, a.created_at) || b.id.localeCompare(a.id))[0]
+          const rejected = open === null && latest?.status === 'rejected' ? latest : null
           return {
             bootstrap_available: await bootstrapAllowed(database, current),
-            open_request: open === undefined ? null : parsedRow('account_link_requests', open),
+            open_request: open,
+            last_rejected_at: rejected === null ? null : (rejected.reviewed_at ?? rejected.created_at),
           }
         })
       }),

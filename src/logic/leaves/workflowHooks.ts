@@ -22,11 +22,15 @@ import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { useSoldiersWithArchived } from '../roster/hooks'
 import { useCurrentOrganization, useSession } from '../session/hooks'
+import { useToday } from '../session/today'
 import { cachedLeaves, leaveKey, leaveListKey, restoreLeaves, showLeave } from './cache'
 import {
   CLOSED_QUERY,
   EDIT_PERMISSION,
   PENDING_QUERY,
+  myLeaveGroups,
+  myLeavesQuery,
+  type MyLeaves,
   closedLeaves,
   editReturnsToPending,
   isEditable,
@@ -283,3 +287,42 @@ export function useClosedLeaves(): Loaded<readonly Leave[]> {
 }
 
 const NO_LEAVES: readonly never[] = []
+
+// ---------------------------------------------------------------- my requests
+
+/** What "my requests" offers the actor on their own soldier (D-167): NULL when the actor is not linked. */
+export function useMyLeavesAccess(): { readonly view: boolean; readonly create: boolean } | null {
+  const actor = useActor()
+  const checks = useMemo(
+    () =>
+      actor === null
+        ? []
+        : [checkOn(LEAVE_PERMISSIONS.view, actor.soldier_id), checkOn(LEAVE_PERMISSIONS.create, actor.soldier_id)],
+    [actor],
+  )
+  const can = useCan(checks)
+  const [view, create] = checks
+  if (view === undefined || create === undefined) return null
+  return { view: can(view), create: can(create) }
+}
+
+/** The actor's own leaves, open and history (D-167). Today is the organization's day. */
+export function useMyLeaves(): Loaded<MyLeaves> {
+  const { data } = usePorts()
+  const actor = useActor()
+  const today = useToday()
+  const query = actor === null ? null : myLeavesQuery(actor.soldier_id)
+  const leaves: Loaded<readonly Leave[]> = loaded(
+    useQuery({
+      queryKey: query === null ? [...QUERY_KEYS.leaves, { soldier_ids: null }] : leaveListKey(query),
+      queryFn: (): Promise<readonly Leave[]> =>
+        query === null ? Promise.resolve(NO_LEAVES) : unwrap(data.repositories.leaves.list(query)),
+      enabled: query !== null,
+    }),
+  )
+  return useMemo((): Loaded<MyLeaves> => {
+    if (leaves.status !== 'ready') return leaves
+    if (today === null) return { status: 'loading' }
+    return { status: 'ready', value: myLeaveGroups(leaves.value, today) }
+  }, [leaves, today])
+}

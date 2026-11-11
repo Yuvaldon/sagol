@@ -41,6 +41,8 @@ export const dictionary = {
     waitingBody: 'מפקד יבדוק את הבקשה. כשהחיבור יאושר, המסך הזה יתחלף בארגון.',
     waitingName: 'הבקשה נשלחה בשם',
     withdraw: 'ביטול הבקשה',
+    rejectedTitle: 'הבקשה הקודמת לא אושרה',
+    rejectedBody: 'אפשר לבדוק את הפרטים ולשלוח בקשה חדשה.',
   },
   accountLinks: {
     title: 'חיבורים',
@@ -456,6 +458,18 @@ export const dictionary = {
     commentDeleteTitle: 'למחוק את ההערה?',
     commentDeleteHint: 'ההערה תוסר מהשרשור, ואי אפשר יהיה לשחזר אותה.',
     commentDeleteConfirm: 'מחיקה',
+  },
+  myLeaves: {
+    title: 'הבקשות שלי',
+    open: 'הבקשות שלי',
+    new: 'בקשה חדשה',
+    openTitle: 'פתוחות',
+    historyTitle: 'היסטוריה',
+    emptyOpen: 'אין בקשות פתוחות.',
+    emptyHistory: 'בקשות שנגמרו, נדחו או בוטלו יופיעו כאן.',
+    emptyTitle: 'אין עדיין בקשות',
+    emptyBody: 'בקשה חדשה תופיע כאן, ואפשר לעקוב אחרי הסטטוס שלה.',
+    emptyReadOnly: 'בקשות שנפתחו בשבילך יופיעו כאן.',
   },
   inbox: {
     title: 'בקשות',

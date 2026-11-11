@@ -32,11 +32,17 @@ export interface NewLeaveValues {
 
 /**
  * "Approve now" starts from the actor's own default (D-121). A drag's draft fills the soldier and the days (D-143); the
- * form offers only soldiers the actor may create a leave for, so it passes NULL for anyone else.
+ * form offers only soldiers the actor may create a leave for, so it passes NULL for anyone else. `onlySoldier` is the one
+ * soldier the form offers, prefilled (D-167).
  */
-export function newLeaveValues(today: CalendarDate, approveNow = false, draft: NewLeaveDraft | null = null): NewLeaveValues {
+export function newLeaveValues(
+  today: CalendarDate,
+  approveNow = false,
+  draft: NewLeaveDraft | null = null,
+  onlySoldier: SoldierId | null = null,
+): NewLeaveValues {
   return {
-    soldier_id: draft?.soldier_id ?? null,
+    soldier_id: draft?.soldier_id ?? onlySoldier,
     leave_type_id: null,
     start_date: draft?.start_date ?? today,
     end_date: draft?.end_date ?? today,
