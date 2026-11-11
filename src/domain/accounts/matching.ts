@@ -3,6 +3,7 @@ import {
   IssueCode,
   type AccountLinkRequest,
   type Issue,
+  type LinkCandidate,
   type Permission,
   type PolicyTarget,
   type Soldier,
@@ -20,24 +21,17 @@ import { normalizeEmail, normalizeName, normalizePersonalId } from './normalize'
 export interface LinkMatchData {
   readonly soldiers: Iterable<Pick<Soldier, 'id' | 'first_name' | 'last_name' | 'archived_at'>>
   readonly soldier_private: Iterable<Pick<SoldierPrivate, 'soldier_id' | 'personal_id' | 'invite_email'>>
-  /** Every account row, revoked included: the schema allows one account per soldier. */
-  readonly soldier_accounts: Iterable<Pick<SoldierAccount, 'soldier_id'>>
-}
-
-export type LinkMatchKind = 'personal_id' | 'name'
-
-export interface LinkCandidate {
-  readonly soldier_id: SoldierId
-  readonly match: LinkMatchKind
+  /** Every account row; only those not revoked keep a soldier from being linked (D-156). */
+  readonly soldier_accounts: Iterable<Pick<SoldierAccount, 'soldier_id' | 'revoked_at'>>
 }
 
 type LinkClaim = Pick<AccountLinkRequest, 'claimed_personal_id' | 'first_name' | 'last_name'>
 type SoldierNames = Pick<Soldier, 'first_name' | 'last_name'>
 
-/** Soldiers that can still be linked: not archived and without an account row (D-066). */
+/** Soldiers that can still be linked: not archived and without an account that is not revoked (D-066, D-156). */
 function linkable(data: LinkMatchData): Pick<Soldier, 'id' | 'first_name' | 'last_name'>[] {
   const withAccount = new Set<SoldierId>()
-  for (const account of data.soldier_accounts) withAccount.add(account.soldier_id)
+  for (const account of data.soldier_accounts) if (account.revoked_at === null) withAccount.add(account.soldier_id)
   return [...data.soldiers].filter((soldier) => soldier.archived_at === null && !withAccount.has(soldier.id))
 }
 
@@ -124,6 +118,28 @@ export function canReviewLinkRequest(
   candidates: readonly LinkCandidate[],
 ): boolean {
   return linkReviewTargets(candidates).some((target) => can(context, actorId, ACCOUNT_REVIEW_PERMISSION, target))
+}
+
+/**
+ * A `link` review names one of the request's candidates (D-156); otherwise `not_a_candidate` on the
+ * resolution's soldier. The reviewer's authority over that soldier is a separate check.
+ */
+export function linkTargetIssues(candidates: readonly LinkCandidate[], soldierId: SoldierId): Issue[] {
+  if (candidates.some((candidate) => candidate.soldier_id === soldierId)) return []
+  return [{ path: ['resolution', 'soldier_id'], code: IssueCode.enum.not_a_candidate }]
+}
+
+/** True when the actor may link the request to this soldier: `accounts:approve` over that soldier (D-156). */
+export function canLinkSoldier(context: PolicyContext, actorId: SoldierId, soldierId: SoldierId): boolean {
+  return can(context, actorId, ACCOUNT_REVIEW_PERMISSION, { kind: 'soldier', soldier_id: soldierId })
+}
+
+/**
+ * True when the actor may revoke the account of this soldier (D-156): `accounts:approve` over the
+ * soldier, and never the actor's own account, so nobody locks themselves out.
+ */
+export function canRevokeAccount(context: PolicyContext, actorId: SoldierId, soldierId: SoldierId): boolean {
+  return actorId !== soldierId && canLinkSoldier(context, actorId, soldierId)
 }
 
 /** Only a pending request is reviewed or cancelled; anything else is `invalid_transition`. */

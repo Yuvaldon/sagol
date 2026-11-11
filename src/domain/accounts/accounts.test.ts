@@ -10,11 +10,14 @@ import {
 import { createPolicyContext, type PolicyData } from '../policy'
 import {
   autoLinkSoldier,
+  canLinkSoldier,
   canReviewLinkRequest,
+  canRevokeAccount,
   linkCandidates,
   linkEnrichment,
   linkRequestTransitionIssues,
   linkReviewTargets,
+  linkTargetIssues,
   normalizeEmail,
   normalizeName,
   normalizePersonalId,
@@ -89,6 +92,7 @@ const S = {
   revokedAccount: soldierId(6),
   other: soldierId(7),
   inactive: soldierId(8),
+  linked: soldierId(9),
 }
 
 function matchData(): LinkMatchData {
@@ -108,14 +112,19 @@ function matchData(): LinkMatchData {
       soldier(S.revokedAccount, 'דנה', 'לוי'),
       soldier(S.other, 'Dana', 'Cohen'),
       soldier(S.inactive, 'דנה', 'לוי'),
+      soldier(S.linked, 'דנה', 'לוי'),
     ],
     soldier_private: [
       { soldier_id: S.byId, personal_id: '1234567', invite_email: 'Dana@Example.com' },
       { soldier_id: S.both, personal_id: '7654321', invite_email: null },
       { soldier_id: S.archived, personal_id: '1111111', invite_email: 'dana@example.com' },
       { soldier_id: S.revokedAccount, personal_id: '2222222', invite_email: 'dana@example.com' },
+      { soldier_id: S.linked, personal_id: '3333333', invite_email: 'dana@example.com' },
     ],
-    soldier_accounts: [{ soldier_id: S.revokedAccount }],
+    soldier_accounts: [
+      { soldier_id: S.revokedAccount, revoked_at: '2026-10-01T00:00:00Z' },
+      { soldier_id: S.linked, revoked_at: null },
+    ],
   }
 }
 
@@ -130,6 +139,7 @@ describe('linkCandidates', () => {
       { soldier_id: S.byName, match: 'name' },
       { soldier_id: S.swapped, match: 'name' },
       { soldier_id: S.both, match: 'name' },
+      { soldier_id: S.revokedAccount, match: 'name' },
       { soldier_id: S.inactive, match: 'name' },
     ])
   })
@@ -142,14 +152,20 @@ describe('linkCandidates', () => {
     expect(candidates[0]).toEqual({ soldier_id: S.both, match: 'personal_id' })
   })
 
-  it('never offers archived soldiers or soldiers with an account (even revoked)', () => {
-    for (const claimed of ['1111111', '2222222']) {
+  it('never offers archived soldiers or soldiers with an account that is not revoked', () => {
+    for (const claimed of ['1111111', '3333333']) {
       const ids = linkCandidates({ claimed_personal_id: claimed, first_name: 'דנה', last_name: 'לוי' }, matchData()).map(
         (candidate) => candidate.soldier_id,
       )
       expect(ids).not.toContain(S.archived)
-      expect(ids).not.toContain(S.revokedAccount)
+      expect(ids).not.toContain(S.linked)
     }
+  })
+
+  it('offers a soldier whose only account was revoked (D-156)', () => {
+    expect(
+      linkCandidates({ claimed_personal_id: '2222222', first_name: 'X', last_name: 'Y' }, matchData()),
+    ).toEqual([{ soldier_id: S.revokedAccount, match: 'personal_id' }])
   })
 
   it('names alone match without a personal id; no match gives no candidates', () => {
@@ -180,7 +196,13 @@ describe('autoLinkSoldier', () => {
     expect(autoLinkSoldier({ personal_id: null, verified_email: 'dana@example.com' }, data)).toBeNull()
     expect(autoLinkSoldier({ personal_id: '7654321', verified_email: 'dana@example.com' }, data)).toBeNull()
     expect(autoLinkSoldier({ personal_id: '1111111', verified_email: 'dana@example.com' }, data)).toBeNull()
-    expect(autoLinkSoldier({ personal_id: '2222222', verified_email: 'dana@example.com' }, data)).toBeNull()
+    expect(autoLinkSoldier({ personal_id: '3333333', verified_email: 'dana@example.com' }, data)).toBeNull()
+  })
+
+  it('links again a soldier whose account was revoked (D-156)', () => {
+    expect(autoLinkSoldier({ personal_id: '2222222', verified_email: 'dana@example.com' }, matchData())).toBe(
+      S.revokedAccount,
+    )
   })
 
   it('does not link when two soldiers match (ids stored before normalization)', () => {
@@ -279,6 +301,26 @@ describe('link review', () => {
     expect(canReviewLinkRequest(context, REVIEWER, [])).toBe(false)
     expect(canReviewLinkRequest(context, ORG_REVIEWER, [])).toBe(true)
     expect(canReviewLinkRequest(context, IN_UNIT, [])).toBe(false)
+  })
+
+  it('a link names a candidate (D-156)', () => {
+    const candidates = [{ soldier_id: IN_UNIT, match: 'name' as const }]
+    expect(linkTargetIssues(candidates, IN_UNIT)).toEqual([])
+    expect(linkTargetIssues(candidates, OUTSIDE)).toEqual([{ path: ['resolution', 'soldier_id'], code: 'not_a_candidate' }])
+    expect(linkTargetIssues([], IN_UNIT)).toHaveLength(1)
+  })
+
+  it('linking needs accounts:approve over the soldier linked, not over any candidate (D-156)', () => {
+    expect(canLinkSoldier(context, REVIEWER, IN_UNIT)).toBe(true)
+    expect(canLinkSoldier(context, REVIEWER, OUTSIDE)).toBe(false)
+    expect(canLinkSoldier(context, ORG_REVIEWER, OUTSIDE)).toBe(true)
+  })
+
+  it('revoking needs accounts:approve over the soldier, and never the own account (D-156)', () => {
+    expect(canRevokeAccount(context, REVIEWER, IN_UNIT)).toBe(true)
+    expect(canRevokeAccount(context, REVIEWER, OUTSIDE)).toBe(false)
+    expect(canRevokeAccount(context, ORG_REVIEWER, ORG_REVIEWER)).toBe(false)
+    expect(canRevokeAccount(context, ORG_REVIEWER, REVIEWER)).toBe(true)
   })
 
   it('only a pending request is reviewed or cancelled', () => {
