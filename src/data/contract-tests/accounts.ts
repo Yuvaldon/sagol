@@ -15,7 +15,7 @@ import {
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, errorOf, issuesOf, seedActor, valueOf } from './support'
+import { NOW, errorOf, issuesOf, seedActor, seedGrant, valueOf } from './support'
 
 // Account linking against the shared contract (D-005, D-030, D-066, D-156): requests, auto-link, review,
 // revocation, and what each side may see. Sample data, test files only.
@@ -67,6 +67,7 @@ function unitInput(name: string): CreateUnitInput {
 const APPROVE_ACCOUNTS: Permission = { resource: 'accounts', action: 'approve' }
 const VIEW_ACCOUNTS: Permission = { resource: 'accounts', action: 'view' }
 const CREATE_SOLDIERS: Permission = { resource: 'soldiers', action: 'create' }
+const VIEW_SOLDIERS: Permission = { resource: 'soldiers', action: 'view' }
 
 export function describeAccountContract(
   harnessOf: () => ContractHarness,
@@ -302,7 +303,7 @@ export function describeAccountContract(
         const outOfReach = await rosterSoldier({ membership: placement(theirs.id) })
         const { input } = await asks()
         const loner = await asks({ first_name: 'Nobody', last_name: 'Known' }, identityOf('loner@example.test'))
-        const reviewer = await seedActor(harnessOf(), organization, [APPROVE_ACCOUNTS], {
+        const reviewer = await seedActor(harnessOf(), organization, [APPROVE_ACCOUNTS, VIEW_SOLDIERS], {
           anchor_type: 'unit',
           anchor_unit_id: mine.id,
           include_descendants: true,
@@ -324,6 +325,76 @@ export function describeAccountContract(
           resolution: { kind: 'create_soldier', account_id: newAccountId(), soldier_id: newSoldierId(), command_rank_id: null, membership: null },
         })
         expect(errorOf(created).code).toBe('forbidden')
+        // A soldier out of reach is refused the same way whether or not it is a candidate (D-157).
+        const stranger = await rosterSoldier({ first_name: 'Other', last_name: 'Name', membership: placement(theirs.id) })
+        harnessOf().signIn(reviewer.identity)
+        const notCandidate = await adapter().commands.accounts.reviewLink({
+          id: input.id,
+          resolution: { kind: 'link', account_id: newAccountId(), soldier_id: stranger.id },
+        })
+        expect(errorOf(notCandidate).code).toBe('forbidden')
+      })
+
+      it('offers only candidates the reviewer may see (D-157)', async () => {
+        const mine = await unit('Mine')
+        await rosterSoldier({ membership: placement(mine.id) })
+        const { input } = await asks()
+        const reviewer = await seedActor(harnessOf(), organization, [APPROVE_ACCOUNTS], {
+          anchor_type: 'unit',
+          anchor_unit_id: mine.id,
+          include_descendants: true,
+        })
+        harnessOf().signIn(reviewer.identity)
+        expect(valueOf(await adapter().repositories.account_link_requests.candidates(input.id))).toEqual([])
+      })
+
+      it('fills the personal id only for a reviewer who may write private fields (D-157)', async () => {
+        const mine = await unit('Mine')
+        const soldier = await rosterSoldier({ membership: placement(mine.id) })
+        const { input } = await asks({ claimed_personal_id: '5554443' })
+        const reviewer = await seedActor(harnessOf(), organization, [APPROVE_ACCOUNTS, VIEW_SOLDIERS], {
+          anchor_type: 'unit',
+          anchor_unit_id: mine.id,
+          include_descendants: true,
+        })
+        harnessOf().signIn(reviewer.identity)
+        const reviewed = await adapter().commands.accounts.reviewLink({
+          id: input.id,
+          resolution: { kind: 'link', account_id: newAccountId(), soldier_id: soldier.id },
+        })
+        expect(valueOf(reviewed).status).toBe('approved')
+        expect(await harnessOf().rows('soldier_private')).toEqual([])
+      })
+
+      it('creates a soldier only where the reviewer may also approve accounts (D-157)', async () => {
+        const mine = await unit('Mine')
+        const theirs = await unit('Theirs')
+        await rosterSoldier({ membership: placement(mine.id) })
+        const { input } = await asks()
+        const reviewer = await seedActor(harnessOf(), organization, [APPROVE_ACCOUNTS], {
+          anchor_type: 'unit',
+          anchor_unit_id: mine.id,
+          include_descendants: true,
+        })
+        await seedGrant(
+          harnessOf(),
+          organization,
+          reviewer.soldierId,
+          [CREATE_SOLDIERS, { resource: 'memberships', action: 'update' }, { resource: 'units', action: 'view' }],
+          { anchor_type: 'organization' },
+        )
+        harnessOf().signIn(reviewer.identity)
+        const elsewhere = await adapter().commands.accounts.reviewLink({
+          id: input.id,
+          resolution: {
+            kind: 'create_soldier',
+            account_id: newAccountId(),
+            soldier_id: newSoldierId(),
+            command_rank_id: null,
+            membership: placement(theirs.id),
+          },
+        })
+        expect(errorOf(elsewhere).code).toBe('forbidden')
       })
 
       it('lets a reviewer with soldiers:create in the unit create there', async () => {
@@ -365,6 +436,21 @@ export function describeAccountContract(
         )
         return { soldier, identity, accountId }
       }
+
+      it('leaves a revoked soldier to review, even with a matching invite email (D-157)', async () => {
+        const soldier = await rosterSoldier({
+          private: { personal_id: '7654321', invite_email: 'asker@example.test', phone: null },
+        })
+        const { identity, result } = await asks({ claimed_personal_id: '7654321' })
+        expect(result).toEqual({ outcome: 'linked' })
+        harnessOf().signIn(owner)
+        const [account] = valueOf(await adapter().repositories.soldier_accounts.list({ soldier_ids: [soldier.id] }))
+        if (account === undefined) throw new Error('no account was linked')
+        valueOf(await adapter().commands.accounts.revokeLink({ id: account.id }))
+        harnessOf().signIn(identity)
+        const again = valueOf(await adapter().commands.accounts.requestLink(requestInput({ claimed_personal_id: '7654321' })))
+        expect(again).toEqual({ outcome: 'pending_review' })
+      })
 
       it('ends the link, keeps the row, and makes the soldier a candidate again (D-156)', async () => {
         const { soldier, identity, accountId } = await linkedSoldier()

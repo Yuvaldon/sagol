@@ -22,6 +22,7 @@ import {
   type TableName,
 } from '@contracts'
 import {
+  ACCOUNT_REVIEW_PERMISSION,
   autoLinkSoldier,
   canLinkSoldier,
   canReviewLinkRequest,
@@ -56,6 +57,8 @@ const LINK_TABLES: readonly TableName[] = [
 const ACCOUNTS_VIEW = { resource: 'accounts', action: 'view' } as const
 const SOLDIERS_CREATE = { resource: 'soldiers', action: 'create' } as const
 const MEMBERSHIPS_UPDATE = { resource: 'memberships', action: 'update' } as const
+const SOLDIERS_VIEW = { resource: 'soldiers', action: 'view' } as const
+const PRIVATE_UPDATE = { resource: 'soldier_private', action: 'update' } as const
 
 function requireIdentity(identity: AuthIdentity | null): AuthIdentity {
   return identity ?? fail({ code: 'unauthenticated' })
@@ -207,14 +210,16 @@ export function createAccountLinkRequestRepository(
             .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
         })
       }),
-    // Only the candidates the reviewer may link: the others' existence is not theirs to learn (D-156).
+    // Only the candidates the reviewer may see and link: the others' existence is not theirs to learn (D-156, D-157).
     candidates: (id) =>
       asResult(() =>
         database.transaction('r', LINK_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const { request, data } = await visibleRequest(database, scope, id)
-          return candidatesOf(request, data).filter((candidate) =>
-            canLinkSoldier(scope.context, scope.soldier_id, candidate.soldier_id),
+          return candidatesOf(request, data).filter(
+            (candidate) =>
+              holds(scope, SOLDIERS_VIEW, soldierTarget(candidate.soldier_id)) &&
+              canLinkSoldier(scope.context, scope.soldier_id, candidate.soldier_id),
           )
         }),
       ),
@@ -256,7 +261,9 @@ export function createAccountCommands(dependencies: LocalDependencies): DataComm
   }
 
   /** Fills the soldier's missing personal id from the request (D-030), when no other soldier holds it. */
+  /** Fills a missing personal id from the request, when the reviewer may write private fields (D-157). */
   async function enrich(scope: ActorScope, request: AccountLinkRequest, soldierId: SoldierId): Promise<DataChange[]> {
+    if (!holds(scope, PRIVATE_UPDATE, soldierTarget(soldierId))) return []
     const stored = await tableOf(database, 'soldier_private').get(soldierId)
     const fill = linkEnrichment(request, stored ?? null)
     if (fill === null || !(await personalIdFree(database, scope.organization_id, fill.personal_id, soldierId))) return []
@@ -381,20 +388,25 @@ export function createAccountCommands(dependencies: LocalDependencies): DataComm
           const written: DataChange[] = [{ table: 'account_link_requests', ids: [request.id] }]
           let soldierId: SoldierId | null = null
           if (resolution.kind === 'link') {
+            // Authority first, so the answer tells nothing of soldiers out of reach (D-157).
+            if (!canLinkSoldier(scope.context, scope.soldier_id, resolution.soldier_id)) return fail({ code: 'forbidden' })
             const issues = linkTargetIssues(linkCandidates(request, data), resolution.soldier_id)
             if (issues.length > 0) return failValidation(issues)
-            if (!canLinkSoldier(scope.context, scope.soldier_id, resolution.soldier_id)) return fail({ code: 'forbidden' })
             soldierId = resolution.soldier_id
             written.push(...(await enrich(scope, request, soldierId)))
           } else if (resolution.kind === 'create_soldier') {
             const placement = placementTarget(resolution.membership?.unit_id ?? null)
+            // The new soldier lands where the reviewer may both create soldiers and approve accounts (D-157).
             requirePermission(scope, SOLDIERS_CREATE, placement)
+            requirePermission(scope, ACCOUNT_REVIEW_PERMISSION, placement)
             if (resolution.membership !== null) {
               requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: resolution.membership.unit_id })
             }
             const personalId = request.claimed_personal_id
             const fill =
-              personalId !== null && (await personalIdFree(database, scope.organization_id, personalId, resolution.soldier_id))
+              personalId !== null &&
+              holds(scope, PRIVATE_UPDATE, placement) &&
+              (await personalIdFree(database, scope.organization_id, personalId, resolution.soldier_id))
             const created = await insertSoldier(
               database,
               scope,

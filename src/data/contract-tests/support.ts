@@ -72,6 +72,48 @@ export async function placeSoldier(
   return id
 }
 
+/** One more role holding `pairs`, granted to `soldierId` at the given scope. */
+export async function seedGrant(
+  harness: ContractHarness,
+  organization_id: OrganizationId,
+  soldierId: SoldierId,
+  pairs: readonly Permission[],
+  scope: ActorScopeColumns,
+) {
+  const roleId = RoleId.parse(crypto.randomUUID())
+  const audit = { created_at: NOW, created_by: null, updated_at: NOW, updated_by: null, version: 1, archived_at: null }
+  await harness.seed('roles', [
+    { id: roleId, organization_id, name: 'Limited', description: null, color_key: null, ...audit },
+  ])
+  await harness.seed(
+    'role_permissions',
+    pairs.map((pair) => ({ ...pair, role_id: roleId, organization_id })),
+  )
+  await harness.seed('access_grants', [
+    {
+      id: AccessGrantId.parse(crypto.randomUUID()),
+      organization_id,
+      grantee_soldier_id: soldierId,
+      role_id: roleId,
+      anchor_type: scope.anchor_type,
+      anchor_unit_id: scope.anchor_unit_id ?? null,
+      anchor_soldier_id: null,
+      anchor_level_id: null,
+      anchor_steps: null,
+      include_descendants: scope.include_descendants ?? false,
+      subject_rank_constraint: 'any',
+      valid_from: NOW,
+      valid_to: null,
+      reason: null,
+      granted_by: null,
+      granted_at: NOW,
+      revoked_at: null,
+      revoked_by: null,
+    },
+  ])
+  return { roleId }
+}
+
 /** A second linked soldier holding `pairs` from one role, at the given scope. */
 export async function seedActor(
   harness: ContractHarness,
@@ -81,7 +123,6 @@ export async function seedActor(
   home?: UnitId,
 ) {
   const soldierId = SoldierId.parse(crypto.randomUUID())
-  const roleId = RoleId.parse(crypto.randomUUID())
   const identity: AuthIdentity = {
     auth_user_id: AuthUserId.parse(crypto.randomUUID()),
     provider: 'local',
@@ -117,35 +158,7 @@ export async function seedActor(
       revoked_by: null,
     },
   ])
-  await harness.seed('roles', [
-    { id: roleId, organization_id, name: 'Limited', description: null, color_key: null, ...audit },
-  ])
-  await harness.seed(
-    'role_permissions',
-    pairs.map((pair) => ({ ...pair, role_id: roleId, organization_id })),
-  )
-  await harness.seed('access_grants', [
-    {
-      id: AccessGrantId.parse(crypto.randomUUID()),
-      organization_id,
-      grantee_soldier_id: soldierId,
-      role_id: roleId,
-      anchor_type: scope.anchor_type,
-      anchor_unit_id: scope.anchor_unit_id ?? null,
-      anchor_soldier_id: null,
-      anchor_level_id: null,
-      anchor_steps: null,
-      include_descendants: scope.include_descendants ?? false,
-      subject_rank_constraint: 'any',
-      valid_from: NOW,
-      valid_to: null,
-      reason: null,
-      granted_by: null,
-      granted_at: NOW,
-      revoked_at: null,
-      revoked_by: null,
-    },
-  ])
+  const { roleId } = await seedGrant(harness, organization_id, soldierId, pairs, scope)
   if (home !== undefined) await placeSoldier(harness, organization_id, soldierId, home, null)
   return { identity, soldierId, roleId }
 }
