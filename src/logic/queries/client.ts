@@ -89,10 +89,13 @@ export function createQueryClient(): QueryClient {
 }
 
 export function invalidateChanged(client: QueryClient, changes: readonly DataChange[]): void {
-  if (changes.some((change) => POLICY_TABLES.has(change.table))) void client.invalidateQueries({ queryKey: [TABLE_SCOPE] })
+  const policyChanged = changes.some((change) => POLICY_TABLES.has(change.table))
+  if (policyChanged) void client.invalidateQueries({ queryKey: [TABLE_SCOPE] })
   for (const change of changes) {
-    void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
     if (ONBOARDING_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.onboarding })
+    // Under a policy change, the whole table scope above covers these already.
+    if (policyChanged) continue
+    void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
     if (LINK_REQUEST_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.accountLinkRequests })
   }
   // Many tables feed the policy, and a hint is cheap to ask again (D-091).

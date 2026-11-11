@@ -149,7 +149,7 @@ describe('session hooks', () => {
     expect(fake.organizationReads).toHaveBeenCalledTimes(1)
 
     act(() => {
-      fake.fireChanges([{ table: 'soldiers', ids: [] }])
+      fake.fireChanges([{ table: 'tags', ids: [] }])
     })
     expect(fake.organizationReads).toHaveBeenCalledTimes(1)
 

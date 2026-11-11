@@ -348,7 +348,7 @@ describe('unit reads and commands', () => {
     })
     expect(fake.list).toHaveBeenCalledTimes(1)
     act(() => {
-      fake.fireChanges('soldiers')
+      fake.fireChanges('tags')
     })
     expect(fake.list).toHaveBeenCalledTimes(1)
     act(() => {
