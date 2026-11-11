@@ -158,7 +158,8 @@ The current state (D-128):
 
 - **One source of filter data** in `logic/filters` (`useFilterSource`, `filterContextOf`): soldiers, ranks, units,
   memberships and soldier tags; seniority overrides join with V15 and property values with V14 (D-131, OI-080, OI-081).
-  The board and the presence lists read it, and V7's rules will.
+  The board, the presence lists and the rules' evaluation (`ruleDataOf`) read it; units with archived ones join with
+  OI-098 (D-147).
 - **Who a view starts from:** soldiers not archived, active only unless the filter has a status condition (D-105, D-131).
 - **The filter bar** reads and writes `filter` as one top-level `and` of a unit (the selector), one `tag any` per
   category, ranks and statuses (D-131); anything else is "a filter the bar does not read". Leave conditions (statuses,

@@ -32,6 +32,7 @@ the row before an audit reminds the owner to open it.
 | 0.7 | docs | Move to vertical slices: `docs/FEATURE_MAP.md`, Stone 3 direction (D-075 … D-082) | ☑ |
 | 0.8 | docs | Record audit A1: `docs/audits/A1.md`, OI-034 … OI-042, D-083, D-084 | ☑ |
 | 0.9 | docs | Record audit A3: `docs/audits/A3.md`, OI-068 … OI-091, D-123 … D-129, open-items archive | ☑ |
+| 0.10 | docs | Record audit A4: `docs/audits/A4.md`, OI-098 … OI-101, D-145 … D-147 | ☑ |
 
 ### Session 0.2 guardrails
 
@@ -89,7 +90,7 @@ the row before an audit reminds the owner to open it.
 | V6 | Tags and filters | Tags, filter chips, "only who is missing", present and absent lists | ☑ |
 | V7 | Availability rules | Rule builder, heat row, soft-rule acknowledgment, hard-rule refusal | ☑ |
 | V8 | Timeline drag | Drag to create, move and resize, with live feedback | ☑ |
-| A4 | audit | Filters and rules: UI warnings equal command results | ☐ |
+| A4 | audit | Filters and rules: UI warnings equal command results. Report: `docs/audits/A4.md` | ☑ |
 
 ## M4 — Everyone has the right access
 
