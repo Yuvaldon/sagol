@@ -127,15 +127,15 @@ am = amends, ref = refines, ext = extends.
 | D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126 |
-| D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119 |
+| D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
 | D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | |
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
-| D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129 |
+| D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143 |
 | D-116 | Module buttons on a phone show their icon | ui | ref D-120 |
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
-| D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129 |
+| D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143 |
 | D-120 | The requests inbox: pending and closed; `LeaveQuery.window` may be NULL | contracts, config, data, logic, ui, backend | |
 | D-121 | The "approve now" default lives in the user menu | data, logic, ui, backend | |
 | D-122 | The board waits for the permission hints | logic, ui | |
@@ -158,7 +158,9 @@ am = amends, ref = refines, ext = extends.
 | D-139 | The availability rule commands | domain, data, logic, backend | |
 | D-140 | The rules module | config, logic, ui | |
 | D-141 | The heat row | config, logic, ui | |
-| D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | |
+| D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143 |
+| D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144 |
+| D-144 | The touch path of the timeline, and its lanes on a phone | config, ui | |
 
 ---
 
@@ -1874,3 +1876,42 @@ needs authority on both ends.
 - An actor who cannot read every row a rule counts may get a live warning that differs from the command's answer. Only
   the owner has an account before V10, which decides how such an actor previews rules (OI-094).
 **Why:** the owner's answer at the start of V7 (warn while choosing), D-047 (the command is the authority) and OI-066.
+
+## D-143 — Timeline drag: move, resize and create, with live feedback
+2026-11-11 · accepted · refines D-092, D-111, D-115, D-119, D-123, D-142 · decided under the owner's autonomy instruction of
+2026-11-11
+- **What moves:** a bar or a marker of a pending or approved leave, whose soldier is not archived, where the actor holds
+  `leaves:update` over the soldier (a hint, D-091). Its body moves it by whole days; the inner ends of a bar (a handle of
+  `TIMELINE_DRAG.handlePx`) move its first or last day, and a leave keeps at least one day. A marker only moves. The row
+  never changes: a leave keeps its soldier (D-045). A drag starts past `TIMELINE_DRAG.thresholdPx`; anything shorter is
+  the press that opens the leave (D-119).
+- **Where:** the pointer counts only the window's days. A leave cut by the window keeps its hidden days and moves them by
+  the same count. A grid wider than the screen scrolls sideways while the pointer is near its edge.
+- **Live feedback:** a ghost of the mark at its new days over the stored one, and a card (`role="status"`) with the new
+  days and their count, "returns to pending" when D-064 says so, and the rules the change would break, as the edit form
+  judges them (D-142): each rule's name with its enforcement chip. The ghost's edge says the worst, a dashed pending edge
+  for a soft rule and a refused edge for a hard one. A hard rule is the conflict a drag shows: the drop is still sent and
+  the command's refusal shows in the dialog, because the command is the authority.
+- **The drop** sends `leaves.update` with the dates only (D-123), through the acknowledgment dialog (D-142). The same days
+  send nothing, and Escape cancels. The mark stays at its new days until the command answers; a refusal puts it back and
+  says why in a notice on the board, cleared by the next drag or its close button.
+- **Create:** pressing an empty day of a soldier the actor may create a leave for (active, `leaves:create`, D-114, D-125)
+  and dragging marks a run of days. Releasing opens the new-leave form with the soldier and the days filled in; the type
+  is chosen there, so its rule warning shows there. The draft is the search param `draft` beside the panel, so a link
+  reopens it, and closing the panel removes it. A mouse press with no drag creates nothing.
+- **Without a pointer:** the details drawer's edit form changes the days, and the "+" creates (D-092: every drag has a
+  way without one).
+**Why:** the V8 card. A drop that is one `update` is all or nothing (D-123), and a creation needs a type, which a drag
+cannot give. Recommended options taken without asking, under the owner's instruction of 2026-11-11.
+
+## D-144 — The touch path of the timeline, and its lanes on a phone
+2026-11-11 · accepted · refines D-111, D-143 · OI-067 · decided under the owner's autonomy instruction of 2026-11-11
+- **On touch** a finger that moves scrolls the board, as before. Holding still on a mark or an empty day for
+  `TIMELINE_DRAG.holdMs` picks it up: the board stops scrolling and the moves of D-143 follow the finger. A tap still opens
+  the leave. A hold on an empty day released without moving opens the new-leave form for that day; a mark released where
+  it was sends nothing.
+- **Lanes on a phone (OI-067):** bars are 28 high with a lane step of 44 (`TIMELINE_LANES_TOUCH`), so a bar's hit area,
+  which fills the gap to the next lane (D-119), is 44 high, and a marker's hit area is 44 wide. A row with one lane stays
+  44 high; each more lane adds 44.
+**Why:** OI-067 asked for 44 px touch targets on the board; taller lanes keep every mark on the board, where a list per
+row would hide them. A hold before a drag keeps scrolling by finger, which a phone needs most.

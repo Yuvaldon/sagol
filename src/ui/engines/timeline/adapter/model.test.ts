@@ -23,7 +23,13 @@ const dana: Soldier = {
   archived_at: null,
 }
 const DAYS = ['2026-11-08', '2026-11-09', '2026-11-10']
-const NO_LEAVES = { leaves: new Map(), colors: 'type', openLeave: () => undefined } as const
+const NO_LEAVES = {
+  leaves: new Map(),
+  colors: 'type',
+  openLeave: () => undefined,
+  movable: () => false,
+  creatable: () => false,
+} as const
 
 describe('the timeline adapter', () => {
   it('writes each day as a narrow weekday and a number, and marks today', () => {
@@ -98,8 +104,14 @@ describe('leaves on a row (D-111, D-112)', () => {
   const openLeave = (leaveId: string) => {
     opened.push(leaveId)
   }
-  const rowWith = (leaves: TimelineLeave[], colors: 'type' | 'uniform' = 'type') => {
-    const [row] = timelineRows([item], DAYS, null, { leaves: new Map([[dana.id, leaves]]), colors, openLeave })
+  const rowWith = (leaves: TimelineLeave[], colors: 'type' | 'uniform' = 'type', movable: (leaveId: string) => boolean = () => false) => {
+    const [row] = timelineRows([item], DAYS, null, {
+      leaves: new Map([[dana.id, leaves]]),
+      colors,
+      openLeave,
+      movable,
+      creatable: (soldierId) => soldierId === dana.id,
+    })
     if (row?.kind !== 'resource') throw new Error('no row')
     return row
   }
@@ -138,6 +150,17 @@ describe('leaves on a row (D-111, D-112)', () => {
   it('paints every absence one color in the uniform mode, with the type as a dot and a caption', () => {
     const [bar] = rowWith([leave(1, '2026-11-08', '2026-11-08')], 'uniform').marks
     expect(bar).toMatchObject({ tone: { fill: 'bg-absence' }, dot: 'bg-palette-teal', caption: 'רגילה' })
+  })
+
+  it('knows every day of a mark, also those the window cuts, and what a drag may do with it (D-143)', () => {
+    const moving = leave(2, '2026-11-09', '2026-11-12', { effect: 'available' })
+    const row = rowWith([leave(1, '2026-11-01', '2026-11-09'), moving], 'type', () => true)
+    expect(row.creatable).toBe(true)
+    expect(row.marks.map((mark) => [mark.range, mark.drag])).toEqual([
+      [{ start: -7, end: 1 }, { resize: true }],
+      [{ start: 1, end: 4 }, { resize: false }],
+    ])
+    expect(rowWith([leave(1, '2026-11-08', '2026-11-08')]).marks[0]?.drag).toBeNull()
   })
 
   it('leaves out what the window does not hold', () => {

@@ -190,6 +190,11 @@ The current state, in short (D-128). The entries hold the reasons.
   hints allow, one edit form, one thread of events and comments. The "+" opens the new-leave form in the same panel
   (D-115); it offers active soldiers only (D-125, D-136). The requests inbox lists pending leaves the actor may
   approve and closed leaves to reopen (D-120). The "approve now" default is a switch in the user menu (D-121).
+- **Dragging on the board (D-143, D-144):** a bar or a marker the actor may edit moves by whole days, and a bar's ends
+  move its first or last day; the drop is one `leaves.update` with the dates, through the rule gate. A drag on empty days
+  opens the new-leave form with the soldier and the days (`draft` in the URL). While it goes on, a card says the new days,
+  a return to pending and the rules the change would break. On touch a finger holds first. The math is in the engine's
+  core; `logic/timeline/editing.ts` gives the hints and the edit a drop sends.
 - **Optimistic updates:** a step shows at once and is taken back on a refusal; `stale_version` shows the stored leave
   again (D-119).
 
@@ -251,7 +256,7 @@ src/
                contract-tests/
   logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ timeline/
                tags/ filters/ presence/ rules/ testing/ (test-only helpers, D-135)
-  ui/          theme/ primitives/ patterns/ errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
+  ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/
 supabase/      migrations/ policies/ functions/ tests/   (phase 8)

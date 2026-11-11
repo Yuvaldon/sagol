@@ -1,7 +1,7 @@
 import type { BarColorMode } from '@config'
 import { RuleEnforcement, type CalendarDate, type SoldierId } from '@contracts'
 import { t } from '@i18n'
-import { fullName, type HeatDay, type TimelineGroupLabel, type TimelineItem, type TimelineLeave } from '@logic'
+import { dayRangeOf, fullName, type HeatDay, type TimelineGroupLabel, type TimelineItem, type TimelineLeave } from '@logic'
 import { formatDate, formatDateRange } from '../../../patterns/dates'
 import { UNIT_STATE_KEYS } from '../../../patterns/units'
 import { ICON_GLYPHS, iconOf } from '../../../theme/icons'
@@ -60,6 +60,10 @@ export interface TimelineMarkOptions {
   readonly colors: BarColorMode
   /** Opens a leave's details: every mark is a control (D-119). */
   readonly openLeave: (leaveId: string) => void
+  /** Whether a drag may move the leave (D-143). */
+  readonly movable: (leaveId: string) => boolean
+  /** Whether a drag on the soldier's row may mark a new leave (D-143). */
+  readonly creatable: (soldierId: SoldierId) => boolean
 }
 
 interface Placed {
@@ -91,7 +95,12 @@ function typeName(leave: TimelineLeave): string {
   return leave.type?.name ?? t('leaves.unknownType')
 }
 
-function markOf({ leave, start, length, cut }: Placed, lane: number, { colors, openLeave }: TimelineMarkOptions): TimelineMark {
+function markOf(
+  { leave, start, length, cut }: Placed,
+  lane: number,
+  first: CalendarDate,
+  { colors, openLeave, movable }: TimelineMarkOptions,
+): TimelineMark {
   const badge = leave.effect === 'available'
   const uniform = colors === 'uniform'
   const typeTone = toneOf(leave.type?.color_key ?? null)
@@ -101,6 +110,8 @@ function markOf({ leave, start, length, cut }: Placed, lane: number, { colors, o
     start,
     length,
     cut,
+    range: dayRangeOf(first, leave),
+    drag: movable(leave.id) ? { resize: !badge } : null,
     lane,
     dashed: leave.status === 'pending',
     tone: uniform ? (badge ? MARKER_TONE : UNIFORM_TONE) : typeTone,
@@ -135,9 +146,11 @@ function marksOf(leaves: readonly TimelineLeave[], days: readonly CalendarDate[]
   const badges = placed.filter((item) => item.leave.effect === 'available')
   const barLanes = assignLanes(bars)
   const badgeLanes = assignLanes(badges)
+  const [first] = days
+  if (first === undefined) return { marks: [], lanes: 1 }
   const marks = [
-    ...bars.map((item, index) => markOf(item, barLanes.lanes[index] ?? 0, options)),
-    ...badges.map((item, index) => markOf(item, badgeLanes.lanes[index] ?? 0, options)),
+    ...bars.map((item, index) => markOf(item, barLanes.lanes[index] ?? 0, first, options)),
+    ...badges.map((item, index) => markOf(item, badgeLanes.lanes[index] ?? 0, first, options)),
   ]
   return { marks, lanes: Math.max(barLanes.count, badgeLanes.count) }
 }
@@ -160,6 +173,7 @@ export function timelineRows(
       detail: item.rank?.short_title ?? item.rank?.title ?? null,
       offDays,
       offText: offTextOf(days, outOfScope, present),
+      creatable: options.creatable(item.soldier.id),
       onOpen:
         open === null
           ? null

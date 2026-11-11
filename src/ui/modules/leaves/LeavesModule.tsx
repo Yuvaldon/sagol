@@ -16,6 +16,7 @@ import {
   usePanel,
   useSoldiers,
   useToday,
+  type NewLeaveDraft,
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { Tags } from 'lucide-react'
@@ -28,8 +29,8 @@ import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
-import { RuleGateDialog, RuleWarnings } from '../rules/RuleGate'
-import { useRuleGate } from '../rules/ruleAnswer'
+import { RuleGateDialog, RuleWarnings } from '../../patterns/rules/RuleGate'
+import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { leaveTypeOptions } from './typeOptions'
 import { LeaveDetails } from './LeaveDetails'
 
@@ -49,6 +50,7 @@ function NewLeaveForm({
   types,
   today,
   approveNow,
+  draft,
 }: {
   readonly soldiers: readonly Soldier[]
   readonly canApprove: (soldierId: SoldierId) => boolean
@@ -56,6 +58,8 @@ function NewLeaveForm({
   readonly types: readonly LeaveType[]
   readonly today: CalendarDate
   readonly approveNow: boolean
+  /** The soldier and days a drag on the board marked (D-143). */
+  readonly draft: NewLeaveDraft | null
 }) {
   const panel = usePanel()
   const create = useCreateLeave()
@@ -64,7 +68,7 @@ function NewLeaveForm({
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
   const form = useForm({
-    defaultValues: newLeaveValues(today, approveNow),
+    defaultValues: newLeaveValues(today, approveNow, draft),
     validators: { onSubmit: ({ value }) => validatorResult(newLeaveIssues(value, typeOf(value.leave_type_id))) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
@@ -215,9 +219,19 @@ function NewLeave() {
     )
   }
   if (!creation.any) return <EmptyNotice titleKey="leaves.noSoldiersTitle" bodyKey="leaves.noSoldiersBody" />
+  // A draft counts only for a soldier the form offers, who the actor may ask for (a link may name anyone).
+  const draft =
+    panel.draft === null
+      ? null
+      : creation.soldiers.some((soldier) => soldier.id === panel.draft?.soldier_id)
+        ? panel.draft
+        : null
 
   return (
     <NewLeaveForm
+      // A new drag starts the form over from its own draft.
+      key={draft === null ? 'blank' : `${draft.soldier_id}:${draft.start_date}:${draft.end_date}`}
+      draft={draft}
       soldiers={creation.soldiers}
       canApprove={creation.canApprove}
       groups={groups.value}

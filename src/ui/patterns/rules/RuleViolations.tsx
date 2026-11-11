@@ -1,7 +1,7 @@
 import { RuleBound, RuleEnforcement, type RuleViolation } from '@contracts'
 import { t } from '@i18n'
 import { fullName } from '@logic'
-import { formatDate } from '../../patterns/dates'
+import { formatDate } from '../dates'
 import { boundText, useRuleNames } from './ruleText'
 
 // The broken rules of a change or of a day (D-138): each rule with its unit, its group and its bound, and for each
@@ -61,6 +61,28 @@ export function RuleViolations({ violations }: { readonly violations: readonly R
           </li>
         )
       })}
+    </ul>
+  )
+}
+
+/**
+ * The broken rules in brief, while a drag is on the board (D-143): each rule once, by name, with its enforcement. A
+ * rule broken both softly and hard on different targets shows hard.
+ */
+export function RuleBrief({ violations }: { readonly violations: readonly RuleViolation[] }) {
+  const names = useRuleNames()
+  const worst = new Map<RuleViolation['rule_id'], RuleViolation['enforcement']>()
+  for (const violation of violations) {
+    if (worst.get(violation.rule_id) !== RuleEnforcement.enum.hard) worst.set(violation.rule_id, violation.enforcement)
+  }
+  return (
+    <ul aria-label={t('rules.violationsLabel')} className="flex flex-col gap-2xs">
+      {[...worst].map(([ruleId, enforcement]) => (
+        <li key={ruleId} className="flex items-center justify-between gap-sm">
+          <span className="min-w-none truncate text-name">{names.rule(ruleId)}</span>
+          <EnforcementChip enforcement={enforcement} />
+        </li>
+      ))}
     </ul>
   )
 }

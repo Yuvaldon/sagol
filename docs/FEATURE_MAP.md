@@ -272,6 +272,9 @@ touch path on mobile.
   (a move or a resize sends the dates, D-123).
 - **Open items:** OI-067 (from V5).
 - **Decisions:** D-064, D-073, D-123.
+- **As built:** D-143, D-144. A move or a resize is one `leaves.update` with the dates; a drag on empty days opens the
+  new-leave form with the soldier and the days (`draft` in the URL), since a leave needs a type. On a phone a finger holds
+  first, and lanes are taller so every mark is a 44 px target (OI-067). The rule pieces moved to `ui/patterns/rules`.
 
 ### M4 — Everyone has the right access
 

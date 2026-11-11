@@ -5,7 +5,8 @@ const TYPES = ['build', 'chore', 'ci', 'docs', 'feat', 'fix', 'perf', 'refactor'
 const HEADER = new RegExp(String.raw`^(?:${TYPES.join('|')})(?:\([a-z0-9-]+\))?!?: \S.*$`)
 const MERGE_OR_REVERT = /^(?:Merge |Revert ")/
 
-const file = process.argv[2]
+// A path with spaces (a worktree under such a folder) reaches the hook split into words.
+const file = process.argv.length > 2 ? process.argv.slice(2).join(' ') : undefined
 if (file === undefined) throw new Error('usage: check-commit-msg.ts <commit message file>')
 const header = readFileSync(file, 'utf8').split('\n')[0] ?? ''
 

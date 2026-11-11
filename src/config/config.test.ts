@@ -17,7 +17,9 @@ import {
   PanelId,
   SEARCH_PARAMS,
   STORAGE_KEYS,
+  TIMELINE_DRAG,
   TIMELINE_LANES,
+  TIMELINE_LANES_TOUCH,
   TIMELINE_LAYOUT,
   VIEW_IDS,
   ViewId,
@@ -164,6 +166,18 @@ describe('views, url, storage, breakpoints, dates', () => {
   it('fits a lane step around a bar (D-111)', () => {
     expect(TIMELINE_LANES.laneStepPx).toBeGreaterThan(TIMELINE_LANES.barPx)
     expect(TIMELINE_LAYOUT.rowPx).toBeGreaterThan(TIMELINE_LANES.barPx)
+  })
+
+  it('makes every bar a 44 px touch target on a phone, and a row of one lane its own height (D-144)', () => {
+    expect(TIMELINE_LANES_TOUCH.laneStepPx).toBe(TIMELINE_LAYOUT.rowTouchPx)
+    expect(TIMELINE_LANES_TOUCH.laneStepPx).toBeGreaterThan(TIMELINE_LANES_TOUCH.barPx)
+    // The hit area grows by the same amount above and below a bar, in whole pixels.
+    expect((TIMELINE_LANES_TOUCH.laneStepPx - TIMELINE_LANES_TOUCH.barPx) % 2).toBe(0)
+  })
+
+  it('keeps the handles of a bar apart from its body (D-143)', () => {
+    expect(TIMELINE_DRAG.handlePx * 3).toBeLessThan(TIMELINE_LAYOUT.minDayPx)
+    expect(TIMELINE_DRAG.holdTolerancePx).toBeGreaterThan(0)
   })
 
   it('has a default view that is a view id', () => {

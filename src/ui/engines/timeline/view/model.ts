@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { DayRange, DragKind } from '../core/drag'
 
 // The neutral model the timeline view renders: days and rows of text, with no domain entity in sight.
 // Only the adapter builds it (ARCHITECTURE "View engines").
@@ -30,6 +31,8 @@ export interface TimelineResourceRow {
   readonly offText: string | null
   /** Opens the row's details. NULL when the actor may not open them (D-076). */
   readonly onOpen: (() => void) | null
+  /** Whether a drag on the row's empty days marks a new item (D-143). */
+  readonly creatable: boolean
   /** The row's bars and badges, each in its lane. */
   readonly marks: readonly TimelineMark[]
   /** How many lanes the row needs, at least one. */
@@ -56,6 +59,10 @@ export interface TimelineMark {
   readonly start: number
   readonly length: number
   readonly cut: { readonly start: boolean; readonly end: boolean }
+  /** Every day of the item as offsets from the window's first day, also days the window cuts (D-143). */
+  readonly range: DayRange
+  /** What a drag may do with it: NULL when it does not move; a badge never resizes (D-143). */
+  readonly drag: { readonly resize: boolean } | null
   readonly lane: number
   /** Pending: a dashed edge over a faint fill. Otherwise solid (D-111). */
   readonly dashed: boolean
@@ -83,4 +90,27 @@ export interface TimelineHeatCell {
   /** The day, the count and the worst, read aloud. */
   readonly label: string
   readonly onOpen: (() => void) | null
+}
+
+export type { DayRange, DragKind } from '../core/drag'
+
+/** A drag on the board (D-143): which row, which mark (NULL marks days for a new item), what it does, and its days. */
+export interface TimelineDrag {
+  readonly rowKey: string
+  readonly markKey: string | null
+  readonly kind: DragKind
+  readonly range: DayRange
+}
+
+/** The worst a drag would break, as the edge of its ghost says it: nothing, a soft rule or a hard one. */
+export type TimelineDragTone = 'ok' | 'soft' | 'hard'
+
+/** What the view tells about a drag, and what it hears back. */
+export interface TimelineDragProps {
+  /** Every change of the drag's days, and NULL when it ends without a drop. */
+  readonly onChange: (drag: TimelineDrag | null) => void
+  readonly onDrop: (drag: TimelineDrag) => void
+  readonly tone: TimelineDragTone
+  /** A drop that waits for its answer, painted where it was dropped. */
+  readonly held: TimelineDrag | null
 }
