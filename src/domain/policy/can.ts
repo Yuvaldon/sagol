@@ -7,7 +7,7 @@ import {
   type SoldierId,
 } from '@contracts'
 import type { EffectivePermission, PolicyContext } from './context'
-import { scopeCovers } from './scope'
+import { scopeCovers, scopeWithin, type ResolvedScope } from './scope'
 import { acceptsTarget } from './targets'
 
 // The one authorization check (D-007): the local adapter, logic's "can I?" hints and the
@@ -21,9 +21,10 @@ function rankAllows(
   target: PolicyTarget,
 ): boolean {
   if (constraint === SubjectRankConstraint.enum.any || target.kind !== 'soldier') return true
-  if (target.soldier_id === holderId) return constraint === SubjectRankConstraint.enum.junior_or_equal
+  // A holder without seniority gets only `any`, their own record included (D-057, D-157).
   const holder = context.seniorityOf(holderId)
   if (holder === null) return false
+  if (target.soldier_id === holderId) return constraint === SubjectRankConstraint.enum.junior_or_equal
   const subject = context.seniorityOf(target.soldier_id)
   if (subject === null) return true
   return constraint === SubjectRankConstraint.enum.junior ? subject < holder : subject <= holder
@@ -74,4 +75,25 @@ export function missingPermissions(
         (permission) => permission.resource === wanted.resource && permission.action === wanted.action,
       ),
   )
+}
+
+/**
+ * True when the actor holds `permission` at a scope that contains `scope` (D-156): a grant
+ * may give a scope only within the granter's own `access_grants:create`. An empty scope is
+ * within nothing.
+ */
+export function withinReach(
+  context: PolicyContext,
+  actorId: SoldierId,
+  permission: Permission,
+  scope: ResolvedScope,
+): boolean {
+  return context
+    .permissionsOf(actorId)
+    .some(
+      (held) =>
+        held.resource === permission.resource &&
+        held.action === permission.action &&
+        scopeWithin(scope, held.scope, context),
+    )
 }

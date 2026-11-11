@@ -89,7 +89,13 @@ export interface CoverageFacts {
   unitOf(soldierId: SoldierId): UnitId | null
 }
 
-/** True when a resolved scope covers the target for this action (D-053). */
+/** The soldier's primary unit today or one of its ancestors (D-159). */
+function inUnitChainOf(soldierId: SoldierId, unitId: UnitId, facts: CoverageFacts): boolean {
+  const home = facts.unitOf(soldierId)
+  return home !== null && isAncestorOrSelf(facts.tree, unitId, home)
+}
+
+/** True when a resolved scope covers the target for this action (D-053, D-159). */
 export function scopeCovers(
   scope: ResolvedScope,
   action: PermissionAction,
@@ -102,7 +108,8 @@ export function scopeCovers(
     case 'organization':
       return action === PermissionAction.enum.view
     case 'unit':
-      return scope.kind === 'unit' && unitCovered(scope, target.unit_id, facts.tree)
+      if (scope.kind === 'unit') return unitCovered(scope, target.unit_id, facts.tree)
+      return action === PermissionAction.enum.view && inUnitChainOf(scope.soldier_id, target.unit_id, facts)
     case 'soldier': {
       if (scope.kind === 'soldier') return scope.soldier_id === target.soldier_id
       const unitId = facts.unitOf(target.soldier_id)
@@ -110,5 +117,26 @@ export function scopeCovers(
     }
     default:
       return target satisfies never
+  }
+}
+
+/**
+ * True when every target `inner` covers is covered by `outer`, for any action (D-156).
+ * Organization lies only within organization; an empty scope lies within nothing.
+ */
+export function scopeWithin(inner: ResolvedScope, outer: ResolvedScope, facts: CoverageFacts): boolean {
+  if (inner.kind === 'empty' || outer.kind === 'empty') return false
+  if (outer.kind === 'organization') return true
+  switch (inner.kind) {
+    case 'organization':
+      return false
+    case 'soldier':
+      return scopeCovers(outer, PermissionAction.enum.update, { kind: 'soldier', soldier_id: inner.soldier_id }, facts)
+    case 'unit':
+      if (outer.kind !== 'unit') return false
+      if (outer.unit_id === inner.unit_id) return outer.include_descendants || !inner.include_descendants
+      return outer.include_descendants && isAncestorOrSelf(facts.tree, outer.unit_id, inner.unit_id)
+    default:
+      return inner satisfies never
   }
 }

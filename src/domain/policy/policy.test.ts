@@ -24,6 +24,9 @@ import {
   can,
   createPolicyContext,
   missingPermissions,
+  scopeWithin,
+  withinReach,
+  type ResolvedScope,
   placementTarget,
   soldierTarget as targetOfSoldier,
   archiveRankIssues,
@@ -114,6 +117,7 @@ function world(): World {
   const pairs: [RoleId, PermissionResource, PermissionAction][] = [
     [ROLE.baseline, 'leaves', 'view'], [ROLE.baseline, 'leaves', 'create'],
     [ROLE.baseline, 'leaves', 'delete'], [ROLE.baseline, 'leave_types', 'view'],
+    [ROLE.baseline, 'units', 'view'],
     [ROLE.approver, 'leaves', 'view'], [ROLE.approver, 'leaves', 'approve'],
     [ROLE.approver, 'soldiers', 'view'],
     [ROLE.admin, 'access_grants', 'create'], [ROLE.admin, 'access_grants', 'delete'],
@@ -246,6 +250,7 @@ function world(): World {
       grant(9, 'norank', ROLE.approver, { subject_rank_constraint: 'junior' }),
       // Management powers held at a unit scope only.
       grant(10, 'pc1', ROLE.admin, { anchor_type: 'home_unit', include_descendants: true }),
+      grant(11, 'norank', ROLE.approver, { subject_rank_constraint: 'junior_or_equal' }),
     ],
   }
 }
@@ -302,6 +307,12 @@ const MATRIX: MatrixRow[] = [
   ['revoked grant and archived role grant nothing', 'f11', 'leaves', 'approve', soldierTarget('f12'), false],
   ['holder without seniority gets only "any" (D-057)', 'norank', 'leaves', 'approve', soldierTarget('f11'), false],
   ['holder without seniority keeps the baseline', 'norank', 'leaves', 'create', soldierTarget('norank'), true],
+  ['holder without seniority: junior_or_equal not even on self (D-157)', 'norank', 'leaves', 'approve', soldierTarget('norank'), false],
+  // A soldier scope sees its own unit chain (D-159)
+  ['self scope views the home unit', 'f11', 'units', 'view', unitTarget(UNIT.S11), true],
+  ['self scope views the home unit\'s ancestors', 'f11', 'units', 'view', unitTarget(UNIT.BAT), true],
+  ['self scope does not view a sibling unit', 'f11', 'units', 'view', unitTarget(UNIT.S12), false],
+  ['self scope sees no unit without a home unit', 'unplaced', 'units', 'view', unitTarget(UNIT.S11), false],
   // Unit targets
   ['steps-up scope covers the platoon unit', 'sc11', 'soldiers', 'view', unitTarget(UNIT.P1), true],
   ['steps-up scope covers a sibling squad unit', 'sc11', 'soldiers', 'view', unitTarget(UNIT.S12), true],
@@ -424,6 +435,10 @@ describe('access-manager invariant (D-059)', () => {
     ['the role loses roles:update', (data) => {
       data.role_permissions = data.role_permissions.filter((r) => !(r.role_id === ROLE.admin && r.resource === 'roles'))
     }],
+    ['the grant is limited to junior subjects (D-158)', (data) => {
+      data.access_grants = data.access_grants.map((g) =>
+        g.grantee_soldier_id === S.admin ? { ...g, subject_rank_constraint: 'junior' as const } : g)
+    }],
     ['the role is archived', (data) => {
       data.roles = data.roles.map((r) => (r.id === ROLE.admin ? { ...r, archived_at: NOW } : r))
     }],
@@ -515,5 +530,42 @@ describe('targets of the unit commands (D-053, D-089)', () => {
   it('checks a placement against the parent, or the organization at the top', () => {
     expect(placementTarget(null)).toEqual({ kind: 'organization' })
     expect(placementTarget(company)).toEqual({ kind: 'unit', unit_id: company })
+  })
+})
+
+describe('grant reach (D-156)', () => {
+  const context = createPolicyContext(world(), CLOCK)
+  const org: ResolvedScope = { kind: 'organization' }
+  const unit = (unitId: UnitId, include_descendants: boolean): ResolvedScope => ({
+    kind: 'unit',
+    unit_id: unitId,
+    include_descendants,
+  })
+  const soldier = (name: SoldierName): ResolvedScope => ({ kind: 'soldier', soldier_id: S[name] })
+
+  it.each<[string, ResolvedScope, ResolvedScope, boolean]>([
+    ['anything within organization', unit(UNIT.S11, true), org, true],
+    ['organization only within organization', org, unit(UNIT.BAT, true), false],
+    ['a unit within itself', unit(UNIT.P1, false), unit(UNIT.P1, false), true],
+    ['a unit with descendants not within the unit alone', unit(UNIT.P1, true), unit(UNIT.P1, false), false],
+    ['a sub-unit within an ancestor with descendants', unit(UNIT.S11, true), unit(UNIT.COMP, true), true],
+    ['a sub-unit not within an ancestor alone', unit(UNIT.S11, false), unit(UNIT.COMP, false), false],
+    ['a sibling unit is outside', unit(UNIT.S21, false), unit(UNIT.P1, true), false],
+    ['a soldier within a unit that covers them', soldier('f11'), unit(UNIT.P1, true), true],
+    ['a soldier outside the unit', soldier('f21'), unit(UNIT.P1, true), false],
+    ['a soldier within the same soldier', soldier('f11'), soldier('f11'), true],
+    ['a unit never within a soldier', unit(UNIT.S11, false), soldier('f11'), false],
+    ['an empty scope within nothing', { kind: 'empty' }, org, false],
+  ])('%s', (_why, inner, outer, within) => {
+    expect(scopeWithin(inner, outer, context)).toBe(within)
+  })
+
+  it('limits a grant by the actor\'s own access_grants:create', () => {
+    const create = p('access_grants', 'create')
+    expect(withinReach(context, S.admin, create, org)).toBe(true)
+    expect(withinReach(context, S.pc1, create, unit(UNIT.S11, true))).toBe(true)
+    expect(withinReach(context, S.pc1, create, unit(UNIT.P2, false))).toBe(false)
+    expect(withinReach(context, S.pc1, create, org)).toBe(false)
+    expect(withinReach(context, S.sc11, create, unit(UNIT.S11, false))).toBe(false)
   })
 })

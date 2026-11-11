@@ -20,17 +20,19 @@ import { normalizeEmail, normalizeName, normalizePersonalId } from './normalize'
 export interface LinkMatchData {
   readonly soldiers: Iterable<Pick<Soldier, 'id' | 'first_name' | 'last_name' | 'archived_at'>>
   readonly soldier_private: Iterable<Pick<SoldierPrivate, 'soldier_id' | 'personal_id' | 'invite_email'>>
-  /** Every account row, revoked included: the schema allows one account per soldier. */
-  readonly soldier_accounts: Iterable<Pick<SoldierAccount, 'soldier_id'>>
+  /** Every account row; a revoked one frees the soldier for a new link (D-163). */
+  readonly soldier_accounts: Iterable<Pick<SoldierAccount, 'soldier_id' | 'revoked_at'>>
 }
 
 type LinkClaim = Pick<AccountLinkRequest, 'claimed_personal_id' | 'first_name' | 'last_name'>
 type SoldierNames = Pick<Soldier, 'first_name' | 'last_name'>
 
-/** Soldiers that can still be linked: not archived and without an account row (D-066). */
+/** Soldiers that can still be linked: not archived and without a live link (D-066, D-163). */
 function linkable(data: LinkMatchData): Pick<Soldier, 'id' | 'first_name' | 'last_name'>[] {
   const withAccount = new Set<SoldierId>()
-  for (const account of data.soldier_accounts) withAccount.add(account.soldier_id)
+  for (const account of data.soldier_accounts) {
+    if (account.revoked_at === null) withAccount.add(account.soldier_id)
+  }
   return [...data.soldiers].filter((soldier) => soldier.archived_at === null && !withAccount.has(soldier.id))
 }
 

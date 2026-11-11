@@ -86,7 +86,7 @@ const S = {
   swapped: soldierId(3),
   both: soldierId(4),
   archived: soldierId(5),
-  revokedAccount: soldierId(6),
+  linkedAccount: soldierId(6),
   other: soldierId(7),
   inactive: soldierId(8),
 }
@@ -105,7 +105,7 @@ function matchData(): LinkMatchData {
       soldier(S.swapped, 'לוי', 'דנה'),
       soldier(S.both, 'דנה', 'לוי'),
       soldier(S.archived, 'דנה', 'לוי', '2026-10-01T00:00:00Z'),
-      soldier(S.revokedAccount, 'דנה', 'לוי'),
+      soldier(S.linkedAccount, 'דנה', 'לוי'),
       soldier(S.other, 'Dana', 'Cohen'),
       soldier(S.inactive, 'דנה', 'לוי'),
     ],
@@ -113,9 +113,9 @@ function matchData(): LinkMatchData {
       { soldier_id: S.byId, personal_id: '1234567', invite_email: 'Dana@Example.com' },
       { soldier_id: S.both, personal_id: '7654321', invite_email: null },
       { soldier_id: S.archived, personal_id: '1111111', invite_email: 'dana@example.com' },
-      { soldier_id: S.revokedAccount, personal_id: '2222222', invite_email: 'dana@example.com' },
+      { soldier_id: S.linkedAccount, personal_id: '2222222', invite_email: 'dana@example.com' },
     ],
-    soldier_accounts: [{ soldier_id: S.revokedAccount }],
+    soldier_accounts: [{ soldier_id: S.linkedAccount, revoked_at: null }],
   }
 }
 
@@ -142,14 +142,22 @@ describe('linkCandidates', () => {
     expect(candidates[0]).toEqual({ soldier_id: S.both, match: 'personal_id' })
   })
 
-  it('never offers archived soldiers or soldiers with an account (even revoked)', () => {
+  it('never offers archived soldiers or soldiers with a live link', () => {
     for (const claimed of ['1111111', '2222222']) {
       const ids = linkCandidates({ claimed_personal_id: claimed, first_name: 'דנה', last_name: 'לוי' }, matchData()).map(
         (candidate) => candidate.soldier_id,
       )
       expect(ids).not.toContain(S.archived)
-      expect(ids).not.toContain(S.revokedAccount)
+      expect(ids).not.toContain(S.linkedAccount)
     }
+  })
+
+  it('offers a soldier whose link was revoked (D-163)', () => {
+    const data = { ...matchData(), soldier_accounts: [{ soldier_id: S.linkedAccount, revoked_at: '2026-10-01T00:00:00Z' }] }
+    const ids = linkCandidates({ claimed_personal_id: '2222222', first_name: 'דנה', last_name: 'לוי' }, data).map(
+      (candidate) => candidate.soldier_id,
+    )
+    expect(ids).toContain(S.linkedAccount)
   })
 
   it('names alone match without a personal id; no match gives no candidates', () => {
