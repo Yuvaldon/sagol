@@ -203,7 +203,7 @@ describe('soldier forms', () => {
     nickname: '',
     command_rank_id: null,
     membership: { unit_id: null, valid_from: TODAY },
-    private: { personal_id: '', phone: '' },
+    private: { personal_id: '', invite_email: '', phone: '' },
   }
 
   it('sends names alone when nothing else is filled in, with a new id each time (D-030, D-044)', () => {
@@ -212,14 +212,14 @@ describe('soldier forms', () => {
     expect(toCreateSoldierInput(values).id).not.toBe(input.id)
   })
 
-  it('places a soldier and writes private fields only when asked, and has no invite email (D-094)', () => {
+  it('places a soldier and writes private fields only when asked, the invite email included (D-094, D-153)', () => {
     const input = toCreateSoldierInput({
       ...values,
       membership: { unit_id: UnitId.parse(uuid(10)), valid_from: TODAY },
-      private: { personal_id: '123', phone: '' },
+      private: { personal_id: '123', invite_email: ' Dana@Example.test ', phone: '' },
     })
     expect(input.membership).toMatchObject({ unit_id: uuid(10), valid_from: TODAY })
-    expect(input.private).toEqual({ personal_id: '123', invite_email: null, phone: null })
+    expect(input.private).toEqual({ personal_id: '123', invite_email: 'Dana@Example.test', phone: null })
   })
 
   it('reports field codes at the paths the form names', () => {
@@ -227,7 +227,7 @@ describe('soldier forms', () => {
     expect(newSoldierIssues({ ...values, first_name: '' })).toEqual([{ path: ['first_name'], code: 'required' }])
     const noDate = newSoldierIssues({ ...values, membership: { unit_id: UnitId.parse(uuid(10)), valid_from: '' } })
     expect(noDate.map((issue) => issue.path)).toEqual([['membership', 'valid_from']])
-    const long = newSoldierIssues({ ...values, private: { personal_id: 'x'.repeat(51), phone: '' } })
+    const long = newSoldierIssues({ ...values, private: { personal_id: 'x'.repeat(51), invite_email: '', phone: '' } })
     expect(long).toEqual([{ path: ['private', 'personal_id'], code: 'too_long' }])
   })
 
@@ -246,8 +246,8 @@ describe('soldier forms', () => {
 
   it('sends private changes with NULL for an empty field, and NULL version until a row exists', () => {
     const id = SoldierId.parse(uuid(1))
-    expect(toUpdatePrivateInput(id, null, { personal_id: '', phone: '' })).toBeNull()
-    expect(toUpdatePrivateInput(id, null, { personal_id: '12', phone: '' })).toEqual({
+    expect(toUpdatePrivateInput(id, null, { personal_id: '', invite_email: '', phone: '' })).toBeNull()
+    expect(toUpdatePrivateInput(id, null, { personal_id: '12', invite_email: '', phone: '' })).toEqual({
       soldier_id: id,
       expected_version: null,
       changes: { personal_id: '12' },
@@ -262,12 +262,18 @@ describe('soldier forms', () => {
       updated_by: null,
       version: 4,
     }
-    expect(toUpdatePrivateInput(id, stored, { personal_id: '12', phone: '' })).toEqual({
+    expect(toUpdatePrivateInput(id, stored, { personal_id: '12', invite_email: '', phone: '' })).toEqual({
       soldier_id: id,
       expected_version: 4,
       changes: { phone: null },
     })
-    expect(privateFormIssues(id, { personal_id: 'x'.repeat(51), phone: '' })).toEqual([{ path: ['personal_id'], code: 'too_long' }])
+    expect(privateFormIssues(id, { personal_id: 'x'.repeat(51), invite_email: '', phone: '' })).toEqual([{ path: ['personal_id'], code: 'too_long' }])
+    // The email is written only by a form that shows it (D-153).
+    const withEmail = { ...stored, invite_email: 'dana@example.test' }
+    expect(toUpdatePrivateInput(id, withEmail, { personal_id: '12', phone: '050' })).toBeNull()
+    expect(toUpdatePrivateInput(id, withEmail, { personal_id: '12', invite_email: ' ', phone: '050' })?.changes).toEqual({
+      invite_email: null,
+    })
   })
 
   it('builds a move from the open row, and asks for a target when there is none', () => {
