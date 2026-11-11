@@ -90,7 +90,7 @@ test('an owner claims the empty organization and reaches the workspace', async (
   })
 })
 
-test('a second identity sees no access and no data', async ({ page }) => {
+test('a second identity sees no data before it is linked', async ({ page }) => {
   await page.goto('/')
   await signIn(page, OWNER.email, OWNER.name)
   await claimOrganization(page)
@@ -102,10 +102,10 @@ test('a second identity sees no access and no data', async ({ page }) => {
     await expect(page.getByRole('button', { name: new RegExp(OWNER.email) })).toBeVisible()
   })
 
-  await test.step('a new identity gets "no access yet", and nothing of the organization', async () => {
+  await test.step('a new identity is offered a link request, and nothing of the organization', async () => {
     await signIn(page, SECOND_EMAIL)
     await expect(page).toHaveURL(/\/onboarding$/)
-    await expect(page.getByRole('heading', { name: he.noAccess.title })).toBeVisible()
+    await expect(page.getByRole('heading', { name: he.linkRequest.title })).toBeVisible()
     await expect(page.getByText(he.onboarding.organizationName)).toHaveCount(0)
     await expect(page.getByText(ORGANIZATION)).toHaveCount(0)
     await expectNoAxeViolations(page)
@@ -124,7 +124,7 @@ test('a second identity sees no access and no data', async ({ page }) => {
 
   await test.step('the user menu switches back to the second identity', async () => {
     await chooseFromUserMenu(page, SECOND_EMAIL)
-    await expect(page.getByRole('heading', { name: he.noAccess.title })).toBeVisible()
+    await expect(page.getByRole('heading', { name: he.linkRequest.title })).toBeVisible()
   })
 })
 
