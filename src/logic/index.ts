@@ -283,6 +283,8 @@ export {
   useGrantCommands,
   useGrantModuleAccess,
   useGrantPermissionHints,
+  useGrantRows,
+  type GrantRow,
   useRankBindings,
   useRevokeLink,
   useRevokeLinkHints,

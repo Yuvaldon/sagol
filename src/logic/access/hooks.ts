@@ -24,6 +24,8 @@ import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import {
+  grantStateAt,
+  sortedGrants,
   toCreateBindingInput,
   toCreateRoleInput,
   toGrantAccessInput,
@@ -31,6 +33,7 @@ import {
   toUpdateRoleInput,
   type BindingFormValues,
   type GrantFormValues,
+  type GrantState,
   type RoleFormValues,
 } from './forms'
 
@@ -85,6 +88,25 @@ export function useAccessGrants(includeInactive: boolean): Loaded<readonly Acces
       queryFn: () => unwrap(data.repositories.access_grants.list(params)),
     }),
   )
+}
+
+export interface GrantRow {
+  readonly grant: AccessGrant
+  readonly state: GrantState
+}
+
+/** The grants as the list shows them: active and scheduled first, each with its state now. */
+export function useGrantRows(includeInactive: boolean): Loaded<readonly GrantRow[]> {
+  const { time } = usePorts()
+  const grants = useAccessGrants(includeInactive)
+  return useMemo((): Loaded<readonly GrantRow[]> => {
+    if (grants.status !== 'ready') return grants
+    const now = time.now()
+    return {
+      status: 'ready',
+      value: sortedGrants(grants.value, now).map((grant) => ({ grant, state: grantStateAt(grant, now) })),
+    }
+  }, [grants, time])
 }
 
 /** The account links the actor reads (D-163). */
