@@ -2297,11 +2297,18 @@ such as a migration or a manual fix.
   domain's own test and by `src/data/server/policy.dbtest.ts`. The DB test writes the world through the migrated schema
   (its constraints and triggers), loads the policy snapshot through the Postgres store the gateway reads, and checks every
   row with `can`. `rls.dbtest.ts` checks that every table holds RLS, that the API roles hold no privilege, and that each
-  of them is refused a read and a write of every table.
+  of them is refused a read and a write of every table, and that a table created later starts closed.
+- **The Data API itself.** `src/data/server/rls.resttest.ts` (`npm run test:rest`, in the CI `db` job after `test:db`)
+  asks a real PostgREST, in front of the migrated database, for a read, an insert and a delete of every table, with an
+  `anon` token (what a publishable key acts as) and an `authenticated` one; each is refused with `42501`.
+  `db-reset` grants the API roles everything by default first, as Supabase does, so the migration's revokes are what
+  the tests prove.
+- **Advisors.** Supabase's advisors report "RLS enabled, no policy" (INFO) for every table. That is this decision, not a
+  finding: an audit leaves it be.
 - **Imports.** A layer's `testing/index.ts` may be imported by other layers' test files, `*.dbtest.ts` included, through an
   alias (`@domain/testing`); dependency-cruiser allows only that file and only from tests.
-- **Local roles.** `scripts/db-reset.ts` creates `anon` and `authenticated` (no login) when missing, as Supabase has them,
-  so the migration and the tests run the same locally and in CI.
+- **Local roles.** `scripts/db-reset.ts` creates `anon` and `authenticated` (no login) when missing, with Supabase's
+  default grants, so the migration and the tests run the same locally, in CI and on Supabase.
 **Why:** a second copy of the policy in SQL would have to agree with the domain forever, the same reason D-201 runs one
 command core on both sides. With every read and write behind the gateway, row policies would only guard a door that is
 already shut; revoking the privileges shuts it explicitly, and the tests prove it stays shut.
