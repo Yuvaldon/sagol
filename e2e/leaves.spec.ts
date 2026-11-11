@@ -83,7 +83,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
 
   await test.step('on a phone the modules and "more" are icons of a touch size, and the "+" too', async () => {
     if (testInfo.project.name !== 'mobile') return
-    for (const name of [he.units.open, he.soldiers.open, he.more.open]) {
+    for (const name of [he.myLeaves.open, he.units.open, he.more.open]) {
       const box = await navigation(page).getByRole('button', { name }).boundingBox()
       if (box === null) throw new Error(`no ${name}`)
       expect(box.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
