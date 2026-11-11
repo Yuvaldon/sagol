@@ -23,6 +23,7 @@ export interface DataPort {
     | 'soldier_private'
     | 'unit_memberships'
     | 'soldier_preferences'
+    | 'account_link_requests'
     | 'tag_categories'
     | 'tags'
     | 'soldier_tags'
@@ -35,7 +36,7 @@ export interface DataPort {
   >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
-    readonly accounts: Pick<DataCommands['accounts'], 'updateMyPreferences'>
+    readonly accounts: DataCommands['accounts']
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']

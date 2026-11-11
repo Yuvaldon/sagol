@@ -1,8 +1,9 @@
 import { PANEL_IDS, type PanelId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useModuleAccess, usePanel } from '@logic'
+import { useLinkReviewAccess, useModuleAccess, usePanel } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { AccountLinksModule } from '../modules/account-links/AccountLinksModule'
 import { CommandRanksModule } from '../modules/command-ranks/CommandRanksModule'
 import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsModule'
 import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
@@ -22,7 +23,7 @@ import { useInboxAccess } from './inboxAccess'
 // its own panel in the URL. A section appears only for who may read it, and a deep link to one they
 // may not read opens nothing (D-046).
 
-type ModuleAccess = ReturnType<typeof useModuleAccess> & { readonly inbox: boolean }
+type ModuleAccess = ReturnType<typeof useModuleAccess> & { readonly inbox: boolean; readonly accountLinks: boolean }
 
 interface ModuleSection {
   readonly panel: PanelId
@@ -100,11 +101,22 @@ const GROUPS: readonly ModuleGroup[] = [
       { panel: PANEL_IDS.leaveClosed, labelKey: 'inbox.tabClosed', isAllowed: (access) => access.inbox, Module: ClosedLeavesModule },
     ],
   },
+  {
+    titleKey: 'accountLinks.title',
+    sections: [
+      {
+        panel: PANEL_IDS.accountLinks,
+        labelKey: 'accountLinks.title',
+        isAllowed: (access) => access.accountLinks,
+        Module: AccountLinksModule,
+      },
+    ],
+  },
 ]
 
 export function ModuleDrawer() {
   const panel = usePanel()
-  const access = { ...useModuleAccess(), inbox: useInboxAccess() }
+  const access = { ...useModuleAccess(), inbox: useInboxAccess(), accountLinks: useLinkReviewAccess().allowed }
   const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []
   const open = sections.find((section) => section.panel === panel.panel)

@@ -6,9 +6,7 @@ export {
   linkCandidates,
   linkEnrichment,
   linkRequestTransitionIssues,
-  linkReviewTargets,
+  reviewableCandidates,
   type AutoLinkClaim,
-  type LinkCandidate,
   type LinkMatchData,
-  type LinkMatchKind,
 } from './matching'

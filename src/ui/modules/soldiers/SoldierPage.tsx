@@ -68,6 +68,7 @@ function PrivateSection({ soldier, canUpdate }: { readonly soldier: Soldier; rea
       <h3 className="text-body font-bold">{t('soldiers.privateTitle')}</h3>
       <dl className="flex flex-col gap-md">
         <ReadOnlyField labelKey="soldiers.personalId" value={row.value?.personal_id ?? ''} />
+        <ReadOnlyField labelKey="soldiers.inviteEmail" value={row.value?.invite_email ?? ''} />
         <ReadOnlyField labelKey="soldiers.phone" value={row.value?.phone ?? ''} />
       </dl>
     </section>

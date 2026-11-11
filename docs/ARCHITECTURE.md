@@ -86,6 +86,12 @@ The data layer is written as if it were the server:
   normalized names, in either order) to the reviewer only, and approval fills a missing
   personal ID (D-030, D-066). Personal IDs are stored normalized. Unlinked accounts see
   nothing, and requesters never learn whether a match exists.
+- **Linking, as built (V9, D-148 to D-151):** `accounts.requestLink` (an identity with no account; auto-link on a verified
+  email, the personal number and the invite email, else a pending request; both answer `{ outcome }`),
+  `cancelLinkRequest` (the asker), `reviewLink` (link to a candidate, create a soldier, reject). A reviewer reads, and may
+  name, only the candidates over which they hold `accounts:approve` (`reviewableCandidates`); approval fills a missing
+  personal number. Candidates are computed on each read. Screens: the request form and waiting notice of onboarding, and
+  the account-links module in the bar. Not built: invite links, revoking a link (D-152).
 - **Bootstrap:** the first sign-in on an empty organization becomes owner only if its
   verified email matches the server secret `BOOTSTRAP_OWNER_EMAIL`. Atomic server function.
   Locally, the same flow makes the developer the owner.

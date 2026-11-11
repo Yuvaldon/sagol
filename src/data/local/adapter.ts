@@ -22,7 +22,12 @@ import {
   createLeaveTypeRepository,
 } from './leaveTypes'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
-import { createAccountCommands, createSoldierPreferencesRepository, type LocalAccountCommands } from './accounts'
+import {
+  createAccountCommands,
+  createAccountLinkRequestRepository,
+  createSoldierPreferencesRepository,
+  type LocalAccountCommands,
+} from './accounts'
 import { createAvailabilityRuleCommands, createAvailabilityRuleRepository } from './rules'
 import { createSessionService } from './session'
 import {
@@ -56,6 +61,7 @@ export interface LocalDataAdapter {
     | 'soldier_private'
     | 'unit_memberships'
     | 'soldier_preferences'
+    | 'account_link_requests'
     | 'tag_categories'
     | 'tags'
     | 'soldier_tags'
@@ -115,6 +121,7 @@ export function createLocalDataAdapter(
       soldier_private: createSoldierPrivateRepository(dependencies),
       unit_memberships: createMembershipRepository(dependencies),
       soldier_preferences: createSoldierPreferencesRepository(dependencies),
+      account_link_requests: createAccountLinkRequestRepository(dependencies),
       tag_categories: createTagCategoryRepository(dependencies),
       tags: createTagRepository(dependencies),
       soldier_tags: createSoldierTagRepository(dependencies),

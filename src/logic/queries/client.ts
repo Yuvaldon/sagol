@@ -18,6 +18,7 @@ export const QUERY_KEYS = {
   soldierPrivate: [TABLE_SCOPE, 'soldier_private'],
   unitMemberships: [TABLE_SCOPE, 'unit_memberships'],
   soldierPreferences: [TABLE_SCOPE, 'soldier_preferences'],
+  accountLinkRequests: [TABLE_SCOPE, 'account_link_requests'],
   tagCategories: [TABLE_SCOPE, 'tag_categories'],
   tags: [TABLE_SCOPE, 'tags'],
   soldierTags: [TABLE_SCOPE, 'soldier_tags'],
@@ -40,6 +41,15 @@ const ONBOARDING_TABLES: ReadonlySet<TableName> = new Set<TableName>([
   'account_link_requests',
 ])
 
+/** Tables a link request's candidates and visibility are computed from (D-149). */
+const LINK_REQUEST_TABLES: ReadonlySet<TableName> = new Set<TableName>([
+  'soldiers',
+  'soldier_private',
+  'soldier_accounts',
+  'unit_memberships',
+  'access_grants',
+])
+
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
@@ -59,6 +69,7 @@ export function invalidateChanged(client: QueryClient, changes: readonly DataCha
   for (const change of changes) {
     void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
     if (ONBOARDING_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.onboarding })
+    if (LINK_REQUEST_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.accountLinkRequests })
   }
   // Many tables feed the policy, and a hint is cheap to ask again (D-091).
   if (changes.length > 0) void client.invalidateQueries({ queryKey: QUERY_KEYS.can })

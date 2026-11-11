@@ -132,6 +132,18 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **What is open lives in the URL:** `panel`, `entity` and, for a new unit, `parent` (`usePanel`). A panel shows
   its list, or the form `entity` names. Sections of a module are panels, so each has its own deep link.
 
+## Account linking (V9, D-150, D-151)
+
+- **Onboarding of an identity with no account** (`ui/shell/LinkRequest.tsx`): under the "no access yet" sheet, a form with
+  first name, last name and an optional personal number, or, with a pending request, a notice with the name sent and a
+  "cancel request" button. Neither says whether anything matched.
+- **`AccountLinksButton`** in the bar, as the inbox button: icon and name on desktop, icon alone on a phone, with the count
+  of pending requests; shown only to who may review.
+- **`AccountLinksModule`** (`ui/modules/account-links`): a `VirtualList` of requests (name, email, when); a request shows
+  its fields, its candidates (why each matches, a "link" button) and "new soldier" and "reject". Link and reject confirm in
+  a `SmallDialog`; the new soldier is an `EntityForm` (rank, unit, date placed).
+- A linked soldier with no access sees the board's notice that the account is linked and has no access yet.
+
 ## Patterns of a module
 
 - **List:** rows with a bottom hairline. A row has an optional handle, an optional color dot, the name as a
@@ -192,6 +204,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   label "כללים" and one cell per day: empty, a dashed `status-pending` cell, or a solid `status-rejected` one, with the
   count. A cell is a button named by its day, its count and the worst rule.
 - **On a phone** the user menu shows its icon only, its name still read aloud, so the bottom bar keeps every module (OI-095).
+- **The phone's bottom bar** never widens the page: its module icons scroll sideways in their own row when they outgrow it,
+  the organization's name and the user menu staying in place (D-155).
 - **A unit the actor does not see:** `unitStateLabel` says "ללא יחידה", "יחידה אחרת" or "לא ידוע" (D-106), the same in
   every list.
 

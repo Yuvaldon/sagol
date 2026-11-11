@@ -21,7 +21,7 @@ am = amends, ref = refines, ext = extends.
 | D-002 | Command rank is the single user-defined level | contracts, domain, ui | ext D-029; ref D-095 |
 | D-003 | Permissions are data: roles, rank bindings, grants | contracts, domain, data, logic, backend | sup D-028 (scope); ref D-040, D-053, D-056, D-060 |
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
-| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030 |
+| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149 |
 | D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
 | D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035 |
 | D-008 | Server-authoritative data layer | data, backend | ref D-090 |
@@ -34,7 +34,7 @@ am = amends, ref = refines, ext = extends.
 | D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130 |
 | D-016 | Notion-like custom properties | contracts, domain, data, ui | ref D-065 |
 | D-017 | Soft delete and audit columns | contracts, data, backend, ui | ref D-088, D-098 |
-| D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | ref D-096, D-102 |
+| D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | ref D-096, D-102; ref D-153 |
 | D-019 | Derived state is never stored | all | |
 | D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
@@ -46,7 +46,7 @@ am = amends, ref = refines, ext = extends.
 | D-027 | Backend target (**proposed**) | backend | |
 | D-028 | Unified scope model with relative anchors | contracts, domain, data, backend | ref D-053, D-054, D-055 |
 | D-029 | Effective seniority with personal overrides | contracts, domain, backend | ref D-057 |
-| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069 |
+| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149 |
 | D-031 | Availability rules: grouping, global scope, priority | contracts, domain, ui | ref D-067 (canonical population), D-071, D-072; ref D-139, D-140 |
 | D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070; ref D-111, D-113; ref D-134 |
 | D-033 | Simple first-run setup wizard | ui | |
@@ -82,7 +82,7 @@ am = amends, ref = refines, ext = extends.
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | ref D-114; ref D-117, D-118; ref D-124 |
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130 |
-| D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069 |
+| D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-149 |
 | D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147 |
 | D-068 | Schema issue mapping | domain, data, logic | |
 | D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
@@ -92,7 +92,7 @@ am = amends, ref = refines, ext = extends.
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142; ref D-146 |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132 |
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154 |
-| D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085 |
+| D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111 |
 | D-078 | Audits follow milestones | docs | |
 | D-079 | The bootstrap owner role holds every valid permission pair | data, backend | |
@@ -110,7 +110,7 @@ am = amends, ref = refines, ext = extends.
 | D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | ref D-107; ref D-122 |
 | D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108; ext D-113 |
 | D-093 | A new issue code lands after its message | contracts, ui, docs | sup D-127 |
-| D-094 | The soldiers drawer: sections, fields, search | config, logic, ui | ref D-116 |
+| D-094 | The soldiers drawer: sections, fields, search | config, logic, ui | ref D-116; ref D-153 |
 | D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
 | D-096 | Permissions of the roster commands | domain, data, logic, ui, backend | ref D-102; ref D-130 |
 | D-097 | Changing a soldier's membership | domain, data, logic, ui, backend | |
@@ -124,7 +124,7 @@ am = amends, ref = refines, ext = extends.
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | |
-| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131 |
+| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
@@ -132,7 +132,7 @@ am = amends, ref = refines, ext = extends.
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143 |
-| D-116 | Module buttons on a phone show their icon | ui | ref D-120 |
+| D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154 |
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
 | D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143 |
@@ -164,7 +164,14 @@ am = amends, ref = refines, ext = extends.
 | D-145 | Approving shows the rules' answer, not a live warning | logic, ui | |
 | D-146 | A live warning lists hard and soft rules together | logic, ui | |
 | D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | |
+| D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | |
+| D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | |
+| D-150 | The account-links module | config, logic, ui | |
+| D-151 | The onboarding of an identity with no account | logic, ui | |
+| D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | |
+| D-153 | The invite email field | logic, ui | |
 | D-154 | The Claude Code harness replaces the session rituals | docs, tooling | |
+| D-155 | The phone's module buttons scroll inside the bottom bar | ui | |
 
 ---
 
@@ -1946,6 +1953,77 @@ filling the form sees the whole cost of the change at once.
 **Why:** audit A4 finding 1 and question 3, answered with its recommendation under the owner's instruction of
 2026-11-11 (one meaning of a filter, D-067), and finding 5 on the words.
 
+## D-148 — Asking to link: the request, auto-link, withdrawing
+2026-11-11 · accepted · refines D-005, D-030 · decided under the owner's autonomy instruction of 2026-11-11
+- **`accounts.requestLink`** is for a signed-in identity with no account (`forbidden` once linked, `unauthenticated` when
+  signed out). Its organization is the one the store holds (D-011: one per local store); with none it answers `not_found`,
+  since an empty store is claimed through the bootstrap (D-005). The claimed personal number is stored normalized (D-066).
+  An identity with a pending request cannot send another (`already_exists` on `id`).
+- **Auto-link** needs a verified email and `autoLinkSoldier` (D-066). It writes the account (`linked_by` NULL, the
+  identity's provider) and keeps the claim as a request row, `approved`, with the soldier and no reviewer, so every ask
+  leaves one row. The answer is `{ outcome }` in both cases, and a pending outcome never says whether anything matched.
+- **`accounts.cancelLinkRequest`**: the requester withdraws their own pending request (`cancelled`); another identity's
+  request answers `not_found`, and one that is no longer pending `invalid_transition`.
+- A request needs no new column: the provider of an account written by a review is the build's provider, the same for every
+  identity of one build (D-048).
+**Why:** the V9 card; the smallest set that keeps D-005's no-enumeration rule and leaves one audit row per ask.
+
+## D-149 — Reviewing a link request: who may be named, what approval writes
+2026-11-11 · accepted · refines D-030, D-066 · OI-034, OI-072 · decided under the owner's autonomy instruction of 2026-11-11
+- **Who sees a request, and its candidates (OI-034).** A reviewer reads the candidates over which they hold
+  `accounts:approve`, and no others. A request is visible when that list is not empty, or when the request has no candidates
+  at all and the reviewer holds the permission at organization scope (D-066's rule, stated on the filtered list). A request
+  the actor may not review answers `not_found`.
+- **Resolutions.** `link` must name one of those candidates (`reference_not_found` otherwise, at
+  `resolution.soldier_id`); it writes the account (`linked_by` the reviewer). `create_soldier` needs `soldiers:create` and
+  `accounts:approve` over the placement (the unit, or the organization without a membership) and `memberships:update` over the
+  unit, with the checks of a new soldier: rank, unit, live. `reject` needs only the right to review.
+  Only a pending request is reviewed (`invalid_transition`, D-066).
+- **Enrichment (D-030).** Approval writes the claimed personal number to the linked or created soldier when it has none, in
+  the same transaction, whatever `soldier_private:update` the reviewer holds, since the approval is the permission that
+  covers it. A number another soldier already holds is skipped, not refused; the request still links. Names are never
+  overwritten.
+- An identity that got an account since the request was written answers `already_exists`.
+**Why:** OI-034: a reviewer's authority covers the soldiers they approve, so they cannot link an identity to one outside it;
+and the candidate list reveals no soldier beyond that authority (D-005, D-138).
+
+## D-150 — The account-links module
+2026-11-11 · accepted · refines D-030 · decided under the owner's autonomy instruction of 2026-11-11
+- One panel, `account_links`, with a bar button "חיבורים" and the number of pending requests, for who holds
+  `accounts:approve` at organization scope or reads at least one pending request.
+- The list shows pending requests only (a closed row stays stored). A request shows the name, the claimed number, the email
+  and when; opening it shows its candidates with why each matches (personal number, name), and three actions: link to a
+  candidate, create a new soldier (rank, unit and the date it starts, as a new soldier's form), reject.
+- The link and the reject confirm in a dialog that says what is written.
+**Why:** the V9 card's "review module", the smallest form that shows every resolution of D-030.
+
+## D-151 — The onboarding of an identity with no account
+2026-11-11 · accepted · refines D-005, D-030 · OI-055 · decided under the owner's autonomy instruction of 2026-11-11
+- An identity that cannot claim the organization sees a form (first name, last name, optional personal number) or, with a
+  pending request, a notice that it waits for review, with a way to withdraw it. A sent form that auto-links goes straight to
+  the workspace; one that does not shows the notice, whatever matched.
+- A linked soldier with no permission to read the organization sees that their account is linked and has no access yet,
+  rather than a board that "is not available" (OI-055). Whether such a soldier sees more is OI-060.
+- Not told: a request that was rejected looks like no request, and the form returns (an open item for V11).
+**Why:** D-005's "the response never reveals whether a match exists", and the card's "the linked soldier sees nothing until
+V10 gives them a role, and that is correct".
+
+## D-152 — Deferred from V9: invite links, revoking a link, restoring archived rows
+2026-11-11 · accepted · OI-019, OI-026 · decided under the owner's autonomy instruction of 2026-11-11
+- **Invite links (OI-026)** are not built: they change D-030's matching (a unit's soldiers only) and add a table, so they are
+  their own slice when the owner wants them (a new open item, `owner (later)`).
+- **Revoking a link** needs a partial unique index on `soldier_accounts.soldier_id` (`WHERE revoked_at IS NULL`) so a soldier
+  can be linked again; it is decided with the access screens, in V10 (a new open item).
+- **Restoring an archived row** stays out; it is a new open item, `owner (later)`, with the personal-number note of D-098.
+**Why:** none of the three is needed to link a second identity; the autonomy instruction prefers the smallest option that does
+not grow the slice.
+
+## D-153 — The invite email field
+2026-11-11 · accepted · refines D-018, D-094 · OI-046 · decided under the owner's autonomy instruction of 2026-11-11
+`soldier_private.invite_email` gets a field in the new-soldier form and in the private fields (read-only for who may only
+read), beside the personal number and the phone, with the same permissions (D-096). Auto-link reads it (D-148).
+**Why:** OI-046: it is the field auto-link matches, so without it auto-link has nothing to link.
+
 ## D-154 — The Claude Code harness replaces the session rituals
 2026-11-11 · accepted · supersedes D-052, D-081 · refines D-051, D-075, D-110, D-126, D-128
 - What a prose rule asked of every session is enforced by the harness in `.claude/settings.json`: hooks block pushes to
@@ -1964,3 +2042,12 @@ filling the form sees the whole cost of the change at once.
 **Why:** the owner's instruction of 2026-11-11 to cut usage and enforce quality through the harness. A fresh session per
 slice and a fixed reading list re-paid a context of about 100k tokens every time, and rules in prose were
 re-read on every turn but enforced by nothing.
+
+## D-155 — The phone's module buttons scroll inside the bottom bar
+2026-11-11 · accepted · refines D-108, D-116 · OI-095 · decided under the owner's autonomy instruction of 2026-11-11
+On a phone, the bottom bar's module buttons sit in a row that shrinks with the bar and scrolls sideways when they do not
+fit, as the filter row does (D-131); the organization's name and the user menu stay in place. No bar may be wider than
+the screen.
+**Why:** V9's account-links button made seven 44 px modules plus the user menu, wider than a phone's bar. The bar then
+widened the page, the phone zoomed out, and presses landed beside their targets (V9's CI failed on mobile). A "more"
+menu, OI-095's lasting answer, stays with V10, which adds more modules.

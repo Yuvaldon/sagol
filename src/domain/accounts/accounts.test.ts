@@ -14,7 +14,7 @@ import {
   linkCandidates,
   linkEnrichment,
   linkRequestTransitionIssues,
-  linkReviewTargets,
+  reviewableCandidates,
   normalizeEmail,
   normalizeName,
   normalizePersonalId,
@@ -259,9 +259,15 @@ describe('link review', () => {
   }
   const context = createPolicyContext(data, { today: '2026-11-04', now: NOW })
 
-  it('targets the candidates, or the organization without candidates', () => {
-    expect(linkReviewTargets([])).toEqual([{ kind: 'organization' }])
-    expect(linkReviewTargets([{ soldier_id: IN_UNIT, match: 'name' }])).toEqual([{ kind: 'soldier', soldier_id: IN_UNIT }])
+  it('a reviewer reads and may name only the candidates they hold approve over (D-149)', () => {
+    const candidates = [
+      { soldier_id: OUTSIDE, match: 'personal_id' as const },
+      { soldier_id: IN_UNIT, match: 'name' as const },
+    ]
+    expect(reviewableCandidates(context, REVIEWER, candidates)).toEqual([{ soldier_id: IN_UNIT, match: 'name' }])
+    expect(reviewableCandidates(context, ORG_REVIEWER, candidates)).toEqual(candidates)
+    expect(reviewableCandidates(context, IN_UNIT, candidates)).toEqual([])
+    expect(reviewableCandidates(context, REVIEWER, [])).toEqual([])
   })
 
   it('a unit reviewer reviews requests whose candidate is in the unit', () => {

@@ -9,6 +9,7 @@ import { fieldError, validatorResult } from '../patterns/forms'
 import { Button } from '../primitives/Button'
 import { SearchSelectField, TextField } from '../primitives/fields'
 import { IdentityList } from './IdentityList'
+import { LinkRequestForm, LinkRequestWaiting } from './LinkRequest'
 import { FailureScreen, LoadingScreen } from './states'
 
 function ClaimForm() {
@@ -137,6 +138,7 @@ export function OnboardingScreen({ identity }: { readonly identity: AuthIdentity
   }
   return (
     <CenteredSheet titleKey="noAccess.title" hintKey="noAccess.body">
+      {onboarding.value.open_request === null ? <LinkRequestForm /> : <LinkRequestWaiting request={onboarding.value.open_request} />}
       <SignOutButton />
       <IdentityList exclude={identity.auth_user_id} />
     </CenteredSheet>
