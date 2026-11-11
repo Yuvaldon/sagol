@@ -2,6 +2,7 @@ import type {
   ChangeFeed,
   DataCommands,
   DataRepositories,
+  DataTransfer,
   LocalAuthProvider,
   SessionPermissions,
   SessionService,
@@ -57,6 +58,8 @@ export interface DataPort {
     readonly rank_role_bindings: DataCommands['rank_role_bindings']
     readonly access_grants: DataCommands['access_grants']
   }
+  /** Import and export (D-171). */
+  readonly transfer: DataTransfer
   readonly changes: ChangeFeed
 }
 
