@@ -247,11 +247,19 @@ export function usePlacementHints(soldiers: readonly Soldier[]) {
   const checks = useMemo(() => soldiers.map((soldier) => check(P.membershipView, soldierTarget(soldier.id))), [soldiers])
   const { can, known } = useCanAnswers(checks)
   const reads = useCallback((soldierId: SoldierId) => can(check(P.membershipView, soldierTarget(soldierId))), [can])
+  /** NULL while this soldier's own hint has not answered (OI-093). */
+  const readsOrPending = useCallback(
+    (soldierId: SoldierId) => {
+      const question = check(P.membershipView, soldierTarget(soldierId))
+      return known(question) ? can(question) : null
+    },
+    [can, known],
+  )
   const answered = useMemo(() => checks.every(known), [checks, known])
   const [hasSettled, setHasSettled] = useState(false)
   if (answered && !hasSettled) setHasSettled(true)
   const settled = answered || hasSettled
-  return useMemo(() => ({ reads, settled }), [reads, settled])
+  return useMemo(() => ({ reads, readsOrPending, settled }), [reads, readsOrPending, settled])
 }
 
 /** What one soldier's page needs (D-096). */

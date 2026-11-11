@@ -298,6 +298,17 @@ describe('the rows of the timeline (D-105)', () => {
     ])
   })
 
+  it('keeps a soldier out while their own hint has not answered, unless their placements were read (OI-093)', () => {
+    const items = timelineItems(
+      base({
+        soldiers: [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן')],
+        memberships: [membership(71, 2, 10, '2026-01-01', null)],
+        readsPlacements: () => null,
+      }),
+    )
+    expect(describeItems(items)).toEqual(['# פלוגה (1)', 'בני ■■■■■■■'])
+  })
+
   it('groups by today when the soldier is in the view today, else by the first day they are', () => {
     const memberships = [membership(70, 1, 13, '2026-01-01', '2026-11-12'), membership(71, 1, 11, '2026-11-13', null)]
     const withToday = timelineItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships }))

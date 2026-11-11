@@ -43,6 +43,8 @@ export interface PresenceInput {
   /** Archived ones too, so a leave keeps its type (D-113). */
   readonly types: readonly LeaveType[]
   readonly day: CalendarDate
+  /** Whether the actor may read the soldier's leaves; the others are left out of both lists (D-161). */
+  readonly readsLeavesOf: (soldier: Soldier) => boolean
 }
 
 const EVERYONE: FilterExpression = {}
@@ -57,12 +59,12 @@ function entryOf(day: SoldierDay, soldier: Soldier, rank: CommandRank | null, ty
   }
 }
 
-export function presenceLists({ source, filter, leaves, types, day }: PresenceInput): PresenceLists {
+export function presenceLists({ source, filter, leaves, types, day, readsLeavesOf }: PresenceInput): PresenceLists {
   const context = filterContextOf(source)
   const inPopulation = populationOf(filter)
   const expression = filter ?? EVERYONE
   const soldiers = source.soldiers
-    .filter((soldier) => inPopulation(soldier) && context.matches(expression, soldier.id, day))
+    .filter((soldier) => inPopulation(soldier) && readsLeavesOf(soldier) && context.matches(expression, soldier.id, day))
     .toSorted(byName)
   const byId = new Map(soldiers.map((soldier) => [soldier.id, soldier]))
   const rankById = new Map<CommandRankId, CommandRank>(source.ranks.map((rank) => [rank.id, rank]))

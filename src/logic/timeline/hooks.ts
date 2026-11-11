@@ -71,7 +71,7 @@ export function useTimeline(
       today,
       filter,
       scopeUnitId: unit.kind === 'unit' ? unit.unitId : null,
-      readsPlacements: placements.reads,
+      readsPlacements: placements.readsOrPending,
       marked: hasLeaveConditions(leaveConditions) ? (soldierId) => drawn.has(soldierId) : null,
       absent:
         availability === null

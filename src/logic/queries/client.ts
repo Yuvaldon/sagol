@@ -28,6 +28,11 @@ export const QUERY_KEYS = {
   leaveEvents: [TABLE_SCOPE, 'leave_events'],
   leaveComments: [TABLE_SCOPE, 'leave_comments'],
   availabilityRules: [TABLE_SCOPE, 'availability_rules'],
+  soldierAccounts: [TABLE_SCOPE, 'soldier_accounts'],
+  roles: [TABLE_SCOPE, 'roles'],
+  rolePermissions: [TABLE_SCOPE, 'role_permissions'],
+  rankRoleBindings: [TABLE_SCOPE, 'rank_role_bindings'],
+  accessGrants: [TABLE_SCOPE, 'access_grants'],
   can: ['can'],
 } as const satisfies Record<string, QueryKey>
 

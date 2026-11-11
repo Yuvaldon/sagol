@@ -9,7 +9,7 @@ import type {
   Unit,
   UnitId,
 } from '@contracts'
-import { compareDates, type AvailabilityLeave, type RuleData } from '@domain'
+import { EVERY_SOLDIER, compareDates, type AvailabilityLeave, type RuleData } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useFilterSource } from '../filters/source'
@@ -187,19 +187,31 @@ export function useRuleConflicts(window: WindowRequest | null): Loaded<readonly 
  * before an edit, so the days it leaves are judged too. Empty while the form is not complete.
  */
 export function useLeaveRuleWarnings(changed: AvailabilityLeave | null, stored: Leave | null = null): readonly RuleViolation[] {
+  const can = useCan(READS_EVERYTHING)
+  const readsEverything = READS_EVERYTHING.every(can)
   const span = useMemo(() => {
-    if (changed === null) return null
+    if (changed === null || !readsEverything) return null
     const dates = [changed.start_date, changed.end_date, ...(stored === null ? [] : [stored.start_date, stored.end_date])].sort(compareDates)
     const [from] = dates
     const to = dates.at(-1)
     return from === undefined || to === undefined ? null : { from, to }
-  }, [changed, stored])
+  }, [changed, stored, readsEverything])
   const rules = useAvailabilityRules()
   const data = useRuleData(span)
   return useMemo(() => {
-    if (changed === null || rules.status !== 'ready' || data.status !== 'ready' || rules.value.length === 0) return NO_VIOLATIONS
+    if (changed === null || !readsEverything || rules.status !== 'ready' || data.status !== 'ready' || rules.value.length === 0) return NO_VIOLATIONS
     return leaveViolations(data.value, rules.value, changed)
-  }, [changed, rules, data])
+  }, [changed, readsEverything, rules, data])
 }
+
+/**
+ * What a rule counts, at organization scope with `any` (D-162). An actor who reads less sees a rule only through the
+ * command's answer, because a warning from part of the data could differ from it.
+ */
+const READS_EVERYTHING: readonly PermissionCheck[] = [
+  checkOf({ resource: 'soldiers', action: 'view' }, EVERY_SOLDIER),
+  checkOf({ resource: 'memberships', action: 'view' }, EVERY_SOLDIER),
+  checkOf({ resource: 'leaves', action: 'view' }, EVERY_SOLDIER),
+]
 
 const NO_VIOLATIONS: readonly RuleViolation[] = []

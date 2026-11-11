@@ -214,7 +214,7 @@ describe('present and absent lists (D-134, OI-090)', () => {
   ]
 
   it('splits who the filter selects into two lists, each soldier once, approved leaves only', () => {
-    const lists = presenceLists({ source, filter: null, leaves, types: [home, exam], day: DAY })
+    const lists = presenceLists({ source, filter: null, leaves, types: [home, exam], day: DAY, readsLeavesOf: READS_ALL })
     // A pending request on an absent day adds nothing: "ממתין" is for who is present (D-134).
     expect(lists.absent.map((entry) => [entry.soldier.first_name, entry.absences.map((type) => type?.name), entry.pending])).toEqual([
       ['F1', ['T70'], false],
@@ -228,7 +228,7 @@ describe('present and absent lists (D-134, OI-090)', () => {
 
   it('follows the soldier filter of the day, the status rule included', () => {
     const inUnit = { where: { kind: 'unit' as const, unit_ids: [UNIT], include_descendants: true } }
-    const lists = presenceLists({ source, filter: inUnit, leaves, types: [home, exam], day: DAY })
+    const lists = presenceLists({ source, filter: inUnit, leaves, types: [home, exam], day: DAY, readsLeavesOf: READS_ALL })
     expect([...lists.absent, ...lists.present].map((entry) => entry.soldier.first_name)).toEqual(['F1', 'F2', 'F3'])
     const withInactive = presenceLists({
       source,
@@ -236,9 +236,42 @@ describe('present and absent lists (D-134, OI-090)', () => {
       leaves,
       types: [home, exam],
       day: DAY,
+      readsLeavesOf: READS_ALL,
     })
     expect(withInactive.absent.map((entry) => entry.soldier.first_name)).toEqual(['F4'])
-    const medics = presenceLists({ source, filter: { where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } }, leaves, types: [], day: DAY })
+    const medics = presenceLists({ source, filter: { where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } }, leaves, types: [], day: DAY, readsLeavesOf: READS_ALL })
     expect(medics.present.map((entry) => entry.soldier.first_name)).toEqual(['F2'])
   })
+
+  it('matches nobody for a unit or rank the actor does not see (D-104, OI-101)', () => {
+    const unseen = { ...source, units: [], ranks: [] }
+    const inUnit = { where: { kind: 'unit' as const, unit_ids: [UNIT], include_descendants: true } }
+    const lists = presenceLists({ source: unseen, filter: inUnit, leaves, types: [home, exam], day: DAY, readsLeavesOf: READS_ALL })
+    expect([...lists.absent, ...lists.present]).toEqual([])
+    const outside = presenceLists({
+      source: unseen,
+      filter: { where: { kind: 'not', node: inUnit.where } },
+      leaves,
+      types: [home, exam],
+      day: DAY,
+      readsLeavesOf: READS_ALL,
+    })
+    expect([...outside.absent, ...outside.present].map((entry) => entry.soldier.first_name).toSorted()).toEqual(['F1', 'F2', 'F3', 'F5'])
+  })
+
+  it('leaves out soldiers whose leaves the actor cannot read, from both lists (D-161)', () => {
+    const hidden = new Set([SoldierId.parse(uuid(1)), SoldierId.parse(uuid(3))])
+    const lists = presenceLists({
+      source,
+      filter: null,
+      leaves,
+      types: [home, exam],
+      day: DAY,
+      readsLeavesOf: (soldier) => !hidden.has(soldier.id),
+    })
+    expect(lists.absent).toEqual([])
+    expect(lists.present.map((entry) => entry.soldier.first_name)).toEqual(['F2', 'F5'])
+  })
 })
+
+const READS_ALL = () => true
