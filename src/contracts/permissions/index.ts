@@ -107,6 +107,8 @@ export const PolicyTarget = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('organization') }),
   z.object({ kind: z.literal('unit'), unit_id: UnitId }),
   z.object({ kind: z.literal('soldier'), soldier_id: SoldierId }),
+  /** Every soldier of the organization, whatever their unit or rank: only organization scope with `any` covers it (D-162). */
+  z.object({ kind: z.literal('every_soldier') }),
 ])
 export type PolicyTarget = z.infer<typeof PolicyTarget>
 
