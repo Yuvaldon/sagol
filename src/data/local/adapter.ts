@@ -22,7 +22,12 @@ import {
   createLeaveTypeRepository,
 } from './leaveTypes'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
-import { createAccountCommands, createSoldierPreferencesRepository, type LocalAccountCommands } from './accounts'
+import {
+  createAccountCommands,
+  createAccountLinkRequestRepository,
+  createSoldierAccountRepository,
+  createSoldierPreferencesRepository,
+} from './accounts'
 import { createAvailabilityRuleCommands, createAvailabilityRuleRepository } from './rules'
 import { createSessionService } from './session'
 import {
@@ -55,6 +60,8 @@ export interface LocalDataAdapter {
     | 'soldiers'
     | 'soldier_private'
     | 'unit_memberships'
+    | 'soldier_accounts'
+    | 'account_link_requests'
     | 'soldier_preferences'
     | 'tag_categories'
     | 'tags'
@@ -68,7 +75,7 @@ export interface LocalDataAdapter {
   >
   readonly commands: {
     readonly organizations: Pick<DataCommands['organizations'], 'bootstrapOwner'>
-    readonly accounts: LocalAccountCommands
+    readonly accounts: DataCommands['accounts']
     readonly unit_levels: DataCommands['unit_levels']
     readonly units: DataCommands['units']
     readonly command_ranks: DataCommands['command_ranks']
@@ -114,6 +121,8 @@ export function createLocalDataAdapter(
       soldiers: createSoldierRepository(dependencies),
       soldier_private: createSoldierPrivateRepository(dependencies),
       unit_memberships: createMembershipRepository(dependencies),
+      soldier_accounts: createSoldierAccountRepository(dependencies),
+      account_link_requests: createAccountLinkRequestRepository(dependencies),
       soldier_preferences: createSoldierPreferencesRepository(dependencies),
       tag_categories: createTagCategoryRepository(dependencies),
       tags: createTagRepository(dependencies),

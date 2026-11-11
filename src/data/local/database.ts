@@ -4,9 +4,12 @@ import type { TableName, TableRow } from '@contracts'
 // The IndexedDB store of the local adapter (D-021). Every table of the schema exists from the
 // first version, because the policy snapshot reads most of them on every check. Table and column
 // names are schema.sql names (D-038). Primary keys and uniques mirror it where IndexedDB can: a
-// compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL".
+// compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL". A partial index on
+// another condition cannot be mirrored: the commands enforce it inside their write transaction
+// (`soldier_accounts` among accounts not revoked, D-156; one pending `account_link_requests` per identity).
 
-const DATABASE_VERSION = 1
+/** 2: `soldier_accounts` keys are no longer unique (D-156). */
+const DATABASE_VERSION = 2
 
 export const STORES = {
   organizations: 'id',
@@ -17,7 +20,7 @@ export const STORES = {
   soldier_private: 'soldier_id, organization_id, &[organization_id+personal_id]',
   seniority_overrides: 'id, organization_id, soldier_id',
   unit_memberships: 'id, organization_id, soldier_id, unit_id',
-  soldier_accounts: 'id, organization_id, auth_user_id, &[organization_id+auth_user_id], &soldier_id',
+  soldier_accounts: 'id, organization_id, auth_user_id, soldier_id',
   account_link_requests: 'id, organization_id, auth_user_id',
   soldier_preferences: 'soldier_id, organization_id',
   roles: 'id, organization_id',
