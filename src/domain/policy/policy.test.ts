@@ -7,6 +7,8 @@ import {
   RoleId,
   SeniorityOverrideId,
   SoldierId,
+  SubjectRankConstraint,
+  Timestamp,
   UnitId,
   UnitLevelId,
   UnitMembershipId,
@@ -567,10 +569,24 @@ describe('grant reach (D-156)', () => {
 
   it('limits a grant by the actor\'s own access_grants:create', () => {
     const create = p('access_grants', 'create')
-    expect(withinReach(context, S.admin, create, org)).toBe(true)
-    expect(withinReach(context, S.pc1, create, unit(UNIT.S11, true))).toBe(true)
-    expect(withinReach(context, S.pc1, create, unit(UNIT.P2, false))).toBe(false)
-    expect(withinReach(context, S.pc1, create, org)).toBe(false)
-    expect(withinReach(context, S.sc11, create, unit(UNIT.S11, false))).toBe(false)
+    const open = { constraint: SubjectRankConstraint.enum.any, until: null }
+    expect(withinReach(context, S.admin, create, org, open)).toBe(true)
+    expect(withinReach(context, S.pc1, create, unit(UNIT.S11, true), open)).toBe(true)
+    expect(withinReach(context, S.pc1, create, unit(UNIT.P2, false), open)).toBe(false)
+    expect(withinReach(context, S.pc1, create, org, open)).toBe(false)
+    expect(withinReach(context, S.sc11, create, unit(UNIT.S11, false), open)).toBe(false)
+  })
+
+  it('never widens the granter\'s rank constraint, nor outlasts its source', () => {
+    const approve = p('leaves', 'approve')
+    const platoon = unit(UNIT.P1, true)
+    const any = SubjectRankConstraint.enum.any
+    expect(withinReach(context, S.sc11, approve, platoon, { constraint: SubjectRankConstraint.enum.junior, until: null })).toBe(true)
+    expect(withinReach(context, S.sc11, approve, platoon, { constraint: SubjectRankConstraint.enum.junior_or_equal, until: null })).toBe(false)
+    expect(withinReach(context, S.sc11, approve, platoon, { constraint: any, until: null })).toBe(false)
+    const create = p('access_grants', 'create')
+    expect(withinReach(context, S.tempadmin, create, org, { constraint: any, until: null })).toBe(false)
+    expect(withinReach(context, S.tempadmin, create, org, { constraint: any, until: Timestamp.parse('2026-12-01T00:00:00.000Z') })).toBe(true)
+    expect(withinReach(context, S.tempadmin, create, org, { constraint: any, until: Timestamp.parse('2027-02-01T00:00:00.000Z') })).toBe(false)
   })
 })

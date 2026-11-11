@@ -5,6 +5,7 @@ import {
   type PermissionResource,
   type PolicyTarget,
   type SoldierId,
+  type Timestamp,
 } from '@contracts'
 import type { EffectivePermission, PolicyContext } from './context'
 import { scopeCovers, scopeWithin, type ResolvedScope } from './scope'
@@ -80,16 +81,26 @@ export function missingPermissions(
   )
 }
 
+/** How narrow each constraint is: a grant may narrow the granter's constraint, never widen it. */
+const RANK_NARROWNESS: Record<SubjectRankConstraint, number> = { any: 0, junior_or_equal: 1, junior: 2 }
+
+/** What a grant gives beyond its scope: its rank constraint and its end (NULL: open). */
+export interface GrantLimits {
+  readonly constraint: SubjectRankConstraint
+  readonly until: Timestamp | null
+}
+
 /**
- * True when the actor holds `permission` at a scope that contains `scope` (D-156): a grant
- * may give a scope only within the granter's own `access_grants:create`. An empty scope is
- * within nothing.
+ * True when the actor holds `permission` at a scope that contains `scope` (D-156), with a rank constraint no wider than
+ * the grant's and a source that lasts at least as long as the grant: a grant may give only what lies within the
+ * granter's own `access_grants:create`. An empty scope is within nothing.
  */
 export function withinReach(
   context: PolicyContext,
   actorId: SoldierId,
   permission: Permission,
   scope: ResolvedScope,
+  limits: GrantLimits,
 ): boolean {
   return context
     .permissionsOf(actorId)
@@ -97,6 +108,8 @@ export function withinReach(
       (held) =>
         held.resource === permission.resource &&
         held.action === permission.action &&
+        RANK_NARROWNESS[held.subject_rank_constraint] <= RANK_NARROWNESS[limits.constraint] &&
+        (held.expires_at === null || (limits.until !== null && limits.until <= held.expires_at)) &&
         scopeWithin(scope, held.scope, context),
     )
 }
