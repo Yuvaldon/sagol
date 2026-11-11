@@ -12,7 +12,8 @@
     "check:layers": "depcruise src --config .dependency-cruiser.cjs",
     "check:raw-values": "node scripts/check-raw-values.ts",
     "check:i18n": "node scripts/check-i18n.ts",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run --passWithNoTests --project unit --project dom",
+    "test:db": "node scripts/db-reset.ts && node scripts/db-schema-drift.ts && vitest run --project db",
     "check": "npm run typecheck && npm run lint && npm run check:layers && npm run check:raw-values && npm run check:i18n && npm run test",
     "prepare": "lefthook install",
     "e2e": "playwright test"
@@ -53,7 +54,7 @@
     "jsdom": "29.1.1",
     "lefthook": "2.2.2",
     "oxlint": "1.91.0",
-    "postgres": "4.1.1",
+    "postgres": "3.4.9",
     "tailwindcss": "4.3.4",
     "typescript": "6.0.3",
     "vite": "8.3.5",
