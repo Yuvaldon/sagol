@@ -52,7 +52,7 @@ function fakePorts(initial: { session: Session; organization?: Result<Organizati
   const ports = portsOf({
     session: {
       current: () => Promise.resolve({ ok: true, value: session }),
-      onboardingState: () => Promise.resolve({ ok: true, value: { bootstrap_available: true, open_request: null } }),
+      onboardingState: () => Promise.resolve({ ok: true, value: { bootstrap_available: true, open_request: null, last_rejected_at: null } }),
       subscribe(listener: (next: Session) => void) {
         sessionListener = listener
         return () => {

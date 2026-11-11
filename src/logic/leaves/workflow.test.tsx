@@ -1,5 +1,6 @@
 import {
   AvailabilityRuleId,
+  CalendarDate,
   LeaveCommentId,
   LeaveEventId,
   LeaveId,
@@ -35,6 +36,7 @@ import {
   leaveEditValues,
   leaveSteps,
   leaveThread,
+  myLeaveGroups,
   pendingRequests,
   toTransitionInput,
 } from './workflow'
@@ -204,6 +206,19 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
       leave(3),
     ]
     expect(closedLeaves(rows).map((row) => row.id)).toEqual([leave(2).id, leave(1).id])
+  })
+
+  it('splits my leaves into open, the earliest first, and history, the last changed first (D-167)', () => {
+    const today = CalendarDate.parse('2026-11-10')
+    const rows = [
+      leave(1, { start_date: '2026-11-20', end_date: '2026-11-21' }),
+      leave(2, { status: 'approved', start_date: '2026-11-08', end_date: '2026-11-10' }),
+      leave(3, { status: 'approved', start_date: '2026-11-01', end_date: '2026-11-09', updated_at: AT }),
+      leave(4, { status: 'rejected', updated_at: LATER }),
+    ]
+    const groups = myLeaveGroups(rows, today)
+    expect(groups.open.map((row) => row.id)).toEqual([leave(2).id, leave(1).id])
+    expect(groups.history.map((row) => row.id)).toEqual([leave(4).id, leave(3).id])
   })
 
   it('counts both ends of a leave', () => {

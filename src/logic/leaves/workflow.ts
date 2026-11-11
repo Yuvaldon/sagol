@@ -245,6 +245,37 @@ export function closedLeaves(leaves: readonly Leave[]): Leave[] {
     .toSorted((a, b) => compareInstants(b.updated_at, a.updated_at) || a.id.localeCompare(b.id))
 }
 
+// ----------------------------------------------------------------- my requests
+
+/** Every leave of one soldier, any dates and any status (D-167). */
+export function myLeavesQuery(soldierId: SoldierId): LeaveQuery {
+  return { window: null, soldier_ids: [soldierId], statuses: null }
+}
+
+export interface MyLeaves {
+  /** Pending, and approved ones that have not ended, the earliest first. */
+  readonly open: readonly Leave[]
+  /** The rest, the last changed first. */
+  readonly history: readonly Leave[]
+}
+
+function isOpen(leave: Leave, today: CalendarDate): boolean {
+  if (leave.status === LeaveStatus.enum.pending) return true
+  return leave.status === LeaveStatus.enum.approved && compareDates(leave.end_date, today) >= 0
+}
+
+/** The actor's own leaves in the two parts of "my requests" (D-167). */
+export function myLeaveGroups(leaves: readonly Leave[], today: CalendarDate): MyLeaves {
+  return {
+    open: leaves
+      .filter((leave) => isOpen(leave, today))
+      .toSorted((a, b) => compareDates(a.start_date, b.start_date) || a.id.localeCompare(b.id)),
+    history: leaves
+      .filter((leave) => !isOpen(leave, today))
+      .toSorted((a, b) => compareInstants(b.updated_at, a.updated_at) || a.id.localeCompare(b.id)),
+  }
+}
+
 /** How many days a leave covers, both ends included (D-012). */
 export function leaveDayCount(leave: Pick<Leave, 'start_date' | 'end_date'>): number {
   return daysBetween(leave.start_date, leave.end_date) + 1

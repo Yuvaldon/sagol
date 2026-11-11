@@ -13,9 +13,10 @@ import type {
   SoldierAccount,
   SoldierId,
 } from '@contracts'
-import { ACCOUNT_REVIEW_PERMISSION } from '@domain'
+import { MAX_TIMER_DELAY_MS } from '@config'
+import { ACCOUNT_REVIEW_PERMISSION, millisecondsUntil } from '@domain'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { checkOf, checkOn } from '../permissions/checks'
 import { useCan } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
@@ -26,6 +27,7 @@ import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
 import {
   grantStateAt,
+  nextGrantBoundary,
   sortedGrants,
   toCreateBindingInput,
   toCreateRoleInput,
@@ -96,18 +98,38 @@ export interface GrantRow {
   readonly state: GrantState
 }
 
-/** The grants as the list shows them: active and scheduled first, each with its state now. */
+/**
+ * The grants as the list shows them: active and scheduled first, each with its state now. The states move on their
+ * own at the next start or end while the list is on screen (D-169); a timer that fires early sets the next one.
+ */
 export function useGrantRows(includeInactive: boolean): Loaded<readonly GrantRow[]> {
   const { time } = usePorts()
   const grants = useAccessGrants(includeInactive)
+  // The states change only at a boundary, so `now` moves only there.
+  const [now, setNow] = useState(() => time.now())
+
+  useEffect(() => {
+    if (grants.status !== 'ready') return undefined
+    const boundary = nextGrantBoundary(grants.value, now)
+    if (boundary === null) return undefined
+    const timer = setTimeout(
+      () => {
+        setNow(time.now())
+      },
+      Math.min(Math.max(millisecondsUntil(time.now(), boundary), 0), MAX_TIMER_DELAY_MS),
+    )
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [grants, now, time])
+
   return useMemo((): Loaded<readonly GrantRow[]> => {
     if (grants.status !== 'ready') return grants
-    const now = time.now()
     return {
       status: 'ready',
       value: sortedGrants(grants.value, now).map((grant) => ({ grant, state: grantStateAt(grant, now) })),
     }
-  }, [grants, time])
+  }, [grants, now])
 }
 
 /** The account links the actor reads (D-163). */

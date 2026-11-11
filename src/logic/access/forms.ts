@@ -360,3 +360,12 @@ export function sortedGrants(grants: readonly AccessGrant[], now: Timestamp): Ac
   const rank = (grant: AccessGrant) => (['active', 'scheduled'].includes(grantStateAt(grant, now)) ? 0 : 1)
   return grants.toSorted((a, b) => rank(a) - rank(b) || compareInstants(b.granted_at, a.granted_at) || a.id.localeCompare(b.id))
 }
+
+/** The next instant a live grant starts or ends after `now`, when one changes state on its own (D-169). NULL: none. */
+export function nextGrantBoundary(grants: readonly AccessGrant[], now: Timestamp): Timestamp | null {
+  const ahead = grants
+    .filter((grant) => grant.revoked_at === null)
+    .flatMap((grant) => [grant.valid_from, grant.valid_to])
+    .filter((instant): instant is Timestamp => instant !== null && compareInstants(instant, now) > 0)
+  return ahead.toSorted(compareInstants)[0] ?? null
+}
