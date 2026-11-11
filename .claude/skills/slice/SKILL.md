@@ -10,12 +10,13 @@ State lives in git and in the docs, not in handoff files. One slice = one branch
 ## Start
 
 1. `git switch main && git pull`. If a pull request is still open, merge it when CI is green, or report it.
-2. Pick the first `☐` row in `docs/ROADMAP.md`. If it is an audit row (`A1`...), stop and tell the owner to run
-   `/audit A<n>` in a fresh session (D-051).
+2. Pick the first `☐` row in `docs/ROADMAP.md`. If it is an audit row (`A1`...), run it through a fresh subagent with
+   the `/audit` skill's steps, read-only, without waiting for a confirmation; triage its findings yourself and record
+   them in a docs pull request (D-170).
 3. `git switch -c <row>-<name>` (for example `v9-account-linking`).
 4. Read that row's card in `docs/FEATURE_MAP.md`, the decisions it lists (the index first, then the entries,
    located with grep), the `open` items targeted at it, and the `schema.sql` tables it touches. Nothing more up front.
-5. Plan, then code. A product choice that is not in `DECISIONS.md` goes to the owner, with a recommendation.
+5. Plan, then code. A product choice that is not in `DECISIONS.md` is decided and recorded, without asking (D-170).
 
 ## Build
 
