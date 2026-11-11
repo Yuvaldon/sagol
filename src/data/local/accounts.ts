@@ -243,7 +243,7 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
           if ((await tableOf(database, 'soldier_accounts').get(input.account_id)) !== undefined) {
             return alreadyExists(['account_id'])
           }
-          if (await holdsAccount(database, organization.id, identity.auth_user_id)) return alreadyExists(['id'])
+          if (await holdsAccount(database, organization.id, identity.auth_user_id)) return fail({ code: 'forbidden' })
 
           const claimedId = input.claimed_personal_id === null ? null : normalizePersonalId(input.claimed_personal_id)
           const data = await matchDataOf(database, organization.id)
@@ -317,6 +317,7 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
     reviewLink: (raw) =>
       asResult(async () => {
         const input = parseInput(ReviewAccountLinkInput, raw)
+        // The provider of a build is the same for every identity of it, the reviewer's included (D-148).
         const provider = requireIdentity(dependencies).provider
         const result = await database.transaction('rw', LINK_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
