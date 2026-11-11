@@ -3,14 +3,14 @@ import {
   IssueCode,
   type AccountLinkRequest,
   type Issue,
+  type LinkCandidate,
   type Permission,
-  type PolicyTarget,
   type Soldier,
   type SoldierAccount,
   type SoldierId,
   type SoldierPrivate,
 } from '@contracts'
-import { can, type PolicyContext } from '../policy'
+import { can, soldierTarget, type PolicyContext } from '../policy'
 import { normalizeEmail, normalizeName, normalizePersonalId } from './normalize'
 
 // Account linking (D-005, D-030, D-066). Candidates are shown to the reviewer only, never to
@@ -22,13 +22,6 @@ export interface LinkMatchData {
   readonly soldier_private: Iterable<Pick<SoldierPrivate, 'soldier_id' | 'personal_id' | 'invite_email'>>
   /** Every account row, revoked included: the schema allows one account per soldier. */
   readonly soldier_accounts: Iterable<Pick<SoldierAccount, 'soldier_id'>>
-}
-
-export type LinkMatchKind = 'personal_id' | 'name'
-
-export interface LinkCandidate {
-  readonly soldier_id: SoldierId
-  readonly match: LinkMatchKind
 }
 
 type LinkClaim = Pick<AccountLinkRequest, 'claimed_personal_id' | 'first_name' | 'last_name'>
@@ -111,19 +104,31 @@ export const ACCOUNT_REVIEW_PERMISSION = {
   action: 'approve',
 } as const satisfies Permission
 
-/** The targets a reviewer needs `accounts:approve` over: the candidates, else the organization (D-030). */
-export function linkReviewTargets(candidates: readonly LinkCandidate[]): PolicyTarget[] {
-  if (candidates.length === 0) return [{ kind: 'organization' }]
-  return candidates.map((candidate) => ({ kind: 'soldier', soldier_id: candidate.soldier_id }))
+/**
+ * The candidates a reviewer may read and name: those over which they hold `accounts:approve` (D-149, OI-034). The data layer
+ * shows no other candidate and refuses a `link` to a soldier outside this list.
+ */
+export function reviewableCandidates(
+  context: PolicyContext,
+  actorId: SoldierId,
+  candidates: readonly LinkCandidate[],
+): LinkCandidate[] {
+  return candidates.filter((candidate) =>
+    can(context, actorId, ACCOUNT_REVIEW_PERMISSION, soldierTarget(candidate.soldier_id)),
+  )
 }
 
-/** True when the actor may see and review the request: `accounts:approve` over one target. */
+/**
+ * True when the actor may see and review the request (D-066, D-149): they hold `accounts:approve` over one of its candidates,
+ * or, when it has none, at organization scope.
+ */
 export function canReviewLinkRequest(
   context: PolicyContext,
   actorId: SoldierId,
   candidates: readonly LinkCandidate[],
 ): boolean {
-  return linkReviewTargets(candidates).some((target) => can(context, actorId, ACCOUNT_REVIEW_PERMISSION, target))
+  if (candidates.length === 0) return can(context, actorId, ACCOUNT_REVIEW_PERMISSION, { kind: 'organization' })
+  return reviewableCandidates(context, actorId, candidates).length > 0
 }
 
 /** Only a pending request is reviewed or cancelled; anything else is `invalid_transition`. */
