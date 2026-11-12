@@ -198,7 +198,10 @@ The current state (D-128):
   `day_reports.confirm` and never deleted; `deployments.report_owner_id` names who reads the summary. `domain/reports`
   holds the confirm rule (an open, live rotation over the unit on the date) and `confirmationStatus`; "changed since" is
   derived in `logic/presence/confirmations.ts` from the section's soldiers' leaves of any status touching the day ±1,
-  written after the confirmation. `useReportConfirmations` reads them with those leaves, and leave writes refresh it.
+  written after the confirmation, on the report with no view filter. Which unit and date the actor may confirm is
+  `report_confirmations.confirmable`, answered on the whole tree, so a hidden middle level does not hide the button. A
+  confirmation holds from the client's read of the leaves (`seen_at`, `confirmedAtOf`). `useReportConfirmations` reads
+  them with those leaves; leave writes refresh it, and rotation writes refresh the confirmable answer.
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
   (D-141), and the same breaches beside a calendar day and above the list (`ui/board/breaches.ts`, D-290); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 

@@ -296,7 +296,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Image**: always the light tokens, the text copy's lines, one tall PNG for a span.
 - **Confirmations (V30, D-293)**: under each unit section's heading, one line with its status ("אומת", "טרם אומת" or
   "השתנה מאז האימות", muted, approved or pending tones) and, for whoever may confirm it now, "אימות הדוח" or "אימות
-  מחדש". Above the count tiles, the report owner (or, with none named, whoever may confirm) reads "N אומתו מתוך M"
+  מחדש". Status and the tally are read on the whole unit, filter or not; while the view filter hides some of a
+  section's soldiers, the button gives way to a muted line that confirming needs the full list. Above the count tiles,
+  the report owner (or, with none named, whoever may confirm) reads "N אומתו מתוך M"
   and, when some changed, "השתנו מאז: K". The copy stays one consolidated message. The rotation form takes an optional
   "אחראי דוח 1" from the active soldiers.
 
