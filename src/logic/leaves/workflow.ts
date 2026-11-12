@@ -1,3 +1,4 @@
+import { INBOX } from '@config'
 import {
   IssueCode,
   LeaveCommentId,
@@ -23,6 +24,7 @@ import { sameProperties, type WithProperties } from '../properties/properties'
 import {
   EDITABLE_LEAVE_STATUSES,
   LEAVE_PERMISSIONS,
+  addDays,
   archivedSoldierIssues,
   compareDates,
   compareInstants,
@@ -225,12 +227,16 @@ export function leaveThread(events: readonly LeaveEvent[], comments: readonly Le
 
 // ----------------------------------------------------------------------- inbox
 
-/** Any dates (D-120). */
+/** Any dates (D-120): a pending leave leaves the list once it is answered. */
 export const PENDING_QUERY: LeaveQuery = { window: null, soldier_ids: null, statuses: [LeaveStatus.enum.pending] }
-export const CLOSED_QUERY: LeaveQuery = {
-  window: null,
-  soldier_ids: null,
-  statuses: [LeaveStatus.enum.rejected, LeaveStatus.enum.cancelled],
+
+/** The closed leaves near today (D-205): the list only grows, so it reads a bounded span of dates. */
+export function closedQuery(today: CalendarDate): LeaveQuery {
+  return {
+    window: { start_date: addDays(today, -INBOX.closedPastDays), end_date: addDays(today, INBOX.closedFutureDays) },
+    soldier_ids: null,
+    statuses: [LeaveStatus.enum.rejected, LeaveStatus.enum.cancelled],
+  }
 }
 
 /** The pending leaves the actor may approve, the earliest first (D-120). */

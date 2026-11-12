@@ -66,7 +66,10 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
   await test.step('a pinned module joins the bar, and leaves it when unpinned', async () => {
     const pin = `${he.navigation.pin} ${he.soldiers.open}`
     await openPanel(page)
-    await navigationPanel(page).getByRole('button', { name: pin }).click()
+    const toggle = navigationPanel(page).getByRole('button', { name: pin })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
     await page.keyboard.press('Escape')
     const pinned = navigation(page).getByRole('button', { name: he.soldiers.open, exact: true })
     await expect(pinned).toBeVisible()

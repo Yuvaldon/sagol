@@ -11,11 +11,11 @@ import type {
 } from '@contracts'
 import { EVERY_SOLDIER, compareDates, type AvailabilityLeave, type RuleData } from '@domain'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useFilterSource } from '../filters/source'
 import { useLeaves, useLeaveTypes } from '../leaves/hooks'
 import { checkOf } from '../permissions/checks'
-import { useCan } from '../permissions/hooks'
+import { useCan, useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
@@ -185,10 +185,15 @@ export function useRuleConflicts(window: WindowRequest | null): Loaded<readonly 
 /**
  * The live warning of a form (D-142): what the leave, as the command would leave it, breaks. `stored` is the leave
  * before an edit, so the days it leaves are judged too. Empty while the form is not complete.
+ *
+ * Loading until the first answer, and failed when a read fails (OI-099). Once it has answered, a new span keeps the
+ * last answer until its own data arrives, so a drag that crosses days does not flash "nothing broken".
  */
-export function useLeaveRuleWarnings(changed: AvailabilityLeave | null, stored: Leave | null = null): readonly RuleViolation[] {
-  const can = useCan(READS_EVERYTHING)
+export function useLeaveRuleCheck(changed: AvailabilityLeave | null, stored: Leave | null = null): Loaded<readonly RuleViolation[]> {
+  const { can, known } = useCanAnswers(READS_EVERYTHING)
   const readsEverything = READS_EVERYTHING.every(can)
+  // Until the actor is known to read less, the warning has no answer yet: not "nothing broken".
+  const decided = READS_EVERYTHING.every(known)
   const span = useMemo(() => {
     if (changed === null || !readsEverything) return null
     const dates = [changed.start_date, changed.end_date, ...(stored === null ? [] : [stored.start_date, stored.end_date])].sort(compareDates)
@@ -198,10 +203,23 @@ export function useLeaveRuleWarnings(changed: AvailabilityLeave | null, stored: 
   }, [changed, stored, readsEverything])
   const rules = useAvailabilityRules()
   const data = useRuleData(span)
-  return useMemo(() => {
-    if (changed === null || !readsEverything || rules.status !== 'ready' || data.status !== 'ready' || rules.value.length === 0) return NO_VIOLATIONS
-    return leaveViolations(data.value, rules.value, changed)
-  }, [changed, readsEverything, rules, data])
+  const current = useMemo((): Loaded<readonly RuleViolation[]> => {
+    if (changed === null) return NO_CHECK
+    if (!decided) return LOADING
+    if (!readsEverything) return NO_CHECK
+    if (rules.status !== 'ready') return rules
+    if (rules.value.length === 0) return NO_CHECK
+    if (data.status !== 'ready') return data
+    return { status: 'ready', value: leaveViolations(data.value, rules.value, changed) }
+  }, [changed, decided, readsEverything, rules, data])
+  // The last answer, kept from an earlier render (React's "storing information from previous renders"). Compared by
+  // value: a form passes a new candidate on every render, and an equal answer must not render again.
+  const [last, setLast] = useState<Loaded<readonly RuleViolation[]> | null>(null)
+  if (changed === null) {
+    // A new candidate after none starts loading afresh.
+    if (last !== null) setLast(null)
+  } else if (current.status === 'ready' && !sameAnswer(current, last)) setLast(current)
+  return current.status === 'loading' && last !== null ? last : current
 }
 
 /**
@@ -215,3 +233,9 @@ const READS_EVERYTHING: readonly PermissionCheck[] = [
 ]
 
 const NO_VIOLATIONS: readonly RuleViolation[] = []
+
+function sameAnswer(answer: Loaded<readonly RuleViolation[]>, last: Loaded<readonly RuleViolation[]> | null): boolean {
+  return answer === last || (last !== null && JSON.stringify(answer) === JSON.stringify(last))
+}
+const NO_CHECK: Loaded<readonly RuleViolation[]> = { status: 'ready', value: NO_VIOLATIONS }
+const LOADING: Loaded<readonly RuleViolation[]> = { status: 'loading' }

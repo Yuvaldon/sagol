@@ -240,7 +240,7 @@ export {
   useAvailabilityRules,
   useDayViolations,
   useHeatRow,
-  useLeaveRuleWarnings,
+  useLeaveRuleCheck,
   useRuleCommands,
   useRuleConflicts,
   useRulePermissions,

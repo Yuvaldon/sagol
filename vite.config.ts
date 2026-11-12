@@ -52,6 +52,11 @@ export default defineConfig({
         extends: true,
         test: { name: 'db', environment: 'node', include: ['src/**/*.dbtest.ts'], fileParallelism: false },
       },
+      {
+        // The public Data API in front of that database (D-203): `npm run test:rest`, in CI after `test:db`.
+        extends: true,
+        test: { name: 'rest', environment: 'node', include: ['src/**/*.resttest.ts'] },
+      },
     ],
   },
 })

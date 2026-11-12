@@ -70,14 +70,15 @@ The data layer is written as if it were the server:
   each `logic` module declares the narrow port it needs, and nothing returns "not implemented"
   (D-076).
 - Every adapter must pass one shared **repository contract test suite**, which grows with each
-  slice and takes a `seed` port per adapter (D-076). The remote adapter (phase 8) passes the same
-  suite, which is what makes the switch safe.
+  slice and takes a `seed` port per adapter (D-076). The remote adapter (`src/data/remote`, D-204) passes the same
+  suite, end to end through the gateway on Postgres, which is what makes the switch safe.
 - Repositories expose change subscriptions, so the UI has one live source of truth
   across tabs and views.
 - On the server (D-201) one function, the command gateway, runs the same command core over a
   Postgres `Store`, in one SERIALIZABLE transaction per request, as the identity of the verified
   token. `src/data/server/index.ts` is its entry; the app imports only `src/data/index.ts`.
-  `supabase/migrations` builds the database from `schema.sql`, plus triggers (D-202).
+  `supabase/migrations` builds the database from `schema.sql`, plus triggers (D-202). The API
+  roles hold no privilege and RLS has no policy, so no client reaches a table (D-203).
 
 ## Identity and access (D-001 … D-006)
 
@@ -123,8 +124,8 @@ The data layer is written as if it were the server:
   at a level, an absolute unit, or a soldier) plus `include_descendants`, optionally limited
   by subject rank against **effective seniority** (rank seniority unless a personal
   override is active, D-029). Implemented once in `domain/policy`, consumed by the local
-  adapter, which answers UI hints ("can I?", D-085), and mirrored by Postgres
-  `has_permission()` + RLS.
+  adapter, which answers UI hints ("can I?", D-085), and run on the server by the command
+  gateway; the same matrix is tested in memory and over Postgres (D-203).
 - **Targets:** a permission is checked against a soldier, a unit or the organization.
   Organization-wide data can be viewed from any scope and changed only at organization
   scope. A soldier's unit is the primary membership today. Only active, linked soldiers
@@ -286,7 +287,7 @@ src/
                json/ time/
   config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
   data/        local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
-               remote/ (phase 8)
+               remote/ (one POST per call to the gateway, D-204)
                contract-tests/
   logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ timeline/
                tags/ filters/ presence/ rules/ testing/ (test-only helpers, D-135)
