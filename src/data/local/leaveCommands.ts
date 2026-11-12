@@ -66,14 +66,19 @@ async function commentIdIssues(database: Store, comment: CommentDraft | null): P
   return [{ path: ['comment', 'id'], code: IssueCode.enum.already_exists }]
 }
 
-/** Only what this change makes worse counts (D-073). Hard rules refuse; soft ones need an acknowledgment. */
+/**
+ * Only what this change makes worse counts (D-073). Hard rules refuse; soft ones need an acknowledgment. The tags
+ * counted are the ones the soldiers hold in the change's rotation (D-222): a change spans one rotation, else none.
+ */
 export async function passRuleGate(
   database: Store,
   scope: ActorScope,
   leaves: readonly Leave[],
   acknowledged: readonly AvailabilityRuleId[],
 ): Promise<AvailabilityRuleId[]> {
-  const { data, rules } = await ruleData(database, scope.organization_id)
+  const rotations = new Set(leaves.map((leave) => leave.deployment_id))
+  const rotationId = rotations.size === 1 ? ([...rotations][0] ?? null) : null
+  const { data, rules } = await ruleData(database, scope.organization_id, rotationId)
   const gate = ruleGate(leaveChangeViolations(data, rules, leaves), acknowledged)
   return gate.ok ? gate.value : fail(gate.error)
 }
