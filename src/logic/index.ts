@@ -357,3 +357,4 @@ export {
   type SeniorityOverrideFormValues,
 } from './seniority/seniority'
 export { useSeniorityOverrideCommands, useSeniorityOverrides, useSeniorityPermissions } from './seniority/hooks'
+export { setupSteps, useSetupAccess, useSetupProgress, type SetupStep } from './organization/setup'
