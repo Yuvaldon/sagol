@@ -2315,6 +2315,8 @@ one-tap access to whoever needs a module daily. An empty heat row and an empty f
   order: text, a number, a date, yes/no/none, one option or none, a check list, a soldier search, a unit picker. The
   values stay beside the form library's own values and join the command's input as `properties`; values of
   definitions the form does not show (archived) are kept as stored. An empty field stores no key (D-065).
+  A multi-select shows as checked only the options that still exist, so a change writes live options only. The
+  definition forms open for who may create or change a definition; for anyone else the form is not there (D-076).
 - **References (OI-037).** A new or changed `soldier_ref` or `unit_ref` value must point to a row of the organization
   (`reference_not_found`) that is not archived (`reference_archived`), checked by the data layer from
   `propertyReferences`. One archived later stays, like any unchanged value.
@@ -2332,6 +2334,9 @@ the domain left to the data layer.
 - "Filter" offers each live soldier property of those types that has a choice and no chip yet. A chip of an archived
   property keeps its label; an option that is gone reads "לא זמין"; a property the viewer cannot read is a chip named
   "לא זמין" that can only be removed. Any other condition on a property is "a filter the bar does not read".
+- An option removed since a chip was written matches no value; the chip's other options still match. A chip that no
+  longer fits its property (a property of another entity, or of a type the chip is not written for) reads "לא זמין"
+  and can only be removed.
 **Why:** select and yes / no are where a unit filters by a property (blood type, a license). Text, number, date and
 reference conditions need operators and inputs the bar does not have; they stay in the model (D-067) and wait for a
 need.
