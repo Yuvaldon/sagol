@@ -3564,7 +3564,8 @@ dead space on any surface; a rule in the check keeps the next surface from bring
 ## D-280 — Production delivery: automatic after staging, guarded
 2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12; amended the same day: the owner
 approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z;
-at about 15:55Z the owner chose repository-level values over a `production` environment
+at about 15:55Z the owner chose repository-level values over a `production` environment, and the comparison with
+`STAGING_PROJECT_REF` was dropped (the orchestrator, about 15:59Z)
 - **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
   pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
   the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
@@ -3573,8 +3574,8 @@ at about 15:55Z the owner chose repository-level values over a `production` envi
   delivered, so production gets only what staging took first. The owner may also start it by hand
   (`workflow_dispatch`, on `main`, owner as actor and triggering actor), typing the production ref as the input. Either
   way it refuses a commit whose CI did not pass or that is not on `main`.
-- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, differs from `STAGING_PROJECT_REF`, names a
-  project of the account, and that project's name does not end in `-staging`; on a manual run the typed ref must equal
+- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, names a project of the account, and that
+  project's name does not end in `-staging`; on a manual run the typed ref must equal
   it too. The ref lives in a variable, not in the file (rule 2).
 - **Destructive migrations.** After the `--dry-run` plan and before the push, every pending migration the plan names is
   scanned, comments stripped, statement by statement: `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE FROM` with no
@@ -3585,10 +3586,12 @@ at about 15:55Z the owner chose repository-level values over a `production` envi
   history row, the next file was not applied). The step fails, so the function deploy after it never runs; the
   project stays on the last migration that succeeded.
 - **No environment.** The job uses no GitHub environment: `SUPABASE_ACCESS_TOKEN` (one scoped token covering the
-  production and staging projects, which Staging reads as well), `PRODUCTION_DB_PASSWORD` and the variables
-  `PRODUCTION_PROJECT_REF` and `STAGING_PROJECT_REF` are repository-level (OI-230), so the owner keeps one copy of each.
+  production and staging projects, which Staging reads as well), `PRODUCTION_DB_PASSWORD` and the variable
+  `PRODUCTION_PROJECT_REF` are repository-level (OI-230), so the owner keeps one copy of each.
   The main-only rule is the job's own checks (`workflow_run` on `main` from this repository, or a dispatch on `main` by
-  the owner, then the commit must be on `main`), and the guard stops if `STAGING_PROJECT_REF` is not readable. No
+  the owner, then the commit must be on `main`). `STAGING_PROJECT_REF` stays in the `staging` environment,
+  out of this job's reach, so the guard does not compare against it: an explicit `PRODUCTION_PROJECT_REF` and the
+  `-staging` name check cover a staging ref set by mistake. No
   required-reviewer gate: GitHub offers it in private repositories only on paid plans, and anything paid is out
   (D-200); the owner's approval of the automatic run replaces it.
 **Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
