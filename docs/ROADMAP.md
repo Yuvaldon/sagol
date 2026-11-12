@@ -124,6 +124,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V17 | Dark Mode | Second token set, the soldier's choice in the user menu (D-181) | ☑ |
 | V18 | Installable app (PWA) | Sagol on the phone's home screen: the manifest and icons, a worker that caches the shell only, the update toast, the install item in the user menu, the offline screen (D-182 … D-185) | ☑ |
 | V19 | Time range, rotations, declutter | A range picker (day, week, month, a whole rotation) that every view honors, "סבב" in place of "פריסה", "only who is missing" as a filter condition, a sort control shared by the board and the table, and a calmer screen (D-211 … D-215) | ☑ |
+| V22 | Daily report (דוח 1) | Tap a day in any view: who is present, absent, leaving and returning, by unit; reasons on request; copy as a message, save or share as an image; several days at once (D-193 … D-197) | ☐ |
 | A7 | audit | Whole product | ☐ |
 
 ## Later (no schema change required)

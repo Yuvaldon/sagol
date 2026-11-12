@@ -336,6 +336,7 @@ database; remote adapter passing the same contract suite; Google auth, environme
 | V16 Setup wizard | Guided first run over the existing forms; progress derived from data | D-033 |
 | V17 Dark Mode | Second token set (was row 8.5) | D-024, D-077 |
 | V18 Installable app (PWA) | Sagol on the home screen, a worker for the shell only, the update toast, the install item, the offline screen | D-182 … D-185 |
+| V22 Daily report (דוח 1) | A day header in every engine opens a centered report: present, absent, leaving and returning, the total, a breakdown by unit in tree order with collapsible names; the active rotation; reasons (off by default, per device, only what the viewer may read); copy as text for a messaging app with a toast; a PNG in the light tokens through the share sheet or a download; a span of days; days outside the scope's rotations are not reportable. Tests: domain categories; e2e for a day tap, counts, the clipboard, the image, a span, reasons with and without permission; axe; phone upright and on its side | D-032, D-070, D-133, D-134, D-161, D-211, D-193 … D-197 |
 
 From M6 on, each slice also updates the remote adapter and server functions, and the contract
 suite holds both to the same behavior (D-082). Open items: V13 OI-088; V14 OI-037, OI-073, OI-080;

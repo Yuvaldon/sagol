@@ -150,7 +150,7 @@ am = amends, ref = refines, ext = extends.
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
-| D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161 |
+| D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161; sup D-193 (panel) |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
 | D-136 | The new-leave form stays with active soldiers | logic, ui | |
 | D-137 | Pending leaves counted by a rule: the requester acknowledges | domain, data | |
@@ -221,6 +221,11 @@ am = amends, ref = refines, ext = extends.
 | D-213 | "Only who is missing" is a filter condition | logic, ui | |
 | D-214 | The board's sort | config, logic, ui | |
 | D-215 | Data and controls, not prose | i18n, ui | |
+| D-193 | The day report (דוח 1): who is present, absent, leaving and returning | domain, config, logic, ui | |
+| D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | |
+| D-195 | The day report as text for a messaging app | config, i18n, logic | |
+| D-196 | The day report as an image: drawn on a canvas in the light tokens | ui | |
+| D-197 | A device store for conveniences | config, data, logic, tooling | |
 
 ---
 
@@ -2854,3 +2859,82 @@ board's frame. One state for the board and the table means a link reopens the sa
   stays clean. An i18n key no screen uses is deleted.
 **Why:** the owner asked for a calmer screen. Hints repeated what the controls already say, and on a phone they pushed
 the data below the fold.
+
+## D-193 — The day report (דוח 1): who is present, absent, leaving and returning
+2026-11-12 · accepted · supersedes D-134 in part (the panel) · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- **What it is.** D-134's present and absent lists grow into the day report, and its drawer panel gives way to a
+  centered dialog over the board. The URL keeps `panel=presence` and `day`; a span adds `until`, the last day. The
+  presence button opens it on today, as before.
+- **Entry.** In every engine a day's header (the timeline's day column, the calendar's day cell, the table's and the
+  list's day heading) is a button that opens that day's report; keyboard and screen readers reach it by its date. In a
+  day range the window label's control opens it. Arrows in the dialog step a day back or forward.
+- **Population.** As D-134: who the board's soldier filter selects on the day, among the soldiers whose leaves the
+  viewer may read (D-161). Approved leaves only (D-133). The model has no planned strength, so the report shows none
+  (D-076): the total is the population.
+- **Categories.** Present and absent partition the population (D-032, D-070). Leaving and returning are part of absent
+  and read the absence, not the leaves: a soldier **leaves** on a day they are absent and were present the day before,
+  and **returns** on a day they are absent and are present the day after (`end_date` is inclusive, so the last day
+  away is the return day). A one-day absence both leaves and returns. Back-to-back or overlapping leaves count one
+  departure and one return. A marker, a pending, rejected or cancelled leave, or an override to available never moves
+  anyone (`dayMovements` in `domain`).
+- **Breakdown.** The counts first (present, absent, leaving, returning, out of the total), then one section per unit in
+  the tree order of the board (D-105), each with its own counts and collapsible name lists.
+- **Rotations (D-211).** The dialog names the scope's rotations that run on the day. When the scope has rotations, a
+  day none of them runs on is not reportable: its header is not a button, and the arrows skip past it. A scope with no
+  rotation reports every day, so a unit that does not plan by rotations still has the report.
+- **Span.** "Several days" turns the dialog to a span: the day and up to `DAY_REPORT.maxSpanDays` − 1 days after it,
+  inside the window's reportable days. Each day is its own section, in order.
+**Why:** the owner's "דוח 1": the morning question of a command post is who is here, who is out, who leaves and who is
+back today. The presence panel already answered half of it; one place is calmer than two (D-215). Reading the
+absence rather than the leaves means a soldier who swaps one leave for another the next day is not reported as coming
+back and leaving again.
+
+## D-194 — Reasons in the day report: off by default, remembered per device, only what the viewer may read
+2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- A switch "סיבות" shows, beside each absent soldier, the type of the leave that makes them absent and its reason text.
+- Off by default. The choice is a convenience of the device, kept per signed-in soldier in the device store (D-197),
+  never in `soldier_preferences`: a commander who shows reasons on their own phone does not show them on the screen of
+  the command post.
+- The switch shows only when the viewer may read a reason for someone in the report: a leave type readable to the
+  viewer or a reason text on a leave they read. It reads what the viewer already may read, through the same
+  checks; nothing is fetched or shown that the leave's own sheet would not show them (no bypass). With nothing to
+  show, the switch is absent (D-076).
+- The text copy and the image carry the reasons only while the switch is on.
+**Why:** reasons are personal and the report is often shown or sent to others, so the safe default is off, and the
+choice belongs to the screen it is made on.
+
+## D-195 — The day report as text for a messaging app
+2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- "העתקה" copies plain text and a toast confirms it. Its order: a `*bold*` header with the date and the scope, the
+  counts, then one section per unit with a `*bold*` name and one line per soldier under absent, leaving and returning.
+  A span has one such block per day. Present names are left out: the counts carry them, and the message stays short.
+- RTL-safe: every line starts with a right-to-left mark, so a line that starts with a number or a Latin name stays
+  aligned. No other markup.
+- The order of the parts lives in `config` (`DAY_REPORT.textSections`), the words in `i18n`, and the text is built in
+  `logic`. Sending inside Sagol or to an app is not built (D-076).
+**Why:** the report's daily use is a message to a group. `*bold*` is what WhatsApp and Telegram render; anything more
+shows as noise elsewhere.
+
+## D-196 — The day report as an image: drawn on a canvas in the light tokens
+2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- "תמונה" makes a PNG of the report as the dialog shows it (the counts, the units, the open name lists, the reasons
+  only while on), drawn with the canvas API from the report itself. No library: an HTML-to-image library rasterizes
+  the DOM through SVG `foreignObject`, which loses web fonts and backdrop blur on Safari, and adds a dependency for
+  one screen.
+- The image always uses the light tokens, whatever the theme: it is read in a chat, on someone else's screen.
+- A span is one tall image, one section per day: one file to send.
+- Where the browser can share a file (`navigator.canShare({ files })`), the button opens the share sheet; elsewhere
+  it downloads the file. Only the path that works is offered.
+**Why:** the image is for a group chat where text formatting is lost; a canvas drawing is the same on every browser
+and is tested by its pixels and size.
+
+## D-197 — A device store for conveniences
+2026-11-12 · accepted · refines D-021, D-074 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- A `DeviceStore` port in `logic`, implemented by `data` over `localStorage` (and `sessionStorage` for what lasts the
+  session), under keys in `config` (`STORAGE_KEYS`), scoped to the signed-in soldier. It holds conveniences of one
+  screen only: never data, never a permission, never what another device needs. A value that does not read back as
+  its type reads as the default.
+- `scripts/guardrails.config.ts` allows web storage in `src/data/device/` beside the local identity.
+**Why:** D-194 and focus mode (V23) remember a choice per device. Rows in `soldier_preferences` follow the soldier to
+every device, which is wrong for these.
+
