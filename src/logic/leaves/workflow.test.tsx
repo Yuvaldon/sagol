@@ -1,3 +1,5 @@
+import { INBOX } from '@config'
+import { addDays } from '@domain'
 import {
   AvailabilityRuleId,
   CalendarDate,
@@ -26,6 +28,7 @@ import { newLeaveValues } from './forms'
 import { useLeaves } from './hooks'
 import {
   closedLeaves,
+  closedQuery,
   editReturnsToPending,
   editedLeaveCandidate,
   isEditable,
@@ -206,6 +209,15 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
       leave(3),
     ]
     expect(closedLeaves(rows).map((row) => row.id)).toEqual([leave(2).id, leave(1).id])
+  })
+
+  it('reads the closed leaves over a bounded span around today (D-205)', () => {
+    const today = CalendarDate.parse('2026-11-10')
+    expect(closedQuery(today)).toEqual({
+      window: { start_date: addDays(today, -INBOX.closedPastDays), end_date: addDays(today, INBOX.closedFutureDays) },
+      soldier_ids: null,
+      statuses: ['rejected', 'cancelled'],
+    })
   })
 
   it('splits my leaves into open, the earliest first, and history, the last changed first (D-167)', () => {
