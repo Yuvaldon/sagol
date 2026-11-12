@@ -171,7 +171,11 @@ The current state (D-128):
 - **Rule commands** (`availability_rules`): a rule is a unit target, or an organization target when global; moving it
   needs `update` on both ends; references, the population filter and the rows it names are checked (D-139).
 - **`logic/rules`** evaluates over what the actor reads, with the commands' domain functions: the heat row, the broken
-  rules of a day, the window's conflicts and the live warning of a form (D-141, D-142). Deployments join in V15 (OI-096).
+  rules of a day, the window's conflicts and the live warning of a form (D-141, D-142). Deployments and their members join, archived ones too (D-179).
+- **Deployment commands** (`deployments`, `deployment_members`): a deployment is a unit target, moving it needs
+  `update` on both units, and its members are replaced whole under its version (D-179).
+- **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
+  one, the rules judged on all at once, all or none (D-179).
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
   (D-141); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
@@ -186,8 +190,7 @@ structural canonical key (D-067).
 The current state (D-128):
 
 - **One source of filter data** in `logic/filters` (`useFilterSource`, `filterContextOf`): soldiers, ranks, units,
-  memberships, soldier tags and the property definitions (a soldier's values are on its row); seniority overrides
-  join with V15 (D-131, D-177, OI-081).
+  memberships, soldier tags and the property definitions (a soldier's values are on its row), and seniority overrides (D-131, D-177, D-179).
   The board, the presence lists and the rules' evaluation (`ruleDataOf`) read it; units with archived ones join with
   OI-098 (D-147).
 - **Who a view starts from:** soldiers not archived, active only unless the filter has a status condition (D-105, D-131).

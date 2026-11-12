@@ -195,6 +195,7 @@ am = amends, ref = refines, ext = extends.
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | |
 | D-177 | Property chips in the filter bar | logic, ui | |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | |
+| D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
@@ -2388,6 +2389,35 @@ module. So a new module lands in three commits, each green: the `ui` entry first
 `NavigationModule` record so it may come before its enum value; then the enum value in `contracts`; then the module in
 its section in `config`.
 **Why:** one layer per commit (D-127) with every commit green; the order is the only one in which each step compiles.
+
+## D-179 — Deployments, collective leave, copies of a leave and personal seniority on screen
+2026-11-12 · accepted · refines D-012, D-019, D-029, D-049, D-071 · OI-069, OI-074, OI-081, OI-096 · decided under the owner's autonomy instruction of 2026-11-11
+- **Deployments** are a module of the leave setup section, after rules (D-178 order). A deployment is a target of its
+  unit, as a scoped rule is (D-053); moving it needs `update` on both units. The `organization` target of
+  `deployments` only asks whether the actor sees any deployment, to open the module; the data layer checks unit
+  targets. Without a live unit the empty module says that a unit comes first, since a deployment belongs to one.
+  "Active" is read from the dates (never stored). The list is the latest first, then by name.
+- **Members** are edited as one list under the deployment's version: a member's own dates may only narrow the
+  deployment's, and blank means the deployment's own day. Members the actor cannot see are kept as they are. New
+  deployment dates must still hold every member's own dates.
+- A rule's form offers a deployment when one exists, and the rules read deployments and their members, archived ones
+  too: a rule of an archived deployment counts nobody (D-071, OI-096).
+- **A collective leave** is a switch in the new-leave drawer, shown only when there is more than one soldier to choose:
+  a batch name, the soldiers, one type and the same days. **A copy of a leave** is a form inside the leave's drawer:
+  the soldiers and days are new, and the type, effect override, reason and properties are copied; never the status or
+  the history. Both run each new leave through `planLeaveCreation` and its permissions, judge the rules on them all at
+  once, save all or none, and write one `created` event per leave with the acknowledged rules (OI-074). "Approve now"
+  shows only to who may approve every soldier chosen (D-013). A batch is visible with any of its leaves.
+- **Personal seniority** is a section of the soldier's page: an override is created and revoked, never edited, and a
+  revoked one stays as history. Only live overrides may not overlap; the overlap answer names only the date, since it
+  counts overrides the actor may not see (OI-069). The filter source reads the overrides (OI-081).
+  A create or revoke is checked again after the write, on the soldier as stored from the override's first day,
+  since seniority feeds the junior constraints (D-157); one's own seniority changes only with an unconstrained
+  (`any`) source.
+- **A deployment** is a row in its own drawer. New dates that would cut a member's own days off answer on the date
+  that cuts them. A rule's deployment reference must be one the actor sees and still live.
+**Why:** these are the V15 card's four pieces. They are built on the existing targets and commands, so they add no
+new permission concept, and every write goes through the same plan and rule gate as a single leave.
 
 ## D-200 — Backend: Supabase and Vercel, free plans
 2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170
