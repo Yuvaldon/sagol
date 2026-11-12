@@ -68,6 +68,22 @@ export function startOfWeek(date: CalendarDate, firstDayOfWeek: number): Calenda
   return addDays(date, -offset)
 }
 
+/** The first day of the month that holds `date`. */
+export function startOfMonth(date: CalendarDate): CalendarDate {
+  return parseDate(date).set({ day: 1 }).toString()
+}
+
+/** The last day of the month that holds `date`. */
+export function endOfMonth(date: CalendarDate): CalendarDate {
+  const day = parseDate(date)
+  return day.set({ day: day.calendar.getDaysInMonth(day) }).toString()
+}
+
+/** `date` moved by whole months; a day past the end of the target month becomes its last day. */
+export function addMonths(date: CalendarDate, months: number): CalendarDate {
+  return parseDate(date).add({ months }).toString()
+}
+
 /**
  * Milliseconds from `now` until the next day starts in `timezone` (D-107). A day that starts at an
  * hour other than midnight, because of a clock change, starts when the time zone says it does.
