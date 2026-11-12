@@ -45,7 +45,7 @@ import { LEAVE_TABLES, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } fro
 // every permission the plan names on the leave's soldier, and passes the availability rules' gate (D-047, D-073), all
 // in one transaction that also writes the event and the comment.
 
-/** What the local adapter builds of `commands.leaves` so far. The rest lands in V15 (D-076). */
+/** Create, edit and transition. Creating together (a batch, a duplicate) is in `leaveCreation.ts`. */
 export type LocalLeaveCommands = Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
 
 /** A leave of an archived soldier can only be cancelled (D-124): the state step, after the version. */
@@ -66,18 +66,18 @@ async function commentIdIssues(database: Store, comment: CommentDraft | null): P
 }
 
 /** Only what this change makes worse counts (D-073). Hard rules refuse; soft ones need an acknowledgment. */
-async function passRuleGate(
+export async function passRuleGate(
   database: Store,
   scope: ActorScope,
-  leave: Leave,
+  leaves: readonly Leave[],
   acknowledged: readonly AvailabilityRuleId[],
 ): Promise<AvailabilityRuleId[]> {
   const { data, rules } = await ruleData(database, scope.organization_id)
-  const gate = ruleGate(leaveChangeViolations(data, rules, [leave]), acknowledged)
+  const gate = ruleGate(leaveChangeViolations(data, rules, leaves), acknowledged)
   return gate.ok ? gate.value : fail(gate.error)
 }
 
-interface LeaveWrite {
+export interface LeaveWrite {
   readonly leave: Leave
   /** NULL when the leave is new. */
   readonly before: Leave | null
@@ -88,7 +88,7 @@ interface LeaveWrite {
 }
 
 /** The leave, its event and its comment, inside the caller's transaction. Returns what the feed is told. */
-async function writeLeave(database: Store, scope: ActorScope, write: LeaveWrite): Promise<DataChange[]> {
+export async function writeLeave(database: Store, scope: ActorScope, write: LeaveWrite): Promise<DataChange[]> {
   const { leave, comment } = write
   const eventId = LeaveEventId.parse(crypto.randomUUID())
   if (write.before === null) await tableOf(database, 'leaves').add(leave)
@@ -216,7 +216,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
       const changed = changedColumns(before, after)
       if (Object.keys(changed).length === 0) return failValidation([{ path: prefix, code: IssueCode.enum.no_changes }])
 
-      const acknowledged = await passRuleGate(database, scope, after, input.acknowledged_rule_ids)
+      const acknowledged = await passRuleGate(database, scope, [after], input.acknowledged_rule_ids)
       const written = await writeLeave(database, scope, {
         leave: after,
         before,
@@ -277,7 +277,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
             version: audit.version,
           })
 
-          const acknowledged = await passRuleGate(database, scope, created, input.acknowledged_rule_ids)
+          const acknowledged = await passRuleGate(database, scope, [created], input.acknowledged_rule_ids)
           const write = { leave: created, before: null, event: plan.event, changes: {}, acknowledged, comment }
           return { leave: created, written: await writeLeave(database, scope, write) }
         })
@@ -327,7 +327,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
             ...reviewOf(plan.next),
             ...updatedBy(scope.soldier_id, scope.now, before.version),
           })
-          const acknowledged = await passRuleGate(database, scope, after, input.acknowledged_rule_ids)
+          const acknowledged = await passRuleGate(database, scope, [after], input.acknowledged_rule_ids)
           const write = { leave: after, before, event: plan.event, changes: {}, acknowledged, comment }
           return { leave: after, written: await writeLeave(database, scope, write) }
         })

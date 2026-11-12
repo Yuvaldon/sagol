@@ -3,6 +3,7 @@ import {
   CommandRankId,
   RankRoleBindingId,
   RoleId,
+  SeniorityOverrideId,
   SoldierId,
   UnitId,
   type AuthIdentity,
@@ -476,6 +477,41 @@ export function describePermissionContract(
           changes: { command_rank_id: senior.id },
         })
         expect(errorOf(raised).code).toBe('forbidden')
+      })
+
+      it('refuses a seniority override that leaves the soldier beyond the actor’s constraint, or is the actor’s own (D-179)', async () => {
+        const junior = await rank(1)
+        const target = await soldier()
+        const targetRow = (await harnessOf().rows('soldiers')).find((row) => row.id === target.id) as TableRow<'soldiers'>
+        await harnessOf().seed('soldiers', [{ ...targetRow, command_rank_id: junior.id }])
+        const { identity, soldierId, roleId } = await actorWith(
+          [VIEW_SOLDIERS, { resource: 'seniority_overrides', action: 'view' }, { resource: 'seniority_overrides', action: 'create' }],
+          { anchor_type: 'organization' },
+        )
+        const mid = await rank(5)
+        const actorRow = (await harnessOf().rows('soldiers')).find((row) => row.id === soldierId) as TableRow<'soldiers'>
+        await harnessOf().seed('soldiers', [{ ...actorRow, command_rank_id: mid.id }])
+        const grant = (await harnessOf().rows('access_grants')).find((row) => row.role_id === roleId) as TableRow<'access_grants'>
+        await harnessOf().seed('access_grants', [{ ...grant, subject_rank_constraint: 'junior_or_equal' }])
+        harnessOf().signIn(identity)
+
+        const override = (soldier_id: SoldierId, seniority: number, valid_from: string) => ({
+          id: SeniorityOverrideId.parse(crypto.randomUUID()),
+          soldier_id,
+          seniority,
+          valid_from,
+          valid_to: null,
+          reason: null,
+        })
+        const today = NOW.slice(0, 10)
+        // Above the actor, today or from a later day: refused, and nothing is stored.
+        expect(errorOf(await adapter().commands.seniority_overrides.create(override(target.id, 9, today))).code).toBe('forbidden')
+        expect(errorOf(await adapter().commands.seniority_overrides.create(override(target.id, 9, '2099-01-01'))).code).toBe('forbidden')
+        expect(await harnessOf().rows('seniority_overrides')).toEqual([])
+        // Still at or below the actor: allowed.
+        valueOf(await adapter().commands.seniority_overrides.create(override(target.id, 4, today)))
+        // Their own record is within `junior_or_equal`, but not their own seniority.
+        expect(errorOf(await adapter().commands.seniority_overrides.create(override(soldierId, 9, today))).code).toBe('forbidden')
       })
     })
   })

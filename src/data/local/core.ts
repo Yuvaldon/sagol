@@ -9,7 +9,10 @@ import type {
 import { createPermissionHints } from './actor'
 import { createCommandRankCommands, createCommandRankRepository } from './commandRanks'
 import type { LocalDependencies } from './dependencies'
-import { createLeaveCommands, type LocalLeaveCommands } from './leaveCommands'
+import { createDeploymentCommands, createDeploymentMemberRepository, createDeploymentRepository } from './deployments'
+import { createLeaveCommands } from './leaveCommands'
+import { createLeaveBatchRepository, createLeaveCreationCommands } from './leaveCreation'
+import { createSeniorityOverrideCommands, createSeniorityOverrideRepository } from './seniorityOverrides'
 import { createLeaveCommentCommands, createLeaveCommentRepository } from './leaveComments'
 import { createLeaveEventRepository, createLeaveRepository } from './leaves'
 import {
@@ -86,6 +89,10 @@ export interface LocalDataAdapter {
     | 'leave_comments'
     | 'availability_rules'
     | 'property_definitions'
+    | 'seniority_overrides'
+    | 'leave_batches'
+    | 'deployments'
+    | 'deployment_members'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -101,10 +108,12 @@ export interface LocalDataAdapter {
     readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
-    readonly leaves: LocalLeaveCommands
+    readonly leaves: DataCommands['leaves']
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
     readonly property_definitions: DataCommands['property_definitions']
+    readonly seniority_overrides: DataCommands['seniority_overrides']
+    readonly deployments: DataCommands['deployments']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed
@@ -143,6 +152,10 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       leave_comments: createLeaveCommentRepository(dependencies),
       availability_rules: createAvailabilityRuleRepository(dependencies),
       property_definitions: createPropertyDefinitionRepository(dependencies),
+      seniority_overrides: createSeniorityOverrideRepository(dependencies),
+      leave_batches: createLeaveBatchRepository(dependencies),
+      deployments: createDeploymentRepository(dependencies),
+      deployment_members: createDeploymentMemberRepository(dependencies),
     },
     commands: {
       organizations: createOrganizationCommands(dependencies),
@@ -158,10 +171,12 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       tags: createTagCommands(dependencies),
       leave_type_groups: createLeaveTypeGroupCommands(dependencies),
       leave_types: createLeaveTypeCommands(dependencies),
-      leaves: createLeaveCommands(dependencies),
+      leaves: { ...createLeaveCommands(dependencies), ...createLeaveCreationCommands(dependencies) },
       leave_comments: createLeaveCommentCommands(dependencies),
       availability_rules: createAvailabilityRuleCommands(dependencies),
       property_definitions: createPropertyDefinitionCommands(dependencies),
+      seniority_overrides: createSeniorityOverrideCommands(dependencies),
+      deployments: createDeploymentCommands(dependencies),
     },
     transfer: createTransfer(dependencies),
     changes,

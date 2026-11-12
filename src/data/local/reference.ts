@@ -41,6 +41,7 @@ export type ReferenceResource =
   | 'availability_rules'
   | 'properties'
   | 'roles'
+  | 'deployments'
 
 type ReferenceAction = 'view' | 'create' | 'update' | 'delete'
 

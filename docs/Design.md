@@ -201,6 +201,19 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   optional, with hints) and a reason.
 - A soldier who may not view the organization and reads no soldier still sees the "no access yet" notice (D-160).
 
+## Deployments, collective leave and seniority (V15, D-179)
+
+- **`DeploymentsModule`** (`ui/modules/deployments`): the deployments list (name, "active" chip, unit · days · members),
+  an `ActionMenu` with "who is in the deployment" and archive (`SmallDialog`); the form has name, unit and two dates
+  (an open end allowed). Without a live unit the empty notice says a unit comes first.
+- **`DeploymentMembersForm`**: a `CheckList` of soldiers, then a row per member with two optional dates inside the
+  deployment's days.
+- **The new-leave drawer** has a "collective leave" switch when there is more than one soldier to choose; the
+  `LeaveBatchForm` has a name, a `CheckList` of soldiers, the type and the days. **`LeaveDuplicateForm`** opens from a
+  leave's drawer: soldiers, days, and "approve now" only for who approves all of them.
+- **`SenioritySection`** on the soldier's page: the overrides (current, permanent, revoked as history), a new one in a
+  dialog, revoke from the row.
+
 ## Patterns of a module
 
 - **List:** rows with a bottom hairline. A row has an optional handle, an optional color dot, the name as a
@@ -297,6 +310,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
 | `PropertiesModule` | `ui/modules/properties` | Property definitions by entity, their options and order (D-176) |
+| `DeploymentsModule`, `DeploymentForm`, `DeploymentMembersForm` | `ui/modules/deployments` | Deployments and who serves in them (D-179) |
+| `LeaveBatchForm`, `LeaveDuplicateForm`, `SenioritySection` | `ui/modules/leaves`, `ui/modules/soldiers` | A collective leave, copies of a leave, and personal seniority (D-179) |
 | `PropertyFields` | `ui/patterns/properties` | One field per live property of an entity, ending the soldier, unit and leave forms (D-176) |
 | `FilterBar`, `FilterControl`, `OnlyMissingSwitch`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, clear all), and the bar's filter, "only who is missing" and presence controls |
 | `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |

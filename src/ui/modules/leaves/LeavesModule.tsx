@@ -19,7 +19,7 @@ import {
   type NewLeaveDraft,
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
-import { Tags } from 'lucide-react'
+import { Tags, User, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -34,6 +34,7 @@ import { ComboField, TextField } from '../../primitives/fields'
 import { RuleGateDialog, RuleWarnings } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { leaveTypeOptions } from './typeOptions'
+import { LeaveBatchForm } from './LeaveBatchForm'
 import { LeaveDetails } from './LeaveDetails'
 
 // A new leave (D-115): who, what kind, which days, and why when the type asks. "Approve now" is there only for
@@ -196,6 +197,7 @@ function NewLeave() {
   const groups = useLeaveTypeGroups()
   const preferences = useMyPreferences()
   const creation = useLeaveCreation(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
+  const [collective, setCollective] = useState(false)
 
   for (const loaded of [soldiers, types, groups, preferences]) {
     if (loaded.status === 'failed') return <FailureNotice error={loaded.error} />
@@ -231,18 +233,43 @@ function NewLeave() {
         ? panel.draft
         : null
 
+  const shared = {
+    soldiers: creation.soldiers,
+    canApprove: creation.canApprove,
+    groups: groups.value,
+    types: liveTypes,
+    today,
+    approveNow: preferences.value.create_leaves_as_approved,
+  }
+  // A collective leave needs more than one soldier to choose from (D-179).
+  const switcher =
+    creation.soldiers.length > 1 ? (
+      <div>
+        <Button
+          onPress={() => {
+            setCollective((current) => !current)
+          }}
+        >
+          {collective ? <User aria-hidden size={14} /> : <Users aria-hidden size={14} />}
+          {t(collective ? 'leaves.single' : 'leaves.collective')}
+        </Button>
+      </div>
+    ) : null
+
   return (
-    <NewLeaveForm
-      // A new drag starts the form over from its own draft.
-      key={draft === null ? 'blank' : `${draft.soldier_id}:${draft.start_date}:${draft.end_date}`}
-      draft={draft}
-      soldiers={creation.soldiers}
-      canApprove={creation.canApprove}
-      groups={groups.value}
-      types={liveTypes}
-      today={today}
-      approveNow={preferences.value.create_leaves_as_approved}
-    />
+    <div className="flex flex-col gap-md">
+      {switcher}
+      {collective && creation.soldiers.length > 1 ? (
+        <LeaveBatchForm {...shared} />
+      ) : (
+        <NewLeaveForm
+          // A new drag starts the form over from its own draft.
+          key={draft === null ? 'blank' : `${draft.soldier_id}:${draft.start_date}:${draft.end_date}`}
+          draft={draft}
+          {...shared}
+        />
+      )}
+    </div>
   )
 }
 

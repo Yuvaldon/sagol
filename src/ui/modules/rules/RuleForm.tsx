@@ -7,6 +7,8 @@ import {
   type AvailabilityRule,
   type CommandRank,
   type CommandRankId,
+  type Deployment,
+  type DeploymentId,
   type Tag,
   type TagCategory,
   type TagCategoryId,
@@ -53,6 +55,7 @@ const RULE_FIELDS: readonly string[] = [
   'scope_level_id',
   'group_by',
   'group_tag_category_id',
+  'deployment_id',
   'metric',
   'min_value',
   'max_value',
@@ -86,6 +89,8 @@ const METRICS: SelectOption<RuleFormValues['metric']>[] = [
 const ORGANIZATION_OPTION: SelectOption<UnitId | null> = { key: 'organization', label: { key: 'rules.wholeOrganization' }, value: null }
 const CHOOSE_LEVEL: SelectOption<UnitLevelId | null> = { key: RuleGroupBy.enum.none, label: { key: 'rules.chooseLevel' }, value: null }
 const ANY_CATEGORY: SelectOption<TagCategoryId | null> = { key: 'any', label: { key: 'rules.anyCategory' }, value: null }
+
+const ANY_DEPLOYMENT: SelectOption<DeploymentId | null> = { key: 'any', label: { key: 'rules.anyDeployment' }, value: null }
 
 /** The population's lists: one per tag category, and the ranks. A filter the form does not read can only be cleared. */
 function PopulationField({
@@ -163,12 +168,14 @@ export interface RuleFormProps {
   readonly categories: readonly TagCategory[]
   readonly tags: readonly Tag[]
   readonly ranks: readonly CommandRank[]
+  /** Archived ones too: the rule's own deployment stays a choice (D-071). */
+  readonly deployments: readonly Deployment[]
   /** Where the rule may be placed: NULL is the whole organization (D-139). */
   readonly placeable: (scopeUnitId: UnitId | null) => boolean
   readonly onReload: () => void
 }
 
-export function RuleForm({ rule, units, levels, categories, tags, ranks, placeable, onReload }: RuleFormProps) {
+export function RuleForm({ rule, units, levels, categories, tags, ranks, deployments, placeable, onReload }: RuleFormProps) {
   const panel = usePanel()
   const { create, update } = useRuleCommands()
   const [opened] = useState(rule)
@@ -206,6 +213,14 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, placeab
   const categoryOptions = [
     ANY_CATEGORY,
     ...liveCategories(categories).map((category) => ({ key: category.id, label: { text: category.name }, value: category.id })),
+  ]
+
+  // Only a deployment's members count (D-071); the one the rule has stays a choice even once archived.
+  const deploymentOptions = [
+    ANY_DEPLOYMENT,
+    ...deployments
+      .filter((deployment) => deployment.archived_at === null || opened?.deployment_id === deployment.id)
+      .map((deployment) => ({ key: deployment.id, label: { text: deployment.name }, value: deployment.id })),
   ]
 
   return (
@@ -302,6 +317,20 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, placeab
         tags={tags}
         ranks={liveRanks(ranks)}
       />
+      {deploymentOptions.length === 1 ? null : (
+        <form.Field name="deployment_id">
+          {(field) => (
+            <SelectField
+              labelKey="rules.deployment"
+              name={field.name}
+              value={field.state.value}
+              options={deploymentOptions}
+              onChange={field.handleChange}
+              error={error(field.state.meta.errors, field.name)}
+            />
+          )}
+        </form.Field>
+      )}
       <form.Field name="scope_unit_id">
         {(field) => (
           <SelectField

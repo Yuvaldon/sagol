@@ -190,6 +190,7 @@ describe('the rows of the board (D-105)', () => {
   const base = (overrides: Partial<BoardInput>): BoardInput => ({
     soldiers: [],
     ranks,
+    seniorityOverrides: [],
     units,
     unitTree: units,
     memberships: [],

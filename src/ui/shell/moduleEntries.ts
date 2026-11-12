@@ -12,6 +12,7 @@ import {
 } from '@logic'
 import {
   ArrowDownUp,
+  CalendarRange,
   ClipboardList,
   Inbox,
   KeyRound,
@@ -62,6 +63,13 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
       count: null,
     },
     rules: access.rules && { id: 'rules', Icon: Scale, labelKey: 'rules.open', onPress: rules.open, count: null },
+    deployments: access.deployments && {
+      id: 'deployments',
+      Icon: CalendarRange,
+      labelKey: 'deployments.open',
+      onPress: opener(PANEL_IDS.deployments),
+      count: null,
+    },
     tags: access.tags && { id: 'tags', Icon: Tag, labelKey: 'tags.open', onPress: opener(PANEL_IDS.tags), count: null },
     properties: access.properties && {
       id: 'properties',

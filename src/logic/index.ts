@@ -97,7 +97,16 @@ export {
 } from './leaves/leaveTypes'
 export { newLeaveCandidate, newLeaveIssues, newLeaveValues, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
 export {
+  duplicateLeaveIssues,
+  leaveBatchIssues,
+  newDuplicateValues,
+  newLeaveBatchValues,
+  type DuplicateLeaveValues,
+  type LeaveBatchValues,
+} from './leaves/batch'
+export {
   useCreateLeave,
+  useLeaveBatchCommands,
   useLeaveCreation,
   useLeaveTypeCommands,
   useLeaveTypeGroupCommands,
@@ -328,3 +337,23 @@ export {
 } from './access/hooks'
 export { exportFileOf, readImportFile, type ImportFile, type ImportFileProblem } from './transfer/file'
 export { readPickedFile, useExport, useImport, useTransferAccess } from './transfer/hooks'
+export {
+  deploymentFormIssues,
+  deploymentFormValues,
+  deploymentMemberValues,
+  deploymentMembersIssues,
+  isDeploymentActive,
+  liveDeployments,
+  newDeploymentValues,
+  type DeploymentFormValues,
+  type DeploymentMemberValues,
+} from './deployments/deployments'
+export { useDeploymentCommands, useDeploymentMembers, useDeploymentPermissions, useDeployments } from './deployments/hooks'
+export {
+  currentOverride,
+  newSeniorityOverrideValues,
+  overridesOf,
+  seniorityOverrideIssues,
+  type SeniorityOverrideFormValues,
+} from './seniority/seniority'
+export { useSeniorityOverrideCommands, useSeniorityOverrides, useSeniorityPermissions } from './seniority/hooks'

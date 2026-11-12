@@ -240,6 +240,7 @@ describe('present and absent lists (D-134, OI-090)', () => {
   const source: FilterSource = {
     soldiers: [soldier(1), soldier(2), soldier(3), soldier(4, { status: 'inactive' }), soldier(5)],
     ranks: [],
+    seniorityOverrides: [],
     units: [unit],
     unitTree: [unit],
     memberships: [placed(1), placed(2), placed(3), placed(4)],

@@ -7,6 +7,7 @@ import {
   UpdateAvailabilityRuleInput,
   type DataCommands,
   type DataRepositories,
+  type DeploymentId,
   type Issue,
   type PolicyTarget,
   type TableName,
@@ -71,6 +72,14 @@ async function organizationRowFinding(
 }
 
 /** The scope unit, the scope level, the group's category and the deployment (D-139). */
+/** A deployment the actor cannot see answers as one that does not exist (D-179). */
+async function deploymentFinding(database: Store, scope: ActorScope, id: DeploymentId): Promise<ReferenceFinding> {
+  const deployment = await tableOf(database, 'deployments').get(id)
+  if (deployment === undefined || deployment.organization_id !== scope.organization_id) return 'missing'
+  if (!holds(scope, permissionOf('deployments', 'view'), { kind: 'unit', unit_id: deployment.unit_id })) return 'missing'
+  return deployment.archived_at === null ? null : 'archived'
+}
+
 async function referenceIssues({ database, scope, row, before }: RowCheck<AvailabilityRule>): Promise<Issue[]> {
   const issues: Issue[] = []
   if (row.scope_unit_id !== null && row.scope_unit_id !== before?.scope_unit_id) {
@@ -86,9 +95,7 @@ async function referenceIssues({ database, scope, row, before }: RowCheck<Availa
     issues.push(...referenceIssue('group_tag_category_id', finding))
   }
   if (row.deployment_id !== null && row.deployment_id !== before?.deployment_id) {
-    const deployment = await tableOf(database, 'deployments').get(row.deployment_id)
-    const exists = deployment !== undefined && deployment.organization_id === scope.organization_id
-    issues.push(...referenceIssue('deployment_id', exists ? null : 'missing'))
+    issues.push(...referenceIssue('deployment_id', await deploymentFinding(database, scope, row.deployment_id)))
   }
   return issues
 }

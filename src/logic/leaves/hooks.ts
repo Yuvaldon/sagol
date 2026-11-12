@@ -27,6 +27,7 @@ import type { WithProperties } from '../properties/properties'
 import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
 import type { DateWindow } from '../view-state/window'
+import { toCreateLeaveBatchInput, toDuplicateLeaveInput, type DuplicateLeaveValues, type LeaveBatchValues } from './batch'
 import { optimisticLeave, toCreateLeaveInput, type NewLeaveValues } from './forms'
 import {
   toCreateLeaveTypeGroupInput,
@@ -128,6 +129,26 @@ export function useCreateLeave() {
   }
 }
 
+/**
+ * A collective leave (D-012) and a leave's copies (D-049): all or nothing, so no optimistic rows. `acknowledged` are
+ * the soft rules the actor agreed to break, sent again after the dialog (D-047, D-142).
+ */
+export function useLeaveBatchCommands() {
+  const { data } = usePorts()
+  const keys = [QUERY_KEYS.leaves, QUERY_KEYS.leaveBatches]
+  const createBatch = useCommand(
+    keys,
+    ({ values, acknowledged = [] }: { values: LeaveBatchValues & WithProperties; acknowledged?: readonly AvailabilityRuleId[] }) =>
+      data.commands.leaves.createBatch(toCreateLeaveBatchInput(values, acknowledged)),
+  )
+  const duplicate = useCommand(
+    keys,
+    ({ source, values, acknowledged = [] }: { source: Leave; values: DuplicateLeaveValues; acknowledged?: readonly AvailabilityRuleId[] }) =>
+      data.commands.leaves.duplicate(toDuplicateLeaveInput(source, values, acknowledged)),
+  )
+  return { createBatch, duplicate }
+}
+
 export function useLeaveTypeCommands() {
   const { data } = usePorts()
   const types = data.commands.leave_types
@@ -210,15 +231,14 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
       soldiers.flatMap((soldier) => [
         checkOn(LEAVE_PERMISSIONS.create, soldier.id),
         checkOn(LEAVE_PERMISSIONS.approve, soldier.id),
+        checkOn(LEAVE_PERMISSIONS.duplicate, soldier.id),
       ]),
     [soldiers],
   )
   const can = useCan(checks)
   return useMemo(() => {
-    const creatable = soldiers
-      .filter((soldier) => soldier.status === 'active' && soldier.archived_at === null)
-      .filter((soldier) => can(checkOn(LEAVE_PERMISSIONS.create, soldier.id)))
-      .toSorted(byName)
+    const offered = soldiers.filter((soldier) => soldier.status === 'active' && soldier.archived_at === null).toSorted(byName)
+    const creatable = offered.filter((soldier) => can(checkOn(LEAVE_PERMISSIONS.create, soldier.id)))
     return {
       /** The soldiers a leave can be created for, by name (D-094). */
       soldiers: creatable,
@@ -226,6 +246,8 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
       /** Whether the actor may approve anyone they see: who the inbox is for (D-120). */
       approvesAny: soldiers.some((soldier) => can(checkOn(LEAVE_PERMISSIONS.approve, soldier.id))),
       canApprove: (soldierId: SoldierId) => can(checkOn(LEAVE_PERMISSIONS.approve, soldierId)),
+      /** Who a leave can be copied to (`leaves:duplicate`, D-049), by name. */
+      duplicable: offered.filter((soldier) => can(checkOn(LEAVE_PERMISSIONS.duplicate, soldier.id))),
     }
   }, [can, soldiers])
 }

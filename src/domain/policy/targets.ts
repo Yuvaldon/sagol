@@ -47,7 +47,8 @@ export const TARGET_KINDS_BY_RESOURCE = {
   leaves: SOLDIER,
   leave_comments: SOLDIER,
   internal_comments: SOLDIER,
-  deployments: ['unit'],
+  /** The deployment's unit; `organization` asks only whether the actor sees any deployment, to open the module (D-179). */
+  deployments: ['unit', 'organization'],
   /** The scope unit; `organization` for a global rule (D-031). */
   availability_rules: ['unit', 'organization'],
   properties: ORGANIZATION,

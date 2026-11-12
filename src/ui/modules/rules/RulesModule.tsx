@@ -16,6 +16,7 @@ import {
   useTags,
   useUnitLevels,
   useUnitsWithArchived,
+  useDeployments,
   useViewFilter,
   type WindowConflict,
 } from '@logic'
@@ -164,6 +165,7 @@ export function RulesModule() {
   const categories = useTagCategories()
   const tags = useTags()
   const ranks = useCommandRanks()
+  const deployments = useDeployments()
   const { window } = useDateWindow()
   const { unit } = useViewFilter()
   const rulesDay = useRulesDay()
@@ -175,7 +177,7 @@ export function RulesModule() {
   const [failure, setFailure] = useState<AppError | null>(null)
   const [archiving, setArchiving] = useState<AvailabilityRule | null>(null)
 
-  for (const loaded of [rules, units, levels, categories, tags, ranks]) {
+  for (const loaded of [rules, units, levels, categories, tags, ranks, deployments]) {
     if (loaded.status === 'failed') return <FailureNotice error={loaded.error} />
   }
   if (
@@ -184,7 +186,8 @@ export function RulesModule() {
     levels.status !== 'ready' ||
     categories.status !== 'ready' ||
     tags.status !== 'ready' ||
-    ranks.status !== 'ready'
+    ranks.status !== 'ready' ||
+    deployments.status !== 'ready'
   ) {
     return <LoadingNotice />
   }
@@ -195,6 +198,7 @@ export function RulesModule() {
     categories: categories.value,
     tags: tags.value,
     ranks: ranks.value,
+    deployments: deployments.value,
   }
   if (panel.entity === NEW_ENTITY) return <RuleEditor rule={null} placeable={permissions.createIn} {...formProps} />
   if (panel.entity !== null) {
