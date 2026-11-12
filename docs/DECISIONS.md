@@ -259,6 +259,7 @@ am = amends, ref = refines, ext = extends.
 | D-271 | Order of the slices after the journeys matrix | docs | |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
+| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
 
 ---
 
@@ -3451,3 +3452,26 @@ adding complexity or working around what is built.
 **Why:** a soldier who lands from a link should learn once that the app exists, without a banner that returns on every
 visit, and without a control that cannot act.
 
+## D-276 — Staging: a second free Supabase project, updated from main after every green CI
+
+Refines D-209 and resolves OI-152. Track: docs.
+
+- **A separate environment, never real data.** Staging is its own Supabase project, `sagol-staging`, on the free plan,
+  with its own database, auth users and `commands` function. Nothing is copied from production: every unit, soldier
+  and personal number in it is made up by whoever tries things there. Production's data, its claim (D-262) and its
+  organization are untouched, so the commander still sets up the real organization from an empty production.
+- **Updated by the pipeline, never by hand.** `.github/workflows/staging.yml` runs after CI succeeds on a push to
+  `main` (and on manual dispatch): it pushes `main`'s pending migrations with `supabase db push`, sets the function's
+  secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
+  branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
+- **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
+  wrong project ref can never migrate production. Production migrations stay the manual, reviewed step they are.
+- **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
+  `staging` environment; the access token, the database password and the bootstrap owner's email are its secrets.
+  Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
+- **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
+  a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
+
+**Why:** the owner wants to try units, soldiers and flows freely, without touching real personal numbers, without
+slowing development, and without using up the real organization's first setup. A second project that follows `main`
+automatically is the usual staging practice and stays inside the free plan.
