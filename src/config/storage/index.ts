@@ -29,6 +29,8 @@ export const DEVICE_KEYS = {
   homeAway: `${STORAGE_PREFIX}.home-away`,
   /** The install offer after sign-in was answered, by installing or by "not now" (D-274). */
   installAnswered: `${STORAGE_PREFIX}.install-answered`,
+  /** The units drawer shows the tree as a chart, not a list (D-318). */
+  unitsChart: `${STORAGE_PREFIX}.units-chart`,
 } as const
 
 export type DeviceKey = (typeof DEVICE_KEYS)[keyof typeof DEVICE_KEYS]
