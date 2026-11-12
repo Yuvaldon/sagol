@@ -1,31 +1,35 @@
 import { PANEL_IDS, type PanelId } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, useSetupAccess, useTransferAccess } from '@logic'
-import type { ComponentType } from 'react'
+import { Suspense, lazy, type ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
-import { PropertiesModule } from '../modules/properties/PropertiesModule'
-import { AccountLinksModule } from '../modules/account-links/AccountLinksModule'
-import { GrantsModule } from '../modules/access/GrantsModule'
-import { RankBindingsModule } from '../modules/access/RankBindingsModule'
-import { RolesModule } from '../modules/access/RolesModule'
-import { CommandRanksModule } from '../modules/command-ranks/CommandRanksModule'
-import { LeaveTypeGroupsModule } from '../modules/leave-types/LeaveTypeGroupsModule'
-import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
-import { ClosedLeavesModule, PendingRequestsModule } from '../modules/leaves/LeaveInboxModule'
-import { LeavesModule } from '../modules/leaves/LeavesModule'
-import { MyLeavesModule } from '../modules/leaves/MyLeavesModule'
-import { RulesModule } from '../modules/rules/RulesModule'
-import { SetupModule } from '../modules/setup/SetupModule'
-import { DeploymentsModule } from '../modules/deployments/DeploymentsModule'
-import { TagCategoriesModule } from '../modules/tags/TagCategoriesModule'
-import { TagsModule } from '../modules/tags/TagsModule'
-import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
-import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
-import { TransferModule } from '../modules/transfer/TransferModule'
-import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
+import { LoadingNotice } from '../patterns/Notices'
 import { ApproveNowSwitch, MyApproveNowSwitch } from './ApproveNowSwitch'
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
+
+// Each module loads when its drawer first opens, so the entry chunk holds only the board (OI-118, D-210).
+const PropertiesModule = lazy(() => import('../modules/properties/PropertiesModule').then((module) => ({ default: module.PropertiesModule })))
+const AccountLinksModule = lazy(() => import('../modules/account-links/AccountLinksModule').then((module) => ({ default: module.AccountLinksModule })))
+const GrantsModule = lazy(() => import('../modules/access/GrantsModule').then((module) => ({ default: module.GrantsModule })))
+const RankBindingsModule = lazy(() => import('../modules/access/RankBindingsModule').then((module) => ({ default: module.RankBindingsModule })))
+const RolesModule = lazy(() => import('../modules/access/RolesModule').then((module) => ({ default: module.RolesModule })))
+const CommandRanksModule = lazy(() => import('../modules/command-ranks/CommandRanksModule').then((module) => ({ default: module.CommandRanksModule })))
+const LeaveTypeGroupsModule = lazy(() => import('../modules/leave-types/LeaveTypeGroupsModule').then((module) => ({ default: module.LeaveTypeGroupsModule })))
+const LeaveTypesModule = lazy(() => import('../modules/leave-types/LeaveTypesModule').then((module) => ({ default: module.LeaveTypesModule })))
+const ClosedLeavesModule = lazy(() => import('../modules/leaves/LeaveInboxModule').then((module) => ({ default: module.ClosedLeavesModule })))
+const PendingRequestsModule = lazy(() => import('../modules/leaves/LeaveInboxModule').then((module) => ({ default: module.PendingRequestsModule })))
+const LeavesModule = lazy(() => import('../modules/leaves/LeavesModule').then((module) => ({ default: module.LeavesModule })))
+const MyLeavesModule = lazy(() => import('../modules/leaves/MyLeavesModule').then((module) => ({ default: module.MyLeavesModule })))
+const RulesModule = lazy(() => import('../modules/rules/RulesModule').then((module) => ({ default: module.RulesModule })))
+const SetupModule = lazy(() => import('../modules/setup/SetupModule').then((module) => ({ default: module.SetupModule })))
+const DeploymentsModule = lazy(() => import('../modules/deployments/DeploymentsModule').then((module) => ({ default: module.DeploymentsModule })))
+const TagCategoriesModule = lazy(() => import('../modules/tags/TagCategoriesModule').then((module) => ({ default: module.TagCategoriesModule })))
+const TagsModule = lazy(() => import('../modules/tags/TagsModule').then((module) => ({ default: module.TagsModule })))
+const SoldiersModule = lazy(() => import('../modules/soldiers/SoldiersModule').then((module) => ({ default: module.SoldiersModule })))
+const UnitLevelsModule = lazy(() => import('../modules/unit-levels/UnitLevelsModule').then((module) => ({ default: module.UnitLevelsModule })))
+const TransferModule = lazy(() => import('../modules/transfer/TransferModule').then((module) => ({ default: module.TransferModule })))
+const UnitsModule = lazy(() => import('../modules/units/UnitsModule').then((module) => ({ default: module.UnitsModule })))
 
 // The map of what opens in the drawer (D-092). A drawer holds one or more sections, and each section is
 // its own panel in the URL. A section appears only for who may read it, and a deep link to one they
@@ -230,7 +234,9 @@ export function ModuleDrawer() {
         )
       }
     >
-      <open.Module />
+      <Suspense fallback={<LoadingNotice />}>
+        <open.Module />
+      </Suspense>
     </Drawer>
   )
 }
