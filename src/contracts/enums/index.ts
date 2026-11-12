@@ -105,6 +105,7 @@ export const NavigationModule = z.enum([
   'leave_types',
   'rules',
   'tags',
+  'properties',
   'roles',
   'access_grants',
   'account_links',

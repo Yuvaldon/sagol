@@ -125,6 +125,11 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.safeParse({ pinned_modules: ['leaves'] }).success).toBe(false)
     expect(SoldierPreferences.safeParse({ rules_row_placement: 'side' }).success).toBe(false)
   })
+
+  it('keeps reading pins stored before a module was added, and takes the new one (V14)', () => {
+    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'] }).pinned_modules).toEqual(['tags', 'roles'])
+    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'properties'] }).pinned_modules).toEqual(['tags', 'properties'])
+  })
 })
 
 describe('permission checks (D-053, D-091)', () => {
