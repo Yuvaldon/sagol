@@ -48,10 +48,6 @@ export const TABLE_SORT_KEYS = ['type', 'from', 'to', 'days', 'status'] as const
 export const TableSortKey = z.enum(TABLE_SORT_KEYS)
 export type TableSortKey = z.infer<typeof TableSortKey>
 
-/** Either kind of key; the table's soldier columns still write it until they move to the board's rules. */
-export const SortKey = z.enum([...BOARD_SORT_KEYS, ...TABLE_SORT_KEYS])
-export type SortKey = z.infer<typeof SortKey>
-
 export const SORT_ORDERS = ['asc', 'desc'] as const
 export const SortOrder = z.enum(SORT_ORDERS)
 export type SortOrder = z.infer<typeof SortOrder>

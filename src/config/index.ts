@@ -40,7 +40,6 @@ export {
   RangeKind,
   SORT_ORDERS,
   SORTABLE_PROPERTY_TYPES,
-  SortKey,
   SortOrder,
   TABLE_SORT_KEYS,
   TableSortKey,
