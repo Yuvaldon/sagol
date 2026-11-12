@@ -69,3 +69,12 @@ export function useSetupProgress(): Loaded<readonly SetupStep[]> {
   if (units.status === 'ready' && rows.units !== undefined) rows.units = units.value.filter((unit) => unit.parent_id !== null)
   return { status: 'ready', value: setupSteps(allowed, rows) }
 }
+
+/**
+ * Whether the checklist is offered: this actor has a step to do that is not done yet (D-262). While the steps load
+ * it is not, so the entry does not flicker in and out.
+ */
+export function useSetupUnfinished(): boolean {
+  const progress = useSetupProgress()
+  return progress.status === 'ready' && progress.value.some((step) => !step.done)
+}
