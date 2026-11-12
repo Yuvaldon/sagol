@@ -2,6 +2,7 @@ import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useBoardFilters, useCurrentOrganization, useDateWindow } from '@logic'
 import { useIsDesktop } from '../patterns/media'
+import { useAppliedAppearance } from './appearance'
 import { ModuleButtons } from './ModuleButtons'
 import { ModuleDrawer } from './ModuleDrawer'
 import { NewLeaveButton } from './NewLeaveButton'
@@ -112,6 +113,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const { active } = useBoardFilters()
   const { window } = useDateWindow()
   const focus = useFilterFocusScope()
+  useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
   const name = organization.value?.name ?? t('app.name')
