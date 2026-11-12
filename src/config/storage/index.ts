@@ -27,7 +27,7 @@ export const DEVICE_KEYS = {
   dayReportReasons: `${STORAGE_PREFIX}.day-report-reasons`,
   /** The last home chosen differs from the one the permissions give (D-265). */
   homeAway: `${STORAGE_PREFIX}.home-away`,
-  /** The install offer after sign-in was answered, by installing or by "not now" (D-277). */
+  /** The install offer after sign-in was answered, by installing or by "not now" (D-274). */
   installAnswered: `${STORAGE_PREFIX}.install-answered`,
 } as const
 
