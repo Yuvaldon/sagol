@@ -39,6 +39,7 @@ export type ReferenceResource =
   | 'leave_types'
   | 'tags'
   | 'availability_rules'
+  | 'properties'
   | 'roles'
 
 type ReferenceAction = 'view' | 'create' | 'update' | 'delete'

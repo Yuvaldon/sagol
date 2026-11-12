@@ -35,6 +35,7 @@ import {
   createSoldierPreferencesRepository,
   type LocalAccountCommands,
 } from './accounts'
+import { createPropertyDefinitionCommands, createPropertyDefinitionRepository } from './propertyDefinitions'
 import { createAvailabilityRuleCommands, createAvailabilityRuleRepository } from './rules'
 import { createSessionService } from './session'
 import { createTransfer } from './transfer'
@@ -84,6 +85,7 @@ export interface LocalDataAdapter {
     | 'leave_events'
     | 'leave_comments'
     | 'availability_rules'
+    | 'property_definitions'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -102,6 +104,7 @@ export interface LocalDataAdapter {
     readonly leaves: LocalLeaveCommands
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
+    readonly property_definitions: DataCommands['property_definitions']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed
@@ -139,6 +142,7 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       leave_events: createLeaveEventRepository(dependencies),
       leave_comments: createLeaveCommentRepository(dependencies),
       availability_rules: createAvailabilityRuleRepository(dependencies),
+      property_definitions: createPropertyDefinitionRepository(dependencies),
     },
     commands: {
       organizations: createOrganizationCommands(dependencies),
@@ -157,6 +161,7 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       leaves: createLeaveCommands(dependencies),
       leave_comments: createLeaveCommentCommands(dependencies),
       availability_rules: createAvailabilityRuleCommands(dependencies),
+      property_definitions: createPropertyDefinitionCommands(dependencies),
     },
     transfer: createTransfer(dependencies),
     changes,
