@@ -34,4 +34,17 @@ describe('the leave-round rhythm (D-270, D-316)', () => {
     expect(roundDays({ days_in: 0, days_home: 6 }, day('2026-12-01'), span('2026-12-01', '2027-01-15'))).toEqual([])
     expect(roundDays({ days_in: 8, days_home: 1.5 }, day('2026-12-01'), span('2026-12-01', '2027-01-15'))).toEqual([])
   })
+
+  it('skips the stretches long before the span, and stops at the limit (OI-252 review)', () => {
+    expect(roundDays(EIGHT_SIX, day('2000-01-01'), span('2026-12-01', '2026-12-31'))).toEqual([
+      span('2026-12-01', '2026-12-03'),
+      span('2026-12-12', '2026-12-17'),
+      span('2026-12-26', '2026-12-31'),
+    ])
+    expect(roundDays({ days_in: 1, days_home: 1 }, day('2026-12-01'), span('2026-12-01', '9999-12-31'), 3)).toEqual([
+      span('2026-12-01', '2026-12-01'),
+      span('2026-12-03', '2026-12-03'),
+      span('2026-12-05', '2026-12-05'),
+    ])
+  })
 })
