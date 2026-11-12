@@ -1,21 +1,30 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
+import { DEVICE_KEYS, NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError } from '@contracts'
 import { t } from '@i18n'
-import { usePanel, useUnitLevels, useUnitPermissions, useUnits } from '@logic'
-import { Plus } from 'lucide-react'
+import { useDeviceFlag, usePanel, useUnitLevels, useUnitPermissions, useUnits } from '@logic'
+import { List, Network, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
+import { useWideDrawer } from '../../patterns/drawerWidth'
 import { Button } from '../../primitives/Button'
+import { Segmented } from '../../primitives/Segmented'
+import { UnitChart } from './UnitChart'
 import { UnitCreateForm, UnitEditForm } from './UnitForms'
 import { UnitTree } from './UnitTree'
 import type { Unit, UnitLevel } from '@contracts'
 
-// The units panel: the tree, or the form the URL names (D-092).
+// The units panel: the tree, or the form the URL names (D-092). The tree reads as a list or as a chart, a choice this
+// device remembers (D-318); the chart takes the whole width.
+
+type UnitsView = 'list' | 'chart'
 
 function UnitsContent({ units, levels }: { readonly units: readonly Unit[]; readonly levels: readonly UnitLevel[] }) {
   const panel = usePanel()
   const permissions = useUnitPermissions(units)
   const [failure, setFailure] = useState<AppError | null>(null)
+  const chartFlag = useDeviceFlag(DEVICE_KEYS.unitsChart)
+  const view: UnitsView = chartFlag.value ? 'chart' : 'list'
+  useWideDrawer(view === 'chart' && panel.entity === null && units.length > 0)
   const canCreateTop = permissions.createUnder(null)
   const newUnit = () => {
     setFailure(null)
@@ -68,8 +77,23 @@ function UnitsContent({ units, levels }: { readonly units: readonly Unit[]; read
 
   return (
     <div className="flex flex-col gap-md">
+      <Segmented<UnitsView>
+        labelKey="units.viewLabel"
+        options={[
+          { id: 'list', labelKey: 'units.viewList', icon: <List aria-hidden size={14} /> },
+          { id: 'chart', labelKey: 'units.viewChart', icon: <Network aria-hidden size={14} /> },
+        ]}
+        value={view}
+        onChange={(next) => {
+          chartFlag.set(next === 'chart')
+        }}
+      />
       {failure === null ? null : <FailureNotice error={failure} />}
-      <UnitTree units={units} levels={levels} permissions={permissions} onFailure={setFailure} />
+      {view === 'chart' ? (
+        <UnitChart units={units} levels={levels} permissions={permissions} onFailure={setFailure} />
+      ) : (
+        <UnitTree units={units} levels={levels} permissions={permissions} onFailure={setFailure} />
+      )}
       {canCreateTop ? (
         <div>
           <Button onPress={newUnit}>
