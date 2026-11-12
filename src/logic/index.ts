@@ -54,9 +54,11 @@ export { useActiveView, type ActiveViewState } from './view-state/view'
 export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useTimezone, useToday } from './session/today'
 export {
+  useAppearance,
   useMyPreferences,
   useNavigationPreferences,
   useUpdateMyPreferences,
+  type AppearancePreference,
   type NavigationPreferences,
 } from './session/preferences'
 export {
