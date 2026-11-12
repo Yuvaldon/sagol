@@ -30,6 +30,11 @@ export function setupSteps(allowed: readonly SetupStepId[], rows: Partial<Readon
   }))
 }
 
+/** The step to do now: the first one not done, or none once all are (D-285). */
+export function nextSetupStep(steps: readonly SetupStep[]): SetupStep | null {
+  return steps.find((step) => !step.done) ?? null
+}
+
 const ORGANIZATION = { kind: 'organization' } as const
 
 const STEP_CHECKS = SETUP_STEPS.map((step) => {
