@@ -81,10 +81,19 @@ export function useRankBindings(): Loaded<readonly RankRoleBinding[]> {
   )
 }
 
-/** The grants the actor reads; expired and revoked ones only on request. */
-export function useAccessGrants(includeInactive: boolean): Loaded<readonly AccessGrant[]> {
+/**
+ * The grants the actor reads; expired and revoked ones only on request. `grantees` narrows them to those soldiers'
+ * own, as a soldier's card does (OI-245).
+ */
+export function useAccessGrants(
+  includeInactive: boolean,
+  grantees: readonly SoldierId[] | null = null,
+): Loaded<readonly AccessGrant[]> {
   const { data } = usePorts()
-  const params = { ...EVERY_GRANTEE, include_inactive: includeInactive }
+  const params = {
+    ...(grantees === null ? EVERY_GRANTEE : { grantee_soldier_ids: [...grantees] }),
+    include_inactive: includeInactive,
+  }
   return loaded(
     useQuery({
       queryKey: [...QUERY_KEYS.accessGrants, params],
@@ -102,9 +111,12 @@ export interface GrantRow {
  * The grants as the list shows them: active and scheduled first, each with its state now. The states move on their
  * own at the next start or end while the list is on screen (D-169); a timer that fires early sets the next one.
  */
-export function useGrantRows(includeInactive: boolean): Loaded<readonly GrantRow[]> {
+export function useGrantRows(
+  includeInactive: boolean,
+  grantees: readonly SoldierId[] | null = null,
+): Loaded<readonly GrantRow[]> {
   const { time } = usePorts()
-  const grants = useAccessGrants(includeInactive)
+  const grants = useAccessGrants(includeInactive, grantees)
   // The states change only at a boundary, so `now` moves only there.
   const [now, setNow] = useState(() => time.now())
 

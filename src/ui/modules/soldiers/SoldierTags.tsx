@@ -37,6 +37,8 @@ import { toneOf } from '../../theme/palette'
 // is kept either for good or for this rotation, and the card marks what holds for the rotation only (D-260, D-222).
 
 const NO_ISSUE_FIELDS: readonly string[] = []
+const WORD = ' '
+const TEXT_LIST = ', '
 
 function choicesOf(group: SoldierTagGroup, categories: readonly TagCategory[]): Choice[] {
   return group.choices.map((choice) => ({
@@ -130,6 +132,13 @@ function TagsDialog({
           const label = { text: group.category.name }
           const selected = selectedOf(group)
           const current = { ...group, selected }
+          // Kept for this rotation, the category's persistent tags still apply: they show, read-only (OI-240).
+          const persistentToo =
+            lifetimeOfGroup(group) === Lifetime.enum.rotation
+              ? selectedInScope(group, scopes, Lifetime.enum.persistent).flatMap(
+                  (tagId) => group.choices.find((choice) => choice.tag.id === tagId)?.tag.name ?? [],
+                )
+              : []
           return (
             <div key={group.category.id} role="group" aria-label={group.category.name} className="flex flex-col gap-xs">
               {group.category.selection_mode === 'single' ? (
@@ -168,6 +177,9 @@ function TagsDialog({
                     setLifetimes((currentLifetimes) => new Map(currentLifetimes).set(group.category.id, lifetime))
                   }}
                 />
+              )}
+              {persistentToo.length === 0 ? null : (
+                <p className="text-label text-text-muted">{[t('soldiers.tagPersistentToo'), persistentToo.join(TEXT_LIST)].join(WORD)}</p>
               )}
             </div>
           )
@@ -210,15 +222,14 @@ export function SoldierTagsSection({
   if (tags.status === 'failed') return <FailureNotice error={tags.error} />
   if (rows.status === 'loading' || categories.status === 'loading' || tags.status === 'loading') return <LoadingNotice />
 
-  // A closed rotation is history: its tags show, but changes go to the persistent set (D-258).
-  const shownRotationId = rotation?.id ?? null
-  const openRotationId = rotation !== null && rotation.closed_at === null ? rotation.id : null
-  const scopes = soldierTagScopes(rows.value, soldier.id, openRotationId)
+  // The rotation in scope is never closed (D-258): its tags are the ones changed here.
+  const rotationId = rotation?.id ?? null
+  const scopes = soldierTagScopes(rows.value, soldier.id, rotationId)
   const groups = soldierTagGroups(categories.value, tags.value, heldInScopes(scopes))
-  const effective = effectiveTagIds(rows.value, soldier.id, shownRotationId, tags.value, categories.value)
-  const forRotation = new Set(soldierTagScopes(rows.value, soldier.id, shownRotationId).rotation)
+  const effective = effectiveTagIds(rows.value, soldier.id, rotationId, tags.value, categories.value)
+  const forRotation = new Set(scopes.rotation)
   const shown = soldierTagGroups(categories.value, tags.value, effective).filter((group) => group.selected.length > 0)
-  const before = rotation === null || openRotationId === null ? null : previousRotation(rotations, rotation)
+  const before = rotation === null ? null : previousRotation(rotations, rotation)
   const previous = before === null ? null : soldierTagScopes(rows.value, soldier.id, before.id).rotation
   // With no tag yet, the dialog offers one in place, or says who sets them up (D-285).
   const canEdit = canSet && soldier.archived_at === null
@@ -269,7 +280,7 @@ export function SoldierTagsSection({
       {editing ? (
         <TagsDialog
           soldier={soldier}
-          rotationId={openRotationId}
+          rotationId={rotationId}
           scopes={scopes}
           previous={previous}
           groups={groups}
