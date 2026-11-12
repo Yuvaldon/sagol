@@ -61,4 +61,15 @@ describe('row level security (D-203)', () => {
     }
   })
 
+  it('leaves a table created later closed to the API roles', async () => {
+    await sql.unsafe('CREATE TABLE public.created_later (id int)')
+    try {
+      const granted = await sql`
+        SELECT grantee FROM information_schema.role_table_grants
+        WHERE table_schema = 'public' AND table_name = 'created_later' AND grantee = ANY(${API_ROLES})`
+      expect(granted).toEqual([])
+    } finally {
+      await sql.unsafe('DROP TABLE public.created_later')
+    }
+  })
 })

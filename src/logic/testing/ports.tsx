@@ -23,6 +23,7 @@ export interface FakePortParts {
   readonly session?: object
   readonly repositories?: object
   readonly commands?: object
+  readonly transfer?: object
   /** Merged over a change feed that subscribes to nothing. */
   readonly changes?: object
   readonly auth?: object
@@ -38,6 +39,7 @@ export function fakePorts(parts: FakePortParts = {}): LogicPorts {
       session: { ...NO_SUBSCRIPTION, ...parts.session },
       repositories: { ...parts.repositories },
       commands: { ...parts.commands },
+      transfer: { ...parts.transfer },
       changes: { ...NO_SUBSCRIPTION, ...parts.changes },
     },
     auth: { ...parts.auth },

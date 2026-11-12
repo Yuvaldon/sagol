@@ -23,6 +23,7 @@ import { describeLeaveContract } from './leaves'
 import { describePermissionContract } from './permissions'
 import { describeRosterContract } from './roster'
 import { describeRuleContract } from './rules'
+import { describeTransferContract } from './transfer'
 import { describeTagContract } from './tags'
 import { describeUnitContract } from './units'
 import { describeLeaveWorkflowContract } from './workflow'
@@ -396,5 +397,6 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
     describeLeaveWorkflowContract(() => harness, () => claim())
     describeRuleContract(() => harness, () => claim())
     describePermissionContract(() => harness, () => claim())
+    describeTransferContract(() => harness, () => claim())
   })
 }

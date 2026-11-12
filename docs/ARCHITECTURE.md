@@ -110,6 +110,11 @@ The data layer is written as if it were the server:
   already chosen (D-167). An identity whose last link request was rejected is told so on the onboarding screen, without
   saying what matched (D-168). The grants list re-renders at the next start or end of a grant while it is on screen
   (D-169).
+- **Import and export, as built (V12, D-171):** `transfer.importBatch` runs the built create commands in one outer
+  transaction after checking `data_transfer:import`; a malformed list runs nothing, and the first refusal ends the run.
+  A dry run writes nothing; a committed run announces its changes once. `transfer.exportOrganization` returns the
+  organization's rows, gated by `data_transfer:export`. The domain reads a soldiers CSV (`domain/transfer`), and logic
+  turns a picked file into operations (`logic/transfer`). A taken membership id answers `already_exists` (OI-050).
 - **Bootstrap:** the first sign-in on an empty organization becomes owner only if its
   verified email matches the server secret `BOOTSTRAP_OWNER_EMAIL`. Atomic server function.
   Locally, the same flow makes the developer the owner.

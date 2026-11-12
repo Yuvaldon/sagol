@@ -691,6 +691,7 @@ CREATE INDEX IF NOT EXISTS "idx_availability_rules_scope"   ON "availability_rul
 -- Commands:  one server function, the command gateway, runs the adapter's command
 --            code in a SERIALIZABLE transaction (D-201): bootstrap, account links,
 --            leaves, grants and the last-admin check (D-059) included.
---            has_permission(resource, action, target), used by RLS, comes with 8.2.
--- RLS:       enabled on every table; policies call has_permission(). Verified by the
---            same table-driven test matrix that tests the domain policy (D-007).
+-- RLS:       enabled on every table with no policy, and anon/authenticated hold no
+--            privilege on any table, sequence or function, now or by default (D-203).
+--            Every read and write goes through the gateway, which runs the domain
+--            policy; the same test matrix checks it over Postgres (D-007, D-203).

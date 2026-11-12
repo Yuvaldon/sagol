@@ -38,7 +38,7 @@ am = amends, ref = refines, ext = extends.
 | D-019 | Derived state is never stored | all | |
 | D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
-| D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050 |
+| D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050, D-171 |
 | D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108; ref D-112, D-115; ref D-119, D-120; ref D-132 |
 | D-024 | First designed component | ui | ref D-077 |
 | D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075 |
@@ -66,7 +66,7 @@ am = amends, ref = refines, ext = extends.
 | D-047 | Soft-rule acknowledgment protocol | contracts, domain, data, ui | ref D-073; ref D-114; ref D-117; ref D-142 |
 | D-048 | Auth and session contracts | contracts, data, logic, app | ref D-076, D-083 |
 | D-049 | Leave command set | contracts, domain, data | ref D-063, D-064; ref D-117, D-118; am D-123 |
-| D-050 | Import and export | contracts, data | |
+| D-050 | Import and export | contracts, data | ref D-171 |
 | D-051 | Phase audits are separate, read-only sessions | docs | am D-078; ref D-126; ref D-154; ref D-170 |
 | D-052 | Next-session model and effort recommendation | docs | ref D-075; sup D-154 |
 | D-053 | What a permission scope covers (policy targets) | domain, data, backend | ref D-083, D-089, D-096; ref D-159 |
@@ -187,6 +187,7 @@ am = amends, ref = refines, ext = extends.
 | D-168 | A rejected link request is told to its identity | contracts, data, logic, ui | |
 | D-169 | The grants list moves to the next state on its own | logic | |
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | |
+| D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
@@ -2228,6 +2229,35 @@ when the data changes.
 **Why:** the owner's words of 2026-11-11: "run alone to the end, stop stopping to ask me". The owner accepts the
 recommendations, which already follow the recorded decisions and the product's direction.
 
+## D-171 — Import runs the built commands and stops at the first refusal
+2026-11-11 · accepted · refines D-022, D-050 · OI-018 · decided under the owner's autonomy instruction of 2026-11-11
+- **Operations.** `ImportOperation` holds the create commands that are built: unit levels, units, command ranks, soldiers
+  (and their tags), roles, rank bindings, access grants, tag categories, tags, leave type groups, leave types, leaves and
+  availability rules. Seniority overrides, leave batches, deployments and property definitions join with the slice that
+  builds their command (D-076).
+- **The run.** `data_transfer:import` is checked before anything else, so who may not import learns nothing of the
+  input's form. The whole input is parsed next. If an operation is malformed, nothing runs and every operation is
+  reported on its form alone. Otherwise the operations run in order through the same commands as the UI, in one
+  transaction; each command checks its own permissions. The first refused
+  operation ends the run: the results stop at it, with its error. A dry run, or a run with a refusal, writes nothing and
+  announces no change; a committed run announces its changes once, after the commit.
+- **The file.** A JSON file of `{ "operations": [...] }`, or a CSV of soldiers whose header names columns from
+  `SOLDIER_CSV_COLUMNS` (in any letter case); each CSV row is one `create_soldier` with a new id and no placement. The
+  CSV is read as UTF-8: a file in another encoding is refused by name ("save it as CSV UTF-8"), not imported with
+  broken letters. Rows are numbered by data row, the header not counted. The owner sees the dry run's report, then
+  commits it; the dry run refreshes nothing, and only the last file picked is shown. The export's file name carries
+  the day on the organization's clock.
+- **Export** is one JSON file, downloaded, of every table as stored (D-050), gated by `data_transfer:export`.
+- **Where.** Import and export open from the account menu, as a drawer panel, for who may import or export. They are
+  not a module button: the bar is already full on a desktop (OI-110), and this is an occasional task.
+- **OI-018: no privileged restore in the app.** Import re-creates rows through commands, so leave history, audit columns
+  and account links of an export are not carried over by it. Moving local data to the backend loads the export file once,
+  on the server, in 8.3 (OI-109).
+**Why:** a refusal inside a nested IndexedDB transaction aborts the whole transaction, and later operations usually
+name rows the earlier ones create, so checking them past a refusal would report errors that are not theirs. A restore
+that writes rows as stored would be a path around the commands' validation (rule 4); the one-time move to the backend
+is a server task, not a screen. A CSV of soldiers is the spreadsheet the owner already holds; everything else is JSON.
+
 ## D-200 — Backend: Supabase and Vercel, free plans
 2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170
 Supabase hosts the database (Postgres), authentication (Google) and the server function (an Edge Function). Vercel
@@ -2251,7 +2281,9 @@ built in), and the owner's instruction to use these two providers at no cost.
   by Postgres (`src/data/server/postgresStore.ts`), in one SERIALIZABLE transaction per request. Validation, visibility,
   policy, state and integrity checks (D-090) are the same code on both sides, so they cannot drift; a lost serialization
   race runs the request again, up to four tries, then answers `unavailable`. The answer carries the result and the
-  changes, for the caller's change feed.
+  changes, for the caller's change feed. The kinds are `session`, `transfer`, `repositories` and `commands`; `session`
+  and `transfer` are single services, so their group is the kind itself. An import (`transfer.importBatch`) runs inside
+  the request's transaction, a dry run and a refusal roll back through a savepoint, and the body cap bounds its size.
 - **Identity.** The actor comes only from the bearer token, which the function checks with Supabase's auth server
   (`/auth/v1/user`); only a Google identity is accepted. No token means signed out. A token the server refuses answers 401;
   an unreachable auth server answers 503. The request body never names an actor.
@@ -2297,11 +2329,18 @@ such as a migration or a manual fix.
   domain's own test and by `src/data/server/policy.dbtest.ts`. The DB test writes the world through the migrated schema
   (its constraints and triggers), loads the policy snapshot through the Postgres store the gateway reads, and checks every
   row with `can`. `rls.dbtest.ts` checks that every table holds RLS, that the API roles hold no privilege, and that each
-  of them is refused a read and a write of every table.
+  of them is refused a read and a write of every table, and that a table created later starts closed.
+- **The Data API itself.** `src/data/server/rls.resttest.ts` (`npm run test:rest`, in the CI `db` job after `test:db`)
+  asks a real PostgREST, in front of the migrated database, for a read, an insert and a delete of every table, with an
+  `anon` token (what a publishable key acts as) and an `authenticated` one; each is refused with `42501`.
+  `db-reset` grants the API roles everything by default first, as Supabase does, so the migration's revokes are what
+  the tests prove.
+- **Advisors.** Supabase's advisors report "RLS enabled, no policy" (INFO) for every table. That is this decision, not a
+  finding: an audit leaves it be.
 - **Imports.** A layer's `testing/index.ts` may be imported by other layers' test files, `*.dbtest.ts` included, through an
   alias (`@domain/testing`); dependency-cruiser allows only that file and only from tests.
-- **Local roles.** `scripts/db-reset.ts` creates `anon` and `authenticated` (no login) when missing, as Supabase has them,
-  so the migration and the tests run the same locally and in CI.
+- **Local roles.** `scripts/db-reset.ts` creates `anon` and `authenticated` (no login) when missing, with Supabase's
+  default grants, so the migration and the tests run the same locally, in CI and on Supabase.
 **Why:** a second copy of the policy in SQL would have to agree with the domain forever, the same reason D-201 runs one
 command core on both sides. With every read and write behind the gateway, row policies would only guard a door that is
 already shut; revoking the privileges shuts it explicitly, and the tests prove it stays shut.
