@@ -227,7 +227,7 @@ export function NavigationPanel() {
         isOpen={isOpen}
         onOpenChange={setOpen}
         isDismissable
-        className="enter-scrim fixed inset-none flex items-start justify-start bg-scrim frame-safe"
+        className="enter-scrim fixed inset-screen flex items-start justify-start bg-scrim frame-safe"
       >
         <Modal className="enter-start-panel glass-drawer flex max-h-full w-full max-w-sheet flex-col overflow-hidden rounded-panel">
           <Dialog className="flex min-h-none flex-col outline-none">

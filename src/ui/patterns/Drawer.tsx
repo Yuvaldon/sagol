@@ -48,7 +48,7 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
       onOpenChange={(open) => {
         if (!open) onClose()
       }}
-      className="enter-scrim fixed inset-none flex items-end justify-center bg-scrim px-safe md:items-start md:justify-end md:p-sm"
+      className="enter-scrim fixed inset-screen flex items-end justify-center bg-scrim px-safe md:items-start md:justify-end md:p-sm"
     >
       <MotionModal
         drag="y"

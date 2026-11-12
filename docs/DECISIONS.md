@@ -245,10 +245,10 @@ am = amends, ref = refines, ext = extends.
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
 | D-256 | One path for each action | ui | ref D-285 |
-| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221 |
-| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221 |
-| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221 |
-| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221 |
+| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221, D-222 |
+| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
+| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221, D-222 |
+| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
@@ -276,6 +276,7 @@ am = amends, ref = refines, ext = extends.
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
+| D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | |
 | D-312 | Filtering is a rule builder | logic, i18n, ui | |
@@ -3901,6 +3902,33 @@ the same tree on top of main is the smallest change Vercel's integration builds.
 
 **Why:** the daily budget goes to the two deployments someone uses, Production and staging. A single line in the
 repository, reviewed like the rest, does that.
+
+## D-300 — The staging deploy is marked: a black band, its own title, a black installed icon
+
+2026-11-12 · accepted · asked by the owner through the orchestrator at about 21:13Z. Track: tooling. Extends D-182,
+D-191 and D-276.
+
+- **The gap.** Staging and Production look the same, in the browser and as an app on the home screen. The owner uses
+  both and must always know which one he is in.
+- **The identity.** It comes from the environment, not from code (rule 2). `VITE_APP_ENV=staging` is set on Vercel as
+  a Preview variable scoped to the `staging` branch, and no other deploy has it. `config` names the variable and its
+  one value and reads it with `isStaging`. That is apart from `parseEnv`, so even the startup failure screen is marked.
+  `parseEnv` still refuses any other value, so a typo stops the app instead of hiding the mark.
+- **The band.** A black band with "אתר בדיקות" sits on top of every screen, 24px under the notch. It is part of the top
+  safe inset: `--safe-top` grows by the band's height when the root element carries `data-stage="staging"`. So the
+  workspace, its floating rows, the centered sheets and the loading screen all start below it. Full-screen overlays
+  (dialogs, the drawer, the navigation panel) use `inset-screen`, which leaves the band's height free. The band covers
+  no control on a phone or a desktop. Its colors are the theme tokens `stage` and `on-stage`, and the tab title becomes
+  "סגול · בדיקות".
+- **The installed app.** When the variable is set, the build derives the icon from the same source: the brand stops
+  become the `stage` token, which is black. The favicon, the apple-touch-icon and the manifest icons are generated from
+  it, and the manifest name, `short_name` and the Apple title are "סגול · בדיקות". The derived file is written to the
+  build cache, never to the repository. Production builds from the source icon and keeps "סגול".
+- **Rejected.** Telling the deploys apart by hostname in code, which would hardcode an identity. A chip in a corner,
+  which would cover a control on a phone. A second icon file drawn by hand, which would drift from the source.
+
+**Why:** the mark comes from the same place that makes a deploy staging. It shows on every screen, and in the icon,
+before anything is touched. Production gains nothing and loses nothing.
 
 ## D-310 — The heat row always sits above the soldiers; the preference is gone
 2026-11-12 · accepted · supersedes D-173's `rules_row_placement` and D-253's "where the rules row sits" · V33 · decided under D-170

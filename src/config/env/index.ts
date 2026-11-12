@@ -1,19 +1,23 @@
 import { z } from 'zod'
 import { AuthMode, DataAdapterMode, DEVELOPMENT_ONLY_AUTH_MODES } from '@contracts'
-import { ENV_VARIABLES, type EnvVariable } from './names'
+import { APP_STAGES, ENV_VARIABLES, type EnvVariable } from './names'
 
 // Environment contract (D-006, D-048). `app` parses `import.meta.env` through `parseEnv`
 // at startup and fails fast on any issue. Only `VITE_` variables reach the client bundle;
 // server-only secrets (`BOOTSTRAP_OWNER_EMAIL`, D-005) are never listed here.
 
-export { ENV_VARIABLES, type EnvVariable } from './names'
+export { APP_STAGES, ENV_VARIABLES, type AppStageName, type EnvVariable } from './names'
 
 const EnvVariableName = z.enum([
   ENV_VARIABLES.authMode,
   ENV_VARIABLES.dataAdapter,
   ENV_VARIABLES.remoteUrl,
   ENV_VARIABLES.remoteAnonKey,
+  ENV_VARIABLES.appStage,
 ])
+
+/** The deploy's own marking (D-300): one of `APP_STAGES`, or unset for production. */
+export const AppStage = z.enum([APP_STAGES.staging])
 
 /** A blank value (`VAR=`) counts as not set. */
 function optional<T extends z.ZodType>(schema: T) {
@@ -28,6 +32,7 @@ export const EnvSchema = z.object({
   [ENV_VARIABLES.dataAdapter]: DataAdapterMode,
   [ENV_VARIABLES.remoteUrl]: optional(z.url()),
   [ENV_VARIABLES.remoteAnonKey]: optional(z.string().trim().min(1)),
+  [ENV_VARIABLES.appStage]: optional(AppStage),
 })
 
 /** The parsed environment, in the shape the app uses: one of the two pairs (D-207). */
@@ -115,4 +120,12 @@ export function parseEnv(raw: RawEnv, options: EnvOptions): EnvResult {
   if (authMode === 'local') return { ok: true, value: { authMode, dataAdapter: 'local', remote: null } }
   if (url === undefined || anonKey === undefined) return { ok: false, issues }
   return { ok: true, value: { authMode, dataAdapter: 'remote', remote: { url, anonKey } } }
+}
+
+/**
+ * Whether this deploy is staging (D-300). Read apart from `parseEnv`, so the marker shows on the startup failure screen
+ * too; a value that is not a stage reads as production here and fails startup through `parseEnv`.
+ */
+export function isStaging(raw: RawEnv): boolean {
+  return raw[ENV_VARIABLES.appStage] === APP_STAGES.staging
 }
