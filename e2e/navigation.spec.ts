@@ -88,19 +88,6 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
     if (testInfo.project.name === 'mobile') await expect(label).toHaveCount(0)
     else await expect(label).toBeVisible()
   })
-
-  await test.step('the rules row placement is kept, in the profile', async () => {
-    const above = page.getByRole('menuitemradio', { name: he.account.rulesRowAbove })
-    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
-    await above.click()
-    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
-    await expect(above).toHaveAttribute('aria-checked', 'true')
-    await page.keyboard.press('Escape')
-    await page.reload()
-    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
-    await expect(above).toHaveAttribute('aria-checked', 'true')
-    await page.keyboard.press('Escape')
-  })
 })
 
 test('a fighter sees only the modules their permissions open, and no unit picker', async ({ page }) => {

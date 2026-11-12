@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, createType, requestLeave, openRotationInNewUnit } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
+import { selectView } from './support/board.ts'
 
 // V13's demo: the list, the table and the calendar show the same soldiers and leaves as the timeline, from the
 // view menu, on desktop and mobile, RTL, with axe (D-174). Sample data, tests only.
@@ -9,11 +10,6 @@ import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.
 // A chip's name is its text: what is seen, then the status a reader cannot see, then the days.
 const REGULAR = `רגילה ${he.leaves.statusPending}, 9–10 בנוב׳`
 const SICK = `מחלה ${he.leaves.statusApproved}, 12 בנוב׳`
-
-async function selectView(page: Page, name: string) {
-  await page.getByRole('button', { name: new RegExp(he.workspace.view) }).click()
-  await page.getByRole('menuitemradio', { name }).click()
-}
 
 function region(page: Page, name: string) {
   return page.getByRole('region', { name })

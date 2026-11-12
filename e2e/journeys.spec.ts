@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { TYPE, YAEL_NAME, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
 import { choose, closeDrawer, drawer, leavesOf, typeDate } from './support/leaves.ts'
+import { selectView } from './support/board.ts'
 import {
   OWNER,
   claimOrganization,
@@ -93,8 +94,7 @@ test('journeys (c), (d) and (e): a soldier requests, a commander approves, the d
     // The steps read the timeline's bars, which a phone opens only when asked (D-290); asked only now, so Yael's
     // address was bare and she landed on "שלי" (D-265).
     if (isMobile) {
-      await page.getByRole('button', { name: new RegExp(he.workspace.view) }).click()
-      await page.getByRole('menuitemradio', { name: he.workspace.views.timeline }).click()
+      await selectView(page, he.workspace.views.timeline)
     }
     await openBoardOnTimeline(page, isMobile)
     await expect(leavesOf(page).first()).toHaveAccessibleName(new RegExp(`^${TYPE}, ${he.leaves.statusPending}, `))
