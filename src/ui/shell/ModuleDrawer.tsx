@@ -24,7 +24,7 @@ import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { TransferModule } from '../modules/transfer/TransferModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
-import { ApproveNowSwitch } from './ApproveNowSwitch'
+import { ApproveNowSwitch, MyApproveNowSwitch } from './ApproveNowSwitch'
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
 // The map of what opens in the drawer (D-092). A drawer holds one or more sections, and each section is
@@ -138,6 +138,8 @@ const GROUPS: readonly ModuleGroup[] = [
   },
   {
     titleKey: 'myLeaves.title',
+    // Who approves their own requests but nobody else's has no inbox: the default sits with their requests (D-299).
+    Header: MyApproveNowSwitch,
     sections: [{ panel: PANEL_IDS.myLeaves, labelKey: 'myLeaves.title', isAllowed: (access) => access.myLeaves, Module: MyLeavesModule }],
   },
   {
@@ -205,7 +207,8 @@ export function ModuleDrawer() {
       onClose={panel.close}
       header={
         sections.length < 2 && group.Header === undefined ? null : (
-          <div className="flex flex-col gap-xs">
+          // A header that renders nothing leaves no gap.
+          <div className="flex flex-col gap-xs empty:hidden">
             {sections.length < 2 ? null : (
               <nav aria-label={t('common.sections')} className="flex gap-xs rounded-pill bg-inner p-2xs">
                 {sections.map((section) => (
