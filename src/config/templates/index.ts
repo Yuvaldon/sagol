@@ -253,14 +253,17 @@ export const COMPANY_TEMPLATE = {
   ],
 } as const satisfies UnitTemplate
 
-/** "ריקה": nothing but a first tag category, so tags have somewhere to go (D-285). */
+/** "ריקה": nothing but its first tag categories, so tags have somewhere to go (D-285, OI-236). */
 export const EMPTY_TEMPLATE = {
   levels: [],
   structure: null,
   ranks: [],
   roles: [],
   bindings: [],
-  tagCategories: [{ key: 'general', selection: 'multiple', lifetime: 'persistent', color: 'gray', tags: [] }],
+  tagCategories: [
+    { key: 'military', selection: 'multiple', lifetime: 'persistent', color: 'green', tags: [] },
+    { key: 'civilian', selection: 'multiple', lifetime: 'persistent', color: 'blue', tags: [] },
+  ],
   leaveGroups: [],
   rules: [],
 } as const satisfies UnitTemplate
