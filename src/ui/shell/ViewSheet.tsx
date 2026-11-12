@@ -7,7 +7,7 @@ import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 import { useViewDevice } from '../patterns/media'
 
 // The view picker (D-311): a card per view the device offers, the current one marked, and under them the colors of
-// the leaves. Picking a view shows it and closes the sheet; the colors stay open to compare.
+// the leaves. Picking a view, even the current one, shows it and closes the sheet; the colors stay open to compare.
 
 const CARD =
   'flex min-h-touch cursor-pointer flex-col items-center justify-center gap-xs rounded-panel border border-line p-md text-control text-text outline-focus outline-offset-2 data-focus-visible:outline-2 data-hovered:bg-inner data-selected:border-action-solid data-selected:bg-inner data-selected:font-semibold'
@@ -39,7 +39,15 @@ export function ViewSheet({ onClose }: { readonly onClose: () => void }) {
           {AVAILABLE_VIEWS.map((id) => {
             const entry = engineOf(id)
             return (
-              <Radio key={id} value={id} className={CARD}>
+              <Radio
+                key={id}
+                value={id}
+                // The current card changes nothing, so its press only closes the sheet: a choice is made either way.
+                onPress={() => {
+                  if (id === view) onClose()
+                }}
+                className={CARD}
+              >
                 <entry.Icon aria-hidden size={22} />
                 {t(entry.labelKey)}
               </Radio>
