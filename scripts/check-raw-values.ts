@@ -2,7 +2,7 @@
 // Fails on: raw colors outside theme files, arbitrary Tailwind values, physical-direction
 // classes/properties (RTL), Tailwind default palette or numeric spacing classes (reset in
 // the theme, D-025), the JavaScript `Date` outside the date adapter, and web storage
-// outside allowed modules.
+// outside allowed modules, and a floating surface that reserves height its content does not fill (D-278).
 import ts from 'typescript'
 import {
   CLASS_NAMES_LIVE_IN,
@@ -104,6 +104,51 @@ function isPropertyName(node: ts.Identifier): boolean {
   )
 }
 
+/** The floating surfaces (D-278): each sizes to its content, capped by the frame, and scrolls inside. */
+const SURFACE_ELEMENTS = new Set(['Modal', 'MotionModal', 'Popover'])
+/** A height a surface would hold whatever its content: a full or fixed height, a floor, or a share of its frame. */
+const RESERVED_HEIGHT = /^(?:h-.+|min-h-(?!none$).+|flex-1|grow|self-stretch)$/
+
+function surfaceProblems(element: string, text: string): string[] {
+  const utilities = text.split(/\s+/).filter(Boolean).map(utilityOf)
+  if (SURFACE_ELEMENTS.has(element)) {
+    return utilities
+      .filter((utility) => RESERVED_HEIGHT.test(utility))
+      .map((utility) => `"${utility}" on a ${element} reserves height: a surface sizes to its content, capped by max-h (D-278)`)
+  }
+  if (element !== 'ModalOverlay' || !utilities.includes('flex')) return []
+  // A flex overlay stretches its surface to its own height unless it aligns it.
+  const aligned = utilities.some((utility) => utility.startsWith('items-') && utility !== 'items-stretch')
+  const stretched = utilities.includes('items-stretch')
+  return aligned && !stretched ? [] : ['a flex ModalOverlay stretches its surface: align it with items-start, -center or -end (D-278)']
+}
+
+/** The class text an attribute holds: a literal, a template's literal parts, or a const of the same file. */
+function classTextOf(source: ts.SourceFile, initializer: ts.JsxAttributeValue | undefined): string | null {
+  if (initializer === undefined) return null
+  if (ts.isStringLiteral(initializer)) return initializer.text
+  if (!ts.isJsxExpression(initializer) || initializer.expression === undefined) return null
+  const expression = initializer.expression
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return expression.text
+  if (ts.isTemplateExpression(expression)) {
+    return [expression.head.text, ...expression.templateSpans.map((span) => span.literal.text)].join(' ')
+  }
+  if (!ts.isIdentifier(expression)) return null
+  let found: string | null = null
+  walk(source, (node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === expression.text &&
+      node.initializer !== undefined &&
+      (ts.isStringLiteral(node.initializer) || ts.isNoSubstitutionTemplateLiteral(node.initializer))
+    ) {
+      found = node.initializer.text
+    }
+  })
+  return found
+}
+
 function scanTs(file: string): Finding[] {
   const source = parseTs(file, readSource(file))
   const findings: Finding[] = []
@@ -113,6 +158,14 @@ function scanTs(file: string): Finding[] {
   const storageAllowed = isUnder(file, WEB_STORAGE_ALLOWED_IN)
 
   walk(source, (node) => {
+    if (classesLiveHere && ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && node.name.text === 'className') {
+      const element = node.parent.parent
+      const tag = ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element) ? element.tagName.getText(source) : ''
+      const text = classTextOf(source, node.initializer)
+      if (text !== null) {
+        for (const message of surfaceProblems(tag, text)) findings.push(findingAt(source, node, 'floating-surface', message))
+      }
+    }
     if (isStringLike(node)) {
       const problems = [
         ...(classesLiveHere ? classProblems(node.text) : []),
