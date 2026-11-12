@@ -355,9 +355,10 @@ export function PropertiesModule() {
     panel.open(PANEL_IDS.properties, { entity: NEW_ENTITY })
   }
 
-  if (panel.entity === NEW_ENTITY) return <PropertyEditor definition={null} all={all} />
+  if (panel.entity === NEW_ENTITY && permissions.create) return <PropertyEditor definition={null} all={all} />
   if (panel.entity !== null) {
-    const definition = live.find((candidate) => candidate.id === panel.entity)
+    // Only who may change a definition opens its form (D-076).
+    const definition = permissions.update ? live.find((candidate) => candidate.id === panel.entity) : undefined
     if (definition === undefined) {
       return (
         <div className="flex flex-col items-center gap-md py-xl text-center">

@@ -250,6 +250,13 @@ const BOOLEAN_CHOICES: readonly Choice[] = [
   { key: BOOLEAN_KEYS.false, label: named('properties.no') },
 ]
 
+/** Whether the bar reads a chip of this definition (D-177): a soldier property, of the type the chip is written for. */
+function chipFits(definition: PropertyDefinition, chip: PropertyChip): boolean {
+  if (definition.entity_type !== 'soldier') return false
+  if (chip.kind === 'boolean') return definition.data_type === 'boolean'
+  return definition.data_type === 'select' || definition.data_type === 'multi_select'
+}
+
 /**
  * The condition of one property the bar reads (D-177): its live options, and any chosen option it no longer holds, for
  * a select or multi-select property; yes or no for a yes / no property, one answer at a time. NULL for other types.
@@ -442,7 +449,7 @@ function useConditions(): ConditionSets {
     const write = (next: PropertyChip | null) => {
       filter.setConditions(withPropertyChip(conditions, chip.definitionId, next))
     }
-    const condition = definition === undefined ? null : propertyCondition(definition, chip, write)
+    const condition = definition === undefined || !chipFits(definition, chip) ? null : propertyCondition(definition, chip, write)
     shown.push(
       condition ?? {
         key: `property:${chip.definitionId}`,

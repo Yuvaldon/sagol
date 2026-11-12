@@ -98,18 +98,22 @@ function PropertyInput(props: InputProps) {
       ]
       return <SelectField labelKey={labelKey} name={name} value={textOf(value)} options={options} onChange={onChange} error={error} />
     }
-    case 'multi_select':
+    case 'multi_select': {
+      const options = optionsOf(definition)
+      // An option removed since the value was stored is not shown, so a change writes the live ones only (D-176).
+      const selected = typeof value === 'string' ? [] : value.filter((id) => options.some((option) => option.id === id))
       return (
         <div className="flex flex-col gap-xs">
           <CheckList
             label={labelKey}
-            choices={optionsOf(definition).map((option) => ({ key: option.id, label: { text: option.label }, dot: option.color_key === null ? null : toneOf(option.color_key).fill }))}
-            selected={typeof value === 'string' ? [] : value}
+            choices={options.map((option) => ({ key: option.id, label: { text: option.label }, dot: option.color_key === null ? null : toneOf(option.color_key).fill }))}
+            selected={selected}
             onChange={onChange}
           />
           {error === null ? null : <p className="text-label text-status-rejected">{t(error)}</p>}
         </div>
       )
+    }
     case 'soldier_ref':
       return <SoldierInput {...props} />
     case 'unit_ref':
