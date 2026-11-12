@@ -29,13 +29,14 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
   await enterAsOwner(page)
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
 
-  await test.step('with no rotation the owner is offered to open one, and nothing to request (D-218)', async () => {
+  await test.step('with no rotation, and no unit to hold one, the owner is sent to found a unit first (D-218)', async () => {
     await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(page.getByText(he.deployments.emptyNoUnits)).toBeVisible()
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
     await expectNoAxeViolations(page)
-    await page.getByRole('button', { name: he.workspace.openRotation }).click()
-    await expect(page).toHaveURL(/panel=deployments/)
+    await page.getByRole('button', { name: he.units.new }).click()
+    await expect(page).toHaveURL(/panel=units&entity=new/)
     await closeDrawer(page)
   })
 
