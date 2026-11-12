@@ -106,7 +106,7 @@ M3 and M4 do not depend on each other. The owner picks their order at the end of
 | V12 | slice | Import and export | ☑ |
 | 8.1 | backend | Provider decision (D-027), migrations from `schema.sql`, triggers, server functions | ☑ D-200 … D-202 |
 | 8.2 | backend | RLS policies + policy matrix run against the database | ☑ D-203 |
-| 8.3 | data | Remote adapter passing the repository contract suite | ☐ |
+| 8.3 | data | Remote adapter passing the repository contract suite | ☑ D-204 … D-206 |
 | 8.4 | app | Google auth provider, env per environment (dev/staging/prod), deploy | ☐ |
 | A6 | audit | Production readiness, RLS against the policy matrix; with A5's scope, one audit (D-170) | ☐ |
 
