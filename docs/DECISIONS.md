@@ -282,7 +282,7 @@ am = amends, ref = refines, ext = extends.
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
 | D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
 | D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
-| D-301 | Focus mode | ui | |
+| D-301 | Focus mode | config, i18n, ui, e2e | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4004,9 +4004,11 @@ before anything is touched. Production gains nothing and loses nothing.
 
 ## D-301 — Focus mode
 2026-11-12 · accepted · refines D-197, D-252 · V23 · decided under the owner's autonomy instruction of 2026-11-11
-- **"מצב מיקוד"** is an item in the view menu, under its own heading with the board's other view controls, so it
-  exists only with the board (D-218); the strip gains no extra control. It and the key Alt+Shift+F hide both strips and the chips row. A key with modifiers, not one letter,
-  so typing never triggers it (WCAG 2.1.4); the same key and Escape restore them.
+- **"מצב מיקוד"** is an item in the view menu, in its own last section with the board's other view controls, so it
+  exists only while a board is drawn (D-218); the strip gains no extra control. It and the key Alt+Shift+F hide both
+  strips and the chips row. A key with modifiers, not one letter, so typing never triggers it (WCAG 2.1.4); the same
+  key and Escape restore them. Inside a text field, or over an open dialog or menu, the key is theirs; an Escape that
+  another control claims, as a drag's cancel does, stays with it.
 - **One restore button** stays, a round glass button at the bottom corner on the inline end, clear of the name
   column; it is touch-sized and named "יציאה ממצב מיקוד".
 - **Focus follows the change:** entering moves focus to the restore button, and leaving returns it to the view menu's trigger,
@@ -4016,5 +4018,6 @@ before anything is touched. Production gains nothing and loses nothing.
   row. A day still opens its report, and every module and dialog opens as before.
 - **It lasts the browser session on the device** (D-197, `sessionStorage`): a reload keeps it, a new session starts
   with both strips.
+
 **Why:** a commander reading the board on a phone wants every row the screen can hold; one way in and one way out,
 both by touch and by keyboard, keep the hidden strips one step away.
