@@ -234,7 +234,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   with its type, from and to, reason, and a "חוזרת" switch that opens "כל כמה ימים" and "חוזרת עד תאריך"; an X removes a
   row while there is more than one, and "בקשה נוספת" adds one. Below the rows: פרטים נוספים, "approve now", and one rules
   warning over every leave the sheet would create.
-- **The install card (D-277):** once after sign-in, a glass card at the top of the workspace, "אפשר להתקין את סגול במכשיר
+- **The install card (D-277):** once after sign-in, a glass card above the bottom bar, clear of the top bar, "אפשר להתקין את סגול במכשיר
   הזה" with "התקנה" and "לא עכשיו"; never on the sign-in screen or in the installed app, and gone on that device once
   answered.
 - **The new-leave drawer** has a "collective leave" switch when there is more than one soldier to choose; the
