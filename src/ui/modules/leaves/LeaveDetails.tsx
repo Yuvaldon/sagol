@@ -4,19 +4,21 @@ import {
   useTimezone,
   useLeave,
   useLeaveActions,
+  useLeaveCreation,
   useLeaveTransition,
   useLeaveTypeGroups,
   useLeaveTypes,
   usePanel,
   useSoldiersWithArchived,
 } from '@logic'
-import { Check, Pencil, RotateCcw, X } from 'lucide-react'
+import { Check, Copy, Pencil, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatInstant } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
 import { RuleGateDialog } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
+import { LeaveDuplicateForm } from './LeaveDuplicateForm'
 import { LeaveEditForm } from './LeaveEditForm'
 import { LeaveStepDialog, type ClosingStep } from './LeaveStepDialog'
 import { LeaveThread } from './LeaveThread'
@@ -52,6 +54,8 @@ function LeaveView({
   const transition = useLeaveTransition()
   const gate = useRuleGate()
   const [editing, setEditing] = useState<number | null>(null)
+  const [duplicating, setDuplicating] = useState(false)
+  const creation = useLeaveCreation(soldiers)
   const [asking, setAsking] = useState<ClosingStep | null>(null)
   const [failure, setFailure] = useState<AppError | null>(null)
   const nameOf = personNames(soldiers)
@@ -80,6 +84,19 @@ function LeaveView({
         }}
         onReload={() => {
           setEditing((count) => (count ?? 0) + 1)
+        }}
+      />
+    )
+  }
+
+  if (duplicating) {
+    return (
+      <LeaveDuplicateForm
+        leave={leave}
+        soldiers={creation.duplicable}
+        canApprove={creation.canApprove}
+        onDone={() => {
+          setDuplicating(false)
         }}
       />
     )
@@ -154,6 +171,17 @@ function LeaveView({
             >
               <Pencil aria-hidden size={14} />
               {t('leaves.edit')}
+            </Button>
+          ) : null}
+          {creation.duplicable.length > 0 ? (
+            <Button
+              onPress={() => {
+                setFailure(null)
+                setDuplicating(true)
+              }}
+            >
+              <Copy aria-hidden size={14} />
+              {t('leaves.duplicate')}
             </Button>
           ) : null}
           {actions.cancel ? (
