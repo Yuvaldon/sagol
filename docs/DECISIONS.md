@@ -3586,6 +3586,7 @@ Extends D-276. Track: tooling.
 **Why:** trying the app on staging needs a believable unit, and typing one in by hand after every reset is slow. A
 re-runnable script that cannot reach production gives that without real personal numbers and without the app carrying
 seed code.
+
 ## D-284 — Launch order: V32 before V28, then the audit
 2026-11-12 · accepted · amends D-271, D-078 · V32 · decided under the owner's autonomy instruction of 2026-11-11
 - Before launch: track B runs V26 → V27; track A runs V32 (its docs first, then the screens) → V28. Then A7 on main,
