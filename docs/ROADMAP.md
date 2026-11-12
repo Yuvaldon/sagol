@@ -97,7 +97,7 @@ M3 and M4 do not depend on each other. The owner picks their order at the end of
 | V9 | Account linking | A second identity asks to link, the owner reviews | ☑ |
 | V10 | Roles and access | Roles, rank bindings, grants; each identity sees only its own scope | ☑ |
 | V11 | Soldier self-service | A fighter requests on a phone, a commander approves | ☑ |
-| A5 | audit | Permissions end to end; deferred by the owner, runs with A6 as one combined audit (D-170) | ☐ |
+| A5 | audit | Permissions end to end; deferred by the owner, runs with A6 as one combined audit (D-170). Report: `.claude/archive/docs/audits/A5-A6.md` | ☑ |
 
 ## M5 — Go live
 
@@ -108,7 +108,7 @@ M3 and M4 do not depend on each other. The owner picks their order at the end of
 | 8.2 | backend | RLS policies + policy matrix run against the database | ☑ D-203 |
 | 8.3 | data | Remote adapter passing the repository contract suite | ☑ D-204 … D-206 |
 | 8.4 | app | Google auth provider, env per environment (dev/staging/prod), deploy | ☑ D-207 … D-210 |
-| A6 | audit | Production readiness, RLS against the policy matrix; with A5's scope, one audit (D-170) | ☐ |
+| A6 | audit | Production readiness, RLS against the policy matrix; with A5's scope, one audit (D-170). Report: `.claude/archive/docs/audits/A5-A6.md` | ☑ |
 
 ## M6 — Complete
 
