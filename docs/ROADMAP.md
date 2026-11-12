@@ -128,7 +128,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V22 | Daily report (דוח 1) | Tap a day in any view: who is present, absent, leaving and returning, by unit; reasons on request; copy as a message, save or share as an image; several days at once (D-193 … D-197) | ☑ |
 | V24 | Simplification: information architecture | Docs only: two vocabularies and a term map, one navigation model (a context strip and a destination strip, the profile, "ניהול יחידה", one requests hub), five journeys, a rotation as a mode of the system, templates (D-250 … D-264) | ☑ |
 | V25 | Navigation and words | The term map in every string, no "ארגון"; two floating strips on every screen; a personal profile; "ניהול יחידה" with groups and a line per module; one requests hub; one path per action (D-250 … D-256) | ☑ |
-| V23 | Focus mode | One control hides both strips and the chips; one restore button brings them back (OI-032, after V25) | ☐ |
+| V23 | Focus mode | One control hides both strips and the chips; one restore button brings them back (OI-032, after V25; D-301) | ☑ |
 | V26 | Rotation as a mode | One rotation at a time, routine between them, the final close, the whole unit by default, tags for one rotation (D-257 … D-260; schema change) | ☑ |
 | V27 | Templates and setup | The claim creates the root unit; the "פלוגה" template; pick, adjust, done (D-251, D-261, D-262) | ☑ |
 | V32 | Work and unit setup | Daily work in "ניהול יחידה", one-time definitions in "הגדרות היחידה"; a definition apart from its use; a missing definition created in place; tag categories advanced; the checklist leads (D-284, D-285) | ☑ |

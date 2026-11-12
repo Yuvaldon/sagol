@@ -380,8 +380,9 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
   לאישורי · closed.
 - **Gone:** the separate floating "+" (its action is now in the strip), the "הבקשות שלי" tab, pins, the presence count in the bar, the empty board's second
   button, "סבב חדש" in the range menu, the full-width phone bars and the folded wide-phone row.
-- **Focus mode (V23):** both strips and the chips row hide; one restore button stays in a corner that does not cover
-  the name column.
+- **Focus mode (V23, D-301):** "מצב מיקוד" in the view menu, or Alt+Shift+F, hides both strips and the chips row; one
+  round restore button, "יציאה ממצב מיקוד", stays at the bottom corner on the inline end, clear of the name column. The
+  same key, Escape or the button restore them, and focus moves with the change. It lasts the browser session.
 
 ### Journeys (D-263)
 

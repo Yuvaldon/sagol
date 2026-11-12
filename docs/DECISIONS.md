@@ -229,7 +229,7 @@ am = amends, ref = refines, ext = extends.
 | D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | |
 | D-195 | The day report as text for a messaging app | config, i18n, logic | |
 | D-196 | The day report as an image: drawn on a canvas in the light tokens | ui | |
-| D-197 | A device store for conveniences | config, data, logic, tooling | |
+| D-197 | A device store for conveniences | config, data, logic, tooling | ref D-301 |
 | D-216 | Every request belongs to a rotation | contracts, data, logic, backend | |
 | D-217 | The workspace is scoped to the active or upcoming rotation, silently | logic, ui | |
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
@@ -240,7 +240,7 @@ am = amends, ref = refines, ext = extends.
 | D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
-| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
+| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266, D-301 |
 | D-253 | The profile is personal only | ui | |
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
@@ -3927,12 +3927,12 @@ before anything is touched. Production gains nothing and loses nothing.
 
 ## D-301 — Focus mode
 2026-11-12 · accepted · refines D-197, D-252 · V23 · decided under the owner's autonomy instruction of 2026-11-11
-- **"מצב מיקוד"** is an icon control in the top strip, with the board's other controls, so it exists only with the
-  board (D-218). It and the key Alt+Shift+F hide both strips and the chips row. A key with modifiers, not one letter,
+- **"מצב מיקוד"** is an item in the view menu, under its own heading with the board's other view controls, so it
+  exists only with the board (D-218); the strip gains no extra control. It and the key Alt+Shift+F hide both strips and the chips row. A key with modifiers, not one letter,
   so typing never triggers it (WCAG 2.1.4); the same key and Escape restore them.
 - **One restore button** stays, a round glass button at the bottom corner on the inline end, clear of the name
   column; it is touch-sized and named "יציאה ממצב מיקוד".
-- **Focus follows the change:** entering moves focus to the restore button, and leaving returns it to "מצב מיקוד",
+- **Focus follows the change:** entering moves focus to the restore button, and leaving returns it to the view menu's trigger,
   so the control pressed never vanishes under the keyboard. Escape inside an open dialog, menu or popover closes that
   first.
 - **The board takes the top's room;** the room above the bottom stays, so the restore button never covers the last
