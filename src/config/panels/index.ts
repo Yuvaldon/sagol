@@ -96,6 +96,8 @@ export const SETUP_STEPS = [
   { id: 'leave_types', panel: PANEL_IDS.leaveTypes, resource: 'leave_types' },
   { id: 'tags', panel: PANEL_IDS.tagCategories, resource: 'tags' },
   { id: 'soldiers', panel: PANEL_IDS.soldiers, resource: 'soldiers' },
+  /** The first rotation (D-212): the range picker's "whole rotation" lists it. */
+  { id: 'deployments', panel: PANEL_IDS.deployments, resource: 'deployments' },
 ] as const satisfies readonly { readonly id: string; readonly panel: PanelId; readonly resource: PermissionResource }[]
 export type SetupStepId = (typeof SETUP_STEPS)[number]['id']
 
