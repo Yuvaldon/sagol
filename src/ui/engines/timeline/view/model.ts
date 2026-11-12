@@ -10,6 +10,10 @@ export interface TimelineDayCell {
   readonly weekday: string
   readonly dayNumber: string
   readonly isToday: boolean
+  /** The whole date, read aloud after what the header shows. */
+  readonly label: string
+  /** Opens the day report on the day (D-193); NULL when there is none to open. */
+  readonly onOpen: (() => void) | null
 }
 
 export interface TimelineGroupRow {

@@ -33,11 +33,20 @@ const NO_LEAVES = {
 
 describe('the timeline adapter', () => {
   it('writes each day as a narrow weekday and a number, and marks today', () => {
-    expect(dayCells(DAYS, '2026-11-09')).toEqual([
-      { key: '2026-11-08', weekday: 'א׳', dayNumber: '8', isToday: false },
-      { key: '2026-11-09', weekday: 'ב׳', dayNumber: '9', isToday: true },
-      { key: '2026-11-10', weekday: 'ג׳', dayNumber: '10', isToday: false },
+    expect(dayCells(DAYS, '2026-11-09', null).map(({ key, weekday, dayNumber, isToday, onOpen }) => ({ key, weekday, dayNumber, isToday, onOpen }))).toEqual([
+      { key: '2026-11-08', weekday: 'א׳', dayNumber: '8', isToday: false, onOpen: null },
+      { key: '2026-11-09', weekday: 'ב׳', dayNumber: '9', isToday: true, onOpen: null },
+      { key: '2026-11-10', weekday: 'ג׳', dayNumber: '10', isToday: false, onOpen: null },
     ])
+  })
+
+  it('makes a day with a report the control that opens it, and reads it aloud (D-193)', () => {
+    const open = vi.fn()
+    const cells = dayCells(DAYS, '2026-11-09', (day) => (day === '2026-11-10' ? null : () => open(day)))
+    expect(cells.map((cell) => cell.onOpen === null)).toEqual([false, false, true])
+    expect(cells[0]?.label).toContain('2026')
+    cells[1]?.onOpen?.()
+    expect(open).toHaveBeenCalledWith('2026-11-09')
   })
 
   it('names groups by path or by state, and reads muted days aloud', () => {

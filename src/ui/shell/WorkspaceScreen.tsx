@@ -5,8 +5,9 @@ import { useIsDesktop, useIsWidePhone } from '../patterns/media'
 import { useAppliedAppearance } from './appearance'
 import { ModuleButtons } from './ModuleButtons'
 import { ModuleDrawer } from './ModuleDrawer'
+import { DayReportDialog } from '../modules/presence/DayReportDialog'
 import { NewLeaveButton } from './NewLeaveButton'
-import { FilterBar, FilterControl, PresenceButton } from './FilterBar'
+import { FilterBar, FilterControl } from './FilterBar'
 import { SortControl } from './SortControl'
 import { NavigationPanel } from './NavigationPanel'
 import { FailureScreen, LoadingScreen } from './states'
@@ -44,7 +45,6 @@ function FilterControls() {
     <>
       <FilterControl />
       <SortControl />
-      <PresenceButton />
     </>
   )
 }
@@ -183,6 +183,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           <Bars name={name} identity={identity} />
         </div>
         <ModuleDrawer />
+        <DayReportDialog />
         <PreferenceFailureNotice />
       </div>
       </PreferenceFailureContext>

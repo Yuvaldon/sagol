@@ -1,4 +1,4 @@
-import type { CalendarDate, LeaveTypeId } from '@contracts'
+import type { CalendarDate, Deployment, LeaveTypeId } from '@contracts'
 import {
   BoardSortKey,
   DEFAULT_BOARD_SORT_KEY,
@@ -7,15 +7,17 @@ import {
   type SortKey,
   type SortOrder,
 } from '@config'
-import { addDays } from '@domain'
+import { addDays, compareDates, daysBetween } from '@domain'
+import { isReportable, reportDays, steppedReportDay } from '../presence/report'
 import { useCallback, useMemo } from 'react'
 import { useToday } from '../session/today'
 import { NO_LEAVE_CONDITIONS, hasLeaveConditions, type BoardLeaveStatus, type LeaveConditions } from './conditions'
 import { NO_CONDITIONS, readFilter, writeFilter } from './filter'
 import { useChangeSearch, useWorkspaceSearch } from './search'
+import { useDateWindow } from './window'
 
 // What the board shows beyond the soldier filter: its leave conditions (D-132), "only who is missing" (D-133)
-// and the day of the presence lists (D-134). Each lives in the URL beside the filter.
+// and the day of the report (D-134, D-193). Each lives in the URL beside the filter.
 
 export interface LeaveConditionsState {
   readonly conditions: LeaveConditions
@@ -144,32 +146,70 @@ export function useBoardSort(): BoardSortState {
 export interface PresenceDayState {
   /** NULL until today is known. */
   readonly day: CalendarDate | null
+  /** The last day of a span (D-193); NULL for one day. */
+  readonly until: CalendarDate | null
   readonly today: CalendarDate | null
+  /** The days the report shows: the day, or the span's reportable days (D-193). Empty while the day is unknown. */
+  readonly days: readonly CalendarDate[]
+  /** The scope's live rotations (D-211). */
+  readonly rotations: readonly Deployment[]
+  /** Whether the day is reportable: the scope has no rotation, or one runs on it (D-193). */
+  readonly reportable: (day: CalendarDate) => boolean
+  /** Whether a step back (-1) or forward (1) reaches a reportable day. */
+  canShift(step: -1 | 1): boolean
+  /** The previous or next reportable day; a span's last day moves as far as its first, so it keeps its calendar length. */
   shift(step: -1 | 1): void
   goToToday(): void
-  /** Opens the presence panel on today, in one step of the history (D-134). */
+  /** The span's last day; NULL turns it back to one day. */
+  setUntil(until: CalendarDate | null): void
+  /** Opens the report on today, in one step of the history (D-134). */
   openToday(): void
+  /** Opens the report on a day, in one step of the history (D-193). */
+  openOn(day: CalendarDate): void
 }
 
-/** The day of the presence lists (D-134): the URL's, else today. */
+/** The day of the report (D-134, D-193): the URL's, else today; and the span's last day. */
 export function usePresenceDay(): PresenceDayState {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
   const today = useToday()
+  const { rotations } = useDateWindow()
   const day = search.day ?? today
+  const until = day === null || search.until === undefined || compareDates(search.until, day) <= 0 ? null : search.until
+  const days = useMemo(() => (day === null ? [] : reportDays(rotations, day, until)), [rotations, day, until])
+  const reportable = useCallback((candidate: CalendarDate) => isReportable(rotations, candidate), [rotations])
+  const target = useCallback(
+    (step: -1 | 1) => (day === null ? null : steppedReportDay(rotations, day, step)),
+    [rotations, day],
+  )
+  const canShift = useCallback((step: -1 | 1) => target(step) !== null, [target])
   const shift = useCallback(
     (step: -1 | 1) => {
-      if (day !== null) change({ day: addDays(day, step) })
+      const next = target(step)
+      if (day === null || next === null) return
+      change({ day: next, until: until === null ? undefined : addDays(until, daysBetween(day, next)) })
     },
-    [change, day],
+    [change, target, day, until],
   )
   const goToToday = useCallback(() => {
-    change({ day: undefined })
+    change({ day: undefined, until: undefined })
   }, [change])
+  const setUntil = useCallback(
+    (next: CalendarDate | null) => {
+      change({ until: next ?? undefined })
+    },
+    [change],
+  )
+  const openOn = useCallback(
+    (next: CalendarDate) => {
+      change({ panel: PANEL_IDS.presence, entity: undefined, parent: undefined, day: next, until: undefined })
+    },
+    [change],
+  )
   const openToday = useCallback(() => {
-    change({ panel: PANEL_IDS.presence, entity: undefined, parent: undefined, day: undefined })
+    change({ panel: PANEL_IDS.presence, entity: undefined, parent: undefined, day: undefined, until: undefined })
   }, [change])
-  return { day, today, shift, goToToday, openToday }
+  return { day, until, today, days, rotations, reportable, canShift, shift, goToToday, setUntil, openToday, openOn }
 }
 
 export interface RulesDayState {

@@ -178,6 +178,11 @@ The current state (D-128):
   `update` on both units, and its members are replaced whole under its version (D-179).
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
+- **Day report** (`logic/presence`, D-193 … D-197): `dayReport` partitions a day's population into present and absent,
+  marks who leaves and returns by `dayMovements` in `domain`, and breaks it down by unit in the tree's order;
+  `reportDays` spans to a last day over the reportable days (D-211); `reportText` writes the message. The reasons
+  switch is a device flag (`useDeviceFlag`) in the device store of `data/device`, under `DEVICE_KEYS`, per soldier.
+  `ui` draws the image on a canvas (`modules/presence/reportImage.ts`).
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
   (D-141); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
@@ -310,11 +315,11 @@ src/
   domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/ text/
                json/ time/
   config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
-  data/        local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
+  data/        device/ (web storage for conveniences, D-197)  local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
                remote/ (one POST per call to the gateway, D-204)
                contract-tests/
   logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ board/ timeline/
-               tags/ filters/ presence/ rules/ testing/ (test-only helpers, D-135)
+               tags/ filters/ presence/ (the day report) device/ rules/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)

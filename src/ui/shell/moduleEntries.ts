@@ -7,6 +7,7 @@ import {
   useMyLeavesAccess,
   usePanel,
   usePendingRequests,
+  usePresenceDay,
   useRulesDay,
   useTransferAccess,
 } from '@logic'
@@ -14,6 +15,7 @@ import {
   ArrowDownUp,
   CalendarRange,
   ClipboardList,
+  FileText,
   Inbox,
   KeyRound,
   ListPlus,
@@ -106,9 +108,11 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
   return allowed
 }
 
-/** The daily modules: a soldier's own requests first, then the inbox (D-120, D-167). */
+/** The daily modules: a soldier's own requests first, then the inbox, then today's report (D-120, D-167, D-252). */
 export function useDailyEntries(): ModuleEntry[] {
   const panel = usePanel()
+  const access = useModuleAccess()
+  const { openToday } = usePresenceDay()
   const inbox = useInboxAccess()
   const pending = usePendingRequests()
   const mine = useMyLeavesAccess()
@@ -131,6 +135,7 @@ export function useDailyEntries(): ModuleEntry[] {
       },
       count: { value: pending.status === 'ready' ? pending.value.length : 0, labelKey: 'inbox.pendingCount' },
     },
+    access.soldiers && { id: 'dayReport', Icon: FileText, labelKey: 'presence.title', onPress: openToday, count: null },
   ]
   return entries.filter((entry) => entry !== false)
 }

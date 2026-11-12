@@ -32,6 +32,8 @@ export const SEARCH_PARAMS = {
   missing: 'missing',
   /** The day of the present and absent lists (D-134), and of the broken rules in the rules panel (D-141). */
   day: 'day',
+  /** The last day of the day report's span (D-193). Absent: the report is of one day. */
+  until: 'until',
   /** The soldier and days a drag on the timeline marked for a new leave (D-143). */
   draft: 'draft',
 } as const
