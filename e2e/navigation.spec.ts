@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
-import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
+import { ORGANIZATION, addUnit, OWNER, enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
 
 // The bars keep the daily work; the modules that set the unit up sit in "ניהול יחידה" by group, each with its plain
 // line and none pinned out (D-254); the scope label names the single root unit; the rules row's place is the soldier's
@@ -62,15 +62,15 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
     await expect(navigationPanel(page)).toBeHidden()
     await openModule(page, he.units.open)
     await expect(navigationPanel(page)).toBeHidden()
-    await addUnit(page, COMPANY)
     await closeDrawer(page)
+    // The root unit from the claim is the only unit, and it holds the rotation (D-223).
     await openRotation(page, [OWNER.name])
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
   })
 
   await test.step('a single unit in sight names the scope, as a label and not a picker; a phone has no room for it', async () => {
     await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
-    const label = page.getByRole('navigation', { name: he.workspace.viewBar }).getByText(COMPANY, { exact: true })
+    const label = page.getByRole('navigation', { name: he.workspace.viewBar }).locator('span').getByText(ORGANIZATION, { exact: true })
     // A phone's strip shows no scope with nothing to choose (D-273).
     if (testInfo.project.name === 'mobile') await expect(label).toHaveCount(0)
     else await expect(label).toBeVisible()

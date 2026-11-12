@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, openRotation, typeDate } from './support/leaves.ts'
-import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
+import { ORGANIZATION, OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
 // axe. Sample data, tests only.
@@ -79,12 +79,14 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
     await expect(page.getByRole('button', { name: he.workspace.today, exact: true })).toHaveCount(0)
     // Today she is in מחלקה ב, so that is her group (D-105).
-    await expect(groupHeading(page, 'פלוגה · מחלקה ב')).toBeVisible()
-    await expect(boardRows(page).nth(0)).toContainText('פלוגה · מחלקה ב')
-    await expect(boardRows(page).nth(1)).toContainText('נועם לב')
-    await expect(boardRows(page).nth(2)).toContainText('יעל שחר')
-    await expect(groupHeading(page, he.soldiers.noUnit)).toBeVisible()
-    await expect(board(page).getByText(OWNER.name)).toBeVisible()
+    // The owner serves in the root unit from the claim, so the root is the first group (D-223).
+    await expect(groupHeading(page, ORGANIZATION)).toBeVisible()
+    await expect(boardRows(page).nth(1)).toContainText(OWNER.name)
+    await expect(groupHeading(page, `${ORGANIZATION} · פלוגה · מחלקה ב`)).toBeVisible()
+    await expect(boardRows(page).nth(2)).toContainText(`${ORGANIZATION} · פלוגה · מחלקה ב`)
+    await expect(boardRows(page).nth(3)).toContainText('נועם לב')
+    await expect(boardRows(page).nth(4)).toContainText('יעל שחר')
+    await expect(groupHeading(page, he.soldiers.noUnit)).toHaveCount(0)
     await expectNoAxeViolations(page)
   })
 
