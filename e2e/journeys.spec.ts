@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { TYPE, YAEL_NAME, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
 import { choose, closeDrawer, drawer, leavesOf, typeDate } from './support/leaves.ts'
-import { OWNER, expectNoAxeViolations, navigation, openModule, signIn } from './support/workspace.ts'
+import { expectNoAxeViolations, navigation, openBoardOnTimeline, openModule, OWNER, signIn } from './support/workspace.ts'
 
 // V25's acceptance: journeys (c), (d) and (e) of docs/Design.md, step by step as written there (D-263), on desktop and
 // a phone, RTL, with axe. A step that changes in Design.md changes here in the same commit. Sample data, tests only.
@@ -13,6 +13,11 @@ const INBOX = new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`)
 function report(page: Page) {
   return page.getByRole('dialog', { name: he.presence.title })
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('journeys (c), (d) and (e): a soldier requests, a commander approves, the daily report', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
