@@ -11,8 +11,7 @@ const GOOD_CSV = 'first_name,last_name,personal_id\nנועה,ברק,7001001\nע�
 const BAD_CSV = 'first_name,last_name,rank\nנועה,ברק,סמל\n'
 
 async function openTransfer(page: Page) {
-  await page.getByRole('button', { name: he.account.menu }).click()
-  await page.getByRole('menuitem', { name: he.transfer.open }).click()
+  await openModule(page, he.transfer.open)
   await expect(drawer(page).getByRole('heading', { name: he.transfer.importTitle, exact: true })).toBeVisible()
 }
 

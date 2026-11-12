@@ -1,9 +1,10 @@
 import type { CalendarDate, LeaveTypeId } from '@contracts'
 import { PANEL_IDS } from '@config'
 import { addDays } from '@domain'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useToday } from '../session/today'
 import { NO_LEAVE_CONDITIONS, hasLeaveConditions, type BoardLeaveStatus, type LeaveConditions } from './conditions'
+import { NO_CONDITIONS, readFilter, writeFilter } from './filter'
 import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // What the board shows beyond the soldier filter: its leave conditions (D-132), "only who is missing" (D-133)
@@ -43,6 +44,33 @@ export function useLeaveConditions(): LeaveConditionsState {
 export interface OnlyMissingState {
   readonly on: boolean
   set(on: boolean): void
+}
+
+export interface BoardFiltersState {
+  /** A condition of the filter row is on: a soldier condition beside the unit, or a leave condition (D-173). */
+  readonly active: boolean
+  /** Removes every condition of the filter row; the unit stays, as it is the scope and not a condition (D-173). */
+  clearAll(): void
+}
+
+export function useBoardFilters(): BoardFiltersState {
+  const search = useWorkspaceSearch()
+  const change = useChangeSearch()
+  const filter = search.filter ?? null
+  const read = useMemo(() => readFilter(filter), [filter])
+  const leaves = search.leaves ?? NO_LEAVE_CONDITIONS
+  const active =
+    read.kind === 'other' ||
+    read.conditions.tagSets.length > 0 ||
+    read.conditions.rankIds.length > 0 ||
+    read.conditions.statuses.length > 0 ||
+    hasLeaveConditions(leaves)
+  const clearAll = useCallback(() => {
+    // A filter the bar does not read has no unit it can keep (D-104).
+    const unitId = read.kind === 'conditions' ? read.conditions.unitId : null
+    change({ filter: writeFilter({ ...NO_CONDITIONS, unitId }), leaves: undefined })
+  }, [read, change])
+  return { active, clearAll }
 }
 
 /** "Only who is missing" (D-133). Off leaves the param out. */

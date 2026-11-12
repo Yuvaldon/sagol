@@ -105,7 +105,25 @@ describe('settings defaults (D-041)', () => {
   })
 
   it('fills soldier preferences from the column default', () => {
-    expect(SoldierPreferences.parse({})).toEqual({ create_leaves_as_approved: false })
+    expect(SoldierPreferences.parse({})).toEqual({
+      create_leaves_as_approved: false,
+      pinned_modules: [],
+      rules_row_placement: 'below',
+    })
+  })
+
+  it('reads a row stored before the navigation keys with their defaults (D-173)', () => {
+    expect(SoldierPreferences.parse({ create_leaves_as_approved: true })).toEqual({
+      create_leaves_as_approved: true,
+      pinned_modules: [],
+      rules_row_placement: 'below',
+    })
+  })
+
+  it('refuses a module pinned twice, or one that is not a navigation module (D-173)', () => {
+    expect(SoldierPreferences.safeParse({ pinned_modules: ['units', 'units'] }).success).toBe(false)
+    expect(SoldierPreferences.safeParse({ pinned_modules: ['leaves'] }).success).toBe(false)
+    expect(SoldierPreferences.safeParse({ rules_row_placement: 'side' }).success).toBe(false)
   })
 })
 
