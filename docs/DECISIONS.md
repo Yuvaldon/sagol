@@ -3447,14 +3447,15 @@ most; the sort is set rarely and belongs with how the board is shown.
   `created` event. No schema change.
 - An issue of an expanded leave lands on the row it came from.
 - **The repetition's bounds.** Every so many days is a whole number, at least the leave's own length, so repetitions
-  never overlap (D-020), and at most a year; the last date is on or after the first day. One sheet creates at most
-  `LEAVE_SHEET.maxLeaves` leaves (`config`); the row that reaches past it says so on its last date.
+  of one row never cover each other (leaves of a soldier may still overlap, D-012), and at most a year; the last date
+  is on or after the first day. One sheet creates at most `LEAVE_SHEET.maxLeaves` leaves (`config`); the row that
+  reaches past it says so on its last date, and `leaves.createMany` refuses more on `leaves` before it reads any row.
 **Why:** D-267 asks for one sheet sent at once; a sheet beside the single form would be two paths to one action
 (D-255), and a recurring row is the rhythm soldiers actually ask for.
 
 ## D-277 — The install offer after sign-in, once per device
 2026-11-12 · accepted · refines D-184 · V28 · decided under the owner's autonomy instruction of 2026-11-11
-- **Once, after sign-in.** A signed-in, linked soldier sees one card above the bottom bar, clear of the top bar and its menu,: "אפשר להתקין את סגול
+- **Once, after sign-in.** A signed-in, linked soldier sees one card above the bottom bar, clear of the top bar and its menu: "אפשר להתקין את סגול
   במכשיר הזה", with "התקנה" and "לא עכשיו". It acts as the user menu's item (D-184): the browser's own prompt where
   there is one, the iOS steps where there is not.
 - **Never where it cannot act.** Not on the sign-in screen, not inside the installed app, and not where the device
