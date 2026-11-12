@@ -2,6 +2,7 @@
 // Every non-entity constant lives here: env schema, storage keys, view ids, URL parameter
 // names, breakpoints, palette and icon keys, date formats. Nothing is hardcoded elsewhere.
 export { DOM } from './dom'
+export { TOOLTIP } from './tooltip'
 export {
   ADAPTER_OF_AUTH_MODE,
   ENV_VARIABLES,
@@ -66,8 +67,10 @@ export { SEARCH_PARAMS, type SearchParamName } from './url'
 export {
   BREAKPOINTS_PX,
   DESKTOP_BREAKPOINT,
+  DESKTOP_MIN_HEIGHT_PX,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
+  WIDE_PHONE_MEDIA_QUERY,
   type Breakpoint,
 } from './breakpoints'
 export { PALETTE_KEYS, PaletteKey, isPaletteKey } from './palette'

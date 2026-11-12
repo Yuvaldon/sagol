@@ -2,6 +2,12 @@
 @import "@fontsource-variable/heebo";
 
 /*
+ * The desktop layout needs width and height (D-190): a phone on its side keeps the phone's bars and sheets. Same pair
+ * as DESKTOP_MEDIA_QUERY in config (768 and 512 px).
+ */
+@custom-variant md (@media (width >= 48rem) and (height >= 32rem));
+
+/*
  * The design tokens of Sagol, from the Stone 3 direction (D-077, docs/Design.md). Tailwind's
  * default palette, spacing, type, radius and shadow scales are reset: only semantic tokens exist.
  * The Light set is the default; the Dark set below replaces the colors and shadows under
@@ -105,7 +111,7 @@
      height while it shows (D-173), below. */
   --spacing-under-bars: 76px;
   --spacing-under-bars-md: 62px;
-  --spacing-under-bars-filtered: 118px;
+  --spacing-under-bars-filtered: 128px;
   --spacing-under-bars-filtered-md: 90px;
   /* The remove button of a filter chip, from Stone 3. */
   --spacing-chip-close: 22px;
@@ -306,23 +312,49 @@
   @media (prefers-reduced-motion: no-preference) {
     animation: sheet-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
-    @media (min-width: 48rem) {
+    @media (width >= 48rem) and (height >= 32rem) {
       animation-name: drawer-in;
     }
   }
 }
 
-/* Keeps a top notice below the phone's status bar and notch. */
-@utility top-safe {
-  top: calc(var(--spacing-lg) + env(safe-area-inset-top));
+/*
+ * The safe area (D-191): the canvas paints edge to edge, under a camera cutout and the home indicator, and what can be
+ * read or pressed sits inside this frame, padded by the insets the device reports.
+ */
+@utility inset-safe {
+  inset-block: var(--safe-top) var(--safe-bottom);
+  inset-inline: var(--safe-inline);
 }
 
-/* Keeps the bottom bar above the phone's home indicator. */
-@utility bottom-safe {
-  bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom));
+/* A full-screen layer's room around what it holds: a small gap plus the safe area (D-191). */
+@utility frame-safe {
+  padding-block: calc(var(--spacing-sm) + var(--safe-top)) calc(var(--spacing-sm) + var(--safe-bottom));
+  padding-inline: calc(var(--spacing-sm) + var(--safe-inline));
+}
+
+/* A bottom sheet keeps clear of a cutout on the side of a phone on its side (D-191). */
+@utility px-safe {
+  padding-inline: var(--safe-inline);
+}
+
+/* Keeps a top notice below the phone's status bar and notch. */
+@utility top-safe {
+  top: calc(var(--spacing-lg) + var(--safe-top));
 }
 
 @layer base {
+  /*
+   * The insets the device reports around a camera cutout, rounded corners and the home indicator (D-191). The cutout
+   * of a phone on its side moves from one side to the other as it turns, so both sides keep the larger inset: the
+   * layout stays still and symmetric, at a few pixels' cost.
+   */
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-inline: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  }
+
   html {
     font-family: var(--font-sans);
     font-size: var(--text-body);

@@ -124,7 +124,7 @@ am = amends, ref = refines, ext = extends.
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133; ref D-214 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | ref D-160 |
-| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173; ref D-174 |
+| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173; ref D-174; ref D-189 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
@@ -132,7 +132,7 @@ am = amends, ref = refines, ext = extends.
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143 |
-| D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154; ref D-173 |
+| D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154; ref D-173; sup D-189 (bars) |
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
 | D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143 |
@@ -171,7 +171,7 @@ am = amends, ref = refines, ext = extends.
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
 | D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-170; ref D-172 |
-| D-155 | The phone's module buttons scroll inside the bottom bar | ui | ref D-165 |
+| D-155 | The phone's module buttons scroll inside the bottom bar | ui | ref D-165; ref D-189 |
 | D-156 | Every way of giving a role is guarded; a grant stays within the granter's reach | domain, data, backend | |
 | D-157 | A holder without seniority gets only `any`; a rank write is checked before and after | domain, data, backend | |
 | D-158 | An access manager holds the three pairs with `any` | domain, backend | |
@@ -189,7 +189,7 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; ref D-213 |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214 |
 | D-175 | The bar names the unit in scope, not the organization | ui | |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
@@ -216,6 +216,10 @@ am = amends, ref = refines, ext = extends.
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
 | D-188 | Postgres extensions live in the `extensions` schema | backend, docs | |
+| D-189 | Bars rebalance and declutter: a phone tab bar, icons with tooltips | config, i18n, ui | ext D-190; ext D-191 |
+| D-190 | A phone on its side keeps the phone's bars, and a wide phone folds the context row into the top | config, ui, tooling | |
+| D-191 | Edge to edge: the canvas under the cutouts, what can be pressed inside the safe area | ui, tooling | |
+| D-192 | The board's corner and name column are one opaque surface | ui | |
 | D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | |
 | D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | |
 | D-213 | "Only who is missing" is a filter condition | logic, ui | |
@@ -2795,6 +2799,65 @@ functions are executable by `anon` and `authenticated` and sit on the Data API's
 them and granted that, so D-203's revokes, run as `postgres`, cannot take it back. They are harmless operator helpers,
 but D-203's rule is that the API roles reach nothing in the app's schema; outside it, the rule holds without them.
 
+## D-189 — Bars rebalance and declutter: a phone tab bar, icons with tooltips
+2026-11-12 · accepted · supersedes D-173's bar layout; refines D-108, D-116, D-155, D-173 · decided under the owner's autonomy instruction of 2026-11-11
+- **On a phone, three rows.** The top bar holds only the week with its navigation and, at the inline end, the user
+  menu as an avatar. Under it a context row holds the scope label, the view switcher and the filter controls in one group,
+  followed by the chips while a condition is set (what the filter controls hold is the filter bar's own, V19); it scrolls
+  sideways and is always there, so the board starts under it (`under-bars-filtered` on a phone). The bottom bar is a
+  tab bar of destinations, each an icon over a short name: the board (current while no panel is open; it closes the
+  panel and returns to the week of today), my requests, the inbox with its count, the soldier's pins, and "תפריט",
+  which opens the navigation panel and carries the count of what waits there. Every tab is permission-derived as
+  before (D-076, D-173); there is no toggle or counter that is not a destination. The organization's name stays the
+  page's `h1`, read aloud only on a phone.
+- **On desktop, two bars as before** (D-108): the menu button, the name, scope, view and filters on the inline start;
+  the week, "today", the destinations and the avatar on the inline end. The destinations, "today", the view switcher,
+  "סינון", the presence count and the avatar are icons; the name of each is its accessible name and a tooltip
+  (`NameTooltip`, `TOOLTIP` in config: 500 ms in, 200 ms out). "רק מי שחסר" keeps its label, because a switch's
+  state needs its words.
+- **Every `IconButton` has a tooltip** with its name, on every screen, so an icon is never a guess.
+- **Declutter.** The avatar shows no name: the tooltip and the accessible name carry it.
+- **The rotation is never on the bars.** Requests (my requests, the inbox) become a destination only while a rotation
+  exists, once the rotation model lands (V19); until then they follow the permissions alone.
+**Why:** the phone's bottom bar mixed destinations with filters, switches and counters, scrolled sideways, and put the
+avatar where a tab bar keeps its last destination. A standard tab bar is what a phone's owner already reads; the
+range and the account are global, so they stay at the top. On desktop the labels made the two bars crowd the name
+again at 1280 px (OI-110), and icons with tooltips keep them short without losing a name.
+
+## D-190 — A phone on its side keeps the phone's bars, and a wide phone folds the context row into the top
+2026-11-12 · accepted · extends D-189 · decided under the owner's autonomy instruction of 2026-11-11
+- **The desktop layout needs height too.** `md` (the theme variant) and `useIsDesktop` (`DESKTOP_MEDIA_QUERY`) both
+  require at least 768 px of width and 512 px of height (`DESKTOP_MIN_HEIGHT_PX`). A phone on its side is 360–430 px
+  tall, so it keeps the phone's structure: the same bars and the same tab bar as upright, never a desktop squeezed
+  into a strip.
+- **A wide phone folds the context row into the top bar.** From `sm` (640 px, `WIDE_PHONE_MEDIA_QUERY`) the scope,
+  view and filter controls sit at the inline start of the top row and the range and the avatar at its inline end;
+  the chips row shows only while a condition is set. The board keeps at least half of the screen's height between
+  the top bars and the tabs.
+- **Nothing clips, wraps or scrolls the page.** A bar's label never takes a second line and the page never scrolls
+  sideways; a bar that holds more than fits scrolls inside itself.
+**Why:** the owner's phone, turned on its side, got the desktop bars in about 400 px of height, which left no room
+for the board and wrapped labels. One structure for both orientations is what a phone's owner expects; folding the
+context row is what keeps the room.
+
+## D-191 — Edge to edge: the canvas under the cutouts, what can be pressed inside the safe area
+2026-11-12 · accepted · extends D-189 · decided under the owner's autonomy instruction of 2026-11-11
+- The viewport is `viewport-fit=cover`, and the workspace's canvas paints every edge, under the notch and the home
+  indicator. Bars, the board, the new-leave button, drawers and the navigation panel sit inside a frame padded by the
+  safe-area insets, through theme tokens (`--safe-top`, `--safe-bottom`, `--safe-inline`) and the `inset-safe`,
+  `frame-safe`, `px-safe` and `top-safe` utilities; no component reads `env()` itself.
+- The inline inset is symmetric: the larger of the left and right insets on both sides, because the side of the
+  cutout changes as the phone turns, and a logical start or end cannot name it.
+- The raw-values check exempts `env(safe-area-inset-left|right)`: it names what the device reports, not a side the
+  layout picks.
+**Why:** on the owner's phone the bars sat under the notch in landscape, and the canvas stopped short of the edges.
+
+## D-192 — The board's corner and name column are one opaque surface
+2026-11-12 · accepted · decided under the owner's autonomy instruction of 2026-11-11
+- The timeline's sticky corner and its name column share one opaque `surface` token, and the day header strip is
+  flat: no glass, blur, shadow or rounded end where it meets the corner. The days scroll under the column with no
+  fade and no seam.
+**Why:** the glass header showed the days through the corner as they scrolled, which read as a fade over the names.
 ## D-211 — The range picker: day, week, month or a whole rotation
 2026-11-12 · accepted · refines D-103 · V19 · decided under D-170
 - **URL.** `range` holds the kind (`day`, `week`, `month`, `rotation`); absent means a week (`DEFAULT_RANGE_KIND`).

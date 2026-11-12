@@ -101,7 +101,7 @@ function DaysHeader({
       >
         {t('timeline.names')}
       </div>
-      <div className="glass-card absolute inset-y-none end-none rounded-pill" style={{ insetInlineStart: layout.nameColumnPx }}>
+      <div className="absolute inset-y-none end-none" style={{ insetInlineStart: layout.nameColumnPx }}>
         {days.map((day, index) => {
           const className = `absolute inset-y-none flex items-center justify-center gap-xs text-label tabular-nums ${day.isToday ? 'font-bold text-text' : 'text-text-muted'}`
           const style = { insetInlineStart: dayOffset(layout, index) - layout.nameColumnPx, width: layout.dayPx }

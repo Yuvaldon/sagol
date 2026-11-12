@@ -99,6 +99,8 @@ export const dictionary = {
   workspace: {
     navigation: 'ניווט ראשי',
     viewBar: 'יחידה ותצוגה',
+    topBar: 'טווח וחשבון',
+    board: 'לוח',
     unit: 'יחידה',
     wholeOrganization: 'כל הארגון',
     unitUnavailable: 'יחידה לא זמינה',
@@ -938,6 +940,7 @@ export const dictionary = {
   },
   navigation: {
     open: 'תפריט ניהול',
+    tab: 'תפריט',
     title: 'ניהול',
     close: 'סגירה',
     sections: {

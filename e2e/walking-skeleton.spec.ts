@@ -58,7 +58,7 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await expect(page).toHaveURL(/\/$/)
     await expect(organizationHeading(page)).toBeVisible()
     await expect(page.getByRole('region', { name: he.timeline.label }).getByText(OWNER.name)).toBeVisible()
-    await expect(navigation(page).getByText(OWNER.name)).toBeVisible()
+    await expect(page.getByRole('button', { name: `${he.account.menu} ${OWNER.name}` })).toBeVisible()
     await expectNoAxeViolations(page)
   })
 
