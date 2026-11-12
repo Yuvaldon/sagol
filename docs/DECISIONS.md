@@ -211,7 +211,7 @@ am = amends, ref = refines, ext = extends.
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
-| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
+| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280 |
 | D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | ref D-183 |
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
@@ -258,6 +258,7 @@ am = amends, ref = refines, ext = extends.
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
+| D-280 | Production delivery: a workflow only the owner starts | backend, tooling | |
 
 ---
 
@@ -3429,3 +3430,24 @@ the track that holds rotations.
 - Every function stays one press away; the range keeps its arrows, the most used control on a phone.
 **Why:** a strip that scrolls hides the avatar at its inline end, and stepping through the days is what a phone does
 most; the sort is set rarely and belongs with how the board is shown.
+
+## D-280 — Production delivery: a workflow only the owner starts
+2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12
+- **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
+  pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
+  the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
+  the owner set them.
+- **Who starts it.** `workflow_dispatch` only, on `main`, and the job runs only when the actor and the triggering actor
+  are the repository's owner. It refuses a commit whose CI did not pass on `main`.
+- **The guard.** The owner types the production ref as the run's input; the run stops unless it equals the
+  `PRODUCTION_PROJECT_REF` variable, differs from `STAGING_PROJECT_REF`, names a project of the account, and that
+  project's name does not end in `-staging`. The ref lives in a repository variable, not in the file (rule 2).
+- **Why not an approval gate.** The intended form was a run after every green CI on `main`, held by a `production`
+  environment whose required reviewer is the owner. The repository is private, and GitHub offers required reviewers
+  in private repositories only on its paid plans; anything paid is out (D-200). The owner's own start, with the typed
+  ref, is the free gate. Repository secrets and variables hold the values, since they need no environment. Should the
+  free plan ever offer the reviewer gate here, a later decision may add the run after CI behind it.
+- **Secrets.** `SUPABASE_ACCESS_TOKEN` (shared with staging) and `PRODUCTION_DB_PASSWORD` as repository secrets,
+  `PRODUCTION_PROJECT_REF` as a repository variable: the owner sets them once (OI-230).
+**Why:** a production change should be one reviewed press by the person who owns the data, run from `main`'s green
+commit by the same steps staging proves first, so no laptop or session deploys production by hand.

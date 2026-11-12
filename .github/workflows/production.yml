@@ -1,0 +1,79 @@
+name: Production
+
+# Delivery to the production Supabase project (D-280), started by the repository owner only and by hand:
+# main's pending migrations and main's `commands` function, for a commit whose CI passed. Production holds
+# real data, so nothing here runs on its own, and nothing here deletes, resets or sets secrets.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_ref:
+        description: The production project ref, typed again to confirm
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.actor == github.repository_owner &&
+      github.triggering_actor == github.repository_owner
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+      PROJECT_REF: ${{ vars.PRODUCTION_PROJECT_REF }}
+      STAGING_REF: ${{ vars.STAGING_PROJECT_REF }}
+      CONFIRM_REF: ${{ inputs.confirm_ref }}
+      SHA: ${{ github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Refuse a commit whose CI did not pass
+        run: |
+          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --commit "$SHA" --event push \
+            --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
+          test "$conclusion" -ge 1 || { echo "::error::CI has not passed on $SHA"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          LEFTHOOK: '0'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Refuse any project but the exact production ref
+        run: |
+          test -n "$PROJECT_REF" || { echo "::error::PRODUCTION_PROJECT_REF is not set"; exit 1; }
+          test "$CONFIRM_REF" = "$PROJECT_REF" || { echo "::error::the typed ref is not PRODUCTION_PROJECT_REF"; exit 1; }
+          test "$PROJECT_REF" != "$STAGING_REF" || { echo "::error::PRODUCTION_PROJECT_REF is the staging ref"; exit 1; }
+          name=$(supabase projects list -o json | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref) | .name')
+          case "$name" in
+            '') echo "::error::no project $PROJECT_REF in this account"; exit 1 ;;
+            *-staging) echo "::error::project $PROJECT_REF is '$name', a staging project"; exit 1 ;;
+            *) echo "Deploying to $name ($PROJECT_REF)" ;;
+          esac
+      - name: Migrations (the plan, then the push)
+        run: |
+          supabase link --project-ref "$PROJECT_REF" --workdir .
+          supabase db push --linked --workdir . --dry-run
+          supabase db push --linked --workdir .
+      - name: The commands function (the bundle of D-209)
+        run: |
+          npm run build:function
+          sha256sum dist/functions/commands/index.ts
+          mkdir -p dist/production/supabase/functions/commands
+          cp dist/functions/commands/index.ts dist/production/supabase/functions/commands/index.ts
+          supabase functions deploy commands --project-ref "$PROJECT_REF" --no-verify-jwt --use-api --workdir dist/production
