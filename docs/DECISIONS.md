@@ -257,6 +257,7 @@ am = amends, ref = refines, ext = extends.
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | |
+| D-272 | Focus mode | ui | |
 
 ---
 
@@ -3416,3 +3417,20 @@ ordinary ones.
   its model commit, as every schema change does.
 **Why:** the matrix adds three requests-and-report slices to the track that holds the requests, and the planner to
 the track that holds rotations.
+
+## D-272 — Focus mode
+2026-11-12 · accepted · refines D-197, D-252 · V23 · decided under the owner's autonomy instruction of 2026-11-11
+- **"מצב מיקוד"** is an icon control in the top strip, with the board's other controls, so it exists only with the
+  board (D-218). It and the key Alt+Shift+F hide both strips and the chips row. A key with modifiers, not one letter,
+  so typing never triggers it (WCAG 2.1.4); the same key and Escape restore them.
+- **One restore button** stays, a round glass button at the bottom corner on the inline end, clear of the name
+  column; it is touch-sized and named "יציאה ממצב מיקוד".
+- **Focus follows the change:** entering moves focus to the restore button, and leaving returns it to "מצב מיקוד",
+  so the control pressed never vanishes under the keyboard. Escape inside an open dialog, menu or popover closes that
+  first.
+- **The board takes the top's room;** the room above the bottom stays, so the restore button never covers the last
+  row. A day still opens its report, and every module and dialog opens as before.
+- **It lasts the browser session on the device** (D-197, `sessionStorage`): a reload keeps it, a new session starts
+  with both strips.
+**Why:** a commander reading the board on a phone wants every row the screen can hold; one way in and one way out,
+both by touch and by keyboard, keep the hidden strips one step away.
