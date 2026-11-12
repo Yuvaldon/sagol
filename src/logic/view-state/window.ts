@@ -23,8 +23,9 @@ import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // The date window of the views (D-103, D-211, D-217). Its kind lives in the URL: a day, a week, a month or a whole
 // rotation, anchored on `from`; without `from` a day, a week or a month holds today and follows the clock. An older
-// link's `from`..`to` with no kind is a free window. A URL with none of them opens on the rotation in scope that runs
-// today, else the next one, else today's week. Pure parts first, then the hook.
+// link's `from`..`to` with no kind is a free window. A URL with none of them opens on the rotation of the mode (D-222):
+// the one that runs today, else the next one, else the latest ended one not closed yet; in routine, today's week.
+// Pure parts first, then the hook.
 
 /** A window's kind: one the range picker offers, or a free window from an older link. */
 export type WindowKind = RangeKind | 'custom'
@@ -43,7 +44,7 @@ export interface DateWindow {
 }
 
 /** What a rotation window reads of a deployment. */
-export type RotationSpan = Pick<Deployment, 'id' | 'start_date' | 'end_date'>
+export type RotationSpan = Pick<Deployment, 'id' | 'start_date' | 'end_date' | 'closed_at'>
 
 export interface WindowParams {
   readonly from?: CalendarDate | undefined
@@ -106,12 +107,22 @@ export function rotationOn<Rotation extends Pick<Deployment, 'start_date' | 'end
   return rotations.find((rotation) => isDeploymentActive(rotation, date)) ?? null
 }
 
-/** The rotation that runs today, else the next one to start (D-217). `rotations` are by start. */
-export function scopeRotation<Rotation extends Pick<Deployment, 'start_date' | 'end_date'>>(
+/**
+ * The workspace's mode (D-217, D-257, D-222): of the rotations not closed, the one that runs today, else the next one
+ * to start, else the latest one that has ended. A closed rotation is history, even on the last day its close gave it
+ * (D-258). NULL is routine. `rotations` are by start.
+ */
+export function scopeRotation<Rotation extends Pick<Deployment, 'start_date' | 'end_date' | 'closed_at'>>(
   rotations: readonly Rotation[],
   today: CalendarDate,
 ): Rotation | null {
-  return rotationOn(rotations, today) ?? rotations.find((rotation) => compareDates(rotation.start_date, today) > 0) ?? null
+  const open = rotations.filter((rotation) => rotation.closed_at === null)
+  return (
+    rotationOn(open, today) ??
+    open.find((rotation) => compareDates(rotation.start_date, today) > 0) ??
+    open.findLast((rotation) => rotation.end_date !== null && compareDates(rotation.end_date, today) < 0) ??
+    null
+  )
 }
 
 /** Whether a URL names no window at all, so the workspace opens on its rotation (D-217). */
@@ -180,9 +191,11 @@ export function scopeRotations(
     .sort((a, b) => compareDates(a.start_date, b.start_date) || a.name.localeCompare(b.name))
 }
 
-/** The rotations the range picker offers: those running or still to come (D-211). */
+/** The rotations the range picker offers: those running or still to come, and those ended but not closed (D-211, D-222). */
 export function pickableRotations(rotations: readonly Deployment[], today: CalendarDate): Deployment[] {
-  return rotations.filter((rotation) => rotation.end_date === null || compareDates(rotation.end_date, today) >= 0)
+  return rotations.filter(
+    (rotation) => rotation.closed_at === null || rotation.end_date === null || compareDates(rotation.end_date, today) >= 0,
+  )
 }
 
 export interface DateWindowState {

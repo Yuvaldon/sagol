@@ -60,7 +60,7 @@ export const STORES = {
   access_grants: 'id, organization_id, grantee_soldier_id',
   tag_categories: 'id, organization_id',
   tags: 'id, organization_id, category_id',
-  soldier_tags: '[soldier_id+tag_id], organization_id, tag_id',
+  soldier_tags: 'id, organization_id, soldier_id, tag_id, deployment_id',
   leave_type_groups: 'id, organization_id',
   leave_types: 'id, organization_id',
   leave_batches: 'id, organization_id',

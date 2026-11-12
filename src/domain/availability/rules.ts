@@ -24,7 +24,7 @@ import {
 import { createFilterContext, filterKey, positiveSelections, type FilterData } from '../filters'
 import { buildUnitTree, descendantsOf, primaryUnitOn, type MembershipSpan } from '../hierarchy'
 import { compareCodeUnits } from '../json'
-import { compareDates } from '../time'
+import { compareDates, spanCovers } from '../time'
 import { createAvailabilityContext, type AvailabilityContext, type AvailabilityData } from './days'
 
 // Availability-rule evaluation (D-014, D-031, D-071, D-072). A rule is evaluated per
@@ -39,7 +39,7 @@ export type RuleSoldier = Pick<
 >
 export type RuleCommandRank = Pick<CommandRank, 'id' | 'seniority' | 'archived_at'>
 export type RuleTag = Pick<Tag, 'id' | 'category_id' | 'archived_at'>
-export type RuleDeployment = Pick<Deployment, 'id' | 'start_date' | 'end_date' | 'archived_at'>
+export type RuleDeployment = Pick<Deployment, 'id' | 'unit_id' | 'start_date' | 'end_date' | 'archived_at'>
 export type RuleDeploymentMember = Pick<DeploymentMember, 'deployment_id' | 'soldier_id' | 'start_date' | 'end_date'>
 
 /** What rule evaluation reads. Full contract rows fit every field. */
@@ -213,8 +213,10 @@ function createStructure(data: RuleData): Structure {
   const tags = new Map<TagId, RuleTag>([...data.tags].map((tag) => [tag.id, tag]))
   const deployments = new Map<DeploymentId, RuleDeployment>([...data.deployments].map((row) => [row.id, row]))
   const deploymentMembers = new Map<string, RuleDeploymentMember>()
+  const listed = new Set<DeploymentId>()
   for (const member of data.deployment_members) {
     deploymentMembers.set(`${member.deployment_id}|${member.soldier_id}`, member)
+    listed.add(member.deployment_id)
   }
 
   // Only active, non-archived soldiers can be counted (D-071).
@@ -305,6 +307,11 @@ function createStructure(data: RuleData): Structure {
 
   function inDeployment(deployment: RuleDeployment | null, soldierId: SoldierId, date: CalendarDate): boolean {
     if (deployment === null) return true
+    // The whole unit (no member rows, D-221): a membership of any type in the rotation's unit or below it.
+    if (!listed.has(deployment.id)) {
+      const subtree = subtreeOf(deployment.unit_id)
+      return (membershipsBySoldier.get(soldierId) ?? []).some((row) => subtree.has(row.unit_id) && spanCovers(row, date))
+    }
     const member = deploymentMembers.get(`${deployment.id}|${soldierId}`)
     if (member === undefined) return false
     // NULL member dates fall back to the deployment dates.

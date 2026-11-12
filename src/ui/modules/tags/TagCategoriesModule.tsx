@@ -1,5 +1,5 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
-import type { AppError, TagCategory, TagSelectionMode } from '@contracts'
+import type { AppError, TagCategory, TagLifetime, TagSelectionMode } from '@contracts'
 import { t } from '@i18n'
 import {
   NEW_TAG_CATEGORY_VALUES,
@@ -30,11 +30,17 @@ import { toneOf } from '../../theme/palette'
 // The categories section of the tags drawer (D-130): an ordered list, each with its color and selection mode. Up
 // and down in the row menu set the order, as for leave type groups (D-113).
 
-const CATEGORY_FIELDS: readonly string[] = ['name', 'selection_mode', 'color_key']
+const CATEGORY_FIELDS: readonly string[] = ['name', 'selection_mode', 'default_lifetime', 'color_key']
 
 const MODE_OPTIONS: readonly SelectOption<TagSelectionMode>[] = [
   { key: 'multiple', label: { key: 'tagCategories.selectionMultiple' }, value: 'multiple' },
   { key: 'single', label: { key: 'tagCategories.selectionSingle' }, value: 'single' },
+]
+
+/** What assigning a tag of the category pre-selects: kept, or for the open rotation only (D-260, D-222). */
+const LIFETIME_OPTIONS: readonly SelectOption<TagLifetime>[] = [
+  { key: 'persistent', label: { key: 'soldiers.tagLifetimePersistent' }, value: 'persistent' },
+  { key: 'rotation', label: { key: 'tagCategories.lifetimeRotation' }, value: 'rotation' },
 ]
 
 function CategoryForm({
@@ -108,6 +114,18 @@ function CategoryForm({
             name={field.name}
             value={field.state.value}
             options={MODE_OPTIONS}
+            onChange={field.handleChange}
+            error={fieldError(field.state.meta.errors, field.name, state.answered)}
+          />
+        )}
+      </form.Field>
+      <form.Field name="default_lifetime">
+        {(field) => (
+          <SelectField
+            labelKey="tagCategories.defaultLifetime"
+            name={field.name}
+            value={field.state.value}
+            options={LIFETIME_OPTIONS}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
           />

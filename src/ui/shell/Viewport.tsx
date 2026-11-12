@@ -17,7 +17,7 @@ import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 
 // The central viewport (D-023): it shows the active engine from the registry. Every engine needs a date window, which
 // needs today. A soldier who may not view the organization and reads no soldier at all sees a notice (D-151, D-160).
-// With no rotation running or to come in scope, the viewport holds "no active rotation" instead (D-218).
+// In routine (שגרה), with no rotation in scope, the board still shows, under a band that says so (D-257, D-222).
 
 function useNoBoard(): boolean {
   const organization = useCurrentOrganization()
@@ -35,10 +35,10 @@ const CENTERED = 'flex h-full items-center justify-center px-lg'
 const NO_UNITS: readonly never[] = []
 
 /**
- * Who may open a rotation opens it here; anyone else reads who does (D-218). A rotation belongs to a unit, so before
- * any unit exists, who may found the tree is sent to found it first.
+ * Routine (D-257, D-222): who may open a rotation opens it here; anyone else reads who does. A rotation belongs to a
+ * unit, so before any unit exists, who may found the tree is sent to found it first.
  */
-function NoRotation() {
+function RoutineBand() {
   const { rotations } = useDateWindow()
   const units = useUnits()
   const panel = usePanel()
@@ -46,22 +46,29 @@ function NoRotation() {
   const { createAny } = useDeploymentPermissions(live, rotations)
   const tree = useUnitPermissions(live)
   const foundFirst = !createAny && units.status === 'ready' && live.length === 0 && tree.createUnder(null)
-  const bodyKey = foundFirst ? 'deployments.emptyNoUnits' : createAny ? undefined : 'workspace.noRotationBody'
+  const bodyKey = foundFirst ? 'deployments.emptyNoUnits' : createAny ? 'workspace.routineOpenBody' : 'workspace.noRotationBody'
   return (
-    <div className={CENTERED}>
-      <EmptyNotice titleKey="workspace.noRotationTitle" bodyKey={bodyKey} headingLevel={2}>
-        {createAny || foundFirst ? (
-          <Button
-            variant="primary"
-            onPress={() => {
-              panel.open(foundFirst ? PANEL_IDS.units : PANEL_IDS.deployments, { entity: NEW_ENTITY })
-            }}
-          >
-            {t(foundFirst ? 'workspace.foundUnits' : 'workspace.openRotation')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
-    </div>
+    <section
+      aria-labelledby="routine-band"
+      className="flex flex-wrap items-center justify-between gap-sm border-b border-line bg-inner px-lg pt-under-bars pb-sm md:pt-under-bars-md"
+    >
+      <div className="flex flex-col gap-2xs">
+        <h2 id="routine-band" className="text-name font-bold">
+          {t('workspace.routineTitle')}
+        </h2>
+        <p className="text-label text-text-muted">{t(bodyKey)}</p>
+      </div>
+      {createAny || foundFirst ? (
+        <Button
+          variant="primary"
+          onPress={() => {
+            panel.open(foundFirst ? PANEL_IDS.units : PANEL_IDS.deployments, { entity: NEW_ENTITY })
+          }}
+        >
+          {t(foundFirst ? 'workspace.foundUnits' : 'workspace.openRotation')}
+        </Button>
+      ) : null}
+    </section>
   )
 }
 
@@ -77,7 +84,15 @@ export function Viewport() {
       </div>
     )
   }
-  if (scope.ready && scope.none) return <NoRotation />
   const { Engine } = engineOf(view)
-  return <Engine />
+  if (!(scope.ready && scope.none)) return <Engine />
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <RoutineBand />
+      {/* The band clears the floating bars, so the board under it starts at its top. */}
+      <div className="flex-1 overflow-hidden below-bars">
+        <Engine />
+      </div>
+    </div>
+  )
 }

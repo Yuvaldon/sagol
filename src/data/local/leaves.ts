@@ -4,6 +4,7 @@ import {
   LeaveQuery,
   LeaveThreadQuery,
   type DataRepositories,
+  type DeploymentId,
   type Issue,
   type Leave,
   type LeaveType,
@@ -12,7 +13,7 @@ import {
   type SoldierId,
   type TableName,
 } from '@contracts'
-import { LEAVE_PERMISSIONS, soldierTarget, type RuleData } from '@domain'
+import { LEAVE_PERMISSIONS, effectiveSoldierTags, soldierTarget, type RuleData } from '@domain'
 import { holds, loadActorScope, type ActorScope } from './actor'
 import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
@@ -27,6 +28,7 @@ import { POLICY_TABLES } from './snapshot'
 const RULE_TABLES = [
   'availability_rules',
   'tags',
+  'tag_categories',
   'soldier_tags',
   'deployments',
   'deployment_members',
@@ -69,8 +71,9 @@ export async function visibleSoldier(database: Store, scope: ActorScope, id: Sol
 /**
  * Everything the rules count, read without the actor's filter: a rule counts soldiers the actor may not see
  * (OI-027). Nothing of it reaches the actor but the violations, which name only who is unavailable (D-138).
+ * A soldier's tags are the ones they hold in `rotationId`: the persistent set plus that rotation's (D-260, D-222).
  */
-export async function ruleData(database: Store, organizationId: OrganizationId) {
+export async function ruleData(database: Store, organizationId: OrganizationId, rotationId: DeploymentId | null) {
   const rowsOf = <T extends Exclude<TableName, 'organizations'>>(table: T) =>
     tableOf(database, table).where('organization_id').equals(organizationId).toArray()
   const [rules, units, soldiers, command_ranks, tags, soldier_tags, seniority_overrides, unit_memberships] =
@@ -84,19 +87,20 @@ export async function ruleData(database: Store, organizationId: OrganizationId) 
       rowsOf('seniority_overrides'),
       rowsOf('unit_memberships'),
     ])
-  const [property_definitions, deployments, deployment_members, leaves, leave_types] = await Promise.all([
+  const [property_definitions, deployments, deployment_members, leaves, leave_types, tag_categories] = await Promise.all([
     rowsOf('property_definitions'),
     rowsOf('deployments'),
     rowsOf('deployment_members'),
     rowsOf('leaves'),
     rowsOf('leave_types'),
+    rowsOf('tag_categories'),
   ])
   const data: RuleData = {
     units,
     soldiers,
     command_ranks,
     tags,
-    soldier_tags,
+    soldier_tags: effectiveSoldierTags(soldier_tags, rotationId, tags, tag_categories),
     seniority_overrides,
     unit_memberships,
     property_definitions,

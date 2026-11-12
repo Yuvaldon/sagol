@@ -107,7 +107,8 @@ export function toCreateLeaveInput(
 }
 
 /** A leave as rules see it, before the command writes it (D-142). */
-export type LeaveCandidate = AvailabilityLeave
+/** A leave as rules see it, with the rotation whose tags count for it (D-260, D-222). */
+export type LeaveCandidate = AvailabilityLeave & Pick<Leave, 'deployment_id'>
 
 /** A leave id no row has: the leave a form would create, before it has one, for its live warning (D-142). */
 const CANDIDATE_ID = LeaveId.parse('00000000-0000-4000-8000-000000000000')
@@ -116,9 +117,11 @@ const CANDIDATE_ID = LeaveId.parse('00000000-0000-4000-8000-000000000000')
  * The leave the form would create, as rules see it (D-142): pending, or approved when "approve now" is on. NULL until
  * the soldier, the type and valid dates are chosen.
  */
-export function newLeaveCandidate(values: NewLeaveValues): LeaveCandidate | null {
+export function newLeaveCandidate(values: NewLeaveValues, deploymentId: DeploymentId | null): LeaveCandidate | null {
   const { soldier_id, leave_type_id, start_date, end_date } = values
   if (soldier_id === null || leave_type_id === null || start_date === '' || end_date === '') return null
+  // A request no rotation holds is refused on its fields; rules have nothing to judge yet (D-216).
+  if (deploymentId === null) return null
   if (compareDates(start_date, end_date) > 0) return null
   return {
     id: CANDIDATE_ID,
@@ -128,6 +131,7 @@ export function newLeaveCandidate(values: NewLeaveValues): LeaveCandidate | null
     end_date,
     status: values.as_approved ? LeaveStatus.enum.approved : LeaveStatus.enum.pending,
     availability_effect_override: null,
+    deployment_id: deploymentId,
   }
 }
 

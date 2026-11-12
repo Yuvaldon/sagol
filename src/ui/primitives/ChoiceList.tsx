@@ -76,11 +76,13 @@ export interface RadioListProps {
   readonly label: ChoiceText
   readonly choices: readonly Choice[]
   readonly selected: string | null
-  readonly noneKey: I18nKey
+  /** The "none" row's name; without it, one choice is always held. */
+  readonly noneKey?: I18nKey | null
   readonly onChange: (key: string | null) => void
 }
 
-export function RadioList({ label, choices, selected, noneKey, onChange }: RadioListProps) {
+export function RadioList({ label, choices, selected, noneKey = null, onChange }: RadioListProps) {
+  const rows: readonly Choice[] = noneKey === null ? choices : [{ key: NONE, label: { key: noneKey } }, ...choices]
   return (
     <RadioGroup
       value={selected ?? NONE}
@@ -90,7 +92,7 @@ export function RadioList({ label, choices, selected, noneKey, onChange }: Radio
       className="flex flex-col gap-2xs"
     >
       <Label className="text-label font-semibold text-text-muted">{textOf(label)}</Label>
-      {[{ key: NONE, label: { key: noneKey } }, ...choices].map((choice) => (
+      {rows.map((choice) => (
         <Radio key={choice.key} value={choice.key} className={ROW}>
           {({ isSelected }) => (
             <>

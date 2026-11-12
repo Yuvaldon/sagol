@@ -304,6 +304,12 @@
   --spacing-under-bars-md: var(--spacing-under-bars-filtered-md);
 }
 
+/* Content already below the bars, such as the board under routine's band (D-222), needs no room for them again. */
+@utility below-bars {
+  --spacing-under-bars: 0px;
+  --spacing-under-bars-md: 0px;
+}
+
 @utility enter-scrim {
   @media (prefers-reduced-motion: no-preference) {
     animation: scrim-in 160ms ease-out;

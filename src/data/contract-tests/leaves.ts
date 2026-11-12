@@ -5,6 +5,9 @@ import {
   LeaveTypeGroupId,
   LeaveTypeId,
   SoldierId,
+  SoldierTagId,
+  TagCategoryId,
+  TagId,
   UnitId,
   UnitMembershipId,
   type AuthIdentity,
@@ -39,6 +42,8 @@ const TODAY = '2026-11-08'
 const TOMORROW = '2026-11-09'
 const LAST_WEEK = '2026-11-01'
 const NEXT_WEEK = '2026-11-15'
+const EARLIER_START = '2025-06-01'
+const EARLIER_END = '2025-12-31'
 
 const newTypeId = () => LeaveTypeId.parse(crypto.randomUUID())
 const newGroupId = () => LeaveTypeGroupId.parse(crypto.randomUUID())
@@ -355,10 +360,13 @@ export function describeLeaveContract(
         expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { deployment_id: newRotationId() })))).toEqual([
           { path: ['deployment_id'], code: 'reference_not_found' },
         ])
-        const elsewhere = await seedRotation(harnessOf(), organization)
-        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { deployment_id: elsewhere })))).toEqual([
+        // A rotation that lists only its owner (D-216).
+        valueOf(await adapter().commands.deployments.setMembers({ deployment_id: rotation, expected_version: 1, members: members(ownerId) }))
+        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))).toEqual([
           { path: ['soldier_id'], code: 'not_a_member' },
         ])
+        // One live rotation at a time (D-221): the next one starts once this one is archived.
+        valueOf(await adapter().commands.deployments.archive({ id: rotation, expected_version: 2 }))
         const narrow = await seedRotation(harnessOf(), organization, [yael.id], { start_date: TOMORROW, end_date: TOMORROW })
         const wide = leaveInput(yael.id, type.id, { deployment_id: narrow, start_date: TODAY, end_date: NEXT_WEEK })
         expect(issuesOf(await adapter().commands.leaves.create(wide))).toEqual([
@@ -416,7 +424,8 @@ export function describeLeaveContract(
         const home = await unit('Home')
         const { identity, soldierId } = await actorWith([VIEW_LEAVES], { anchor_type: 'self' }, home.id)
         await seedServing(harnessOf(), organization, rotation, [soldierId])
-        await seedRotation(harnessOf(), organization)
+        // An earlier rotation, before this one (D-221).
+        await seedRotation(harnessOf(), organization, [], { start_date: EARLIER_START, end_date: EARLIER_END })
         harnessOf().signIn(identity)
         expect(valueOf(await adapter().repositories.deployments.list({ include_archived: false })).map((row) => row.id)).toEqual([rotation])
         const own = valueOf(await adapter().repositories.deployment_members.list({ deployment_ids: null }))
@@ -595,6 +604,42 @@ export function describeLeaveContract(
         expect(asked).toMatchObject({
           code: 'rule_acknowledgment_required',
           violations: [{ rule_id: ruleId, days: [{ date: TODAY, required: 2, actual: 0, unavailable }, { date: TOMORROW, unavailable }] }],
+        })
+      })
+
+      it('counts the tags a soldier holds in the rotation of the leave, not in another (D-260, D-222)', async () => {
+        const { type, yael } = await lastSoldierStanding()
+        const audit = { created_at: NOW, created_by: null, updated_at: NOW, updated_by: null, version: 1, archived_at: null }
+        const categoryId = TagCategoryId.parse(crypto.randomUUID())
+        const tagId = TagId.parse(crypto.randomUUID())
+        await harnessOf().seed('tag_categories', [
+          { id: categoryId, organization_id: organization, name: 'Role', selection_mode: 'multiple', default_lifetime: 'rotation', color_key: 'teal', sort_order: 0, ...audit },
+        ])
+        await harnessOf().seed('tags', [
+          { id: tagId, organization_id: organization, category_id: categoryId, name: 'Driver', color_key: null, sort_order: 0, ...audit },
+        ])
+        const earlier = await seedRotation(harnessOf(), organization, [], { start_date: '2025-06-01', end_date: '2025-06-30' })
+        const holds = (deployment_id: DeploymentId) => ({
+          id: SoldierTagId.parse(crypto.randomUUID()),
+          organization_id: organization,
+          soldier_id: yael.id,
+          tag_id: tagId,
+          deployment_id,
+          created_at: NOW,
+          created_by: null,
+        })
+        await harnessOf().seed('soldier_tags', [holds(earlier)])
+        const ruleId = await seedSharedRule(harnessOf(), organization, {
+          enforcement: 'hard',
+          count_pending_as_unavailable: true,
+          population_filter: { where: { kind: 'tag', match: 'any', tag_ids: [tagId] } },
+        })
+        // A driver of the earlier rotation only: nobody this rotation counts, so the leave makes nothing worse.
+        valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { start_date: NEXT_WEEK, end_date: NEXT_WEEK })))
+        await harnessOf().seed('soldier_tags', [holds(rotation)])
+        expect(errorOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))).toMatchObject({
+          code: 'rule_violation',
+          violations: [{ rule_id: ruleId }],
         })
       })
 

@@ -235,6 +235,8 @@ am = amends, ref = refines, ext = extends.
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
+| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | |
+| D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
@@ -242,10 +244,10 @@ am = amends, ref = refines, ext = extends.
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
 | D-256 | One path for each action | ui | ref D-285 |
-| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266 |
-| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | |
-| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | |
-| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | |
+| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221 |
+| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221 |
+| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221 |
+| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
@@ -3107,6 +3109,59 @@ work.
   the editor shows what is stored. Creating a rotation opens its members editor at once.
 **Why:** these are the edges D-216..D-219 left open; each one follows the rule that a request belongs to a rotation its
 soldier serves in, without a second place that decides it.
+
+## D-221 — Rotation as a mode in practice: guards, the whole unit, tag scopes and the format
+2026-11-12 · accepted · refines D-257, D-258, D-259, D-260 · V26 · decided under D-170
+- **One at a time.** The domain answers `rotation_overlap` on `start_date` when a create, an edit of the dates or a
+  reopen would overlap another live rotation; the database holds it with `deployments_one_at_a_time`. The migration
+  stops, naming the pairs, when live rotations already overlap.
+- **Close and reopen** are their own commands on `deployments`, allowed to the rotation's `created_by` or to
+  `deployments:update` on its unit (the "manage" of D-258). Closing an open-ended rotation sets its end to today, so one that has not started, like one that ends
+  after today, answers `rotation_not_ended`. A closed rotation answers `rotation_closed` to an edit of its dates, unit or name, to its
+  members, to its rotation tags and to its requests (create, edit, transition); archive still works. The database
+  guards only the closed row itself (`deployments_closed_unchanged`): the children are guarded by the commands, since a
+  child or deferred guard would refuse `load_organization_export`, which writes a closed rotation with its history.
+- **The whole unit** (no member rows) holds a soldier on the days of any of their memberships, primary or attached, in
+  the rotation's unit or below it. A request outside those days is `not_a_member`; outside the rotation's dates it is
+  `outside_rotation`, as with a list. The database trigger checks the same with the soldier's memberships in the
+  unit's subtree. A move or an end of a membership re-checks that soldier's live requests in whole-unit rotations, in
+  the command and by a deferred trigger on `unit_memberships`, and is refused with `leaves_outside_rotation` when one
+  would be stranded; a new membership only widens the days. Moving a unit under another parent is not re-checked.
+- **Tag scopes.** A soldier's tag set is replaced one scope at a time: the persistent set, or one rotation's.
+  `single` holds within each scope; in the effective set of a rotation (persistent plus that rotation's), a rotation
+  tag of a `single` category replaces the persistent tag of that category. "כמו בסבב הקודם" sets the rotation scope
+  to the soldier's tags of the previous rotation (by start date).
+- **Format 3.** `soldier_tags` gains `id` and `deployment_id`, `tag_categories` gains `default_lifetime` and
+  `deployments` gains `closed_at` and `closed_by`: the export format moves to 3. The local database moves the tags of a
+  soldier through a temporary table, since IndexedDB cannot change a primary key, and fills the new columns of the
+  stored rows (persistent, open).
+- **`preferences.pinned_modules` stays** until V25 removes the pins and their control (OI-203): the model drops
+  the key with the last code that reads it.
+**Why:** these are the edges D-257..D-260 left to the implementation; each one keeps a single place that decides, and
+the database's guards hold what can be held without refusing a faithful restore.
+
+## D-222 — Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count
+2026-11-12 · accepted · refines D-221, D-257, D-258, D-259, D-260 · V26 · decided under D-170
+- **The mode** is derived from the live rotations in scope that are not closed: the one holding today, else the next
+  to start, else the latest ended. A closed rotation is never the mode, even on the last day its close gave it.
+- **Routine** keeps the board, under a band that names it (its action opens a rotation for who may create one); the
+  requests hub and "דוח 1" do not show. A rotation the actor sees no member rows of holds the whole unit (D-259), so
+  the screen offers it to a request and the command answers `not_a_member`; closed rotations are not offered.
+- **The rotation form** chooses "כל היחידה" or "רשימה"; a list starts from the previous rotation's list for all the new
+  days when it had one, else from the soldiers placed in the unit on the first day (D-219). The overlap of D-221 is
+  shown on the start date before saving. "סגירת הסבב" shows once the planned end has come, or from the start while the end is open;
+  "פתיחה מחדש" on a closed one. Both are row actions, with no confirmation, since each undoes the other.
+- **Tag lifetimes** are chosen per category in the soldier's tags dialog, pre-selected from the category's
+  `default_lifetime`; the category form sets that default. Rotation tags are copied per soldier with "כמו בסבב הקודם"
+  on the card (D-221), not in bulk when a rotation is created: the copy of OI-217 is this action and the member list's
+  start, both ordinary commands. A save that changes both lifetimes sends two `setTags` calls, the persistent scope
+  first: `setTags` replaces one scope at a time (D-221), so a failure on the second keeps the first, the dialog says
+  so, and saving again sends the rest.
+- **Whose tags count.** The board, the filters and the heat row read the effective tags of the mode's rotation. A
+  leave's live warning and the data its rules read use the leave's own rotation, so a request for another rotation is
+  judged by that rotation's tags; a candidate with no rotation is NULL, since its fields already refuse it (D-216).
+**Why:** each surface reads one rotation, named where it is read, so the mode and a request for another rotation never
+mix their tags; a close the screen offers only when the command would take it.
 
 ## D-250 — Two vocabularies: everyday words, and the words of managing a unit
 2026-11-12 · accepted · refines D-212, D-215 · V24 · decided under the owner's autonomy instruction of 2026-11-11
