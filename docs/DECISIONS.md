@@ -257,6 +257,7 @@ am = amends, ref = refines, ext = extends.
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | |
+| D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 
 ---
 
@@ -3416,3 +3417,15 @@ ordinary ones.
   its model commit, as every schema change does.
 **Why:** the matrix adds three requests-and-report slices to the track that holds the requests, and the planner to
 the track that holds rotations.
+
+## D-273 — A phone's top strip: the sort in the view menu, the unit as an icon
+2026-11-12 · accepted · refines D-252, D-214 · V25 · decided under the owner's autonomy instruction of 2026-11-11
+- D-252's one top strip holds seven touch-sized controls and the range on a phone, wider than an upright phone's
+  screen. It fits without scrolling: on a phone (below the desktop query, upright or on its side) the sort has no
+  button of its own, and its two sections, the key and the direction, follow the view's in the view menu ("תצוגה").
+- On a phone the unit picker is its icon, touch-sized, with the unit in scope read aloud as its value; its list is
+  unchanged. A single unit in sight, with nothing to choose, is not shown there (D-076); the board's rows name it.
+- On a desktop nothing changes: the unit's name, down to its floor, and the sort's own button.
+- Every function stays one press away; the range keeps its arrows, the most used control on a phone.
+**Why:** a strip that scrolls hides the avatar at its inline end, and stepping through the days is what a phone does
+most; the sort is set rarely and belongs with how the board is shown.
