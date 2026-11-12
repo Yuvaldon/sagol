@@ -474,9 +474,8 @@ export const dictionary = {
     clearAll: 'ניקוי הכול',
   },
   presence: {
-    title: 'דוח יומי',
-    missingToday: 'חסרים היום',
-    openDay: 'דוח יומי של',
+    title: 'דוח 1',
+    openDay: 'דוח 1 של',
     total: 'סך הכול',
     present: 'נוכחים',
     absent: 'חסרים',

@@ -26,22 +26,18 @@ import {
   useLeaveConditions,
   useLeaveTypeGroups,
   useLeaveTypes,
-  useModuleAccess,
   useOnlyMissing,
-  usePresence,
-  usePresenceDay,
   usePropertyDefinitions,
   useTagCategories,
   useTags,
   useBoardFilters,
-  useToday,
   useViewFilter,
   withPropertyChip,
   withTagChip,
   type PropertyChip,
   type SoldierConditions,
 } from '@logic'
-import { ChevronRight, ListFilter, UserX, X } from 'lucide-react'
+import { ChevronRight, ListFilter, X } from 'lucide-react'
 import { useState, type ReactNode, useEffect } from 'react'
 import { Button as AriaButton, Dialog, DialogTrigger, Popover } from 'react-aria-components'
 import { useFilterFocus } from './filterFocus'
@@ -50,7 +46,7 @@ import { toneOf } from '../theme/palette'
 import { CheckList, type Choice, type ChoiceText } from '../primitives/ChoiceList'
 
 // The board's filters (D-131 to D-134, D-173, D-213). The bar holds "filter" to add a condition, "only who is missing"
-// among them, and the presence button. The row under the bars shows only while a condition is set: a chip per condition,
+// among them. The row under the bars shows only while a condition is set: a chip per condition,
 // and "clear all". A chip opens its values; its "x" removes it. The unit stays in the scope label of the top bar (D-104).
 
 const PILL = 'glass-bar pointer-events-auto inline-flex min-h-touch shrink-0 items-center rounded-pill text-control text-text md:min-h-control'
@@ -541,28 +537,6 @@ function useConditions(): ConditionSets {
   else addable.push(status)
 
   return { shown: [...shown, ...leave.shown, ...missingShown], addable: [...addable, ...leave.addable, ...missingAddable] }
-}
-
-/** How many are missing today, under the board's filter; it opens the lists of today (D-134). */
-export function PresenceButton() {
-  const access = useModuleAccess()
-  const today = useToday()
-  const { filter } = useViewFilter()
-  const presence = usePresence(today, filter)
-  const { openToday } = usePresenceDay()
-  const isDesktop = useIsDesktop()
-  if (!access.soldiers || presence.status !== 'ready') return null
-  return (
-    <AriaButton onPress={openToday} className={`${BAR_CONTROL} ${PRESS}`}>
-      <UserX aria-hidden size={isDesktop ? 14 : 18} className="text-text-muted md:text-text" />
-      <span className={isDesktop ? 'text-text-muted' : 'sr-only'}>{t('presence.missingToday')}</span>
-      <span
-        className={`${isDesktop ? '' : 'absolute end-none top-xs bg-inner'} inline-flex min-w-icon items-center justify-center rounded-pill px-xs font-bold tabular-nums ${isDesktop ? '' : 'text-micro'}`}
-      >
-        {presence.value.absent.length}
-      </span>
-    </AriaButton>
-  )
 }
 
 /** "Filter" in the bar: the conditions not set yet. Absent when there is nothing left to add (D-076). */

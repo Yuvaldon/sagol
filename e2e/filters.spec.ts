@@ -154,8 +154,8 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   })
 
   await test.step('who is missing today, and who is present', async () => {
-    const button = page.getByRole('button', { name: new RegExp(he.presence.missingToday) })
-    await expect(button).toContainText('1')
+    // The report is a destination, as the board is (D-252): no count in the bar.
+    const button = page.getByRole('button', { name: he.presence.title, exact: true })
     await button.click()
     const report = page.getByRole('dialog', { name: he.presence.title })
     await expectUnitsOpen(report)
@@ -176,7 +176,7 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await report.getByRole('button', { name: he.presence.today, exact: true }).click()
     await expect(page).not.toHaveURL(/day=2026-11-13/)
     await expect(report.getByText(he.presence.noneAbsent)).toBeHidden()
-    // Left on another day, the report opens again on today from the pill (D-134).
+    // Left on another day, the report opens again on today from its destination (D-134, D-252).
     await report.getByRole('button', { name: he.presence.nextDay }).click()
     await expect(page).toHaveURL(/day=/)
     await report.getByRole('button', { name: he.common.close }).click()

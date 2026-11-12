@@ -7,7 +7,7 @@ import { ModuleButtons } from './ModuleButtons'
 import { ModuleDrawer } from './ModuleDrawer'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
 import { NewLeaveButton } from './NewLeaveButton'
-import { FilterBar, FilterControl, PresenceButton } from './FilterBar'
+import { FilterBar, FilterControl } from './FilterBar'
 import { SortControl } from './SortControl'
 import { NavigationPanel } from './NavigationPanel'
 import { FailureScreen, LoadingScreen } from './states'
@@ -45,7 +45,6 @@ function FilterControls() {
     <>
       <FilterControl />
       <SortControl />
-      <PresenceButton />
     </>
   )
 }
