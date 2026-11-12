@@ -249,6 +249,10 @@ describe('property conditions (D-067)', () => {
     expect(select(property(PROP.shift, 'any_of', [OPT.day, OPT.night]))).toEqual([S.s1, S.s5])
     expect(select(property(PROP.langs, 'contains', OPT.night))).toEqual([S.s1, S.s2])
     expect(select(property(PROP.langs, 'any_of', [OPT.day]))).toEqual([S.s1])
+    // An option removed since the filter was written matches no value; the others still do (D-177).
+    const gone = '00000000-0000-4000-8000-000000000999'
+    expect(select(property(PROP.shift, 'any_of', [OPT.night, gone]))).toEqual([S.s5])
+    expect(select(property(PROP.langs, 'any_of', [gone]))).toEqual([])
     expect(select(property(PROP.buddy, 'equals', S.s2))).toEqual([S.s1])
   })
 
