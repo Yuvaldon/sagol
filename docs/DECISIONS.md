@@ -200,6 +200,7 @@ am = amends, ref = refines, ext = extends.
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
 | D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
+| D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | |
 
 ---
 
@@ -2499,3 +2500,16 @@ the deployment's, so it enters as a dependency and the command code stays one.
 **Why:** each environment is a Vercel scope with its own values, so no file holds a deployment's identity (rule 2), and
 the one function source stays the one the tests run.
 
+## D-210 — Code splitting: the env's adapter pair and libraries in chunks of their own
+2026-11-12 · accepted · OI-045
+- **Measured.** Before 8.4 the production build was one 1.68 MB script (491 kB gzip): both adapter pairs, Dexie
+  included, and every library.
+- **Adapter pairs.** `@data` exports the adapters only through `loadLocalData()` and `loadRemoteData()`, each a dynamic
+  import; its other exports are types. The composition loads the pair the env names, so a Google build never downloads
+  Dexie and a local build never downloads the remote adapter or Supabase's auth client (D-207).
+- **Libraries.** `vite.config.ts` puts React, the react-aria family (with `@internationalized`), TanStack, Motion and
+  zod in chunks of their own. They change only on an upgrade, so a deploy of the app's code leaves them cached. No chunk
+  passes Vite's 500 kB warning (the largest, react-aria, is 400 kB, 121 kB gzip); the warning limit stays as it is.
+- **Not now: route-level splitting.** Every screen is one app the user stays in, and the first load of a Google build is
+  about 470 kB gzip. Splitting the modules by route is for when a measured first load is slow, not before.
+**Why:** a build should download only what its env runs, and the libraries' bytes should outlive a deploy.
