@@ -35,7 +35,7 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
     await expectNoAxeViolations(page)
-    await page.getByRole('button', { name: he.units.new }).click()
+    await page.getByRole('button', { name: he.workspace.foundUnits }).click()
     await expect(page).toHaveURL(/panel=units&entity=new/)
     await closeDrawer(page)
   })
