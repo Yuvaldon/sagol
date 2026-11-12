@@ -9,14 +9,15 @@ import type {
   Unit,
   UnitMembership,
 } from '@contracts'
-import { createFilterContext, type FilterContext } from '@domain'
+import { createFilterContext, effectiveSoldierTags, type FilterContext } from '@domain'
 import { useMemo } from 'react'
 import type { Loaded } from '../queries/loaded'
 import { usePropertyDefinitions } from '../properties/hooks'
 import { useCommandRanks, useMemberships, useSoldiers, useUnitsWithArchived } from '../roster/hooks'
 import { useSeniorityOverrides } from '../seniority/hooks'
-import { useSoldierTags } from '../tags/hooks'
+import { useSoldierTags, useTagCategories, useTags } from '../tags/hooks'
 import { useUnits } from '../units/hooks'
+import { useRotationScope } from '../view-state/rotation'
 
 // The one source of the data a filter reads (D-131, OI-079): every engine, the filter bar, the presence lists and the
 // rules read it, so a condition means the same everywhere (D-067, D-147). Property values are on the soldiers, and
@@ -37,6 +38,7 @@ export interface FilterSource {
    */
   readonly unitTree: readonly Unit[]
   readonly memberships: readonly UnitMembership[]
+  /** The tags each soldier holds in the rotation of the mode: the persistent ones, and that rotation's (D-260, D-222). */
   readonly soldierTags: readonly SoldierTag[]
   /** Archived ones too: a filter on one keeps reading the values stored for it (D-016). */
   readonly propertyDefinitions: readonly PropertyDefinition[]
@@ -102,6 +104,9 @@ export function useFilterSource(): Loaded<FilterSource> {
   const unitTree = useUnitsWithArchived()
   const memberships = useMemberships()
   const soldierTags = useSoldierTags()
+  const tags = useTags()
+  const categories = useTagCategories()
+  const rotationId = useRotationScope().rotation?.id ?? null
   const propertyDefinitions = usePropertyDefinitions()
   return useMemo((): Loaded<FilterSource> => {
     if (soldiers.status !== 'ready') return soldiers
@@ -111,6 +116,8 @@ export function useFilterSource(): Loaded<FilterSource> {
     if (unitTree.status !== 'ready') return unitTree
     if (memberships.status !== 'ready') return memberships
     if (soldierTags.status !== 'ready') return soldierTags
+    if (tags.status !== 'ready') return tags
+    if (categories.status !== 'ready') return categories
     if (propertyDefinitions.status !== 'ready') return propertyDefinitions
     return {
       status: 'ready',
@@ -121,11 +128,11 @@ export function useFilterSource(): Loaded<FilterSource> {
         units: units.value,
         unitTree: unitTree.value,
         memberships: memberships.value,
-        soldierTags: soldierTags.value,
+        soldierTags: effectiveSoldierTags(soldierTags.value, rotationId, tags.value, categories.value),
         propertyDefinitions: propertyDefinitions.value,
       },
     }
-  }, [soldiers, ranks, seniorityOverrides, units, unitTree, memberships, soldierTags, propertyDefinitions])
+  }, [soldiers, ranks, seniorityOverrides, units, unitTree, memberships, soldierTags, tags, categories, rotationId, propertyDefinitions])
 }
 
 function mentionsStatus(node: FilterNode): boolean {

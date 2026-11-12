@@ -9,6 +9,8 @@ import {
   isDeploymentActive,
   liveDeployments,
   newDeploymentValues,
+  previousRotation,
+  startingMembers,
   toCreateDeploymentInput,
   toSetDeploymentMembersInput,
   toUpdateDeploymentInput,
@@ -29,6 +31,8 @@ const deployment = (overrides: Partial<Deployment> = {}): Deployment => ({
   unit_id: UNIT,
   start_date: '2026-12-01',
   end_date: '2026-12-20',
+  closed_at: null,
+  closed_by: null,
   created_at: AT,
   created_by: null,
   updated_at: AT,
@@ -48,6 +52,14 @@ describe('the deployment form (D-179)', () => {
   it('refuses an end before the start', () => {
     const values = { ...newDeploymentValues('2026-11-12', UNIT), name: 'סבב', end_date: '2026-11-01' as const }
     expect(deploymentFormIssues(values)).toEqual([{ path: ['end_date'], code: 'range_inverted' }])
+  })
+
+  it('refuses dates that share a day with another live rotation, but not with itself (D-257)', () => {
+    const other = deployment()
+    const values = { ...newDeploymentValues('2026-12-15', UNIT), name: 'סבב' }
+    expect(deploymentFormIssues(values, [other])).toEqual([{ path: ['start_date'], code: 'rotation_overlap' }])
+    expect(deploymentFormIssues(values, [deployment({ archived_at: AT })])).toEqual([])
+    expect(deploymentFormIssues(deploymentFormValues(other), [other], other.id)).toEqual([])
   })
 
   it('updates only what changed, and nothing when nothing did', () => {
@@ -131,5 +143,32 @@ describe('a new rotation starts with its unit (D-219)', () => {
       { soldier_id: SoldierId.parse(uuid(1)), start_date: '', end_date: '' },
       { soldier_id: SoldierId.parse(uuid(2)), start_date: '', end_date: '' },
     ])
+  })
+})
+
+describe('a new rotation from the previous one (D-222)', () => {
+  const earlier = deployment({ id: DeploymentId.parse(uuid(51)), start_date: '2026-06-01', end_date: '2026-06-30' })
+  const latest = deployment({ id: DeploymentId.parse(uuid(52)), start_date: '2026-09-01', end_date: '2026-09-30' })
+  const next = deployment({ id: DeploymentId.parse(uuid(53)), start_date: '2026-12-01', end_date: null })
+
+  it('copies the live rotation that ended last before it starts', () => {
+    expect(previousRotation([earlier, latest, next], next)?.id).toBe(latest.id)
+    expect(previousRotation([earlier, deployment({ ...latest, archived_at: AT }), next], next)?.id).toBe(earlier.id)
+    expect(previousRotation([next], next)).toBeNull()
+  })
+
+  it("starts with the previous list's soldiers for all the new days, else with those placed", () => {
+    const row = (n: number): DeploymentMember => ({
+      deployment_id: latest.id,
+      soldier_id: SoldierId.parse(uuid(n)),
+      organization_id: ORGANIZATION,
+      start_date: '2026-09-05',
+      end_date: null,
+      created_at: AT,
+      created_by: null,
+    })
+    const placed = [{ soldier_id: SOLDIER, start_date: '' as const, end_date: '' as const }]
+    expect(startingMembers([row(2)], placed)).toEqual([{ soldier_id: SoldierId.parse(uuid(2)), start_date: '', end_date: '' }])
+    expect(startingMembers([], placed)).toEqual(placed)
   })
 })

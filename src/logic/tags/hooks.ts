@@ -1,4 +1,5 @@
 import type {
+  DeploymentId,
   PermissionCheck,
   Result,
   Soldier,
@@ -7,6 +8,7 @@ import type {
   TagCategory,
   TagCategoryId,
   TagId,
+  TagLifetime,
 } from '@contracts'
 import { checkOn } from '../permissions/checks'
 import { useQuery } from '@tanstack/react-query'
@@ -23,12 +25,13 @@ import {
   tagsOfCategory,
   toCreateTagCategoryInput,
   toCreateTagInput,
-  toSetTagsInput,
+  toScopedTagInputs,
   toUpdateTagCategoryInput,
   toUpdateTagInput,
   type SoldierTagGroup,
   type TagCategoryFormValues,
   type TagFormValues,
+  type TagScopes,
 } from './tags'
 
 // Reading and changing tags and a soldier's tags (D-130).
@@ -125,21 +128,41 @@ export function useTagCommands() {
   return { create, update, archive, step }
 }
 
-export interface SetSoldierTagsRequest {
+export interface SetScopedTagsRequest {
   readonly soldier: Soldier
   readonly openedVersion: number
-  readonly held: readonly TagId[]
+  /** The open rotation of the mode, NULL in routine (D-257). */
+  readonly rotationId: DeploymentId | null
+  readonly scopes: TagScopes
   readonly groups: readonly SoldierTagGroup[]
   readonly chosen: ReadonlyMap<TagCategoryId, readonly TagId[]>
+  readonly lifetimes: ReadonlyMap<TagCategoryId, TagLifetime>
 }
 
-/** `soldiers.setTags`: the whole set, guarded by the version the form opened with (D-130). */
-export function useSetSoldierTags() {
+/**
+ * A soldier's tags in both scopes (D-260, D-222): the persistent set, then the rotation's, one `setTags` each. The
+ * second waits for the first; a failure stops there and is the answer.
+ */
+export function useSetScopedTags() {
   const { data } = usePorts()
-  return useCommand([QUERY_KEYS.soldierTags, QUERY_KEYS.soldiers], async (request: SetSoldierTagsRequest) => {
-    const input = toSetTagsInput(request.soldier, request.openedVersion, request.held, request.groups, request.chosen)
-    const unchanged: Result<SoldierTag[]> = { ok: true, value: [] }
-    return input === null ? unchanged : data.commands.soldiers.setTags(input)
+  return useCommand([QUERY_KEYS.soldierTags, QUERY_KEYS.soldiers], async (request: SetScopedTagsRequest) => {
+    const inputs = toScopedTagInputs(
+      request.soldier,
+      request.openedVersion,
+      request.rotationId,
+      request.scopes,
+      request.groups,
+      request.chosen,
+      request.lifetimes,
+    )
+    const saved: SoldierTag[] = []
+    for (const input of inputs) {
+      const result = await data.commands.soldiers.setTags(input)
+      if (!result.ok) return result
+      saved.push(...result.value)
+    }
+    const done: Result<SoldierTag[]> = { ok: true, value: saved }
+    return done
   })
 }
 

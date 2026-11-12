@@ -5,6 +5,7 @@ import {
   LeaveTypeId,
   OrganizationId,
   SoldierId,
+  SoldierTagId,
   TagCategoryId,
   TagId,
   UnitId,
@@ -155,10 +156,10 @@ const SOURCE: FilterSource = {
   unitTree: UNITS,
   memberships: [membership(1, 1, PLATOON_A), membership(2, 2, PLATOON_A), membership(3, 3, PLATOON_B), membership(4, 4, PLATOON_B)],
   soldierTags: [
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(1)), tag_id: MEDIC, created_at: AT, created_by: null },
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(2)), tag_id: MEDIC, created_at: AT, created_by: null },
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, created_at: AT, created_by: null },
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(4)), tag_id: DRIVER, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(701)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(1)), tag_id: MEDIC, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(702)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(2)), tag_id: MEDIC, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(703)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(704)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(4)), tag_id: DRIVER, created_at: AT, created_by: null },
   ],
   propertyDefinitions: [],
 }

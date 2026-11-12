@@ -1,7 +1,7 @@
 import { DATE_WINDOW } from '@config'
 import { DeploymentId, OrganizationId, UnitId, UnitLevelId, type Deployment } from '@contracts'
 import { describe, expect, it } from 'vitest'
-import { dateWindowOf, pickableRotations, rotationDays, scopeRotations, shiftedAnchor } from './window'
+import { dateWindowOf, pickableRotations, rotationDays, scopeRotation, scopeRotations, shiftedAnchor } from './window'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -25,6 +25,8 @@ const rotation = (n: number, overrides: Partial<Deployment> = {}): Deployment =>
   unit_id: COMPANY,
   start_date: '2026-12-01',
   end_date: '2026-12-20',
+  closed_at: null,
+  closed_by: null,
   created_at: AT,
   created_by: null,
   updated_at: AT,
@@ -93,7 +95,27 @@ describe('the rotations in scope (D-211)', () => {
     expect(scopeRotations(all, UNITS, null)).toHaveLength(4)
   })
 
-  it('offers those running or still to come', () => {
-    expect(pickableRotations(scopeRotations(all, UNITS, COMPANY), TODAY).map((row) => row.id)).toEqual([platoon.id, company.id])
+  it('offers those running, still to come or ended but not closed (D-222)', () => {
+    const closed = { ...battalion, end_date: '2026-11-01', closed_at: AT, closed_by: null }
+    expect(pickableRotations(scopeRotations(all, UNITS, COMPANY), TODAY).map((row) => row.id)).toEqual([battalion.id, platoon.id, company.id])
+    expect(pickableRotations([closed, platoon], TODAY).map((row) => row.id)).toEqual([platoon.id])
+  })
+})
+
+describe('the rotation of the mode (D-257, D-222)', () => {
+  const ended = rotation(1, { start_date: '2026-10-01', end_date: '2026-10-31' })
+  const running = rotation(2, { start_date: '2026-11-01', end_date: '2026-11-30' })
+  const coming = rotation(3, { start_date: '2026-12-01', end_date: null })
+  const closedEnded = { ...ended, closed_at: AT }
+
+  it('is the one holding today, else the nearest to come, else the latest ended and still open', () => {
+    expect(scopeRotation([ended, running, coming], TODAY)?.id).toBe(running.id)
+    expect(scopeRotation([ended, coming], TODAY)?.id).toBe(coming.id)
+    expect(scopeRotation([ended], TODAY)?.id).toBe(ended.id)
+  })
+
+  it('is routine once the last one is closed', () => {
+    expect(scopeRotation([closedEnded], TODAY)).toBeNull()
+    expect(scopeRotation([], TODAY)).toBeNull()
   })
 })

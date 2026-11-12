@@ -3,7 +3,9 @@ import {
   CreateTagInput,
   TagCategoryId,
   TagId,
+  TagLifetime,
   TagSelectionMode,
+  type DeploymentId,
   type Issue,
   type SetSoldierTagsInput,
   type Soldier,
@@ -14,6 +16,7 @@ import {
   type UpdateTagCategoryInput,
   type UpdateTagInput,
 } from '@contracts'
+import { effectiveSoldierTags, scopeTagIds } from '@domain'
 import { formIssues } from '../forms/issues'
 import { bySortOrder, nextSortOrder } from '../forms/order'
 
@@ -49,6 +52,8 @@ export function tagColorOf(tag: Tag, categories: readonly TagCategory[]): string
 export interface TagCategoryFormValues {
   readonly name: string
   readonly selection_mode: TagSelectionMode
+  /** What an assignment of the category pre-selects (D-260). */
+  readonly default_lifetime: TagLifetime
   /** NULL until a color is picked; the schema then answers `required`. */
   readonly color_key: string | null
 }
@@ -56,11 +61,17 @@ export interface TagCategoryFormValues {
 export const NEW_TAG_CATEGORY_VALUES: TagCategoryFormValues = {
   name: '',
   selection_mode: TagSelectionMode.enum.multiple,
+  default_lifetime: TagLifetime.enum.persistent,
   color_key: null,
 }
 
 export function tagCategoryFormValues(category: TagCategory): TagCategoryFormValues {
-  return { name: category.name, selection_mode: category.selection_mode, color_key: category.color_key }
+  return {
+    name: category.name,
+    selection_mode: category.selection_mode,
+    default_lifetime: category.default_lifetime,
+    color_key: category.color_key,
+  }
 }
 
 function createCategoryInput(values: TagCategoryFormValues, categories: readonly TagCategory[]) {
@@ -85,6 +96,7 @@ export function toUpdateTagCategoryInput(
   const changes = {
     ...(values.name === category.name ? {} : { name: values.name }),
     ...(values.selection_mode === category.selection_mode ? {} : { selection_mode: values.selection_mode }),
+    ...(values.default_lifetime === category.default_lifetime ? {} : { default_lifetime: values.default_lifetime }),
     ...(values.color_key === category.color_key || values.color_key === null ? {} : { color_key: values.color_key }),
   }
   if (Object.keys(changes).length === 0) return null
@@ -189,22 +201,125 @@ export function toggledTags(group: SoldierTagGroup, tagId: TagId, on: boolean): 
   return group.selected.includes(tagId) ? [...group.selected] : [...group.selected, tagId]
 }
 
+// ------------------------------------------------- a soldier's tags in a rotation
+
+/** What a soldier holds in each scope (D-260): the persistent set, and the rotation's when there is one. */
+export interface TagScopes {
+  readonly persistent: readonly TagId[]
+  readonly rotation: readonly TagId[]
+}
+
+export function soldierTagScopes(rows: readonly SoldierTag[], soldierId: SoldierId, rotationId: DeploymentId | null): TagScopes {
+  return {
+    persistent: scopeTagIds(rows, soldierId, null),
+    rotation: rotationId === null ? [] : scopeTagIds(rows, soldierId, rotationId),
+  }
+}
+
+/** What the soldier holds in the rotation (D-260): the persistent tags, a rotation's `single` choice replacing its own. */
+export function effectiveTagIds(
+  rows: readonly SoldierTag[],
+  soldierId: SoldierId,
+  rotationId: DeploymentId | null,
+  tags: readonly Tag[],
+  categories: readonly TagCategory[],
+): TagId[] {
+  const own = rows.filter((row) => row.soldier_id === soldierId)
+  return effectiveSoldierTags(own, rotationId, tags, categories).map((row) => row.tag_id)
+}
+
+/** Every tag of either scope: what the groups show, so a held tag archived since can still be removed. */
+export function heldInScopes(scopes: TagScopes): TagId[] {
+  return [...new Set([...scopes.persistent, ...scopes.rotation])]
+}
+
+function idsOf(group: SoldierTagGroup): Set<TagId> {
+  return new Set(group.choices.map((choice) => choice.tag.id))
+}
+
 /**
- * The whole set (D-045): the chosen tags of the groups shown, and the held tags no group shows, kept as they are.
- * NULL when nothing changed.
+ * The lifetime each category opens with (D-222): the rotation's when the rotation holds one of its tags, the
+ * persistent one when the persistent set does, else the category's default. Without a rotation, everything is persistent.
  */
-export function toSetTagsInput(
+export function initialLifetimes(
+  groups: readonly SoldierTagGroup[],
+  scopes: TagScopes,
+  rotationId: DeploymentId | null,
+): ReadonlyMap<TagCategoryId, TagLifetime> {
+  return new Map(
+    groups.map((group) => {
+      if (rotationId === null) return [group.category.id, TagLifetime.enum.persistent]
+      const own = idsOf(group)
+      if (scopes.rotation.some((tagId) => own.has(tagId))) return [group.category.id, TagLifetime.enum.rotation]
+      if (scopes.persistent.some((tagId) => own.has(tagId))) return [group.category.id, TagLifetime.enum.persistent]
+      return [group.category.id, group.category.default_lifetime]
+    }),
+  )
+}
+
+/** The tags of a group held in the scope of `lifetime`: what it shows until the actor chooses. */
+export function selectedInScope(group: SoldierTagGroup, scopes: TagScopes, lifetime: TagLifetime): TagId[] {
+  const own = idsOf(group)
+  const held = lifetime === TagLifetime.enum.rotation ? scopes.rotation : scopes.persistent
+  return held.filter((tagId) => own.has(tagId))
+}
+
+/**
+ * The categories of the previous rotation's tags (D-222), to copy into this one: the tags it held of each shown
+ * category, with that category set to the rotation's lifetime.
+ */
+export function copiedRotationTags(
+  groups: readonly SoldierTagGroup[],
+  previous: readonly TagId[],
+): { chosen: ReadonlyMap<TagCategoryId, readonly TagId[]>; lifetimes: ReadonlyMap<TagCategoryId, TagLifetime> } {
+  const copied = groups.flatMap((group) => {
+    const own = idsOf(group)
+    const ids = previous.filter((tagId) => own.has(tagId))
+    return ids.length === 0 ? [] : [[group.category.id, ids] as const]
+  })
+  return {
+    chosen: new Map(copied),
+    lifetimes: new Map(copied.map(([categoryId]) => [categoryId, TagLifetime.enum.rotation])),
+  }
+}
+
+function replaced(held: readonly TagId[], own: ReadonlySet<TagId>, next: readonly TagId[]): TagId[] {
+  return [...held.filter((tagId) => !own.has(tagId)), ...next]
+}
+
+function sameSet(a: readonly TagId[], b: readonly TagId[]): boolean {
+  return a.length === b.length && a.every((tagId) => b.includes(tagId))
+}
+
+/**
+ * The sets to save, the persistent one first (D-260, D-222). A category kept persistent takes its choice into the
+ * persistent set and leaves the rotation's; a category for the rotation takes it into the rotation's set and leaves
+ * the persistent one as it is. Each set is guarded by the version it is saved at: the first by `openedVersion`, the
+ * second by the version the first leaves. Empty when nothing changed.
+ */
+export function toScopedTagInputs(
   soldier: Soldier,
   openedVersion: number,
-  held: readonly TagId[],
+  rotationId: DeploymentId | null,
+  scopes: TagScopes,
   groups: readonly SoldierTagGroup[],
   chosen: ReadonlyMap<TagCategoryId, readonly TagId[]>,
-): SetSoldierTagsInput | null {
-  const shown = new Set(groups.flatMap((group) => group.choices.map((choice) => choice.tag.id)))
-  const next = [
-    ...held.filter((tagId) => !shown.has(tagId)),
-    ...groups.flatMap((group) => chosen.get(group.category.id) ?? group.selected),
-  ]
-  const same = next.length === held.length && next.every((tagId) => held.includes(tagId))
-  return same ? null : { soldier_id: soldier.id, expected_version: openedVersion, tag_ids: next }
+  lifetimes: ReadonlyMap<TagCategoryId, TagLifetime>,
+): SetSoldierTagsInput[] {
+  let persistent = [...scopes.persistent]
+  let rotation = [...scopes.rotation]
+  for (const group of groups) {
+    const lifetime = rotationId === null ? TagLifetime.enum.persistent : (lifetimes.get(group.category.id) ?? TagLifetime.enum.persistent)
+    const next = chosen.get(group.category.id) ?? selectedInScope(group, scopes, lifetime)
+    const own = idsOf(group)
+    if (lifetime === TagLifetime.enum.rotation) rotation = replaced(rotation, own, next)
+    else {
+      persistent = replaced(persistent, own, next)
+      rotation = replaced(rotation, own, [])
+    }
+  }
+  const sets: { deployment_id: DeploymentId | null; tag_ids: TagId[] }[] = []
+  if (!sameSet(persistent, scopes.persistent)) sets.push({ deployment_id: null, tag_ids: persistent })
+  if (rotationId !== null && !sameSet(rotation, scopes.rotation)) sets.push({ deployment_id: rotationId, tag_ids: rotation })
+  return sets.map((set, index) => ({ soldier_id: soldier.id, expected_version: openedVersion + index, ...set }))
 }
