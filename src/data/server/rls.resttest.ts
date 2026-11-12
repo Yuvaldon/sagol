@@ -25,7 +25,8 @@ const base64url = (bytes: Uint8Array) =>
   btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
 const encoded = (value: unknown) => base64url(encoder.encode(JSON.stringify(value)))
 
-/** A token as Supabase signs one: the role decides what PostgREST runs the request as. */
+/** A token as Supabase signs one: the role decides what PostgREST runs the request as. PostgREST
+ * needs no expiry, so the token carries none. */
 async function token(claims: Record<string, unknown>): Promise<string> {
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
     'sign',
@@ -34,10 +35,9 @@ async function token(claims: Record<string, unknown>): Promise<string> {
   return `${head}.${base64url(new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(head))))}`
 }
 
-const exp = Math.floor(Date.now() / 1000) + 3600
 const CALLERS = [
-  { role: 'anon', bearer: await token({ role: 'anon', exp }) },
-  { role: 'authenticated', bearer: await token({ role: 'authenticated', sub: crypto.randomUUID(), exp }) },
+  { role: 'anon', bearer: await token({ role: 'anon' }) },
+  { role: 'authenticated', bearer: await token({ role: 'authenticated', sub: crypto.randomUUID() }) },
 ] as const
 
 let tables: string[] = []
