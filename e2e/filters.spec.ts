@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, press, requestLeave } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
@@ -15,6 +15,13 @@ function filterBar(page: Page) {
 /** A chip is named by its condition and values, as a person reads it. */
 function chip(page: Page, condition: string, values: string) {
   return filterBar(page).getByRole('button', { name: new RegExp(`^${condition}\\s?:\\s?${values}$`) })
+}
+
+/** Opens every unit's section of the day report. */
+async function expectUnitsOpen(report: Locator) {
+  const closed = report.getByRole('heading').getByRole('button', { expanded: false })
+  await expect(closed.first()).toBeVisible()
+  while ((await closed.count()) > 0) await closed.first().click()
 }
 
 function rowNames(page: Page) {
@@ -150,29 +157,35 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     const button = page.getByRole('button', { name: new RegExp(he.presence.missingToday) })
     await expect(button).toContainText('1')
     await button.click()
-    const absent = drawer(page).getByRole('list', { name: new RegExp(he.presence.absent) })
-    const present = drawer(page).getByRole('list', { name: new RegExp(he.presence.present) })
-    await expect(absent.getByRole('listitem')).toHaveCount(1)
-    await expect(absent).toContainText(OWNER.name)
-    await expect(absent).toContainText('רגילה')
-    await expect(present.getByRole('listitem')).toHaveCount(2)
+    const report = page.getByRole('dialog', { name: he.presence.title })
+    await expectUnitsOpen(report)
+    await expect(report.getByRole('heading', { name: `${he.presence.absent} 1`, exact: true })).toBeVisible()
+    await expect(report.getByRole('heading', { name: `${he.presence.present} 2`, exact: true })).toBeVisible()
+    await expect(report).toContainText(OWNER.name)
+    // The type stands beside a name only while the reasons show (D-194).
+    await expect(report).not.toContainText('רגילה')
+    await press(page, 'switch', he.presence.reasons)
+    await expect(report).toContainText('רגילה')
     await expectNoAxeViolations(page)
     await testInfo.attach('presence', { body: await page.screenshot(), contentType: 'image/png' })
     // Friday 13 November: the leave ended the day before.
-    await drawer(page).getByRole('button', { name: he.presence.nextDay }).click()
-    await drawer(page).getByRole('button', { name: he.presence.nextDay }).click()
-    await expect(drawer(page).getByText(he.presence.noneAbsent)).toBeVisible()
+    await report.getByRole('button', { name: he.presence.nextDay }).click()
+    await report.getByRole('button', { name: he.presence.nextDay }).click()
+    await expect(report.getByText(he.presence.noneAbsent)).toBeVisible()
     await expect(page).toHaveURL(/day=2026-11-13/)
-    await drawer(page).getByRole('button', { name: he.presence.today, exact: true }).click()
-    await expect(absent.getByRole('listitem')).toHaveCount(1)
-    // Left on another day, the lists open again on today from the pill (D-134).
-    await drawer(page).getByRole('button', { name: he.presence.nextDay }).click()
+    await report.getByRole('button', { name: he.presence.today, exact: true }).click()
+    await expect(page).not.toHaveURL(/day=2026-11-13/)
+    await expect(report.getByText(he.presence.noneAbsent)).toBeHidden()
+    // Left on another day, the report opens again on today from the pill (D-134).
+    await report.getByRole('button', { name: he.presence.nextDay }).click()
     await expect(page).toHaveURL(/day=/)
-    await closeDrawer(page)
+    await report.getByRole('button', { name: he.common.close }).click()
+    await expect(report).toBeHidden()
     await button.click()
     await expect(page).not.toHaveURL(/day=/)
-    await expect(absent.getByRole('listitem')).toHaveCount(1)
-    await closeDrawer(page)
+    await expect(report.getByText(he.presence.noneAbsent)).toBeHidden()
+    await page.keyboard.press('Escape')
+    await expect(report).toBeHidden()
   })
 
   await test.step('a filter the bar does not read keeps its leave chips beside it', async () => {
