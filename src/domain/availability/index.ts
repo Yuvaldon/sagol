@@ -34,3 +34,4 @@ export {
   type RuleUnit,
 } from './rules'
 export { leaveChangeViolations, ruleGate, ruleViolations } from './gate'
+export { deploymentMemberIssues, type DeploymentMemberDates } from './deployments'
