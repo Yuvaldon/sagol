@@ -269,7 +269,7 @@ am = amends, ref = refines, ext = extends.
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
-| D-292 | Staging's Preview is built by its Deploy Hook | tooling | |
+| D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 
 ---
 
@@ -3538,8 +3538,9 @@ the one project, not the account's project list, and the access token is reposit
   organization are untouched, so the commander still sets up the real organization from an empty production.
 - **Updated by the pipeline, never by hand.** `.github/workflows/staging.yml` runs after CI succeeds on a push to
   `main` (and on manual dispatch): it pushes `main`'s pending migrations with `supabase db push`, sets the function's
-  secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
-  branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
+  secrets, deploys the D-209 bundle of `commands`, and puts on the `staging` branch a commit with main's tree whose only
+  parent is main's commit (D-292). Vercel builds that branch as a Preview, so staging lives at a stable address:
+  `sagol-git-staging-yuval-dons-projects.vercel.app`.
 - **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
   wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
   (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
@@ -3727,21 +3728,24 @@ Checked against CLI 2.122.0: its permission tables list `api_gateway_keys_*` for
 trace against a nonexistent ref shows `functions deploy --use-api` calling `POST /functions/deploy` and
 `GET /v1/projects/{ref}` only, and `db push --db-url` making no Management API call.
 
-## D-292 — Staging's Preview is built by its Deploy Hook
+## D-292 — Staging's branch gets a new commit with main's tree, so Vercel builds it
 
-2026-11-12 · accepted · approved by the orchestrator at about 17:21Z. Track: tooling. Extends D-276.
+2026-11-12 · accepted · asked by the orchestrator at about 18:09Z. Track: tooling. Extends D-276.
 
-- **The gap.** Vercel's GitHub integration does not build a push that brings no new commits. Staging moves the
-  `staging` branch to main's commit, which Vercel already built for `main`, so the branch got no Preview. Checked on
+- **The gap.** Vercel's GitHub integration does not build a push that brings no new commits. Staging moved the
+  `staging` branch to main's commit, which Vercel had already built for `main`, so the branch got no Preview. Checked on
   2026-11-12: the project has no ignored-build command and no disabled deployments, and every push with new commits was
   built within seconds. The Staging push of 1319efc left no deployment and no Vercel event. A branch the owner's account
   pushed at the same commit got none either, so the pusher (`GITHUB_TOKEN`) is not the cause.
-- **The fix.** A Vercel Deploy Hook for the branch `staging` builds that branch's head on request. Its URL is the secret
-  `VERCEL_STAGING_DEPLOY_HOOK` in the `staging` GitHub environment, which only the owner creates (OI-231). Staging
-  refuses to start without it, before any change, and after moving the branch it POSTs the hook and prints only Vercel's
-  job id and state. The URL is masked and never printed.
-- **Rejected.** A new commit on `staging` (the branch must hold main's exact commit). A Vercel account token in GitHub
-  (wider than one branch's rebuild). A deployment made by hand after each run (not automatic).
+- **The fix.** After the migrations and the function, Staging creates a commit with `git commit-tree`: main's tree, main's
+  commit as its only parent, the message `staging: deploy <sha>`. It pushes that commit to `staging` with
+  `--force-with-lease` on the branch's current head. The commit is new, so Vercel builds it like any other push.
+- **The invariant.** `staging` no longer equals `main`. Instead, staging's tree equals main's tree, and its only parent
+  is main's commit, so the Preview runs exactly main's code. The workflow checks both on the pushed branch and fails if
+  either does not hold.
+- **Rejected.** A Vercel Deploy Hook: its URL is a secret only the owner can create and store, and the owner wants no
+  manual steps. A Vercel account token in GitHub: wider than one branch's build. A deployment made by hand after each
+  run: not automatic.
 
-**Why:** every Staging run must end with a Preview of the same commit, on its own; the hook is the narrowest credential
-that can ask for it.
+**Why:** every Staging run must end with a Preview of main's code, on its own and without an owner step. A commit with
+the same tree on top of main is the smallest change Vercel's integration builds.
