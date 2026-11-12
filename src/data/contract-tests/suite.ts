@@ -37,6 +37,9 @@ export type { ContractAdapter, ContractHarness } from './harness'
 
 export const CONTRACT_NOW: Timestamp = '2026-11-08T10:00:00.000Z'
 
+/** The identity a server lets claim the empty organization (`BOOTSTRAP_OWNER_EMAIL`, D-005). */
+export const CONTRACT_OWNER_EMAIL = 'owner@example.test'
+
 function identityOf(email: string, overrides: Partial<AuthIdentity> = {}): AuthIdentity {
   return {
     auth_user_id: AuthUserId.parse(crypto.randomUUID()),
@@ -48,7 +51,8 @@ function identityOf(email: string, overrides: Partial<AuthIdentity> = {}): AuthI
   }
 }
 
-function bootstrapInput(overrides: Partial<BootstrapOwnerInput> = {}): BootstrapOwnerInput {
+/** A valid `bootstrapOwner` input with fresh ids. */
+export function bootstrapInput(overrides: Partial<BootstrapOwnerInput> = {}): BootstrapOwnerInput {
   return {
     organization: { id: OrganizationId.parse(crypto.randomUUID()), name: 'Company', timezone: 'Asia/Jerusalem' },
     soldier: { id: SoldierId.parse(crypto.randomUUID()), first_name: 'Dana', last_name: 'Levi' },
@@ -98,7 +102,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
 
     /** Claims the store as a new owner and returns the identity and input. */
     async function claim() {
-      const owner = identityOf('owner@example.test')
+      const owner = identityOf(CONTRACT_OWNER_EMAIL)
       const input = bootstrapInput()
       harness.signIn(owner)
       const session = valueOf(await adapter.commands.organizations.bootstrapOwner(input))
@@ -158,7 +162,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
 
     describe('unlinked on an empty store', () => {
       it('may bootstrap, and sees no organization', async () => {
-        const identity = identityOf('first@example.test')
+        const identity = identityOf(CONTRACT_OWNER_EMAIL)
         harness.signIn(identity)
         expect(valueOf(await adapter.session.current())).toEqual({ status: 'unlinked', identity })
         expect(valueOf(await adapter.session.onboardingState())).toEqual({
@@ -170,7 +174,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
       })
 
       it('may not bootstrap without a verified email (D-005)', async () => {
-        harness.signIn(identityOf('first@example.test', { email_verified: false }))
+        harness.signIn(identityOf(CONTRACT_OWNER_EMAIL, { email_verified: false }))
         expect(valueOf(await adapter.session.onboardingState()).bootstrap_available).toBe(false)
         const result = await adapter.commands.organizations.bootstrapOwner(bootstrapInput())
         expect(errorOf(result).code).toBe('bootstrap_not_allowed')
@@ -180,7 +184,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
 
     describe('bootstrapOwner validation', () => {
       beforeEach(() => {
-        harness.signIn(identityOf('first@example.test'))
+        harness.signIn(identityOf(CONTRACT_OWNER_EMAIL))
       })
 
       async function issuesOf(input: unknown) {
@@ -377,7 +381,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
 
     describe('session subscription', () => {
       it('fires when the identity changes', async () => {
-        const identity = identityOf('first@example.test')
+        const identity = identityOf(CONTRACT_OWNER_EMAIL)
         const next = new Promise<Session>((resolve) => {
           const stop = adapter.session.subscribe((session) => {
             stop()

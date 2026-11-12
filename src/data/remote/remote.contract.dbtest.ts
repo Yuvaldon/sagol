@@ -1,7 +1,7 @@
-import { TABLE_SCHEMAS, type AuthIdentity, type Unsubscribe } from '@contracts'
+import { AuthUserId, TABLE_SCHEMAS, type AuthIdentity, type Unsubscribe } from '@contracts'
 import postgres from 'postgres'
-import { afterAll, beforeAll } from 'vitest'
-import { CONTRACT_NOW, describeAdapterContract, type ContractAdapter, type ContractHarness } from '../contract-tests/suite'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { CONTRACT_NOW, CONTRACT_OWNER_EMAIL, bootstrapInput, describeAdapterContract, type ContractAdapter, type ContractHarness } from '../contract-tests/suite'
 import { createRemoteDataAdapter } from './adapter'
 import { createCommandGateway } from '../server/gateway'
 import { createCommandHandler } from '../server/http'
@@ -37,6 +37,7 @@ function handlerFetch(): { fetch: typeof fetch; tokenOf(identity: AuthIdentity):
       transact: (work) => sql.begin('isolation level serializable', (tx) => work(clientOf(tx))) as never,
       catalog,
       time: { now: () => CONTRACT_NOW },
+      bootstrapOwnerEmail: CONTRACT_OWNER_EMAIL,
     }),
     verify: (token) => Promise.resolve(tokens.get(token) ?? null),
     origins: [],
@@ -108,3 +109,37 @@ async function createHarness(): Promise<ContractHarness> {
 }
 
 describeAdapterContract('remote adapter over the gateway', createHarness)
+
+describe('remote adapter: the bootstrap claimant (D-005)', () => {
+  it('lets no one but BOOTSTRAP_OWNER_EMAIL claim the empty organization', async () => {
+    const harness = await createHarness()
+    const stranger: AuthIdentity = {
+      auth_user_id: AuthUserId.parse(crypto.randomUUID()),
+      provider: 'google',
+      email: 'someone-else@example.test',
+      email_verified: true,
+      display_name: null,
+    }
+    harness.signIn(stranger)
+    const onboarding = await harness.adapter.session.onboardingState()
+    expect(onboarding.ok && onboarding.value.bootstrap_available).toBe(false)
+    const result = await harness.adapter.commands.organizations.bootstrapOwner(bootstrapInput())
+    expect(result.ok ? null : result.error.code).toBe('bootstrap_not_allowed')
+    expect(await harness.rows('organizations')).toEqual([])
+    await harness.dispose()
+  })
+
+  it('matches the owner email without regard to case', async () => {
+    const harness = await createHarness()
+    harness.signIn({
+      auth_user_id: AuthUserId.parse(crypto.randomUUID()),
+      provider: 'google',
+      email: CONTRACT_OWNER_EMAIL.toUpperCase(),
+      email_verified: true,
+      display_name: null,
+    })
+    const onboarding = await harness.adapter.session.onboardingState()
+    expect(onboarding.ok && onboarding.value.bootstrap_available).toBe(true)
+    await harness.dispose()
+  })
+})

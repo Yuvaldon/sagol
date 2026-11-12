@@ -10,8 +10,10 @@ function required(name: string): string {
   return value
 }
 
-// Supabase provides the first three; APP_ORIGINS lists the app's deployments, comma-separated.
+// Supabase provides the first three; APP_ORIGINS lists the app's deployments, comma-separated;
+// BOOTSTRAP_OWNER_EMAIL names the one identity that may claim the empty organization (D-005).
 const sql = postgres(required('SUPABASE_DB_URL'), { max: 2, prepare: false, onnotice: () => undefined, connection: { TimeZone: 'UTC' } })
+const bootstrapOwnerEmail = required('BOOTSTRAP_OWNER_EMAIL')
 const origins = required('APP_ORIGINS').split(',').map((origin) => origin.trim()).filter((origin) => origin !== '')
 
 const clientOf = (connection: postgres.Sql | postgres.TransactionSql): SqlClient => ({
@@ -35,6 +37,7 @@ const serve = createCommandHandler({
       transact,
       catalog: await catalogOnce(),
       time: { now: () => new Date().toISOString() },
+      bootstrapOwnerEmail,
     })(identity, body),
 })
 

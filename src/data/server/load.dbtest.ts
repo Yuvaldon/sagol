@@ -184,6 +184,7 @@ async function serverExport(): Promise<OrganizationExport> {
     transact: (work) => sql.begin('isolation level serializable', (tx) => work(clientOf(tx))) as never,
     catalog,
     time: { now: () => NOW },
+    bootstrapOwnerEmail: owner.email,
   })
   const answer = await gateway(owner, { kind: 'transfer', group: 'transfer', method: 'exportOrganization', args: [] })
   return valueOf(answer.result as Result<OrganizationExport>)

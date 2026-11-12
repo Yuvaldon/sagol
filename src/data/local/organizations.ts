@@ -30,7 +30,7 @@ function everyPermission() {
 }
 
 async function writeBootstrap(
-  { database, time }: LocalDependencies,
+  { database, time, claimant }: LocalDependencies,
   identity: AuthIdentity,
   input: BootstrapOwnerInput,
 ): Promise<Session> {
@@ -102,7 +102,7 @@ async function writeBootstrap(
   return database.transaction('rw', [...POLICY_TABLES, 'account_link_requests'], async () => {
     const session = await resolveSession(database, identity)
     if (session.status === 'linked') return fail({ code: 'forbidden' })
-    if (!(await bootstrapAllowed(database, identity))) return fail({ code: 'bootstrap_not_allowed' })
+    if (!(await bootstrapAllowed(database, identity, claimant))) return fail({ code: 'bootstrap_not_allowed' })
 
     await tableOf(database, 'organizations').add(organization)
     await tableOf(database, 'soldiers').add(soldier)
