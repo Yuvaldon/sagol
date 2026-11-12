@@ -23,7 +23,7 @@ export function useInstallOffer(): { readonly offer: InstallOffer; readonly inst
 }
 
 /**
- * The one-time install offer after sign-in (D-277): what the device can offer, while the signed-in soldier has not
+ * The one-time install offer after sign-in (D-274): what the device can offer, while the signed-in soldier has not
  * answered it on this device. Installing or "not now" answers it for good; the user menu keeps the install (D-184).
  * The flag is read only for a linked soldier, so the offer is never on the sign-in screen.
  */

@@ -56,7 +56,7 @@ describe('the shell hooks (D-183, D-184)', () => {
   })
 })
 
-describe('the install offer after sign-in (D-277)', () => {
+describe('the install offer after sign-in (D-274)', () => {
   function portsWith(shell: ReturnType<typeof shellOf>, local = memoryDeviceStore(), linked = true) {
     const session = linked
       ? { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION }
