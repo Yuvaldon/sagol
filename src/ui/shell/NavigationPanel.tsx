@@ -149,10 +149,10 @@ export function NavigationPanel() {
         isOpen={isOpen}
         onOpenChange={setOpen}
         isDismissable
-        className="enter-scrim fixed inset-none flex justify-start bg-scrim frame-safe"
+        className="enter-scrim fixed inset-none flex items-start justify-start bg-scrim frame-safe"
       >
-        <Modal className="enter-start-panel glass-drawer flex h-full w-full max-w-sheet flex-col overflow-hidden rounded-panel">
-          <Dialog className="flex min-h-none flex-1 flex-col outline-none">
+        <Modal className="enter-start-panel glass-drawer flex max-h-full w-full max-w-sheet flex-col overflow-hidden rounded-panel">
+          <Dialog className="flex min-h-none flex-col outline-none">
             <header className="flex shrink-0 items-center justify-between gap-sm px-lg pt-lg pb-md">
               <Heading slot="title" className="text-title font-bold tracking-tight">
                 {t('navigation.title')}
@@ -161,7 +161,7 @@ export function NavigationPanel() {
                 <X aria-hidden size={18} />
               </IconButton>
             </header>
-            <nav aria-label={t('navigation.title')} className="flex min-h-none flex-1 flex-col gap-md overflow-y-auto px-md pb-lg">
+            <nav aria-label={t('navigation.title')} className="flex min-h-none flex-col gap-md overflow-y-auto px-md pb-lg">
               {setup ? <SetupItem onOpen={close} /> : null}
               {sections.map((section) => (
                 <section key={section.id} aria-labelledby={`navigation-${section.id}`} className="flex flex-col gap-2xs">
