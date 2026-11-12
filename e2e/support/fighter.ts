@@ -21,7 +21,7 @@ const SELF_PERMISSIONS: readonly (readonly [string, readonly string[]])[] = [
 export async function signOut(page: Page) {
   await page.getByRole('button', { name: he.account.menu }).click()
   await page.getByRole('menuitem', { name: he.account.signOut }).click()
-  await expect(page).toHaveURL(/\/sign-in$/)
+  await expect(page).toHaveURL(/\/sign-in(\?view=\w+)?$/)
 }
 
 /** The owner's setup: a unit, a type, Yael with the fields auto-link reads, the fighter role as the baseline, a rotation. */
@@ -72,7 +72,7 @@ export async function setUpFighter(page: Page) {
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */
 export async function enterAsYael(page: Page) {
   await signIn(page, YAEL.email)
-  await expect(page).toHaveURL(/\/onboarding$/)
+  await expect(page).toHaveURL(/\/onboarding(\?view=\w+)?$/)
   await page.getByLabel(he.linkRequest.firstName).fill(YAEL.first)
   await page.getByLabel(he.linkRequest.lastName).fill(YAEL.last)
   await page.getByLabel(he.linkRequest.personalId).fill(YAEL.personalId)

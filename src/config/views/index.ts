@@ -8,8 +8,11 @@ export const VIEW_IDS = ['timeline', 'calendar', 'list', 'table'] as const
 export const ViewId = z.enum(VIEW_IDS)
 export type ViewId = z.infer<typeof ViewId>
 
-/** The view shown when the URL names none (D-074). */
-export const DEFAULT_VIEW_ID: ViewId = 'timeline'
+/**
+ * The view shown when the URL names none, by the device (D-074, D-290): the timeline from `md` for planning, the list of
+ * the window's days on a phone for the field.
+ */
+export const DEFAULT_VIEW_BY_DEVICE = { desktop: 'timeline', phone: 'list' } as const satisfies Readonly<Record<'desktop' | 'phone', ViewId>>
 
 /**
  * The date window (D-103, D-211): a week by default, and at most this many days, from a link or a rotation. A rotation

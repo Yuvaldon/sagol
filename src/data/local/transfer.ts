@@ -11,6 +11,7 @@ import {
   type PolicyTarget,
   type TableName,
 } from '@contracts'
+import { IMPORTED_LEAVE_TYPE_STAND_IN, isLeaveTypePaletteKey } from '@config'
 import { issuesFromSchema } from '@domain'
 import { z } from 'zod'
 import { loadActorScope, requirePermission } from './actor'
@@ -34,6 +35,11 @@ import { createUnitCommands } from './units'
 const IMPORT = { resource: 'data_transfer', action: 'import' } as const satisfies Permission
 const EXPORT = { resource: 'data_transfer', action: 'export' } as const satisfies Permission
 const ORGANIZATION: PolicyTarget = { kind: 'organization' }
+
+/** A leave type's color as an import writes it: one a new type may not take comes in as the stand-in (D-290). */
+function importedColorOf(key: string): string {
+  return isLeaveTypePaletteKey(key) ? key : IMPORTED_LEAVE_TYPE_STAND_IN
+}
 
 /** Every store: the commands an import runs open their transactions inside this one. `STORES` names every table. */
 const EVERY_TABLE = Object.keys(STORES) as TableName[]
@@ -91,7 +97,9 @@ function runOperation(commands: ImportCommands, operation: ImportOperation): Asy
     case 'create_leave_type_group':
       return commands.leave_type_groups.create(operation.input)
     case 'create_leave_type':
-      return commands.leave_types.create(operation.input)
+      // An export may hold a type stored green before D-290, which a new type may not be. It comes in as the quiet
+      // stand-in rather than failing the whole import; the board never painted it green anyway.
+      return commands.leave_types.create({ ...operation.input, color_key: importedColorOf(operation.input.color_key) })
     case 'create_leave':
       return commands.leaves.create(operation.input)
     case 'create_availability_rule':

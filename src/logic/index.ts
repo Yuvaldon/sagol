@@ -93,7 +93,7 @@ export {
 } from './presence/report'
 export { reportText, type ReportWords } from './presence/reportText'
 export { useDeviceFlag, type DeviceFlag, type DeviceLasting } from './device/hooks'
-export { useActiveView, type ActiveViewState } from './view-state/view'
+export { defaultViewOf, useActiveView, type ActiveViewState, type ViewDevice } from './view-state/view'
 export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useTimezone, useToday } from './session/today'
 export {
@@ -115,7 +115,7 @@ export {
   type BoardSort,
 } from './board/rows'
 export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
-export { boardLeaves, type BoardLeave } from './board/leaves'
+export { boardLeaves, layerOf, type BoardLeave, type LeaveLayer } from './board/leaves'
 export { boardDays, boardEntries, calendarWeeks, type BoardDay, type BoardEntry } from './board/views'
 export {
   datesOfRange,

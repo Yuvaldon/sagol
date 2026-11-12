@@ -211,7 +211,7 @@ am = amends, ref = refines, ext = extends.
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
-| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280 |
+| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280; ext D-295 |
 | D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | ref D-183 |
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
@@ -255,7 +255,7 @@ am = amends, ref = refines, ext = extends.
 | D-265 | Home follows permissions: the board, or "שלי" | logic, ui | |
 | D-266 | The quick action follows the role, then the mode | logic, ui | |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
-| D-268 | The board's visual language: presence is quiet, absence is a hole | ui | |
+| D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290 |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend |ref D-293 |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
@@ -263,14 +263,17 @@ am = amends, ref = refines, ext = extends.
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
-| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281 |
+| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
+| D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | |
+| D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | |
+| D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
 
 ---
 
@@ -2513,7 +2516,7 @@ hosts the built app. Both run on their free plans: nothing that costs money is c
 cost money becomes an open item instead. Public client values (the project URL and its anon key) live in the hosting
 provider's environment variables, and `.env.example` lists their names only; no secret is in the repository.
 The Supabase project is `sagol` (ref `etmyjbhkqoufoqsjbhev`, region `eu-central-1`, free plan); the Vercel project is
-`sagol` (Hobby plan, linked to the repository, so every push gets a preview deploy).
+`sagol` (Hobby plan, linked to the repository; since D-295 only `main` and `staging` are built).
 **Why:** the reasons of D-027 (Postgres matches `schema.sql`, row-level security matches the policy model, Google sign-in is
 built in), and the owner's instruction to use these two providers at no cost.
 
@@ -3568,8 +3571,9 @@ the one project, not the account's project list, and the access token is reposit
   organization are untouched, so the commander still sets up the real organization from an empty production.
 - **Updated by the pipeline, never by hand.** `.github/workflows/staging.yml` runs after CI succeeds on a push to
   `main` (and on manual dispatch): it pushes `main`'s pending migrations with `supabase db push`, sets the function's
-  secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
-  branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
+  secrets, deploys the D-209 bundle of `commands`, and puts on the `staging` branch a commit with main's tree whose only
+  parent is main's commit (D-292). Vercel builds that branch as a Preview, so staging lives at a stable address:
+  `sagol-git-staging-yuval-dons-projects.vercel.app`.
 - **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
   wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
   (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
@@ -3581,8 +3585,8 @@ the one project, not the account's project list, and the access token is reposit
   `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
   the repository-level one Production uses too (D-280).
   Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
-- **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
-  a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
+- **Every Preview runs on staging.** The only Preview is the `staging` branch's (D-295): a pull request gets none, and a
+  slice is tried locally (`npm run dev`, the local adapter) and by CI's e2e.
 
 **Why:** the owner wants to try units, soldiers and flows freely, without touching real personal numbers, without
 slowing development, and without using up the real organization's first setup. A second project that follows `main`
@@ -3757,6 +3761,55 @@ Checked against CLI 2.122.0: its permission tables list `api_gateway_keys_*` for
 trace against a nonexistent ref shows `functions deploy --use-api` calling `POST /functions/deploy` and
 `GET /v1/projects/{ref}` only, and `db push --db-url` making no Management API call.
 
+## D-290 — The board's visual language as built: a hatched hole, rounds as bands, the view by device
+
+2026-11-12 · accepted · refines D-268, D-272, D-174 · V29 · decided under the owner's autonomy instruction of 2026-11-11
+
+- **Absence is a hole.** On the timeline an approved leave is hatched (`hatch-absence`, drawn from `currentColor`),
+  with a faint fill of the type's tone and its edge. A pending one is a dashed edge over the surface. The caption is
+  always the body text, so it reads in both themes. The list's and the calendar's chips already were quiet (D-174).
+- **Green never means away.** A leave type is not offered green or lime (`NOT_FOR_LEAVES`, config); the local adapter
+  refuses a new one, as the color field does. A type stored green before is painted in the uniform tone, so the data
+  stays and the board still never says "present" for someone away. An import (D-171) brings a type stored green in
+  as gray (`IMPORTED_LEAVE_TYPE_STAND_IN`, config), so an old export still loads. A marker leave keeps the marker tone
+  when its type has no color it may take.
+- **Rounds under requests.** A leave in a batch is a round (`layerOf`, derived, D-019). On the timeline it is a band of
+  the row's full height under the request bars, outside the lanes, and resizes like a bar. In the list and the calendar,
+  which have no lanes, it stays a chip.
+- **The opening view by device (OI-220).** With no view in the link, desktop opens on the timeline and a phone on the
+  list (`DEFAULT_VIEW_BY_DEVICE`, config). Until a view is chosen the link stays bare; a chosen view, the device's
+  default included, is written to the link. Nothing is remembered: a chosen view lives in the URL (D-103), so a link
+  shared from a phone opens on what it names, on any device.
+- **Overlapping rounds** share the band's place; the one beneath is reached from the list view (OI-246).
+- **A breach in every view (OI-221).** The same evaluation as the heat row (D-141): a calendar day that breaks a rule
+  shows a count beside its heading, and the list shows the window's broken days above its rows. Each one opens the rules
+  of its day, in the heat row's tones.
+
+**Why:** D-268 set the direction; these are the choices it left open, each one the smallest that keeps one meaning
+across the views.
+
+## D-292 — Staging's branch gets a new commit with main's tree, so Vercel builds it
+
+2026-11-12 · accepted · asked by the orchestrator at about 18:09Z. Track: tooling. Extends D-276.
+
+- **The gap.** Vercel's GitHub integration does not build a push that brings no new commits. Staging moved the
+  `staging` branch to main's commit, which Vercel had already built for `main`, so the branch got no Preview. Checked on
+  2026-11-12: the project has no ignored-build command and no disabled deployments, and every push with new commits was
+  built within seconds. The Staging push of 1319efc left no deployment and no Vercel event. A branch the owner's account
+  pushed at the same commit got none either, so the pusher (`GITHUB_TOKEN`) is not the cause.
+- **The fix.** After the migrations and the function, Staging creates a commit with `git commit-tree`: main's tree, main's
+  commit as its only parent, the message `staging: deploy <sha>`. It pushes that commit to `staging` with
+  `--force-with-lease` on the branch's current head. The commit is new, so Vercel builds it like any other push.
+- **The invariant.** `staging` no longer equals `main`. Instead, staging's tree equals main's tree, and its only parent
+  is main's commit, so the Preview runs exactly main's code. The workflow checks both on the pushed branch and fails if
+  either does not hold.
+- **Rejected.** A Vercel Deploy Hook: its URL is a secret only the owner can create and store, and the owner wants no
+  manual steps. A Vercel account token in GitHub: wider than one branch's build. A deployment made by hand after each
+  run: not automatic.
+
+**Why:** every Staging run must end with a Preview of main's code, on its own and without an owner step. A commit with
+the same tree on top of main is the smallest change Vercel's integration builds.
+
 ## D-293 — The daily report workflow: confirmations per unit and date, a rotation's report owner
 2026-11-12 · accepted · refines D-269 · V30 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
 - **Stored:** `report_confirmations` (`unit_id`, `report_date`, `confirmed_by`, `confirmed_at`), unique by unit and
@@ -3784,3 +3837,24 @@ trace against a nonexistent ref shows `functions deploy --use-api` calling `POST
   `load_organization_export` move to 4, as the rotation model did (D-257 .. D-260).
 **Why:** D-269 fixed the chain; this fixes what is stored and who may act. One row per unit and day keeps the history
 small and makes "confirm again" the same act as the first; deriving "changed since" means it can never go stale.
+
+## D-295 — Vercel builds only `main` and `staging`; other branches get no preview
+
+2026-11-12 · accepted · asked by the orchestrator at about 18:14Z. Track: tooling. Extends D-209 and D-276.
+
+- **The gap.** The Hobby plan allows 100 deployments a day. Every push to every branch was built as a Preview, and on
+  2026-11-12 at about 18:13Z Vercel refused builds for a day (`api-deployments-free-per-day`). That blocked the
+  production frontend and the staging Preview with them. Nobody uses the pull request previews: CI's e2e covers the
+  branches.
+- **The rule.** `vercel.json` sets `git.deploymentEnabled` to `{ "**": false, "main": true, "staging": true }`. Vercel
+  reads it from the pushed commit, and a branch that matches a `true` rule is built even when it also matches a
+  `false` one. So `main` (Production) and `staging` (D-276, D-292) build. Every other branch does not, including names
+  with `/`, which `**` matches. `staging` holds main's tree, so it carries the same file.
+- **Until it merges.** A branch is skipped only once its own commit has the file, so a branch that has not merged
+  `main` yet still builds.
+- **Rejected.** A paid plan, because only free plans are allowed. An ignored-build command: Vercel still creates a
+  deployment for each push and then cancels it, and the command lives in the project's settings, not in the
+  repository.
+
+**Why:** the daily budget goes to the two deployments someone uses, Production and staging. A single line in the
+repository, reviewed like the rest, does that.

@@ -1,5 +1,5 @@
 import type { Store } from './store'
-import { isIconKey, isPaletteKey } from '@config'
+import { isIconKey, isLeaveTypePaletteKey, isPaletteKey } from '@config'
 import { IssueCode, type Issue, type PropertyEntityType, type PropertyValues } from '@contracts'
 import { propertyReferences, propertyValueIssues } from '@domain'
 import { tableOf } from './store'
@@ -9,9 +9,18 @@ import type { ActorScope } from './actor'
 // Row checks that several tables share. Paths are relative to the row.
 
 /** A new `color_key` must be in the closed palette (D-074, OI-011). */
-export function colorKeyIssues(before: string | null | undefined, after: string | null): Issue[] {
-  if (after === null || after === before || isPaletteKey(after)) return []
+export function colorKeyIssues(
+  before: string | null | undefined,
+  after: string | null,
+  isAllowed: (value: string) => boolean = isPaletteKey,
+): Issue[] {
+  if (after === null || after === before || isAllowed(after)) return []
   return [{ path: ['color_key'], code: IssueCode.enum.invalid_value }]
+}
+
+/** A leave type's new color may not be green: green never means away (D-290). A color it held before stays. */
+export function leaveTypeColorIssues(before: string | null | undefined, after: string | null): Issue[] {
+  return colorKeyIssues(before, after, isLeaveTypePaletteKey)
 }
 
 /** A new `icon_key` must be in the closed list (D-113), as a color key is. */

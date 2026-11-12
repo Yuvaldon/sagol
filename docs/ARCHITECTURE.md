@@ -200,7 +200,7 @@ The current state (D-128):
   derived in `logic/presence/confirmations.ts` from the section's soldiers' leaves of any status touching the day ±1,
   written after the confirmation. `useReportConfirmations` reads them with those leaves, and leave writes refresh it.
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
-  (D-141); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
+  (D-141), and the same breaches beside a calendar day and above the list (`ui/board/breaches.ts`, D-290); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
 ## Filters (shared model)
 

@@ -298,6 +298,18 @@
   }
 }
 
+/*
+ * An absence reads as a hole (D-268, D-290): a fine hatch in the shape's own ink (its `text-*` color) over its faint
+ * fill, never a solid block. The angle is the same in both directions; only the color changes with the theme.
+ */
+@utility hatch-absence {
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, currentColor 28%, transparent) 0 1px,
+    transparent 1px 6px
+  );
+}
+
 /* While the filter row shows, content starts under it too (D-131, D-173). */
 [data-filter-row='shown'] {
   --spacing-under-bars: var(--spacing-under-bars-filtered);
