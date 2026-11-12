@@ -35,7 +35,7 @@ import { useToday } from '../session/today'
 import { filterUnitOf, unitFilterOf, useViewFilter } from '../view-state/filter'
 import { usePanel } from '../view-state/panel'
 import { WorkspaceSearch, useWorkspaceSearch } from '../view-state/search'
-import { usePresenceDay } from '../view-state/board'
+import { usePresenceDay, useTableSort } from '../view-state/board'
 import { useActiveView } from '../view-state/view'
 import { dateWindowOf, shiftedWindow, useDateWindow } from '../view-state/window'
 import { boardItems, type BoardInput, type BoardItem } from './rows'
@@ -283,8 +283,8 @@ describe('the rows of the board (D-105)', () => {
     expect(input({ key: 'rank', order: 'asc' })).toEqual([...first, 'אבי ■■■■■■■', 'בני ■■■■■■■', 'גיל ■■■■■■■', ...second])
     const away = (soldierId: SoldierId) => (soldierId === SoldierId.parse(uuid(3)) ? 4 : soldierId === SoldierId.parse(uuid(1)) ? 1 : 0)
     expect(input({ key: 'absent', order: 'desc' }, away)).toEqual([...first, 'גיל ■■■■■■■', 'אבי ■■■■■■■', 'בני ■■■■■■■', ...second])
-    // The unit orders the groups; inside one, the name breaks the ties (D-313).
-    expect(input({ key: 'unit', order: 'desc' })).toEqual([...second, ...first, 'בני ■■■■■■■', 'גיל ■■■■■■■', 'אבי ■■■■■■■'])
+    // The unit orders the groups; inside one, the rows keep the default, most senior first (D-214, D-313).
+    expect(input({ key: 'unit', order: 'desc' })).toEqual([...second, ...first, 'בני ■■■■■■■', 'אבי ■■■■■■■', 'גיל ■■■■■■■'])
   })
 
   it('breaks the ties of one rule with the next, and sorts by a property, no value last (D-313)', () => {
@@ -557,6 +557,7 @@ describe('view state in the URL (D-103, D-104)', () => {
     const filter = useViewFilter()
     const view = useActiveView(['timeline'], 'desktop')
     const presence = usePresenceDay()
+    const table = useTableSort()
     return (
       <div>
         <p data-testid="search">{JSON.stringify(search)}</p>
@@ -567,6 +568,7 @@ describe('view state in the URL (D-103, D-104)', () => {
         <button type="button" data-testid="today" onClick={window.goToToday} />
         <button type="button" data-testid="unit" onClick={() => { filter.selectUnit(PLATOON) }} />
         <button type="button" data-testid="presence" onClick={presence.openToday} />
+        <button type="button" data-testid="header" onClick={() => { table.sortRows({ key: 'name', order: 'desc' }) }} />
       </div>
     )
   }
@@ -652,6 +654,17 @@ describe('view state in the URL (D-103, D-104)', () => {
     await renderAt(`/?leaves=${leaves}&missing=false&day=soon`)
     await waitFor(() => {
       expect(read('search')).toEqual({})
+    })
+  })
+
+  it('puts a header rule first and keeps the other rules after it (D-313)', async () => {
+    const sorts = encodeURIComponent(JSON.stringify([{ key: 'unit', order: 'asc' }, { key: 'name', order: 'asc' }, { key: 'rank', order: 'asc' }]))
+    await renderAt(`/?sorts=${sorts}&sort=type`)
+    press('header')
+    await waitFor(() => {
+      expect(read('search')).toEqual({
+        sorts: [{ key: 'name', order: 'desc' }, { key: 'unit', order: 'asc' }, { key: 'rank', order: 'asc' }],
+      })
     })
   })
 

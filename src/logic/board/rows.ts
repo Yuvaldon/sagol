@@ -14,7 +14,7 @@ import type {
 import { effectiveSeniority } from '@domain'
 import { filterContextOf, populationOf, type FilterSource } from '../filters/source'
 import { byName, compareText, membershipsBySoldier, unitStateOn, type UnitState } from '../roster/roster'
-import type { SortRule } from '../view-state/sort-rules'
+import { DEFAULT_SORT_RULES, type SortRule } from '../view-state/sort-rules'
 import { unitTreeRows } from '../units/tree'
 
 // The rows of the board (D-105, D-174): who served in the selected unit during the window, grouped by
@@ -113,7 +113,8 @@ type Compare = (a: BoardSoldierItem, b: BoardSoldierItem) => number
 
 /**
  * Orders rows by each rule in turn (D-214, D-313): a row with no value for a rule comes after the others either way,
- * and the name breaks the last ties. The unit key orders the groups (see `boardItems`), so inside one it is skipped.
+ * and the name breaks the last ties. The unit key orders the groups (see `boardItems`), so inside one it is skipped;
+ * when it is the only rule, the rows inside a group keep the default order, most senior first (D-214).
  */
 function rowOrder(
   sorts: readonly SortRule[],
@@ -151,7 +152,8 @@ function rowOrder(
         return null
     }
   }
-  const compares = sorts.flatMap((rule) => byRule(rule) ?? [])
+  const own = sorts.flatMap((rule) => byRule(rule) ?? [])
+  const compares = own.length > 0 || sorts.length === 0 ? own : DEFAULT_SORT_RULES.flatMap((rule) => byRule(rule) ?? [])
   return (a, b) => {
     for (const compare of compares) {
       const result = compare(a, b)

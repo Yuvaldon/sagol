@@ -98,7 +98,10 @@ export interface TableSortState {
   readonly order: SortOrder
   /** Sorts the lines by a leave column; with no direction, ascending. */
   sortBy(key: TableSortKey, order?: SortOrder): void
-  /** Sorts the rows by one rule, as the soldier and unit headers do, and drops the leave column's sort (D-313). */
+  /**
+   * Puts one rule first, as the soldier and unit headers do, keeping the others after it as ties, and drops the leave
+   * column's sort (D-313).
+   */
   sortRows(rule: SortRule): void
 }
 
@@ -117,11 +120,12 @@ export function useTableSort(): TableSortState {
         change({ sort: next, order: nextOrder === DEFAULT_TABLE_SORT_ORDER ? undefined : nextOrder })
       },
       sortRows: (rule) => {
-        const sorts = [rule]
+        const held = search.sorts ?? DEFAULT_SORT_RULES
+        const sorts = [rule, ...held.filter((other) => !sameTarget(other, rule))]
         change({ sort: undefined, order: undefined, sorts: isDefaultSort(sorts) ? undefined : sorts })
       },
     }),
-    [key, order, change],
+    [key, order, change, search.sorts],
   )
 }
 
