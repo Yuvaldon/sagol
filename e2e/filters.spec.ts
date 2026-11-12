@@ -133,14 +133,17 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   })
 
   await test.step('only who is missing: the owner, with the days present muted', async () => {
-    await page.getByRole('switch', { name: he.filters.onlyMissing }).click({ force: true })
+    await page.getByRole('button', { name: he.filters.add, exact: true }).click()
+    await page.getByRole('dialog', { name: he.filters.add }).getByRole('button', { name: he.filters.onlyMissing, exact: true }).click()
     await expect(page).toHaveURL(/missing=true/)
+    await expect(filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.onlyMissing}` })).toBeVisible()
     await expect(rowNames(page)).toHaveText([OWNER.name])
     await expect(board(page).getByText(new RegExp(`${he.timeline.present}: `))).toHaveCount(1)
     await expectNoAxeViolations(page)
     await testInfo.attach('only-missing', { body: await page.screenshot(), contentType: 'image/png' })
-    await page.getByRole('switch', { name: he.filters.onlyMissing }).click({ force: true })
+    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.onlyMissing}` }).click()
     await expect(rowNames(page)).toHaveCount(3)
+    await expect(filterBar(page)).toBeHidden()
   })
 
   await test.step('who is missing today, and who is present', async () => {

@@ -291,7 +291,7 @@ export function UnitLevelsModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="unitLevels.emptyTitle" bodyKey={permissions.create ? 'unitLevels.emptyBody' : 'unitLevels.emptyReadOnly'}>
+      <EmptyNotice titleKey="unitLevels.emptyTitle" bodyKey={permissions.create ? undefined : 'unitLevels.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newLevel}>
             <Plus aria-hidden size={14} />
@@ -304,7 +304,6 @@ export function UnitLevelsModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('unitLevels.hint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}
       <LevelList levels={live} onFailure={setFailure} />
       {permissions.create ? (

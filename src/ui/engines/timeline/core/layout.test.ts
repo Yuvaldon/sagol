@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayOffset, gridLayout, spansOf } from './layout'
+import { dayOffset, gridLayout, minDayPxFor, spansOf } from './layout'
 
 const SIZES = { nameColumnPx: 124, minDayPx: 64 }
 
@@ -42,5 +42,25 @@ describe('runs of days', () => {
   it('is empty when no day has the flag, and one run when all do', () => {
     expect(spansOf([true, true], false)).toEqual([])
     expect(spansOf([true, true], true)).toEqual([{ start: 0, length: 2 }])
+  })
+})
+
+describe('minDayPxFor', () => {
+  const bands = [
+    { upToDays: 7, minDayPx: 64 },
+    { upToDays: 31, minDayPx: 32 },
+    { upToDays: 186, minDayPx: 24 },
+  ]
+
+  it('takes the first band that holds the window', () => {
+    expect(minDayPxFor(1, bands)).toBe(64)
+    expect(minDayPxFor(7, bands)).toBe(64)
+    expect(minDayPxFor(8, bands)).toBe(32)
+    expect(minDayPxFor(31, bands)).toBe(32)
+    expect(minDayPxFor(120, bands)).toBe(24)
+  })
+
+  it('keeps the last band past the longest one', () => {
+    expect(minDayPxFor(400, bands)).toBe(24)
   })
 })

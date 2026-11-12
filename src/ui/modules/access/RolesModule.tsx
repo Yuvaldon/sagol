@@ -256,7 +256,7 @@ export function RolesModule() {
     return (
       <div className="flex flex-col gap-md">
         {baseline}
-        <EmptyNotice titleKey="roles.emptyTitle" bodyKey={permissions.create ? 'roles.emptyBody' : 'roles.emptyReadOnly'}>
+        <EmptyNotice titleKey="roles.emptyTitle" bodyKey={permissions.create ? undefined : 'roles.emptyReadOnly'}>
           {permissions.create ? (
             <Button variant="primary" onPress={newRole}>
               <Plus aria-hidden size={14} />
@@ -285,7 +285,6 @@ export function RolesModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('roles.hint')}</p>
       {baseline}
       {failure === null ? null : <FailureNotice error={failure} />}
       <ul aria-label={t('roles.listLabel')} className="flex flex-col">

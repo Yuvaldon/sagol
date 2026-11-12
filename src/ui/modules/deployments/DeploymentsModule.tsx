@@ -235,7 +235,6 @@ export function DeploymentsModule() {
         </EmptyNotice>
       ) : (
         <>
-          <p className="text-micro text-text-muted">{t('deployments.hint')}</p>
           {failure === null ? null : <FailureNotice error={failure} />}
           <ul aria-label={t('deployments.listLabel')} className="flex flex-col">
             {live.map((deployment) => (
@@ -285,7 +284,7 @@ export function DeploymentsModule() {
 /** Without a live unit there is nowhere to place a deployment yet. */
 function emptyBody(hasUnits: boolean, canCreate: boolean) {
   if (!hasUnits) return 'deployments.emptyNoUnits' as const
-  return canCreate ? ('deployments.emptyBody' as const) : ('deployments.emptyReadOnly' as const)
+  return canCreate ? undefined : ('deployments.emptyReadOnly' as const)
 }
 
 const NO_UNITS: readonly Unit[] = []
