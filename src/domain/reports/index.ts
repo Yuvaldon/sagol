@@ -39,6 +39,11 @@ export function confirmationStatus(
   return changedAt.some((at) => compareInstants(at, confirmation.confirmed_at) > 0) ? 'changed_since' : 'confirmed'
 }
 
+/** When a confirmation holds from: when the confirmer last read the section, never later than now (D-293). */
+export function confirmedAtOf(now: Timestamp, seenAt: Timestamp): Timestamp {
+  return compareInstants(seenAt, now) < 0 ? seenAt : now
+}
+
 type ReportRotation = Pick<Deployment, 'unit_id' | 'start_date' | 'end_date' | 'archived_at' | 'closed_at'>
 
 /** The live rotation over the unit (its own unit or one above it) that runs on the date, if any (D-222, D-257). */

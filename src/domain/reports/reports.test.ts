@@ -1,7 +1,7 @@
 import type { CalendarDate, Timestamp, UnitId } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import { buildUnitTree } from '../hierarchy'
-import { confirmationStatus, confirmReportIssues, reportRotationOf } from '.'
+import { confirmationStatus, confirmedAtOf, confirmReportIssues, reportRotationOf } from '.'
 
 // The daily report's status and when it may be confirmed (D-293). Sample rows, test file only.
 
@@ -30,6 +30,17 @@ describe('confirmationStatus', () => {
 
   it('is changed_since when a leaf was written after it, whatever the offset', () => {
     expect(confirmationStatus(confirmation, [at('2026-11-10T10:00:01+02:00')])).toBe('changed_since')
+  })
+})
+
+describe('confirmedAtOf', () => {
+  it('holds from what the confirmer saw, never later than now', () => {
+    const now = at('2026-11-12T10:00:00Z')
+    const earlier = at('2026-11-12T09:59:00Z')
+    const later = at('2026-11-12T10:05:00Z')
+    expect(confirmedAtOf(now, earlier)).toBe(earlier)
+    expect(confirmedAtOf(now, later)).toBe(now)
+    expect(confirmedAtOf(now, at('2026-11-12T12:00:00+02:00'))).toBe(now)
   })
 })
 

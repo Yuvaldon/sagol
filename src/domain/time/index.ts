@@ -1,4 +1,4 @@
-import { parseAbsolute, parseDate, toCalendarDate, toZoned } from '@internationalized/date'
+import { fromAbsolute, parseAbsolute, parseDate, toCalendarDate, toZoned } from '@internationalized/date'
 import { IssueCode, type CalendarDate, type Issue, type Timestamp } from '@contracts'
 
 // Calendar and instant arithmetic shared by every domain module (D-035, D-042).
@@ -92,6 +92,11 @@ export function millisecondsUntilNextDay(timezone: string, now: Timestamp): numb
   const current = parseAbsolute(now, timezone)
   const nextDay = toZoned(toCalendarDate(current).add({ days: 1 }), timezone)
   return nextDay.compare(current)
+}
+
+/** The instant `milliseconds` after the epoch: when a cache that keeps a read time as a number last read (D-293). */
+export function instantAt(milliseconds: number): Timestamp {
+  return fromAbsolute(milliseconds, INSTANT_COMPARISON_ZONE).toAbsoluteString()
 }
 
 /** How long from `now` until `then`: negative when `then` has passed (D-169). */
