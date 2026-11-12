@@ -5,6 +5,13 @@ export const dictionary = {
   app: {
     name: 'סגול',
     loading: 'טוען…',
+    updateReady: 'גרסה חדשה זמינה',
+    updateReload: 'רענון',
+  },
+  offline: {
+    title: 'אין חיבור לרשת',
+    hint: 'סגול צריכה רשת כדי לטעון את הנתונים. היא תיפתח מעצמה כשהחיבור יחזור.',
+    retry: 'ניסיון חוזר',
   },
   signIn: {
     title: 'כניסה לסגול',
@@ -738,6 +745,9 @@ export const dictionary = {
     appearanceLight: 'בהיר',
     appearanceDark: 'כהה',
     appearanceSystem: 'לפי המכשיר',
+    install: 'התקנת האפליקציה',
+    installIosTitle: 'התקנה במסך הבית',
+    installIosHint: 'בספארי: הקישו על כפתור השיתוף ואז על ״הוספה למסך הבית״.',
     signOut: 'יציאה',
   },
   startup: {

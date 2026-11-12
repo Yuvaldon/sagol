@@ -32,6 +32,15 @@ export function FailureScreen({ error }: { readonly error: AppError }) {
   )
 }
 
+/** A remote build without a network (D-185): says so, and the app starts by itself when the network returns. */
+export function OfflineScreen({ onRetry }: { readonly onRetry: () => void }) {
+  return (
+    <CenteredSheet titleKey="offline.title" hintKey="offline.hint">
+      <Button onPress={onRetry}>{t('offline.retry')}</Button>
+    </CenteredSheet>
+  )
+}
+
 /** The env is invalid: every problem, by variable (D-074, D-207). */
 export function StartupFailureScreen({ issues }: { readonly issues: readonly EnvIssue[] }) {
   return (

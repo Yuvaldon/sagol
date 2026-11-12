@@ -308,6 +308,11 @@
   }
 }
 
+/* Keeps a top notice below the phone's status bar and notch. */
+@utility top-safe {
+  top: calc(var(--spacing-lg) + env(safe-area-inset-top));
+}
+
 /* Keeps the bottom bar above the phone's home indicator. */
 @utility bottom-safe {
   bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom));
