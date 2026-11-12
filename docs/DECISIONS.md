@@ -237,6 +237,7 @@ am = amends, ref = refines, ext = extends.
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
 | D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | |
 | D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | |
+| D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
@@ -3164,6 +3165,30 @@ the database's guards hold what can be held without refusing a faithful restore.
   judged by that rotation's tags; a candidate with no rotation is NULL, since its fields already refuse it (D-216).
 **Why:** each surface reads one rotation, named where it is read, so the mode and a request for another rotation never
 mix their tags; a close the screen offers only when the command would take it.
+
+## D-223 — The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval
+2026-11-12 · accepted · refines D-251, D-262, D-282, D-283 · V27 · decided under D-170
+- **The claim** creates the root unit, named after the organization, with the claimer as its first soldier, and the
+  time zone chosen in the claim form. The root's form edits the time zone on its own: saving it changes nothing else.
+  One root only (D-251): neither the units module nor "move to" offers the top level once it exists, and the
+  permissions read the same rule, so no control leads to a refusal.
+- **The setup opens over the board** once the claim lands. While the root is fresh it shows the template wizard
+  (pick, adjust, "סיום"); "אחר כך" hands over to the checklist. "סיום" closes it on the board in routine. A refused step
+  stops the run, keeps what ran, and the stop shows above the checklist, which finishes the rest. The checklist shows
+  only while something is unfinished; its units step counts units under the root, since the root always exists.
+- **Template details.** Squads are named by their position ("כיתה 1"...), and rules keep a null description. The
+  staging data is not migrated by this slice: organizations claimed before it have no root, and get one the first time
+  the owner creates a unit, as before.
+- **Quick entry** is offered only for units where the actor may place a soldier and set the private fields, since every
+  row carries them. A pasted header is recognized by the column labels as the screen shows them. Rows are independent:
+  each is checked and saved on its own, a refusal stays on its row, and the rest are saved.
+- **Bulk approval** shows only with more than one pending request. A request is linked only when exactly one live
+  soldier matches its personal number; the candidates are re-read for each request at the time it runs, so a soldier
+  linked by an earlier request of the same run is not offered again. Every other request is named for its own review.
+- **e2e:** the helpers `enterAsOwner` (which sets the opened setup aside with `closeSetup`) and `addUnit` (a unit under
+  the root through the row's actions) follow the claim; tests that built a top unit build it under the root.
+**Why:** journey (a) of Design.md runs end to end with no dead end, and every bulk path is the single path repeated, so
+no check is skipped.
 
 ## D-250 — Two vocabularies: everyday words, and the words of managing a unit
 2026-11-12 · accepted · refines D-212, D-215 · V24 · decided under the owner's autonomy instruction of 2026-11-11
