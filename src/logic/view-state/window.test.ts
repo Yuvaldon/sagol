@@ -118,4 +118,9 @@ describe('the rotation of the mode (D-257, D-222)', () => {
     expect(scopeRotation([closedEnded], TODAY)).toBeNull()
     expect(scopeRotation([], TODAY)).toBeNull()
   })
+
+  it('skips a closed rotation even on the last day its close gave it (D-258)', () => {
+    expect(scopeRotation([{ ...running, end_date: TODAY, closed_at: AT }], TODAY)).toBeNull()
+    expect(scopeRotation([ended, { ...running, end_date: TODAY, closed_at: AT }], TODAY)?.id).toBe(ended.id)
+  })
 })

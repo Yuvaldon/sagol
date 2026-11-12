@@ -108,17 +108,19 @@ export function rotationOn<Rotation extends Pick<Deployment, 'start_date' | 'end
 }
 
 /**
- * The workspace's mode (D-217, D-257, D-222): the rotation that runs today, else the next one to start, else the latest
- * one that has ended but is not closed yet. NULL is routine. `rotations` are by start.
+ * The workspace's mode (D-217, D-257, D-222): of the rotations not closed, the one that runs today, else the next one
+ * to start, else the latest one that has ended. A closed rotation is history, even on the last day its close gave it
+ * (D-258). NULL is routine. `rotations` are by start.
  */
 export function scopeRotation<Rotation extends Pick<Deployment, 'start_date' | 'end_date' | 'closed_at'>>(
   rotations: readonly Rotation[],
   today: CalendarDate,
 ): Rotation | null {
+  const open = rotations.filter((rotation) => rotation.closed_at === null)
   return (
-    rotationOn(rotations, today) ??
-    rotations.find((rotation) => compareDates(rotation.start_date, today) > 0) ??
-    rotations.findLast((rotation) => rotation.closed_at === null && rotation.end_date !== null && compareDates(rotation.end_date, today) < 0) ??
+    rotationOn(open, today) ??
+    open.find((rotation) => compareDates(rotation.start_date, today) > 0) ??
+    open.findLast((rotation) => rotation.end_date !== null && compareDates(rotation.end_date, today) < 0) ??
     null
   )
 }
