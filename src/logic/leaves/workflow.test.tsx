@@ -432,12 +432,12 @@ describe('my preferences (D-121)', () => {
       wrapper: wrapperOf(portsWith({ stored: [], updateMyPreferences })),
     })
     await waitFor(() => {
-      expect(result.current.mine).toEqual({ status: 'ready', value: { create_leaves_as_approved: false } })
+      expect(result.current.mine).toEqual({ status: 'ready', value: SoldierPreferences.parse({}) })
     })
     await act(async () => {
       await result.current.save.run({ create_leaves_as_approved: true })
     })
-    expect(updateMyPreferences).toHaveBeenCalledWith({ expected_version: null, preferences: { create_leaves_as_approved: true } })
+    expect(updateMyPreferences).toHaveBeenCalledWith({ expected_version: null, preferences: SoldierPreferences.parse({ create_leaves_as_approved: true }) })
   })
 
   it('starts "approve now" from the default (D-121)', () => {
