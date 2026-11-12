@@ -131,14 +131,16 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V23 | Focus mode | One control hides both strips and the chips; one restore button brings them back (OI-032, after V25) | ☐ |
 | V26 | Rotation as a mode | One rotation at a time, routine between them, the final close, the whole unit by default, tags for one rotation (D-257 … D-260; schema change) | ☑ |
 | V27 | Templates and setup | The claim creates the root unit; the "פלוגה" template; pick, adjust, done (D-251, D-261, D-262) | ☐ |
+| V32 | Work and unit setup | Daily work in "ניהול יחידה", one-time definitions in "הגדרות היחידה"; a definition apart from its use; a missing definition created in place; tag categories advanced; the checklist leads (D-284, D-285) | ☐ |
 | V28 | Several requests at once | One sheet of rows, a recurring row, sent atomically, each row its own leave; the quick action by mode (D-266, D-267) | ☐ |
+| A7 | audit | Whole product, once V27 and V28 are in (D-284) | ☐ |
 | V29 | Board visual language | Presence quiet, absence a hole, green never means away; rounds under requests (D-268) | ☐ |
 | V30 | דוח 1 as a workflow | Each unit confirms its list, the report owner sends one message up (D-269; schema change) | ☐ |
 | V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation (D-270) | ☐ |
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units | ☐ |
-| A7 | audit | Whole product | ☐ |
 
-Order (D-271): track A runs V24 → V22 → V25 → V28 → V29 → V30 → V23; track B runs V26 → V27 → V31 → V21.
+Order (D-271, amended by D-284): before launch, track A runs V32 (its docs first) → V28 and track B runs V26 → V27;
+then A7 on main once V27 and V28 are in; after launch, V29, V30, V31, V21, V23.
 
 ## Later (no schema change required)
 
