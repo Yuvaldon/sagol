@@ -56,7 +56,7 @@ interface ModuleGroup {
 
 const GROUPS: readonly ModuleGroup[] = [
   {
-    // Opened from the navigation panel and from an empty board (D-180).
+    // The template wizard, opened on the new unit by the onboarding screen; the checklist is in "הגדרות היחידה" (D-297).
     titleKey: 'setup.title',
     sections: [{ panel: PANEL_IDS.setup, labelKey: 'setup.title', isAllowed: (access) => access.setup, Module: SetupModule }],
   },

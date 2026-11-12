@@ -16,6 +16,7 @@ import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { TabBar } from './TabBar'
 import { HomeLanding } from './HomeLanding'
 import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
+import { NavigationPanelContext, useNavigationPanelScope } from './navigationPanelState'
 import { InstallInvitation } from './InstallInvitation'
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { ViewSwitcher } from './ViewSwitcher'
@@ -102,6 +103,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
+  const navigation = useNavigationPanelScope()
   useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
@@ -111,6 +113,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
     // The row under the top strip pushes the board's first row down while a condition is set (D-173, D-252).
     <FilterFocusContext value={focus}>
       <PreferenceFailureContext value={preferenceFailure}>
+      <NavigationPanelContext value={navigation}>
       <div
         data-filter-row={boardShown && active ? 'shown' : undefined}
         className="relative h-dvh bg-canvas"
@@ -129,6 +132,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
         <PreferenceFailureNotice />
         <InstallInvitation />
       </div>
+      </NavigationPanelContext>
       </PreferenceFailureContext>
     </FilterFocusContext>
   )

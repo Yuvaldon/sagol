@@ -1040,7 +1040,6 @@ export const dictionary = {
     waiting: 'ממתינים לטיפול',
   },
   setup: {
-    open: 'הקמת היחידה',
     title: 'הקמת היחידה',
     progressOf: 'מתוך',
     progressDone: 'צעדים הושלמו',
