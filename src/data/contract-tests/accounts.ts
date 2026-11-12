@@ -343,6 +343,19 @@ export function describeAccountContract(
           valueOf(await review(identity, input.id, { kind: 'link', account_id: newAccountId(), soldier_id: inside }))
         })
 
+        it('names no linked soldier outside the reviewer: the candidate is checked before the uniques (OI-122)', async () => {
+          // A candidate inside the reviewer's scope lets the reviewer read the request at all.
+          await addSoldier('Asher', 'Peretz')
+          const outside = await addSoldier('Asher', 'Peretz', null, false)
+          const { input: first } = await ask(stranger('first@example.test'))
+          valueOf(await review(owner, first.id, { kind: 'link', account_id: newAccountId(), soldier_id: outside }))
+          const { input } = await ask(stranger('second@example.test'))
+          const { identity } = await unitReviewer()
+          expect(issuesOf(await review(identity, input.id, { kind: 'link', account_id: newAccountId(), soldier_id: outside }))).toEqual([
+            { path: ['resolution', 'soldier_id'], code: 'reference_not_found' },
+          ])
+        })
+
         it('refuses a reviewer without the permission, and a request that is no longer pending', async () => {
           const soldier = await addSoldier('Asher', 'Peretz')
           const { input } = await ask(stranger('a@example.test'))

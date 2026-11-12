@@ -13,6 +13,8 @@ import { FailureScreen, LoadingScreen } from './states'
 import { UnitSelector } from './UnitSelector'
 import { UserMenu } from './UserMenu'
 import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
+import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
+import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { ViewSwitcher } from './ViewSwitcher'
 import { Viewport } from './Viewport'
 import { WindowNavigator } from './WindowNavigator'
@@ -114,6 +116,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const { active } = useBoardFilters()
   const { window } = useDateWindow()
   const focus = useFilterFocusScope()
+  const preferenceFailure = usePreferenceFailureScope()
   useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
@@ -122,6 +125,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   return (
     // The row of set conditions pushes the board's first row down only while it shows (D-173).
     <FilterFocusContext value={focus}>
+      <PreferenceFailureContext value={preferenceFailure}>
       <div data-filter-row={active && window !== null ? 'shown' : undefined} className="relative h-dvh bg-canvas p-sm">
         <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
           <Viewport />
@@ -129,7 +133,9 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
         <NewLeaveButton />
         {isDesktop ? <DesktopBars name={name} identity={identity} /> : <MobileBars name={name} identity={identity} />}
         <ModuleDrawer />
+        <PreferenceFailureNotice />
       </div>
+      </PreferenceFailureContext>
     </FilterFocusContext>
   )
 }
