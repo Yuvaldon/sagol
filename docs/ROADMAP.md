@@ -140,7 +140,8 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units | ☐ |
 
 Order (D-271, amended by D-284): before launch, track A runs V32 (its docs first) → V28 and track B runs V26 → V27;
-then A7 on main once V27 and V28 are in; after launch, V29, V30, V31, V21, V23.
+then A7 on main once V27 and V28 are in. V29 is done. Before launch: "A7 fixes" (track A) and V33 "Board controls"
+(track B); then V30, V31, V21, V23.
 
 ## Later (no schema change required)
 
