@@ -225,7 +225,7 @@ export function DeploymentsModule() {
   return (
     <div className="flex flex-col gap-lg">
       {live.length === 0 ? (
-        <EmptyNotice titleKey="deployments.emptyTitle" bodyKey={permissions.createAny ? 'deployments.emptyBody' : 'deployments.emptyReadOnly'}>
+        <EmptyNotice titleKey="deployments.emptyTitle" bodyKey={emptyBody(liveUnits.length > 0, permissions.createAny)}>
           {permissions.createAny ? (
             <Button variant="primary" onPress={newDeployment}>
               <Plus aria-hidden size={14} />
@@ -280,6 +280,12 @@ export function DeploymentsModule() {
       )}
     </div>
   )
+}
+
+/** Without a live unit there is nowhere to place a deployment yet. */
+function emptyBody(hasUnits: boolean, canCreate: boolean) {
+  if (!hasUnits) return 'deployments.emptyNoUnits' as const
+  return canCreate ? ('deployments.emptyBody' as const) : ('deployments.emptyReadOnly' as const)
 }
 
 const NO_UNITS: readonly Unit[] = []
