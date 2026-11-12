@@ -7,7 +7,7 @@ import { Button } from '../primitives/Button'
 // its body and uses a named action (D-088).
 
 const OVERLAY = 'enter-scrim fixed inset-none flex items-center justify-center bg-scrim p-lg'
-const SURFACE = 'glass-menu w-full max-w-sheet rounded-panel p-lg'
+const SURFACE = 'glass-menu max-h-full w-full max-w-sheet overflow-y-auto rounded-panel p-lg'
 const BODY = 'flex flex-col gap-md outline-none'
 
 export interface SmallDialogProps {
