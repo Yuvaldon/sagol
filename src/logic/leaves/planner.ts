@@ -41,7 +41,8 @@ export interface LeaveRoundValues {
   /** As typed: the form's fields are text. */
   readonly days_in: string
   readonly days_home: string
-  readonly groups: readonly RoundGroup[]
+  // Not readonly: TanStack Form adds and removes groups in place, as the sheet's rows (D-275).
+  readonly groups: RoundGroup[]
   readonly leave_type_id: LeaveTypeId | null
   readonly reason: string
   /** Shown only to who may approve every soldier planned (D-013). */
