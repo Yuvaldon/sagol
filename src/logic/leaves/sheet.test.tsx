@@ -44,12 +44,12 @@ describe('the request sheet (D-275)', () => {
     const values = newLeaveSheetValues('2026-11-08', true, { soldier_id: YAEL, start_date: '2026-11-09', end_date: '2026-11-11' })
     expect(values).toMatchObject({ soldier_id: YAEL, as_approved: true })
     expect(values.rows).toHaveLength(1)
-    expect(values.rows[0]).toMatchObject({ start_date: '2026-11-09', end_date: '2026-11-11', repeats: false, every_days: LEAVE_SHEET.defaultEveryDays })
+    expect(values.rows[0]).toMatchObject({ start_date: '2026-11-09', end_date: '2026-11-11', repeats: false, every_days: String(LEAVE_SHEET.defaultEveryDays) })
     expect(newLeaveSheetValues('2026-11-08').rows[0]).toMatchObject({ start_date: '2026-11-08', end_date: '2026-11-08' })
   })
 
   it('expands a recurring row every so many days up to its last date, each leave as long as the first', () => {
-    const days = sheetDays(sheet(row({ repeats: true, every_days: 14, until: '2026-12-07' }), row({ start_date: '2026-11-20', end_date: '2026-11-20' })))
+    const days = sheetDays(sheet(row({ repeats: true, every_days: '14', until: '2026-12-07' }), row({ start_date: '2026-11-20', end_date: '2026-11-20' })))
     expect(days.map((day) => [day.row, day.start_date, day.end_date])).toEqual([
       [0, '2026-11-09', '2026-11-10'],
       [0, '2026-11-23', '2026-11-24'],
@@ -59,7 +59,7 @@ describe('the request sheet (D-275)', () => {
   })
 
   it('keeps a repetition that is not valid to its own days, and says why on the row', () => {
-    const values = sheet(row(), row({ repeats: true, every_days: 1, until: '' }))
+    const values = sheet(row(), row({ repeats: true, every_days: '1', until: '' }))
     expect(sheetDays(values)).toHaveLength(2)
     expect(leaveSheetIssues(values, () => null, rotationOf)).toEqual([
       { path: ['rows', 1, 'every_days'], code: 'too_small' },
@@ -68,15 +68,18 @@ describe('the request sheet (D-275)', () => {
     expect(leaveSheetIssues(sheet(row({ repeats: true, until: '2026-11-01' })), () => null, rotationOf)).toEqual([
       { path: ['rows', 0, 'until'], code: 'too_small' },
     ])
-    expect(leaveSheetIssues(sheet(row({ repeats: true, every_days: 1.5, until: '2026-12-01' })), () => null, rotationOf)).toEqual([
+    expect(leaveSheetIssues(sheet(row({ repeats: true, every_days: '1.5', until: '2026-12-01' })), () => null, rotationOf)).toEqual([
       { path: ['rows', 0, 'every_days'], code: 'not_integer' },
+    ])
+    expect(leaveSheetIssues(sheet(row({ repeats: true, every_days: ' ', until: '2026-12-01' })), () => null, rotationOf)).toEqual([
+      { path: ['rows', 0, 'every_days'], code: 'required' },
     ])
   })
 
   it('answers each row on its own fields: the schema, a reason the type requires, the rotation', () => {
     const outside: RotationOf = (_soldiers, dates) =>
       dates.start_date === '2026-11-23' ? { deployment_id: null, issues: [{ path: ['start_date'], code: 'outside_rotation' }] } : { deployment_id: ROTATION, issues: [] }
-    const values = sheet(row({ reason: '' }), row({ leave_type_id: null }), row({ repeats: true, every_days: 14, until: '2026-11-23' }))
+    const values = sheet(row({ reason: '' }), row({ leave_type_id: null }), row({ repeats: true, every_days: '14', until: '2026-11-23' }))
     expect(leaveSheetIssues(values, (id) => (id === null ? null : { requires_reason: true }), outside)).toEqual([
       { path: ['rows', 1, 'leave_type_id'], code: 'required' },
       { path: ['rows', 0, 'reason'], code: 'reason_required' },
@@ -90,14 +93,14 @@ describe('the request sheet (D-275)', () => {
   })
 
   it('stops past the sheet\'s limit, on the row that reaches it', () => {
-    const endless = sheet(row({ start_date: '2026-11-01', end_date: '2026-11-01', repeats: true, every_days: 1, until: '2027-12-31' }))
+    const endless = sheet(row({ start_date: '2026-11-01', end_date: '2026-11-01', repeats: true, every_days: '1', until: '2027-12-31' }))
     expect(sheetDays(endless)).toHaveLength(LEAVE_SHEET.maxLeaves + 1)
     expect(leaveSheetIssues(endless, () => null, rotationOf)).toContainEqual({ path: ['rows', 0, 'until'], code: 'too_big' })
     expect(sheetCandidates(endless)).toHaveLength(LEAVE_SHEET.maxLeaves)
   })
 
   it('sends one command, each leave with its own id and rotation, a blank reason as NULL', () => {
-    const values = { ...sheet(row({ reason: ' ', repeats: true, every_days: 28, until: '2026-12-07' })), as_approved: true }
+    const values = { ...sheet(row({ reason: ' ', repeats: true, every_days: '28', until: '2026-12-07' })), as_approved: true }
     const { input, days } = toCreateLeavesInput(values, rotationOf, [])
     expect(days).toHaveLength(2)
     expect(input).toMatchObject({ soldier_id: YAEL, as_approved: true, acknowledged_rule_ids: [] })
@@ -109,7 +112,7 @@ describe('the request sheet (D-275)', () => {
   })
 
   it('judges every leave the sheet would create, each with an id no row has', () => {
-    const values = sheet(row({ repeats: true, every_days: 14, until: '2026-11-23' }), row({ leave_type_id: null }))
+    const values = sheet(row({ repeats: true, every_days: '14', until: '2026-11-23' }), row({ leave_type_id: null }))
     const candidates = sheetCandidates(values)
     expect(candidates.map((leave) => [leave.start_date, leave.status])).toEqual([
       ['2026-11-09', 'pending'],
@@ -136,7 +139,7 @@ describe('sending the sheet with an optimistic update (D-275)', () => {
   }
 
   const datesOf = (state: ReturnType<typeof useLeaves>) => (state.status === 'ready' ? state.value.map((leave) => leave.start_date).sort() : null)
-  const values = sheet(row({ repeats: true, every_days: 14, until: '2026-11-23' }))
+  const values = sheet(row({ repeats: true, every_days: '14', until: '2026-11-23' }))
 
   it('shows every leave at once, and takes them all back on a refusal', async () => {
     let answer: (result: Result<Leave[]>) => void = () => undefined

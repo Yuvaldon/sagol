@@ -31,9 +31,9 @@ export interface LeaveSheetRow {
   readonly start_date: CalendarDate | ''
   readonly end_date: CalendarDate | ''
   readonly reason: string
-  /** The row repeats its days every `every_days`, up to `until`. */
+  /** The row repeats its days every `every_days`, up to `until`. As typed: the form's field is text. */
   readonly repeats: boolean
-  readonly every_days: number
+  readonly every_days: string
   readonly until: CalendarDate | ''
 }
 
@@ -53,7 +53,7 @@ export function newSheetRow(start: CalendarDate | '', end: CalendarDate | '' = s
     end_date: end,
     reason: '',
     repeats: false,
-    every_days: LEAVE_SHEET.defaultEveryDays,
+    every_days: String(LEAVE_SHEET.defaultEveryDays),
     until: '',
   }
 }
@@ -93,7 +93,8 @@ export function rowDays(row: LeaveSheetRow, index: number): SheetDays[] {
   const length = daysBetween(row.start_date, row.end_date)
   const days: SheetDays[] = []
   // Bounded past the sheet's limit, so the count's issue is still raised without walking an endless rhythm.
-  for (let start = row.start_date; compareDates(start, row.until) <= 0 && days.length <= LEAVE_SHEET.maxLeaves; start = addDays(start, row.every_days)) {
+  const every = Number(row.every_days)
+  for (let start = row.start_date; compareDates(start, row.until) <= 0 && days.length <= LEAVE_SHEET.maxLeaves; start = addDays(start, every)) {
     days.push({ row: index, start_date: start, end_date: addDays(start, length) })
   }
   return days
@@ -116,9 +117,11 @@ function repeatIssues(row: LeaveSheetRow): Issue[] {
     row.start_date === '' || row.end_date === '' || compareDates(row.start_date, row.end_date) > 0
       ? LEAVE_SHEET.minEveryDays
       : Math.max(LEAVE_SHEET.minEveryDays, daysBetween(row.start_date, row.end_date) + 1)
-  if (!Number.isInteger(row.every_days)) issues.push({ path: at('every_days'), code: IssueCode.enum.not_integer })
-  else if (row.every_days < shortest) issues.push({ path: at('every_days'), code: IssueCode.enum.too_small })
-  else if (row.every_days > LEAVE_SHEET.maxEveryDays) issues.push({ path: at('every_days'), code: IssueCode.enum.too_big })
+  const every = Number(row.every_days)
+  if (row.every_days.trim() === '') issues.push({ path: at('every_days'), code: IssueCode.enum.required })
+  else if (!Number.isInteger(every)) issues.push({ path: at('every_days'), code: IssueCode.enum.not_integer })
+  else if (every < shortest) issues.push({ path: at('every_days'), code: IssueCode.enum.too_small })
+  else if (every > LEAVE_SHEET.maxEveryDays) issues.push({ path: at('every_days'), code: IssueCode.enum.too_big })
   if (row.until === '') issues.push({ path: at('until'), code: IssueCode.enum.required })
   else if (row.start_date !== '' && compareDates(row.until, row.start_date) < 0) issues.push({ path: at('until'), code: IssueCode.enum.too_small })
   return issues
