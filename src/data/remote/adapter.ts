@@ -179,6 +179,11 @@ export function createRemoteDataAdapter(
         }
       },
     },
+    // A batch is one request: the server runs it in that request's transaction (D-201).
+    transfer: {
+      importBatch: (raw) => call('transfer', 'transfer', 'importBatch', [raw]) as never,
+      exportOrganization: () => call('transfer', 'transfer', 'exportOrganization', []) as never,
+    },
     repositories: groupsOf('repositories', REPOSITORY_METHODS, call),
     commands: groupsOf('commands', COMMAND_METHODS, call),
     changes,
