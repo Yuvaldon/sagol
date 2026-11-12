@@ -217,7 +217,6 @@ export function RankBindingsModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('bindings.hint')}</p>
       <SelectField labelKey="bindings.role" name="role_id" value={role?.id ?? null} options={roleChoices} onChange={setRoleId} error={null} />
       {failure === null ? null : <FailureNotice error={failure} />}
       {role === undefined ? (

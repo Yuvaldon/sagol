@@ -67,7 +67,7 @@ export function MyLeavesModule() {
 
   if (open.length === 0 && history.length === 0) {
     return (
-      <EmptyNotice titleKey="myLeaves.emptyTitle" bodyKey={access?.create === true ? 'myLeaves.emptyBody' : 'myLeaves.emptyReadOnly'}>
+      <EmptyNotice titleKey="myLeaves.emptyTitle" bodyKey={access?.create === true ? undefined : 'myLeaves.emptyReadOnly'}>
         {newRequest}
       </EmptyNotice>
     )

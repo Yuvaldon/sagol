@@ -245,7 +245,7 @@ export function RulesModule() {
         <DaySection day={rulesDay.day} unitId={unit.kind === 'unit' ? unit.unitId : null} onClose={rulesDay.open} />
       )}
       {live.length === 0 ? (
-        <EmptyNotice titleKey="rules.emptyTitle" bodyKey={permissions.createAny ? 'rules.emptyBody' : 'rules.emptyReadOnly'}>
+        <EmptyNotice titleKey="rules.emptyTitle" bodyKey={permissions.createAny ? undefined : 'rules.emptyReadOnly'}>
           {permissions.createAny ? (
             <Button variant="primary" onPress={newRule}>
               <Plus aria-hidden size={14} />
@@ -256,7 +256,7 @@ export function RulesModule() {
       ) : (
         <>
           {conflicts.status === 'ready' ? <ConflictsSection conflicts={conflicts.value} /> : null}
-          <Section title={t('rules.listLabel')} hint={t('rules.hint')}>
+          <Section title={t('rules.listLabel')}>
             {failure === null ? null : <FailureNotice error={failure} />}
             <ul aria-label={t('rules.listLabel')} className="flex flex-col">
               {live.map((rule) => (

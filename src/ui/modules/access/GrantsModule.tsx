@@ -217,7 +217,6 @@ function GrantList({
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('grants.hint')}</p>
       <SwitchField labelKey="grants.showInactive" name="show_inactive" value={showInactive} onChange={setShowInactive} />
       {failure === null ? null : <FailureNotice error={failure} />}
       {rows.status === 'failed' ? (

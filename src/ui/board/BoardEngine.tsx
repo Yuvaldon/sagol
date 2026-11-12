@@ -5,6 +5,7 @@ import {
   hasLeaveConditions,
   useBarColors,
   useBoard,
+  useBoardSort,
   useDateWindow,
   useLeaveConditions,
   useModuleAccess,
@@ -145,7 +146,11 @@ function BoardData({
   const { filter, read } = useViewFilter()
   const { conditions } = useLeaveConditions()
   const missing = useOnlyMissing()
-  const board = useMemo((): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on }), [conditions, missing.on])
+  const { board: sort } = useBoardSort()
+  const board = useMemo(
+    (): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on, sort }),
+    [conditions, missing.on, sort],
+  )
   const model = useBoard(window, today, filter, board)
   if (model.status === 'loading') {
     return (

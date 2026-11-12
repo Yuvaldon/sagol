@@ -251,7 +251,7 @@ export function TagsModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="tags.emptyTitle" bodyKey={permissions.create ? 'tags.emptyBody' : 'tags.emptyReadOnly'}>
+      <EmptyNotice titleKey="tags.emptyTitle" bodyKey={permissions.create ? undefined : 'tags.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newTag}>
             <Plus aria-hidden size={14} />
@@ -297,7 +297,6 @@ export function TagsModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('tags.hint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}
       {sections.map((section) => (
         <CategorySection key={section.category.id} title={section.category.name}>

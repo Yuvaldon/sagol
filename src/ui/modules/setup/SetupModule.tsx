@@ -17,6 +17,7 @@ const STEP_KEYS: Readonly<Record<SetupStepId, { readonly title: I18nKey; readonl
   leave_types: { title: 'setup.steps.leave_types.title', body: 'setup.steps.leave_types.body' },
   tags: { title: 'setup.steps.tags.title', body: 'setup.steps.tags.body' },
   soldiers: { title: 'setup.steps.soldiers.title', body: 'setup.steps.soldiers.body' },
+  deployments: { title: 'setup.steps.deployments.title', body: 'setup.steps.deployments.body' },
 }
 
 /** Between the words of a line built from several strings. */
@@ -62,7 +63,6 @@ export function SetupModule() {
   const summary = [String(done), t('setup.progressOf'), String(steps.length), t('setup.progressDone')].join(WORD)
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('setup.intro')}</p>
       <p role="status" className="text-name font-semibold tabular-nums">
         {summary}
       </p>

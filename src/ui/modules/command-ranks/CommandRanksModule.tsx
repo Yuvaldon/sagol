@@ -219,7 +219,7 @@ export function CommandRanksModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="commandRanks.emptyTitle" bodyKey={permissions.create ? 'commandRanks.emptyBody' : 'commandRanks.emptyReadOnly'}>
+      <EmptyNotice titleKey="commandRanks.emptyTitle" bodyKey={permissions.create ? undefined : 'commandRanks.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newRank}>
             <Plus aria-hidden size={14} />
@@ -247,7 +247,6 @@ export function CommandRanksModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('commandRanks.hint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}
       <ul aria-label={t('commandRanks.listLabel')} className="flex flex-col">
         {live.map((rank) => (

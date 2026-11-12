@@ -25,6 +25,18 @@ export function gridLayout(availablePx: number, dayCount: number, sizes: GridSiz
   return { nameColumnPx: sizes.nameColumnPx, dayPx, dayCount, widthPx: sizes.nameColumnPx + dayPx * dayCount }
 }
 
+/** A band of window lengths and the narrowest day column it allows (D-211). */
+export interface DensityBand {
+  readonly upToDays: number
+  readonly minDayPx: number
+}
+
+/** The narrowest day column for a window of `dayCount` days: the first band that holds it, else the last band's. */
+export function minDayPxFor(dayCount: number, bands: readonly DensityBand[]): number {
+  const band = bands.find((candidate) => dayCount <= candidate.upToDays) ?? bands.at(-1)
+  return band?.minDayPx ?? 0
+}
+
 /** Where a day's column starts. */
 export function dayOffset(layout: GridLayout, index: number): number {
   return layout.nameColumnPx + layout.dayPx * index

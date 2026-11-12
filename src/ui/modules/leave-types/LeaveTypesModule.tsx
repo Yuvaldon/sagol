@@ -284,7 +284,7 @@ export function LeaveTypesModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="leaveTypes.emptyTitle" bodyKey={permissions.create ? 'leaveTypes.emptyBody' : 'leaveTypes.emptyReadOnly'}>
+      <EmptyNotice titleKey="leaveTypes.emptyTitle" bodyKey={permissions.create ? undefined : 'leaveTypes.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newType}>
             <Plus aria-hidden size={14} />
@@ -332,7 +332,6 @@ export function LeaveTypesModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('leaveTypes.hint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}
       {sections
         .filter((section) => section.types.length > 0)

@@ -6,7 +6,8 @@ import { useAppliedAppearance } from './appearance'
 import { ModuleButtons } from './ModuleButtons'
 import { ModuleDrawer } from './ModuleDrawer'
 import { NewLeaveButton } from './NewLeaveButton'
-import { FilterBar, FilterControl, OnlyMissingSwitch, PresenceButton } from './FilterBar'
+import { FilterBar, FilterControl, PresenceButton } from './FilterBar'
+import { SortControl } from './SortControl'
 import { NavigationPanel } from './NavigationPanel'
 import { FailureScreen, LoadingScreen } from './states'
 import { UnitSelector } from './UnitSelector'
@@ -38,7 +39,7 @@ function FilterControls() {
   return (
     <>
       <FilterControl />
-      <OnlyMissingSwitch />
+      <SortControl />
       <PresenceButton />
     </>
   )
@@ -84,7 +85,8 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
   return (
     <>
       <nav aria-label={t('workspace.viewBar')} className={`${BAR} absolute inset-x-lg top-lg justify-between`}>
-        <div className="flex min-w-none items-center gap-xs">
+        {/* The dates keep their width; the unit's name gives way and truncates, so nothing overlaps (D-215). */}
+        <div className="flex shrink-0 items-center gap-xs">
           <NavigationPanel />
           <WindowNavigator />
         </div>

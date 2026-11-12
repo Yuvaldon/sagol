@@ -125,9 +125,9 @@ describe('the date window (D-103)', () => {
     expect(dateWindowOf({ from: TODAY, to: TODAY }, TODAY).days).toEqual([TODAY])
   })
 
-  it('counts a pair with one side, inverted or too long as absent', () => {
-    for (const params of [{ from: '2026-12-01' }, { from: '2026-12-03', to: '2026-12-01' }, { from: '2026-01-01', to: '2026-12-31' }]) {
-      expect(dateWindowOf(params, TODAY)).toMatchObject({ from: '2026-11-08', followsToday: true })
+  it('reads a pair with one side, inverted or too long as the week of its anchor (D-211)', () => {
+    for (const params of [{ from: '2026-12-01' }, { from: '2026-12-03', to: '2026-12-01' }, { from: '2026-12-02', to: '2027-12-31' }]) {
+      expect(dateWindowOf(params, TODAY)).toMatchObject({ kind: 'week', from: '2026-11-29', followsToday: false })
     }
   })
 
@@ -203,6 +203,8 @@ describe('the rows of the board (D-105)', () => {
     readsPlacements: () => true,
     marked: null,
     absent: null,
+    sort: { key: 'seniority', order: 'desc' },
+    daysAway: null,
     ...overrides,
   })
 
@@ -243,6 +245,41 @@ describe('the rows of the board (D-105)', () => {
       '# פלוגה · מחלקה א · כיתה 1 (1)',
       'הדר ■■■■■■■',
     ])
+  })
+
+  it('sorts inside each group by the chosen key and direction, and orders the groups by unit (D-214)', () => {
+    const fighter = CommandRankId.parse(uuid(20))
+    const commander = CommandRankId.parse(uuid(21))
+    const input = (sort: BoardInput['sort'], daysAway: BoardInput['daysAway'] = null) =>
+      describeItems(
+        boardItems(
+          base({
+            soldiers: [
+              soldier(1, 'אבי', 'כהן', { command_rank_id: fighter }),
+              soldier(2, 'בני', 'אבו', { command_rank_id: commander }),
+              soldier(3, 'גיל', 'זך'),
+              soldier(5, 'הדר', 'טל'),
+            ],
+            memberships: [
+              membership(70, 1, 11, '2026-01-01', null),
+              membership(71, 2, 11, '2026-01-01', null),
+              membership(72, 3, 11, '2026-01-01', null),
+              membership(74, 5, 13, '2026-01-01', null),
+            ],
+            sort,
+            daysAway,
+          }),
+        ),
+      )
+    const first = ['# פלוגה · מחלקה א (3)']
+    const second = ['# פלוגה · מחלקה א · כיתה 1 (1)', 'הדר ■■■■■■■']
+    expect(input({ key: 'name', order: 'asc' })).toEqual([...first, 'בני ■■■■■■■', 'גיל ■■■■■■■', 'אבי ■■■■■■■', ...second])
+    expect(input({ key: 'name', order: 'desc' })).toEqual([...first, 'אבי ■■■■■■■', 'גיל ■■■■■■■', 'בני ■■■■■■■', ...second])
+    // No rank comes last whichever way.
+    expect(input({ key: 'rank', order: 'asc' })).toEqual([...first, 'אבי ■■■■■■■', 'בני ■■■■■■■', 'גיל ■■■■■■■', ...second])
+    const away = (soldierId: SoldierId) => (soldierId === SoldierId.parse(uuid(3)) ? 4 : soldierId === SoldierId.parse(uuid(1)) ? 1 : 0)
+    expect(input({ key: 'absent', order: 'desc' }, away)).toEqual([...first, 'גיל ■■■■■■■', 'אבי ■■■■■■■', 'בני ■■■■■■■', ...second])
+    expect(input({ key: 'unit', order: 'desc' })).toEqual([...second, ...first, 'בני ■■■■■■■', 'אבי ■■■■■■■', 'גיל ■■■■■■■'])
   })
 
   it('keeps who served one day of the week, mutes the other days, and names paths below the selected unit', () => {
@@ -503,7 +540,7 @@ describe('view state in the URL (D-103, D-104)', () => {
     })
     press('next')
     await waitFor(() => {
-      expect(read('search')).toEqual({ from: '2026-11-15', to: '2026-11-21' })
+      expect(read('search')).toEqual({ from: '2026-11-15' })
     })
     press('today')
     await waitFor(() => {

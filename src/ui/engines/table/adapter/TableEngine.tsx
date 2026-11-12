@@ -1,5 +1,6 @@
+import type { SortKey, SortOrder } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { boardEntries, fullName, type BoardEntry } from '@logic'
+import { boardEntries, fullName, useBoardSort, type BoardEntry } from '@logic'
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -18,7 +19,9 @@ import { EngineScroller } from '../../../board/EngineScroller'
 import { groupLabel, leaveDays, leaveTone, statusText, typeName } from '../../../board/labels'
 
 // The table view (D-174): one line per leave in the window, of the soldiers in view, sorted by any column. The soldier
-// opens the soldier and the type opens the leave, as on every engine (D-119).
+// opens the soldier and the type opens the leave, as on every engine (D-119). The order is the board's, in the URL
+// (D-214): the soldier column sorts by `name` and the unit column by `unit`, both in the board's own order, and the
+// leave columns by their own keys. A board key with no column keeps the board's order.
 
 const features = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel(), sortFns })
 const column = createColumnHelper<typeof features, BoardEntry>()
@@ -50,6 +53,22 @@ const COLUMN_IDS: readonly ColumnId[] = ['soldier', 'unit', 'type', 'from', 'to'
 /** The column the table names, read back from its id. */
 function columnOf(id: string): ColumnId {
   return COLUMN_IDS.find((known) => known === id) ?? 'soldier'
+}
+
+/** The URL's key a column sorts by. */
+const KEY_OF: Record<ColumnId, SortKey> = {
+  soldier: 'name',
+  unit: 'unit',
+  type: 'type',
+  from: 'from',
+  to: 'to',
+  days: 'days',
+  status: 'status',
+}
+
+/** The column a key shows on, or NULL when the key has none and the lines keep the board's order. */
+function columnOfKey(key: SortKey): ColumnId | null {
+  return COLUMN_IDS.find((id) => KEY_OF[id] === key) ?? null
 }
 
 const CELL = 'border-b border-line px-md py-xs text-start align-middle'
@@ -103,7 +122,15 @@ function Cell({ id, entry, frame }: { readonly id: ColumnId; readonly entry: Boa
 
 function LeavesTable({ frame }: { readonly frame: BoardFrame }) {
   const data = useMemo(() => boardEntries(frame.model), [frame.model])
-  const table = useTable({ features, columns: COLUMNS, data, getRowId: (entry) => entry.leave.id })
+  const sort = useBoardSort()
+  const active = columnOfKey(sort.key ?? sort.board.key)
+  // The soldier and unit columns keep the board's own order (D-214): its rows already come sorted by name or by the
+  // tree, in the URL's direction, so a link shows the same order in either engine.
+  const sorting = useMemo(
+    () => (active === null || active === 'soldier' || active === 'unit' ? [] : [{ id: active, desc: sort.order === 'desc' }]),
+    [active, sort.order],
+  )
+  const table = useTable({ features, columns: COLUMNS, data, getRowId: (entry) => entry.leave.id, state: { sorting } })
   if (data.length === 0) {
     return (
       <Centered>
@@ -120,7 +147,7 @@ function LeavesTable({ frame }: { readonly frame: BoardFrame }) {
               <tr key={group.id}>
                 {group.headers.map((header) => {
                   const id = columnOf(header.column.id)
-                  const sorted = header.column.getIsSorted()
+                  const sorted: SortOrder | null = id === active ? sort.order : null
                   return (
                     <th
                       key={header.id}
@@ -131,7 +158,7 @@ function LeavesTable({ frame }: { readonly frame: BoardFrame }) {
                       <AriaButton
                         className={`${LINK} inline-flex items-center gap-xs`}
                         onPress={() => {
-                          header.column.toggleSorting()
+                          sort.set(KEY_OF[id], sorted === null ? undefined : sorted === 'asc' ? 'desc' : 'asc')
                         }}
                       >
                         {t(HEADER_KEYS[id])}

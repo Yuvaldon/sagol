@@ -1,5 +1,12 @@
 import type { CalendarDate, LeaveTypeId } from '@contracts'
-import { PANEL_IDS } from '@config'
+import {
+  BoardSortKey,
+  DEFAULT_BOARD_SORT_KEY,
+  DEFAULT_SORT_ORDER,
+  PANEL_IDS,
+  type SortKey,
+  type SortOrder,
+} from '@config'
 import { addDays } from '@domain'
 import { useCallback, useMemo } from 'react'
 import { useToday } from '../session/today'
@@ -47,7 +54,10 @@ export interface OnlyMissingState {
 }
 
 export interface BoardFiltersState {
-  /** A condition of the filter row is on: a soldier condition beside the unit, or a leave condition (D-173). */
+  /**
+   * A condition of the filter row is on: a soldier condition beside the unit, a leave condition, or "only who is
+   * missing" (D-173, D-213).
+   */
   readonly active: boolean
   /** Removes every condition of the filter row; the unit stays, as it is the scope and not a condition (D-173). */
   clearAll(): void
@@ -65,16 +75,17 @@ export function useBoardFilters(): BoardFiltersState {
     read.conditions.rankIds.length > 0 ||
     read.conditions.statuses.length > 0 ||
     read.conditions.properties.length > 0 ||
-    hasLeaveConditions(leaves)
+    hasLeaveConditions(leaves) ||
+    search.missing === true
   const clearAll = useCallback(() => {
     // A filter the bar does not read has no unit it can keep (D-104).
     const unitId = read.kind === 'conditions' ? read.conditions.unitId : null
-    change({ filter: writeFilter({ ...NO_CONDITIONS, unitId }), leaves: undefined })
+    change({ filter: writeFilter({ ...NO_CONDITIONS, unitId }), leaves: undefined, missing: undefined })
   }, [read, change])
   return { active, clearAll }
 }
 
-/** "Only who is missing" (D-133). Off leaves the param out. */
+/** "Only who is missing" (D-133), a condition of the filter row (D-213). Off leaves the param out. */
 export function useOnlyMissing(): OnlyMissingState {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
@@ -85,6 +96,49 @@ export function useOnlyMissing(): OnlyMissingState {
     [change],
   )
   return { on: search.missing === true, set }
+}
+
+export interface BoardSortState {
+  /** The key and direction the URL holds; NULL when it names none (D-214). */
+  readonly key: SortKey | null
+  readonly order: SortOrder
+  /** What the board's rows are ordered by: the URL's key when the board knows it, else the default. */
+  readonly board: { readonly key: BoardSortKey; readonly order: SortOrder }
+  /** Sorts by a key; with no direction, the key's own (D-214). The default order leaves both params out. */
+  set(key: SortKey, order?: SortOrder): void
+}
+
+function defaultOrderOf(key: SortKey): SortOrder {
+  const parsed = BoardSortKey.safeParse(key)
+  return parsed.success ? DEFAULT_SORT_ORDER[parsed.data] : 'asc'
+}
+
+/** The order of the board's rows and the table's lines (D-214), in the URL. */
+export function useBoardSort(): BoardSortState {
+  const search = useWorkspaceSearch()
+  const change = useChangeSearch()
+  const key = search.sort ?? null
+  const order = search.order ?? (key === null ? DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] : defaultOrderOf(key))
+  const boardKey = BoardSortKey.safeParse(key)
+  const board = useMemo(
+    () =>
+      boardKey.success
+        ? { key: boardKey.data, order }
+        : // A bare direction applies to the default key; a table-only key leaves the board in its default order.
+          { key: DEFAULT_BOARD_SORT_KEY, order: key === null ? order : DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] },
+    [boardKey.success, boardKey.data, key, order],
+  )
+  const set = useCallback(
+    (next: SortKey, nextOrder: SortOrder = defaultOrderOf(next)) => {
+      const isDefault = next === DEFAULT_BOARD_SORT_KEY && nextOrder === DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY]
+      change({
+        sort: isDefault ? undefined : next,
+        order: isDefault || nextOrder === defaultOrderOf(next) ? undefined : nextOrder,
+      })
+    },
+    [change],
+  )
+  return { key, order, board, set }
 }
 
 export interface PresenceDayState {

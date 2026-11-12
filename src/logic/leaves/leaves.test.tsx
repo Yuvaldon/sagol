@@ -175,6 +175,8 @@ describe('the leaves of a timeline row (D-111)', () => {
 
 describe('creating a leave with an optimistic update (D-115)', () => {
   const WINDOW: DateWindow = {
+    kind: 'week',
+    rotationId: null,
     from: '2026-11-08',
     to: '2026-11-14',
     days: [],
