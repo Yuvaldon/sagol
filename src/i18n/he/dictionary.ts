@@ -251,7 +251,7 @@ export const dictionary = {
     new: 'יחידה חדשה',
     newTitle: 'יחידה חדשה',
     editTitle: 'עריכת יחידה',
-    timezone: 'אזור הזמן של הארגון',
+    timezone: 'אזור הזמן של היחידה',
     timezoneToggle: 'הצגת רשימת אזורי הזמן',
     timezoneHint: 'לפיו נקבעים "היום" ושעות הבקשות בכל היחידה.',
     name: 'שם היחידה',
