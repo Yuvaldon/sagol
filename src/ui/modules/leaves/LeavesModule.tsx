@@ -78,7 +78,7 @@ function NewLeave() {
     today,
     approveNow: preferences.value.create_leaves_as_approved,
   }
-  // A collective leave needs more than one soldier to choose from (D-179), and a round plan an open rotation too (D-286).
+  // A collective leave needs more than one soldier to choose from (D-179), and a round plan an open rotation too (D-316).
   const many = creation.soldiers.length > 1
   const planIn = many && rounds.context !== null && rounds.preferred !== null ? { context: rounds.context, preferred: rounds.preferred } : null
   const offered = LEAVE_MODES.filter((candidate) => candidate === 'single' || (candidate === 'collective' ? many : planIn !== null))

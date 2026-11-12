@@ -34,7 +34,7 @@ import { LeaveTypeInPlace } from '../leave-types/LeaveTypesModule'
 import { FieldMessage } from './LeaveBatchForm'
 import { leaveTypeOptions } from './typeOptions'
 
-// The leave-round planner (D-270, D-286): inside one rotation, groups of soldiers go home on one rhythm, each group
+// The leave-round planner (D-270, D-316): inside one rotation, groups of soldiers go home on one rhythm, each group
 // from its own first day home, so the groups take turns. The plan is sent as one collective leave (D-179): every
 // round of every soldier, or none. Each group shows its rounds before anything is sent.
 
