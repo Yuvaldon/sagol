@@ -8,6 +8,8 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 type Target = 'control' | 'restore'
 
 export interface FocusMode {
+  /** Whether focus mode can be entered: only while a board is drawn (D-301). */
+  readonly available: boolean
   /** Whether the strips are hidden. */
   readonly on: boolean
   readonly enter: () => void
@@ -20,7 +22,7 @@ function noop() {
   // Outside the workspace there is nothing to hide.
 }
 
-const NONE: FocusMode = { on: false, enter: noop, leave: noop, bind: () => noop }
+const NONE: FocusMode = { available: false, on: false, enter: noop, leave: noop, bind: () => noop }
 
 export const FocusModeContext = createContext<FocusMode>(NONE)
 
@@ -38,11 +40,13 @@ function isShortcut(event: KeyboardEvent): boolean {
   )
 }
 
-function inOverlay(event: KeyboardEvent): boolean {
-  return (
-    (event.target instanceof Element && event.target.closest(FOCUS_MODE.overlay) !== null) ||
-    document.querySelector(FOCUS_MODE.overlay) !== null
-  )
+/** An open dialog, menu or popover anywhere: its keys are its own. */
+function overlayOpen(): boolean {
+  return document.querySelector(FOCUS_MODE.overlay) !== null
+}
+
+function inTextField(event: KeyboardEvent): boolean {
+  return event.target instanceof Element && event.target.closest(FOCUS_MODE.editable) !== null
 }
 
 /** The workspace's focus mode: kept for the browser session (D-197), live only while the board shows (D-218). */
@@ -60,12 +64,19 @@ export function useFocusModeScope(boardShown: boolean): FocusMode {
     set(false)
   }, [set])
   const elements = useRef<Record<Target, HTMLButtonElement | null>>({ control: null, restore: null })
-  const bind = useCallback(
-    (target: Target) => (element: HTMLButtonElement | null) => {
-      elements.current[target] = element
-    },
+  // One stable ref callback per target, so a render never detaches and reattaches it.
+  const binders = useMemo(
+    (): Record<Target, (element: HTMLButtonElement | null) => void> => ({
+      control: (element) => {
+        elements.current.control = element
+      },
+      restore: (element) => {
+        elements.current.restore = element
+      },
+    }),
     [],
   )
+  const bind = useCallback((target: Target) => binders[target], [binders])
   // After the change, once a closing menu has handed focus back to its gone trigger: the next frame.
   useEffect(() => {
     const target = pending.current
@@ -86,21 +97,25 @@ export function useFocusModeScope(boardShown: boolean): FocusMode {
   useEffect(() => {
     if (!boardShown) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return
       if (isShortcut(event)) {
+        // Not over a dialog or menu, nor in a text field, where the key is theirs; a held key toggles once.
+        if (overlayOpen() || inTextField(event)) return
         event.preventDefault()
+        if (event.repeat) return
         if (current.current) leave()
         else enter()
-      } else if (event.key === 'Escape' && current.current && !inOverlay(event)) {
-        event.preventDefault()
-        leave()
+      } else if (event.key === 'Escape' && current.current && !overlayOpen()) {
+        // Decided once the key has reached every listener: an Escape another one claims, as a drag's cancel does,
+        // stays its own. Whether an overlay was open is read now, before it closes.
+        window.setTimeout(() => {
+          if (!event.defaultPrevented) leave()
+        })
       }
     }
-    // On the window, capturing: ahead of a tooltip's own Escape on the document, so one Escape leaves; a real overlay
-    // still closes first, through `inOverlay`.
+    // On the window, capturing: ahead of a tooltip's own Escape on the document, which stops it there.
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [boardShown, enter, leave])
 
-  return useMemo(() => ({ on, enter, leave, bind }), [on, enter, leave, bind])
+  return useMemo(() => ({ available: boardShown, on, enter, leave, bind }), [boardShown, on, enter, leave, bind])
 }

@@ -12,8 +12,8 @@ import { SortSections } from './SortControl'
 import { MENU_HEADER, MENU_ITEM, MENU_LIST, MENU_POPOVER, MENU_TRIGGER, onlyKey } from './menuStyles'
 
 // The view menu lists what the engine registry holds, and nothing else (D-076, D-108). The colors of
-// the leaves sit under their own heading (D-112), for every engine (D-174), and so does focus mode (D-301), so the bars
-// gain no control.
+// the leaves sit under their own heading (D-112), for every engine (D-174); focus mode is the last section, while a
+// board is drawn (D-301), so the bars gain no control.
 
 /** Between the menu's name and the view chosen, in its tooltip. */
 const LABEL_SEPARATOR = ': '
@@ -74,19 +74,21 @@ export function ViewSwitcher() {
           </MenuSection>
           {/* A phone's strip has no room for the sort's button: its sections follow the view's here (D-273). */}
           {isDesktop ? null : <SortSections />}
-          <MenuSection>
-            <MenuItem
-              id="focus-mode"
-              textValue={t('workspace.focusEnter')}
-              aria-keyshortcuts={FOCUS_MODE.shortcut}
-              onAction={focusMode.enter}
-              className={MENU_ITEM}
-            >
-              <Maximize2 aria-hidden size={14} />
-              <span className="flex-1">{t('workspace.focusEnter')}</span>
-              <kbd className="font-sans text-label text-text-muted">{FOCUS_MODE.shortcut}</kbd>
-            </MenuItem>
-          </MenuSection>
+          {focusMode.available ? (
+            <MenuSection>
+              <MenuItem
+                id={FOCUS_MODE.menuItem}
+                textValue={t('workspace.focusEnter')}
+                aria-keyshortcuts={FOCUS_MODE.shortcut}
+                onAction={focusMode.enter}
+                className={MENU_ITEM}
+              >
+                <Maximize2 aria-hidden size={14} />
+                <span className="flex-1">{t('workspace.focusEnter')}</span>
+                <kbd className="font-sans text-label text-text-muted">{FOCUS_MODE.shortcut}</kbd>
+              </MenuItem>
+            </MenuSection>
+          ) : null}
         </Menu>
       </Popover>
     </MenuTrigger>

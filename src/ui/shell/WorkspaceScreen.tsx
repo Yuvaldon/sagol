@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useBoardFilters, useCurrentOrganization } from '@logic'
-import { useBoardShown } from './boardShown'
+import { useBoardShown, useNoBoard } from './boardShown'
 import { useAppliedAppearance } from './appearance'
 import { ModuleDrawer } from './ModuleDrawer'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
@@ -105,7 +105,8 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
-  const focusMode = useFocusModeScope(boardShown)
+  const noBoard = useNoBoard()
+  const focusMode = useFocusModeScope(boardShown && !noBoard)
   const navigation = useNavigationPanelScope()
   useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
