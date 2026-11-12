@@ -174,11 +174,11 @@ describe('the company template', () => {
     )
   })
 
-  it('sets up only the general tag category from the empty template', async () => {
+  it('sets up only the military and civilian tag categories from the empty template', async () => {
     const data = await claimedData()
     const choices = initialChoices('empty', sectionName)
     const steps = templatePlan(await baseOf(data), choices, namesOf(UNIT_TEMPLATES.empty))
-    expect(steps.map((step) => step.stage)).toEqual(['tag_categories'])
+    expect(steps.map((step) => step.stage)).toEqual(['tag_categories', 'tag_categories'])
     expect(await applyTemplatePlan(data.commands, steps)).toEqual({ ok: true })
   })
 
