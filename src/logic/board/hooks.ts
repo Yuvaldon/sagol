@@ -8,18 +8,18 @@ import { usePlacementHints } from '../roster/hooks'
 import { hasLeaveConditions, leaveMatches, type LeaveConditions } from '../view-state/conditions'
 import { filterUnitOf } from '../view-state/filter'
 import type { DateWindow } from '../view-state/window'
-import { timelineLeaves, type TimelineLeave } from './leaves'
-import { timelineItems, type TimelineItem } from './rows'
+import { boardLeaves, type BoardLeave } from './leaves'
+import { boardItems, type BoardItem } from './rows'
 
-// What the timeline engine shows for a window, a filter and the board's own conditions (D-105, D-132, D-133).
-// The viewport hands them to the engine, so every engine reads the same state (ARCHITECTURE "View engines").
+// What every engine shows for a window, a filter and the board's own conditions (D-105, D-132, D-133, D-174): one model,
+// so the timeline, the list, the table and the calendar never disagree on who is in view (ARCHITECTURE "View engines").
 
-export interface TimelineModel {
+export interface BoardModel {
   readonly days: readonly CalendarDate[]
   readonly today: CalendarDate
-  readonly items: readonly TimelineItem[]
+  readonly items: readonly BoardItem[]
   /** Each row's leaves in the window that meet the leave conditions (D-111, D-132). A soldier with none is absent. */
-  readonly leaves: ReadonlyMap<SoldierId, readonly TimelineLeave[]>
+  readonly leaves: ReadonlyMap<SoldierId, readonly BoardLeave[]>
   /** How many soldiers the rows hold, headers aside. */
   readonly soldierCount: number
   /** How many live soldiers the actor sees at all, so an empty board can tell "nobody yet" from "nobody here". */
@@ -35,12 +35,12 @@ export interface BoardConditions {
 
 const NO_BOARD_CONDITIONS: BoardConditions = { leaves: {}, onlyMissing: false }
 
-export function useTimeline(
+export function useBoard(
   window: DateWindow,
   today: CalendarDate,
   filter: FilterExpression | null,
   board: BoardConditions = NO_BOARD_CONDITIONS,
-): Loaded<TimelineModel> {
+): Loaded<BoardModel> {
   const source = useFilterSource()
   const leaves = useLeaves(window)
   const leaveTypes = useLeaveTypes()
@@ -48,25 +48,21 @@ export function useTimeline(
   const { onlyMissing } = board
   const leaveConditions = board.leaves
 
-  return useMemo((): Loaded<TimelineModel> => {
+  return useMemo((): Loaded<BoardModel> => {
     if (source.status !== 'ready') return source
     if (leaves.status !== 'ready') return leaves
     if (leaveTypes.status !== 'ready') return leaveTypes
     // What a row says about its unit waits for the hints (D-122).
     if (!placements.settled) return { status: 'loading' }
     const unit = filterUnitOf(filter)
-    const drawn = timelineLeaves(
+    const drawn = boardLeaves(
       leaves.value.filter((leave) => leaveMatches(leaveConditions, leave)),
       leaveTypes.value,
     )
     // Availability counts every leave, whatever the leave conditions draw (D-133).
     const availability = onlyMissing ? createAvailabilityContext({ leaves: leaves.value, leave_types: leaveTypes.value }) : null
-    const items = timelineItems({
-      soldiers: source.value.soldiers,
-      ranks: source.value.ranks,
-      units: source.value.units,
-      memberships: source.value.memberships,
-      soldierTags: source.value.soldierTags,
+    const items = boardItems({
+      ...source.value,
       days: window.days,
       today,
       filter,

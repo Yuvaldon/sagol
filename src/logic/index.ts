@@ -58,15 +58,15 @@ export {
   type NavigationPreferences,
 } from './session/preferences'
 export {
-  timelineItems,
-  type TimelineGroupItem,
-  type TimelineGroupLabel,
-  type TimelineInput,
-  type TimelineItem,
-  type TimelineSoldierItem,
-} from './timeline/rows'
-export { useTimeline, type BoardConditions, type TimelineModel } from './timeline/hooks'
-export { timelineLeaves, type TimelineLeave } from './timeline/leaves'
+  boardItems,
+  type BoardGroupItem,
+  type BoardGroupLabel,
+  type BoardInput,
+  type BoardItem,
+  type BoardSoldierItem,
+} from './board/rows'
+export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
+export { boardLeaves, type BoardLeave } from './board/leaves'
 export {
   datesOfRange,
   dayRangeOf,
