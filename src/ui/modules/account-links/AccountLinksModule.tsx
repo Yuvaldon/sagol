@@ -41,6 +41,7 @@ import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { rankOptions } from '../soldiers/rankOptions'
 import { unitOptions } from '../soldiers/unitOptions'
+import { BulkApproval } from './BulkApproval'
 
 // The account-links module (D-150): the pending requests, and one request with its candidates and the three ways to
 // answer it (D-149). What the actor reads is already filtered by the adapter.
@@ -368,6 +369,7 @@ export function AccountLinksModule() {
   const requests = usePendingLinkRequests()
   const panel = usePanel()
   const sentAt = useRequestTime()
+  const [bulk, setBulk] = useState(false)
   if (requests.status === 'failed') return <FailureNotice error={requests.error} />
   if (requests.status === 'loading') return <LoadingNotice />
 
@@ -393,8 +395,26 @@ export function AccountLinksModule() {
   return (
     <div className="flex flex-col gap-lg">
       <section className="flex flex-col gap-xs">
-        <h3 className="text-control font-semibold">{t('accountLinks.requestsTitle')}</h3>
-        {requests.value.length === 0 ? (
+        <div className="flex items-center justify-between gap-sm">
+          <h3 className="text-control font-semibold">{t('accountLinks.requestsTitle')}</h3>
+          {!bulk && requests.value.length > 1 ? (
+            <Button
+              onPress={() => {
+                setBulk(true)
+              }}
+            >
+              {t('accountLinks.bulk.open')}
+            </Button>
+          ) : null}
+        </div>
+        {bulk ? (
+          <BulkApproval
+            requests={requests.value}
+            onDone={() => {
+              setBulk(false)
+            }}
+          />
+        ) : requests.value.length === 0 ? (
           <EmptyNotice titleKey="accountLinks.emptyTitle" bodyKey="accountLinks.emptyBody" />
         ) : (
           <VirtualList
