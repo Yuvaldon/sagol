@@ -3,6 +3,7 @@
 // names, breakpoints, palette and icon keys, date formats. Nothing is hardcoded elsewhere.
 export { DOM } from './dom'
 export { TOOLTIP } from './tooltip'
+export { FOCUS_MODE } from './focus'
 export {
   ADAPTER_OF_AUTH_MODE,
   ENV_VARIABLES,

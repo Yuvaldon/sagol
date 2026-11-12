@@ -27,6 +27,8 @@ export const DEVICE_KEYS = {
   dayReportReasons: `${STORAGE_PREFIX}.day-report-reasons`,
   /** The last home chosen differs from the one the permissions give (D-265). */
   homeAway: `${STORAGE_PREFIX}.home-away`,
+  /** Focus mode, for the browser session (D-272). */
+  focusMode: `${STORAGE_PREFIX}.focus-mode`,
 } as const
 
 export type DeviceKey = (typeof DEVICE_KEYS)[keyof typeof DEVICE_KEYS]
