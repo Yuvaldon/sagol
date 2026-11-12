@@ -57,7 +57,9 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await claimOrganization(page)
     await expect(page).toHaveURL(/\/$/)
     await expect(organizationHeading(page)).toBeVisible()
-    await expect(page.getByRole('region', { name: he.timeline.label }).getByText(OWNER.name)).toBeVisible()
+    // A new organization has no rotation yet, nor a unit to hold one; its owner is sent to found the unit (D-218).
+    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
     await expect(page.getByRole('button', { name: `${he.account.menu} ${OWNER.name}` })).toBeVisible()
     await expectNoAxeViolations(page)
   })
@@ -170,5 +172,7 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   await expectTouchTargets()
   await claimOrganization(page)
   await expect(organizationHeading(page)).toBeVisible()
+  // The settled workspace: its empty state is in place before anything is measured.
+  await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
   await expectTouchTargets()
 })

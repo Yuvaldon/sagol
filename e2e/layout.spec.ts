@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { board } from './support/leaves.ts'
+import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, navigation, OWNER } from './support/workspace.ts'
 
 // V20's layout checks: the bars fit on one line in every shape of screen, a phone on its side keeps the phone's bars
@@ -38,7 +38,10 @@ async function overrideSafeArea(page: Page, insets: typeof UPRIGHT_INSETS) {
 }
 
 test('the bars fit on one line, the page never scrolls sideways, and the board keeps its room', async ({ page }, testInfo) => {
+  await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  // The board and its bars exist only with a rotation (D-218).
+  await openRotationInNewUnit(page, [OWNER.name])
   await expect(board(page)).toBeVisible()
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
 
@@ -78,7 +81,10 @@ test('what can be pressed sits inside the safe area, and the canvas paints edge 
   test.skip(testInfo.project.name === 'desktop', 'a desktop screen has no cutout')
   const insets = testInfo.project.name === 'landscape' ? SIDEWAYS_INSETS : UPRIGHT_INSETS
   await overrideSafeArea(page, insets)
+  await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  // The board and its bars exist only with a rotation (D-218).
+  await openRotationInNewUnit(page, [OWNER.name])
   await expect(board(page)).toBeVisible()
   await testInfo.attach('safe area', { body: await page.screenshot(), contentType: 'image/png' })
   const viewport = page.viewportSize()
@@ -116,7 +122,10 @@ test('what can be pressed sits inside the safe area, and the canvas paints edge 
 
 test('the board’s corner and name column stay one opaque surface while the days scroll under them', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'an upright phone is where the days scroll sideways')
+  await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  // The board and its bars exist only with a rotation (D-218).
+  await openRotationInNewUnit(page, [OWNER.name])
   const timeline = board(page)
   await expect(timeline.getByRole('button', { name: OWNER.name })).toBeVisible()
   // RTL: the days start at the inline start, the right, and scroll in from the left.

@@ -1,11 +1,11 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
 import { t } from '@i18n'
-import { useLeaveCreation, usePanel, useSoldiers } from '@logic'
+import { useLeaveCreation, usePanel, useRotationScope, useSoldiers } from '@logic'
 import { Plus } from 'lucide-react'
 import { Button as AriaButton } from 'react-aria-components'
 
 // The floating "+" of Stone 3 (D-115): the bottom inline-end corner of the board, above the bottom bar on a phone.
-// It shows for who may create a leave for a soldier they see (D-076).
+// It shows for who may create a leave for a soldier they see (D-076), while a rotation a request can be about exists (D-218).
 
 const NO_SOLDIERS: readonly never[] = []
 
@@ -13,7 +13,8 @@ export function NewLeaveButton() {
   const panel = usePanel()
   const soldiers = useSoldiers()
   const creation = useLeaveCreation(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
-  if (!creation.any) return null
+  const { requests } = useRotationScope()
+  if (!creation.any || !requests) return null
   return (
     <AriaButton
       aria-label={t('leaves.new')}

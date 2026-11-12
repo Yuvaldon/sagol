@@ -8,6 +8,7 @@ import {
   type DataChange,
   type DataCommands,
   type DataRepositories,
+  type DeploymentId,
   type Issue,
   type JsonValue,
   type Leave,
@@ -27,6 +28,7 @@ import {
 } from '@domain'
 import { loadActorScope, requirePermission, type ActorScope } from './actor'
 import { propertiesIssues } from './checks'
+import { leaveRotationCheck } from './leaveRotation'
 import { tableOf } from './store'
 import { createdBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
@@ -42,6 +44,7 @@ import { POLICY_TABLES } from './snapshot'
 interface LeaveDraft {
   readonly id: Leave['id']
   readonly soldier_id: SoldierId
+  readonly deployment_id: DeploymentId
   readonly start_date: Leave['start_date']
   readonly end_date: Leave['end_date']
   readonly leave_type_id: Leave['leave_type_id']
@@ -99,7 +102,11 @@ async function createLeaves(
   const issues: Issue[] = await creation.ownIssues()
   for (const [index, draft] of creation.drafts.entries()) {
     const taken = (await tableOf(database, 'leaves').get(draft.id)) !== undefined
-    const found = [...(taken ? [{ path: ['id'], code: IssueCode.enum.already_exists }] : []), ...(await details(draft))]
+    const found = [
+      ...(taken ? [{ path: ['id'], code: IssueCode.enum.already_exists }] : []),
+      ...(await details(draft)),
+      ...(await leaveRotationCheck(database, scope, draft, true)),
+    ]
     issues.push(...withPathPrefix(creation.pathOf(index), found))
   }
   if (issues.length > 0) return failValidation(issues)
@@ -156,7 +163,11 @@ export function createLeaveCreationCommands(
               as_approved: input.as_approved,
               acknowledged_rule_ids: input.acknowledged_rule_ids,
               batch_id: batch.id,
-              drafts: input.leaves.map((leave) => ({ ...leave, reason: optionalText(leave.reason) })),
+              drafts: input.leaves.map((leave) => ({
+                ...leave,
+                deployment_id: input.deployment_id,
+                reason: optionalText(leave.reason),
+              })),
               pathOf: (index) => ['leaves', index],
               ownIssues: async () =>
                 (await tableOf(database, 'leave_batches').get(batch.id)) === undefined

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, board, closeDrawer, createType, drawer, leavesOf, press, requestLeave } from './support/leaves.ts'
+import { NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, press, requestLeave } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V6's demo: tag categories and tags, a soldier's tags, filter chips, leave conditions, "only who is missing" and
@@ -99,6 +99,10 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel })).toContainText('יעל שחר')
     await expect(page.getByRole('alert')).toHaveCount(0)
     await closeDrawer(page)
+  })
+
+  await test.step('a rotation they all serve in, so the board and its filters are there (D-218)', async () => {
+    await openRotationInNewUnit(page, [OWNER.name, 'יעל שחר', 'נועם לב'])
   })
 
   await test.step('a tag chip keeps who holds the tag, in the URL', async () => {

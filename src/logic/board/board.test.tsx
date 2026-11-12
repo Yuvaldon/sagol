@@ -540,11 +540,12 @@ describe('view state in the URL (D-103, D-104)', () => {
     })
     press('next')
     await waitFor(() => {
-      expect(read('search')).toEqual({ from: '2026-11-15' })
+      // An explicit range is written, since a bare URL opens on the rotation (D-220).
+      expect(read('search')).toEqual({ range: 'week', from: '2026-11-15' })
     })
     press('today')
     await waitFor(() => {
-      expect(read('search')).toEqual({})
+      expect(read('search')).toEqual({ range: 'week' })
     })
     act(() => {
       history.back()

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { board, choose, closeDrawer, drawer } from './support/leaves.ts'
+import { NOW, board, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn } from './support/workspace.ts'
 
 // V10's demo: the owner builds a role, gives it to a soldier for a while with a personal grant, the soldier sees the
@@ -59,9 +59,11 @@ async function enterAsYael(page: Page) {
 
 test.describe('roles and access', () => {
   test('a role, a personal grant that opens the board, and its revocation', async ({ page }) => {
+    await page.clock.setFixedTime(NOW)
     await enterAsOwner(page)
     await createUnit(page)
     await addYael(page)
+    await openRotation(page, [`${YAEL.first} ${YAEL.last}`])
 
     await test.step('the owner builds a role from the permission grid', async () => {
       await openModule(page, he.roles.open)

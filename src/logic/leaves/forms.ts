@@ -4,6 +4,7 @@ import {
   LeaveStatus,
   type AvailabilityRuleId,
   type CalendarDate,
+  type DeploymentId,
   type Issue,
   type Leave,
   type LeaveType,
@@ -16,6 +17,7 @@ import { compareDates, leaveReasonIssues, optionalText, planLeaveCreation, type 
 import { formIssues } from '../forms/issues'
 import type { WithProperties } from '../properties/properties'
 import type { NewLeaveDraft } from '../view-state/draft'
+import type { RequestRotation } from './rotation'
 
 // The new-leave form (D-115), between its fields and `leaves.create`. Ids are generated here (D-044), and a
 // blank reason is NULL, as the command stores it (D-101).
@@ -52,9 +54,19 @@ export function newLeaveValues(
   }
 }
 
-function createInput(values: NewLeaveValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []) {
+/** The soldiers a request is for: the one chosen, or none yet. */
+export function soldiersOf(values: Pick<NewLeaveValues, 'soldier_id'>): SoldierId[] {
+  return values.soldier_id === null ? [] : [values.soldier_id]
+}
+
+function createInput(
+  values: NewLeaveValues & WithProperties,
+  deploymentId: DeploymentId | null,
+  acknowledged: readonly AvailabilityRuleId[] = [],
+) {
   return {
     id: LeaveId.parse(crypto.randomUUID()),
+    deployment_id: deploymentId ?? undefined,
     soldier_id: values.soldier_id,
     leave_type_id: values.leave_type_id,
     // An empty field is an absent value, so the schema answers `required`.
@@ -70,18 +82,28 @@ function createInput(values: NewLeaveValues & WithProperties, acknowledged: read
 }
 
 /**
- * The same codes the adapter answers: the schema's (D-068), and a reason the chosen type requires (D-064). The
+ * The same codes the adapter answers: the schema's (D-068), a reason the chosen type requires (D-064), and the
+ * request's rotation (D-216), which the form picks itself, so its issues land on the soldier and the dates. The
  * command stays the authority.
  */
-export function newLeaveIssues(values: NewLeaveValues, type: Pick<LeaveType, 'requires_reason'> | null): Issue[] {
+export function newLeaveIssues(
+  values: NewLeaveValues,
+  type: Pick<LeaveType, 'requires_reason'> | null,
+  rotation: RequestRotation,
+): Issue[] {
   return [
-    ...formIssues(CreateLeaveInput, createInput(values)),
+    ...formIssues(CreateLeaveInput, createInput(values, rotation.deployment_id)).filter((issue) => issue.path[0] !== 'deployment_id'),
     ...(type === null ? [] : leaveReasonIssues(type, optionalText(values.reason))),
+    ...rotation.issues,
   ]
 }
 
-export function toCreateLeaveInput(values: NewLeaveValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []): CreateLeaveInput {
-  return CreateLeaveInput.parse(createInput(values, acknowledged))
+export function toCreateLeaveInput(
+  values: NewLeaveValues & WithProperties,
+  deploymentId: DeploymentId | null,
+  acknowledged: readonly AvailabilityRuleId[] = [],
+): CreateLeaveInput {
+  return CreateLeaveInput.parse(createInput(values, deploymentId, acknowledged))
 }
 
 /** A leave as rules see it, before the command writes it (D-142). */
@@ -122,6 +144,7 @@ export function optimisticLeave(
   return {
     id: input.id,
     organization_id: actor.organization_id,
+    deployment_id: input.deployment_id,
     soldier_id: input.soldier_id,
     leave_type_id: input.leave_type_id,
     batch_id: null,
