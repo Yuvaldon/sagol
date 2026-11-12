@@ -1,5 +1,4 @@
-import { PANEL_IDS, SETUP_SECTIONS, WORK_SECTIONS, type SetupPanel } from '@config'
-import type { NavigationModule } from '@contracts'
+import { PANEL_IDS, SETUP_SECTIONS, WORK_SECTIONS, type SetupPanel, type WorkModule } from '@config'
 import type { I18nKey } from '@i18n'
 import {
   useHome,
@@ -35,7 +34,7 @@ import {
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
 // The modules of the workspace (D-116, D-167, D-173): each one only for who may open it. The bar holds the daily ones
-// (my leaves, the inbox) and the soldier's pins; the rest live in the navigation panel.
+// (my leaves, the inbox); the rest live in the navigation panel (D-285, D-291).
 
 export interface ModuleEntry {
   readonly id: string
@@ -49,7 +48,7 @@ export interface ModuleEntry {
 }
 
 /** The work modules of the panel this actor may open; a module they may not open is absent (D-076, D-285). */
-export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntry> {
+export function useNavigationEntries(): ReadonlyMap<WorkModule, ModuleEntry> {
   const access = useModuleAccess()
   const panel = usePanel()
   const rules = useRulesDay()
@@ -77,9 +76,9 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
       onPress: opener(PANEL_IDS.accountLinks),
       count: { value: links.pending, labelKey: 'accountLinks.pendingCount' },
     },
-  } satisfies Readonly<Record<(typeof WORK_SECTIONS)[number]['modules'][number], ModuleEntry | false>>
+  } satisfies Readonly<Record<WorkModule, ModuleEntry | false>>
   const byModule: Readonly<Record<string, ModuleEntry | false>> = entries
-  const allowed = new Map<NavigationModule, ModuleEntry>()
+  const allowed = new Map<WorkModule, ModuleEntry>()
   for (const section of WORK_SECTIONS) {
     for (const module of section.modules) {
       const entry = byModule[module]

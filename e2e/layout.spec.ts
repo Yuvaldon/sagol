@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
+import { openViewSheet, viewSheet } from './support/board.ts'
 import { enterAsOwner, expectNoAxeViolations, navigation, openBoardOnTimeline, OWNER } from './support/workspace.ts'
 
 // The layout checks: the two strips fit on one line in every shape of screen, center on their edges and leave the
@@ -95,19 +96,20 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     }
   })
 
-  await test.step('a phone, upright or on its side, keeps the sort in the view menu; a desktop gives it its own button', async () => {
+  await test.step('the strip holds no view button; the "לוח" tab opens a card per view and the colors (D-311)', async () => {
     const strip = page.getByRole('navigation', { name: he.workspace.viewBar })
-    const sortButton = strip.getByRole('button', { name: he.workspace.sort, exact: true })
-    const sortKeys = page.getByRole('menu').getByRole('group', { name: he.workspace.sortBy })
-    if (testInfo.project.name !== 'desktop') {
-      await expect(sortButton).toHaveCount(0)
-      await strip.getByRole('button', { name: new RegExp(`^${he.workspace.view} `) }).click()
-    } else {
-      await sortButton.click()
-    }
-    await expect(sortKeys.getByRole('menuitemradio')).toHaveCount(5)
-    await page.keyboard.press('Escape')
-    await expect(sortKeys).toHaveCount(0)
+    await expect(strip.getByRole('button', { name: new RegExp(`^${he.workspace.view}`) })).toHaveCount(0)
+    await testInfo.attach('strip', { body: await page.screenshot(), contentType: 'image/png' })
+    await openViewSheet(page)
+    const views = viewSheet(page).getByRole('radiogroup', { name: he.workspace.view }).getByRole('radio')
+    await expect(views).toHaveCount(4)
+    await expect(viewSheet(page).getByRole('radiogroup', { name: he.workspace.view }).getByRole('radio', { checked: true })).toHaveCount(1)
+    await expect(viewSheet(page).getByRole('radio', { name: he.workspace.colorsByType, exact: true })).toBeChecked()
+    await expect(viewSheet(page).getByRole('radio', { name: he.workspace.colorsUniform, exact: true })).not.toBeChecked()
+    await expectNoAxeViolations(page)
+    await testInfo.attach('view-sheet', { body: await page.screenshot(), contentType: 'image/png' })
+    await viewSheet(page).getByRole('button', { name: he.common.close }).click()
+    await expect(viewSheet(page)).toBeHidden()
   })
 
   await expectNoAxeViolations(page)

@@ -7,7 +7,7 @@ import { Button } from '../primitives/Button'
 
 export function LoadingScreen() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-canvas">
+    <main className="flex min-h-dvh items-center justify-center bg-canvas frame-safe-lg">
       <p role="status" className="text-name text-text-muted">
         {t('app.loading')}
       </p>

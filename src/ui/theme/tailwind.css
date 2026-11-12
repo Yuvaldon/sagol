@@ -43,6 +43,9 @@
   --color-brand-light: #9b6bff;
   --color-brand: #5b2bd6;
   --color-brand-deep: #1a0b4a;
+  /* The staging deploy's band and its installed icon (D-300): black, and the band's caption on it. */
+  --color-stage: #000000;
+  --color-on-stage: #ffffff;
   --color-today: #2a2a26;
   /* The column of today on the timeline, a band barely darker than the surface (Stone 3). */
   --color-today-band: rgba(26, 26, 24, 0.035);
@@ -97,6 +100,8 @@
   --spacing-icon: 16px;
   --spacing-control: 30px;
   --spacing-bar: 40px;
+  /* The height of the staging deploy's band at the top of every screen (D-300). */
+  --spacing-stage-band: 24px;
   /* Controls are at least this tall on mobile (OI-033). */
   --spacing-touch: 44px;
   --spacing-list: 240px;
@@ -358,6 +363,27 @@
   padding-inline: var(--safe-inline);
 }
 
+/* A full-screen layer below the staging deploy's band (D-300): the whole screen in production. */
+@utility inset-screen {
+  inset-block: var(--stage-band) 0;
+  inset-inline: 0;
+}
+
+/* A centered screen's room around what it holds: a large gap plus the safe area (D-191). */
+@utility frame-safe-lg {
+  padding-block: calc(var(--spacing-lg) + var(--safe-top)) calc(var(--spacing-lg) + var(--safe-bottom));
+  padding-inline: calc(var(--spacing-lg) + var(--safe-inline));
+}
+
+/* The staging deploy's band (D-300): from the screen's top edge, under the notch, to where the safe area now starts. */
+@utility stage-band {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: var(--safe-top);
+  padding-block-start: env(safe-area-inset-top, 0px);
+}
+
 /* Keeps a top notice below the phone's status bar and notch. */
 @utility top-safe {
   top: calc(var(--spacing-lg) + var(--safe-top));
@@ -370,9 +396,15 @@
    * layout stays still and symmetric, at a few pixels' cost.
    */
   :root {
-    --safe-top: env(safe-area-inset-top, 0px);
+    /* The staging deploy's band joins the top inset, so everything placed in the safe area starts below it (D-300). */
+    --stage-band: 0px;
+    --safe-top: calc(env(safe-area-inset-top, 0px) + var(--stage-band));
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-inline: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  }
+
+  :root[data-stage='staging'] {
+    --stage-band: var(--spacing-stage-band);
   }
 
   html {

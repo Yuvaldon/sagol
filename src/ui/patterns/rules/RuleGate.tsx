@@ -10,7 +10,7 @@ import type { RuleGate } from './ruleAnswer'
 // a soft rule it names is acknowledged here and the same command goes again with the ids; a hard rule is shown with
 // no way through.
 
-const OVERLAY = 'enter-scrim fixed inset-none flex items-center justify-center bg-scrim p-lg'
+const OVERLAY = 'enter-scrim fixed inset-screen flex items-center justify-center bg-scrim p-lg'
 const SURFACE = 'glass-menu flex max-h-full w-full max-w-sheet flex-col rounded-panel p-lg'
 const BODY = 'flex min-h-none flex-col gap-md overflow-y-auto outline-none'
 

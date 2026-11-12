@@ -86,6 +86,9 @@ The data layer is written as if it were the server:
   development. The production build fails if `VITE_AUTH_MODE=local`. As built (8.4, D-207): Google
   through Supabase Auth (PKCE), always paired with the remote adapter; the composition loads only
   the env's pair (D-210). Deploys: Vercel Preview and Production (D-209).
+- **Deploy marking (D-300):** `VITE_APP_ENV=staging`, set on Vercel for the `staging` branch only, marks the staging
+  deploy: a black band "אתר בדיקות" on every screen, the title "סגול · בדיקות", and an installed app with the bison in
+  black and that name. Production has no such variable and stays unmarked.
 - **Accounts:** `soldier_accounts` links a provider identity to a soldier. Commanders may
   create soldiers with names only (personal ID and email optional). Linking is automatic
   only on personal ID + verified invite email match. Anything else becomes an
@@ -145,6 +148,9 @@ descendants and depth, and rejects cycles. Postgres keeps a trigger-maintained
 `unit_memberships`, so history is kept and attachments or temporary units need no schema
 change. The claim creates the organization and its root unit from one name (V27, D-251); templates (`config/templates`)
 are applied by `logic/organization/template` as a sequence of the ordinary commands that stops at the first refusal (D-261).
+Quick entry of several soldiers (`logic/roster/quickEntry`, D-282) runs `soldiers.create` once per grid row, saved row by
+row; approving several join requests (`logic/accounts/bulk`, D-283) links each one through its own review, and only a
+single match by personal number.
 
 ## Availability (D-012, D-014, D-070 … D-073)
 
@@ -259,13 +265,14 @@ The current state, in short (D-128). The entries hold the reasons.
 - One main workspace route. Management modules and details open as floating surfaces:
   side drawer on desktop, bottom sheet on mobile. Navigation is two floating strips that hug their content on every
   screen (V25, D-252): a context strip at the top (scope, range, view, filters) and a destination strip at the bottom
-  (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action, "בקשה חדשה", at its inline end. "ניהול יחידה" is
+  (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action by mode (`useQuickAction` in `logic`, D-296) at its inline end. "ניהול יחידה" is
   a panel from the inline start, a plain line per module and no pins (D-254). From V32 it holds daily work only,
-  grouped by `WORK_SECTIONS` in `config`, with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
+  grouped by `WORK_SECTIONS` in `config`, each module loaded lazily (OI-118), with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
   `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
   (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
-  anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's
-  preferences (`useNavigationPreferences`). The organization's setup (`setup` panel) is first in that panel and the
+  anyone else on "שלי", and the last choice is kept on the device. The heat row always sits above the soldiers, sticky (D-310).
+  The "לוח" tab opens the view sheet on the board (`ViewSheet`, D-311); "סינון ומיון" opens the rule builder
+  (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
   done from live rows (`useSetupProgress`, D-180).
 - All view state lives in **typed URL search params** (TanStack Router + Zod): active view
@@ -331,15 +338,17 @@ never reach the client bundle.
 
 ```
 src/
-  contracts/   entities/ inputs/ enums/ filters/ permissions/ repositories/ commands/ auth/ errors/
-  domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/ text/
-               json/ time/
-  config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
+  contracts/   auth/ commands/ common/ entities/ enums/ errors/ filters/ inputs/ permissions/ repositories/ settings/
+  domain/      accounts/ availability/ filters/ hierarchy/ issues/ json/ leaves/ policy/ properties/ tags/ text/ time/
+               transfer/ testing/
+  config/      breakpoints/ dates/ env/ icons/ inbox/ leaves/ palette/ panels/ pwa/ remote/ report/ routes/ startup/
+               storage/ templates/ url/ views/
   data/        device/ (web storage for conveniences, D-197)  local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
                remote/ (one POST per call to the gateway, D-204)
                contract-tests/
-  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ board/ timeline/
-               tags/ filters/ presence/ (the day report) device/ rules/ testing/ (test-only helpers, D-135)
+  logic/       access/ accounts/ board/ deployments/ device/ filters/ forms/ home/ leaves/ organization/ permissions/
+               presence/ (the day report) properties/ queries/ roster/ rules/ runtime/ seniority/ session/ shell/ tags/
+               timeline/ transfer/ units/ view-state/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)

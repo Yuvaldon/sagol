@@ -5,7 +5,6 @@ import {
   hasLeaveConditions,
   useBarColors,
   useBoard,
-  useBoardSort,
   useDateWindow,
   useLeaveConditions,
   useModuleAccess,
@@ -13,16 +12,18 @@ import {
   usePanel,
   usePresenceDay,
   useSetupUnfinished,
+  useSortRules,
   useViewFilter,
   type BoardConditions,
   type BoardModel,
   type DateWindow,
-  type ReadFilter,
+  type ReadRules,
 } from '@logic'
 import { ListChecks } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../patterns/Notices'
 import { Button } from '../primitives/Button'
+import { useOpenUnitSetup } from '../shell/navigationPanelState'
 
 // What every engine shares around the board model (D-174): the window, the filter and the board's own conditions from
 // the URL (D-103, D-104, D-131 to D-133), the states of an empty or loading board, and how a soldier or a leave opens.
@@ -49,13 +50,11 @@ export function Centered({ children }: { readonly children: ReactNode }) {
 }
 
 /** Why the board is empty when soldiers exist: what the bar asks for, or the unit and the window (D-131 to D-133). */
-function emptyKeys(board: BoardConditions, read: ReadFilter) {
+function emptyKeys(board: BoardConditions, rules: ReadRules) {
   if (board.onlyMissing) return { titleKey: 'timeline.emptyMissingTitle', bodyKey: 'timeline.emptyMissingBody' } as const
   const chips =
-    read.kind === 'other' ||
-    read.conditions.tagSets.length > 0 ||
-    read.conditions.rankIds.length > 0 ||
-    read.conditions.statuses.length > 0 ||
+    rules.kind === 'other' ||
+    rules.filter.rules.length > 0 ||
     hasLeaveConditions(board.leaves)
   if (chips) return { titleKey: 'timeline.emptyFilterTitle', bodyKey: 'timeline.emptyFilterBody' } as const
   return { titleKey: 'timeline.emptyScopeTitle', bodyKey: 'timeline.emptyScopeBody' } as const
@@ -66,20 +65,22 @@ type Draw = (frame: BoardFrame) => ReactNode
 function Board({
   model,
   board,
-  read,
+  rules,
   window,
   filter,
   draw,
 }: {
   readonly model: BoardModel
   readonly board: BoardConditions
-  readonly read: ReadFilter
+  readonly rules: ReadRules
   readonly window: DateWindow
   readonly filter: FilterExpression | null
   readonly draw: Draw
 }) {
   const access = useModuleAccess()
   const canSetUp = useSetupUnfinished()
+  // The setup's checklist is in "הגדרות היחידה" (D-297).
+  const openUnitSetup = useOpenUnitSetup()
   const panel = usePanel()
   const { mode } = useBarColors()
   const { open } = panel
@@ -113,12 +114,10 @@ function Board({
           {canSetUp ? (
             <Button
               variant="primary"
-              onPress={() => {
-                open(PANEL_IDS.setup)
-              }}
+              onPress={openUnitSetup}
             >
               <ListChecks aria-hidden size={14} />
-              {t('setup.open')}
+              {t('navigation.setupTitle')}
             </Button>
           ) : null}
         </EmptyNotice>
@@ -126,7 +125,7 @@ function Board({
     )
   }
   if (model.soldierCount === 0) {
-    const empty = emptyKeys(board, read)
+    const empty = emptyKeys(board, rules)
     return (
       <Centered>
         <EmptyNotice titleKey={empty.titleKey} bodyKey={empty.bodyKey} headingLevel={2} />
@@ -145,13 +144,13 @@ function BoardData({
   readonly today: CalendarDate
   readonly draw: Draw
 }) {
-  const { filter, read } = useViewFilter()
+  const { filter, rules } = useViewFilter()
   const { conditions } = useLeaveConditions()
   const missing = useOnlyMissing()
-  const { board: sort } = useBoardSort()
+  const { rules: sorts } = useSortRules()
   const board = useMemo(
-    (): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on, sort }),
-    [conditions, missing.on, sort],
+    (): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on, sorts }),
+    [conditions, missing.on, sorts],
   )
   const model = useBoard(window, today, filter, board)
   if (model.status === 'loading') {
@@ -168,7 +167,7 @@ function BoardData({
       </Centered>
     )
   }
-  return <Board model={model.value} board={board} read={read} window={window} filter={filter} draw={draw} />
+  return <Board model={model.value} board={board} rules={rules} window={window} filter={filter} draw={draw} />
 }
 
 /** The frame of every engine. The viewport shows it only once today is known. */

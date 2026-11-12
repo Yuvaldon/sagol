@@ -37,6 +37,7 @@ import {
   ViewId,
   isIconKey,
   isPaletteKey,
+  isStaging,
   parseEnv,
 } from './index'
 
@@ -118,6 +119,18 @@ describe('env', () => {
         { variable: 'VITE_REMOTE_URL', code: 'required_for_remote' },
         { variable: 'VITE_REMOTE_ANON_KEY', code: 'required_for_remote' },
       ],
+    })
+  })
+
+  it('marks staging only for its exact stage name (D-300)', () => {
+    expect(isStaging({ ...REMOTE, VITE_APP_ENV: 'staging' })).toBe(true)
+    expect(isStaging(REMOTE)).toBe(false)
+    expect(isStaging({ ...REMOTE, VITE_APP_ENV: 'Staging' })).toBe(false)
+    expect(parseEnv({ ...REMOTE, VITE_APP_ENV: 'staging' }, PROD).ok).toBe(true)
+    expect(parseEnv({ ...REMOTE, VITE_APP_ENV: '' }, PROD).ok).toBe(true)
+    expect(parseEnv({ ...REMOTE, VITE_APP_ENV: 'prod' }, PROD)).toEqual({
+      ok: false,
+      issues: [{ variable: 'VITE_APP_ENV', code: 'invalid' }],
     })
   })
 

@@ -8,7 +8,7 @@ import { Button } from '../primitives/Button'
 // form over the drawer, the same component and command, and the field takes what was saved. Who may not reads that it
 // is missing and who sets it up, so there is never a "create it first" with nothing to press.
 
-const OVERLAY = 'enter-scrim fixed inset-none flex items-center justify-center bg-scrim p-lg'
+const OVERLAY = 'enter-scrim fixed inset-screen flex items-center justify-center bg-scrim p-lg'
 const SURFACE = 'glass-menu flex max-h-full w-full max-w-sheet flex-col overflow-y-auto rounded-panel p-lg'
 
 export interface CreateInPlaceProps {

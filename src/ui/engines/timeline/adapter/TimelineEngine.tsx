@@ -1,5 +1,4 @@
-import { RulesRowPlacement } from '@contracts'
-import { filterUnitOf, useHeatRow, useNavigationPreferences, useRulesDay } from '@logic'
+import { filterUnitOf, useHeatRow, useRulesDay } from '@logic'
 import { useMemo } from 'react'
 import { BoardEngine, type BoardFrame } from '../../../board/BoardEngine'
 import { TimelineGrid } from '../view/TimelineGrid'
@@ -14,7 +13,6 @@ function Timeline({ model, window, filter, colors, openSoldier, openLeave, openD
   const rulesDay = useRulesDay()
   const unit = filterUnitOf(filter)
   const heat = useHeatRow(window, unit.kind === 'unit' ? unit.unitId : null)
-  const { rulesRow, settled } = useNavigationPreferences()
   const soldiers = useMemo(() => model.items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier] : [])), [model.items])
   const drag = useBoardDrag(window, soldiers)
   const { movable, creatable } = drag
@@ -29,9 +27,7 @@ function Timeline({ model, window, filter, colors, openSoldier, openLeave, openD
       <TimelineGrid
         days={days}
         rows={rows}
-        // The row waits for the soldier's placement, so it does not appear in one place and move to the other (D-173).
-        heat={settled && heat.status === 'ready' && heat.value !== null ? heatCells(heat.value, rulesDay.openOn) : null}
-        heatOnTop={rulesRow === RulesRowPlacement.enum.above}
+        heat={heat.status === 'ready' && heat.value !== null ? heatCells(heat.value, rulesDay.openOn) : null}
         drag={drag.props}
       />
       <DragOverlay drag={drag} />

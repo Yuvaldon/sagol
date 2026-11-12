@@ -12,7 +12,7 @@ export function CenteredSheet({
   readonly children?: ReactNode
 }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-canvas p-lg">
+    <main className="flex min-h-dvh items-center justify-center bg-canvas frame-safe-lg">
       <div className="glass-card flex w-full max-w-sheet flex-col gap-lg rounded-sheet p-xl">
         <header className="flex flex-col gap-xs">
           <h1 className="text-title font-bold tracking-tight">{t(titleKey)}</h1>

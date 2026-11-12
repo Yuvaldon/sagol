@@ -4,14 +4,14 @@ import { FailureScreen, LoadingScreen, OfflineScreen, StartupFailureScreen, UiRo
 import { StrictMode, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { composePorts } from './composition'
-import { readEnv } from './env'
+import { readEnv, readStaging } from './env'
 import { AppRouter } from './router'
 import { createBrowserShell } from './shell'
 
 function render(root: Root, content: ReactNode): void {
   root.render(
     <StrictMode>
-      <UiRoot>{content}</UiRoot>
+      <UiRoot staging={readStaging()}>{content}</UiRoot>
     </StrictMode>,
   )
 }

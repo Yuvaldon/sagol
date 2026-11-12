@@ -9,7 +9,7 @@ import {
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
-import { useAppearance, useNavigationPreferences } from './preferences'
+import { useAppearance } from './preferences'
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const ORGANIZATION = OrganizationId.parse(uuid(900))
@@ -53,53 +53,37 @@ function storeOf() {
   return { ports, updateMyPreferences, elsewhere }
 }
 
-describe('navigation preferences (D-173, D-253)', () => {
-  it('starts with the rules row below', async () => {
-    const { ports } = storeOf()
-    const { result } = renderHook(() => useNavigationPreferences(), { wrapper: wrapperOf(ports) })
-    expect(result.current.settled).toBe(false)
-    await waitFor(() => {
-      expect(result.current.settled).toBe(true)
-    })
-    expect(result.current.rulesRow).toBe('below')
-    expect(result.current.editable).toBe(true)
-  })
-
+describe('preference saves (D-187)', () => {
   it('keeps two quick saves: each one builds on the one before', async () => {
     const { ports, updateMyPreferences } = storeOf()
-    const { result } = renderHook(() => ({ navigation: useNavigationPreferences(), appearance: useAppearance() }), {
-      wrapper: wrapperOf(ports),
-    })
-    await waitFor(() => {
-      expect(result.current.navigation.editable).toBe(true)
-    })
-    act(() => {
-      result.current.navigation.setRulesRow('above')
-      result.current.appearance.setAppearance('dark')
-    })
-    await waitFor(() => {
-      expect(result.current.appearance.appearance).toBe('dark')
-    })
-    expect(result.current.navigation.rulesRow).toBe('above')
-    expect(updateMyPreferences).toHaveBeenCalledTimes(2)
-  })
-})
-
-describe('a save that fails (D-187)', () => {
-  it('answers the failure, and the hook reads the stored row again', async () => {
-    const { ports, elsewhere } = storeOf()
-    const { result } = renderHook(() => useNavigationPreferences(), { wrapper: wrapperOf(ports) })
+    const { result } = renderHook(() => useAppearance(), { wrapper: wrapperOf(ports) })
     await waitFor(() => {
       expect(result.current.editable).toBe(true)
     })
-    elsewhere({ rules_row_placement: 'above' })
-    let saved: Awaited<ReturnType<typeof result.current.setRulesRow>> | undefined
+    act(() => {
+      result.current.setAppearance('dark')
+      result.current.setAppearance('system')
+    })
+    await waitFor(() => {
+      expect(result.current.appearance).toBe('system')
+    })
+    expect(updateMyPreferences).toHaveBeenCalledTimes(2)
+  })
+
+  it('answers a failure, and the hook reads the stored row again', async () => {
+    const { ports, elsewhere } = storeOf()
+    const { result } = renderHook(() => useAppearance(), { wrapper: wrapperOf(ports) })
+    await waitFor(() => {
+      expect(result.current.editable).toBe(true)
+    })
+    elsewhere({ appearance: 'dark' })
+    let saved: Awaited<ReturnType<typeof result.current.setAppearance>> | undefined
     await act(async () => {
-      saved = await result.current.setRulesRow('below')
+      saved = await result.current.setAppearance('system')
     })
     expect(saved).toEqual({ ok: false, error: { code: 'stale_version' } })
     await waitFor(() => {
-      expect(result.current.rulesRow).toBe('above')
+      expect(result.current.appearance).toBe('dark')
     })
   })
 })
@@ -120,7 +104,7 @@ describe('appearance (D-181)', () => {
       expect(result.current.appearance).toBe('dark')
     })
     expect(updateMyPreferences).toHaveBeenCalledWith(
-      expect.objectContaining({ preferences: expect.objectContaining({ appearance: 'dark', rules_row_placement: 'below' }) }),
+      expect.objectContaining({ preferences: expect.objectContaining({ appearance: 'dark', create_leaves_as_approved: false }) }),
     )
   })
 })

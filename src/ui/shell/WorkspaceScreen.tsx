@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useBoardFilters, useCurrentOrganization } from '@logic'
@@ -6,9 +6,10 @@ import { useBoardShown } from './boardShown'
 import { useAppliedAppearance } from './appearance'
 import { ModuleDrawer } from './ModuleDrawer'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
-import { NewLeaveButton } from './NewLeaveButton'
-import { FilterBar, FilterControl } from './FilterBar'
-import { SortControl } from './SortControl'
+import { QuickActionButton } from './QuickActionButton'
+import { FilterBar, FilterButton } from './FilterBar'
+import { BuilderOpenContext, type BuilderOpen, type BuilderTarget } from './builderOpen'
+import { RuleBuilder } from './RuleBuilder'
 import { FailureScreen, LoadingScreen } from './states'
 import { UnitSelector } from './UnitSelector'
 import { UserMenu } from './UserMenu'
@@ -16,16 +17,16 @@ import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { TabBar } from './TabBar'
 import { HomeLanding } from './HomeLanding'
 import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
+import { NavigationPanelContext, useNavigationPanelScope } from './navigationPanelState'
 import { InstallInvitation } from './InstallInvitation'
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
-import { ViewSwitcher } from './ViewSwitcher'
 import { Viewport } from './Viewport'
 import { WindowNavigator } from './WindowNavigator'
 
 /**
  * The workspace (D-023, D-108, D-252): the viewport fills the screen, and two glass pills float over it, the same on
- * every screen size and orientation. The top strip is context: the unit in scope, the range, the view, the filter and
- * the sort, and the account at its inline end. The bottom strip holds the destinations and the role's quick action. Each hugs its content and
+ * every screen size and orientation. The top strip is context: the unit in scope, the range, "filter and sort", and
+ * the account at its inline end; the view is picked from the board's tab (D-311). The bottom strip holds the destinations and the role's quick action. Each hugs its content and
  * centers on its edge, and scrolls sideways inside itself only when its content cannot fit. Everything sits inside the
  * safe area; the canvas paints under the cutout (D-191).
  */
@@ -37,18 +38,13 @@ function OrganizationName({ name }: { readonly name: string }) {
   return <h1 className="sr-only">{name}</h1>
 }
 
-/** The board's filter controls (D-173). They exist only with the board (D-218). */
+/** "Filter and sort" (D-312), a control of the board: it exists only with it (D-218). */
 function FilterControls() {
   if (!useBoardShown()) return null
-  return (
-    <>
-      <FilterControl />
-      <SortControl />
-    </>
-  )
+  return <FilterButton />
 }
 
-/** The dates and the view: controls of the board, so they exist only with it (D-218). */
+/** The dates: a control of the board, so it exists only with it (D-218). */
 function BoardControl({ children }: { readonly children: ReactNode }) {
   return useBoardShown() ? children : null
 }
@@ -74,7 +70,6 @@ function ContextStrip({ name, identity }: { readonly name: string; readonly iden
         <div className="flex shrink-0 items-center gap-xs">
           <BoardControl>
             <WindowNavigator />
-            <ViewSwitcher />
           </BoardControl>
           <FilterControls />
           <UserMenu identity={identity} />
@@ -90,7 +85,7 @@ function DestinationStrip() {
     <div className="pointer-events-none absolute inset-x-lg bottom-lg flex justify-center">
       <nav aria-label={t('workspace.navigation')} className={BAR}>
         <TabBar />
-        <NewLeaveButton />
+        <QuickActionButton />
       </nav>
     </div>
   )
@@ -102,6 +97,10 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
+  // What of "filter and sort" is open (D-312); the builder exists only with the board.
+  const [building, setBuilding] = useState<BuilderTarget | null>(null)
+  const builder = useMemo<BuilderOpen>(() => ({ open: setBuilding }), [])
+  const navigation = useNavigationPanelScope()
   useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
@@ -110,7 +109,9 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   return (
     // The row under the top strip pushes the board's first row down while a condition is set (D-173, D-252).
     <FilterFocusContext value={focus}>
+      <BuilderOpenContext value={builder}>
       <PreferenceFailureContext value={preferenceFailure}>
+      <NavigationPanelContext value={navigation}>
       <div
         data-filter-row={boardShown && active ? 'shown' : undefined}
         className="relative h-dvh bg-canvas"
@@ -128,8 +129,18 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
         <DayReportDialog />
         <PreferenceFailureNotice />
         <InstallInvitation />
+        {boardShown && building !== null ? (
+          <RuleBuilder
+            target={building}
+            onClose={() => {
+              setBuilding(null)
+            }}
+          />
+        ) : null}
       </div>
+      </NavigationPanelContext>
       </PreferenceFailureContext>
+      </BuilderOpenContext>
     </FilterFocusContext>
   )
 }

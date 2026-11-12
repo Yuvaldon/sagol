@@ -189,14 +189,14 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278 |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278; ref D-291; sup D-310 (rules row) |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
-| D-177 | Property chips in the filter bar | logic, ui | |
+| D-177 | Property chips in the filter bar | logic, ui | ref D-312 |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259; ref D-267, D-268, D-270 |
-| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285 |
+| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285; ref D-297 |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
 | D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
@@ -216,14 +216,14 @@ am = amends, ref = refines, ext = extends.
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
 | D-188 | Postgres extensions live in the `extensions` schema | backend, docs | |
-| D-189 | Bars rebalance and declutter: a phone tab bar, icons with tooltips | config, i18n, ui | ext D-190; ext D-191; sup D-252 (bars); ref D-256, D-257 |
+| D-189 | Bars rebalance and declutter: a phone tab bar, icons with tooltips | config, i18n, ui | ext D-190; ext D-191; sup D-252 (bars); ref D-256, D-257; ref D-311 |
 | D-190 | A phone on its side keeps the phone's bars, and a wide phone folds the context row into the top | config, ui, tooling | sup D-252 (folded top row) |
 | D-191 | Edge to edge: the canvas under the cutouts, what can be pressed inside the safe area | ui, tooling | ref D-252 |
 | D-192 | The board's corner and name column are one opaque surface | ui | |
 | D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217, D-220, D-256, D-257 |
 | D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | ref D-219, D-250, D-257 |
-| D-213 | "Only who is missing" is a filter condition | logic, ui | |
-| D-214 | The board's sort | config, logic, ui | |
+| D-213 | "Only who is missing" is a filter condition | logic, ui | ref D-312 |
+| D-214 | The board's sort | config, logic, ui | sup D-313 (one key) |
 | D-215 | Data and controls, not prose | i18n, ui | ref D-250 |
 | D-193 | The day report (דוח 1): who is present, absent, leaving and returning | domain, config, logic, ui | |
 | D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | |
@@ -235,47 +235,61 @@ am = amends, ref = refines, ext = extends.
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
-| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | |
-| D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | |
+| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | ref D-291 |
+| D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | am D-296 |
 | D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
-| D-253 | The profile is personal only | ui | |
+| D-253 | The profile is personal only | ui | sup D-310 (rules row); ref D-311 |
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
-| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
+| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266; ref D-299 |
 | D-256 | One path for each action | ui | ref D-285 |
-| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221 |
-| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221 |
-| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221 |
-| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221 |
+| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221, D-222 |
+| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
+| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221, D-222 |
+| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
-| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | |
-| D-266 | The quick action follows the role, then the mode | logic, ui | |
+| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299 |
+| D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296 |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290 |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
-| D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
+| D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | sup D-311 (sort placement) |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
-| D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | |
+| D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
-| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
+| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297 |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | |
+| D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
+| D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | |
+| D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
+| D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
+| D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
+| D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
+| D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
+| D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | |
+| D-312 | Filtering is a rule builder | logic, i18n, ui | |
+| D-313 | Several sorts, in order | config, logic, i18n, ui | |
+| D-314 | A filter chip's remove is a plain × | ui | |
+| D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | |
+
+Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
 ---
 
@@ -3895,3 +3909,167 @@ the same tree on top of main is the smallest change Vercel's integration builds.
 
 **Why:** the daily budget goes to the two deployments someone uses, Production and staging. A single line in the
 repository, reviewed like the rest, does that.
+
+## D-291 — `NavigationModule` goes; the work sections are typed by panel id
+
+2026-11-12 · accepted · refines D-173, D-221 · A7 fixes (OI-244) · decided under the owner's autonomy instruction of 2026-11-11
+
+- **What is gone.** `NavigationModule` (contracts) named the modules a soldier could pin to the bar (D-173). The pins
+  are gone (D-254, D-285), and the enum outlived them: only the five work modules of "ניהול יחידה" used it, as a type.
+  It is removed, with no stub (D-076).
+- **Where the placement lives.** Config already holds it: `WORK_SECTIONS` lists each work module by its panel id
+  (`PanelId`), and `WorkModule` is derived from that list. The shell's work entries are keyed by it.
+- **Old preferences still parse.** A stored `pinned_modules` key in `soldier_preferences.preferences` is still dropped
+  on read (D-221): an old preference loads, and nothing writes the key. No migration exists or is needed, since the key
+  lives inside the JSON and never had a column.
+**Why:** an enum in contracts promises a vocabulary the product shares; this one described a feature that no longer
+exists. The placement is configuration, so it is typed where it is configured.
+
+## D-296 — Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode
+
+2026-11-12 · accepted · amends D-222 · refines D-266 · A7 fixes (OI-219) · decided under the owner's autonomy instruction of 2026-11-11
+
+- **One place for the quick action.** The bottom strip holds the quick action in every mode (D-256: one path for each
+  action). In routine it is "פתיחת סבב", for who may create a rotation; the routine band above the board loses its
+  button.
+- **The band states the mode, quietly.** "שגרה" in the band is information, not a problem: a neutral tone, no error or
+  warning color, and no action.
+- **"בקשה חדשה" by mode and by role** (D-266): while a rotation is current or upcoming, for who may request leave for
+  themselves (`useMyLeavesAccess().create`). Not in an ended rotation that is not closed: requests are collected before
+  and during a rotation, not after it. Not for who may only enter leaves for others: that stays the secondary path
+  (the form's requester, a drag on the board).
+- **Before the first unit**, in routine, the strip's quick action is "הגדרת מבנה היחידות" for who may found units: a
+  rotation needs units to schedule.
+- Otherwise the strip has no quick action (D-076).
+**Why:** D-222 put the routine action on the band before the strip's quick action followed the mode; two places for
+one action is what D-256 rules out, and the strip is where Design.md journeys (a)5 and (b)1 start.
+
+## D-297 — The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard
+
+2026-11-12 · accepted · refines D-180, D-285 · A7 fixes (OI-250) · decided under the owner's autonomy instruction of 2026-11-11
+
+- **One checklist.** The unfinished setup steps show once, at the head of "הגדרות היחידה" (D-285). The setup drawer no
+  longer repeats them.
+- **The drawer is the template wizard.** It opens on first run, for who may set the organization up, until a template
+  is applied or "אחר כך" is chosen; "אחר כך" stops it from opening by itself. Its other openers (the empty board, the
+  onboarding screen) go to "הגדרות היחידה" instead, where the checklist is.
+- **As built:** the onboarding screen's first open is the first run, so it still opens the wizard. "אחר כך", a template
+  with nothing to offer, and a stop part way each hand over to "הגדרות היחידה" (the navigation panel's setup view); the
+  empty board's button opens it directly; a template that runs to the end closes the drawer on the board.
+**Why:** two surfaces with the same list drift apart and leave the user unsure which one is the setup (D-256, D-223).
+
+## D-298 — Quick entry of soldiers as built: the unit is required, paste goes in its own box
+
+2026-11-12 · accepted · refines D-282 · A7 fixes · decided under the owner's autonomy instruction of 2026-11-11
+
+- **The unit is required.** D-282 let the grid's unit stay empty; as built, a unit must be chosen before saving, since
+  a commander adds soldiers to a unit they command and an unplaced soldier is out of every commander's sight.
+- **Paste has its own box.** Lines are pasted into a box above the grid, not into a cell, and fill rows from it by the
+  rules of D-282 (tabs, else commas; an optional header line).
+**Why:** records what V27 shipped, so the decision and the screen agree.
+
+## D-299 — "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests
+
+2026-11-12 · accepted · refines D-255, D-265 · A7 fixes · decided under the owner's autonomy instruction of 2026-11-11
+
+- **The requests inbox** ("בקשות") shows only to someone who may approve the requests of at least one other soldier.
+  Approving only one's own requests is not a queue to work through.
+- **"אשר עכשיו"**, the switch that creates one's own request as approved (D-121), shows to someone who may approve their
+  own requests, whether or not they approve others: in the inbox's header for who has an inbox, otherwise in the
+  header of "הבקשות שלי".
+**Why:** the inbox and the switch read the same permission today, which includes oneself, so a soldier allowed to
+approve only their own leave saw an empty inbox, and the switch's meaning is about oneself, not about others.
+
+## D-300 — The staging deploy is marked: a black band, its own title, a black installed icon
+
+2026-11-12 · accepted · asked by the owner through the orchestrator at about 21:13Z. Track: tooling. Extends D-182,
+D-191 and D-276.
+
+- **The gap.** Staging and Production look the same, in the browser and as an app on the home screen. The owner uses
+  both and must always know which one he is in.
+- **The identity.** It comes from the environment, not from code (rule 2). `VITE_APP_ENV=staging` is set on Vercel as
+  a Preview variable scoped to the `staging` branch, and no other deploy has it. `config` names the variable and its
+  one value and reads it with `isStaging`. That is apart from `parseEnv`, so even the startup failure screen is marked.
+  `parseEnv` still refuses any other value, so a typo stops the app instead of hiding the mark.
+- **The band.** A black band with "אתר בדיקות" sits on top of every screen, 24px under the notch. It is part of the top
+  safe inset: `--safe-top` grows by the band's height when the root element carries `data-stage="staging"`. So the
+  workspace, its floating rows, the centered sheets and the loading screen all start below it. Full-screen overlays
+  (dialogs, the drawer, the navigation panel) use `inset-screen`, which leaves the band's height free. The band covers
+  no control on a phone or a desktop. Its colors are the theme tokens `stage` and `on-stage`, and the tab title becomes
+  "סגול · בדיקות".
+- **The installed app.** When the variable is set, the build derives the icon from the same source: the brand stops
+  become the `stage` token, which is black. The favicon, the apple-touch-icon and the manifest icons are generated from
+  it, and the manifest name, `short_name` and the Apple title are "סגול · בדיקות". The derived file is written to the
+  build cache, never to the repository. Production builds from the source icon and keeps "סגול".
+- **Rejected.** Telling the deploys apart by hostname in code, which would hardcode an identity. A chip in a corner,
+  which would cover a control on a phone. A second icon file drawn by hand, which would drift from the source.
+
+**Why:** the mark comes from the same place that makes a deploy staging. It shows on every screen, and in the icon,
+before anything is touched. Production gains nothing and loses nothing.
+
+## D-310 — The heat row always sits above the soldiers; the preference is gone
+2026-11-12 · accepted · supersedes D-173's `rules_row_placement` and D-253's "where the rules row sits" · V33 · decided under D-170
+- The rules heat row is always the first row of the board, above the soldier rows, and it sticks with the day headers
+  while the rows scroll, so a day's load is read against the days in every scroll position.
+- The choice of above or below is removed everywhere: the profile's item, its setter, the stored
+  `preferences.rules_row_placement`, its contract (`RulesRowPlacement`), its strings and the `schema.sql` comment.
+- A value already stored is ignored: preferences are parsed with defaults that drop unknown keys, as with
+  `pinned_modules` (D-173, removed in V27). No data migration.
+**Why:** one row the eye always finds in the same place beats a setting nobody looks for; the profile holds only what
+is about the person (D-253).
+
+## D-311 — The view picker is a sheet of cards, opened from the board's tab
+2026-11-12 · accepted · refines D-189, D-253, D-273 · V33 · decided under D-170
+- **Cards.** The view picker is a sheet with one card per view the device offers (D-290): its icon and its name
+  (ציר זמן, לוח שנה, רשימה, טבלה). The current view is marked as selected. Under the cards one small secondary control
+  sets the bars' colors (לפי סוג, צבע אחיד).
+- **The board's tab is the switch.** The "לוח" tab in the destination strip shows the current view's icon. From any
+  other destination it returns to the board; on the board it opens the cards sheet. The view switcher leaves the top
+  strip, on a phone and on a desktop alike.
+- **No sort in it.** The sort leaves the view menu (D-273's phone placement) and the desktop's own sort button: it lives
+  in "סינון ומיון" (D-313).
+**Why:** the view is chosen where the board is reached, with a picture of each view, and the top strip keeps only the
+scope, the window and the filter.
+
+## D-312 — Filtering is a rule builder
+2026-11-12 · accepted · refines D-131, D-177, D-213 · V33 · decided under D-170
+- **Rules.** "סינון ומיון" opens a builder. Each filter row is property · operator · value, with "+ הוספת סינון", and a
+  toggle sets whether the soldier rules all hold (וגם) or any one holds (או).
+- **Properties and operators.** A tag category: has any of, has none of. Command rank: is any of, is none of. Soldier
+  status: is, is not. A soldier property (D-176): select and multi-select take is any of, is none of, is empty,
+  is not empty; yes/no takes is. A property may have several rules.
+- **In the URL.** The soldier rules are written into the `filter` expression (D-103): `and(unit, ...rules)` for וגם,
+  `and(unit, or(...rules))` for או; "none of" is `not` over "any of". No contract change.
+- **Board conditions.** The leave conditions (status, type, D-132) and "only who is missing" (D-213) stay conditions of
+  the board and always hold in addition, one of each. "רק מי שחסר" is offered in the builder as a quick suggestion.
+- **Chips.** Each active rule is a chip under the strip; pressing it opens its rule in the builder; "ניקוי הכול" clears
+  every rule and condition and keeps the unit. A rule still without a value lives only in the open builder.
+**Why:** one familiar pattern (property, operator, value) covers every filter, the ones that exclude too, without a
+control per case.
+
+## D-313 — Several sorts, in order
+2026-11-12 · accepted · supersedes D-214's single key in the URL; refines D-214 · V33 · decided under D-170
+- **Rules.** The builder's sort section lists property · direction rows, with "+ הוספת מיון", in order, and each row
+  moves up or down. The first row decides; the next ones break its ties; the name breaks the rest.
+- **Keys.** D-214's keys (name, command rank, seniority, unit, days absent) and a soldier property of type text, number,
+  date, yes/no or select (by the options' order). Unit anywhere in the list sets the order of the groups.
+- **In the URL.** `sorts`, an ordered list of `{key, order}` or `{property, order}`. Absent, the default is seniority,
+  descending (D-214). The table's leave columns keep `sort` and `order`; its soldier and unit headers write `sorts`.
+**Why:** "by unit, then by rank" is the common question, and one key could not ask it.
+
+## D-314 — A filter chip's remove is a plain ×
+2026-11-12 · accepted · refines D-131 · V33 · decided under D-170
+- A chip's remove control is a bare × icon with the touch-sized hit area of D-115: no filled circle, no shadow, its
+  colors from the theme's tokens only. Hover and focus show the theme's usual states.
+**Why:** a circle inside a pill doubled the chip's edges; the × alone reads as remove.
+
+## D-315 — Every organization has a root unit; no "ללא יחידה" under it
+2026-11-12 · accepted · refines D-251, D-262 · V33 · schema change (data only) · decided under D-170
+- **Backfill.** An additive, idempotent migration creates a root unit (the organization's name, standing, no parent)
+  for each organization without a live root, and gives each of that organization's non-archived soldiers without a
+  current primary membership one in the new root, from today in the organization's time zone, open-ended. An
+  organization that already has a root is not touched. Constraints and row-level security are unchanged.
+- **Grouping.** When the organization has one live root, a soldier with no unit in the window is shown in the root's
+  group, not in a "ללא יחידה" group.
+- Organizations claimed since V27 already have their root (D-262); this covers the ones created before.
+**Why:** a group named for an absence reads as an error; every soldier belongs at least to the whole unit.

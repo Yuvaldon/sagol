@@ -2,13 +2,14 @@ import { SETUP_SECTIONS, WORK_SECTIONS, type SetupPanel, type SetupSectionId, ty
 import { t, type I18nKey } from '@i18n'
 import { nextSetupStep, usePanel, useSetupAccess, useSetupProgress, type SetupStep } from '@logic'
 import { ArrowRight, ChevronLeft, ListChecks, Menu as MenuIcon, Settings, X } from 'lucide-react'
-import { useId, useState, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import { IconButton } from '../primitives/Button'
 import { EntryCount } from './EntryCount'
 import { SetupChecklist } from '../modules/setup/SetupModule'
 import { WORD, progressText, stepTitle } from '../modules/setup/steps'
 import { useNavigationEntries, useSetupEntries, type ModuleEntry } from './moduleEntries'
+import { useNavigationPanel } from './navigationPanelState'
 import { TAB, TAB_COLOR } from './tabStyle'
 
 // "ניהול יחידה" (D-254, D-285): the daily work, grouped by what the commander is doing, sliding in from the inline start.
@@ -191,23 +192,20 @@ function Waiting({ count }: { readonly count: number }) {
  * is the last destination of the bottom strip, "ניהול" under its icon (D-252, D-254). */
 export function NavigationPanel() {
   const panel = usePanel()
-  const [isOpen, setOpen] = useState(false)
-  const [view, setView] = useState<'work' | 'setup'>('work')
+  const navigation = useNavigationPanel()
+  const { isOpen, view } = navigation
   const work = useWorkSections()
   const setup = useSetupSections()
   const stepsAllowed = useSetupAccess().length > 0
   const hasSetup = setup.length > 0 || stepsAllowed
   if (work.length === 0 && !hasSetup) return null
-  const close = () => {
-    setOpen(false)
-  }
+  const close = navigation.close
   const open = () => {
     // Every opening starts at the work; the setup is a step away (D-285).
-    setView(work.length > 0 ? 'work' : 'setup')
-    setOpen(true)
+    navigation.open(work.length > 0 ? 'work' : 'setup')
   }
   const toSetup = () => {
-    setView('setup')
+    navigation.open('setup')
   }
   // What waits in the panel shows on its button as one sum, so a pending request is not hidden behind it (D-254).
   const waiting = [...work, ...setup].reduce(
@@ -225,9 +223,12 @@ export function NavigationPanel() {
       </AriaButton>
       <ModalOverlay
         isOpen={isOpen}
-        onOpenChange={setOpen}
+        onOpenChange={(next) => {
+          if (next) open()
+          else close()
+        }}
         isDismissable
-        className="enter-scrim fixed inset-none flex items-start justify-start bg-scrim frame-safe"
+        className="enter-scrim fixed inset-screen flex items-start justify-start bg-scrim frame-safe"
       >
         <Modal className="enter-start-panel glass-drawer flex max-h-full w-full max-w-sheet flex-col overflow-hidden rounded-panel">
           <Dialog className="flex min-h-none flex-col outline-none">
@@ -237,7 +238,7 @@ export function NavigationPanel() {
                   <IconButton
                     labelKey="navigation.back"
                     onPress={() => {
-                      setView('work')
+                      navigation.open('work')
                     }}
                   >
                     <ArrowRight aria-hidden size={18} />

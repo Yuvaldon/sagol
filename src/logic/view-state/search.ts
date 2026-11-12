@@ -1,12 +1,13 @@
-import { BarColorMode, NEW_ENTITY, PanelId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortKey, SortOrder, ViewId } from '@config'
+import { BarColorMode, NEW_ENTITY, PanelId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TableSortKey, ViewId } from '@config'
 import { CalendarDate, DeploymentId, FilterExpression, UnitId } from '@contracts'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
 import { z } from 'zod'
 import { LeaveConditions } from './conditions'
 import { NewLeaveDraft } from './draft'
+import { SortRules } from './sort-rules'
 
-// All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort (D-214), the
+// All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the
 // filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193) and a new leave's draft (D-143). A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
@@ -18,7 +19,8 @@ export const WorkspaceSearch = z.object({
   [SEARCH_PARAMS.to]: CalendarDate.optional().catch(undefined),
   [SEARCH_PARAMS.range]: RangeKind.optional().catch(undefined),
   [SEARCH_PARAMS.rotation]: DeploymentId.optional().catch(undefined),
-  [SEARCH_PARAMS.sort]: SortKey.optional().catch(undefined),
+  [SEARCH_PARAMS.sorts]: SortRules.optional().catch(undefined),
+  [SEARCH_PARAMS.sort]: TableSortKey.optional().catch(undefined),
   [SEARCH_PARAMS.order]: SortOrder.optional().catch(undefined),
   [SEARCH_PARAMS.filter]: FilterExpression.optional().catch(undefined),
   [SEARCH_PARAMS.panel]: PanelId.optional().catch(undefined),
