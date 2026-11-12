@@ -274,6 +274,8 @@ export const dictionary = {
     newTitle: 'חייל חדש',
     profileTitle: 'פרטים',
     privateTitle: 'פרטים אישיים',
+    accessTitle: 'הרשאות',
+    accessEmpty: 'לחייל אין הרשאות אישיות.',
     placementTitle: 'שיבוץ',
     firstName: 'שם פרטי',
     lastName: 'שם משפחה',
