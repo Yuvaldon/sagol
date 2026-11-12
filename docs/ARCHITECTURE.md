@@ -148,6 +148,9 @@ descendants and depth, and rejects cycles. Postgres keeps a trigger-maintained
 `unit_memberships`, so history is kept and attachments or temporary units need no schema
 change. The claim creates the organization and its root unit from one name (V27, D-251); templates (`config/templates`)
 are applied by `logic/organization/template` as a sequence of the ordinary commands that stops at the first refusal (D-261).
+Quick entry of several soldiers (`logic/roster/quickEntry`, D-282) runs `soldiers.create` once per grid row, saved row by
+row; approving several join requests (`logic/accounts/bulk`, D-283) links each one through its own review, and only a
+single match by personal number.
 
 ## Availability (D-012, D-014, D-070 … D-073)
 
@@ -334,15 +337,17 @@ never reach the client bundle.
 
 ```
 src/
-  contracts/   entities/ inputs/ enums/ filters/ permissions/ repositories/ commands/ auth/ errors/
-  domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/ text/
-               json/ time/
-  config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
+  contracts/   auth/ commands/ common/ entities/ enums/ errors/ filters/ inputs/ permissions/ repositories/ settings/
+  domain/      accounts/ availability/ filters/ hierarchy/ issues/ json/ leaves/ policy/ properties/ tags/ text/ time/
+               transfer/ testing/
+  config/      breakpoints/ dates/ env/ icons/ inbox/ leaves/ palette/ panels/ pwa/ remote/ report/ routes/ startup/
+               storage/ templates/ url/ views/
   data/        device/ (web storage for conveniences, D-197)  local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
                remote/ (one POST per call to the gateway, D-204)
                contract-tests/
-  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ board/ timeline/
-               tags/ filters/ presence/ (the day report) device/ rules/ testing/ (test-only helpers, D-135)
+  logic/       access/ accounts/ board/ deployments/ device/ filters/ forms/ home/ leaves/ organization/ permissions/
+               presence/ (the day report) properties/ queries/ roster/ rules/ runtime/ seniority/ session/ shell/ tags/
+               timeline/ transfer/ units/ view-state/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)
