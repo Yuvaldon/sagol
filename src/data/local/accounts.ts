@@ -378,6 +378,22 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
           let status: AccountLinkRequest['status'] = AccountLinkRequestStatus.enum.rejected
           let resolved: SoldierId | null = null
 
+          // Who and what the reviewer may name is checked before any unique, so a refusal never tells whether a
+          // soldier outside the reviewer's scope is linked (D-090, D-046).
+          if (resolution.kind === 'link') {
+            // Only a candidate the reviewer holds `accounts:approve` over may be named (OI-034).
+            if (!readable.candidates.some((candidate) => candidate.soldier_id === resolution.soldier_id)) {
+              return failValidation([{ path: ['resolution', 'soldier_id'], code: IssueCode.enum.reference_not_found }])
+            }
+          }
+          if (resolution.kind === 'create_soldier') {
+            const membership = resolution.membership
+            const placement = placementTarget(membership?.unit_id ?? null)
+            requirePermission(scope, permissionOf('soldiers', 'create'), placement)
+            requirePermission(scope, ACCOUNT_REVIEW_PERMISSION, placement)
+            if (membership !== null) requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: membership.unit_id })
+          }
+
           if (resolution.kind !== 'reject') {
             if (await holdsLiveLink(database, scope.organization_id, request.auth_user_id)) return alreadyExists(['id'])
             if (resolution.kind === 'link' && (await soldierLinked(database, resolution.soldier_id))) {
@@ -391,10 +407,6 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
           }
 
           if (resolution.kind === 'link') {
-            // Only a candidate the reviewer holds `accounts:approve` over may be named (OI-034).
-            if (!readable.candidates.some((candidate) => candidate.soldier_id === resolution.soldier_id)) {
-              return failValidation([{ path: ['resolution', 'soldier_id'], code: IssueCode.enum.reference_not_found }])
-            }
             if (await enrichSoldier(database, scope, request, resolution.soldier_id)) {
               touched.push({ table: 'soldier_private', ids: [resolution.soldier_id] })
             }
@@ -402,11 +414,6 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
 
           if (resolution.kind === 'create_soldier') {
             const membership = resolution.membership
-            const placement = placementTarget(membership?.unit_id ?? null)
-            requirePermission(scope, permissionOf('soldiers', 'create'), placement)
-            requirePermission(scope, ACCOUNT_REVIEW_PERMISSION, placement)
-            if (membership !== null) requirePermission(scope, MEMBERSHIPS_UPDATE, { kind: 'unit', unit_id: membership.unit_id })
-
             // A number another soldier holds is skipped, not refused (D-149).
             const claimed = request.claimed_personal_id === null ? null : normalizePersonalId(request.claimed_personal_id)
             const taken = claimed === null || (await personalIdIssues(database, scope, resolution.soldier_id, claimed, [])).length > 0
