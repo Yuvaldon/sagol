@@ -113,7 +113,7 @@ export function useNavigationPreferences(): NavigationPreferences {
 }
 
 export interface AppearancePreference {
-  /** Light until the preferences are read, so the screen never flashes dark and back (D-181). */
+  /** Light until the preferences are read: a soldier who chose dark sees light first, never dark and back (D-181). */
   readonly appearance: Appearance
   /** FALSE while the preferences cannot be read, so the choice is not offered (D-076). */
   readonly editable: boolean
