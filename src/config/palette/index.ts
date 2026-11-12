@@ -25,3 +25,15 @@ export type PaletteKey = z.infer<typeof PaletteKey>
 export function isPaletteKey(value: string): value is PaletteKey {
   return PaletteKey.safeParse(value).success
 }
+
+/**
+ * The keys a leave type may take (D-268, D-290): a leave is an absence, and green never means away, so the green family
+ * is not offered. A type that holds one from before is painted in the uniform tone.
+ */
+const NOT_FOR_LEAVES: ReadonlySet<PaletteKey> = new Set(['green', 'lime'])
+
+export const LEAVE_TYPE_PALETTE_KEYS: readonly PaletteKey[] = PALETTE_KEYS.filter((key) => !NOT_FOR_LEAVES.has(key))
+
+export function isLeaveTypePaletteKey(value: string): value is PaletteKey {
+  return isPaletteKey(value) && !NOT_FOR_LEAVES.has(value)
+}
