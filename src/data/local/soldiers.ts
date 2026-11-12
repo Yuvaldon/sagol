@@ -55,6 +55,7 @@ import {
 import { rolePairs, requireHeld } from './permissions'
 import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 import { SOLDIER_TAG_TABLES, soldierTagIssues, tagScopeIssues } from './tags'
+import { membershipsHoldLeaves } from './leaveRotation'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
 // (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097. A soldier's tags
@@ -111,6 +112,10 @@ const SPEC: ReferenceSpec<Soldier> = {
 }
 
 export const ROSTER_TABLES: readonly TableName[] = [...tablesOf(SPEC), 'soldier_private']
+/** A membership change reads the soldier's requests and their rotations (D-221). */
+const MEMBERSHIP_TABLES: readonly TableName[] = [
+  ...new Set<TableName>([...ROSTER_TABLES, 'leaves', 'deployments', 'deployment_members', 'units']),
+]
 
 /** Optional private text: blank is stored as NULL (D-101). The personal id has its own normalization (D-066). */
 const PRIVATE_OPTIONAL_TEXT = ['invite_email', 'phone'] as const
@@ -462,7 +467,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
       asResult(async () => {
         const input = parseInput(ChangeMembershipInput, raw)
         const newUnitId = input.new_membership?.unit_id ?? null
-        const written = await database.transaction('rw', ROSTER_TABLES, async () => {
+        const written = await database.transaction('rw', MEMBERSHIP_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const soldier = await visibleRow(database, SPEC, scope, input.soldier_id)
           requirePermission(scope, MEMBERSHIPS_UPDATE, soldierTarget(soldier.id))
@@ -522,6 +527,10 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
             }
           }
 
+          // A move or an end may not strand a live request of a whole-unit rotation (D-216, D-221).
+          if (!(await membershipsHoldLeaves(database, scope.organization_id, soldier.id))) {
+            return failValidation([{ path: ['effective_date'], code: IssueCode.enum.leaves_outside_rotation }])
+          }
           await requireAccessManager(database, scope.organization_id, scope.now)
           return answer
         })

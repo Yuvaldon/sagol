@@ -101,7 +101,8 @@ BEGIN
 END $$;
 
 -- A change to a rotation or its list re-checks every soldier with leaves in it: the first member
--- row turns "the whole unit" into a list, and removing the last turns it back (D-259).
+-- row turns "the whole unit" into a list, and removing the last turns it back (D-259). A change to
+-- a soldier's memberships re-checks that soldier's leaves; a new one only widens the unit's days.
 CREATE OR REPLACE FUNCTION "leaves_within_rotation"() RETURNS trigger
 LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
@@ -110,6 +111,17 @@ DECLARE
 BEGIN
   IF TG_TABLE_NAME = 'leaves' THEN
     PERFORM "leaves_check_rotation"(NEW."deployment_id", NEW."soldier_id");
+    RETURN NULL;
+  END IF;
+  IF TG_TABLE_NAME = 'unit_memberships' THEN
+    -- A move or an end re-checks the soldier's requests in the rotations that hold the whole unit (D-221).
+    FOR pair IN
+      SELECT DISTINCT l."deployment_id", l."soldier_id" FROM "leaves" l
+      WHERE l."soldier_id" IN (CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD."soldier_id" END,
+                               CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW."soldier_id" END)
+    LOOP
+      PERFORM "leaves_check_rotation"(pair."deployment_id", pair."soldier_id");
+    END LOOP;
     RETURN NULL;
   END IF;
   IF TG_TABLE_NAME = 'deployment_members' THEN
@@ -126,6 +138,10 @@ END $$;
 DROP TRIGGER IF EXISTS "leaves_within_rotation" ON "deployment_members";
 CREATE CONSTRAINT TRIGGER "leaves_within_rotation"
   AFTER INSERT OR UPDATE OR DELETE ON "deployment_members" DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION "leaves_within_rotation"();
+DROP TRIGGER IF EXISTS "leaves_within_rotation" ON "unit_memberships";
+CREATE CONSTRAINT TRIGGER "leaves_within_rotation"
+  AFTER UPDATE OR DELETE ON "unit_memberships" DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION "leaves_within_rotation"();
 DROP TRIGGER IF EXISTS "leaves_within_rotation" ON "deployments";
 CREATE CONSTRAINT TRIGGER "leaves_within_rotation"

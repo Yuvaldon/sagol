@@ -117,3 +117,22 @@ export async function closedRotationOf(database: Store, leave: Pick<Leave, 'depl
   const stored = await tableOf(database, 'deployments').get(leave.deployment_id)
   return stored === undefined ? [] : rotationClosedIssues(stored)
 }
+
+/**
+ * Whether the soldier's live requests in whole-unit rotations still fit their memberships, after a change to them: a
+ * move or an end may not strand a request outside the unit's days (D-216, D-221). Listed rotations do not read them.
+ */
+export async function membershipsHoldLeaves(database: Store, organizationId: Deployment['organization_id'], soldierId: SoldierId): Promise<boolean> {
+  const leaves = (await tableOf(database, 'leaves').where('soldier_id').equals(soldierId).toArray()).filter(
+    (row) => row.organization_id === organizationId && isLiveLeave(row),
+  )
+  const byRotation = new Map<DeploymentId, typeof leaves>()
+  for (const leave of leaves) byRotation.set(leave.deployment_id, [...(byRotation.get(leave.deployment_id) ?? []), leave])
+  for (const [deploymentId, held] of byRotation) {
+    const deployment = await tableOf(database, 'deployments').get(deploymentId)
+    if (deployment === undefined || (await hasMemberRows(database, deployment))) continue
+    const parsed = held.map((row) => parsedRow('leaves', row))
+    if (!(await wholeUnitHoldsLeaves(database, deployment, soldierId, parsed))) return false
+  }
+  return true
+}

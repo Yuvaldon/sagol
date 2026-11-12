@@ -707,6 +707,23 @@ export function describeDeploymentContract(
         ).toEqual([{ path: ["soldier_id"], code: "not_a_member" }]);
       });
 
+      it("refuses a move that strands a request of the whole unit (D-216, D-221)", async () => {
+        const type = await leaveType();
+        const { unit_id } = valueOf(await adapter().repositories.deployments.get(rotation));
+        const inside = await soldier(unit_id, "Avi");
+        valueOf(await adapter().commands.leaves.create(single(draft(inside.id, type.id))));
+        const [membership] = (await harnessOf().rows("unit_memberships")).filter((row) => row.soldier_id === inside.id);
+        if (membership === undefined) throw new Error("no membership");
+        const leaving = await adapter().commands.soldiers.changeMembership({
+          soldier_id: inside.id,
+          effective_date: TOMORROW,
+          current_membership: { id: membership.id, expected_version: membership.version },
+          new_membership: null,
+        });
+        expect(issuesOf(leaving)).toEqual([{ path: ["effective_date"], code: "leaves_outside_rotation" }]);
+        expect((await harnessOf().rows("unit_memberships")).find((row) => row.id === membership.id)?.valid_to).toBeNull();
+      });
+
       it("takes no new request, edit or transition in a closed rotation (D-221)", async () => {
         const type = await leaveType();
         const member = await soldier(null, "Avi");
