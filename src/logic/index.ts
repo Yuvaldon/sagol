@@ -67,6 +67,7 @@ export {
 } from './board/rows'
 export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
 export { boardLeaves, type BoardLeave } from './board/leaves'
+export { boardDays, boardEntries, calendarWeeks, type BoardDay, type BoardEntry } from './board/views'
 export {
   datesOfRange,
   dayRangeOf,
