@@ -774,7 +774,6 @@ export const dictionary = {
   account: {
     menu: 'תפריט משתמש',
     switchIdentity: 'החלפת חשבון',
-    preferences: 'העדפות',
     approveNowDefault: 'לאשר מיד בקשות שאני יוצר',
     appearance: 'מראה',
     rulesRow: 'שורת הכללים',
