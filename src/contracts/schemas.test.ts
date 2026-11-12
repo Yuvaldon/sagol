@@ -109,15 +109,13 @@ describe('settings defaults (D-041)', () => {
   it('fills soldier preferences from the column default', () => {
     expect(SoldierPreferences.parse({})).toEqual({
       create_leaves_as_approved: false,
-      rules_row_placement: 'below',
       appearance: 'light',
     })
   })
 
-  it('reads a row stored before the navigation keys with their defaults (D-173)', () => {
+  it('reads a row stored before the appearance with its default (D-181)', () => {
     expect(SoldierPreferences.parse({ create_leaves_as_approved: true })).toEqual({
       create_leaves_as_approved: true,
-      rules_row_placement: 'below',
       appearance: 'light',
     })
   })
@@ -125,13 +123,11 @@ describe('settings defaults (D-041)', () => {
   it('reads the appearance, and refuses one that is not a choice (D-181)', () => {
     expect(SoldierPreferences.parse({ appearance: 'dark' }).appearance).toBe('dark')
     expect(SoldierPreferences.safeParse({ appearance: 'sepia' }).success).toBe(false)
-    expect(SoldierPreferences.safeParse({ rules_row_placement: 'side' }).success).toBe(false)
   })
 
-  it('reads a row that still holds the dropped pins, without them (D-221)', () => {
-    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'], appearance: 'dark' })).toEqual({
+  it('reads a row that still holds dropped keys, without them (D-221, D-310)', () => {
+    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'], rules_row_placement: 'above', appearance: 'dark' })).toEqual({
       create_leaves_as_approved: false,
-      rules_row_placement: 'below',
       appearance: 'dark',
     })
   })

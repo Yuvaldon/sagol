@@ -118,10 +118,6 @@ export const NavigationModule = z.enum([
 ])
 export type NavigationModule = z.infer<typeof NavigationModule>
 
-/** Where the rules heat row sits on the board: over the soldier list, or under it (D-173). */
-export const RulesRowPlacement = z.enum(['above', 'below'])
-export type RulesRowPlacement = z.infer<typeof RulesRowPlacement>
-
 /** The color scheme the soldier chose: light (the default), dark, or the device's (D-181). */
 export const Appearance = z.enum(['light', 'dark', 'system'])
 export type Appearance = z.infer<typeof Appearance>
