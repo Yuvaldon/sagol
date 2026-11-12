@@ -59,6 +59,8 @@ const MODULE_CHECKS = {
   rules: { permission: { resource: 'availability_rules', action: 'view' }, target: { kind: 'organization' } },
   /** Roles and their bindings are organization data (D-028, D-165). */
   roles: { permission: { resource: 'roles', action: 'view' }, target: { kind: 'organization' } },
+  /** A deployment is a target of its unit; any scope of `view` opens the module (D-179). */
+  deployments: { permission: { resource: 'deployments', action: 'view' }, target: { kind: 'organization' } },
 } as const satisfies Record<string, PermissionCheck>
 
 const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
@@ -75,5 +77,6 @@ export function useModuleAccess() {
     properties: can(MODULE_CHECKS.properties),
     rules: can(MODULE_CHECKS.rules),
     roles: can(MODULE_CHECKS.roles),
+    deployments: can(MODULE_CHECKS.deployments),
   }
 }

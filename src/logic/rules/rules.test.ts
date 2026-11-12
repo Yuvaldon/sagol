@@ -1,5 +1,6 @@
 import {
   AvailabilityRuleId,
+  DeploymentId,
   LeaveId,
   LeaveTypeId,
   OrganizationId,
@@ -148,6 +149,7 @@ const UNITS = [unit(COMPANY, null), unit(PLATOON_A, COMPANY), unit(PLATOON_B, CO
 const SOURCE: FilterSource = {
   soldiers: [soldier(1, 'Dana'), soldier(2, 'Eli'), soldier(3, 'Gal'), soldier(4, 'Tom')],
   ranks: [],
+  seniorityOverrides: [],
   units: UNITS,
   unitTree: UNITS,
   memberships: [membership(1, 1, PLATOON_A), membership(2, 2, PLATOON_A), membership(3, 3, PLATOON_B), membership(4, 4, PLATOON_B)],
@@ -161,7 +163,7 @@ const SOURCE: FilterSource = {
 }
 
 const dataWith = (leaves: readonly Leave[]) =>
-  ruleDataOf({ source: SOURCE, tags: [tag(MEDIC), tag(DRIVER)], leaves, types: [TYPE] })
+  ruleDataOf({ source: SOURCE, tags: [tag(MEDIC), tag(DRIVER)], leaves, types: [TYPE], deployments: [], deploymentMembers: [] })
 
 const MEDICS = { kind: 'conditions', tagSets: [[MEDIC]], rankIds: [] } as const
 
@@ -211,6 +213,14 @@ describe('the rule form (D-140)', () => {
     const level = UnitLevelId.parse(uuid(40))
     const input = toCreateRuleInput({ ...filled, scope_level_id: level, group_tag_category_id: CATEGORY })
     expect(input).toMatchObject({ scope_level_id: null, group_tag_category_id: null, deployment_id: null })
+  })
+
+  it('keeps and changes the rule deployment (D-071, OI-096)', () => {
+    const deployment = DeploymentId.parse(uuid(60))
+    const stored = rule(1, { ...toCreateRuleInput({ ...filled, deployment_id: deployment }), id: AvailabilityRuleId.parse(uuid(802)) })
+    expect(ruleFormValues(stored).deployment_id).toBe(deployment)
+    expect(toUpdateRuleInput(stored, 1, ruleFormValues(stored))).toBeNull()
+    expect(toUpdateRuleInput(stored, 1, { ...ruleFormValues(stored), deployment_id: null })?.changes).toEqual({ deployment_id: null })
   })
 
   it('updates only what changed, and nothing when nothing did', () => {

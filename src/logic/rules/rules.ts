@@ -8,6 +8,7 @@ import {
   type AvailabilityRule,
   type CalendarDate,
   type CommandRankId,
+  type DeploymentId,
   type FilterExpression,
   type Issue,
   type TagCategoryId,
@@ -57,6 +58,8 @@ export interface RuleFormValues {
   readonly max_value: string
   readonly effective_from: CalendarDate | ''
   readonly effective_to: CalendarDate | ''
+  /** NULL = always; otherwise the rule counts only while the deployment runs, only its members (D-071). */
+  readonly deployment_id: DeploymentId | null
   readonly count_pending_as_unavailable: boolean
   readonly priority: string
   readonly is_enabled: boolean
@@ -79,6 +82,7 @@ export const NEW_RULE_VALUES: RuleFormValues = {
   max_value: '',
   effective_from: '',
   effective_to: '',
+  deployment_id: null,
   count_pending_as_unavailable: false,
   priority: '0',
   is_enabled: true,
@@ -120,6 +124,7 @@ export function ruleFormValues(rule: AvailabilityRule): RuleFormValues {
     max_value: textOf(rule.max_value),
     effective_from: rule.effective_from ?? '',
     effective_to: rule.effective_to ?? '',
+    deployment_id: rule.deployment_id,
     count_pending_as_unavailable: rule.count_pending_as_unavailable,
     priority: String(rule.priority),
     is_enabled: rule.is_enabled,
@@ -163,7 +168,7 @@ function ruleContent(values: RuleFormValues, stored: FilterExpression | null) {
     max_value: numberOf(values.max_value),
     effective_from: values.effective_from === '' ? null : values.effective_from,
     effective_to: values.effective_to === '' ? null : values.effective_to,
-    deployment_id: null,
+    deployment_id: values.deployment_id,
     count_pending_as_unavailable: values.count_pending_as_unavailable,
   }
 }
@@ -189,8 +194,7 @@ export function toUpdateRuleInput(
   openedVersion: number,
   values: RuleFormValues,
 ): UpdateAvailabilityRuleInput | null {
-  // The form has no deployment field before V15: the rule keeps its own (OI-096).
-  const content = CreateAvailabilityRuleInput.parse({ ...createInput(values, rule.population_filter), deployment_id: rule.deployment_id })
+  const content = CreateAvailabilityRuleInput.parse(createInput(values, rule.population_filter))
   const stored: Readonly<Record<string, unknown>> = rule
   const changes = Object.fromEntries(
     Object.entries(content).filter(([column, value]) => column !== 'id' && !sameValue(value, stored[column])),
