@@ -117,7 +117,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | # | Slice | The owner sees | Status |
 |---|-------|----------------|--------|
 | V12a | Navigation rebalance | A lighter bar for daily work, a navigation panel by section with pins, the scope label, filters that show only while filtering, the rules row's place (D-173) | ☑ |
-| V13 | More views | List, table/agenda and calendar engines | ☐ |
+| V13 | More views | List, table and calendar engines on one board model and frame (D-174) | ☑ |
 | V14 | Custom properties | Definitions module, values in forms and filters | ☐ |
 | V15 | Deployments, batches, overrides | Collective leave, duplicate, deployments, seniority overrides | ☐ |
 | V16 | Setup wizard | Guided first run over the existing forms (D-033) | ☐ |

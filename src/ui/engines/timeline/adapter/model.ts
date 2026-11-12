@@ -1,11 +1,11 @@
 import type { BarColorMode } from '@config'
 import { RuleEnforcement, type CalendarDate, type SoldierId } from '@contracts'
 import { t } from '@i18n'
-import { dayRangeOf, fullName, type HeatDay, type TimelineGroupLabel, type TimelineItem, type TimelineLeave } from '@logic'
-import { formatDate, formatDateRange } from '../../../patterns/dates'
-import { UNIT_STATE_KEYS } from '../../../patterns/units'
+import { dayRangeOf, fullName, type HeatDay, type BoardItem, type BoardLeave } from '@logic'
+import { formatDate } from '../../../patterns/dates'
 import { ICON_GLYPHS, iconOf } from '../../../theme/icons'
-import { MARKER_TONE, UNIFORM_TONE, toneOf } from '../../../theme/palette'
+import { toneOf } from '../../../theme/palette'
+import { TEXT_SEPARATOR, groupLabel, leaveText, leaveTone, rangeText, typeName } from '../../../board/labels'
 import { assignLanes } from '../core/lanes'
 import { spansOf } from '../core/layout'
 import type { TimelineDayCell, TimelineHeatCell, TimelineMark, TimelineRowModel } from '../view/model'
@@ -14,14 +14,6 @@ import type { TimelineDayCell, TimelineHeatCell, TimelineMark, TimelineRowModel 
 // group headers, days become header cells, and leaves become bars and badges (ARCHITECTURE "View engines").
 // Pure.
 
-/** How a path below the selected unit is written: `מחלקה א · כיתה 1` (D-105). */
-const PATH_SEPARATOR = ' · '
-const TEXT_SEPARATOR = ', '
-
-function groupLabel(label: TimelineGroupLabel): string {
-  return label.kind === 'unit' ? label.path.join(PATH_SEPARATOR) : t(UNIT_STATE_KEYS[label.kind])
-}
-
 export function dayCells(days: readonly CalendarDate[], today: CalendarDate): TimelineDayCell[] {
   return days.map((day) => ({
     key: day,
@@ -29,10 +21,6 @@ export function dayCells(days: readonly CalendarDate[], today: CalendarDate): Ti
     dayNumber: formatDate(day, 'day'),
     isToday: day === today,
   }))
-}
-
-function rangeText(first: CalendarDate, last: CalendarDate): string {
-  return first === last ? formatDate(first, 'dayMonth') : formatDateRange(first, last)
 }
 
 /** Days flagged true, as ranges of dates read aloud after their meaning. NULL when none is. */
@@ -56,7 +44,7 @@ function offTextOf(days: readonly CalendarDate[], outOfScope: readonly boolean[]
 
 /** What the view needs to know about the leaves (D-111, D-112). */
 export interface TimelineMarkOptions {
-  readonly leaves: ReadonlyMap<SoldierId, readonly TimelineLeave[]>
+  readonly leaves: ReadonlyMap<SoldierId, readonly BoardLeave[]>
   readonly colors: BarColorMode
   /** Opens a leave's details: every mark is a control (D-119). */
   readonly openLeave: (leaveId: string) => void
@@ -67,14 +55,14 @@ export interface TimelineMarkOptions {
 }
 
 interface Placed {
-  readonly leave: TimelineLeave
+  readonly leave: BoardLeave
   readonly start: number
   readonly length: number
   readonly cut: { readonly start: boolean; readonly end: boolean }
 }
 
 /** Where a leave falls in the window. Stored days compare as text (`YYYY-MM-DD`). NULL outside it. */
-function placeInWindow(leave: TimelineLeave, days: readonly CalendarDate[]): Placed | null {
+function placeInWindow(leave: BoardLeave, days: readonly CalendarDate[]): Placed | null {
   const first = days.findIndex((day) => day >= leave.start_date)
   const last = days.findLastIndex((day) => day <= leave.end_date)
   if (first < 0 || last < first) return null
@@ -89,10 +77,6 @@ function placeInWindow(leave: TimelineLeave, days: readonly CalendarDate[]): Pla
       end: lastDay !== undefined && leave.end_date > lastDay,
     },
   }
-}
-
-function typeName(leave: TimelineLeave): string {
-  return leave.type?.name ?? t('leaves.unknownType')
 }
 
 function markOf(
@@ -114,30 +98,19 @@ function markOf(
     drag: movable(leave.id) ? { resize: !badge } : null,
     lane,
     dashed: leave.status === 'pending',
-    tone: uniform ? (badge ? MARKER_TONE : UNIFORM_TONE) : typeTone,
+    tone: leaveTone(leave, colors),
     Icon: badge ? (iconOf(leave.type?.icon_key ?? null) ?? ICON_GLYPHS.other.Icon) : null,
     dot: uniform && !badge && leave.type !== null ? typeTone.fill : null,
     caption: uniform && !badge ? typeName(leave) : null,
-    label: markText(leave),
+    label: leaveText(leave),
     onOpen: () => {
       openLeave(leave.id)
     },
   }
 }
 
-/** A mark's name: the type, marker or absence, the status, and the days of the leave itself. */
-function markText(leave: TimelineLeave): string {
-  const parts = [
-    typeName(leave),
-    ...(leave.effect === 'available' ? [t('leaves.marker')] : []),
-    t(leave.status === 'approved' ? 'leaves.statusApproved' : 'leaves.statusPending'),
-    rangeText(leave.start_date, leave.end_date),
-  ]
-  return parts.join(TEXT_SEPARATOR)
-}
-
 /** Bars and badges take lanes apart: a badge sits over a bar, as in Stone 3 (D-111). */
-function marksOf(leaves: readonly TimelineLeave[], days: readonly CalendarDate[], options: TimelineMarkOptions) {
+function marksOf(leaves: readonly BoardLeave[], days: readonly CalendarDate[], options: TimelineMarkOptions) {
   const placed = leaves.flatMap((leave) => {
     const at = placeInWindow(leave, days)
     return at === null ? [] : [at]
@@ -156,7 +129,7 @@ function marksOf(leaves: readonly TimelineLeave[], days: readonly CalendarDate[]
 }
 
 export function timelineRows(
-  items: readonly TimelineItem[],
+  items: readonly BoardItem[],
   days: readonly CalendarDate[],
   open: ((soldierId: string) => void) | null,
   options: TimelineMarkOptions,
@@ -184,7 +157,6 @@ export function timelineRows(
     }
   })
 }
-
 
 /** The heat row's cells (D-141). A day with nothing broken is empty; any other opens the rules of its day. */
 export function heatCells(

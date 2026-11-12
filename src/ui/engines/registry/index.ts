@@ -1,7 +1,10 @@
 import { VIEW_IDS, type ViewId } from '@config'
 import type { I18nKey } from '@i18n'
-import { GanttChart, type LucideIcon } from 'lucide-react'
+import { CalendarDays, GanttChart, List, Table, type LucideIcon } from 'lucide-react'
 import type { ComponentType } from 'react'
+import { CalendarEngine } from '../calendar'
+import { ListEngine } from '../list'
+import { TableEngine } from '../table'
 import { TimelineEngine } from '../timeline'
 
 // The registry maps view ids to engines (ARCHITECTURE "View engines"). The view switcher lists what is
@@ -16,12 +19,17 @@ export interface EngineEntry {
 
 const TIMELINE: EngineEntry = { labelKey: 'workspace.views.timeline', Icon: GanttChart, Engine: TimelineEngine }
 
-const ENGINES: Partial<Record<ViewId, EngineEntry>> = { timeline: TIMELINE }
+// Every engine draws the one board model, in the colors the switcher sets (D-174).
+const ENGINES: Record<ViewId, EngineEntry> = {
+  timeline: TIMELINE,
+  calendar: { labelKey: 'workspace.views.calendar', Icon: CalendarDays, Engine: CalendarEngine },
+  list: { labelKey: 'workspace.views.list', Icon: List, Engine: ListEngine },
+  table: { labelKey: 'workspace.views.table', Icon: Table, Engine: TableEngine },
+}
 
 /** The views that exist, in the order of `VIEW_IDS`. */
-export const AVAILABLE_VIEWS: readonly ViewId[] = VIEW_IDS.filter((id) => ENGINES[id] !== undefined)
+export const AVAILABLE_VIEWS: readonly ViewId[] = VIEW_IDS
 
-/** `useActiveView` names only views that exist; the timeline answers anything else. */
 export function engineOf(view: ViewId): EngineEntry {
-  return ENGINES[view] ?? TIMELINE
+  return ENGINES[view]
 }
