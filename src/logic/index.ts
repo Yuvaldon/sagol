@@ -214,7 +214,6 @@ export {
   useDayViolations,
   useHeatRow,
   useLeaveRuleCheck,
-  useLeaveRuleWarnings,
   useRuleCommands,
   useRuleConflicts,
   useRulePermissions,
