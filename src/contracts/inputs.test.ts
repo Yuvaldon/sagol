@@ -78,6 +78,7 @@ const COMMAND_FIELDS = new Set([
   'organization',
   'soldier',
   'leave_id',
+  'seen_at',
 ])
 
 type Target = { table: TableName; nested?: Record<string, TableName> }

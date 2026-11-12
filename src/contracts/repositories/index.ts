@@ -136,6 +136,20 @@ export const ReportConfirmationQuery = z.strictObject({
 })
 export type ReportConfirmationQuery = z.infer<typeof ReportConfirmationQuery>
 
+/** Which of the units' reports the actor may confirm on the window's dates (D-293). */
+export const ConfirmableReportQuery = z.strictObject({
+  window: DateWindow,
+  unit_ids: z.array(UnitId),
+})
+export type ConfirmableReportQuery = z.infer<typeof ConfirmableReportQuery>
+
+/**
+ * A unit's report of a date the actor may confirm now: the permission on the unit, and an open live rotation over it
+ * on the date, read on the whole unit tree, which the actor may not see (D-293).
+ */
+export const ConfirmableReport = z.object({ unit_id: UnitId, report_date: CalendarDate })
+export type ConfirmableReport = z.infer<typeof ConfirmableReport>
+
 /** Why a soldier is proposed for a link request (D-030). Shown to the reviewer only. */
 export const LinkCandidateMatch = z.enum(['personal_id', 'name'])
 export type LinkCandidateMatch = z.infer<typeof LinkCandidateMatch>
@@ -198,7 +212,9 @@ export interface DataRepositories {
   availability_rules: EntityRepository<AvailabilityRule, AvailabilityRuleId, ReferenceQuery>
   property_definitions: EntityRepository<PropertyDefinition, PropertyDefinitionId, ReferenceQuery>
   /** Readable by who views the unit, may confirm it, or owns the report of a rotation over it (D-293). */
-  report_confirmations: ListRepository<ReportConfirmation, ReportConfirmationQuery>
+  report_confirmations: ListRepository<ReportConfirmation, ReportConfirmationQuery> & {
+    confirmable(query: ConfirmableReportQuery): AsyncResult<ConfirmableReport[]>
+  }
 }
 
 // ------------------------------------------------------------------- changes
