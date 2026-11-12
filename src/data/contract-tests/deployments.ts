@@ -14,6 +14,7 @@ import {
   type OrganizationId,
   type Permission,
 } from "@contracts";
+import { LEAVE_SHEET } from "@config";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ContractHarness } from "./harness";
 import {
@@ -532,7 +533,7 @@ export function describeDeploymentContract(
       const serve = (...soldier_ids: SoldierId[]) =>
         seedServing(harnessOf(), organization, rotation, soldier_ids);
 
-      async function leaveType() {
+      async function leaveType(requires_reason = false) {
         return valueOf(
           await adapter().commands.leave_types.create({
             id: LeaveTypeId.parse(crypto.randomUUID()),
@@ -541,7 +542,7 @@ export function describeDeploymentContract(
             color_key: "teal",
             icon_key: null,
             availability_effect: "unavailable",
-            requires_reason: false,
+            requires_reason,
             sort_order: 0,
           }),
         );
@@ -745,6 +746,31 @@ export function describeDeploymentContract(
           { path: ["leaves", 0, "id"], code: "already_exists" },
         ]);
         expect(await harnessOf().rows("leaves")).toHaveLength(2);
+      });
+
+      it("checks a sheet's reasons on their rows, and refuses past its limit before reading any (D-275)", async () => {
+        const type = await leaveType(true);
+        const person = await soldier(null, "Avi");
+        await serve(person.id);
+        const { soldier_id: _soldier, ...row } = draft(person.id, type.id);
+        const sheet = (leaves: Parameters<ReturnType<typeof adapter>["commands"]["leaves"]["createMany"]>[0]["leaves"]) =>
+          adapter().commands.leaves.createMany({ soldier_id: person.id, leaves, as_approved: false, acknowledged_rule_ids: [] });
+        expect(
+          issuesOf(
+            await sheet([
+              { ...row, id: newLeaveId(), reason: "Family", deployment_id: rotation },
+              { ...row, id: newLeaveId(), reason: " ", deployment_id: rotation },
+            ]),
+          ),
+        ).toEqual([{ path: ["leaves", 1, "reason"], code: "reason_required" }]);
+        const endless = Array.from({ length: LEAVE_SHEET.maxLeaves + 1 }, () => ({
+          ...row,
+          id: newLeaveId(),
+          reason: "Family",
+          deployment_id: rotation,
+        }));
+        expect(issuesOf(await sheet(endless))).toEqual([{ path: ["leaves"], code: "too_big" }]);
+        expect(await harnessOf().rows("leaves")).toHaveLength(0);
       });
 
       it("needs leaves:create over the soldier for a sheet, and leaves:approve to approve it now (D-275)", async () => {

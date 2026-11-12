@@ -1,3 +1,4 @@
+import { LEAVE_SHEET } from '@config'
 import type { Store } from './store'
 import {
   CreateLeaveBatchInput,
@@ -191,6 +192,8 @@ export function createLeaveCreationCommands(
     createMany: (raw) =>
       asResult(async () => {
         const input = parseInput(CreateLeavesInput, raw)
+        // The sheet's limit, as its input's shape: checked before any row is read (D-275).
+        if (input.leaves.length > LEAVE_SHEET.maxLeaves) failValidation([{ path: ['leaves'], code: IssueCode.enum.too_big }])
         const result = await database.transaction('rw', CREATION_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           return createLeaves(
