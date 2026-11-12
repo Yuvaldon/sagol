@@ -1,4 +1,4 @@
-import { BarColorMode, NEW_ENTITY, PanelId, ROUTES, RangeKind, SEARCH_PARAMS, SortKey, SortOrder, ViewId } from '@config'
+import { BarColorMode, NEW_ENTITY, PanelId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortKey, SortOrder, ViewId } from '@config'
 import { CalendarDate, DeploymentId, FilterExpression, UnitId } from '@contracts'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
@@ -23,7 +23,7 @@ export const WorkspaceSearch = z.object({
   [SEARCH_PARAMS.filter]: FilterExpression.optional().catch(undefined),
   [SEARCH_PARAMS.panel]: PanelId.optional().catch(undefined),
   [SEARCH_PARAMS.entity]: z
-    .union([z.literal(NEW_ENTITY), z.uuid()])
+    .union([z.literal(NEW_ENTITY), z.literal(QUICK_ENTRY), z.uuid()])
     .optional()
     .catch(undefined),
   [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),
