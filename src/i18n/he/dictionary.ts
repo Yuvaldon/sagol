@@ -519,6 +519,7 @@ export const dictionary = {
     summaryConfirmed: 'אומתו',
     summaryOf: 'מתוך',
     summaryChanged: 'השתנו מאז:',
+    confirmNeedsFullList: 'הסינון מסתיר חלק מהחיילים כאן. כדי לאמת, צריך לנקות את הסינון ולראות את הרשימה המלאה.',
   },
   leaves: {
     title: 'היעדרויות',
@@ -1092,5 +1093,6 @@ export const dictionary = {
     rotationClosed: 'הסבב סגור: אי אפשר לשנות אותו או את הבקשות שלו',
     rotationNotEnded: 'אפשר לסגור סבב רק מהיום האחרון שלו',
     notReportable: 'אף סבב של היחידה לא רץ ביום הזה, ולכן אין לו דוח לאמת.',
+    soldierInactive: 'אחראי הדוח צריך להיות חייל פעיל',
   },
 } as const

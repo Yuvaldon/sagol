@@ -1,5 +1,5 @@
 import { DAY_REPORT, DAY_REPORT_CATEGORIES, DEVICE_KEYS, PANEL_IDS } from '@config'
-import type { AppError, CalendarDate, UnitId } from '@contracts'
+import type { AppError, CalendarDate, Timestamp, UnitId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
   reportText,
@@ -92,25 +92,34 @@ const STATUS = {
   changed_since: { key: 'presence.statusChanged', tone: 'text-status-pending-text' },
 } as const satisfies Record<SectionConfirmation['status'], { readonly key: I18nKey; readonly tone: string }>
 
-/** Where a unit's section stands, and the button for who may confirm it now. */
+/**
+ * Where a unit's section stands, and the button for who may confirm it now; while the view filter hides some of its
+ * soldiers, a line says confirming needs the full list instead (D-293).
+ */
 function Confirmation({
   confirmation,
   date,
+  seenAt,
   confirm,
 }: {
   readonly confirmation: SectionConfirmation
   readonly date: CalendarDate
+  readonly seenAt: Timestamp
   readonly confirm: Confirm
 }) {
   const status = STATUS[confirmation.status]
+  const open = confirmation.status !== 'confirmed'
   return (
     <div className="flex min-h-control flex-wrap items-center gap-sm border-t border-line px-sm py-2xs">
       <span className={`min-w-none flex-1 text-label font-semibold ${status.tone}`}>{t(status.key)}</span>
-      {confirmation.canConfirm && confirmation.status !== 'confirmed' ? (
+      {open && confirmation.needsFullList ? (
+        <p className="w-full text-micro text-text-muted">{t('presence.confirmNeedsFullList')}</p>
+      ) : null}
+      {open && confirmation.canConfirm ? (
         <Button
           isDisabled={confirm.isPending}
           onPress={() => {
-            void confirm.run(confirmation.unitId, date)
+            void confirm.run(confirmation.unitId, date, seenAt)
           }}
         >
           <CheckCheck aria-hidden size={14} />
@@ -127,6 +136,7 @@ function UnitSection({
   level,
   date,
   confirmation,
+  seenAt,
   confirm,
 }: {
   readonly section: ReportSection
@@ -134,6 +144,7 @@ function UnitSection({
   readonly level: 3 | 4
   readonly date: CalendarDate
   readonly confirmation: SectionConfirmation | undefined
+  readonly seenAt: Timestamp | undefined
   readonly confirm: Confirm
 }) {
   const ListHeading = level === 3 ? 'h4' : 'h5'
@@ -162,7 +173,9 @@ function UnitSection({
           </section>
         ))}
       </DisclosurePanel>
-      {confirmation === undefined ? null : <Confirmation confirmation={confirmation} date={date} confirm={confirm} />}
+      {confirmation === undefined || seenAt === undefined ? null : (
+        <Confirmation confirmation={confirmation} date={date} seenAt={seenAt} confirm={confirm} />
+      )}
     </Disclosure>
   )
 }
@@ -187,7 +200,7 @@ function Summary({ summary }: { readonly summary: ConfirmationSummary }) {
 }
 
 interface Confirm {
-  readonly run: (unitId: UnitId, date: CalendarDate) => Promise<unknown>
+  readonly run: (unitId: UnitId, date: CalendarDate, seenAt: Timestamp) => Promise<unknown>
   readonly isPending: boolean
 }
 
@@ -222,6 +235,7 @@ function Day({
             level={span ? 4 : 3}
             date={day.date}
             confirmation={confirmations?.sections.get(section.key)}
+            seenAt={confirmations?.seenAt}
             confirm={confirm}
           />
         ))}
@@ -363,15 +377,15 @@ function DayReportBody() {
   const { day, until, today, days, rotations, canShift, shift, goToToday, setUntil } = usePresenceDay()
   const { filter } = useViewFilter()
   const report = useDayReport(days, filter, rotations)
-  const confirmations = useReportConfirmations(report, rotations)
+  const confirmations = useReportConfirmations(days, report, rotations)
   const confirmCommand = useConfirmDayReport()
   const [refused, setRefused] = useState<AppError | null>(null)
   const confirm = useMemo(
     (): Confirm => ({
       isPending: confirmCommand.isPending,
-      run: async (unitId, date) => {
+      run: async (unitId, date, seenAt) => {
         setRefused(null)
-        const result = await confirmCommand.run(unitId, date)
+        const result = await confirmCommand.run(unitId, date, seenAt)
         if (!result.ok) setRefused(result.error)
       },
     }),
