@@ -49,19 +49,31 @@ export function createBrowserShell({ registerWorker }: { readonly registerWorker
     change({ install: 'none' })
   })
 
+  // A reload happens only for the soldier who asked for it (D-183): another tab's update makes this one offer it.
+  let updateRequested = false
+  const reload = (): void => {
+    location.reload()
+  }
+
   if (registerWorker && 'serviceWorker' in navigator) {
     const worker = new Workbox(PWA.serviceWorkerPath)
     worker.addEventListener('waiting', () => {
       change({ updateReady: true })
     })
     worker.addEventListener('controlling', () => {
-      location.reload()
+      if (updateRequested) reload()
+      else change({ updateReady: true })
     })
-    void worker.register().then(() => {
-      setInterval(() => {
-        void worker.update()
-      }, PWA.updateCheckMs)
-    })
+    worker.register().then(
+      () => {
+        setInterval(() => {
+          // An offline tick fails; the next one asks again.
+          worker.update().catch(() => undefined)
+        }, PWA.updateCheckMs)
+      },
+      // A browser that refuses workers (a private window) runs the app from the network, as before V18.
+      () => undefined,
+    )
     workbox = worker
   }
 
@@ -74,16 +86,33 @@ export function createBrowserShell({ registerWorker }: { readonly registerWorker
     },
     current: () => state,
     applyUpdate() {
-      // The waiting worker takes over; `controlling` above reloads the page under it.
-      workbox?.messageSkipWaiting()
+      if (workbox === null || updateRequested) return
+      updateRequested = true
+      navigator.serviceWorker.getRegistration().then(
+        (registration) => {
+          const waiting = registration?.waiting
+          // Already active (another tab took it): a reload is all that is left.
+          if (!waiting) return reload()
+          // A page the worker does not control (a hard reload) hears no `controlling`, so it waits for activation.
+          waiting.addEventListener('statechange', () => {
+            if (waiting.state === 'activated') reload()
+          })
+          workbox?.messageSkipWaiting()
+        },
+        reload,
+      )
     },
     async install() {
       const event = deferred
       if (event === null) return
       deferred = null
-      await event.prompt()
-      await event.userChoice
-      change({ install: 'none' })
+      // The browser makes an offer once, used or refused, so the item goes either way (D-076).
+      try {
+        await event.prompt()
+        await event.userChoice
+      } finally {
+        change({ install: 'none' })
+      }
     },
   }
 }

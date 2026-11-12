@@ -27,6 +27,13 @@ export function mountApp(): void {
   const container = document.getElementById(DOM.rootElementId)
   if (!container) throw new Error(STARTUP_ERROR_CODES.rootElementMissing)
   const root = createRoot(container)
+  // Before the workspace opens there is no form to lose, so a waiting version takes over at once: a broken deploy
+  // never traps an installed app on its failure screen (D-183).
+  let workspaceOpen = false
+  const takeWaitingUpdate = (): void => {
+    if (!workspaceOpen && shell.current().updateReady) shell.applyUpdate()
+  }
+  shell.subscribe(takeWaitingUpdate)
   const env = readEnv()
   if (!env.ok) {
     render(root, <StartupFailureScreen issues={env.issues} />)
@@ -44,6 +51,7 @@ export function mountApp(): void {
     render(root, <LoadingScreen />)
     composePorts(env.value, location.origin, shell).then(
       (ports) => {
+        workspaceOpen = true
         render(
           root,
           <LogicProvider ports={ports}>
@@ -54,6 +62,7 @@ export function mountApp(): void {
       },
       () => {
         composing = false
+        takeWaitingUpdate()
         render(root, navigator.onLine ? <FailureScreen error={{ code: 'unavailable' }} /> : <OfflineScreen onRetry={start} />)
       },
     )
