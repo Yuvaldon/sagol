@@ -58,3 +58,37 @@ export function SmallDialog({
     </ModalOverlay>
   )
 }
+
+export interface InfoDialogProps {
+  readonly titleKey: I18nKey
+  readonly hintKey: I18nKey
+  readonly onClose: () => void
+}
+
+/** A dialog that only tells something: one way out. */
+export function InfoDialog({ titleKey, hintKey, onClose }: InfoDialogProps) {
+  return (
+    <ModalOverlay
+      isOpen
+      isDismissable
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+      className={OVERLAY}
+    >
+      <Modal className={SURFACE}>
+        <Dialog className={BODY}>
+          <Heading slot="title" className="text-body font-bold">
+            {t(titleKey)}
+          </Heading>
+          <p className="text-name text-text-muted">{t(hintKey)}</p>
+          <div className="flex justify-end">
+            <Button variant="primary" onPress={onClose}>
+              {t('common.close')}
+            </Button>
+          </div>
+        </Dialog>
+      </Modal>
+    </ModalOverlay>
+  )
+}
