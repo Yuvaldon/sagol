@@ -23,6 +23,7 @@ import { describeDeploymentContract } from './deployments'
 import { describeLeaveContract } from './leaves'
 import { describePermissionContract } from './permissions'
 import { describePropertyContract } from './properties'
+import { describeReportContract } from './reports'
 import { describeRosterContract } from './roster'
 import { describeRuleContract } from './rules'
 import { describeTransferContract } from './transfer'
@@ -406,5 +407,6 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
     describeTransferContract(() => harness, () => claim())
     describePropertyContract(() => harness, () => claim())
     describeDeploymentContract(() => harness, () => claim())
+    describeReportContract(() => harness, () => claim())
   })
 }

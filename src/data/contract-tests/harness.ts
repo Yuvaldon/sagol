@@ -43,6 +43,7 @@ export interface ContractAdapter {
     | 'leave_batches'
     | 'deployments'
     | 'deployment_members'
+    | 'report_confirmations'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -64,6 +65,7 @@ export interface ContractAdapter {
     readonly property_definitions: DataCommands['property_definitions']
     readonly seniority_overrides: DataCommands['seniority_overrides']
     readonly deployments: DataCommands['deployments']
+    readonly day_reports: DataCommands['day_reports']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed

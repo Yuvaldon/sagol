@@ -150,7 +150,7 @@ async function localExport(): Promise<OrganizationExport> {
   )
   // The rotation the request is asked in (D-216).
   const rotation = valueOf(
-    await commands.deployments.create({ id: DeploymentId.parse(crypto.randomUUID()), name: 'Rotation', unit_id: company, start_date: TODAY, end_date: null }),
+    await commands.deployments.create({ id: DeploymentId.parse(crypto.randomUUID()), name: 'Rotation', unit_id: company, start_date: TODAY, end_date: null, report_owner_id: null }),
   )
   valueOf(
     await commands.deployments.setMembers({

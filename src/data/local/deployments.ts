@@ -78,6 +78,20 @@ async function unitIssues({ database, scope, row, before }: RowCheck<Deployment>
   return []
 }
 
+/** A report owner that changed must be a soldier the actor sees, and live (D-293); an unchanged one is left alone. */
+async function reportOwnerIssues({ database, scope, row, before }: RowCheck<Deployment>): Promise<Issue[]> {
+  const owner = row.report_owner_id
+  if (owner === null || owner === before?.report_owner_id) return []
+  const soldier = await tableOf(database, 'soldiers').get(owner)
+  const visible =
+    soldier !== undefined &&
+    soldier.organization_id === scope.organization_id &&
+    holds(scope, permissionOf('soldiers', 'view'), soldierTarget(owner))
+  if (!visible) return [{ path: ['report_owner_id'], code: IssueCode.enum.reference_not_found }]
+  if (soldier.archived_at !== null) return [{ path: ['report_owner_id'], code: IssueCode.enum.reference_archived }]
+  return []
+}
+
 /** New dates must still hold every member's own dates (D-179), and every live request (D-216). */
 async function memberDateIssues({ database, row, before }: RowCheck<Deployment>): Promise<Issue[]> {
   if (before === null || (before.start_date === row.start_date && before.end_date === row.end_date)) return []
@@ -153,7 +167,7 @@ const SPEC: ReferenceSpec<Deployment> = {
   table: 'deployments',
   resource: 'deployments',
   schema: Deployment,
-  checkTables: ['deployment_members', 'leaves'],
+  checkTables: ['deployment_members', 'leaves', 'soldiers'],
   optionalText: [],
   createdColumns: { closed_at: null, closed_by: null },
   targetOf: (deployment) => deploymentTarget(deployment.unit_id),
@@ -162,6 +176,7 @@ const SPEC: ReferenceSpec<Deployment> = {
     if (closed.length > 0) return closed
     return [
       ...(await unitIssues(check)),
+      ...(await reportOwnerIssues(check)),
       ...(await overlapIssues(check)),
       ...(await memberDateIssues(check)),
       ...(await wholeUnitMoveIssues(check)),

@@ -123,6 +123,7 @@ export function describeDeploymentContract(
         unit_id,
         start_date: LAST_WEEK,
         end_date: MONTH_END,
+        report_owner_id: null,
         ...overrides,
       };
     }
