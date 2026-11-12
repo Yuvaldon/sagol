@@ -146,6 +146,7 @@ const INPUT_TABLES: Record<string, Target> = {
   ReorderLeaveTypesInput: { table: 'leave_types', nested: { items: 'leave_types' } },
   CreateLeaveInput: { table: 'leaves', nested: { comment: 'leave_comments' } },
   CreateLeaveBatchInput: { table: 'leaves', nested: { batch: 'leave_batches', leaves: 'leaves' } },
+  CreateLeavesInput: { table: 'leaves', nested: { leaves: 'leaves' } },
   DuplicateLeaveInput: { table: 'leaves', nested: { copies: 'leaves' } },
   UpdateLeaveInput: { table: 'leaves' },
   TransitionLeaveInput: { table: 'leaves', nested: { comment: 'leave_comments' } },

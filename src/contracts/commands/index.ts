@@ -47,6 +47,7 @@ import type {
   ArchiveLeaveTypeGroupInput,
   ArchiveLeaveTypeInput,
   CreateLeaveBatchInput,
+  CreateLeavesInput,
   CreateLeaveInput,
   CreateLeaveTypeGroupInput,
   CreateLeaveTypeInput,
@@ -206,6 +207,8 @@ export interface DataCommands {
   leaves: {
     create: Command<CreateLeaveInput, Leave>
     createBatch: Command<CreateLeaveBatchInput, { batch: LeaveBatch; leaves: Leave[] }>
+    /** `createLeaves`: several leaves of one soldier, all or none, no batch row (D-267, D-275). */
+    createMany: Command<CreateLeavesInput, Leave[]>
     duplicate: Command<DuplicateLeaveInput, Leave[]>
     /** The dates and the details in one command and one event (D-123). */
     update: Command<UpdateLeaveInput, Leave>
