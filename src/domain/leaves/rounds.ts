@@ -1,7 +1,7 @@
 import type { CalendarDate } from '@contracts'
 import { addDays, compareDates } from '../time'
 
-// The leave-round planner's rhythm (D-270, D-286): days in, then days home, over and over. Pure.
+// The leave-round planner's rhythm (D-270, D-316): days in, then days home, over and over. Pure.
 
 /** Whole days, both at least one: a rhythm with no day in or no day home is no rhythm. */
 export interface RoundRhythm {

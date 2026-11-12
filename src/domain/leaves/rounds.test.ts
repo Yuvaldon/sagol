@@ -6,7 +6,7 @@ const day = (value: string) => CalendarDate.parse(value)
 const span = (start: string, end: string) => ({ start_date: day(start), end_date: day(end) })
 const EIGHT_SIX = { days_in: 8, days_home: 6 }
 
-describe('the leave-round rhythm (D-270, D-286)', () => {
+describe('the leave-round rhythm (D-270, D-316)', () => {
   it('repeats the days home every days in plus days home', () => {
     expect(roundDays(EIGHT_SIX, day('2026-12-09'), span('2026-12-01', '2027-01-15'))).toEqual([
       span('2026-12-09', '2026-12-14'),
