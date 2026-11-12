@@ -26,10 +26,11 @@ export function useActiveView(available: readonly ViewId[], device: ViewDevice):
   const wanted = search.view ?? fallback
   const view = available.includes(wanted) ? wanted : fallback
   const select = useCallback(
+    // A chosen view is pinned in the link, the device's own too: a link shared from a phone opens on what it shows (D-290).
     (next: ViewId) => {
-      change({ view: next === fallback ? undefined : next })
+      change({ view: next })
     },
-    [change, fallback],
+    [change],
   )
   return { view, select }
 }
