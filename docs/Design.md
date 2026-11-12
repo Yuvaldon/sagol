@@ -35,6 +35,7 @@ and this file says how to use them.
 | `today`, `today-band` | Today on the timeline: the dark pill around its number in the days header, and the faint band of its column |
 | `marker-ink` | Timeline markers, from V4 |
 | `scrim` | Behind a drawer or a dialog |
+| `on-fill` | A caption on a solid fill (a bar's name); dark in both sets, since fills stay bright |
 | `absence`, `absence-edge` | Every absence in the uniform color mode of the timeline: the fill text reads on, and its dashed edge (D-112) |
 | `palette-<key>` | The 12 colors users choose (D-074). Each passes 3:1 on `surface`, so they are for shapes, not text |
 
@@ -43,6 +44,19 @@ painted in a user's color takes its `PALETTE_TONES`: a solid fill, a faint fill 
 An icon key reaches the screen through `ICON_GLYPHS` (`ui/theme/icons.ts`), also total, with a name read aloud. A
 user's color says nothing by itself, so a row also has its name, and the color field reads each swatch's
 name aloud and marks the selected one with a check.
+
+## Color (Dark)
+
+The same tokens, a second value each, under `[data-appearance='dark']` on the root element with
+`color-scheme: dark` (D-181). The soldier chooses light (the default), dark or the device's in the user menu, under
+"מראה"; the choice is kept in their preferences, and the device's follows `prefers-color-scheme` live. The screens
+before the soldier is known (sign-in, onboarding) stay light. In the dark set:
+
+- `canvas` and `surface` are warm near-blacks; `text` and `text-muted` stay at 6.7:1 or more on both.
+- `action-solid` and `today` turn light, with `on-action` dark on them.
+- The palette keeps its twelve hues, lifted to 5:1 on `surface`; `on-fill` stays dark on them.
+- The glass surfaces are dark glass, and the primary action is light glass.
+- axe checks the board, its bars and a drawer in the dark set (`e2e/appearance.spec.ts`).
 
 ## Glass
 
@@ -54,7 +68,7 @@ Five surfaces, each with a solid fallback under `prefers-reduced-transparency`:
 | `glass-card` | A sheet on the canvas (sign-in, onboarding, full-screen states) |
 | `glass-menu` | Popovers and small dialogs |
 | `glass-drawer` | The drawer and the bottom sheet: nearly opaque, because forms are read on it |
-| `glass-action` | The primary action, dark glass |
+| `glass-action` | The primary action, dark glass (light glass in the dark set) |
 
 Use one primary action per surface. Glass makes a containing block, so anything `fixed` that follows the
 pointer inside it, such as a drag overlay, renders in a portal.
