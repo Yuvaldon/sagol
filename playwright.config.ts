@@ -1,9 +1,12 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // The slice demos, in a real browser (D-075): desktop and mobile, RTL, with axe. They run against
-// the dev server, because a production build refuses the local identity (D-006).
+// the dev server, because a production build refuses the local identity (D-006). The installed app (D-182, D-183)
+// exists only in a production build, so its spec runs alone against `vite preview` of one.
 
 const BASE_URL = 'http://localhost:5173'
+const PREVIEW_URL = 'http://localhost:4173'
+const PRODUCTION_ONLY = /pwa\.spec\.ts/
 const onCi = process.env.CI !== undefined
 // A slice demo walks the whole slice in one test, with axe after each step. The longest (V4's leaves, V5's
 // approval) take 22 s with two workers here, each of their 7-8 steps 1.5-5 s, and cross Playwright's default
@@ -26,12 +29,20 @@ export default defineConfig({
     timezoneId: 'Asia/Jerusalem',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] }, testIgnore: PRODUCTION_ONLY },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: PRODUCTION_ONLY },
+    { name: 'installable', use: { ...devices['Pixel 7'], baseURL: PREVIEW_URL }, testMatch: PRODUCTION_ONLY },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: BASE_URL,
-    reuseExistingServer: !onCi,
-  },
+  webServer: [
+    {
+      command: 'npm run dev',
+      url: BASE_URL,
+      reuseExistingServer: !onCi,
+    },
+    {
+      command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+      url: PREVIEW_URL,
+      reuseExistingServer: !onCi,
+    },
+  ],
 })

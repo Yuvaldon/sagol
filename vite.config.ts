@@ -1,9 +1,15 @@
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { minimal2023Preset } from '@vite-pwa/assets-generator/config'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { loadEnv, type Plugin } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 import { DEVELOPMENT_ONLY_AUTH_MODES } from './src/contracts/auth/development-modes.ts'
 import { ENV_VARIABLES } from './src/config/env/names.ts'
+import { PWA } from './src/config/pwa/index.ts'
+import { dictionary } from './src/i18n/he/dictionary.ts'
 
 const DEVELOPMENT_ONLY: readonly string[] = DEVELOPMENT_ONLY_AUTH_MODES
 
@@ -25,6 +31,93 @@ function productionEnvGuard(): Plugin {
   }
 }
 
+/** The light theme's value of a color token: the first definition, in the @theme block (D-182). */
+function lightToken(name: string): string {
+  const css = readFileSync(resolve(import.meta.dirname, 'src/ui/theme/tailwind.css'), 'utf8')
+  const value = new RegExp(`--color-${name}:\\s*(#[0-9a-fA-F]{3,8})\\s*;`).exec(css)?.[1]
+  if (value === undefined) throw new Error(`The theme has no --color-${name} value (D-182).`)
+  return value
+}
+
+const THEME_DIR = resolve(import.meta.dirname, 'src/ui/theme')
+const APP_ICON = 'app-icon.svg'
+const CANVAS = lightToken('canvas')
+const MARKER = lightToken('marker')
+const APP_NAME = dictionary.app.name
+
+/**
+ * The installed app's head (D-182): its bar color, its name and standalone mode on Apple devices. The icon is
+ * drawn in the brand's purple, and the build refuses one that drifted from the theme's marker.
+ */
+function installedAppHead(): Plugin {
+  return {
+    name: 'sagol:installed-app-head',
+    buildStart() {
+      const icon = readFileSync(resolve(THEME_DIR, APP_ICON), 'utf8')
+      if (!icon.toLowerCase().includes(MARKER.toLowerCase())) {
+        throw new Error(`${APP_ICON} is not drawn in the theme's marker color ${MARKER} (D-182).`)
+      }
+    },
+    generateBundle() {
+      // The page links the source icon as its scalable favicon.
+      this.emitFile({ type: 'asset', fileName: APP_ICON, source: readFileSync(resolve(THEME_DIR, APP_ICON)) })
+    },
+    transformIndexHtml: () => [
+      { tag: 'meta', attrs: { name: 'theme-color', content: CANVAS }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'apple-mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title', content: APP_NAME }, injectTo: 'head' },
+    ],
+  }
+}
+
+/** Escapes a path for a route pattern of the service worker. */
+function pathPattern(path: string): RegExp {
+  return new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+}
+
+/**
+ * The service worker (D-183): the app shell only, and only in a production build. Navigations fall back to the
+ * cached page, except the command gateway and auth, which always go to the network. No data is cached.
+ */
+const installedApp = VitePWA({
+  registerType: 'prompt',
+  injectRegister: false,
+  filename: PWA.serviceWorkerPath.slice(1),
+  devOptions: { enabled: false },
+  pwaAssets: {
+    image: resolve(THEME_DIR, APP_ICON),
+    integration: { publicDir: THEME_DIR, outDir: resolve(import.meta.dirname, 'dist'), baseUrl: '/' },
+    htmlPreset: '2023',
+    injectThemeColor: false,
+    overrideManifestIcons: true,
+    config: false,
+    preset: {
+      ...minimal2023Preset,
+      maskable: { ...minimal2023Preset.maskable, resizeOptions: { background: MARKER } },
+      apple: { ...minimal2023Preset.apple, resizeOptions: { background: MARKER } },
+    },
+  },
+  manifest: {
+    name: APP_NAME,
+    short_name: APP_NAME,
+    lang: 'he',
+    dir: 'rtl',
+    display: 'standalone',
+    start_url: '/',
+    scope: '/',
+    theme_color: CANVAS,
+    background_color: CANVAS,
+  },
+  workbox: {
+    globPatterns: ['**/*.{js,css,html,woff2,png,svg,ico}'],
+    navigateFallback: 'index.html',
+    navigateFallbackDenylist: PWA.networkOnlyPaths.map(pathPattern),
+    cleanupOutdatedCaches: true,
+  },
+})
+
 /**
  * Libraries in chunks of their own (D-210): they change only on an upgrade, so a deploy of the app's
  * code leaves them cached, and no chunk passes Vite's 500 kB warning.
@@ -35,6 +128,7 @@ const VENDOR_CHUNKS: readonly { readonly name: string; readonly packages: readon
   { name: 'tanstack', packages: ['@tanstack'] },
   { name: 'motion', packages: ['motion', 'motion-dom', 'motion-utils', 'framer-motion'] },
   { name: 'zod', packages: ['zod'] },
+  { name: 'workbox', packages: ['workbox-window'] },
 ]
 
 function vendorTest(packages: readonly string[]): RegExp {
@@ -45,7 +139,7 @@ function vendorTest(packages: readonly string[]): RegExp {
 // Path aliases are read from tsconfig.app.json ("paths") so that the
 // layer map is defined in exactly one place.
 export default defineConfig({
-  plugins: [productionEnvGuard(), react(), tailwindcss()],
+  plugins: [productionEnvGuard(), react(), tailwindcss(), installedAppHead(), installedApp],
   resolve: {
     tsconfigPaths: true,
   },
