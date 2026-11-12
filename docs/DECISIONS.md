@@ -31,7 +31,7 @@ am = amends, ref = refines, ext = extends.
 | D-012 | Leaves: whole days, overlaps, availability by union | contracts, domain, data, ui | ext D-032, D-049; ref D-070; ref D-111 |
 | D-013 | Approval behavior | domain, data, logic, ui | ref D-041, D-063, D-064; ext D-049; ref D-114, D-115; ref D-117, D-121 |
 | D-014 | Availability rules | contracts, domain, data, logic, ui | ext D-031; ref D-047, D-071, D-073; ref D-139, D-140, D-141; ref D-145 |
-| D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130; ref D-260 |
+| D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130; ref D-260; ref D-285 |
 | D-016 | Notion-like custom properties | contracts, domain, data, ui | ref D-065; ref D-176, D-177 |
 | D-017 | Soft delete and audit columns | contracts, data, backend, ui | ref D-088, D-098 |
 | D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | ref D-096, D-102; ref D-153 |
@@ -146,7 +146,7 @@ am = amends, ref = refines, ext = extends.
 | D-127 | One commit = one layer, and every commit passes | all, tooling, docs | |
 | D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | ref D-154 |
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
-| D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260 |
+| D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260; ref D-285 |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
@@ -196,7 +196,7 @@ am = amends, ref = refines, ext = extends.
 | D-177 | Property chips in the filter bar | logic, ui | |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259; ref D-267, D-268, D-270 |
-| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262 |
+| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262, D-285 |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
 | D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
@@ -239,7 +239,7 @@ am = amends, ref = refines, ext = extends.
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
 | D-253 | The profile is personal only | ui | |
-| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278 |
+| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; ref D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
 | D-256 | One path for each action | ui | |
 | D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266 |
@@ -247,7 +247,7 @@ am = amends, ref = refines, ext = extends.
 | D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | |
 | D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
-| D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | |
+| D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | ref D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
 | D-265 | Home follows permissions: the board, or "שלי" | logic, ui | |
@@ -256,12 +256,14 @@ am = amends, ref = refines, ext = extends.
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
-| D-271 | Order of the slices after the journeys matrix | docs | |
+| D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
 | D-278 | A floating surface fits its content | ui, scripts | |
+| D-284 | Launch order: V32 before V28, then the audit | docs | |
+| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 
 ---
 
@@ -3504,3 +3506,45 @@ automatically is the usual staging practice and stays inside the free plan.
   `className`, and the string consts it names, the file's own or imported from beside it.
 **Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
 dead space on any surface; a rule in the check keeps the next surface from bringing it back.
+
+## D-284 — Launch order: V32 before V28, then the audit
+2026-11-12 · accepted · amends D-271 · V32 · decided under the owner's autonomy instruction of 2026-11-11
+- Before launch: track B runs V26 → V27; track A runs V32 (its docs first, then the screens) → V28. Then A7 on main,
+  once V28 is in.
+- After launch, in this order: V29, V30, V31, V21, V23.
+- V32's docs land first, on their own, because V27's setup builds on them.
+**Why:** the owner found the management screen mixing daily work with one-time configuration; the first units should
+meet the split, not learn the mixed screen and then lose it. The audit reads the product as it launches.
+
+## D-285 — Work and unit setup: two places, a definition apart from its use
+2026-11-12 · accepted · refines D-015, D-130, D-180, D-254, D-262 · V32 · decided under the owner's autonomy instruction of 2026-11-11
+- **Two places.** "ניהול יחידה" holds the work that recurs: soldiers (and on a soldier, their tags, their extra
+  details and their access), join requests, personal access, rotations, presence rules. "הגדרות היחידה" holds what is
+  defined once and rarely changed: the unit's structure and unit types, command levels, permission levels and their
+  bindings to command levels, absence types and their groups, the tag catalog, the definitions of extra details, and
+  import and export. Setup is reached from one quiet row at the foot of "ניהול יחידה", never mixed into its groups.
+  Requests stay in the bottom strip (D-252).
+- **A definition apart from its use.** Each concept is split by its nature: the definition lives in setup, its use on
+  the object at work. An extra detail is defined in setup and filled on the soldier's card; a permission level is
+  defined in setup and granted from the person (the soldier's card, or "הרשאות אישיות"); a tag is defined in setup and
+  put on a soldier from the card; an absence type is defined in setup and chosen in a request.
+- **No dead ends.** When an action needs a definition that does not exist yet, the field offers to create it in place,
+  for who may create it: a unit type, a command level, a tag, an absence type. A rich definition (a permission level)
+  is a link to its form that returns to the action. For who may not create it, the field says that it is missing and
+  who sets it up. Never "first create X" with nothing to press.
+- **The setup checklist (D-180)** stays the first section of setup while unfinished, and "ניהול יחידה" shows its
+  progress as a callout above the groups. The first step not done is marked as the next one. The tags step opens the
+  tags, not the categories.
+- **Tag categories are advanced.** Adding a tag never asks for a category first: the form chooses the first live
+  category, and the choice can be changed. A unit with no category yet sees the category as a name to create with the
+  tag ("כללי", editable), so the tag is saved in one step. New units start with categories from their template
+  (D-262; the empty template too). The tags module has no categories tab; categories are edited under "מתקדם" in setup.
+  The model is unchanged: a tag still has its category (D-130), and a category keeps its selection mode (D-015) and
+  its default lifetime (D-260).
+- **Visibility.** Each section and row shows only what the viewer's access allows (the module's `isAllowed`); with
+  nothing allowed, a place and its row are absent. The owner sees everything because the bootstrap owner role holds
+  every permission (D-079), not by a special case.
+**Why:** the owner's review: the management screen mixed daily work with one-time configuration, "פרטים נוספים"
+read as unclear because its definition and its values shared one name, and most users should never think about tag
+categories. Splitting by nature keeps each daily screen short, and offering the missing definition in place leads a
+new unit by the hand without a second code path.

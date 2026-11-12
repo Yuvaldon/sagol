@@ -141,8 +141,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   may create a request while the screen has a rotation; it replaced the floating "+". "פתיחת סבב" in routine comes with
   V26.
 - **ניהול יחידה (D-173, D-254):** "ניהול", the last destination, opens a `glass-drawer` panel from the inline start (the
-  right), at most `sheet` wide, as tall as its rows up to the screen and scrolling past it (D-278), on every screen. "הקמת היחידה" first while unfinished, then its groups,
-  each a muted heading over its rows: היחידה, נוכחות, פרטי חיילים, הרשאות, נתונים. A row is the module's icon, name, one
+  right), at most `sheet` wide, as tall as its rows up to the screen and scrolling past it (D-278), on every screen. It
+  holds daily work only (from V32, D-285): the setup's progress as a callout while unfinished, then its groups, each a muted
+  heading over its rows: אנשים, נוכחות; and at its foot one quiet row, "הגדרות היחידה", that opens setup. A row is the module's icon, name, one
   plain line and its waiting count; pressing it closes the panel and opens the module, whose deep link is unchanged. No
   pins. A row the viewer may not open is absent; with nothing to show, the panel and its destination are absent. The
   destination carries the sum of the panel's waiting counts.
@@ -309,7 +310,7 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 |-----------------|------------|----------|--------------------------|
 | ארגון | the tenant (`organizations`) | hide: the root unit's name, or "היחידה" | nowhere |
 | כל הארגון (scope, rule target) | the whole tenant | rename: the root unit's name; a rule's target "כל היחידה" | scope picker, rules |
-| הקמת הארגון | the setup | rename: הקמת היחידה | ניהול יחידה, while unfinished |
+| הקמת הארגון | the setup | rename: הקמת היחידה | הגדרות היחידה, while unfinished; its progress in ניהול יחידה (D-285) |
 | יחידה | `units` | keep | everywhere |
 | דרג / רמת יחידה | `unit_levels` | rename: סוג יחידה (פלוגה, מחלקה, כיתה) | מבנה היחידה |
 | דרגה | `command_ranks` | rename: דרג פיקודי (מ"פ, מ"מ, מ"כ, לוחם) | חיילים, הרשאות, the soldier's card |
@@ -330,8 +331,8 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 | כללים | `availability_rules` | rename: כללי נוכחות | נוכחות |
 | סבב / סבבים | `deployments` | keep (D-212) | top strip, סבבים |
 | תגית / תגיות | `tags` | keep | soldier's card, filter, תגיות |
-| קטגוריה | `tag_categories` | keep, inside תגיות only | תגיות |
-| מאפיינים | `property_definitions` | rename: פרטים נוספים | פרטי חיילים, the soldier's card |
+| קטגוריה | `tag_categories` | keep, advanced only (D-285) | הגדרות היחידה › מתקדם; a tag's form |
+| מאפיינים | `property_definitions` | rename: פרטים נוספים | defined in הגדרות היחידה, filled on the soldier's card (D-285) |
 | בכירות / ותק | effective seniority | merge: ותק | sort, the soldier's card |
 | שיבוץ | `unit_memberships` | keep: שיבוץ ליחידה | the soldier's card |
 | שיוך (tagging) | `soldier_tags` | rename: תיוג | the soldier's card |
@@ -351,9 +352,9 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 - **The rule (D-256):** one entry per destination, plus one primary quick action per role.
 - **Profile (avatar):** name · appearance (light or dark, the rules row's place) · install · identity switch (local) ·
   sign-out.
-- **ניהול יחידה:** הקמת היחידה (while unfinished) · היחידה: מבנה היחידה, חיילים, סבבים · נוכחות: סוגי היעדרות, כללי
-  נוכחות · פרטי חיילים: תגיות, פרטים נוספים · הרשאות: רמות הרשאה, הרשאות אישיות, בקשות הצטרפות · נתונים: ייבוא
-  וייצוא. No pins.
+- **ניהול יחידה (work, D-285):** the setup's progress (while unfinished) · אנשים: חיילים, בקשות הצטרפות, הרשאות
+  אישיות · נוכחות: סבבים, כללי נוכחות · then "הגדרות היחידה". No pins. Setup is laid out in "Work and unit setup"
+  below.
 - **Home (D-265):** who approves or manages someone lands on the board at their widest scope; everyone else on
   "שלי". One press apart; the last choice is remembered on the device; a link that names a panel or view wins.
 - **שלי:** my next days, in or out · my requests, open and history, with their status. A new request starts from the
@@ -442,6 +443,41 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 categories "הכשרות" (נהג, חובש, קשר, נגביסט, מטול) with colors, and a category "תפקיד בסבב" whose tags default to this rotation; absence types
 in groups (בית: יציאה הביתה, יציאה מיוחדת; בריאות: מחלה, גימלים; אחר: קורס, אירוע משפחתי); rule defaults sized to a
 company. V27 fixes the exact lists and colors in config.
+
+## Work and unit setup (V32, D-284, D-285)
+
+Daily work and one-time configuration live apart. A concept's definition sits in setup; its use sits on the object at
+work. Every section and row shows only what the viewer may open (the module's `isAllowed`); a place with nothing allowed
+is absent. The owner sees everything because the owner role holds every permission (D-079).
+
+| Place | Section | Rows |
+|-------|---------|------|
+| ניהול יחידה (work) | callout | the setup's progress, "X מתוך Y", and the next step, while unfinished |
+| | אנשים | חיילים · בקשות הצטרפות · הרשאות אישיות |
+| | נוכחות | סבבים · כללי נוכחות |
+| | foot | הגדרות היחידה (one quiet row) |
+| הגדרות היחידה (setup) | הקמת היחידה | the checklist (D-180), while unfinished; the next step marked |
+| | מבנה | מבנה היחידה (with סוגי יחידה) · דרגים פיקודיים |
+| | הרשאות | רמות הרשאה (with הרשאות לפי דרג פיקודי) |
+| | קטלוגים | סוגי היעדרות (with their groups) · תגיות · פרטים נוספים |
+| | נתונים | ייבוא וייצוא |
+| | מתקדם | קטגוריות תגיות |
+
+- **Setup's surface:** the same `glass-drawer` panel as "ניהול יחידה", replacing its rows, with a back arrow in its
+  header; the deep link of each module is unchanged. On a phone, the same panel as a sheet.
+- **Moved out of tabs:** command levels leave the soldiers module for "מבנה"; tag categories leave the tags module for
+  "מתקדם". Unit types stay a tab of the structure, permission bindings a tab of the permission levels, absence groups a
+  tab of the absence types: each is part of the same definition.
+- **On the person (work):** the soldier's card holds their tags, their extra details and their access: the permission
+  levels granted to them, a grant and a revoke for who may manage access (the same commands as "הרשאות אישיות").
+- **In place, not a dead end:** a select whose list is empty, or lacks what is needed, ends with "+ חדש" for who may
+  create it (a unit type, a command level, a tag, an absence type, a tag category): a small form in a popover, and the
+  new item is chosen on save. A permission level opens its form and returns. For who may not create it, the empty
+  field says "עוד לא הוגדר" and who sets it up.
+- **A tag without categories:** the tag's form chooses the first live category and lets it change; with none, the
+  category field is a new name, "כללי" by default, created with the tag.
+- **Templates (D-262):** every template, the empty one too, starts the unit with tag categories; the empty one with
+  "צבאי" and "אזרחי" (V27).
 
 ## Patterns of a module
 
