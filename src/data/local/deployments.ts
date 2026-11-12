@@ -15,7 +15,7 @@ import {
   type TableName,
   type UnitId,
 } from '@contracts'
-import { compareCodeUnits, deploymentMemberIssues, soldierTarget, unitTarget } from '@domain'
+import { compareCodeUnits, compareDates, deploymentMemberIssues, soldierTarget, unitTarget } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { tableOf } from './store'
 import { updatedBy, type LocalDependencies } from './dependencies'
@@ -61,9 +61,13 @@ async function unitIssues({ database, scope, row, before }: RowCheck<Deployment>
 /** New dates must still hold every member's own dates (D-179). */
 async function memberDateIssues({ database, row, before }: RowCheck<Deployment>): Promise<Issue[]> {
   if (before === null || (before.start_date === row.start_date && before.end_date === row.end_date)) return []
-  const outside = (await membersOf(database, row)).flatMap((member) => deploymentMemberIssues(row, member))
-  const paths = [...new Set(outside.map((issue) => String(issue.path[0])))]
-  return paths.map((path) => ({ path: [path], code: IssueCode.enum.invalid_value }))
+  // The answer names the deployment's date that cuts a member's own date off, not the member's.
+  const dates = (await membersOf(database, row)).flatMap((member) => [member.start_date, member.end_date]).filter((date) => date !== null)
+  const issues: Issue[] = []
+  if (dates.some((date) => compareDates(date, row.start_date) < 0)) issues.push({ path: ['start_date'], code: IssueCode.enum.invalid_value })
+  const end = row.end_date
+  if (end !== null && dates.some((date) => compareDates(date, end) > 0)) issues.push({ path: ['end_date'], code: IssueCode.enum.invalid_value })
+  return issues
 }
 
 async function membersOf(database: Store, deployment: Deployment): Promise<DeploymentMember[]> {

@@ -8,13 +8,13 @@ import {
   type SeniorityOverride,
   type TableName,
 } from '@contracts'
-import { compareCodeUnits, optionalText, seniorityOverrideOverlapIssues, soldierTarget } from '@domain'
+import { can, canUnconstrained, compareCodeUnits, optionalText, seniorityOverrideOverlapIssues, soldierTarget } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { visibleSoldier } from './leaves'
-import { POLICY_TABLES } from './snapshot'
+import { POLICY_TABLES, loadPolicySnapshot } from './snapshot'
 
 // Personal seniority (D-029, D-179). An override is a target of its soldier. It is created and revoked, never edited:
 // a revoked override stays as history, and the overlap check counts only the live ones.
@@ -24,6 +24,25 @@ const CREATE = { resource: 'seniority_overrides', action: 'create' } as const
 const REVOKE = { resource: 'seniority_overrides', action: 'delete' } as const
 
 const TABLES: readonly TableName[] = [...new Set<TableName>([...POLICY_TABLES, 'seniority_overrides'])]
+
+/**
+ * An override changes seniority, which the `junior` constraints compare (D-157, D-179). So the write passes the check on
+ * the soldier as stored after it too, on the day it takes effect, and one's own seniority changes only through a
+ * source with `any`.
+ */
+async function requireAfterOverrideWrite(
+  database: LocalDependencies['database'],
+  scope: ActorScope,
+  permission: typeof CREATE | typeof REVOKE,
+  override: Pick<SeniorityOverride, 'soldier_id' | 'valid_from'>,
+) {
+  const { context } = await loadPolicySnapshot(database, scope.organization_id, scope.now, override.valid_from)
+  const target = soldierTarget(override.soldier_id)
+  if (!can(context, scope.soldier_id, permission, target)) fail({ code: 'forbidden' })
+  if (override.soldier_id === scope.soldier_id && !canUnconstrained(context, scope.soldier_id, permission, target)) {
+    fail({ code: 'forbidden' })
+  }
+}
 
 function canView(scope: ActorScope, override: Pick<SeniorityOverride, 'soldier_id'>): boolean {
   return holds(scope, VIEW, soldierTarget(override.soldier_id))
@@ -98,6 +117,7 @@ export function createSeniorityOverrideCommands(dependencies: LocalDependencies)
           const issues = seniorityOverrideOverlapIssues(await overridesOf(database, scope), candidate)
           if (issues.length > 0) return failValidation(issues)
           await tableOf(database, 'seniority_overrides').add(candidate)
+          await requireAfterOverrideWrite(database, scope, CREATE, candidate)
           return candidate
         })
         publish(row.id)
@@ -117,6 +137,7 @@ export function createSeniorityOverrideCommands(dependencies: LocalDependencies)
           if (stored.revoked_at !== null) return failValidation([{ path: [], code: IssueCode.enum.archived }])
           const revoked = parsedRow('seniority_overrides', { ...stored, revoked_at: scope.now, revoked_by: scope.soldier_id })
           await tableOf(database, 'seniority_overrides').put(revoked)
+          await requireAfterOverrideWrite(database, scope, REVOKE, revoked)
           return revoked
         })
         publish(row.id)

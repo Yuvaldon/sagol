@@ -264,6 +264,15 @@ export function describeDeploymentContract(
         expect(issuesOf(narrowed)).toEqual([
           { path: ["changes", "start_date"], code: "invalid_value" },
         ]);
+        // The answer names the deployment's date that cuts the member off.
+        const shortened = await adapter().commands.deployments.update({
+          id: deployment.id,
+          expected_version: 2,
+          changes: { end_date: TODAY },
+        });
+        expect(issuesOf(shortened)).toEqual([
+          { path: ["changes", "end_date"], code: "invalid_value" },
+        ]);
         const moved = valueOf(
           await adapter().commands.deployments.update({
             id: deployment.id,

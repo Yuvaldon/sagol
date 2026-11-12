@@ -1,6 +1,6 @@
 import type { Store } from './store'
-import type { Organization, OrganizationId, Timestamp } from '@contracts'
-import { accessManagerIssues, clockAt, createPolicyContext, type PolicyContext } from '@domain'
+import type { CalendarDate, Organization, OrganizationId, Timestamp } from '@contracts'
+import { accessManagerIssues, clockAt, createPolicyContext, type Clock, type PolicyContext } from '@domain'
 import { tableOf } from './store'
 import { fail, failValidation, parsedRow } from './failure'
 
@@ -30,6 +30,8 @@ export function loadPolicySnapshot(
   database: Store,
   organizationId: OrganizationId,
   now: Timestamp,
+  /** A later day to judge on instead of today: a change that takes effect then is checked as it will be (D-179). */
+  onDay?: CalendarDate,
 ): Promise<PolicySnapshot> {
   const rowsOf = <T extends Exclude<(typeof POLICY_TABLES)[number], 'organizations'>>(table: T) =>
     tableOf(database, table).where('organization_id').equals(organizationId).toArray()
@@ -66,7 +68,7 @@ export function loadPolicySnapshot(
         rank_role_bindings,
         access_grants,
       },
-      clockAt(organization.timezone, now),
+      dayClock(clockAt(organization.timezone, now), onDay),
     )
     return { organization, context }
   })
@@ -80,4 +82,9 @@ export async function requireAccessManager(database: Store, organizationId: Orga
   const { context } = await loadPolicySnapshot(database, organizationId, now)
   const issues = accessManagerIssues(context)
   if (issues.length > 0) failValidation(issues)
+}
+
+/** Today, or a later day when one is given. */
+function dayClock(clock: Clock, onDay: CalendarDate | undefined): Clock {
+  return onDay === undefined || onDay <= clock.today ? clock : { ...clock, today: onDay }
 }
