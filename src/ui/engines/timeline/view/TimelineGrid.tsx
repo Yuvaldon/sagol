@@ -444,15 +444,13 @@ function ResourceRow({
 export interface TimelineGridProps {
   readonly days: readonly TimelineDayCell[]
   readonly rows: readonly TimelineRowModel[]
-  /** The heat row (D-141); NULL when no rule the actor sees concerns the unit (D-173). */
+  /** The heat row (D-141), always under the days and held there (D-310); NULL when no rule the actor sees concerns the unit (D-173). */
   readonly heat: readonly TimelineHeatCell[] | null
-  /** The heat row sits above the list, under the days, or below it (D-173). */
-  readonly heatOnTop: boolean
   /** Dragging marks and days (D-143); NULL when nothing on the board moves. */
   readonly drag: TimelineDragProps | null
 }
 
-export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGridProps) {
+export function TimelineGrid({ days, rows, heat, drag }: TimelineGridProps) {
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
   const [content, setContent] = useState<HTMLDivElement | null>(null)
   const list = useRef<HTMLUListElement>(null)
@@ -470,9 +468,7 @@ export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGrid
   const place: Place = { layout, baseRowPx: rowPx, lanes, pressIsDrag: gesture.pressIsDrag }
 
   // Where the rows start inside what scrolls: under the bars and the days header, which grows with the heat row.
-  const heatAbove = heatOnTop ? heat : null
-  const heatBelow = heatOnTop ? null : heat
-  const hasHeatAbove = heatAbove !== null
+  const hasHeat = heat !== null
   // What sits above the rows can grow without this grid rendering again (the filter row, D-173), so it is watched.
   useLayoutEffect(() => {
     const element = list.current
@@ -486,7 +482,7 @@ export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGrid
     return () => {
       observer.disconnect()
     }
-  }, [content, scroller, hasHeatAbove, rowPx])
+  }, [content, scroller, hasHeat, rowPx])
 
   // TanStack Virtual hands out new functions each render, and nothing here memoizes them.
   // oxlint-disable-next-line react/incompatible-library
@@ -519,7 +515,7 @@ export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGrid
     >
       <div ref={setContent} className={`relative min-w-full ${gesture.active === null ? '' : 'select-none'}`} style={{ width: layout.widthPx }}>
         <div aria-hidden className="h-under-bars md:h-under-bars-md" />
-        <DaysHeader days={days} layout={layout} heat={heatAbove} heatPx={rowPx} />
+        <DaysHeader days={days} layout={layout} heat={heat} heatPx={rowPx} />
         <ul ref={list} aria-label={t('timeline.names')} className="relative" style={{ height: virtualizer.getTotalSize() }}>
           <Columns days={days} layout={layout} />
           {virtualizer.getVirtualItems().map((item) => {
@@ -548,12 +544,6 @@ export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGrid
             )
           })}
         </ul>
-        {heatBelow === null ? null : (
-          // Held at the bottom of the board, over the bottom bar and the floating "+", so every day stays in reach.
-          <div className="sticky bottom-above-bottom-bar z-3 bg-surface">
-            <HeatRow cells={heatBelow} layout={layout} heightPx={rowPx} />
-          </div>
-        )}
         {/* Room for the bottom bar on a phone, and for the floating "+" everywhere (D-115). */}
         <div aria-hidden className="h-above-bottom-bar" />
       </div>

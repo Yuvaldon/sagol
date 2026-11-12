@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, drawer, openRotationInNewUnit } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
+import { addFilter } from './support/board.ts'
 
 // V14's demo: custom properties (D-016), their fields in a soldier's form, and their chips in the filter bar (D-177),
 // on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -38,13 +39,6 @@ async function createSoldier(page: Page, firstName: string, lastName: string, fi
   await fill(page)
   await page.getByRole('button', { name: he.common.create }).click()
   await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
-}
-
-async function addCondition(page: Page, condition: string, value: string) {
-  await page.getByRole('button', { name: he.filters.add, exact: true }).click()
-  await page.getByRole('dialog', { name: he.filters.add }).getByRole('button', { name: condition, exact: true }).click()
-  await page.getByRole('dialog', { name: he.filters.add }).locator('label').filter({ hasText: value }).click()
-  await page.keyboard.press('Escape')
 }
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
@@ -85,10 +79,14 @@ test('custom properties: defined once, filled in a form, and filtered by', async
   })
 
   await test.step('a property chip keeps who holds the answer', async () => {
-    await addCondition(page, 'סוג דם', 'O')
+    await addFilter(page, 'סוג דם', ['O'])
     await expect(rowNames(page)).toHaveText(['נועם לב'])
     await filterBar(page).getByRole('button', { name: `${he.filters.remove} סוג דם` }).click()
-    await addCondition(page, 'רישיון נהיגה', he.properties.yes)
+    // A select with no answer is "empty" (D-312).
+    await addFilter(page, 'סוג דם', [], he.filters.operators.isEmpty)
+    await expect(rowNames(page)).toHaveText([OWNER.name])
+    await filterBar(page).getByRole('button', { name: `${he.filters.remove} סוג דם` }).click()
+    await addFilter(page, 'רישיון נהיגה', [he.properties.yes])
     await expect(rowNames(page)).toHaveText(['יעל שחר'])
     await expect(page).toHaveURL(/filter=/)
     await expectNoAxeViolations(page)

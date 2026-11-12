@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { MARK_NAME, NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, OWNER } from './support/workspace.ts'
+import { selectColors } from './support/board.ts'
 
 // V4's demo: leave types and their groups, a new leave from the floating "+", bars, lanes and a marker on the
 // board, and the uniform colors, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -78,8 +79,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
   })
 
   await test.step('the uniform colors live in the URL and name the type inside the bar', async () => {
-    await page.getByRole('button', { name: new RegExp(he.workspace.view) }).click()
-    await page.getByRole('menuitemradio', { name: he.workspace.colorsUniform }).click()
+    await selectColors(page, he.workspace.colorsUniform)
     await expect(page).toHaveURL(/colors=uniform/)
     await expect(board(page).getByText('מחלה', { exact: true })).toBeVisible()
     await page.reload()
@@ -89,7 +89,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
 
   await test.step('on a phone the bar\'s controls and the menu are icons of a touch size, and the "+" too', async () => {
     if (testInfo.project.name !== 'mobile') return
-    for (const name of [he.myLeaves.open, he.filters.add, he.navigation.open]) {
+    for (const name of [he.myLeaves.open, he.filters.builder, he.navigation.open]) {
       const box = await page.getByRole('button', { name, exact: true }).boundingBox()
       if (box === null) throw new Error(`no ${name}`)
       expect(box.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
