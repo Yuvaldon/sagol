@@ -290,6 +290,16 @@ parses `import.meta.env` at startup and fails fast on invalid values. Variables:
 data adapter, remote URL/keys (phase 8). Server-only secrets (`BOOTSTRAP_OWNER_EMAIL`)
 never reach the client bundle.
 
+## Installed app (D-182 … D-185)
+
+- The build makes the manifest, the icons (from `ui/theme/app-icon.svg`, drawn in the marker color) and the head
+  tags from the light theme's tokens and the i18n name (`vite.config.ts`, `vite-plugin-pwa`).
+- The service worker exists only in a production build. It precaches the app shell, falls back to the cached page
+  for navigations, and caches no data: the command gateway and auth always go to the network (`config/pwa`).
+- `app/shell` owns the browser APIs (registration through `workbox-window`, the update check, `beforeinstallprompt`)
+  behind the `shell` port of `logic`; `useAppUpdate` and `useInstallOffer` read it, and `ui` shows the update
+  toast and the install item. A remote build without a network waits on the offline screen (`mountApp`).
+
 ## Folder structure (target)
 
 ```
@@ -305,7 +315,7 @@ src/
                tags/ filters/ presence/ rules/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
-  app/         env/ time/ composition/ router/
+  app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)
 supabase/      migrations/ functions/commands/ (D-201)
 e2e/           Playwright specs
 docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md OPEN_ITEMS.md

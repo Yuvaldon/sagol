@@ -19,6 +19,7 @@ import {
   PANEL_IDS,
   SETUP_STEPS,
   PanelId,
+  PWA,
   SEARCH_PARAMS,
   STORAGE_KEYS,
   TIMELINE_DRAG,
@@ -233,5 +234,11 @@ describe('panels (D-092)', () => {
   it('gives each setup step its own panel (D-180)', () => {
     expect(new Set(SETUP_STEPS.map((step) => step.id)).size).toBe(SETUP_STEPS.length)
     expect(new Set(SETUP_STEPS.map((step) => step.panel)).size).toBe(SETUP_STEPS.length)
+  })
+
+  it('keeps the command gateway and auth out of the worker (D-183)', () => {
+    expect(PWA.networkOnlyPaths).toEqual(['/functions/v1/commands', '/auth/v1'])
+    expect(PWA.iosUserAgent.test('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')).toBe(true)
+    expect(PWA.iosUserAgent.test('Mozilla/5.0 (Linux; Android 15; Pixel 7)')).toBe(false)
   })
 })

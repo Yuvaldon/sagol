@@ -28,9 +28,12 @@ export interface FakePortParts {
   readonly changes?: object
   readonly auth?: object
   readonly now?: () => Timestamp
+  /** Merged over a shell with nothing to offer. */
+  readonly shell?: object
 }
 
 const NO_SUBSCRIPTION = { subscribe: () => () => undefined }
+const QUIET_SHELL_STATE = { updateReady: false, install: 'none' } as const
 
 export function fakePorts(parts: FakePortParts = {}): LogicPorts {
   const now = parts.now ?? (() => TEST_NOW)
@@ -44,6 +47,7 @@ export function fakePorts(parts: FakePortParts = {}): LogicPorts {
     },
     auth: { ...parts.auth },
     time: { now },
+    shell: { ...NO_SUBSCRIPTION, current: () => QUIET_SHELL_STATE, ...parts.shell },
   } as unknown as LogicPorts
 }
 

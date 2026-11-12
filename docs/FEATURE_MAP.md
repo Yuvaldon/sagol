@@ -87,6 +87,7 @@ graph TD
     P --> V15[V15 Deployments, batches, overrides]
     P --> V16[V16 Setup wizard]
     P --> V17[V17 Dark Mode]
+    P --> V18[V18 Installable app]
   end
 ```
 
@@ -334,6 +335,7 @@ database; remote adapter passing the same contract suite; Google auth, environme
 | V15 Deployments, batches, overrides | Collective leave, duplicate, deployments and members, seniority overrides | D-012, D-029, D-049, D-071 |
 | V16 Setup wizard | Guided first run over the existing forms; progress derived from data | D-033 |
 | V17 Dark Mode | Second token set (was row 8.5) | D-024, D-077 |
+| V18 Installable app (PWA) | Sagol on the home screen, a worker for the shell only, the update toast, the install item, the offline screen | D-182 … D-185 |
 
 From M6 on, each slice also updates the remote adapter and server functions, and the contract
 suite holds both to the same behavior (D-082). Open items: V13 OI-088; V14 OI-037, OI-073, OI-080;
