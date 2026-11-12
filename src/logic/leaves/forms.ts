@@ -3,8 +3,8 @@ import { optionalText, planLeaveCreation, type AvailabilityLeave } from '@domain
 
 // A new leave before the command answers: as rules see it (D-142), and as the board shows it (optimistic update).
 
-/** A leave as rules see it, before the command writes it (D-142). */
-export type LeaveCandidate = AvailabilityLeave
+/** A leave as rules see it, before the command writes it (D-142), with the rotation whose tags count for it (D-260, D-222). */
+export type LeaveCandidate = AvailabilityLeave & Pick<Leave, 'deployment_id'>
 
 /**
  * The leave as the command will write it, shown before it answers (optimistic update). Its status and review

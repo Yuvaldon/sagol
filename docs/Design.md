@@ -141,7 +141,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   may create a request while the screen has a rotation; it replaced the floating "+". "פתיחת סבב" in routine comes with
   V26.
 - **ניהול יחידה (D-173, D-254):** "ניהול", the last destination, opens a `glass-drawer` panel from the inline start (the
-  right), at most `sheet` wide, the full height, on every screen. "הקמת היחידה" first while unfinished, then its groups,
+  right), at most `sheet` wide, as tall as its rows up to the screen and scrolling past it (D-278), on every screen. "הקמת היחידה" first while unfinished, then its groups,
   each a muted heading over its rows: היחידה, נוכחות, פרטי חיילים, הרשאות, נתונים. A row is the module's icon, name, one
   plain line and its waiting count; pressing it closes the panel and opens the module, whose deep link is unchanged. No
   pins. A row the viewer may not open is absent; with nothing to show, the panel and its destination are absent. The
@@ -171,7 +171,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Outside the workspace:** one `glass-card` centered on the canvas (`CenteredSheet`), at most `sheet`
   420 wide.
 - **Management modules (D-092):** `Drawer`, one surface in two forms. From `md` it is modal, at most `drawer`
-  440 wide, on the inline end (the left), leaving the name column of the timeline in sight. Below `md` it is a
+  440 wide, on the inline end (the left), as tall as its content up to the screen (D-278), leaving the name column of the timeline in sight. Below `md` it is a
   bottom sheet up to 88% of the height, which also closes by dragging its grip down. Both close by Escape, the
   scrim and the close button, and enter with a short slide that `prefers-reduced-motion` turns off.
 - **What is open lives in the URL:** `panel`, `entity` and, for a new unit, `parent` (`usePanel`). A panel shows
@@ -437,11 +437,12 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 | No overlap per organization | exclusion constraint (V26) | |
 | Upcoming, running, ended | | today against the dates |
 | Closed (explicit, reversible) | `closed_at`, `closed_by` (V26) | |
-| The mode of the screen | | the rotation holding today, else the nearest upcoming, else the latest open, else שגרה |
+| The mode of the screen | | of the rotations not closed: the one holding today, else the nearest upcoming, else the latest ended, else שגרה (D-222) |
 | A feature's context | each card says: rotation, routine or both | |
 | Who is in it | member rows, only for a list | no rows: the unit's soldiers for its days |
 | A tag's lifetime (persistent or this rotation) | `soldier_tags.deployment_id` (V26), per assignment | |
 | The lifetime pre-selected when assigning | `tag_categories.default_lifetime` (V26) | |
+| Rotation tags from the previous rotation | | "כמו בסבב הקודם" on the soldier's card, per soldier (D-222) |
 
 ### Templates (D-261, D-262)
 

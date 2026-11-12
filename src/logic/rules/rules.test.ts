@@ -5,6 +5,7 @@ import {
   LeaveTypeId,
   OrganizationId,
   SoldierId,
+  SoldierTagId,
   TagCategoryId,
   TagId,
   UnitId,
@@ -155,10 +156,10 @@ const SOURCE: FilterSource = {
   unitTree: UNITS,
   memberships: [membership(1, 1, PLATOON_A), membership(2, 2, PLATOON_A), membership(3, 3, PLATOON_B), membership(4, 4, PLATOON_B)],
   soldierTags: [
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(1)), tag_id: MEDIC, created_at: AT, created_by: null },
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(2)), tag_id: MEDIC, created_at: AT, created_by: null },
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, created_at: AT, created_by: null },
-    { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(4)), tag_id: DRIVER, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(701)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(1)), tag_id: MEDIC, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(702)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(2)), tag_id: MEDIC, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(703)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, created_at: AT, created_by: null },
+    { id: SoldierTagId.parse(uuid(704)), deployment_id: null, organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(4)), tag_id: DRIVER, created_at: AT, created_by: null },
   ],
   propertyDefinitions: [],
 }
@@ -319,16 +320,20 @@ describe('rule evaluation for a window (D-141, OI-091)', () => {
     const soft = rule(5, { scope_unit_id: PLATOON_A, min_value: 2 })
     const row = { ...newSheetRow(MONDAY), leave_type_id: HOME }
     const values: LeaveSheetValues = { soldier_id: SoldierId.parse(uuid(1)), rows: [row], as_approved: true }
-    const [candidate] = sheetCandidates(values)
+    const rotation = DeploymentId.parse(uuid(70))
+    const inRotation = () => ({ deployment_id: rotation, issues: [] })
+    const [candidate] = sheetCandidates(values, inRotation)
     expect(candidate).toBeDefined()
     if (candidate === undefined) return
     const violations = leaveViolations(dataWith([]), [soft, twoMedicsPerPlatoon], [candidate])
     expect(violations.map((violation) => violation.rule_id).sort()).toEqual([soft.id, twoMedicsPerPlatoon.id].sort())
     expect(acknowledgedRuleIds(violations)).toEqual([soft.id])
     // A pending request counts for no rule that does not count pending leaves.
-    const pending = sheetCandidates({ ...values, as_approved: false })
+    const pending = sheetCandidates({ ...values, as_approved: false }, inRotation)
     expect(pending).toHaveLength(1)
     expect(leaveViolations(dataWith([]), [soft], pending)).toEqual([])
-    expect(sheetCandidates({ ...values, rows: [{ ...row, end_date: '' }] })).toEqual([])
+    expect(sheetCandidates({ ...values, rows: [{ ...row, end_date: '' }] }, inRotation)).toEqual([])
+    // No rotation holds the request: the command refuses it on its fields, so the rules judge nothing (D-216).
+    expect(sheetCandidates(values, () => ({ deployment_id: null, issues: [] }))).toEqual([])
   })
 })

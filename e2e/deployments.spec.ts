@@ -48,6 +48,9 @@ test('deployments, a collective leave, a copy and personal seniority', async ({ 
     await page.getByRole('button', { name: he.common.create }).click()
     // Creating it goes straight on to who serves (D-220).
     await expect(drawer(page).getByRole('heading', { name: he.deployments.membersTitle })).toBeVisible()
+    // It holds the whole unit until a list is chosen (D-259, D-222).
+    await expect(drawer(page).getByRole('radio', { name: he.deployments.wholeUnit })).toBeChecked()
+    await press(page, 'radio', he.deployments.listed)
     await press(page, 'checkbox', 'יעל שחר')
     await press(page, 'checkbox', 'נועם לב')
     await press(page, 'checkbox', OWNER.name)

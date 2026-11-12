@@ -1,10 +1,12 @@
 import type { Store } from './store'
 import {
   ArchiveDeploymentInput,
+  CloseDeploymentInput,
   CreateDeploymentInput,
   Deployment,
   DeploymentMemberQuery,
   IssueCode,
+  ReopenDeploymentInput,
   SetDeploymentMembersInput,
   UpdateDeploymentInput,
   type DataCommands,
@@ -13,12 +15,25 @@ import {
   type Issue,
   type Leave,
   type PolicyTarget,
+  type SoldierId,
   type TableName,
   type UnitId,
 } from '@contracts'
-import { compareCodeUnits, compareDates, deploymentMemberIssues, memberSpan, soldierTarget, unitTarget } from '@domain'
+import {
+  compareCodeUnits,
+  compareDates,
+  deploymentMemberIssues,
+  isClosedRotation,
+  memberSpan,
+  rotationCloseEnd,
+  rotationClosedIssues,
+  rotationOverlapIssues,
+  soldierTarget,
+  todayIn,
+  unitTarget,
+} from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
-import { holdsLeaves, liveLeavesOf } from './leaveRotation'
+import { holdsLeaves, liveLeavesOf, wholeUnitHoldsLeaves } from './leaveRotation'
 import { tableOf } from './store'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, failValidation, parseInput, parsedRow } from './failure'
@@ -37,7 +52,9 @@ import { POLICY_TABLES } from './snapshot'
 
 // Deployments (D-019, D-179): a reserve duty period of a unit, and who serves in it. A deployment is a target of its
 // unit, as a scoped rule is (D-053), and moving it needs authority on both units. Its member set is replaced whole,
-// under the deployment's version; members the actor cannot see are kept as they are.
+// under the deployment's version; members the actor cannot see are kept as they are. One live rotation at a time
+// (D-257); a closed one keeps its row and its children until it is reopened (D-258, D-221); one with no member rows
+// holds the whole unit (D-259).
 
 function deploymentTarget(unitId: UnitId): PolicyTarget {
   return { kind: 'unit', unit_id: unitId }
@@ -92,6 +109,41 @@ async function strandedDateIssues(database: Store, row: Deployment): Promise<Iss
 
 const NO_DATES = { start_date: null, end_date: null } as const
 
+/** A closed rotation keeps its name, unit and dates until it is reopened (D-258). */
+function closedEditIssues({ row, before }: RowCheck<Deployment>): Issue[] {
+  if (before === null || !isClosedRotation(before)) return []
+  const edited =
+    row.name !== before.name || row.unit_id !== before.unit_id || row.start_date !== before.start_date || row.end_date !== before.end_date
+  // The row's root: the update answers it on its `changes`.
+  return edited ? rotationClosedIssues(before, []) : []
+}
+
+/** One live rotation at a time, on a create or a change of dates (D-257). */
+async function overlapIssues({ database, row, before }: RowCheck<Deployment>): Promise<Issue[]> {
+  if (before !== null && before.start_date === row.start_date && before.end_date === row.end_date) return []
+  return rotationOverlapIssues(row, await rotationsOf(database, row))
+}
+
+async function rotationsOf(database: Store, deployment: Pick<Deployment, 'organization_id'>): Promise<Deployment[]> {
+  const rows = await tableOf(database, 'deployments').where('organization_id').equals(deployment.organization_id).toArray()
+  return rows.map((row) => parsedRow('deployments', row))
+}
+
+/** A rotation of the whole unit that moves to another unit still holds each of its live requests (D-221). */
+async function wholeUnitMoveIssues({ database, row, before }: RowCheck<Deployment>): Promise<Issue[]> {
+  if (before === null || before.unit_id === row.unit_id || (await membersOf(database, row)).length > 0) return []
+  const bySoldier = new Map<SoldierId, Leave[]>()
+  for (const leave of await liveLeavesOf(database, row)) {
+    bySoldier.set(leave.soldier_id, [...(bySoldier.get(leave.soldier_id) ?? []), leave])
+  }
+  for (const [soldierId, leaves] of bySoldier) {
+    if (!(await wholeUnitHoldsLeaves(database, row, soldierId, leaves))) {
+      return [{ path: ['unit_id'], code: IssueCode.enum.leaves_outside_rotation }]
+    }
+  }
+  return []
+}
+
 async function membersOf(database: Store, deployment: Deployment): Promise<DeploymentMember[]> {
   const rows = await tableOf(database, 'deployment_members').where('organization_id').equals(deployment.organization_id).toArray()
   return rows.filter((row) => row.deployment_id === deployment.id).map((row) => parsedRow('deployment_members', row))
@@ -103,8 +155,18 @@ const SPEC: ReferenceSpec<Deployment> = {
   schema: Deployment,
   checkTables: ['deployment_members', 'leaves'],
   optionalText: [],
+  createdColumns: { closed_at: null, closed_by: null },
   targetOf: (deployment) => deploymentTarget(deployment.unit_id),
-  rowIssues: async (check) => [...(await unitIssues(check)), ...(await memberDateIssues(check))],
+  rowIssues: async (check) => {
+    const closed = closedEditIssues(check)
+    if (closed.length > 0) return closed
+    return [
+      ...(await unitIssues(check)),
+      ...(await overlapIssues(check)),
+      ...(await memberDateIssues(check)),
+      ...(await wholeUnitMoveIssues(check)),
+    ]
+  },
   // A soldier reads the rotations they serve in, so their own requests have a rotation to name (D-218).
   alsoReadableBy: async (database, scope) => {
     const own = await tableOf(database, 'deployment_members').where('soldier_id').equals(scope.soldier_id).toArray()
@@ -178,10 +240,12 @@ export function createDeploymentCommands(dependencies: LocalDependencies): DataC
           const deployment = await visibleRow(database, SPEC, scope, input.deployment_id)
           requirePermission(scope, permissionOf('deployments', 'update'), SPEC.targetOf(deployment))
           requireWritable(deployment, input.expected_version)
+          const closed = rotationClosedIssues(deployment)
+          if (closed.length > 0) return failValidation(closed)
 
           const stored = await membersOf(database, deployment)
           const storedBySoldier = new Map(stored.map((member) => [member.soldier_id, member]))
-          const liveBySoldier = new Map<string, Leave[]>()
+          const liveBySoldier = new Map<SoldierId, Leave[]>()
           for (const leave of await liveLeavesOf(database, deployment)) {
             liveBySoldier.set(leave.soldier_id, [...(liveBySoldier.get(leave.soldier_id) ?? []), leave])
           }
@@ -205,16 +269,31 @@ export function createDeploymentCommands(dependencies: LocalDependencies): DataC
               issues.push({ path, code: IssueCode.enum.leaves_outside_rotation })
             }
           }
-          // A visible member left out is removed: not while they hold a live request in the rotation (D-216).
-          const sent = new Set<string>(input.members.map((member) => member.soldier_id))
-          const strandedRemoval = stored.some(
-            (member) => canViewSoldier(scope, member) && !sent.has(member.soldier_id) && liveBySoldier.has(member.soldier_id),
-          )
-          if (strandedRemoval) issues.push({ path: ['members'], code: IssueCode.enum.leaves_outside_rotation })
-          if (issues.length > 0) return failValidation(issues)
-
           // Members the actor cannot see stay: the set the actor sends is the set the actor sees.
           const hidden = stored.filter((member) => !canViewSoldier(scope, member))
+          const sent = new Set<string>([...input.members, ...hidden].map((member) => member.soldier_id))
+          if (stored.length === 0 && sent.size > 0) {
+            // The whole unit becomes a list: nobody outside it may hold a live request in the rotation (D-221).
+            if ([...liveBySoldier.keys()].some((soldierId) => !sent.has(soldierId))) {
+              issues.push({ path: ['members'], code: IssueCode.enum.leaves_outside_rotation })
+            }
+          } else if (sent.size === 0) {
+            // The list becomes the whole unit: each live request must fit the soldier's days in the unit (D-221).
+            for (const [soldierId, leaves] of liveBySoldier) {
+              if (!(await wholeUnitHoldsLeaves(database, deployment, soldierId, leaves))) {
+                issues.push({ path: ['members'], code: IssueCode.enum.leaves_outside_rotation })
+                break
+              }
+            }
+          } else {
+            // A visible member left out is removed: not while they hold a live request in the rotation (D-216).
+            const strandedRemoval = stored.some(
+              (member) => canViewSoldier(scope, member) && !sent.has(member.soldier_id) && liveBySoldier.has(member.soldier_id),
+            )
+            if (strandedRemoval) issues.push({ path: ['members'], code: IssueCode.enum.leaves_outside_rotation })
+          }
+          if (issues.length > 0) return failValidation(issues)
+
           const next = [
             ...hidden,
             ...input.members.map((member) =>
@@ -248,5 +327,63 @@ export function createDeploymentCommands(dependencies: LocalDependencies): DataC
         ])
         return members
       }),
+
+    close: (raw) =>
+      asResult(async () => {
+        const input = parseInput(CloseDeploymentInput, raw)
+        const row = await database.transaction('rw', tablesOf(SPEC), async () => {
+          const { scope, before } = await closingRotation(dependencies, input)
+          const end = rotationCloseEnd(before, todayIn(scope.organization.timezone, scope.now))
+          if ('issues' in end) return failValidation(end.issues)
+          // Closing earlier than the planned end may not cut a live request off (D-216).
+          const closed = Deployment.parse({
+            ...before,
+            end_date: end.end_date,
+            closed_at: scope.now,
+            closed_by: scope.soldier_id,
+            ...updatedBy(scope.soldier_id, scope.now, before.version),
+          })
+          const stranded = await memberDateIssues({ database, scope, row: closed, before })
+          // The answer names the close itself: its end is not one the caller sent.
+          if (stranded.length > 0) return failValidation(stranded.map((issue) => ({ ...issue, path: ['id'] })))
+          await tableOf(database, 'deployments').put(closed)
+          return closed
+        })
+        changes.publish([{ table: 'deployments', ids: [row.id] }])
+        return row
+      }),
+
+    reopen: (raw) =>
+      asResult(async () => {
+        const input = parseInput(ReopenDeploymentInput, raw)
+        const row = await database.transaction('rw', tablesOf(SPEC), async () => {
+          const { scope, before } = await closingRotation(dependencies, input)
+          if (!isClosedRotation(before)) return failValidation([{ path: ['id'], code: IssueCode.enum.invalid_value }])
+          const reopened = Deployment.parse({
+            ...before,
+            closed_at: null,
+            closed_by: null,
+            ...updatedBy(scope.soldier_id, scope.now, before.version),
+          })
+          const overlap = rotationOverlapIssues(reopened, await rotationsOf(database, reopened))
+          if (overlap.length > 0) return failValidation(overlap)
+          await tableOf(database, 'deployments').put(reopened)
+          return reopened
+        })
+        changes.publish([{ table: 'deployments', ids: [row.id] }])
+        return row
+      }),
   }
+}
+
+/** The rotation to close or reopen: visible, live, current, and the actor's own or theirs to update (D-258, D-221). */
+async function closingRotation(
+  dependencies: LocalDependencies,
+  input: CloseDeploymentInput | ReopenDeploymentInput,
+): Promise<{ scope: ActorScope; before: Deployment }> {
+  const scope = await loadActorScope(dependencies)
+  const before = await visibleRow(dependencies.database, SPEC, scope, input.id)
+  if (before.created_by !== scope.soldier_id) requirePermission(scope, permissionOf('deployments', 'update'), SPEC.targetOf(before))
+  requireWritable(before, input.expected_version)
+  return { scope, before }
 }

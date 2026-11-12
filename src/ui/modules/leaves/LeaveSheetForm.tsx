@@ -93,8 +93,8 @@ export function LeaveSheetForm({
   const approving = values.as_approved && values.soldier_id !== null && canApprove(values.soldier_id)
   // While the leaves are sent they are already on the board; judging the sheet too would count them twice.
   const candidates = useMemo(
-    () => (create.isPending ? [] : sheetCandidates({ ...values, as_approved: approving })),
-    [create.isPending, values, approving],
+    () => (create.isPending ? [] : sheetCandidates({ ...values, as_approved: approving }, rotationOf)),
+    [create.isPending, values, approving, rotationOf],
   )
   const error = (errors: readonly unknown[], row: number, field: string) => fieldError(errors, `rows.${String(row)}.${field}`, state.answered)
 

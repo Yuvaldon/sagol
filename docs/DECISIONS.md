@@ -108,7 +108,7 @@ am = amends, ref = refines, ext = extends.
 | D-089 | Permissions of the unit commands | domain, data, logic, ui, backend | |
 | D-090 | The order of checks inside a command | data, backend, docs | ref D-114; ref D-117 |
 | D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | ref D-107; ref D-122 |
-| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108; ext D-113 |
+| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108; ext D-113; ref D-278 |
 | D-093 | A new issue code lands after its message | contracts, ui, docs | sup D-127 |
 | D-094 | The soldiers drawer: sections, fields, search | config, logic, ui | ref D-116; ref D-153 |
 | D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
@@ -189,7 +189,7 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256 |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
@@ -211,7 +211,7 @@ am = amends, ref = refines, ext = extends.
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
-| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
+| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280 |
 | D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | ref D-183 |
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
@@ -235,17 +235,19 @@ am = amends, ref = refines, ext = extends.
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
+| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | |
+| D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
 | D-253 | The profile is personal only | ui | |
-| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | |
+| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
 | D-256 | One path for each action | ui | |
-| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266 |
-| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | |
-| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | |
-| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | |
+| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221 |
+| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221 |
+| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221 |
+| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
@@ -261,7 +263,11 @@ am = amends, ref = refines, ext = extends.
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
-| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
+| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281 |
+| D-278 | A floating surface fits its content | ui, scripts | |
+| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
+| D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
+| D-289 | CI skips e2e and db on a draft pull request | tooling | |
 
 ---
 
@@ -3106,6 +3112,59 @@ work.
 **Why:** these are the edges D-216..D-219 left open; each one follows the rule that a request belongs to a rotation its
 soldier serves in, without a second place that decides it.
 
+## D-221 — Rotation as a mode in practice: guards, the whole unit, tag scopes and the format
+2026-11-12 · accepted · refines D-257, D-258, D-259, D-260 · V26 · decided under D-170
+- **One at a time.** The domain answers `rotation_overlap` on `start_date` when a create, an edit of the dates or a
+  reopen would overlap another live rotation; the database holds it with `deployments_one_at_a_time`. The migration
+  stops, naming the pairs, when live rotations already overlap.
+- **Close and reopen** are their own commands on `deployments`, allowed to the rotation's `created_by` or to
+  `deployments:update` on its unit (the "manage" of D-258). Closing an open-ended rotation sets its end to today, so one that has not started, like one that ends
+  after today, answers `rotation_not_ended`. A closed rotation answers `rotation_closed` to an edit of its dates, unit or name, to its
+  members, to its rotation tags and to its requests (create, edit, transition); archive still works. The database
+  guards only the closed row itself (`deployments_closed_unchanged`): the children are guarded by the commands, since a
+  child or deferred guard would refuse `load_organization_export`, which writes a closed rotation with its history.
+- **The whole unit** (no member rows) holds a soldier on the days of any of their memberships, primary or attached, in
+  the rotation's unit or below it. A request outside those days is `not_a_member`; outside the rotation's dates it is
+  `outside_rotation`, as with a list. The database trigger checks the same with the soldier's memberships in the
+  unit's subtree. A move or an end of a membership re-checks that soldier's live requests in whole-unit rotations, in
+  the command and by a deferred trigger on `unit_memberships`, and is refused with `leaves_outside_rotation` when one
+  would be stranded; a new membership only widens the days. Moving a unit under another parent is not re-checked.
+- **Tag scopes.** A soldier's tag set is replaced one scope at a time: the persistent set, or one rotation's.
+  `single` holds within each scope; in the effective set of a rotation (persistent plus that rotation's), a rotation
+  tag of a `single` category replaces the persistent tag of that category. "כמו בסבב הקודם" sets the rotation scope
+  to the soldier's tags of the previous rotation (by start date).
+- **Format 3.** `soldier_tags` gains `id` and `deployment_id`, `tag_categories` gains `default_lifetime` and
+  `deployments` gains `closed_at` and `closed_by`: the export format moves to 3. The local database moves the tags of a
+  soldier through a temporary table, since IndexedDB cannot change a primary key, and fills the new columns of the
+  stored rows (persistent, open).
+- **`preferences.pinned_modules` stays** until V25 removes the pins and their control (OI-203): the model drops
+  the key with the last code that reads it.
+**Why:** these are the edges D-257..D-260 left to the implementation; each one keeps a single place that decides, and
+the database's guards hold what can be held without refusing a faithful restore.
+
+## D-222 — Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count
+2026-11-12 · accepted · refines D-221, D-257, D-258, D-259, D-260 · V26 · decided under D-170
+- **The mode** is derived from the live rotations in scope that are not closed: the one holding today, else the next
+  to start, else the latest ended. A closed rotation is never the mode, even on the last day its close gave it.
+- **Routine** keeps the board, under a band that names it (its action opens a rotation for who may create one); the
+  requests hub and "דוח 1" do not show. A rotation the actor sees no member rows of holds the whole unit (D-259), so
+  the screen offers it to a request and the command answers `not_a_member`; closed rotations are not offered.
+- **The rotation form** chooses "כל היחידה" or "רשימה"; a list starts from the previous rotation's list for all the new
+  days when it had one, else from the soldiers placed in the unit on the first day (D-219). The overlap of D-221 is
+  shown on the start date before saving. "סגירת הסבב" shows once the planned end has come, or from the start while the end is open;
+  "פתיחה מחדש" on a closed one. Both are row actions, with no confirmation, since each undoes the other.
+- **Tag lifetimes** are chosen per category in the soldier's tags dialog, pre-selected from the category's
+  `default_lifetime`; the category form sets that default. Rotation tags are copied per soldier with "כמו בסבב הקודם"
+  on the card (D-221), not in bulk when a rotation is created: the copy of OI-217 is this action and the member list's
+  start, both ordinary commands. A save that changes both lifetimes sends two `setTags` calls, the persistent scope
+  first: `setTags` replaces one scope at a time (D-221), so a failure on the second keeps the first, the dialog says
+  so, and saving again sends the rest.
+- **Whose tags count.** The board, the filters and the heat row read the effective tags of the mode's rotation. A
+  leave's live warning and the data its rules read use the leave's own rotation, so a request for another rotation is
+  judged by that rotation's tags; a candidate with no rotation is NULL, since its fields already refuse it (D-216).
+**Why:** each surface reads one rotation, named where it is read, so the mode and a request for another rotation never
+mix their tags; a close the screen offers only when the command would take it.
+
 ## D-250 — Two vocabularies: everyday words, and the words of managing a unit
 2026-11-12 · accepted · refines D-212, D-215 · V24 · decided under the owner's autonomy instruction of 2026-11-11
 - **Everyday words** are the only domain words on the board, the bars, the requests hub, the day report and the
@@ -3497,7 +3556,8 @@ visit, and without a control that cannot act.
 
 ## D-276 — Staging: a second free Supabase project, updated from main after every green CI
 
-Refines D-209 and resolves OI-152. Track: docs.
+Refines D-209 and resolves OI-152. Track: docs. Amended 2026-11-12 (the orchestrator, about 16:04Z): the guard reads
+the one project, not the account's project list, and the access token is repository-level (D-280).
 
 - **A separate environment, never real data.** Staging is its own Supabase project, `sagol-staging`, on the free plan,
   with its own database, auth users and `commands` function. Nothing is copied from production: every unit, soldier
@@ -3508,9 +3568,14 @@ Refines D-209 and resolves OI-152. Track: docs.
   secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
   branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
 - **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
-  wrong project ref can never migrate production. Production migrations stay the manual, reviewed step they are.
+  wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
+  (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
+  account-wide `projects_read`. Before the name check it tries, read-only, the calls the later steps make (functions,
+  secrets; `supabase link`'s keys and configs as warnings), so a single run names every permission the token lacks.
+  Production follows by its own workflow (D-280).
 - **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
-  `staging` environment; the access token, the database password and the bootstrap owner's email are its secrets.
+  `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
+  the repository-level one Production uses too (D-280).
   Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
 - **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
   a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
@@ -3518,3 +3583,99 @@ Refines D-209 and resolves OI-152. Track: docs.
 **Why:** the owner wants to try units, soldiers and flows freely, without touching real personal numbers, without
 slowing development, and without using up the real organization's first setup. A second project that follows `main`
 automatically is the usual staging practice and stays inside the free plan.
+
+## D-278 — A floating surface fits its content
+2026-11-12 · accepted · refines D-092, D-173, D-254 · panels fix · decided under the owner's autonomy instruction of 2026-11-11
+- A floating surface (the side panel, the drawer and its bottom sheet, a dialog, a popover) is as tall as its
+  content, up to the height its frame leaves it, and scrolls inside past that. No surface reserves height its content
+  does not fill: "ניהול יחידה" is no longer the full height, and the drawer on `md` and up is no longer either.
+- Its size comes from the layout and the tokens only: `max-h-full` of the frame, or `max-h-sheet-height` for the
+  bottom sheet. The header stays in place and the body is what scrolls.
+- `check-raw-values` guards it (rule `floating-surface`): a `Modal`, `MotionModal` or `Popover` with a reserved-height
+  utility (`h-*` or `size-*` but `fit`, `auto`, `min`, `max`; a `min-h-*` but `min-h-none`; `inset-y-*`, `flex-1`,
+  `flex-auto`, `grow`, `basis-full`, `self-stretch`) fails the check, and so does a row-flex or grid `ModalOverlay`
+  that does not align its surface at every width, or stretches it at any. The rule reads every string in a
+  `className`, and the string consts it names, the file's own or imported from beside it.
+**Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
+dead space on any surface; a rule in the check keeps the next surface from bringing it back.
+
+## D-280 — Production delivery: automatic after staging, guarded
+2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12; amended the same day: the owner
+approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z;
+at about 15:55Z the owner chose repository-level values over a `production` environment, and the comparison with
+`STAGING_PROJECT_REF` was dropped (the orchestrator, about 15:59Z); at about 16:04Z the guard moved from the account's
+project list to reading the one project, so the scoped token needs no `projects_read` (the orchestrator)
+- **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
+  pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
+  the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
+  the owner set them.
+- **When it runs.** On its own after every successful Staging run on `main` (`workflow_run`), for the commit Staging
+  delivered, so production gets only what staging took first. The owner may also start it by hand
+  (`workflow_dispatch`, on `main`, owner as actor and triggering actor), typing the production ref as the input. Either
+  way it refuses a commit whose CI did not pass or that is not on `main`.
+- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, the token can read that one project
+  (`scripts/supabase-project-guard.sh`, as in D-276, with the same read-only tries of the later steps' calls), and
+  its name does not end in `-staging`; on a manual run the typed ref must equal it too. The ref lives in a variable, not in the file (rule 2).
+- **Destructive migrations.** After the `--dry-run` plan and before the push, every pending migration the plan names is
+  scanned, comments stripped, statement by statement: `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE FROM` with no
+  `WHERE` stops the run. A migration that means it carries the line `-- production: destructive change approved`,
+  which its review then sees.
+- **A failing migration.** `db push` applies each file and its history row in one transaction and stops at the first
+  failure with a non-zero exit (checked with CLI 2.122.0 on a local database: the failing file left no table and no
+  history row, the next file was not applied). The step fails, so the function deploy after it never runs; the
+  project stays on the last migration that succeeded.
+- **No environment.** The job uses no GitHub environment: `SUPABASE_ACCESS_TOKEN` (one scoped token covering the
+  production and staging projects, which Staging reads as well), `PRODUCTION_DB_PASSWORD` and the variable
+  `PRODUCTION_PROJECT_REF` are repository-level (OI-230), so the owner keeps one copy of each.
+  The main-only rule is the job's own checks (`workflow_run` on `main` from this repository, or a dispatch on `main` by
+  the owner, then the commit must be on `main`). `STAGING_PROJECT_REF` stays in the `staging` environment,
+  out of this job's reach, so the guard does not compare against it: an explicit `PRODUCTION_PROJECT_REF` and the
+  `-staging` name check cover a staging ref set by mistake. No
+  required-reviewer gate: GitHub offers it in private repositories only on paid plans, and anything paid is out
+  (D-200); the owner's approval of the automatic run replaces it.
+**Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
+with no laptop or session deploying by hand, and the one class of change that loses real data needs an explicit,
+reviewed marker.
+
+## D-281 — Staging is seeded with made-up data by a guarded, re-runnable script
+
+Extends D-276. Track: tooling.
+
+- **One script, outside the app.** `scripts/seed-staging.sql` holds the data; `npm run seed:staging` (`scripts/seed-staging.ts`)
+  sends it to the project named by `STAGING_PROJECT_REF` through the Supabase Management API. Nothing in `src` knows it
+  exists, and no test reads it (rule 3: it is data for a person to try the app with, not mock data for code).
+- **Only staging.** The runner refuses any project whose name does not end in `-staging` (the D-276 guard). The SQL itself
+  refuses unless the database holds exactly one organization, the one the owner's first sign-in created (D-005), so it
+  never runs on an empty project or on one with several organizations.
+- **On top of the owner's bootstrap.** It adds to that organization and changes none of its rows: three unit levels, a
+  company with a headquarters, three platoons and three squads each; six command ranks; skill and shift tags; leave
+  groups and types; a past and a current rotation; 60 soldiers with Hebrew names and made-up personal numbers (`99000NN`,
+  outside any real range); their memberships, rank bindings, a commander and a soldier role; two soft availability rules;
+  and about 320 leaves with their events, reviewers and some comments, consistent with every trigger and constraint.
+- **Re-runnable.** Every id is derived from the organization id and a fixed key (`md5(org || ':seed:' || key)`), every insert
+  is `ON CONFLICT DO NOTHING`, and leave events are added only to a leave that has none. A second run adds nothing and
+  changes nothing; data someone added by hand in staging is left alone. Dates are relative to the week the organization
+  was created, so the current rotation is current when the seed runs.
+
+**Why:** trying the app on staging needs a believable unit, and typing one in by hand after every reset is slow. A
+re-runnable script that cannot reach production gives that without real personal numbers and without the app carrying
+seed code.
+
+## D-289 — CI skips e2e and db on a draft pull request
+
+2026-11-12 · accepted · asked by the orchestrator at about 16:09Z. Track: tooling.
+
+- **The limit.** The repository is private, so GitHub Actions has 2,000 free minutes a month, and paid use is
+  forbidden. On 2026-11-12 the cycle stood at 1,801 (it resets on 2026-12-01). `e2e` and `db` are most of each run.
+- **What changes.** In `.github/workflows/ci.yml`, `e2e` and `db` run only on a push to `main` or on a pull request that
+  is not a draft (`github.event_name == 'push' || !github.event.pull_request.draft`). `check` (typecheck, lint, layers,
+  raw values, i18n, unit tests, build) still runs on every pull request, draft or not.
+- **Marking ready runs them.** `pull_request` also listens to `ready_for_review`, so the moment a draft is marked ready
+  the full CI runs on its head. Without that type, the default triggers would not run CI again until the next push.
+- **No test is skipped before a merge.** Pull requests merge on a green, full CI of a ready head, and every push to
+  `main` runs the full CI that Staging and Production wait for (D-276, D-280). Locally, `npm run check` and the
+  relevant e2e still run before a push.
+
+**Why:** a draft is pushed to often while work is in progress; running the two slowest jobs on each of those pushes
+spent the month's free minutes. Running them once the work is ready, and on `main`, keeps the same guarantee at a
+fraction of the cost.

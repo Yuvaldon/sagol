@@ -3,7 +3,12 @@ import { TagCategoryId, TagId } from '../common/ids'
 import { Tag, TagCategory } from '../entities/tags'
 import { archiveInput, reorderInput, updateInput } from './common'
 
-const categoryContent = TagCategory.pick({ name: true, selection_mode: true, color_key: true }).shape
+const categoryContent = TagCategory.pick({
+  name: true,
+  selection_mode: true,
+  default_lifetime: true,
+  color_key: true,
+}).shape
 
 export const CreateTagCategoryInput = z.strictObject({
   id: TagCategoryId,

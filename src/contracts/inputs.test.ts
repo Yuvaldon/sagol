@@ -156,6 +156,8 @@ const INPUT_TABLES: Record<string, Target> = {
   CreateDeploymentInput: { table: 'deployments' },
   UpdateDeploymentInput: { table: 'deployments' },
   ArchiveDeploymentInput: { table: 'deployments' },
+  CloseDeploymentInput: { table: 'deployments' },
+  ReopenDeploymentInput: { table: 'deployments' },
   SetDeploymentMembersInput: { table: 'deployment_members', nested: { members: 'deployment_members' } },
   CreateAvailabilityRuleInput: { table: 'availability_rules' },
   UpdateAvailabilityRuleInput: { table: 'availability_rules' },
@@ -364,7 +366,7 @@ describe('row checks on inputs', () => {
       IssueCode.enum.duplicate_item,
     ])
     expect(ReorderTagsInput.safeParse({ items: [] }).success).toBe(false)
-    const tags = { soldier_id: ID.a, expected_version: 1, tag_ids: [ID.b, ID.b] }
+    const tags = { soldier_id: ID.a, expected_version: 1, deployment_id: null, tag_ids: [ID.b, ID.b] }
     expect(messages(SetSoldierTagsInput.safeParse(tags))).toEqual([IssueCode.enum.duplicate_item])
   })
 

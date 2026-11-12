@@ -26,7 +26,9 @@ import type {
 } from '../inputs/accounts'
 import type {
   ArchiveDeploymentInput,
+  CloseDeploymentInput,
   CreateDeploymentInput,
+  ReopenDeploymentInput,
   SetDeploymentMembersInput,
   UpdateDeploymentInput,
 } from '../inputs/deployments'
@@ -226,6 +228,9 @@ export interface DataCommands {
     Deployment
   > & {
     setMembers: Command<SetDeploymentMembersInput, DeploymentMember[]>
+    /** By its creator or `deployments:update` on its unit (D-258, D-221). */
+    close: Command<CloseDeploymentInput, Deployment>
+    reopen: Command<ReopenDeploymentInput, Deployment>
   }
   availability_rules: ReferenceCommands<
     CreateAvailabilityRuleInput,

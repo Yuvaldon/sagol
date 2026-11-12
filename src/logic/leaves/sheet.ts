@@ -273,9 +273,10 @@ export function leavesOfInput(input: CreateLeavesInput): CreateLeaveInput[] {
 
 /**
  * The leaves the sheet would create, as rules see them (D-142): pending, or approved when "approve now" is on, each with
- * an id no row has. Empty until the soldier is chosen; a row joins once its type and valid days are.
+ * an id no row has and the rotation that holds it. Empty until the soldier is chosen; a row joins once its type and valid
+ * days are, and a rotation holds them: a request no rotation holds is refused on its fields (D-216).
  */
-export function sheetCandidates(values: LeaveSheetValues): LeaveCandidate[] {
+export function sheetCandidates(values: LeaveSheetValues, rotationOf: RotationOf): LeaveCandidate[] {
   const { soldier_id } = values
   if (soldier_id === null) return []
   const status = values.as_approved ? LeaveStatus.enum.approved : LeaveStatus.enum.pending
@@ -284,7 +285,9 @@ export function sheetCandidates(values: LeaveSheetValues): LeaveCandidate[] {
     const { start_date, end_date } = day
     if (leave_type_id === null || start_date === '' || end_date === '' || compareDates(start_date, end_date) > 0) return []
     if (index >= LEAVE_SHEET.maxLeaves) return []
-    return [{ id: candidateId(index), soldier_id, leave_type_id, start_date, end_date, status, availability_effect_override: null }]
+    const deployment_id = rotationOf([soldier_id], { start_date, end_date }).deployment_id
+    if (deployment_id === null) return []
+    return [{ id: candidateId(index), soldier_id, leave_type_id, start_date, end_date, status, availability_effect_override: null, deployment_id }]
   })
 }
 

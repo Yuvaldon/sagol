@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AccessGrant,
   AvailabilityRule,
+  Deployment,
   FilterExpression,
   Leave,
   OrganizationSettings,
@@ -229,6 +230,16 @@ describe('row checks', () => {
     expect(Leave.safeParse({ ...leave, start_date: '2026-13-01' }).success).toBe(false)
     expect(Leave.safeParse({ ...leave, created_at: '2026-11-04 08:00' }).success).toBe(false)
     expect(Leave.safeParse({ ...leave, created_at: '2026-11-04T08:00:00+02:00' }).success).toBe(true)
+  })
+
+  it('holds a close with its actor and an end date (D-258)', () => {
+    const open = { ...audit, id: ID.a, organization_id: ID.org, name: 'סבב', unit_id: ID.b, start_date: '2026-11-01' }
+    const closed = { ...open, end_date: '2026-11-10', closed_at: AT, closed_by: ID.c }
+    expect(Deployment.safeParse({ ...open, end_date: null, closed_at: null, closed_by: null }).success).toBe(true)
+    expect(Deployment.safeParse(closed).success).toBe(true)
+    for (const change of [{ closed_by: null }, { closed_at: null }, { end_date: null }]) {
+      expect(issues(Deployment.safeParse({ ...closed, ...change }))).toEqual([SchemaIssue.enum.close_incomplete])
+    }
   })
 
   it('accepts a global per-tag rule with an empty population', () => {

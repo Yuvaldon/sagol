@@ -126,7 +126,7 @@ describe('the request sheet (D-275)', () => {
     const endless = sheet(row({ start_date: '2026-11-01', end_date: '2026-11-01', repeats: true, every_days: '1', until: '2027-12-31' }))
     expect(sheetDays(endless)).toHaveLength(LEAVE_SHEET.maxLeaves + 1)
     expect(leaveSheetIssues(endless, () => null, rotationOf)).toContainEqual({ path: ['rows', 0, 'until'], code: 'too_big' })
-    expect(sheetCandidates(endless)).toHaveLength(LEAVE_SHEET.maxLeaves)
+    expect(sheetCandidates(endless, rotationOf)).toHaveLength(LEAVE_SHEET.maxLeaves)
   })
 
   it('sends one command, each leave with its own id and rotation, a blank reason as NULL', () => {
@@ -151,13 +151,13 @@ describe('the request sheet (D-275)', () => {
 
   it('judges every leave the sheet would create, each with an id no row has', () => {
     const values = sheet(row({ repeats: true, every_days: '14', until: '2026-11-23' }), row({ leave_type_id: null }))
-    const candidates = sheetCandidates(values)
-    expect(candidates.map((leave) => [leave.start_date, leave.status])).toEqual([
-      ['2026-11-09', 'pending'],
-      ['2026-11-23', 'pending'],
+    const candidates = sheetCandidates(values, rotationOf)
+    expect(candidates.map((leave) => [leave.start_date, leave.status, leave.deployment_id])).toEqual([
+      ['2026-11-09', 'pending', ROTATION],
+      ['2026-11-23', 'pending', ROTATION],
     ])
     expect(new Set(candidates.map((leave) => leave.id)).size).toBe(2)
-    expect(sheetCandidates({ ...values, soldier_id: null })).toEqual([])
+    expect(sheetCandidates({ ...values, soldier_id: null }, rotationOf)).toEqual([])
   })
 })
 

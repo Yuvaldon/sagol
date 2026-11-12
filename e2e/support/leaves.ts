@@ -106,6 +106,8 @@ export async function openRotation(page: Page, members: readonly string[], unit?
   await typeDate(page, he.deployments.to, ...ROTATION.to)
   await page.getByRole('button', { name: he.common.create }).click()
   await expect(drawer(page).getByRole('heading', { name: he.deployments.membersTitle })).toBeVisible()
+  // A new rotation holds the whole unit until a list is chosen (D-259, D-222).
+  await press(page, 'radio', he.deployments.listed)
   for (const member of members) {
     if (!(await drawer(page).getByRole('checkbox', { name: member, exact: true }).isChecked())) await press(page, 'checkbox', member)
   }

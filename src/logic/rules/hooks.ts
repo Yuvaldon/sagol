@@ -1,4 +1,5 @@
 import type {
+  DeploymentId,
   AvailabilityRule,
   CalendarDate,
   Leave,
@@ -9,7 +10,7 @@ import type {
   Unit,
   UnitId,
 } from '@contracts'
-import { EVERY_SOLDIER, compareDates, type AvailabilityLeave, type RuleData } from '@domain'
+import { EVERY_SOLDIER, compareDates, type RuleData } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useDeploymentMembers, useDeployments } from '../deployments/hooks'
@@ -23,6 +24,8 @@ import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { useTags } from '../tags/hooks'
+import { useRotationScope } from '../view-state/rotation'
+import type { LeaveCandidate } from '../leaves/forms'
 import {
   dayViolations,
   heatRow,
@@ -114,8 +117,9 @@ interface Span {
 }
 
 /** What rule evaluation reads on the days of a span, over what the actor reads. Loading while there is no span. */
-export function useRuleData(span: Span | null): Loaded<RuleData> {
-  const source = useFilterSource()
+/** The tags counted are the ones held in `rotationId` (D-260, D-222), as the command counts them. */
+export function useRuleData(span: Span | null, rotationId: DeploymentId | null): Loaded<RuleData> {
+  const source = useFilterSource(rotationId)
   const tags = useTags()
   const leaves = useLeaves(span)
   const types = useLeaveTypes()
@@ -151,7 +155,8 @@ interface WindowRequest {
 /** The rules and their data for a window, or NULL when the actor sees no rule: the heat row then has no place. */
 function useWindowEvaluation(window: WindowRequest | null): Loaded<{ rules: readonly AvailabilityRule[]; data: RuleData } | null> {
   const rules = useAvailabilityRules()
-  const data = useRuleData(window)
+  // The heat row reads the days of the mode, so the tags of its rotation (D-222).
+  const data = useRuleData(window, useRotationScope().rotation?.id ?? null)
   return useMemo(() => {
     if (rules.status !== 'ready') return rules
     if (rules.value.length === 0) return { status: 'ready', value: null }
@@ -199,7 +204,7 @@ export function useRuleConflicts(window: WindowRequest | null): Loaded<readonly 
  * last answer until its own data arrives, so a drag that crosses days does not flash "nothing broken".
  */
 export function useLeaveRuleCheck(
-  changes: AvailabilityLeave | readonly AvailabilityLeave[] | null,
+  changes: LeaveCandidate | readonly LeaveCandidate[] | null,
   stored: Leave | null = null,
 ): Loaded<readonly RuleViolation[]> {
   // One leave, or the leaves of a sheet judged together (D-073, D-275); none while the form is not complete.
@@ -220,7 +225,10 @@ export function useLeaveRuleCheck(
   const to = dates.at(-1) ?? null
   const span = useMemo(() => (from === null || to === null ? null : { from, to }), [from, to])
   const rules = useAvailabilityRules()
-  const data = useRuleData(span)
+  // The change's own rotation, as the command's gate reads it (D-222): leaves of one rotation read its tags, leaves of
+  // several read none, as `passRuleGate` does.
+  const rotations = new Set(some?.map((leave) => leave.deployment_id))
+  const data = useRuleData(span, rotations.size === 1 ? ([...rotations][0] ?? null) : null)
   const current = useMemo((): Loaded<readonly RuleViolation[]> => {
     if (some === null) return NO_CHECK
     if (!decided) return LOADING
@@ -252,7 +260,7 @@ const READS_EVERYTHING: readonly PermissionCheck[] = [
 
 const NO_VIOLATIONS: readonly RuleViolation[] = []
 
-function listOf(changes: AvailabilityLeave | readonly AvailabilityLeave[]): readonly AvailabilityLeave[] {
+function listOf(changes: LeaveCandidate | readonly LeaveCandidate[]): readonly LeaveCandidate[] {
   return 'id' in changes ? [changes] : changes
 }
 

@@ -176,10 +176,14 @@ The current state (D-128):
   rules of a day, the window's conflicts and the live warning of a form (D-141, D-142). Deployments and their members join, archived ones too (D-179).
 - **Deployment commands** (`deployments`, `deployment_members`): a deployment is a unit target, moving it needs
   `update` on both units, and its members are replaced whole under its version (D-179).
-- **Rotations** (D-216 … D-220): every leave names a rotation its soldier serves in on those dates, checked by the
-  commands, the gateway and deferred constraint triggers. `logic/view-state` scopes the workspace to the active or
-  upcoming rotation (`scopeRotation`, `rotationOn`); `useBoardShown` hides the board's controls and request surfaces
-  without one; `defaultDeploymentMembers` fills a new rotation from its unit.
+- **Rotations** (D-216 … D-220, D-257 … D-260, D-221, D-222): every leave names a rotation its soldier serves in on
+  those dates, checked by the commands, the gateway and deferred constraint triggers. One rotation at a time per
+  organization (`deployments_one_at_a_time`); `deployments.close` and `reopen` set and clear `closed_at`, and a closed
+  rotation, its members, rotation tags and requests answer `rotation_closed`. A rotation with no member rows holds its
+  unit's soldiers on their membership days. `logic/view-state` derives the mode (`scopeRotation`: the open rotation
+  holding today, else the next, else the latest ended; NULL is routine, `useRotationScope`); routine keeps the board
+  under its band and hides the requests hub and the day report; `defaultDeploymentMembers` and `startingMembers` fill
+  a new list from the unit or the previous rotation.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
 - **The request sheet** (`leaves.createMany`, `logic/leaves/sheet`, D-275): one soldier's rows, a recurring row expanded
@@ -220,7 +224,9 @@ The current state (D-128):
 Categories and tags are organization data (`tags:*` at `organization`). `soldiers.setTags` replaces a soldier's set with
 `soldiers:update` over the soldier, checks only the tags it adds, keeps one tag of a `single` category, and bumps the
 soldier's version (D-045). A category in use is not archived; switching to `single` is refused while a soldier holds two
-of its tags.
+of its tags. A tag lasts for good (`deployment_id` NULL) or for one rotation, per assignment; the set is replaced one
+scope at a time, and a rotation's effective set is the persistent tags plus its own (D-260, D-221). The board, the
+filters and the heat row read the mode rotation's set; a leave's warning reads its own rotation's (D-222).
 
 ## Leave workflow (D-013, D-063, D-064, D-114 … D-125)
 

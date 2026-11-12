@@ -309,7 +309,7 @@ describe('a live rule warning is the command’s answer (OI-100, D-142)', () => 
       soldier_id: leave.soldier_id,
       as_approved: leave.as_approved,
       rows: days.map(([start, end]) => ({ ...newSheetRow(start, end), leave_type_id: world.type })),
-    })
+    }, () => ({ deployment_id: world.rotation, issues: [] }))
 
   /** The sheet's leaves, judged live and then sent as the form sends them: one `createMany`. */
   async function checkSheet(leave: Omit<NewLeave, 'leave_type_id' | 'start_date' | 'end_date'>, days: readonly (readonly [CalendarDate, CalendarDate])[]) {
@@ -408,7 +408,7 @@ describe('a live rule warning says when it has no answer (OI-099)', () => {
       soldier_id: world.soldiers.a2,
       as_approved: false,
       rows: [{ ...newSheetRow(start_date, end_date), leave_type_id: world.type }],
-    })[0] ?? null
+    }, () => ({ deployment_id: world.rotation, issues: [] }))[0] ?? null
 
   function render(ports: LogicPorts, candidate: LeaveCandidate | null) {
     const wrapper = ({ children }: { readonly children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>
