@@ -30,10 +30,12 @@ import {
 // D-029, D-049, D-179). Sample data, test files only.
 
 const LAST_WEEK = "2026-11-01";
+const YESTERDAY = "2026-11-07";
 const TODAY = "2026-11-08";
 const TOMORROW = "2026-11-09";
 const MID_MONTH = "2026-11-15";
 const MONTH_END = "2026-11-30";
+const NEXT_MONTH = "2026-12-01";
 
 const newDeploymentId = () => DeploymentId.parse(crypto.randomUUID());
 const newOverrideId = () => SeniorityOverrideId.parse(crypto.randomUUID());
@@ -124,7 +126,7 @@ export function describeDeploymentContract(
         const company = await unit("Company");
         const early = valueOf(
           await adapter().commands.deployments.create(
-            deploymentInput(company.id, { name: "Early" }),
+            deploymentInput(company.id, { name: "Early", end_date: YESTERDAY }),
           ),
         );
         const late = valueOf(
@@ -145,7 +147,7 @@ export function describeDeploymentContract(
         expect(listed.map((row) => row.id)).toEqual([late.id, early.id]);
 
         const unknown = await adapter().commands.deployments.create(
-          deploymentInput(UnitId.parse(crypto.randomUUID())),
+          deploymentInput(UnitId.parse(crypto.randomUUID()), { start_date: NEXT_MONTH, end_date: null }),
         );
         expect(issuesOf(unknown)).toEqual([
           { path: ["unit_id"], code: "reference_not_found" },
@@ -160,7 +162,7 @@ export function describeDeploymentContract(
         expect(
           issuesOf(
             await adapter().commands.deployments.create(
-              deploymentInput(gone.id),
+              deploymentInput(gone.id, { start_date: NEXT_MONTH, end_date: null }),
             ),
           ),
         ).toEqual([{ path: ["unit_id"], code: "reference_archived" }]);
@@ -404,6 +406,86 @@ export function describeDeploymentContract(
       });
     });
 
+    describe("rotation mode (D-221)", () => {
+      it("closes on today, refuses changes while closed, and reopens", async () => {
+        const company = await unit("Company");
+        const rotation = valueOf(
+          await adapter().commands.deployments.create(
+            deploymentInput(company.id, { end_date: null }),
+          ),
+        );
+        const closed = valueOf(
+          await adapter().commands.deployments.close({ id: rotation.id, expected_version: 1 }),
+        );
+        expect(closed).toMatchObject({ end_date: TODAY, closed_at: NOW, closed_by: ownerId, version: 2 });
+        expect(
+          issuesOf(await adapter().commands.deployments.close({ id: rotation.id, expected_version: 2 })),
+        ).toEqual([{ path: ["id"], code: "rotation_closed" }]);
+        expect(
+          issuesOf(
+            await adapter().commands.deployments.update({
+              id: rotation.id,
+              expected_version: 2,
+              changes: { name: "Renamed" },
+            }),
+          ),
+        ).toEqual([{ path: ["changes"], code: "rotation_closed" }]);
+        expect(
+          issuesOf(
+            await adapter().commands.deployments.setMembers({
+              deployment_id: rotation.id,
+              expected_version: 2,
+              members: [],
+            }),
+          ),
+        ).toEqual([{ path: ["deployment_id"], code: "rotation_closed" }]);
+
+        const reopened = valueOf(
+          await adapter().commands.deployments.reopen({ id: rotation.id, expected_version: 2 }),
+        );
+        expect(reopened).toMatchObject({ end_date: TODAY, closed_at: null, closed_by: null, version: 3 });
+        expect(
+          issuesOf(await adapter().commands.deployments.reopen({ id: rotation.id, expected_version: 3 })),
+        ).toEqual([{ path: ["id"], code: "invalid_value" }]);
+      });
+
+      it("refuses to close a rotation whose planned end is still ahead", async () => {
+        const company = await unit("Company");
+        const rotation = valueOf(
+          await adapter().commands.deployments.create(deploymentInput(company.id)),
+        );
+        expect(
+          issuesOf(await adapter().commands.deployments.close({ id: rotation.id, expected_version: 1 })),
+        ).toEqual([{ path: ["id"], code: "rotation_not_ended" }]);
+      });
+
+      it("holds one live rotation at a time, archived ones aside", async () => {
+        const company = await unit("Company");
+        const other = await unit("Other");
+        const first = valueOf(
+          await adapter().commands.deployments.create(deploymentInput(company.id)),
+        );
+        expect(
+          issuesOf(
+            await adapter().commands.deployments.create(
+              deploymentInput(other.id, { start_date: MID_MONTH, end_date: null }),
+            ),
+          ),
+        ).toEqual([{ path: ["start_date"], code: "rotation_overlap" }]);
+        valueOf(
+          await adapter().commands.deployments.create(
+            deploymentInput(other.id, { start_date: NEXT_MONTH, end_date: null }),
+          ),
+        );
+        valueOf(await adapter().commands.deployments.archive({ id: first.id, expected_version: 1 }));
+        valueOf(
+          await adapter().commands.deployments.create(
+            deploymentInput(company.id, { start_date: MID_MONTH, end_date: MONTH_END }),
+          ),
+        );
+      });
+    });
+
     describe("seniority overrides (D-029, D-179)", () => {
       function overrideInput(
         soldier_id: SoldierId,
@@ -604,6 +686,66 @@ export function describeDeploymentContract(
         ]);
         expect(await harnessOf().rows("leaves")).toHaveLength(2);
         expect(await harnessOf().rows("leave_batches")).toHaveLength(1);
+      });
+
+      const single = (leave: ReturnType<typeof draft>): CreateLeaveInput => ({
+        ...leave,
+        deployment_id: rotation,
+        as_approved: false,
+        acknowledged_rule_ids: [],
+        comment: null,
+      });
+
+      it("takes a request of the whole unit from its memberships in the unit's subtree (D-221)", async () => {
+        const type = await leaveType();
+        const { unit_id } = valueOf(await adapter().repositories.deployments.get(rotation));
+        const inside = await soldier(unit_id, "Avi");
+        const outside = await soldier(null, "Ben");
+        valueOf(await adapter().commands.leaves.create(single(draft(inside.id, type.id))));
+        expect(
+          issuesOf(await adapter().commands.leaves.create(single(draft(outside.id, type.id)))),
+        ).toEqual([{ path: ["soldier_id"], code: "not_a_member" }]);
+      });
+
+      it("takes no new request, edit or transition in a closed rotation (D-221)", async () => {
+        const type = await leaveType();
+        const member = await soldier(null, "Avi");
+        await serve(member.id);
+        const leave = valueOf(
+          await adapter().commands.leaves.create(
+            single({ ...draft(member.id, type.id), start_date: LAST_WEEK, end_date: LAST_WEEK }),
+          ),
+        );
+        valueOf(await adapter().commands.deployments.close({ id: rotation, expected_version: 1 }));
+        const closed = [{ path: ["deployment_id"], code: "rotation_closed" }];
+        expect(
+          issuesOf(
+            await adapter().commands.leaves.create(
+              single({ ...draft(member.id, type.id), start_date: LAST_WEEK, end_date: LAST_WEEK }),
+            ),
+          ),
+        ).toEqual(closed);
+        expect(
+          issuesOf(
+            await adapter().commands.leaves.update({
+              id: leave.id,
+              expected_version: 1,
+              changes: { reason: "Later" },
+              acknowledged_rule_ids: [],
+            }),
+          ),
+        ).toEqual(closed);
+        expect(
+          issuesOf(
+            await adapter().commands.leaves.transition({
+              id: leave.id,
+              expected_version: 1,
+              transition: "approve",
+              acknowledged_rule_ids: [],
+              comment: null,
+            }),
+          ),
+        ).toEqual(closed);
       });
 
       it("copies a leave to other soldiers and dates, without its batch", async () => {

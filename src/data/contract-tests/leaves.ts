@@ -39,6 +39,8 @@ const TODAY = '2026-11-08'
 const TOMORROW = '2026-11-09'
 const LAST_WEEK = '2026-11-01'
 const NEXT_WEEK = '2026-11-15'
+const EARLIER_START = '2025-06-01'
+const EARLIER_END = '2025-12-31'
 
 const newTypeId = () => LeaveTypeId.parse(crypto.randomUUID())
 const newGroupId = () => LeaveTypeGroupId.parse(crypto.randomUUID())
@@ -355,10 +357,13 @@ export function describeLeaveContract(
         expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { deployment_id: newRotationId() })))).toEqual([
           { path: ['deployment_id'], code: 'reference_not_found' },
         ])
-        const elsewhere = await seedRotation(harnessOf(), organization)
-        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { deployment_id: elsewhere })))).toEqual([
+        // A rotation that lists only its owner (D-216).
+        valueOf(await adapter().commands.deployments.setMembers({ deployment_id: rotation, expected_version: 1, members: members(ownerId) }))
+        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))).toEqual([
           { path: ['soldier_id'], code: 'not_a_member' },
         ])
+        // One live rotation at a time (D-221): the next one starts once this one is archived.
+        valueOf(await adapter().commands.deployments.archive({ id: rotation, expected_version: 2 }))
         const narrow = await seedRotation(harnessOf(), organization, [yael.id], { start_date: TOMORROW, end_date: TOMORROW })
         const wide = leaveInput(yael.id, type.id, { deployment_id: narrow, start_date: TODAY, end_date: NEXT_WEEK })
         expect(issuesOf(await adapter().commands.leaves.create(wide))).toEqual([
@@ -416,7 +421,8 @@ export function describeLeaveContract(
         const home = await unit('Home')
         const { identity, soldierId } = await actorWith([VIEW_LEAVES], { anchor_type: 'self' }, home.id)
         await seedServing(harnessOf(), organization, rotation, [soldierId])
-        await seedRotation(harnessOf(), organization)
+        // An earlier rotation, before this one (D-221).
+        await seedRotation(harnessOf(), organization, [], { start_date: EARLIER_START, end_date: EARLIER_END })
         harnessOf().signIn(identity)
         expect(valueOf(await adapter().repositories.deployments.list({ include_archived: false })).map((row) => row.id)).toEqual([rotation])
         const own = valueOf(await adapter().repositories.deployment_members.list({ deployment_ids: null }))

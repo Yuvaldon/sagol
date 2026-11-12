@@ -20,6 +20,7 @@ import {
   type UnitId,
   type UnitMembership,
   type UnitMembershipId,
+  SoldierTagId,
 } from '@contracts'
 import {
   can,
@@ -53,7 +54,7 @@ import {
 } from './reference'
 import { rolePairs, requireHeld } from './permissions'
 import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
-import { SOLDIER_TAG_TABLES, soldierTagIssues } from './tags'
+import { SOLDIER_TAG_TABLES, soldierTagIssues, tagScopeIssues } from './tags'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
 // (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097. A soldier's tags
@@ -357,20 +358,28 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
           requirePermission(scope, permissionOf('soldiers', 'update'), soldierTarget(soldier.id))
           requireWritable(soldier, input.expected_version)
 
+          const scopeIssues = await tagScopeIssues(database, scope, input.deployment_id)
+          if (scopeIssues.length > 0) return failValidation(scopeIssues)
+
           const table = tableOf(database, 'soldier_tags')
-          const held = await table.where('soldier_id').equals(soldier.id).toArray()
+          // One scope at a time (D-221): the persistent set, or one rotation's.
+          const held = (await table.where('soldier_id').equals(soldier.id).toArray()).filter(
+            (row) => row.deployment_id === input.deployment_id,
+          )
           const issues = await soldierTagIssues(database, scope, held.map((row) => row.tag_id), input.tag_ids)
           if (issues.length > 0) return failValidation(issues)
 
           const next = new Set(input.tag_ids)
           const heldById = new Map(held.map((row) => [row.tag_id, row]))
-          await table.bulkDelete(held.filter((row) => !next.has(row.tag_id)).map((row) => [row.soldier_id, row.tag_id]))
+          await table.bulkDelete(held.filter((row) => !next.has(row.tag_id)).map((row) => row.id))
           const answer = input.tag_ids.map(
             (tagId) =>
               heldById.get(tagId) ??
               parsedRow('soldier_tags', {
+                id: SoldierTagId.parse(crypto.randomUUID()),
                 soldier_id: soldier.id,
                 tag_id: tagId,
+                deployment_id: input.deployment_id,
                 organization_id: scope.organization_id,
                 created_at: scope.now,
                 created_by: scope.soldier_id,

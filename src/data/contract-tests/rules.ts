@@ -157,6 +157,7 @@ export function describeRuleContract(
           id: TagCategoryId.parse(crypto.randomUUID()),
           name: 'Role',
           selection_mode: 'multiple',
+          default_lifetime: 'persistent',
           color_key: 'teal',
           sort_order: 0,
         }),

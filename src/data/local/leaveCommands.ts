@@ -36,7 +36,7 @@ import {
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { propertiesIssues } from './checks'
-import { isLiveLeave, leaveRotationCheck } from './leaveRotation'
+import { closedRotationOf, isLiveLeave, leaveRotationCheck } from './leaveRotation'
 import { tableOf } from './store'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
@@ -197,6 +197,8 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
       )
       if (!plan.allowed) return failValidation(plan.issues)
       await requireOpenSoldier(database, before, (soldier) => archivedSoldierIssues(soldier, 'update', []))
+      const closed = await closedRotationOf(database, before)
+      if (closed.length > 0) return failValidation(closed)
 
       const after = editedLeave(scope, before, columns, plan.next)
       if (Array.isArray(after)) return failValidation(withPathPrefix(prefix, after))
@@ -325,6 +327,8 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
           if (before.version !== input.expected_version) return fail({ code: 'stale_version' })
           if (!plan.allowed) return failValidation(plan.issues)
           await requireOpenSoldier(database, before, (soldier) => archivedSoldierIssues(soldier, input.transition, ['transition']))
+          const closed = await closedRotationOf(database, before)
+          if (closed.length > 0) return failValidation(closed)
           const issues = await commentIdIssues(database, comment)
           if (issues.length > 0) return failValidation(issues)
 
