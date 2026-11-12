@@ -101,23 +101,38 @@ function DaysHeader({
       >
         {t('timeline.names')}
       </div>
-      <div
-        aria-hidden
-        className="glass-card absolute inset-y-none end-none rounded-pill"
-        style={{ insetInlineStart: layout.nameColumnPx }}
-      >
-        {days.map((day, index) => (
-          <div
-            key={day.key}
-            className={`absolute inset-y-none flex items-center justify-center gap-xs text-label tabular-nums ${day.isToday ? 'font-bold text-text' : 'text-text-muted'}`}
-            style={{ insetInlineStart: dayOffset(layout, index) - layout.nameColumnPx, width: layout.dayPx }}
-          >
-            {layout.dayPx < TIMELINE_DENSITY.weekdayMinPx ? null : <span>{day.weekday}</span>}
-            <span className={day.isToday ? 'inline-flex min-w-icon items-center justify-center rounded-pill bg-today px-xs text-on-action' : ''}>
-              {day.dayNumber}
-            </span>
-          </div>
-        ))}
+      <div className="glass-card absolute inset-y-none end-none rounded-pill" style={{ insetInlineStart: layout.nameColumnPx }}>
+        {days.map((day, index) => {
+          const className = `absolute inset-y-none flex items-center justify-center gap-xs text-label tabular-nums ${day.isToday ? 'font-bold text-text' : 'text-text-muted'}`
+          const style = { insetInlineStart: dayOffset(layout, index) - layout.nameColumnPx, width: layout.dayPx }
+          const face = (
+            <>
+              {layout.dayPx < TIMELINE_DENSITY.weekdayMinPx ? null : <span aria-hidden>{day.weekday}</span>}
+              <span
+                aria-hidden
+                className={day.isToday ? 'inline-flex min-w-icon items-center justify-center rounded-pill bg-today px-xs text-on-action' : ''}
+              >
+                {day.dayNumber}
+              </span>
+            </>
+          )
+          // A day with a report is the control that opens it (D-193); the others are only read.
+          return day.onOpen === null ? (
+            <div key={day.key} aria-hidden className={className} style={style}>
+              {face}
+            </div>
+          ) : (
+            <AriaButton
+              key={day.key}
+              aria-label={day.label}
+              onPress={day.onOpen}
+              className={`${className} cursor-pointer rounded-pill outline-focus outline-offset-1 data-focus-visible:outline-2 data-hovered:bg-inner`}
+              style={style}
+            >
+              {face}
+            </AriaButton>
+          )
+        })}
       </div>
       </div>
       {heat === null ? null : <HeatRow cells={heat} layout={layout} heightPx={heatPx} />}

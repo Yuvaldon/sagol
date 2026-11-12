@@ -14,7 +14,6 @@ import { LeaveTypesModule } from '../modules/leave-types/LeaveTypesModule'
 import { ClosedLeavesModule, PendingRequestsModule } from '../modules/leaves/LeaveInboxModule'
 import { LeavesModule } from '../modules/leaves/LeavesModule'
 import { MyLeavesModule } from '../modules/leaves/MyLeavesModule'
-import { PresenceModule } from '../modules/presence/PresenceModule'
 import { RulesModule } from '../modules/rules/RulesModule'
 import { SetupModule } from '../modules/setup/SetupModule'
 import { DeploymentsModule } from '../modules/deployments/DeploymentsModule'
@@ -94,10 +93,6 @@ const GROUPS: readonly ModuleGroup[] = [
     sections: [
       { panel: PANEL_IDS.properties, labelKey: 'properties.title', isAllowed: (access) => access.properties, Module: PropertiesModule },
     ],
-  },
-  {
-    titleKey: 'presence.title',
-    sections: [{ panel: PANEL_IDS.presence, labelKey: 'presence.title', isAllowed: (access) => access.soldiers, Module: PresenceModule }],
   },
   {
     titleKey: 'rules.title',

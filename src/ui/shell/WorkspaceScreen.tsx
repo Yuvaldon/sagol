@@ -5,6 +5,7 @@ import { useIsDesktop } from '../patterns/media'
 import { useAppliedAppearance } from './appearance'
 import { ModuleButtons } from './ModuleButtons'
 import { ModuleDrawer } from './ModuleDrawer'
+import { DayReportDialog } from '../modules/presence/DayReportDialog'
 import { NewLeaveButton } from './NewLeaveButton'
 import { FilterBar, FilterControl, PresenceButton } from './FilterBar'
 import { SortControl } from './SortControl'
@@ -134,6 +135,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
         <NewLeaveButton />
         {isDesktop ? <DesktopBars name={name} identity={identity} /> : <MobileBars name={name} identity={identity} />}
         <ModuleDrawer />
+        <DayReportDialog />
         <PreferenceFailureNotice />
       </div>
       </PreferenceFailureContext>

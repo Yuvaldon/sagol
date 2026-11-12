@@ -10,7 +10,7 @@ import { dayCells, heatCells, timelineRows } from './model'
 // The timeline as the viewport shows it. The adapter is the only part that meets the domain (model.ts); the frame
 // around it, the window, the filter and the empty states, is every engine's (D-174).
 
-function Timeline({ model, window, filter, colors, openSoldier, openLeave }: BoardFrame) {
+function Timeline({ model, window, filter, colors, openSoldier, openLeave, openDay }: BoardFrame) {
   const rulesDay = useRulesDay()
   const unit = filterUnitOf(filter)
   const heat = useHeatRow(window, unit.kind === 'unit' ? unit.unitId : null)
@@ -23,7 +23,7 @@ function Timeline({ model, window, filter, colors, openSoldier, openLeave }: Boa
     () => timelineRows(model.items, model.days, openSoldier, { leaves: model.leaves, colors, openLeave, movable, creatable }),
     [model, openSoldier, colors, openLeave, movable, creatable],
   )
-  const days = useMemo(() => dayCells(model.days, model.today), [model.days, model.today])
+  const days = useMemo(() => dayCells(model.days, model.today, openDay), [model.days, model.today, openDay])
   return (
     <>
       <TimelineGrid

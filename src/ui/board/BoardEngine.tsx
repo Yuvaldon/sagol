@@ -11,6 +11,7 @@ import {
   useModuleAccess,
   useOnlyMissing,
   usePanel,
+  usePresenceDay,
   useSetupAccess,
   useViewFilter,
   type BoardConditions,
@@ -37,6 +38,9 @@ export interface BoardFrame {
   readonly openSoldier: ((soldierId: string) => void) | null
   /** Opens a leave's details: every leave on the board is a control (D-119). */
   readonly openLeave: (leaveId: string) => void
+  /** Opens the day report on a day (D-193). NULL when the actor may not open the soldiers module; the day's own NULL
+   *  when the scope has no rotation on it. */
+  readonly openDay: ((day: CalendarDate) => (() => void) | null) | null
 }
 
 /** A state of the board, in the middle of the viewport, clear of the bars. */
@@ -91,6 +95,16 @@ function Board({
     },
     [open],
   )
+  const { reportable, openOn } = usePresenceDay()
+  const openDay = useCallback(
+    (day: CalendarDate) =>
+      reportable(day)
+        ? () => {
+            openOn(day)
+          }
+        : null,
+    [reportable, openOn],
+  )
 
   if (model.rosterCount === 0) {
     return (
@@ -131,7 +145,7 @@ function Board({
       </Centered>
     )
   }
-  return draw({ model, window, filter, colors: mode, openSoldier: access.soldiers ? openSoldier : null, openLeave })
+  return draw({ model, window, filter, colors: mode, openSoldier: access.soldiers ? openSoldier : null, openLeave, openDay: access.soldiers ? openDay : null })
 }
 
 function BoardData({
