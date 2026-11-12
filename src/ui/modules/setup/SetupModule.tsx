@@ -1,13 +1,16 @@
 import type { SetupStepId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { usePanel, useSetupProgress, type SetupStep } from '@logic'
+import { usePanel, useSetupProgress, useTemplateOffer, type SetupStep, type TemplateOutcome } from '@logic'
 import { Check, ChevronLeft } from 'lucide-react'
+import { useState } from 'react'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { Button } from '../../primitives/Button'
+import { TemplateStopped, TemplateWizard } from './TemplateWizard'
 
 // The organization's setup (D-033, D-180): the steps this actor may do, in order, each marked done once what it sets
 // up exists. A step opens its own module, so every step uses the forms that module already has. Any step may be
-// skipped or done again; nothing about the setup is stored.
+// skipped or done again; nothing about the setup is stored. A fresh unit is first offered a template (D-262), until the
+// commander sets it aside; a template that stopped part way says where, above the checklist that finishes it.
 
 const STEP_KEYS: Readonly<Record<SetupStepId, { readonly title: I18nKey; readonly body: I18nKey }>> = {
   unit_levels: { title: 'setup.steps.unit_levels.title', body: 'setup.steps.unit_levels.body' },
@@ -55,6 +58,24 @@ function StepRow({ step, position }: { readonly step: SetupStep; readonly positi
 }
 
 export function SetupModule() {
+  const offer = useTemplateOffer()
+  const [left, setLeft] = useState(false)
+  const [stopped, setStopped] = useState<Extract<TemplateOutcome, { ok: false }> | null>(null)
+  if (!left && stopped === null && offer.status === 'ready' && offer.value !== null) {
+    return (
+      <TemplateWizard
+        base={offer.value}
+        onLeave={() => {
+          setLeft(true)
+        }}
+        onStop={setStopped}
+      />
+    )
+  }
+  return <SetupChecklist stopped={stopped} />
+}
+
+function SetupChecklist({ stopped }: { readonly stopped: Extract<TemplateOutcome, { ok: false }> | null }) {
   const progress = useSetupProgress()
   if (progress.status === 'failed') return <FailureNotice error={progress.error} />
   if (progress.status === 'loading') return <LoadingNotice />
@@ -63,6 +84,7 @@ export function SetupModule() {
   const summary = [String(done), t('setup.progressOf'), String(steps.length), t('setup.progressDone')].join(WORD)
   return (
     <div className="flex flex-col gap-md">
+      {stopped === null ? null : <TemplateStopped outcome={stopped} />}
       <p role="status" className="text-name font-semibold tabular-nums">
         {summary}
       </p>

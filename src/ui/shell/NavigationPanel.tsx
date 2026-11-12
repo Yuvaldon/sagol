@@ -1,7 +1,7 @@
 import { NAVIGATION_SECTIONS, PANEL_IDS, type NavigationSectionId } from '@config'
 import type { NavigationModule } from '@contracts'
 import { t, type I18nKey } from '@i18n'
-import { usePanel, useSetupAccess } from '@logic'
+import { usePanel, useSetupUnfinished } from '@logic'
 import { ListChecks, Menu as MenuIcon, X } from 'lucide-react'
 import { useId, useState } from 'react'
 import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
@@ -125,7 +125,7 @@ function Waiting({ count }: { readonly count: number }) {
 export function NavigationPanel() {
   const [isOpen, setOpen] = useState(false)
   const sections = useSections()
-  const setup = useSetupAccess().length > 0
+  const setup = useSetupUnfinished()
   if (sections.length === 0 && !setup) return null
   const close = () => {
     setOpen(false)
