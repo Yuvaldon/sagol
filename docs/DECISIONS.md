@@ -23,7 +23,7 @@ am = amends, ref = refines, ext = extends.
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
 | D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149 |
 | D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
-| D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035 |
+| D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035; ref D-203 |
 | D-008 | Server-authoritative data layer | data, backend | ref D-090; ref D-201 |
 | D-009 | Unit hierarchy: `parent_id` only, derived ancestry | contracts, domain, data, backend | |
 | D-010 | Memberships are time-bounded rows | contracts, domain, data, backend | ref D-097 |
@@ -191,8 +191,9 @@ am = amends, ref = refines, ext = extends.
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
-| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | |
-| D-202 | The database's own guarantees: triggers | backend | |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203 |
+| D-202 | The database's own guarantees: triggers | backend | am D-203 |
+| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | |
 
 ---
 
@@ -2357,3 +2358,31 @@ The functions listed in `schema.sql`'s server-side block are the gateway's comma
 policies come with 8.2.
 **Why:** derived data (the closure) and history must stay right even for a write that does not come through the gateway,
 such as a migration or a manual fix.
+
+## D-203 — No client reaches a table: the policy stays in the domain
+2026-11-11 · accepted · amends D-202 · refines D-201, D-007 · OI-022
+- **No row policies, no `has_permission()`.** Row-level security stays on for every table with no policy (D-202), and a
+  migration (`20261111000200_rls.sql`) revokes every privilege on the public schema's tables, sequences and functions
+  from the API roles (`anon`, `authenticated`, and `PUBLIC` for functions), now and by default for later objects. The
+  Data API answers nothing to a publishable key or a session token; the only way in is the command gateway (D-201),
+  which connects as the owner and runs the domain policy (D-003, D-053 … D-060) itself. D-053 … D-060 are not ported to
+  SQL.
+- **The matrix against the database.** The sample world and `MATRIX` move to `src/domain/testing` (D-135), read by the
+  domain's own test and by `src/data/server/policy.dbtest.ts`. The DB test writes the world through the migrated schema
+  (its constraints and triggers), loads the policy snapshot through the Postgres store the gateway reads, and checks every
+  row with `can`. `rls.dbtest.ts` checks that every table holds RLS, that the API roles hold no privilege, and that each
+  of them is refused a read and a write of every table, and that a table created later starts closed.
+- **The Data API itself.** `src/data/server/rls.resttest.ts` (`npm run test:rest`, in the CI `db` job after `test:db`)
+  asks a real PostgREST, in front of the migrated database, for a read, an insert and a delete of every table, with an
+  `anon` token (what a publishable key acts as) and an `authenticated` one; each is refused with `42501`.
+  `db-reset` grants the API roles everything by default first, as Supabase does, so the migration's revokes are what
+  the tests prove.
+- **Advisors.** Supabase's advisors report "RLS enabled, no policy" (INFO) for every table. That is this decision, not a
+  finding: an audit leaves it be.
+- **Imports.** A layer's `testing/index.ts` may be imported by other layers' test files, `*.dbtest.ts` included, through an
+  alias (`@domain/testing`); dependency-cruiser allows only that file and only from tests.
+- **Local roles.** `scripts/db-reset.ts` creates `anon` and `authenticated` (no login) when missing, with Supabase's
+  default grants, so the migration and the tests run the same locally, in CI and on Supabase.
+**Why:** a second copy of the policy in SQL would have to agree with the domain forever, the same reason D-201 runs one
+command core on both sides. With every read and write behind the gateway, row policies would only guard a door that is
+already shut; revoking the privileges shuts it explicitly, and the tests prove it stays shut.

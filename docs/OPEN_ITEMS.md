@@ -26,7 +26,6 @@ Status: `open` · `closed`
 | Id | Target | From | Item | Status | Notes |
 |----|--------|------|------|--------|-------|
 | OI-020 | 8.3 | 1.1b | `IdentitySource` exposes no access token. The remote adapter is expected to share the provider client created by `app`. If it cannot, add a credentials method to the contract in a contracts session. | open | |
-| OI-022 | 8.2 | 1.2a | The policy matrix lives in `src/domain/policy/policy.test.ts` (sample world + `MATRIX`). Phase 8 runs it against `has_permission()` and RLS, so it must be extracted into a form both runners read, and D-053 … D-060 ported to SQL. | open | |
 | OI-032 | owner (later) | 0.7 | Focus mode (the mock's "מצב מיקוד") has no decision behind it. Define it and give it a slice when wanted (D-077). | open | Needs a product-owner decision. |
 | OI-037 | V14 | A1 | The rows that `soldier_ref` and `unit_ref` values point to are checked by no item, and no domain function lists the ids that properties reference, unlike `filterReferences` (D-065, A1 finding 9). | open | Definitions arrive in V14, so no such value exists before it. |
 | OI-045 | 8.4 | V0 | The production bundle is one 874 KB script, above Vite's 500 KB warning. Decide on code splitting (routes, heavy libraries) before deploy, when real network sizes matter. | open | Local use is not affected. V2: it keeps growing with each slice, now with the calendar and the virtual list. |
