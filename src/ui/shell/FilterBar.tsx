@@ -35,8 +35,9 @@ import {
   type SoldierConditions,
 } from '@logic'
 import { ChevronRight, ListFilter, UserMinus, UserX, X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useState, type ReactNode, useEffect } from 'react'
 import { Button as AriaButton, Dialog, DialogTrigger, Popover, Switch } from 'react-aria-components'
+import { useFilterFocus } from './filterFocus'
 import { useIsDesktop } from '../patterns/media'
 import { toneOf } from '../theme/palette'
 import { CheckList, type Choice, type ChoiceText } from '../primitives/ChoiceList'
@@ -141,6 +142,7 @@ function AddCondition({
   readonly isOpen: boolean
   readonly onOpenChange: (isOpen: boolean) => void
 }) {
+  const { bindTrigger } = useFilterFocus()
   const [picked, setPicked] = useState<string | null>(null)
   const isDesktop = useIsDesktop()
   const open = all.find((condition) => condition.key === picked)
@@ -152,7 +154,7 @@ function AddCondition({
         onOpenChange(next)
       }}
     >
-      <AriaButton aria-label={t('filters.add')} className={`${BAR_CONTROL} ${PRESS}`}>
+      <AriaButton ref={bindTrigger} aria-label={t('filters.add')} className={`${BAR_CONTROL} ${PRESS}`}>
         <ListFilter aria-hidden size={isDesktop ? 14 : 18} className="text-text-muted md:text-text" />
         <span aria-hidden className={isDesktop ? '' : 'sr-only'}>
           {t('filters.open')}
@@ -459,6 +461,11 @@ export function FilterControl() {
 export function FilterBar() {
   const { shown } = useConditions()
   const { active, clearAll } = useBoardFilters()
+  const focus = useFilterFocus()
+  // A press that empties the row takes its control away with it, so focus moves on to "filter" in the bar.
+  useEffect(() => {
+    if (!active) focus.restore()
+  }, [active, focus])
   if (!active) return null
   return (
     <search
@@ -468,11 +475,25 @@ export function FilterBar() {
       className="pointer-events-none -my-xl flex max-w-full items-center gap-sm overflow-x-auto px-2xs py-xl"
     >
       {shown.map((condition) => (
-        <Chip key={condition.key} name={condition.name} values={condition.values} onRemove={condition.onRemove}>
+        <Chip
+          key={condition.key}
+          name={condition.name}
+          values={condition.values}
+          onRemove={() => {
+            if (shown.length === 1) focus.request()
+            condition.onRemove()
+          }}
+        >
           {condition.choices === null ? null : <CheckList {...condition.choices} autoFocus />}
         </Chip>
       ))}
-      <AriaButton onPress={clearAll} className={`${PILL} gap-xs px-md font-semibold ${PRESS}`}>
+      <AriaButton
+        onPress={() => {
+          focus.request()
+          clearAll()
+        }}
+        className={`${PILL} gap-xs px-md font-semibold ${PRESS}`}
+      >
         <X aria-hidden size={12} strokeWidth={2.6} />
         {t('filters.clearAll')}
       </AriaButton>

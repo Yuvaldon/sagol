@@ -390,7 +390,6 @@ export interface TimelineGridProps {
   readonly rows: readonly TimelineRowModel[]
   /** The heat row (D-141); NULL when no rule the actor sees concerns the unit (D-173). */
   readonly heat: readonly TimelineHeatCell[] | null
-  /** Over the soldier list, under the days, or held under the list at the bottom of the board (D-173). */
   /** The heat row sits above the list, under the days, or below it (D-173). */
   readonly heatOnTop: boolean
   /** Dragging marks and days (D-143); NULL when nothing on the board moves. */
@@ -415,9 +414,20 @@ export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGrid
   const heatAbove = heatOnTop ? heat : null
   const heatBelow = heatOnTop ? null : heat
   const hasHeatAbove = heatAbove !== null
+  // What sits above the rows can grow without this grid rendering again (the filter row, D-173), so it is watched.
   useLayoutEffect(() => {
-    if (list.current !== null) setListTop(list.current.offsetTop)
-  }, [scroller, hasHeatAbove, rowPx])
+    const element = list.current
+    if (element === null || content === null) return
+    const measure = () => {
+      setListTop(element.offsetTop)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(content)
+    return () => {
+      observer.disconnect()
+    }
+  }, [content, scroller, hasHeatAbove, rowPx])
 
   // TanStack Virtual hands out new functions each render, and nothing here memoizes them.
   // oxlint-disable-next-line react/incompatible-library

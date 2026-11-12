@@ -25,6 +25,9 @@ import { useNavigationEntries, type ModuleEntry } from './moduleEntries'
 const PRESS = 'cursor-pointer outline-focus outline-offset-2 data-focus-visible:outline-2'
 const ROW = `flex min-h-touch flex-1 items-center gap-sm rounded-control px-sm text-control md:min-h-control data-hovered:bg-inner ${PRESS}`
 
+/** Between the pin's action and the module it names, read as one label. */
+const NAME_SEPARATOR = ' '
+
 const SECTION_KEYS: Record<NavigationSectionId, I18nKey> = {
   structure: 'navigation.sections.structure',
   leaveSetup: 'navigation.sections.leaveSetup',
@@ -64,6 +67,7 @@ function Item({
 }) {
   const preferences = useNavigationPreferences()
   const name = t(entry.labelKey)
+  const pinLabel = `${t('navigation.pin')}${NAME_SEPARATOR}${name}`
   return (
     <li className="flex items-center gap-2xs">
       <AriaButton
@@ -80,7 +84,7 @@ function Item({
       {/* Pins are offered once the preferences they are saved in have loaded (D-076, D-121). */}
       {preferences.editable ? (
         <ToggleButton
-          aria-label={[t('navigation.pin'), name].join(' ')}
+          aria-label={pinLabel}
           isSelected={preferences.pinned.includes(module)}
           onChange={() => {
             preferences.togglePin(module)
@@ -140,8 +144,13 @@ export function NavigationPanel() {
     setOpen(false)
   }
   // What waits in the panel shows on its button, so a pending request is not hidden behind it.
+  // A pinned module shows its own count in the bar, so it is not counted twice.
   const waiting = sections.reduce(
-    (sum, section) => section.items.reduce((inner, item) => inner + (item.entry.count?.value ?? 0), sum),
+    (sum, section) =>
+      section.items.reduce(
+        (inner, item) => (preferences.pinned.includes(item.module) ? inner : inner + (item.entry.count?.value ?? 0)),
+        sum,
+      ),
     0,
   )
   return (
