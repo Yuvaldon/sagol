@@ -2,6 +2,7 @@ import { VIRTUAL_LIST } from '@config'
 import { t } from '@i18n'
 import { fullName, type BoardItem } from '@logic'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { BoardEngine, type BoardFrame } from '../../../board/BoardEngine'
 import { EngineScroller } from '../../../board/EngineScroller'
@@ -58,6 +59,14 @@ function ListRow({ item, frame }: { readonly item: BoardItem; readonly frame: Bo
 
 function List({ frame, scroller }: { readonly frame: BoardFrame; readonly scroller: HTMLElement | null }) {
   const { items } = frame.model
+  const list = useRef<HTMLDivElement>(null)
+  const [offset, setOffset] = useState(0)
+  // Where the list starts inside what scrolls: below the bars' spacer, which grows when a filter is on, and a filter
+  // gives a new model.
+  useLayoutEffect(() => {
+    if (scroller === null || list.current === null) return
+    setOffset(list.current.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop)
+  }, [scroller, frame.model])
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -65,10 +74,11 @@ function List({ frame, scroller }: { readonly frame: BoardFrame; readonly scroll
     // Chips wrap, so each row is measured; the estimate is only where it starts.
     estimateSize: () => VIRTUAL_LIST.estimatedRowPx,
     overscan: VIRTUAL_LIST.overscanRows,
+    scrollMargin: offset,
     getItemKey: (index) => items[index]?.key ?? index,
   })
   return (
-    <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+    <div ref={list} className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
       {virtualizer.getVirtualItems().map((row) => {
         const item = items[row.index]
         if (item === undefined) return null
@@ -78,7 +88,7 @@ function List({ frame, scroller }: { readonly frame: BoardFrame; readonly scroll
             ref={virtualizer.measureElement}
             data-index={row.index}
             className="absolute inset-x-none top-none"
-            style={{ transform: `translateY(${String(row.start)}px)` }}
+            style={{ transform: `translateY(${String(row.start - offset)}px)` }}
           >
             <ListRow item={item} frame={frame} />
           </div>

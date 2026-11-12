@@ -13,7 +13,10 @@ import { LeaveChip } from '../../../board/LeaveChip'
 function Day({ day, frame }: { readonly day: BoardDay; readonly frame: BoardFrame }) {
   const isToday = day.day === frame.model.today
   return (
-    <li className="flex min-w-none flex-col gap-xs border-b border-line bg-surface p-sm md:border-s">
+    <li
+      className="flex min-w-none flex-col gap-xs border-b border-line bg-surface p-sm md:border-s"
+      aria-current={isToday ? 'date' : undefined}
+    >
       <h2 className="flex items-center gap-sm text-name">
         <span className="text-text-muted">{formatDate(day.day, 'weekdayShort')}</span>
         <span
