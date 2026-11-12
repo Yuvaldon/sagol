@@ -47,6 +47,10 @@ export type SubjectRankConstraint = z.infer<typeof SubjectRankConstraint>
 export const TagSelectionMode = z.enum(['single', 'multiple'])
 export type TagSelectionMode = z.infer<typeof TagSelectionMode>
 
+/** How long a tag assignment holds: always, or for one rotation (D-260). */
+export const TagLifetime = z.enum(['persistent', 'rotation'])
+export type TagLifetime = z.infer<typeof TagLifetime>
+
 export const AvailabilityEffect = z.enum(['unavailable', 'available'])
 export type AvailabilityEffect = z.infer<typeof AvailabilityEffect>
 

@@ -3,6 +3,7 @@ import {
   CommandRankId,
   OrganizationId,
   SoldierId,
+  SoldierTagId,
   TagId,
   UnitId,
   UnitMembershipId,
@@ -387,7 +388,7 @@ describe('the rows of the board (D-105)', () => {
   const names = (items: readonly BoardItem[]) => items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier.first_name] : []))
 
   it('reads soldier tags, and a status condition brings inactive soldiers back (D-131)', () => {
-    const tagged = { soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, organization_id: ORGANIZATION, created_at: AT, created_by: null }
+    const tagged = { id: SoldierTagId.parse(uuid(701)), deployment_id: null, soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, organization_id: ORGANIZATION, created_at: AT, created_by: null }
     const medics = boardItems(
       base({ soldiers: three, memberships: everyoneInA, soldierTags: [tagged], filter: { where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } } }),
     )

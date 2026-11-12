@@ -7,6 +7,7 @@ import {
   PropertyDefinitionId,
   PropertyOptionId,
   SoldierId,
+  SoldierTagId,
   TagCategoryId,
   TagId,
   UnitId,
@@ -238,7 +239,7 @@ describe('present and absent lists (D-134, OI-090)', () => {
     updated_by: null,
     version: 1,
   })
-  const tagged: SoldierTag = { soldier_id: SoldierId.parse(uuid(2)), tag_id: MEDIC, organization_id: ORGANIZATION, created_at: AT, created_by: null }
+  const tagged: SoldierTag = { id: SoldierTagId.parse(uuid(701)), deployment_id: null, soldier_id: SoldierId.parse(uuid(2)), tag_id: MEDIC, organization_id: ORGANIZATION, created_at: AT, created_by: null }
   const source: FilterSource = {
     soldiers: [soldier(1), soldier(2), soldier(3), soldier(4, { status: 'inactive' }), soldier(5)],
     ranks: [],

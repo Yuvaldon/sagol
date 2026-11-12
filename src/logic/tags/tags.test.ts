@@ -1,12 +1,16 @@
-import { OrganizationId, SoldierId, TagCategoryId, TagId, type Soldier, type Tag, type TagCategory } from '@contracts'
+import { DeploymentId, OrganizationId, SoldierId, SoldierTagId, TagCategoryId, TagId, type Soldier, type SoldierTag, type Tag, type TagCategory } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import {
+  copiedRotationTags,
+  heldInScopes,
+  initialLifetimes,
   soldierTagGroups,
+  soldierTagScopes,
   tagCategoryFormIssues,
   tagColorOf,
   tagFormIssues,
   tagSections,
-  toSetTagsInput,
+  toScopedTagInputs,
   toUpdateTagCategoryInput,
   toUpdateTagInput,
   toggledTags,
@@ -24,6 +28,7 @@ function category(n: number, name: string, overrides: Partial<TagCategory> = {})
     organization_id: ORGANIZATION,
     name,
     selection_mode: 'multiple',
+    default_lifetime: 'persistent',
     color_key: 'teal',
     sort_order: n,
     ...audit,
@@ -85,7 +90,7 @@ describe('tag sections and colors (D-130)', () => {
 
 describe('the tag forms', () => {
   it('answers the same field codes as the adapter', () => {
-    expect(tagCategoryFormIssues({ name: '', selection_mode: 'multiple', color_key: null })).toEqual(
+    expect(tagCategoryFormIssues({ name: '', selection_mode: 'multiple', default_lifetime: 'persistent', color_key: null })).toEqual(
       expect.arrayContaining([expect.objectContaining({ path: ['name'] }), expect.objectContaining({ path: ['color_key'] })]),
     )
     expect(tagFormIssues({ name: 'x', category_id: null, color_key: null })).toEqual([
@@ -94,12 +99,12 @@ describe('the tag forms', () => {
   })
 
   it('sends only what changed, with the version the form opened', () => {
-    expect(toUpdateTagCategoryInput(ROLE, 1, { name: 'תפקיד', selection_mode: 'single', color_key: 'teal' })).toEqual({
+    expect(toUpdateTagCategoryInput(ROLE, 1, { name: 'תפקיד', selection_mode: 'single', default_lifetime: 'rotation', color_key: 'teal' })).toEqual({
       id: ROLE.id,
       expected_version: 1,
-      changes: { selection_mode: 'single' },
+      changes: { selection_mode: 'single', default_lifetime: 'rotation' },
     })
-    expect(toUpdateTagCategoryInput(ROLE, 1, { name: 'תפקיד', selection_mode: 'multiple', color_key: 'teal' })).toBeNull()
+    expect(toUpdateTagCategoryInput(ROLE, 1, { name: 'תפקיד', selection_mode: 'multiple', default_lifetime: 'persistent', color_key: 'teal' })).toBeNull()
     expect(toUpdateTagInput(MEDIC, 1, { name: 'חובש', category_id: MEDIC.category_id, color_key: 'red' })).toEqual({
       id: MEDIC.id,
       expected_version: 1,
@@ -131,14 +136,80 @@ describe("a soldier's tags (D-130)", () => {
 
   it('sends the whole set, keeping held tags no group shows, and nothing when unchanged', () => {
     const hidden = TagId.parse(uuid(99))
-    const held = [MEDIC.id, hidden]
-    const groups = soldierTagGroups(CATEGORIES, TAGS, held)
-    expect(toSetTagsInput(SOLDIER, 3, held, groups, new Map())).toBeNull()
+    const scopes = { persistent: [MEDIC.id, hidden], rotation: [] }
+    const groups = soldierTagGroups(CATEGORIES, TAGS, heldInScopes(scopes))
+    const lifetimes = initialLifetimes(groups, scopes, null)
+    expect(toScopedTagInputs(SOLDIER, 3, null, scopes, groups, new Map(), lifetimes)).toEqual([])
     const chosen = new Map([[ROLE.id, [DRIVER.id]]])
-    expect(toSetTagsInput(SOLDIER, 3, held, groups, chosen)).toEqual({
-      soldier_id: SOLDIER.id,
-      expected_version: 3,
-      tag_ids: [hidden, DRIVER.id],
-    })
+    expect(toScopedTagInputs(SOLDIER, 3, null, scopes, groups, chosen, lifetimes)).toEqual([
+      { soldier_id: SOLDIER.id, expected_version: 3, deployment_id: null, tag_ids: [hidden, DRIVER.id] },
+    ])
+  })
+})
+
+describe("a soldier's tags in a rotation (D-260, D-222)", () => {
+  const ROTATION = DeploymentId.parse(uuid(70))
+  const EARLIER = DeploymentId.parse(uuid(71))
+  const SHIFT = category(4, 'משמרת', { default_lifetime: 'rotation' })
+  const NIGHT = tag(41, 4, 'לילה')
+  const row = (n: number, tagId: TagId, deploymentId: DeploymentId | null): SoldierTag => ({
+    id: SoldierTagId.parse(uuid(n)),
+    organization_id: ORGANIZATION,
+    soldier_id: SOLDIER.id,
+    tag_id: tagId,
+    deployment_id: deploymentId,
+    created_at: AT,
+    created_by: null,
+  })
+
+  it('splits what a soldier holds by scope', () => {
+    const rows = [row(80, MEDIC.id, null), row(81, SINGLE.id, ROTATION), row(82, DRIVER.id, EARLIER)]
+    expect(soldierTagScopes(rows, SOLDIER.id, ROTATION)).toEqual({ persistent: [MEDIC.id], rotation: [SINGLE.id] })
+    expect(soldierTagScopes(rows, SOLDIER.id, null)).toEqual({ persistent: [MEDIC.id], rotation: [] })
+  })
+
+  it('opens each category in the scope that holds it, else its default', () => {
+    const scopes = { persistent: [MEDIC.id], rotation: [SINGLE.id] }
+    const groups = soldierTagGroups([...CATEGORIES, SHIFT], [...TAGS, NIGHT], heldInScopes(scopes))
+    const lifetimes = initialLifetimes(groups, scopes, ROTATION)
+    expect(lifetimes.get(ROLE.id)).toBe('persistent')
+    expect(lifetimes.get(MARITAL.id)).toBe('rotation')
+    expect(lifetimes.get(SHIFT.id)).toBe('rotation')
+    expect(initialLifetimes(groups, scopes, null).get(SHIFT.id)).toBe('persistent')
+  })
+
+  it('saves the persistent set first, then the rotation set at the next version', () => {
+    const scopes = { persistent: [MEDIC.id, SINGLE.id], rotation: [] }
+    const groups = soldierTagGroups(CATEGORIES, TAGS, heldInScopes(scopes))
+    const lifetimes = new Map([
+      [ROLE.id, 'persistent' as const],
+      [MARITAL.id, 'rotation' as const],
+    ])
+    const chosen = new Map([
+      [ROLE.id, [DRIVER.id]],
+      [MARITAL.id, [MARRIED.id]],
+    ])
+    expect(toScopedTagInputs(SOLDIER, 3, ROTATION, scopes, groups, chosen, lifetimes)).toEqual([
+      { soldier_id: SOLDIER.id, expected_version: 3, deployment_id: null, tag_ids: [SINGLE.id, DRIVER.id] },
+      { soldier_id: SOLDIER.id, expected_version: 4, deployment_id: ROTATION, tag_ids: [MARRIED.id] },
+    ])
+  })
+
+  it('moving a category back to persistent clears it from the rotation', () => {
+    const scopes = { persistent: [], rotation: [SINGLE.id] }
+    const groups = soldierTagGroups(CATEGORIES, TAGS, heldInScopes(scopes))
+    const lifetimes = new Map([[MARITAL.id, 'persistent' as const]])
+    const chosen = new Map([[MARITAL.id, [SINGLE.id]]])
+    expect(toScopedTagInputs(SOLDIER, 3, ROTATION, scopes, groups, chosen, lifetimes)).toEqual([
+      { soldier_id: SOLDIER.id, expected_version: 3, deployment_id: null, tag_ids: [SINGLE.id] },
+      { soldier_id: SOLDIER.id, expected_version: 4, deployment_id: ROTATION, tag_ids: [] },
+    ])
+  })
+
+  it('copies the previous rotation, category by category', () => {
+    const groups = soldierTagGroups(CATEGORIES, TAGS, [])
+    const copied = copiedRotationTags(groups, [MARRIED.id, LEFTOVER.id])
+    expect([...copied.chosen]).toEqual([[MARITAL.id, [MARRIED.id]]])
+    expect([...copied.lifetimes]).toEqual([[MARITAL.id, 'rotation']])
   })
 })

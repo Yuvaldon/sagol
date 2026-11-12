@@ -78,11 +78,10 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
-  await test.step('with no rotation, the workspace is the empty state that opens one', async () => {
-    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
-    await expect(board(page)).toHaveCount(0)
-    // No board, so nothing to choose (D-218).
-    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
+  await test.step('with no rotation, routine shows the board under a band; with no unit yet, it sends to found one (D-257, D-222)', async () => {
+    await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
+    await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
+    await expect(board(page)).toBeVisible()
     await expect(page).toHaveURL(/\/$/)
     await expectNoAxeViolations(page)
   })

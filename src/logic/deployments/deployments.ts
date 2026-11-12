@@ -17,6 +17,7 @@ import {
   deploymentMemberIssues,
   descendantsOf,
   primaryUnitOn,
+  rotationOverlapIssues,
   withPathPrefix,
   type MembershipSpan,
   type UnitNode,
@@ -61,9 +62,20 @@ function createInput(values: DeploymentFormValues) {
   return { id: DeploymentId.parse(crypto.randomUUID()), ...deploymentContent(values) }
 }
 
-/** The codes the command answers on the row (D-068). */
-export function deploymentFormIssues(values: DeploymentFormValues): Issue[] {
-  return formIssues(CreateDeploymentInput, createInput(values))
+/**
+ * The codes the command answers on the row (D-068): the schema's, then `rotation_overlap` when the dates share a day
+ * with another live rotation (D-257). `id` is the rotation being changed, NULL for a new one.
+ */
+export function deploymentFormIssues(
+  values: DeploymentFormValues,
+  others: readonly Deployment[] = [],
+  id: DeploymentId | null = null,
+): Issue[] {
+  const input = createInput(values)
+  const issues = formIssues(CreateDeploymentInput, input)
+  if (issues.length > 0 || input.start_date === undefined) return issues
+  const candidate = { id: id ?? input.id, start_date: input.start_date, end_date: input.end_date, archived_at: null }
+  return rotationOverlapIssues(candidate, others)
 }
 
 export function toCreateDeploymentInput(values: DeploymentFormValues): CreateDeploymentInput {
@@ -128,6 +140,34 @@ export function deploymentMemberValues(members: readonly DeploymentMember[], dep
   return members
     .filter((member) => member.deployment_id === deployment.id)
     .map((member) => ({ soldier_id: member.soldier_id, start_date: member.start_date ?? '', end_date: member.end_date ?? '' }))
+}
+
+/** A rotation closes once its planned end has come, or any day from its start while its end is open (D-258). */
+export function isRotationClosable(deployment: Deployment, today: CalendarDate): boolean {
+  const end = deployment.end_date ?? (compareDates(deployment.start_date, today) <= 0 ? today : null)
+  return deployment.closed_at === null && end !== null && compareDates(end, today) <= 0
+}
+
+/** The live rotation that ended last before `rotation` starts: what a new rotation copies from (D-222). */
+export function previousRotation(rotations: readonly Deployment[], rotation: Pick<Deployment, 'id' | 'start_date'>): Deployment | null {
+  const before = rotations.filter(
+    (other) =>
+      other.id !== rotation.id &&
+      other.archived_at === null &&
+      other.end_date !== null &&
+      compareDates(other.end_date, rotation.start_date) < 0,
+  )
+  return before.toSorted((a, b) => compareDates(b.start_date, a.start_date))[0] ?? null
+}
+
+/**
+ * The members a rotation's list starts with (D-219, D-222): the previous rotation's soldiers, for all the new one's
+ * days, when it had a list; else the soldiers placed in the unit.
+ */
+export function startingMembers(previous: readonly DeploymentMember[], placed: readonly DeploymentMemberValues[]): DeploymentMemberValues[] {
+  if (previous.length === 0) return [...placed]
+  const soldiers = [...new Set(previous.map((member) => member.soldier_id))]
+  return soldiers.map((soldier_id) => ({ soldier_id, start_date: '', end_date: '' }))
 }
 
 function membersInput(deployment: Deployment, openedVersion: number, members: readonly DeploymentMemberValues[]) {

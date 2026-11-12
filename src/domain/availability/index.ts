@@ -36,9 +36,16 @@ export {
 export { leaveChangeViolations, ruleGate, ruleViolations } from './gate'
 export {
   deploymentMemberIssues,
+  isClosedRotation,
   leaveRotationIssues,
   memberSpan,
+  rotationCloseEnd,
+  rotationClosedIssues,
+  rotationOverlapIssues,
+  spansCoverRange,
+  wholeUnitRotationIssues,
   withinMemberSpan,
   type DeploymentMemberDates,
+  type RotationDates,
 } from './deployments'
 export { dayMovements, soldierMovement, type DayMovements, type SoldierMovement } from './movements'

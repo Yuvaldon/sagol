@@ -304,7 +304,7 @@ describe('a live rule warning is the command’s answer (OI-100, D-142)', () => 
   })
 
   const candidateOf = (leave: Omit<NewLeave, 'leave_type_id'>) =>
-    newLeaveCandidate({ ...newLeaveValues(D1, leave.as_approved), ...leave, leave_type_id: world.type, reason: '' })
+    newLeaveCandidate({ ...newLeaveValues(D1, leave.as_approved), ...leave, leave_type_id: world.type, reason: '' }, world.rotation)
 
   async function checkCreate(leave: Omit<NewLeave, 'leave_type_id'>) {
     const warnings = await warningOf(world.ports, candidateOf(leave))
@@ -382,7 +382,7 @@ describe('a live rule warning says when it has no answer (OI-099)', () => {
       as_approved: false,
       leave_type_id: world.type,
       reason: '',
-    })
+    }, world.rotation)
 
   function render(ports: LogicPorts, candidate: LeaveCandidate | null) {
     const wrapper = ({ children }: { readonly children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>

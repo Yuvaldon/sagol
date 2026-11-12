@@ -105,7 +105,7 @@ const COMMAND_METHODS = {
   availability_rules: EDIT,
   property_definitions: SORTED_EDIT,
   seniority_overrides: { create: true, revoke: true },
-  deployments: { ...EDIT, setMembers: true },
+  deployments: { ...EDIT, setMembers: true, close: true, reopen: true },
 } as const satisfies MethodTable<RemoteDataAdapter['commands']>
 
 type Call = (kind: string, group: string, method: string, args: readonly unknown[]) => Promise<Result<unknown>>

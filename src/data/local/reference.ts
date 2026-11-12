@@ -70,6 +70,8 @@ export interface ReferenceSpec<Row extends ReferenceRow> {
   readonly checkTables: readonly TableName[]
   /** Optional text columns: blank is stored as NULL (D-101). */
   readonly optionalText: readonly (keyof Row)[]
+  /** Columns the store sets on a new row, never the input: their column defaults. */
+  readonly createdColumns?: Partial<Row>
   /** What the row's permissions are checked against. */
   readonly targetOf: (row: Row) => PolicyTarget
   /** References and uniques. Paths are relative to the row (D-065). */
@@ -224,6 +226,7 @@ export function createReferenceCommands<
           const candidate = parsedCandidate(
             spec,
             withSpecOptionalText(spec, {
+              ...spec.createdColumns,
               ...input,
               organization_id: scope.organization_id,
               ...createdBy(scope.soldier_id, scope.now),
