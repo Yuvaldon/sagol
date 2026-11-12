@@ -266,6 +266,7 @@ am = amends, ref = refines, ext = extends.
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
+| D-289 | CI skips e2e and db on a draft pull request | tooling | |
 
 ---
 
@@ -3629,3 +3630,22 @@ Extends D-276. Track: tooling.
 **Why:** trying the app on staging needs a believable unit, and typing one in by hand after every reset is slow. A
 re-runnable script that cannot reach production gives that without real personal numbers and without the app carrying
 seed code.
+
+## D-289 — CI skips e2e and db on a draft pull request
+
+2026-11-12 · accepted · asked by the orchestrator at about 16:09Z. Track: tooling.
+
+- **The limit.** The repository is private, so GitHub Actions has 2,000 free minutes a month, and paid use is
+  forbidden. On 2026-11-12 the cycle stood at 1,801 (it resets on 2026-12-01). `e2e` and `db` are most of each run.
+- **What changes.** In `.github/workflows/ci.yml`, `e2e` and `db` run only on a push to `main` or on a pull request that
+  is not a draft (`github.event_name == 'push' || !github.event.pull_request.draft`). `check` (typecheck, lint, layers,
+  raw values, i18n, unit tests, build) still runs on every pull request, draft or not.
+- **Marking ready runs them.** `pull_request` also listens to `ready_for_review`, so the moment a draft is marked ready
+  the full CI runs on its head. Without that type, the default triggers would not run CI again until the next push.
+- **No test is skipped before a merge.** Pull requests merge on a green, full CI of a ready head, and every push to
+  `main` runs the full CI that Staging and Production wait for (D-276, D-280). Locally, `npm run check` and the
+  relevant e2e still run before a push.
+
+**Why:** a draft is pushed to often while work is in progress; running the two slowest jobs on each of those pushes
+spent the month's free minutes. Running them once the work is ready, and on `main`, keeps the same guarantee at a
+fraction of the cost.
