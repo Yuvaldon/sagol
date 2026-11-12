@@ -1,5 +1,5 @@
 import type { Env } from '@config'
-import { loadLocalData, loadRemoteData } from '@data'
+import { browserDeviceStores, loadLocalData, loadRemoteData } from '@data'
 import type { LogicPorts, ShellPort } from '@logic'
 import { systemTime } from '../time'
 
@@ -13,7 +13,7 @@ export async function composePorts(env: Env, origin: string, shell: ShellPort): 
     const { browserIdentityStore, createLocalAuthProvider, createLocalDataAdapter } = await loadLocalData()
     const auth = createLocalAuthProvider(browserIdentityStore())
     const data = createLocalDataAdapter({ identity: auth, time: systemTime })
-    return { auth, data, time: systemTime, shell }
+    return { auth, data, time: systemTime, shell, device: browserDeviceStores() }
   }
   const { url, anonKey } = env.remote
   const { createRemoteDataAdapter, loadGoogleAuth } = await loadRemoteData()
@@ -25,5 +25,5 @@ export async function composePorts(env: Env, origin: string, shell: ShellPort): 
     accessToken: google.accessToken,
     fetch: (input, init) => fetch(input, init),
   })
-  return { auth: google.provider, data, time: systemTime, shell }
+  return { auth: google.provider, data, time: systemTime, shell, device: browserDeviceStores() }
 }
