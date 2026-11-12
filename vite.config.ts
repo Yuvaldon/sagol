@@ -42,20 +42,23 @@ function lightToken(name: string): string {
 const THEME_DIR = resolve(import.meta.dirname, 'src/ui/theme')
 const APP_ICON = 'app-icon.svg'
 const CANVAS = lightToken('canvas')
-const MARKER = lightToken('marker')
+const ICON_GROUND = lightToken('surface')
+const ICON_COLORS = [ICON_GROUND, lightToken('brand-light'), lightToken('brand'), lightToken('brand-deep')]
 const APP_NAME = dictionary.app.name
 
 /**
- * The installed app's head (D-182): its bar color, its name and standalone mode on Apple devices. The icon is
- * drawn in the brand's purple, and the build refuses one that drifted from the theme's marker.
+ * The installed app's head (D-182): its bar color, its name and standalone mode on Apple devices. The icon is the
+ * company's bison in the brand gradient on the surface, and the build refuses one that drifted from those tokens.
  */
 function installedAppHead(): Plugin {
   return {
     name: 'sagol:installed-app-head',
     buildStart() {
-      const icon = readFileSync(resolve(THEME_DIR, APP_ICON), 'utf8')
-      if (!icon.toLowerCase().includes(MARKER.toLowerCase())) {
-        throw new Error(`${APP_ICON} is not drawn in the theme's marker color ${MARKER} (D-182).`)
+      const icon = readFileSync(resolve(THEME_DIR, APP_ICON), 'utf8').toLowerCase()
+      const drawn = new Set(icon.match(/#[0-9a-f]{6}\b/g))
+      const expected = new Set(ICON_COLORS.map((color) => color.toLowerCase()))
+      if (drawn.size !== expected.size || [...drawn].some((color) => !expected.has(color))) {
+        throw new Error(`${APP_ICON} must use exactly the theme's surface and brand colors ${ICON_COLORS.join(', ')} (D-182).`)
       }
     },
     generateBundle() {
@@ -88,15 +91,15 @@ const installedApp = VitePWA({
   devOptions: { enabled: false },
   pwaAssets: {
     image: resolve(THEME_DIR, APP_ICON),
-    integration: { publicDir: THEME_DIR, outDir: resolve(import.meta.dirname, 'dist'), baseUrl: '/' },
+    integration: { publicDir: THEME_DIR, baseUrl: '/' },
     htmlPreset: '2023',
     injectThemeColor: false,
     overrideManifestIcons: true,
     config: false,
     preset: {
       ...minimal2023Preset,
-      maskable: { ...minimal2023Preset.maskable, resizeOptions: { background: MARKER } },
-      apple: { ...minimal2023Preset.apple, resizeOptions: { background: MARKER } },
+      maskable: { ...minimal2023Preset.maskable, resizeOptions: { background: ICON_GROUND } },
+      apple: { ...minimal2023Preset.apple, resizeOptions: { background: ICON_GROUND } },
     },
   },
   manifest: {
