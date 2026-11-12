@@ -143,7 +143,8 @@ The data layer is written as if it were the server:
 descendants and depth, and rejects cycles. Postgres keeps a trigger-maintained
 `unit_closure` as a derived index. A soldier's unit comes from time-bounded
 `unit_memberships`, so history is kept and attachments or temporary units need no schema
-change.
+change. The claim creates the organization and its root unit from one name (V27, D-251); templates (`config/templates`)
+are applied by `logic/organization/template` as a sequence of the ordinary commands that stops at the first refusal (D-261).
 
 ## Availability (D-012, D-014, D-070 … D-073)
 

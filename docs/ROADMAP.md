@@ -130,7 +130,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V25 | Navigation and words | The term map in every string, no "ארגון"; two floating strips on every screen; a personal profile; "ניהול יחידה" with groups and a line per module; one requests hub; one path per action (D-250 … D-256) | ☑ |
 | V23 | Focus mode | One control hides both strips and the chips; one restore button brings them back (OI-032, after V25) | ☐ |
 | V26 | Rotation as a mode | One rotation at a time, routine between them, the final close, the whole unit by default, tags for one rotation (D-257 … D-260; schema change) | ☑ |
-| V27 | Templates and setup | The claim creates the root unit; the "פלוגה" template; pick, adjust, done (D-251, D-261, D-262) | ☐ |
+| V27 | Templates and setup | The claim creates the root unit; the "פלוגה" template; pick, adjust, done (D-251, D-261, D-262) | ☑ |
 | V32 | Work and unit setup | Daily work in "ניהול יחידה", one-time definitions in "הגדרות היחידה"; a definition apart from its use; a missing definition created in place; tag categories advanced; the checklist leads (D-284, D-285) | ☑ |
 | V28 | Several requests at once | One sheet of rows, a recurring row, sent atomically, each row its own leave; the quick action by mode (D-266, D-267) | ☑ |
 | A7 | audit | Whole product, once V27 and V28 are in (D-284) | ☐ |
