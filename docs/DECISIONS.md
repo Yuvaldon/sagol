@@ -90,7 +90,7 @@ am = amends, ref = refines, ext = extends.
 | D-071 | Rule targets, populations and thresholds | domain, data, logic, ui, backend | |
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142; ref D-146 |
-| D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132 |
+| D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132; ref D-185 |
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111 |
@@ -198,17 +198,21 @@ am = amends, ref = refines, ext = extends.
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | |
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | |
+| D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
+| D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
+| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | |
+| D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
-| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209 |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-183 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
 | D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | |
 | D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207 |
 | D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
-| D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | |
+| D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
 | D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
-| D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | |
+| D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | ref D-183 |
 
 ---
 
@@ -2598,6 +2602,70 @@ transaction.
   text color reaches 4.5:1 on its surface in both sets; axe checks the board and a drawer in the dark set.
 - **Why:** reservists open the board at night, in a vehicle or a tent, where a white screen is the brightest thing
   around. Light stays the default because the board is mostly read in daylight and printed screenshots stay legible.
+
+## D-182 — The installable app: manifest, icons and head, from the theme and i18n
+2026-11-12 · accepted · V18 · decided under the owner's autonomy instruction of 2026-11-11
+- **Tooling.** `vite-plugin-pwa` 2.0.0 with `@vite-pwa/assets-generator` 2.0.0, pinned (D-037), build-time only. They
+  write the manifest, the icons and the head links into the build. Nothing they generate is committed (rule 3).
+  `npm audit` reports moderate advisories in `workbox-build`'s `glob`/`minimatch`: they run on the build machine
+  over the build's own files, never in the browser.
+- **Manifest.** `name` and `short_name` are `app.name` from `i18n`; `lang` `he`, `dir` `rtl`, `display` `standalone`,
+  `start_url` and `scope` `/`. `theme_color` and `background_color` are the light set's canvas, read from
+  `src/ui/theme/tailwind.css` when the build starts, so the theme stays the only place a color is written.
+- **Icons.** One source, `src/ui/theme/app-icon.svg`: a white calendar mark on the marker purple. The build makes the
+  64, 192 and 512 icons, a maskable 512 (padded on the same purple, so a round or squircle mask cuts only ground),
+  the 180 Apple touch icon and the favicon. The build fails if the icon's purple is not the marker token.
+- **Head.** `theme-color`, `apple-mobile-web-app-capable`, `mobile-web-app-capable`, `apple-mobile-web-app-title`
+  (`app.name`), and `apple-mobile-web-app-status-bar-style` `default`: the status bar keeps its own strip, so no
+  content runs under it, and `viewport-fit=cover` with the bottom bar's `bottom-safe` keeps the home indicator
+  clear. In the workspace, `theme-color` follows the soldier's appearance (D-181), so a dark board has a dark bar.
+**Why:** reservists open Sagol from the phone's home screen far more than from a bookmark. Reading the name and the
+colors from `i18n` and the theme keeps one source for each, and the build check keeps the icon's purple honest.
+
+## D-183 — The service worker caches the app shell only, and a new version waits for the soldier
+2026-11-12 · accepted · refines D-201, D-210 · V18 · decided under the owner's autonomy instruction of 2026-11-11
+- **What it caches.** Workbox's generated worker precaches the build's own files (scripts, styles, `index.html`,
+  fonts, icons), and a navigation inside the scope gets the precached `index.html`. There is no runtime caching at
+  all: the command gateway (`REMOTE.commandsPath`) and Supabase Auth (`REMOTE.authPath`) are on the backend's origin
+  and always go to the network, and both paths are on the navigation fallback's denylist too. No read and no command
+  is ever answered from a cache, so every check of D-201 runs on every request (rule 4).
+- **Where it runs.** Production builds only. `app` registers it through `workbox-window` (7.4.1, pinned, the only
+  runtime addition) before it reads the env; the dev server and the slice demos run without a worker.
+- **A new version.** The new worker installs beside the old one and waits. The open app shows a polite toast,
+  "גרסה חדשה זמינה", with "רענון": the worker takes over and the page reloads once it controls. Nothing reloads by
+  itself, so a form being filled is never lost. The app asks for an update when it opens and every hour
+  (`PWA.updateCheckMs`).
+- **The port.** `logic` reads the worker and the install offer (D-184) through a `shell` port that `app` provides,
+  beside `data`, `auth` and `time`, so `ui` never touches the browser's worker API and its tests use a fake.
+**Why:** the shell is the same for everyone and changes only on a deploy, so caching it makes the installed app open
+at once; the data is per soldier and per permission, and a cached answer would be a bypass. A waiting worker with a
+toast is the one update flow that neither serves an old shell forever nor reloads under the soldier's hands.
+
+## D-184 — The install offer in the user menu, and sign-in in the installed app
+2026-11-12 · accepted · refines D-207 · V18 · decided under the owner's autonomy instruction of 2026-11-11
+- **Where.** The user menu, in its own section above sign-out, and only when there is something to do (D-076):
+  - the browser fired `beforeinstallprompt` (Chrome, Edge, Android): "התקנת האפליקציה" shows the browser's own
+    install dialog, and the item goes once it was used or the app was installed;
+  - iOS outside the installed app, where Safari has no such event: the same item opens a short hint, Share and then
+    "Add to Home Screen";
+  - otherwise, and always inside the installed app: no item.
+- **Sign-in.** Google's OAuth stays a full-page redirect in the same window (D-207), back to the origin, which is the
+  manifest's scope. The return is a navigation: the worker answers it with `index.html`, and the code exchange goes
+  to Supabase Auth over the network. Nothing in the flow opens a popup or a second window.
+**Why:** the menu is where the soldier's own device settings live (D-181), and a menu item that shows only when it can
+act is the one install control that is never dead. An iPhone cannot install from a button, so it gets the words.
+
+## D-185 — Offline: the shell opens, a remote build waits for the network
+2026-11-12 · accepted · refines D-074 · V18 · decided under the owner's autonomy instruction of 2026-11-11
+- **Local mode** keeps its data on the device (D-006) and works offline as it is.
+- **A remote build** that starts without a network shows the offline screen, "אין חיבור לרשת", with a retry, in
+  place of the generic failure. It also shows when the start fails while the browser is offline. When the network
+  returns, the app starts by itself.
+- **Inside the workspace** a lost connection stays what it is today: each failed read or command shows its own
+  `unavailable` notice. There is no offline queue of commands: a command decided on stale data would skip D-201's
+  checks of the moment it is applied (OI-116).
+**Why:** a cached shell with no data is a blank board that looks broken; one screen that says why, and recovers
+by itself, is honest. Offline writes would need conflict rules the product does not have.
 
 ## D-207 — Google sign-in through Supabase Auth, loaded only in production modes
 2026-11-12 · accepted · refines D-005, D-204 · supersedes D-086 (unsupported modes) · OI-020 · decided under D-170
