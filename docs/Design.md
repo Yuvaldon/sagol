@@ -106,7 +106,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   the navigation panel sit inside the insets (`--safe-top`, `--safe-bottom`, `--safe-inline`; `inset-safe`,
   `frame-safe`, `px-safe`, `top-safe`). The inline inset is the larger side on both sides.
 - **Icons and tooltips (D-189):** every `IconButton`, and every control shown as an icon alone (the destinations on
-  desktop, the view switcher, "סינון", the presence count, the avatar), has its name as its accessible name and as a
+  desktop, the view switcher, "סינון", the avatar), has its name as its accessible name and as a
   `NameTooltip`: a dark pill, `label` type, after `TOOLTIP.delayMs`. No hint prose sits beside a control.
 - **Timeline (D-108, D-192):** sizes come from `TIMELINE_LAYOUT` in `config`, because the geometry and the virtualizer need the
   same numbers: rows 36 (44 on mobile, where a name is a touch target), group rows 32, the days header 28, names 124,
@@ -158,8 +158,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Module buttons (D-116, D-189):** an icon with a tooltip from `md`; below it a tab of the bottom bar, the icon over
   its short name, 44 px at least.
 - **The filter controls (D-131 to D-134, D-173):** in the bar from `md` and in the context row below it, "סינון" (a
-  filter icon with a tooltip), the "רק מי שחסר" switch and the presence count (an icon and today's count, "חסרים היום"
-  read aloud and as a tooltip). "סינון" is absent when every condition is set.
+  filter icon with a tooltip) and the "רק מי שחסר" switch. "סינון" is absent when every condition is set. Today's report
+  is a destination, "דוח 1", after the requests (D-252); the bar holds no presence count.
 - **The filter row (D-131, D-173):** a `search` landmark under the top bars, there only while a condition is set: from
   `md` under the bar with the scope (`top-filter-row-md`), below `md` under the top bar (`top-filter-row`), scrolling
   sideways. It holds the chips and "ניקוי הכול". Each is a `glass-bar` pill, `control` high from `md` and `touch` below;
@@ -264,7 +264,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 ## Range, sort and a calm screen (V19, D-211 … D-215)
 
 - **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / חודש, then "סבב שלם" with the
-  scope's running and coming rotations and their dates; with none, "סבב חדש" for whoever may create one. The arrows'
+  scope's running and coming rotations and their dates; with none, the item is absent (D-218). The arrows'
   names follow the kind ("שבוע הבא", "חודש הבא", "סבב הבא"). The timeline narrows its days for a long range and drops
   the weekday name below 44 px. On a phone "היום" is an icon with its name in a tooltip.
 - **Sort**: "מיון" in the bar, next to the filter, an icon with its name on desktop. Two lists: by name, rank,
@@ -275,7 +275,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Day report (V22, D-193 … D-197)
 
-- **Entry**: a day's header in the timeline and the calendar is a button, and the presence pill opens today. A day
+- **Entry**: a day's header in the timeline and the calendar is a button, and "דוח 1" among the daily destinations opens today. A day
   outside the scope's rotations is plain text.
 - **Dialog**: centered glass, at most the drawer's width. The date between the arrows, "היום", "כמה ימים" (then "עד
   יום" and "יום אחד"), one muted line on what is counted, the "סיבות" switch when there is something to show, then
@@ -284,6 +284,17 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   reason line under a name while the switch is on. A span puts each day under its own date.
 - **Toast**: one line in the dialog's status region, "הדוח הועתק" or what failed, gone after a moment.
 - **Image**: always the light tokens, the text copy's lines, one tall PNG for a span.
+
+## The rotation-centric workspace (V19, D-216 … D-220)
+
+- The workspace opens on the rotation running today, else the next; its window is the whole rotation. No control or
+  label names the rotation: the dates say it, and the range menu's "סבב שלם" is a single item or, with more than one
+  rotation, a short list by start.
+- With no rotation in scope the viewport shows "אין סבב פעיל": "פתיחת סבב" for whoever may create one, otherwise one
+  line saying the commander opens it; before any unit exists, "הגדרת מבנה היחידות" for whoever may found the tree. The dates, view switcher, filters, new-request button, inbox and "my requests"
+  are gone; the permanent modules stay.
+- The request forms pick the rotation that holds the soldier on those dates. Creating a rotation opens its members
+  editor, which starts with the unit's soldiers.
 
 ## Simplification: information architecture (V24, D-250 … D-264)
 
@@ -333,9 +344,10 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 
 - **Top strip (context):** unit in scope · time (the rotation's name or "שגרה", the range, its arrows, "היום" while
   away from today) · view · filter · sort · avatar. A floating pill that hugs its content, centered at the top.
-- **Bottom strip (destinations):** לוח · בקשות (count awaiting me) · דוח 1 · ניהול (sum of waiting counts, commanders
-  only), then the role's one primary quick action, a filled round button at the strip's inline end: "בקשה חדשה" in a
-  rotation, "פתיחת סבב" in routine for who may create one. A floating pill that hugs its content, centered at the
+- **Bottom strip (destinations):** לוח · שלי (who has a soldier record) · בקשות (count awaiting me, who approves) ·
+  דוח 1 · ניהול (sum of waiting counts, commanders only), then the role's one primary quick action, a filled round
+  button at the strip's inline end: "בקשה חדשה" for who may request while a rotation is current or upcoming, "פתיחת
+  סבב" in routine for who may create one, otherwise none (D-266). A floating pill that hugs its content, centered at the
   bottom. The same two pills on a phone, a phone on its side, a tablet and a desktop.
 - **The rule (D-256):** one entry per destination, plus one primary quick action per role.
 - **Profile (avatar):** name · appearance (light or dark, the rules row's place) · install · identity switch (local) ·
@@ -343,8 +355,12 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 - **ניהול יחידה:** הקמת היחידה (while unfinished) · היחידה: מבנה היחידה, חיילים, סבבים · נוכחות: סוגי היעדרות, כללי
   נוכחות · פרטי חיילים: תגיות, פרטים נוספים · הרשאות: רמות הרשאה, הרשאות אישיות, בקשות הצטרפות · נתונים: ייבוא
   וייצוא. No pins.
-- **Requests hub:** the approve-now switch (who may) · ממתינות לאישורי (who approves) · הבקשות שלי · closed. A new
-  request starts from the strip's quick action.
+- **Home (D-265):** who approves or manages someone lands on the board at their widest scope; everyone else on
+  "שלי". One press apart; the last choice is remembered on the device; a link that names a panel or view wins.
+- **שלי:** my next days, in or out · my requests, open and history, with their status. A new request starts from the
+  strip's quick action.
+- **בקשות (the inbox, who approves):** the approve-now switch in its header (who may approve their own) · ממתינות
+  לאישורי · closed.
 - **Gone:** the separate floating "+" (its action is now in the strip), the "הבקשות שלי" tab, pins, the presence count in the bar, the empty board's second
   button, "סבב חדש" in the range menu, the full-width phone bars and the folded wide-phone row.
 - **Focus mode (V23):** both strips and the chips row hide; one restore button stays in a corner that does not cover
@@ -352,8 +368,19 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 
 ### Journeys (D-263)
 
-**Pending the owner's per-role matrix** (soldier, mid-level commander, company headquarters and clerk, company
-commander; daily, weekly, per rotation, once). It will replace this draft and set the home screen per role.
+**Roles (the owner's matrix, D-265).** Plain words; the system stays permission-driven.
+
+| Role | Cares about | Home | Quick action |
+|------|-------------|------|--------------|
+| Soldier, squad leader | Their own days and requests; opens the app to add or follow a request, or when asked | שלי | "בקשה חדשה" while a rotation is current or upcoming; none in routine |
+| Platoon commander, sergeant | The unit's requests, their own included; may delegate | לוח (their unit) | "בקשה חדשה" in a rotation; "פתיחת סבב" in routine if they may create one |
+| Company commander | The plan: wide view and control; rarely approves (HQ's requests) | לוח (the company) | "פתיחת סבב" in routine; "בקשה חדשה" in a rotation |
+| מפל"ג (company HQ) | Dedicated roles under the company commander; the report owner (D-269) | by permission: לוח or שלי | as above, by permission |
+
+Requests come from the soldiers; a commander entering one for a soldier uses the form's requester or a drag on the
+board, never the quick action (D-266). Next slices on these journeys: several requests at once (V28, D-267), the
+board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V30, D-269), the leave-round planner
+(V31, D-270).
 
 **(a) First sign-in to a running unit.**
 1. Sign in. With no organization yet, the claim sheet asks for the unit's name and your name; the time zone is the
@@ -381,10 +408,10 @@ commander; daily, weekly, per rotation, once). It will replace this draft and se
 1. "בקשה חדשה", the strip's quick action. The soldier is the requester (a commander may pick another).
 2. Type (by group), from and to (inside the rotation by default), the reason when the type needs one, and any פרטים
    נוספים; the rules' warnings show as the dates change.
-3. Send. The request shows in "הבקשות שלי" as pending, and on the board as a dashed bar.
+3. Send. The request shows in "שלי" as pending, and on the board as pending (dashed until V29's language, D-268).
 
 **(d) A commander approves.**
-1. The בקשות destination carries the count awaiting approval; open it.
+1. The commander lands on the board; the בקשות destination carries the count awaiting approval; open it.
 2. "ממתינות לאישורי": each request with the soldier, the type, the days and the rules it would break.
 3. Approve or reject; a soft rule asks for an acknowledgement, a hard one refuses (D-145). Details open the leave's
    drawer (D-119).
@@ -406,14 +433,14 @@ commander; daily, weekly, per rotation, once). It will replace this draft and se
 | The mode of the screen | | the rotation holding today, else the nearest upcoming, else the latest open, else שגרה |
 | A feature's context | each card says: rotation, routine or both | |
 | Who is in it | member rows, only for a list | no rows: the unit's soldiers for its days |
-| A rotation tag | `soldier_tags.deployment_id` (V26) | |
-| A category's lifetime | `tag_categories.lifetime` (V26) | |
+| A tag's lifetime (persistent or this rotation) | `soldier_tags.deployment_id` (V26), per assignment | |
+| The lifetime pre-selected when assigning | `tag_categories.default_lifetime` (V26) | |
 
 ### Templates (D-261, D-262)
 
 "פלוגה" in `config`, names in `i18n`: the company (root) with מפל"ג and three platoons of three squads; unit types
 פלוגה, מחלקה, כיתה; command levels מ"פ, סמ"פ, מ"מ, סמל, מ"כ, לוחם, each bound to a permission level; persistent tag
-categories "הכשרות" (נהג, חובש, קשר, נגביסט, מטול) with colors, and a rotation category "תפקיד בסבב"; absence types
+categories "הכשרות" (נהג, חובש, קשר, נגביסט, מטול) with colors, and a category "תפקיד בסבב" whose tags default to this rotation; absence types
 in groups (בית: יציאה הביתה, יציאה מיוחדת; בריאות: מחלה, גימלים; אחר: קורס, אירוע משפחתי); rule defaults sized to a
 company. V27 fixes the exact lists and colors in config.
 
@@ -517,7 +544,7 @@ company. V27 fixes the exact lists and colors in config.
 | `DeploymentsModule`, `DeploymentForm`, `DeploymentMembersForm` | `ui/modules/deployments` | Deployments and who serves in them (D-179) |
 | `LeaveBatchForm`, `LeaveDuplicateForm`, `SenioritySection` | `ui/modules/leaves`, `ui/modules/soldiers` | A collective leave, copies of a leave, and personal seniority (D-179) |
 | `PropertyFields` | `ui/patterns/properties` | One field per live property of an entity, ending the soldier, unit and leave forms (D-176) |
-| `FilterBar`, `FilterControl`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, "only who is missing", clear all), and the bar's filter and presence controls (D-213) |
+| `FilterBar`, `FilterControl` | `ui/shell` | The filter row (chips, property chips, "only who is missing", clear all), and the bar's filter control (D-213) |
 | `SortControl` | `ui/shell` | The board's sort, shared with the table (D-214) |
 | `MenuChoice`, `menuStyles` | `ui/shell` | A menu item with a check while selected, and the bar menus' classes |
 | `DayReportDialog` | `ui/modules/presence` | The day report: counts, units, names, reasons, a span, the text copy and the image (D-193 … D-196) |

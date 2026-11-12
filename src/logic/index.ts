@@ -26,6 +26,8 @@ export {
   dateWindowOf,
   pickableRotations,
   rotationDays,
+  rotationOn,
+  scopeRotation,
   scopeRotations,
   shiftedAnchor,
   shiftedWindow,
@@ -34,6 +36,7 @@ export {
   type DateWindowState,
   type WindowKind,
 } from './view-state/window'
+export { requestRotations, useRotationScope, type RotationScope } from './view-state/rotation'
 export {
   NO_CONDITIONS,
   filterUnitOf,
@@ -132,7 +135,8 @@ export {
   type LeaveTypeFormValues,
   type LeaveTypeSection,
 } from './leaves/leaveTypes'
-export { newLeaveCandidate, newLeaveIssues, newLeaveValues, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
+export { newLeaveCandidate, newLeaveIssues, newLeaveValues, soldiersOf, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
+export { requestRotation, useRequestRotation, type RequestRotation } from './leaves/rotation'
 export {
   duplicateLeaveIssues,
   leaveBatchIssues,
@@ -376,6 +380,7 @@ export {
 export { exportFileOf, readImportFile, type ImportFile, type ImportFileProblem } from './transfer/file'
 export { readPickedFile, useExport, useImport, useTransferAccess } from './transfer/hooks'
 export {
+  defaultDeploymentMembers,
   deploymentFormIssues,
   deploymentFormValues,
   deploymentMemberValues,

@@ -124,14 +124,14 @@ am = amends, ref = refines, ext = extends.
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133; ref D-214 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | ref D-160 |
-| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173; ref D-174; ref D-189; ref D-252 |
+| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173; ref D-174; ref D-189; ref D-252; ref D-268 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
 | D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | ref D-174 |
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
-| D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143; sup D-255 (floating "+") |
+| D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143; sup D-255 (floating "+"); ref D-267 |
 | D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154; ref D-173; sup D-189 (bars); ref D-252 |
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
@@ -183,19 +183,19 @@ am = amends, ref = refines, ext = extends.
 | D-164 | Link-request candidates stay computed | data | |
 | D-165 | The roles and grants modules; "more" on a phone | config, logic, ui | ref D-173 |
 | D-166 | A grant's window is whole days in the organization's zone | logic, ui | ext D-169 |
-| D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | sup D-255 (tab) |
+| D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | sup D-255 (tab); ref D-265 |
 | D-168 | A rejected link request is told to its identity | contracts, data, logic, ui | |
 | D-169 | The grants list moves to the next state on its own | logic | |
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256 |
-| D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214 |
+| D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
 | D-177 | Property chips in the filter bar | logic, ui | |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
-| D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259 |
+| D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259; ref D-267, D-268, D-270 |
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262 |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
@@ -220,8 +220,8 @@ am = amends, ref = refines, ext = extends.
 | D-190 | A phone on its side keeps the phone's bars, and a wide phone folds the context row into the top | config, ui, tooling | sup D-252 (folded top row) |
 | D-191 | Edge to edge: the canvas under the cutouts, what can be pressed inside the safe area | ui, tooling | ref D-252 |
 | D-192 | The board's corner and name column are one opaque surface | ui | |
-| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-256, D-257 |
-| D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | ref D-250, D-257 |
+| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217, D-220, D-256, D-257 |
+| D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | ref D-219, D-250, D-257 |
 | D-213 | "Only who is missing" is a filter condition | logic, ui | |
 | D-214 | The board's sort | config, logic, ui | |
 | D-215 | Data and controls, not prose | i18n, ui | ref D-250 |
@@ -230,21 +230,33 @@ am = amends, ref = refines, ext = extends.
 | D-195 | The day report as text for a messaging app | config, i18n, logic | |
 | D-196 | The day report as an image: drawn on a canvas in the light tokens | ui | |
 | D-197 | A device store for conveniences | config, data, logic, tooling | |
+| D-216 | Every request belongs to a rotation | contracts, data, logic, backend | |
+| D-217 | The workspace is scoped to the active or upcoming rotation, silently | logic, ui | |
+| D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
+| D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
+| D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
-| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | |
+| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
 | D-253 | The profile is personal only | ui | |
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | |
-| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | |
+| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
 | D-256 | One path for each action | ui | |
-| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | |
+| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266 |
 | D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | |
 | D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | |
 | D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | |
-| D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | |
-| D-264 | Order of the simplification slices | docs | |
+| D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
+| D-264 | Order of the simplification slices | docs | am D-271 |
+| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | |
+| D-266 | The quick action follows the role, then the mode | logic, ui | |
+| D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
+| D-268 | The board's visual language: presence is quiet, absence is a hole | ui | |
+| D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
+| D-270 | The leave-round planner | domain, logic, ui | |
+| D-271 | Order of the slices after the journeys matrix | docs | |
 
 ---
 
@@ -2938,6 +2950,157 @@ board's frame. One state for the board and the table means a link reopens the sa
 **Why:** the owner asked for a calmer screen. Hints repeated what the controls already say, and on a phone they pushed
 the data below the fold.
 
+## D-193 — The day report (דוח 1): who is present, absent, leaving and returning
+2026-11-12 · accepted · supersedes D-134 in part (the panel) · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- **What it is.** D-134's present and absent lists grow into the day report, and its drawer panel gives way to a
+  centered dialog over the board. The URL keeps `panel=presence` and `day`; a span adds `until`, the last day. The
+  presence button opens it on today, as before.
+- **Entry.** In the engines that show days, a day's header (the timeline's day column, the calendar's day cell) is a
+  button that opens that day's report; keyboard and screen readers reach it by its whole date. The table and the list
+  show no days, so they reach it through the presence button. Arrows in the dialog step a day back or forward.
+- **Population.** As D-134: who the board's soldier filter selects on the day, among the soldiers whose leaves the
+  viewer may read (D-161). Approved leaves only (D-133). The model has no planned strength, so the report shows none
+  (D-076): the total is the population.
+- **Categories.** Present and absent partition the population (D-032, D-070). Leaving and returning are part of absent
+  and read the absence, not the leaves: a soldier **leaves** on a day they are absent and were present the day before,
+  and **returns** on a day they are absent and are present the day after (`end_date` is inclusive, so the last day
+  away is the return day). A one-day absence both leaves and returns. Back-to-back or overlapping leaves count one
+  departure and one return. A marker, a pending, rejected or cancelled leave, or an override to available never moves
+  anyone (`dayMovements` in `domain`).
+- **Breakdown.** The counts first (present, absent, leaving, returning, out of the total), then one section per unit in
+  the tree order of the board (D-105), each with its own counts and collapsible name lists.
+- **Rotations (D-211).** The dialog names the scope's rotations that run on the day. When the scope has rotations, a
+  day none of them runs on is not reportable: its header is not a button, and the arrows skip past it. A scope with no
+  rotation reports every day, so a unit that does not plan by rotations still has the report.
+- **Span.** "כמה ימים" opens a "עד יום" date field: the report runs from the day to that last day, its reportable
+  days only, at most `DAY_REPORT.maxSpanDays` calendar days. A last day on or before the day is ignored; "יום אחד"
+  returns to one day. Each day is its own section, in order, under its own date.
+**Why:** the owner's "דוח 1": the morning question of a command post is who is here, who is out, who leaves and who is
+back today. The presence panel already answered half of it; one place is calmer than two (D-215). Reading the
+absence rather than the leaves means a soldier who swaps one leave for another the next day is not reported as coming
+back and leaving again.
+
+## D-194 — Reasons in the day report: off by default, remembered per device, only what the viewer may read
+2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- A switch "סיבות" shows, beside each absent soldier, the type of the leave that makes them absent and its reason text.
+- Off by default. The choice is a convenience of the device, kept per signed-in soldier in the device store (D-197),
+  never in `soldier_preferences`: a commander who shows reasons on their own phone does not show them on the screen of
+  the command post.
+- The switch shows only when the viewer may read a reason for someone in the report: a leave type readable to the
+  viewer or a reason text on a leave they read. It reads what the viewer already may read, through the same
+  checks; nothing is fetched or shown that the leave's own sheet would not show them (no bypass). With nothing to
+  show, the switch is absent (D-076).
+- The text copy and the image carry the reasons only while the switch is on.
+**Why:** reasons are personal and the report is often shown or sent to others, so the safe default is off, and the
+choice belongs to the screen it is made on.
+
+## D-195 — The day report as text for a messaging app
+2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- "העתקה" copies plain text and a toast confirms it. Its order: a `*bold*` header with the date and the scope, the
+  counts, then one section per unit with a `*bold*` name and one line per soldier under absent, leaving and returning.
+  A span has one such block per day. Present names are left out: the counts carry them, and the message stays short.
+- RTL-safe: every line starts with a right-to-left mark, so a line that starts with a number or a Latin name stays
+  aligned. No other markup.
+- The order of the parts lives in `config` (`DAY_REPORT.text.sections`), the words in `i18n`, and the text is built in
+  `logic`. Sending inside Sagol or to an app is not built (D-076).
+**Why:** the report's daily use is a message to a group. `*bold*` is what WhatsApp and Telegram render; anything more
+shows as noise elsewhere.
+
+## D-196 — The day report as an image: drawn on a canvas in the light tokens
+2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- "תמונה" makes a PNG of the report: the same lines as the text copy (D-195), the reasons only while on, drawn with the canvas API from the report itself. No library: an HTML-to-image library rasterizes
+  the DOM through SVG `foreignObject`, which loses web fonts and backdrop blur on Safari, and adds a dependency for
+  one screen.
+- The image always uses the light tokens, whatever the theme: it is read in a chat, on someone else's screen.
+- A span is one tall image, one section per day: one file to send.
+- Where the browser can share a file (`navigator.canShare({ files })`), the button opens the share sheet; elsewhere
+  it downloads the file. Only the path that works is offered.
+**Why:** the image is for a group chat where text formatting is lost; a canvas drawing is the same on every browser
+and is tested by its pixels and size.
+
+## D-197 — A device store for conveniences
+2026-11-12 · accepted · refines D-021, D-074 · V22 · decided under the owner's autonomy instruction of 2026-11-11
+- A `DeviceStore` port in `logic`, implemented by `data` over `localStorage` (and `sessionStorage` for what lasts the
+  session), under keys in `config` (`DEVICE_KEYS`), scoped to the signed-in soldier. It holds conveniences of one
+  screen only: never data, never a permission, never what another device needs. A value that does not read back as
+  its type reads as the default.
+- `scripts/guardrails.config.ts` allows web storage in `src/data/device/` beside the local identity.
+**Why:** D-194 and focus mode (V23) remember a choice per device. Rows in `soldier_preferences` follow the soldier to
+every device, which is wrong for these.
+
+## D-216 — Every request belongs to a rotation
+2026-11-12 · accepted · refines D-012, D-179 · V19 · decided under D-170
+- **Model.** `leaves.deployment_id` (NOT NULL, FK to `deployments`). The leave's soldier is a member of that deployment
+  (`deployment_members`), and its dates fall within the member's dates; a NULL member side means the deployment's own,
+  and a deployment with no end bounds nothing at the end.
+- **Commands.** `createLeave` names the rotation; `createLeaveBatch` names one rotation for all its leaves; a copy of
+  `duplicateLeave` stays in the source's rotation. The rotation is live (`reference_archived` otherwise), the soldier is
+  its member (`not_a_member`) and the dates fit (`outside_rotation`). `updateLeave` never moves a leave to another
+  rotation; new dates must still fit. Changing a member's dates, removing a member or changing a rotation's dates is
+  refused with `leaves_outside_rotation` when it would strand a live request (pending or approved); cancelled and
+  rejected requests do not hold a rotation in place.
+- **Server.** The gateway runs the same checks (D-201). Constraint triggers, deferred to commit, re-check every live
+  leave of a changed pair (`20261112000200_leave_deployment.sql`), so a write that skipped the commands fails as
+  `internal`. RLS is unchanged: a leave is read and written as before, by its soldier's unit (D-082).
+- **Migration.** Non-destructive and applied by the orchestrator: the column is added, filled where exactly one live
+  rotation fits, and set NOT NULL. A leave no rotation fits stops the migration, which rolls back; the file holds the
+  query that counts them first.
+- **Export.** `EXPORT_FORMAT_VERSION` 2: leaves carry `deployment_id`. The loader accepts 2 only.
+**Why:** the owner runs the unit by rotations: a request outside a rotation has no commander to answer it and no board
+to show on. The database guarantees it because the dates and the membership change in other commands than the leave's.
+
+## D-217 — The workspace is scoped to the active or upcoming rotation, silently
+2026-11-12 · accepted · refines D-211, D-103 · V19 · decided under D-170
+- **Default.** With no range in the URL, the workspace opens on the rotation in scope (D-211's scope) that runs today,
+  else the next one to start; its window is the whole rotation (`rotation` kind). The day, week and month kinds work
+  inside it as before.
+- **No control, no label.** The bars gain no rotation control, and no label names the rotation: the dates say it.
+  Past and upcoming rotations are reached only from the range picker's "whole rotation" choice; with more than one
+  rotation in scope it opens a short list of them, by start.
+- **Editing** rotations stays in the navigation panel's deployments module and in the empty state (D-218).
+- **Helpers** for other slices: `rotationOn(rotations, date)` says which rotation holds a date, and `scopeRotation`
+  picks the active or upcoming one; both in `logic/view-state`, with the window model they feed.
+**Why:** the owner asked for a workspace that is about the rotation without spending bar space on it. The range picker
+already holds rotations, so it is the one place to switch.
+
+## D-218 — No request surface without a rotation in scope; one empty state
+2026-11-12 · accepted · refines D-076, D-215 · V19 · decided under D-170
+- With no rotation running or to come in scope, the request surfaces do not exist (D-076): the inbox, "my requests",
+  the new-request button and the request filters. Permanent modules (soldiers, units, settings and the rest) stay.
+- A soldier sees the request surfaces only for rotations they are a member of; a manager sees them for the rotations in
+  their scope.
+- The viewport shows one empty state, "אין סבב פעיל". Whoever may create a deployment gets "פתיחת סבב", which opens the
+  deployment form; anyone else gets one line saying their commander opens it. Before any unit exists, whoever may
+  found the tree gets "הגדרת מבנה היחידות" instead, since a rotation belongs to a unit.
+**Why:** a request needs a rotation (D-216); a button that cannot lead anywhere is a dead control.
+
+## D-219 — The setup wizard ends by opening the first rotation
+2026-11-12 · accepted · refines D-180, D-212 · V19 · decided under D-170
+- The "first rotation" step is the wizard's last. It asks for the dates and the unit, and its members default to all
+  of the unit's soldiers (the unit and its sub-units, placed on the start date); the form's member list can narrow it.
+- Done once a live deployment exists, as before.
+**Why:** after D-216 nothing can be requested before a rotation exists, so the wizard leaves the organization ready to
+work.
+
+## D-220 — Rotation membership in practice: references, reads and the form
+2026-11-12 · accepted · refines D-216, D-217, D-218, D-219 · V19 · decided under D-170
+- **References.** A leave names a rotation of its own organization. An archived rotation keeps its leaves and takes no
+  new ones; a transition back to a live status (pending or approved) checks the rotation, membership and dates again.
+- **Reads.** A soldier reads the rotations they serve in and their own membership rows (server rules), so the form and
+  the request surfaces work without `deployments` view. The server's helper functions are revoked from `public` and
+  granted only where a policy needs them.
+- **The form picks the rotation.** The new-request and collective forms offer the rotations in scope that hold the
+  chosen soldier on the chosen dates, preselect the one in view, and send its id; the logic layer never guesses it.
+- **Request surfaces count a rotation** only when one of its members is visible to the actor (D-218).
+- **URL.** A bare URL opens on the rotation (D-217); an explicit kind (day, week, month) is written to the URL so a
+  shared link keeps it. With no rotation, the dates, the view switcher and the filter controls are hidden with the board.
+- **Range menu.** "Whole rotation" is a single item with one rotation in scope and a list, by start, with more.
+  D-211's "סבב חדש" item goes: with no rotation the picker itself is hidden, and the empty state opens one.
+- **Members.** A new rotation's members default to its unit (D-219) only while it has no stored members; once saved,
+  the editor shows what is stored. Creating a rotation opens its members editor at once.
+**Why:** these are the edges D-216..D-219 left open; each one follows the rule that a request belongs to a rotation its
+soldier serves in, without a second place that decides it.
+
 ## D-250 — Two vocabularies: everyday words, and the words of managing a unit
 2026-11-12 · accepted · refines D-212, D-215 · V24 · decided under the owner's autonomy instruction of 2026-11-11
 - **Everyday words** are the only domain words on the board, the bars, the requests hub, the day report and the
@@ -3113,25 +3276,28 @@ says, and a stored copy would drift when the unit changes.
 
 ## D-260 — Tags have two lifetimes: persistent, or for one rotation
 2026-11-12 · accepted · refines D-015, D-130 · V24 · decided under the owner's autonomy instruction of 2026-11-11
-- **The lifetime belongs to the category:** `tag_categories.lifetime` is `persistent` (a course, a skill, a vehicle
-  licence) or `rotation` (a post or a duty in this rotation). The category form chooses it; it cannot change once the
-  category has tags in use.
-- **A rotation tag is held for one rotation:** `soldier_tags.deployment_id UUID NULL REFERENCES deployments`, required
-  for a `rotation` category and NULL for a `persistent` one (domain and trigger). The key becomes an `id`, with
-  one live row per soldier and tag for persistent tags, and per soldier, tag and rotation for rotation tags.
+- **The lifetime belongs to the assignment, not the category:** the same tag can be persistent for one soldier and
+  for one rotation for another. "מ\"כ" is persistent for the squad's leader and this rotation only for a soldier filling
+  in; "מפעיל רחפן" is a qualification for one soldier and this rotation's assignment for another.
+- **A rotation tag is held for one rotation:** `soldier_tags.deployment_id UUID NULL REFERENCES deployments`, allowed
+  for every category: NULL is persistent, set is that rotation only. The key becomes an `id`, with at most one row per
+  soldier and tag where `deployment_id` is NULL and one per soldier, tag and rotation where it is set.
+- **The category keeps a default only:** `tag_categories.default_lifetime` (`persistent` or `rotation`) pre-selects the
+  choice when a tag is assigned; it never constrains a row, and changing it changes no existing row.
 - The board and the filters read persistent tags and the current rotation's tags; a closed rotation's tags stay as its
   history and are read only inside it. Nothing copies tags silently: a rotation started "מסבב קודם" copies them once
   (D-258), and the soldier's card offers "כמו בסבב הקודם" as one command that adds the same rows for one soldier.
 - V26 makes the change in `schema.sql`, `DECISIONS.md` and `contracts` together, first in the slice (rule 5).
-**Why:** a driver is a driver in every rotation; the kitchen duty of this rotation is not. Putting the lifetime on the
-category lets the commander decide once, and the rotation reference makes "this rotation's tags" a query.
+**Why:** a driver is a driver in every rotation, and the kitchen duty of this rotation is not; but whether a tag lasts
+depends on who holds it and why, so the row says it. The category's default keeps the common case one tap, and the
+rotation reference makes "this rotation's tags" a query.
 
 ## D-261 — Templates: a starter unit in config, names in i18n, applied through the commands
 2026-11-12 · accepted · refines D-022, D-033 · V24 · decided under the owner's autonomy instruction of 2026-11-11
 - A template is structure in `config` (ids and relations only) with every name in `i18n`. The first and only one in
   V27 is **"פלוגה"**: the company as the root unit with מפל"ג and three platoons of three squads; unit types (פלוגה,
   מחלקה, כיתה); command levels (מ"פ, סמ"פ, מ"מ, סמל, מ"כ, לוחם) bound to permission levels; qualification tags
-  (persistent) with colors; absence types in their groups; and rule defaults sized to a company.
+  (persistent by default) with colors; absence types in their groups; and rule defaults sized to a company.
 - **Applying a template is a sequence of the ordinary commands** the actor may run, through the same validation and
   permission checks (rule 4); there is no import path or bulk insert for it. A failure stops at the step that failed
   and says which, and what was created stays and shows in the setup.
@@ -3171,81 +3337,82 @@ slices can fail.
 **Why:** words and bars do not wait for the model, and the model must land before templates that create rotations
 and tags. Splitting by layer keeps the two tracks off each other's files.
 
-## D-193 — The day report (דוח 1): who is present, absent, leaving and returning
-2026-11-12 · accepted · supersedes D-134 in part (the panel) · V22 · decided under the owner's autonomy instruction of 2026-11-11
-- **What it is.** D-134's present and absent lists grow into the day report, and its drawer panel gives way to a
-  centered dialog over the board. The URL keeps `panel=presence` and `day`; a span adds `until`, the last day. The
-  presence button opens it on today, as before.
-- **Entry.** In the engines that show days, a day's header (the timeline's day column, the calendar's day cell) is a
-  button that opens that day's report; keyboard and screen readers reach it by its whole date. The table and the list
-  show no days, so they reach it through the presence button. Arrows in the dialog step a day back or forward.
-- **Population.** As D-134: who the board's soldier filter selects on the day, among the soldiers whose leaves the
-  viewer may read (D-161). Approved leaves only (D-133). The model has no planned strength, so the report shows none
-  (D-076): the total is the population.
-- **Categories.** Present and absent partition the population (D-032, D-070). Leaving and returning are part of absent
-  and read the absence, not the leaves: a soldier **leaves** on a day they are absent and were present the day before,
-  and **returns** on a day they are absent and are present the day after (`end_date` is inclusive, so the last day
-  away is the return day). A one-day absence both leaves and returns. Back-to-back or overlapping leaves count one
-  departure and one return. A marker, a pending, rejected or cancelled leave, or an override to available never moves
-  anyone (`dayMovements` in `domain`).
-- **Breakdown.** The counts first (present, absent, leaving, returning, out of the total), then one section per unit in
-  the tree order of the board (D-105), each with its own counts and collapsible name lists.
-- **Rotations (D-211).** The dialog names the scope's rotations that run on the day. When the scope has rotations, a
-  day none of them runs on is not reportable: its header is not a button, and the arrows skip past it. A scope with no
-  rotation reports every day, so a unit that does not plan by rotations still has the report.
-- **Span.** "כמה ימים" opens a "עד יום" date field: the report runs from the day to that last day, its reportable
-  days only, at most `DAY_REPORT.maxSpanDays` calendar days. A last day on or before the day is ignored; "יום אחד"
-  returns to one day. Each day is its own section, in order, under its own date.
-**Why:** the owner's "דוח 1": the morning question of a command post is who is here, who is out, who leaves and who is
-back today. The presence panel already answered half of it; one place is calmer than two (D-215). Reading the
-absence rather than the leaves means a soldier who swaps one leave for another the next day is not reported as coming
-back and leaving again.
+## D-265 — Home follows permissions: the board, or "שלי"
+2026-11-12 · accepted · supersedes D-255's "הבקשות שלי" section; refines D-252, D-263 · V24 · decided under the owner's autonomy instruction of 2026-11-11
+- **The roles, in plain words** (the system stays permission-driven, never title-driven): a soldier and a squad leader
+  care about themselves, and open the app to add or follow a request, or when asked to. A platoon commander or
+  sergeant is the first real manager: approves the unit's requests, their own included, and may delegate. A company
+  commander plans, with a wide view and control, and rarely approves (company HQ's requests, mostly a formality).
+  מפל"ג (company HQ) is soldiers with dedicated roles directly under the company commander: in the template it is a unit
+  under the company next to the platoons, with no model change.
+- **Home is derived from permissions.** Whoever approves or manages someone else lands on the board, scoped to their
+  widest scope. Everyone else lands on "שלי". The two are one press apart in the bottom strip, and the last one chosen
+  is remembered on the device; a link that names a panel or a view still wins.
+- **"שלי" is a destination for whoever has a soldier record:** my next days, in or out; my requests and their status
+  (D-167's open and history); the quick action. The "בקשות" destination is the approval inbox, for whoever may approve
+  someone: "ממתינות לאישורי" with its count, then the closed requests, with the approve-now switch in its header (D-255).
+- The panel keys stay: `my_leaves` lands on "שלי", `leave_inbox` and `leaves` on the inbox.
+**Why:** the owner described a soldier who only follows their own requests and a commander who works the board. One
+home for both made each look for their thing in the other's screen.
 
-## D-194 — Reasons in the day report: off by default, remembered per device, only what the viewer may read
-2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
-- A switch "סיבות" shows, beside each absent soldier, the type of the leave that makes them absent and its reason text.
-- Off by default. The choice is a convenience of the device, kept per signed-in soldier in the device store (D-197),
-  never in `soldier_preferences`: a commander who shows reasons on their own phone does not show them on the screen of
-  the command post.
-- The switch shows only when the viewer may read a reason for someone in the report: a leave type readable to the
-  viewer or a reason text on a leave they read. It reads what the viewer already may read, through the same
-  checks; nothing is fetched or shown that the leave's own sheet would not show them (no bypass). With nothing to
-  show, the switch is absent (D-076).
-- The text copy and the image carry the reasons only while the switch is on.
-**Why:** reasons are personal and the report is often shown or sent to others, so the safe default is off, and the
-choice belongs to the screen it is made on.
+## D-266 — The quick action follows the role, then the mode
+2026-11-12 · accepted · refines D-252, D-255, D-257 · V24 · decided under the owner's autonomy instruction of 2026-11-11
+- "בקשה חדשה" for whoever may request while a rotation is current or upcoming: requests are collected before a
+  rotation, so a planned one counts. "פתיחת סבב" only for whoever may create a rotation, in routine. Otherwise none
+  (D-076): a soldier in routine has no quick action.
+- **Requests come from the soldiers.** A commander should not need to enter them; entering one for a soldier stays a
+  secondary path (the form's requester, a drag on the board, D-143), never a quick action.
+- Until the mode is derived (V26, OI-211), "בקשה חדשה" follows the creation permission alone; fitting it to the mode,
+  with "פתיחת סבב", comes after V26 (OI-219).
+**Why:** a quick action that does nothing useful in routine is a dead control, and the commander's main journey is
+approving, not typing other people's requests.
 
-## D-195 — The day report as text for a messaging app
-2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
-- "העתקה" copies plain text and a toast confirms it. Its order: a `*bold*` header with the date and the scope, the
-  counts, then one section per unit with a `*bold*` name and one line per soldier under absent, leaving and returning.
-  A span has one such block per day. Present names are left out: the counts carry them, and the message stays short.
-- RTL-safe: every line starts with a right-to-left mark, so a line that starts with a number or a Latin name stays
-  aligned. No other markup.
-- The order of the parts lives in `config` (`DAY_REPORT.text.sections`), the words in `i18n`, and the text is built in
-  `logic`. Sending inside Sagol or to an app is not built (D-076).
-**Why:** the report's daily use is a message to a group. `*bold*` is what WhatsApp and Telegram render; anything more
-shows as noise elsewhere.
+## D-267 — Several requests at once
+2026-11-12 · accepted · refines D-115, D-179 · V28 · decided under the owner's autonomy instruction of 2026-11-11
+- **One sheet of rows:** dates, type and reason per row; "add a row"; and a recurring row, a pattern that expands into
+  separate leaves when the sheet is sent. The pattern is an input helper and is not stored.
+- **Sent atomically;** each row becomes its own leave, approved, rejected and edited on its own. No grouping is stored:
+  the requests of one soldier are derivable (D-019).
+- **A new command, `createLeaves`,** for one soldier and several leaves, atomic (D-049). `createLeaveBatch` is not
+  reused, because it stores a `leave_batches` row, which is the grouping this rules out. The command is a contracts
+  change of V28.
+**Why:** a soldier with several days off in a rotation sent them one form at a time; the commander still decides on
+each day separately.
 
-## D-196 — The day report as an image: drawn on a canvas in the light tokens
-2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
-- "תמונה" makes a PNG of the report: the same lines as the text copy (D-195), the reasons only while on, drawn with the canvas API from the report itself. No library: an HTML-to-image library rasterizes
-  the DOM through SVG `foreignObject`, which loses web fonts and backdrop blur on Safari, and adds a dependency for
-  one screen.
-- The image always uses the light tokens, whatever the theme: it is read in a chat, on someone else's screen.
-- A span is one tall image, one section per day: one file to send.
-- Where the browser can share a file (`navigator.canShare({ files })`), the button opens the share sheet; elsewhere
-  it downloads the file. Only the path that works is offered.
-**Why:** the image is for a group chat where text formatting is lost; a canvas drawing is the same on every browser
-and is tested by its pixels and size.
+## D-268 — The board's visual language: presence is quiet, absence is a hole
+2026-11-12 · accepted · refines D-108, D-174, D-179 · V29 · decided under the owner's autonomy instruction of 2026-11-11
+- **Presence is the quiet default; absence reads as a hole,** dimmed or hatched, with the type's color as an accent
+  edge or icon, never a solid fill. Green never means away. Pending stays distinguishable from approved.
+- **Planned rounds and requests are two layers.** A round (the routine rhythm commanders plan, such as 8 days in and 6
+  home) renders as a background layer; soldiers' requests render on top. The kind is derived, not stored (D-019): a
+  leave in a batch (collective leave, D-179, or V31's planner) is a round, any other is a request.
+- Recorded in V24, built in V29.
+**Why:** a filled green block marked who is away and read as "present", and a collective leave painted half the
+company; the board said the opposite of what it meant.
 
-## D-197 — A device store for conveniences
-2026-11-12 · accepted · refines D-021, D-074 · V22 · decided under the owner's autonomy instruction of 2026-11-11
-- A `DeviceStore` port in `logic`, implemented by `data` over `localStorage` (and `sessionStorage` for what lasts the
-  session), under keys in `config` (`DEVICE_KEYS`), scoped to the signed-in soldier. It holds conveniences of one
-  screen only: never data, never a permission, never what another device needs. A value that does not read back as
-  its type reads as the default.
-- `scripts/guardrails.config.ts` allows web storage in `src/data/device/` beside the local identity.
-**Why:** D-194 and focus mode (V23) remember a choice per device. Rows in `soldier_preferences` follow the soldier to
-every device, which is wrong for these.
+## D-269 — דוח 1 as a workflow: each unit confirms, one owner sends it up
+2026-11-12 · accepted · extends D-193 · V30 · decided under the owner's autonomy instruction of 2026-11-11
+- **Each platoon commander confirms the unit's list for a date:** whoever holds that permission on that day. The
+  live list is always visible, confirmed or not.
+- **The report owner** is set per rotation (typically someone in מפל"ג) and sees the consolidated report: each unit
+  confirmed, not yet confirmed, or changed since its confirmation; one consolidated message copies upward (to the
+  battalion). In routine, without a rotation, whoever may read the root unit's report sees it.
+- **Stored:** the confirmation fact only (unit, date, who, when) and the rotation's report owner. "Changed since" is
+  derived from leave changes after the confirmation time. Both are a schema change of V30, after V22 lands as it is.
+**Why:** the daily report is a chain, not a screen: platoons confirm, HQ consolidates, the battalion receives one
+message.
 
+## D-270 — The leave-round planner
+2026-11-12 · accepted · refines D-179, D-268 · V31 · decided under the owner's autonomy instruction of 2026-11-11
+- Inside a rotation, a commander generates the routine rhythm (for example 8 days in and 6 home) for groups of
+  soldiers. The planner creates ordinary leaves in a batch, so they read as rounds on the board (D-268).
+**Why:** commanders build the same rhythm by hand every rotation; it is a pattern, and the leaves it makes are
+ordinary ones.
+
+## D-271 — Order of the slices after the journeys matrix
+2026-11-12 · accepted · amends D-264 · V24 · decided under the owner's autonomy instruction of 2026-11-11
+- Track A: V24 → V22 → V25 → V28 → V29 → V30 → V23. Track B: V26 → V27 → V31 → V21.
+- V28 owns the `createLeaves` contract, V30 the confirmation table and the rotation's report owner; each asks before
+  its model commit, as every schema change does.
+**Why:** the matrix adds three requests-and-report slices to the track that holds the requests, and the planner to
+the track that holds rotations.

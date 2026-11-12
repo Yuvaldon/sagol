@@ -7,6 +7,7 @@ import {
   UnitId,
   UnitMembershipId,
   type AuthIdentity,
+  type DeploymentId,
   type CommentVisibility,
   type CreateLeaveInput,
   type CreateLeaveTypeInput,
@@ -20,7 +21,17 @@ import {
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, PAST_DATE, errorOf, issuesOf, seedActor, seedRule as seedSharedRule, valueOf } from './support'
+import {
+  NOW,
+  PAST_DATE,
+  errorOf,
+  issuesOf,
+  seedActor,
+  seedRotation,
+  seedRule as seedSharedRule,
+  seedServing,
+  valueOf,
+} from './support'
 
 // The approval workflow against the shared contract (D-063, D-064, D-117 … D-121): transitions, edits and their
 // effect on approval, comments by visibility, the rule gate on a step, and a soldier's own preferences. Sample
@@ -58,12 +69,14 @@ export function describeLeaveWorkflowContract(
     let organization: OrganizationId
     let ownerId: SoldierId
     let owner: AuthIdentity
+    let rotation: DeploymentId
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
+      rotation = await seedRotation(harnessOf(), organization, [ownerId])
     })
 
     /** A second soldier holding exactly `pairs` over the whole organization. */
@@ -74,8 +87,9 @@ export function describeLeaveWorkflowContract(
       return actor
     }
 
+    /** A soldier who serves in the test's rotation, so a request of theirs has one (D-216). */
     async function soldier(unitId: UnitId | null = null) {
-      return valueOf(
+      const created = valueOf(
         await adapter().commands.soldiers.create({
           id: SoldierId.parse(crypto.randomUUID()),
           first_name: 'Yael',
@@ -88,6 +102,8 @@ export function describeLeaveWorkflowContract(
           membership: unitId === null ? null : { id: UnitMembershipId.parse(crypto.randomUUID()), unit_id: unitId, valid_from: PAST_DATE },
         }),
       )
+      await seedServing(harnessOf(), organization, rotation, [created.id])
+      return created
     }
 
     async function createType(overrides: Partial<CreateLeaveTypeInput> = {}) {
@@ -114,6 +130,7 @@ export function describeLeaveWorkflowContract(
         id: LeaveId.parse(crypto.randomUUID()),
         soldier_id: yael?.id ?? SoldierId.parse(crypto.randomUUID()),
         leave_type_id: type?.id ?? LeaveTypeId.parse(crypto.randomUUID()),
+        deployment_id: rotation,
         start_date: TODAY,
         end_date: TOMORROW,
         availability_effect_override: null,

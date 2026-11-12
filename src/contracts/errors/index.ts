@@ -62,6 +62,12 @@ const STATE_ISSUE_CODES = [
   'rank_in_use',
   /** A leave type group holds a type that is not archived (D-113). */
   'group_in_use',
+  /** A leave's soldier is not a member of the rotation it belongs to (D-216). */
+  'not_a_member',
+  /** A leave's dates fall outside the soldier's days in its rotation (D-216). */
+  'outside_rotation',
+  /** A change to a rotation or its members would leave live requests outside it (D-216). */
+  'leaves_outside_rotation',
 ] as const
 
 /** Every validation issue code: field codes, row checks (`SchemaIssue`) and state codes. */

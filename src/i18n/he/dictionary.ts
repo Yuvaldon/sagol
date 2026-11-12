@@ -132,7 +132,10 @@ export const dictionary = {
       month: 'חודש',
     },
     rotations: 'סבב שלם',
-    newRotation: 'סבב חדש',
+    noRotationTitle: 'אין סבב פעיל',
+    noRotationBody: 'המפקד פותח את הסבב, ואז אפשר להגיש בקשות.',
+    openRotation: 'פתיחת סבב',
+    foundUnits: 'הגדרת מבנה היחידות',
     sort: 'מיון',
     sortBy: 'מיון לפי',
     sortKeys: {
@@ -1034,5 +1037,8 @@ export const dictionary = {
     unitNotEmpty: 'אי אפשר להעביר לארכיון יחידה שיש בה יחידות משנה או חיילים משובצים',
     rankInUse: 'אי אפשר להעביר לארכיון דרג פיקודי שיש חיילים שמחזיקים בו',
     groupInUse: 'אי אפשר להעביר לארכיון קבוצה שיש בה סוגים פעילים',
+    notAMember: 'החייל אינו משובץ בסבב בימים האלה',
+    outsideRotation: 'התאריך מחוץ לימי החייל בסבב',
+    leavesOutsideRotation: 'יש בקשות פתוחות או מאושרות שהשינוי היה מוציא מהסבב',
   },
 } as const

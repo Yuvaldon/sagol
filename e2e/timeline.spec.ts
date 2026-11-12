@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, board, choose, closeDrawer, typeDate } from './support/leaves.ts'
+import { NOW, board, choose, closeDrawer, openRotation, typeDate } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
@@ -78,26 +78,29 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
-  await test.step('the owner is the first row, without a unit, in this week', async () => {
-    await expect(groupHeading(page, he.soldiers.noUnit)).toBeVisible()
-    await expect(board(page).getByText(OWNER.name)).toBeVisible()
-    await expect(windowLabel(page)).toContainText(THIS_WEEK)
-    await expect(page.getByRole('button', { name: he.workspace.today, exact: true })).toHaveCount(0)
-    // No unit exists yet, so there is nothing to choose (D-076).
+  await test.step('with no rotation, the workspace is the empty state that opens one', async () => {
+    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(board(page)).toHaveCount(0)
+    // No board, so nothing to choose (D-218).
     await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
     await expect(page).toHaveURL(/\/$/)
     await expectNoAxeViolations(page)
   })
 
-  await test.step('units and soldiers fill the board, grouped by sub-unit', async () => {
+  await test.step('units, soldiers and a rotation fill the board, grouped by sub-unit, in this week', async () => {
     await buildUnits(page)
     await buildRoster(page)
+    await openRotation(page, [OWNER.name], 'פלוגה')
+    await page.goto('/?range=week')
+    await expect(windowLabel(page)).toContainText(THIS_WEEK)
+    await expect(page.getByRole('button', { name: he.workspace.today, exact: true })).toHaveCount(0)
     // Today she is in מחלקה ב, so that is her group (D-105).
     await expect(groupHeading(page, 'פלוגה · מחלקה ב')).toBeVisible()
     await expect(boardRows(page).nth(0)).toContainText('פלוגה · מחלקה ב')
     await expect(boardRows(page).nth(1)).toContainText('נועם לב')
     await expect(boardRows(page).nth(2)).toContainText('יעל שחר')
     await expect(groupHeading(page, he.soldiers.noUnit)).toBeVisible()
+    await expect(board(page).getByText(OWNER.name)).toBeVisible()
     await expectNoAxeViolations(page)
   })
 

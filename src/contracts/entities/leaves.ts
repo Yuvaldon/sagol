@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { auditColumns, createdColumns, updatedColumns } from '../common/audit'
 import {
   AvailabilityRuleId,
+  DeploymentId,
   LeaveBatchId,
   LeaveCommentId,
   LeaveEventId,
@@ -67,6 +68,8 @@ export const LeaveColumns = z.object({
   soldier_id: SoldierId,
   leave_type_id: LeaveTypeId,
   batch_id: LeaveBatchId.nullable(),
+  /** The rotation the request belongs to (D-216): the soldier is its member and the dates fall within theirs. */
+  deployment_id: DeploymentId,
   start_date: CalendarDate,
   end_date: CalendarDate,
   status: LeaveStatus,

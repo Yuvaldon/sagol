@@ -64,6 +64,9 @@ const ISSUE_MESSAGES = {
   unit_not_empty: 'issues.unitNotEmpty',
   rank_in_use: 'issues.rankInUse',
   group_in_use: 'issues.groupInUse',
+  not_a_member: 'issues.notAMember',
+  outside_rotation: 'issues.outsideRotation',
+  leaves_outside_rotation: 'issues.leavesOutsideRotation',
 } as const satisfies Record<string, I18nKey>
 
 const ISSUE_KEYS: Record<IssueCode, I18nKey> = ISSUE_MESSAGES

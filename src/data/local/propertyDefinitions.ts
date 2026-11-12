@@ -59,7 +59,7 @@ const SPEC: ReferenceSpec<PropertyDefinition> = {
   optionalText: [],
   targetOf: () => ORGANIZATION,
   rowIssues: ({ row }) => Promise.resolve(propertyDefinitionIssues(row)),
-  alsoReadableBy: writesEntityOf,
+  alsoReadableBy: (_database, scope) => Promise.resolve((row) => writesEntityOf(scope, row)),
 }
 
 /** By `sort_order` inside an entity type. */

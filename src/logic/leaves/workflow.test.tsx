@@ -1,6 +1,7 @@
 import { INBOX, MINE } from '@config'
 import { addDays } from '@domain'
 import {
+  DeploymentId,
   AvailabilityRuleId,
   CalendarDate,
   LeaveCommentId,
@@ -66,6 +67,7 @@ function leave(n: number, overrides: Partial<Leave> = {}): Leave {
     soldier_id: YAEL,
     leave_type_id: TYPE,
     batch_id: null,
+    deployment_id: DeploymentId.parse(uuid(70)),
     start_date: '2026-11-09',
     end_date: '2026-11-10',
     status: 'pending',

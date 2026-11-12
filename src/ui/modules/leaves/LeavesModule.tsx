@@ -17,6 +17,8 @@ import {
   useSoldiers,
   useToday,
   type NewLeaveDraft,
+  soldiersOf,
+  useRequestRotation,
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { Tags, User, Users } from 'lucide-react'
@@ -67,20 +69,26 @@ function NewLeaveForm({
   const panel = usePanel()
   const create = useCreateLeave()
   const gate = useRuleGate()
+  const rotationOf = useRequestRotation()
   const [state, setState] = useState(CLEAN_FORM)
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
   const properties = usePropertyFields('leave')
   const form = useForm({
     defaultValues: newLeaveValues(today, approveNow, draft, soldiers.length === 1 ? (soldiers[0]?.id ?? null) : null),
-    validators: { onSubmit: ({ value }) => validatorResult(newLeaveIssues(value, typeOf(value.leave_type_id))) },
+    validators: { onSubmit: ({ value }) => validatorResult(newLeaveIssues(value, typeOf(value.leave_type_id), rotationOf(soldiersOf(value), value))) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
       // Only who may approve the soldier sends "approve now"; the command checks again (D-013).
       const asApproved = value.as_approved && value.soldier_id !== null && canApprove(value.soldier_id)
       // A rule the command names opens the dialog, and acknowledging sends it again (D-047, D-142).
       await gate.run(
-        (acknowledged) => create.run({ ...value, as_approved: asApproved, ...properties.withProperties }, acknowledged),
+        (acknowledged) =>
+          create.run(
+            { ...value, as_approved: asApproved, ...properties.withProperties },
+            rotationOf(soldiersOf(value), value).deployment_id,
+            acknowledged,
+          ),
         (result) => {
           if (result.ok) panel.close()
           else setState(formStateOf(result.error, [...LEAVE_FIELDS, ...properties.fieldNames]))

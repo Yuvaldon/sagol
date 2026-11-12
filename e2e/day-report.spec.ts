@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, requestLeave } from './support/leaves.ts'
+import { NOW, closeDrawer, createType, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
 
 // V22's demo: the day report opens from a day of the timeline and of the calendar, holds the counts and the names per
@@ -31,6 +31,7 @@ test('the day report: counts and names, reasons, a span, a text copy and an imag
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  await openRotationInNewUnit(page, [OWNER.name])
 
   await test.step('a leave with a reason, from Thursday 12 November', async () => {
     await page.goto('/?panel=leave_types')

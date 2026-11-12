@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useBoardFilters, useCurrentOrganization, useDateWindow } from '@logic'
+import { useBoardFilters, useCurrentOrganization } from '@logic'
+import { useBoardShown } from './boardShown'
 import { useAppliedAppearance } from './appearance'
 import { ModuleDrawer } from './ModuleDrawer'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
@@ -34,10 +36,9 @@ function OrganizationName({ name }: { readonly name: string }) {
   return <h1 className="sr-only">{name}</h1>
 }
 
-/** The board's filter controls (D-173). They need a day, as every engine does. */
+/** The board's filter controls (D-173). They exist only with the board (D-218). */
 function FilterControls() {
-  const { window } = useDateWindow()
-  if (window === null) return null
+  if (!useBoardShown()) return null
   return (
     <>
       <FilterControl />
@@ -46,10 +47,14 @@ function FilterControls() {
   )
 }
 
+/** The dates and the view: controls of the board, so they exist only with it (D-218). */
+function BoardControl({ children }: { readonly children: ReactNode }) {
+  return useBoardShown() ? children : null
+}
+
 /** The row of set conditions under the top strip (D-131, D-213): there only while a condition is set. */
 function FilterRow() {
-  const { window } = useDateWindow()
-  if (window === null) return null
+  if (!useBoardShown()) return null
   return (
     <div className="pointer-events-none absolute inset-x-lg top-filter-row flex justify-center md:top-filter-row-md">
       <FilterBar />
@@ -66,8 +71,10 @@ function ContextStrip({ name, identity }: { readonly name: string; readonly iden
         {/* The unit's name gives way first, down to a floor; the rest keeps its size, and the strip scrolls after. */}
         <UnitSelector />
         <div className="flex shrink-0 items-center gap-xs">
-          <WindowNavigator />
-          <ViewSwitcher />
+          <BoardControl>
+            <WindowNavigator />
+            <ViewSwitcher />
+          </BoardControl>
           <FilterControls />
           <UserMenu identity={identity} />
         </div>
@@ -91,7 +98,7 @@ function DestinationStrip() {
 export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity }) {
   const organization = useCurrentOrganization()
   const { active } = useBoardFilters()
-  const { window } = useDateWindow()
+  const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
   useAppliedAppearance()
@@ -104,7 +111,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
     <FilterFocusContext value={focus}>
       <PreferenceFailureContext value={preferenceFailure}>
       <div
-        data-filter-row={window !== null && active ? 'shown' : undefined}
+        data-filter-row={boardShown && active ? 'shown' : undefined}
         className="relative h-dvh bg-canvas"
       >
         <div className="absolute inset-safe p-sm">

@@ -9,6 +9,7 @@ import {
   usePanel,
   usePendingRequests,
   usePresenceDay,
+  useRotationScope,
   useRulesDay,
   useTransferAccess,
 } from '@logic'
@@ -113,17 +114,22 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
 
 const INBOX_PANELS: readonly string[] = [PANEL_IDS.leaveInbox, PANEL_IDS.leaveClosed]
 
-/** The daily destinations: "mine" first, then the inbox, then today's report (D-120, D-252, D-265). */
+/**
+ * The daily destinations: "mine" first, then the inbox, then today's report (D-120, D-252, D-265). The first two are
+ * request surfaces, so they exist only while a rotation they can be about does (D-218).
+ */
 export function useDailyEntries(): ModuleEntry[] {
   const panel = usePanel()
   const { choose } = useHome()
   const access = useModuleAccess()
   const { openToday } = usePresenceDay()
+  const { requests } = useRotationScope()
   const inbox = useInboxAccess()
   const pending = usePendingRequests()
   const mine = useMyLeavesAccess()
   const entries: (ModuleEntry | false)[] = [
-    mine?.view === true && {
+    requests &&
+      mine?.view === true && {
       id: 'myLeaves',
       Icon: User,
       labelKey: 'myLeaves.open',
@@ -134,7 +140,8 @@ export function useDailyEntries(): ModuleEntry[] {
       current: panel.panel === PANEL_IDS.myLeaves,
       count: null,
     },
-    inbox && {
+    requests &&
+      inbox && {
       id: 'inbox',
       Icon: Inbox,
       labelKey: 'inbox.open',
