@@ -5,9 +5,13 @@ export { DOM } from './dom'
 export { TOOLTIP } from './tooltip'
 export {
   ADAPTER_OF_AUTH_MODE,
+  APP_STAGES,
+  AppStage,
   ENV_VARIABLES,
   EnvSchema,
+  isStaging,
   parseEnv,
+  type AppStageName,
   type Env,
   type EnvIssue,
   type EnvIssueCode,

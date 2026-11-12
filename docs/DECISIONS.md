@@ -245,10 +245,10 @@ am = amends, ref = refines, ext = extends.
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266; ref D-299 |
 | D-256 | One path for each action | ui | ref D-285 |
-| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221 |
-| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221 |
-| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221 |
-| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221 |
+| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221, D-222 |
+| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
+| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221, D-222 |
+| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
@@ -281,6 +281,7 @@ am = amends, ref = refines, ext = extends.
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
 | D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
+| D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -3972,3 +3973,30 @@ one action is what D-256 rules out, and the strip is where Design.md journeys (a
   header of "הבקשות שלי".
 **Why:** the inbox and the switch read the same permission today, which includes oneself, so a soldier allowed to
 approve only their own leave saw an empty inbox, and the switch's meaning is about oneself, not about others.
+
+## D-300 — The staging deploy is marked: a black band, its own title, a black installed icon
+
+2026-11-12 · accepted · asked by the owner through the orchestrator at about 21:13Z. Track: tooling. Extends D-182,
+D-191 and D-276.
+
+- **The gap.** Staging and Production look the same, in the browser and as an app on the home screen. The owner uses
+  both and must always know which one he is in.
+- **The identity.** It comes from the environment, not from code (rule 2). `VITE_APP_ENV=staging` is set on Vercel as
+  a Preview variable scoped to the `staging` branch, and no other deploy has it. `config` names the variable and its
+  one value and reads it with `isStaging`. That is apart from `parseEnv`, so even the startup failure screen is marked.
+  `parseEnv` still refuses any other value, so a typo stops the app instead of hiding the mark.
+- **The band.** A black band with "אתר בדיקות" sits on top of every screen, 24px under the notch. It is part of the top
+  safe inset: `--safe-top` grows by the band's height when the root element carries `data-stage="staging"`. So the
+  workspace, its floating rows, the centered sheets and the loading screen all start below it. Full-screen overlays
+  (dialogs, the drawer, the navigation panel) use `inset-screen`, which leaves the band's height free. The band covers
+  no control on a phone or a desktop. Its colors are the theme tokens `stage` and `on-stage`, and the tab title becomes
+  "סגול · בדיקות".
+- **The installed app.** When the variable is set, the build derives the icon from the same source: the brand stops
+  become the `stage` token, which is black. The favicon, the apple-touch-icon and the manifest icons are generated from
+  it, and the manifest name, `short_name` and the Apple title are "סגול · בדיקות". The derived file is written to the
+  build cache, never to the repository. Production builds from the source icon and keeps "סגול".
+- **Rejected.** Telling the deploys apart by hostname in code, which would hardcode an identity. A chip in a corner,
+  which would cover a control on a phone. A second icon file drawn by hand, which would drift from the source.
+
+**Why:** the mark comes from the same place that makes a deploy staging. It shows on every screen, and in the icon,
+before anything is touched. Production gains nothing and loses nothing.
