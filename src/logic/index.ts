@@ -213,6 +213,7 @@ export {
   useAvailabilityRules,
   useDayViolations,
   useHeatRow,
+  useLeaveRuleCheck,
   useLeaveRuleWarnings,
   useRuleCommands,
   useRuleConflicts,
