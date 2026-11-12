@@ -23,7 +23,10 @@ jobs:
   deploy:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     environment: staging
     env:
@@ -46,18 +49,16 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.122.0
+      # Reads the one project, not the account's list, and tries the later steps' read calls first (D-276).
       - name: Refuse any project whose name does not end in -staging
-        run: |
-          test -n "$PROJECT_REF" || { echo "::error::STAGING_PROJECT_REF is not set"; exit 1; }
-          name=$(supabase projects list -o json | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref) | .name')
-          case "$name" in
-            *-staging) echo "Deploying to $name" ;;
-            *) echo "::error::project $PROJECT_REF is '$name', not a staging project"; exit 1 ;;
-          esac
+        run: >-
+          scripts/supabase-project-guard.sh staging /functions /secrets /config/database/pooler
+      # No `supabase link`: it needs the revealed API keys, which CD does not (D-289).
       - name: Migrations
         run: |
-          supabase link --project-ref "$PROJECT_REF" --workdir .
-          supabase db push --linked --workdir .
+          db_url=$(scripts/supabase-db-url.sh)
+          echo "::add-mask::$db_url"
+          supabase db push --db-url "$db_url" --workdir .
       - name: Function secrets
         run: >-
           supabase secrets set --project-ref "$PROJECT_REF"

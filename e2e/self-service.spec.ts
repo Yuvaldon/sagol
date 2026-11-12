@@ -17,8 +17,8 @@ test('a fighter asks for a leave from "my requests", and sees it approved', asyn
   await signOut(page)
   await enterAsYael(page)
 
-  await test.step('"my requests" sits in the bar and starts empty', async () => {
-    await openModule(page, he.myLeaves.open)
+  await test.step('Yael lands on "my requests", and it starts empty', async () => {
+    // A soldier who does not manage lands on "שלי" (D-265).
     await expect(drawer(page).getByText(he.myLeaves.emptyTitle)).toBeVisible()
     await expectNoAxeViolations(page)
   })

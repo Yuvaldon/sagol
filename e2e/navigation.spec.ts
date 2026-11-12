@@ -48,9 +48,22 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
 
   await test.step('the panel lists the modules by section, and opens one', async () => {
     await openPanel(page)
-    for (const section of Object.values(he.navigation.sections)) {
+    // The work first; the unit's setup is a step in, behind the row at its foot, with a way back (D-285).
+    for (const section of [he.navigation.sections.people, he.navigation.sections.presence]) {
       await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toBeVisible()
     }
+    await expect(navigationPanel(page).getByRole('heading', { name: he.navigation.sections.structure, exact: true })).toHaveCount(0)
+    await navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click()
+    for (const section of [
+      he.navigation.sections.structure,
+      he.navigation.sections.access,
+      he.navigation.sections.catalogs,
+      he.navigation.sections.data,
+      he.navigation.sections.advanced,
+    ]) {
+      await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toBeVisible()
+    }
+    await navigationPanel(page).getByRole('button', { name: he.navigation.back, exact: true }).click()
     // Each module says what it is for, and none can be pinned to the bar (D-250, D-254).
     await expect(navigationPanel(page).getByRole('button', { name: he.soldiers.open, exact: true })).toHaveAccessibleDescription(
       he.navigation.lines.soldiers,
@@ -153,12 +166,16 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     }
     for (const section of [
       he.navigation.sections.presence,
-      he.navigation.sections.soldierDetails,
+      he.navigation.sections.structure,
       he.navigation.sections.access,
+      he.navigation.sections.catalogs,
       he.navigation.sections.data,
+      he.navigation.sections.advanced,
     ]) {
       await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toHaveCount(0)
     }
+    // No setup of the unit is theirs, so its row is not there either (D-285).
+    await expect(navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })).toHaveCount(0)
     await expectNoAxeViolations(page)
   })
 })
@@ -169,8 +186,8 @@ test('on a tablet held upright, no row of the panel stretches to fill it', async
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await openPanel(page)
-  // The unit is not set up yet, so its setup sits above the groups, a row like the others.
-  const setup = navigationPanel(page).getByRole('button', { name: he.setup.open, exact: true })
+  // The unit is not set up yet, so its setup sits apart at the foot of the work, a row like the others (D-285).
+  const setup = navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })
   await expect(setup).toBeVisible()
   await testInfo.attach('panel, tablet upright', { body: await page.screenshot(), contentType: 'image/png' })
   const heights = await navigationPanel(page)
@@ -179,7 +196,6 @@ test('on a tablet held upright, no row of the panel stretches to fill it', async
     .evaluateAll((buttons) => buttons.map((button) => ({ name: button.textContent ?? '', height: button.getBoundingClientRect().height })))
   expect(heights.length).toBeGreaterThan(1)
   // A row is one or two lines tall, never the panel's leftover height.
+  // The setup's row is one of them: two lines, its name and what it holds, like a module's (D-285).
   for (const row of heights) expect(row.height, row.name).toBeLessThanOrEqual(64)
-  const setupBox = await setup.boundingBox()
-  expect(setupBox?.height ?? 0).toBeLessThanOrEqual(44)
 })

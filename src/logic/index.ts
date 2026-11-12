@@ -2,7 +2,7 @@
 // Business rules, services and the hooks exposed to the UI. Receives
 // repositories by injection and never imports @data.
 export type { AuthPort, DataPort, DevicePort, DeviceStore, InstallOffer, LogicPorts, ShellPort, ShellState } from './ports'
-export { useAppUpdate, useInstallOffer } from './shell/hooks'
+export { useAppUpdate, useInstallInvitation, useInstallOffer } from './shell/hooks'
 export { useHome, type Home } from './home/hooks'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
@@ -135,8 +135,17 @@ export {
   type LeaveTypeFormValues,
   type LeaveTypeSection,
 } from './leaves/leaveTypes'
-export { newLeaveCandidate, newLeaveIssues, newLeaveValues, soldiersOf, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
+export { type LeaveCandidate } from './leaves/forms'
 export { requestRotation, useRequestRotation, type RequestRotation } from './leaves/rotation'
+export {
+  leaveSheetIssues,
+  newLeaveSheetValues,
+  newSheetRow,
+  sheetCandidates,
+  type LeaveSheetRow,
+  type LeaveSheetValues,
+  type RotationOf,
+} from './leaves/sheet'
 export {
   duplicateLeaveIssues,
   leaveBatchIssues,
@@ -146,7 +155,7 @@ export {
   type LeaveBatchValues,
 } from './leaves/batch'
 export {
-  useCreateLeave,
+  useCreateLeaves,
   useLeaveBatchCommands,
   useLeaveCreation,
   useLeaveTypeCommands,
@@ -424,7 +433,7 @@ export {
 } from './seniority/seniority'
 export { useSeniorityOverrideCommands, useSeniorityOverrides, useSeniorityPermissions } from './seniority/hooks'
 export { useCanSetTimezone, useSetOrganizationTimezone } from './organization/timezone'
-export { setupSteps, useSetupAccess, useSetupProgress, useSetupUnfinished, type SetupStep } from './organization/setup'
+export { nextSetupStep, setupSteps, useSetupAccess, useSetupProgress, useSetupUnfinished, type SetupStep } from './organization/setup'
 export {
   applyTemplatePlan,
   initialChoices,

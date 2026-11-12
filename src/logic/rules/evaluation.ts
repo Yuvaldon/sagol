@@ -156,8 +156,8 @@ export function windowConflicts({ data, rules, days }: Omit<RuleWindowInput, 'un
 }
 
 /** What a leave as the command would leave it breaks (D-073, D-142): the command's own evaluation. */
-export function leaveViolations(data: RuleData, rules: readonly AvailabilityRule[], changed: AvailabilityLeave): RuleViolation[] {
-  return leaveChangeViolations(data, rules, [changed])
+export function leaveViolations(data: RuleData, rules: readonly AvailabilityRule[], changed: readonly AvailabilityLeave[]): RuleViolation[] {
+  return leaveChangeViolations(data, rules, changed)
 }
 
 /** The rule ids to send again after the actor acknowledged the soft violations (D-047). */

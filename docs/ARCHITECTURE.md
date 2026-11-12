@@ -186,6 +186,9 @@ The current state (D-128):
   a new list from the unit or the previous rotation.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
+- **The request sheet** (`leaves.createMany`, `logic/leaves/sheet`, D-275): one soldier's rows, a recurring row expanded
+  in logic, each leave with its own rotation and checked on `leaves.<n>` as `leaves.create` checks one, all or none;
+  the answer's issues land back on their rows.
 - **Day report** (`logic/presence`, D-193 … D-197): `dayReport` partitions a day's population into present and absent,
   marks who leaves and returns by `dayMovements` in `domain`, and breaks it down by unit in the tree's order;
   `reportDays` spans to a last day over the reportable days (D-211); `reportText` writes the message. The reasons
@@ -256,8 +259,10 @@ The current state, in short (D-128). The entries hold the reasons.
   side drawer on desktop, bottom sheet on mobile. Navigation is two floating strips that hug their content on every
   screen (V25, D-252): a context strip at the top (scope, range, view, filters) and a destination strip at the bottom
   (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action, "בקשה חדשה", at its inline end. "ניהול יחידה" is
-  a panel from the inline start, grouped by `NAVIGATION_SECTIONS` in `config`, a plain line per module and no pins
-  (D-254). The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
+  a panel from the inline start, a plain line per module and no pins (D-254). From V32 it holds daily work only,
+  grouped by `WORK_SECTIONS` in `config`, with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
+  `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
+  (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
   anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's
   preferences (`useNavigationPreferences`). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
@@ -318,7 +323,8 @@ never reach the client bundle.
   for navigations, and caches no data: the command gateway and auth always go to the network (`config/pwa`).
 - `app/shell` owns the browser APIs (registration through `workbox-window`, the update check, `beforeinstallprompt`)
   behind the `shell` port of `logic`; `useAppUpdate` and `useInstallOffer` read it, and `ui` shows the update
-  toast and the install item. A remote build without a network waits on the offline screen (`mountApp`).
+  toast and the install item. `useInstallInvitation` adds the one-time card after sign-in, answered once per device
+  (D-274). A remote build without a network waits on the offline screen (`mountApp`).
 
 ## Folder structure (target)
 

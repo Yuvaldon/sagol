@@ -31,7 +31,7 @@ am = amends, ref = refines, ext = extends.
 | D-012 | Leaves: whole days, overlaps, availability by union | contracts, domain, data, ui | ext D-032, D-049; ref D-070; ref D-111 |
 | D-013 | Approval behavior | domain, data, logic, ui | ref D-041, D-063, D-064; ext D-049; ref D-114, D-115; ref D-117, D-121 |
 | D-014 | Availability rules | contracts, domain, data, logic, ui | ext D-031; ref D-047, D-071, D-073; ref D-139, D-140, D-141; ref D-145 |
-| D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130; ref D-260 |
+| D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130; ref D-260; ref D-285 |
 | D-016 | Notion-like custom properties | contracts, domain, data, ui | ref D-065; ref D-176, D-177 |
 | D-017 | Soft delete and audit columns | contracts, data, backend, ui | ref D-088, D-098 |
 | D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | ref D-096, D-102; ref D-153 |
@@ -94,7 +94,7 @@ am = amends, ref = refines, ext = extends.
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152; ref D-215 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111 |
-| D-078 | Audits follow milestones | docs | |
+| D-078 | Audits follow milestones | docs | am D-284 |
 | D-079 | The bootstrap owner role holds every valid permission pair | data, backend | |
 | D-080 | `fake-indexeddb` for data tests | data, tooling | |
 | D-081 | Start-of-session reading follows the slice | docs | sup D-154 |
@@ -146,7 +146,7 @@ am = amends, ref = refines, ext = extends.
 | D-127 | One commit = one layer, and every commit passes | all, tooling, docs | |
 | D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | ref D-154 |
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
-| D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260 |
+| D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260; ref D-285 |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
@@ -196,11 +196,11 @@ am = amends, ref = refines, ext = extends.
 | D-177 | Property chips in the filter bar | logic, ui | |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259; ref D-267, D-268, D-270 |
-| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262 |
+| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285 |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
 | D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
-| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253 |
+| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-274 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188 |
@@ -211,7 +211,7 @@ am = amends, ref = refines, ext = extends.
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
-| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
+| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280 |
 | D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | ref D-183 |
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
@@ -242,15 +242,15 @@ am = amends, ref = refines, ext = extends.
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
 | D-253 | The profile is personal only | ui | |
-| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278 |
+| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
-| D-256 | One path for each action | ui | |
+| D-256 | One path for each action | ui | ref D-285 |
 | D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221 |
 | D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221 |
 | D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221 |
 | D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
-| D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | |
+| D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
 | D-265 | Home follows permissions: the board, or "שלי" | logic, ui | |
@@ -259,15 +259,20 @@ am = amends, ref = refines, ext = extends.
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
-| D-271 | Order of the slices after the journeys matrix | docs | |
+| D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
-| D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
+| D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
+| D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281 |
 | D-278 | A floating surface fits its content | ui, scripts | |
+| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
 | D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
+| D-284 | Launch order: V32 before V28, then the audit | docs | |
+| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
+| D-289 | CI skips e2e and db on a draft pull request | tooling | |
 
 ---
 
@@ -3437,6 +3442,11 @@ and tags. Splitting by layer keeps the two tracks off each other's files.
 - **Home is derived from permissions.** Whoever approves or manages someone else lands on the board, scoped to their
   widest scope. Everyone else lands on "שלי". The two are one press apart in the bottom strip, and the last one chosen
   is remembered on the device; a link that names a panel or a view still wins.
+- **"Manages someone else", in permissions:** may approve or read the leaves of a soldier other than oneself, or may
+  create in a module across the organization. Viewing a module is no sign of it, since a view of one's own record opens
+  one too, and approving only one's own leaves is not either. A choice made before every answer has arrived is not
+  kept, and "שלי" is landed on only while it is a destination (D-218); what the soldier opened meanwhile stays open.
+  Refined in V28 after the review of V25, under the owner's autonomy instruction of 2026-11-11.
 - **"שלי" is a destination for whoever has a soldier record:** my next days, in or out; my requests and their status
   (D-167's open and history); the quick action. The "בקשות" destination is the approval inbox, for whoever may approve
   someone: "ממתינות לאישורי" with its count, then the closed requests, with the approve-now switch in its header (D-255).
@@ -3547,12 +3557,37 @@ most; the sort is set rarely and belongs with how the board is shown.
   remembered home (D-265). The menu item still offers the install.
 - **Not "open in the app".** A web page cannot tell reliably that the app is installed, and it cannot open it. The
   browser owns that path: Chrome on Android shows its own "open in app". So Sagol offers only the install.
+- **As built (V28).** The card sits above the bottom bar, clear of the top bar and its menu, for a signed-in, linked
+  soldier: "אפשר להתקין את סגול במכשיר הזה", with "התקנה" and "לא עכשיו". The answer is the device flag
+  `DEVICE_KEYS.installAnswered`, scoped to the linked soldier as other device preferences are.
 **Why:** a soldier who lands from a link should learn once that the app exists, without a banner that returns on every
 visit, and without a control that cannot act.
 
+## D-275 — Several requests at once: the sheet, the recurring row, `leaves.createMany`
+2026-11-12 · accepted · refines D-267, D-115, D-143 · V28 · decided under the owner's autonomy instruction of 2026-11-11
+- **The request form is the sheet.** One soldier, then rows; a new request starts with one row, so one leave is still
+  the plain case. A row holds its type, its two dates and its reason; "add a row" adds one, and a row is removed while
+  there is more than one. A drag on the board fills the soldier and the first row (D-143). The custom properties,
+  "approve now" and the rules' warning are the sheet's, over every leave it would create.
+- **A recurring row** repeats its days every so many days, until a last date: "every 14 days until ..." turns an
+  8-in, 6-home rhythm into its leaves. It expands in logic when the sheet is sent and when the warning is computed;
+  only the leaves are stored (D-019). A row whose repetition yields no leave beyond the first is still one leave.
+- **`createLeaves` is `leaves.createMany`,** as `createLeaveBatch` is `leaves.createBatch`: one soldier, one to many
+  leaves, each with its own rotation, since a sheet may reach past one (D-216, D-220), atomic, with no batch row.
+  Each leave is checked on its own path (`leaves.<n>`), the rules judge them all at once (D-073), and each gets its own
+  `created` event. No schema change.
+- An issue of an expanded leave lands on the row it came from.
+- **The repetition's bounds.** Every so many days is a whole number, at least the leave's own length, so repetitions
+  of one row never cover each other (leaves of a soldier may still overlap, D-012), and at most a year; the last date
+  is on or after the first day. One sheet creates at most `LEAVE_SHEET.maxLeaves` leaves (`config`); the row that
+  reaches past it says so on its last date, and `leaves.createMany` refuses more on `leaves` before it reads any row.
+**Why:** D-267 asks for one sheet sent at once; a sheet beside the single form would be two paths to one action
+(D-255), and a recurring row is the rhythm soldiers actually ask for.
+
 ## D-276 — Staging: a second free Supabase project, updated from main after every green CI
 
-Refines D-209 and resolves OI-152. Track: docs.
+Refines D-209 and resolves OI-152. Track: docs. Amended 2026-11-12 (the orchestrator, about 16:04Z): the guard reads
+the one project, not the account's project list, and the access token is repository-level (D-280).
 
 - **A separate environment, never real data.** Staging is its own Supabase project, `sagol-staging`, on the free plan,
   with its own database, auth users and `commands` function. Nothing is copied from production: every unit, soldier
@@ -3563,9 +3598,15 @@ Refines D-209 and resolves OI-152. Track: docs.
   secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
   branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
 - **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
-  wrong project ref can never migrate production. Production migrations stay the manual, reviewed step they are.
+  wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
+  (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
+  account-wide `projects_read`. Before the name check it tries, read-only, the calls the later steps make (functions,
+  secrets, the pooler config the database URL comes from; D-289), so a single run names every permission the token
+  lacks.
+  Production follows by its own workflow (D-280).
 - **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
-  `staging` environment; the access token, the database password and the bootstrap owner's email are its secrets.
+  `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
+  the repository-level one Production uses too (D-280).
   Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
 - **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
   a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
@@ -3588,6 +3629,44 @@ automatically is the usual staging practice and stays inside the free plan.
   `className`, and the string consts it names, the file's own or imported from beside it.
 **Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
 dead space on any surface; a rule in the check keeps the next surface from bringing it back.
+
+## D-280 — Production delivery: automatic after staging, guarded
+2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12; amended the same day: the owner
+approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z;
+at about 15:55Z the owner chose repository-level values over a `production` environment, and the comparison with
+`STAGING_PROJECT_REF` was dropped (the orchestrator, about 15:59Z); at about 16:04Z the guard moved from the account's
+project list to reading the one project, so the scoped token needs no `projects_read` (the orchestrator)
+- **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
+  pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
+  the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
+  the owner set them.
+- **When it runs.** On its own after every successful Staging run on `main` (`workflow_run`), for the commit Staging
+  delivered, so production gets only what staging took first. The owner may also start it by hand
+  (`workflow_dispatch`, on `main`, owner as actor and triggering actor), typing the production ref as the input. Either
+  way it refuses a commit whose CI did not pass or that is not on `main`.
+- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, the token can read that one project
+  (`scripts/supabase-project-guard.sh`, as in D-276, with the same read-only tries of the later steps' calls), and
+  its name does not end in `-staging`; on a manual run the typed ref must equal it too. The ref lives in a variable, not in the file (rule 2).
+- **Destructive migrations.** After the `--dry-run` plan and before the push, every pending migration the plan names is
+  scanned, comments stripped, statement by statement: `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE FROM` with no
+  `WHERE` stops the run. A migration that means it carries the line `-- production: destructive change approved`,
+  which its review then sees.
+- **A failing migration.** `db push` applies each file and its history row in one transaction and stops at the first
+  failure with a non-zero exit (checked with CLI 2.122.0 on a local database: the failing file left no table and no
+  history row, the next file was not applied). The step fails, so the function deploy after it never runs; the
+  project stays on the last migration that succeeded.
+- **No environment.** The job uses no GitHub environment: `SUPABASE_ACCESS_TOKEN` (one scoped token covering the
+  production and staging projects, which Staging reads as well), `PRODUCTION_DB_PASSWORD` and the variable
+  `PRODUCTION_PROJECT_REF` are repository-level (OI-230), so the owner keeps one copy of each.
+  The main-only rule is the job's own checks (`workflow_run` on `main` from this repository, or a dispatch on `main` by
+  the owner, then the commit must be on `main`). `STAGING_PROJECT_REF` stays in the `staging` environment,
+  out of this job's reach, so the guard does not compare against it: an explicit `PRODUCTION_PROJECT_REF` and the
+  `-staging` name check cover a staging ref set by mistake. No
+  required-reviewer gate: GitHub offers it in private repositories only on paid plans, and anything paid is out
+  (D-200); the owner's approval of the automatic run replaces it.
+**Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
+with no laptop or session deploying by hand, and the one class of change that loses real data needs an explicit,
+reviewed marker.
 
 ## D-281 — Staging is seeded with made-up data by a guarded, re-runnable script
 
@@ -3650,3 +3729,95 @@ keeps one path for creating a soldier and its guarantees, and keeps a refused ro
 **Why:** after a quick entry the soldiers sign in and ask to join, each one matching a soldier by personal number;
 approving them one by one is a page per soldier. Linking only the certain matches keeps the bulk action safe, and
 running the single review command keeps one path and its checks.
+
+## D-284 — Launch order: V32 before V28, then the audit
+2026-11-12 · accepted · amends D-271, D-078 · V32 · decided under the owner's autonomy instruction of 2026-11-11
+- Before launch: track B runs V26 → V27; track A runs V32 (its docs first, then the screens) → V28. Then A7 on main,
+  once both V27 and V28 are in. A7 no longer waits for the rest of M6 (D-078).
+- After launch, in this order: V29, V30, V31, V21, V23.
+- V32's docs land first, on their own, because V27's setup builds on them. V32 owns the navigation and setup surface
+  (`NAVIGATION_SECTIONS`, `SETUP_STEPS`, the setup panel and its checklist); V27 owns the claim, the templates and the
+  pick, adjust, done sheet, which opens from the checklist in "הגדרות היחידה". The slice that merges second merges
+  main first and follows the other's surface.
+- V28's PR, already open, merges after V32.
+**Why:** the owner found the management screen mixing daily work with one-time configuration; the first units should
+meet the split, not learn the mixed screen and then lose it. The audit reads the product as it launches.
+
+## D-285 — Work and unit setup: two places, a definition apart from its use
+2026-11-12 · accepted · refines D-015, D-130, D-256 · amends D-180, D-254, D-262 · V32 · decided under the owner's autonomy instruction of 2026-11-11
+- **Two places.** "ניהול יחידה" holds the work that recurs: soldiers (and on a soldier, their tags, their extra
+  details and their access), join requests, personal access, rotations, presence rules. "הגדרות היחידה" holds what is
+  defined once and rarely changed: the unit's structure and unit types, command levels, permission levels and their
+  bindings to command levels, absence types and their groups, the tag catalog, the fields of extra details ("שדות
+  נוספים", the definitions; "פרטים נוספים" stays the name of the values on a card), and import and export. Setup is reached from one quiet row at the foot of "ניהול יחידה", never mixed into its groups.
+  Requests stay in the bottom strip (D-252).
+- **A definition apart from its use.** Each concept is split by its nature: the definition lives in setup, its use on
+  the object at work. An extra detail is defined in setup and filled on the soldier's card; a permission level is
+  defined in setup and granted from the person (the soldier's card, or "הרשאות אישיות"); a tag is defined in setup and
+  put on a soldier from the card; an absence type is defined in setup and chosen in a request. Granting from the
+  person is a use on the object, not a second destination (D-256): it opens the same grant form as "הרשאות אישיות".
+- **No dead ends.** When an action needs a definition that does not exist yet, the field offers to create it in place,
+  for who may create it: a unit type, a command level, a tag, an absence type, a tag category. It opens the module's
+  own form in a popover, the same component and command, so there is still one form per entity (D-180), and the new
+  item is chosen on save. A rich definition (a permission level) is a link to its form that returns to the action. For who may not create it, the field says that it is missing and
+  who sets it up. Never "first create X" with nothing to press.
+- **The setup checklist (D-180)** leaves "ניהול יחידה" (D-254, D-262) and becomes the first section of setup while
+  unfinished; "ניהול יחידה" shows its progress as a callout above the groups that opens it. The first step not done is marked as the next one. The tags step opens the
+  tags, not the categories.
+- **Tag categories are advanced.** Adding a tag never asks for a category first: the form chooses the first live
+  category, and the choice can be changed. A unit with no category yet gets the in-place creation in the category
+  field, its name filled with "כללי" and its color and lifetime the form's defaults; it is saved first, as its own
+  command, and the tag after it. No command composes the two. New units start with categories from their template
+  (D-262; the empty template too). The tags module has no categories tab; categories are edited under "מתקדם" in setup.
+  The model is unchanged: a tag still has its category (D-130), and a category keeps its selection mode (D-015) and
+  its default lifetime (D-260).
+- **Visibility.** Each section and row shows only what the viewer's access allows (the module's `isAllowed`); with
+  nothing allowed, a place and its row are absent. The owner sees everything because the bootstrap owner role holds
+  every permission (D-079), not by a special case.
+**Why:** the owner's review: the management screen mixed daily work with one-time configuration, "פרטים נוספים"
+read as unclear because its definition and its values shared one name (now "שדות נוספים" and "פרטים נוספים"), and most users should never think about tag
+categories. Splitting by nature keeps each daily screen short, and offering the missing definition in place leads a
+new unit by the hand without a second form or code path.
+
+## D-289 — CI skips e2e and db on a draft pull request
+
+2026-11-12 · accepted · asked by the orchestrator at about 16:09Z. Track: tooling.
+
+- **The limit.** The repository is private, so GitHub Actions has 2,000 free minutes a month, and paid use is
+  forbidden. On 2026-11-12 the cycle stood at 1,801 (it resets on 2026-12-01). `e2e` and `db` are most of each run.
+- **What changes.** In `.github/workflows/ci.yml`, `e2e` and `db` run only on a push to `main` or on a pull request that
+  is not a draft (`github.event_name == 'push' || !github.event.pull_request.draft`). `check` (typecheck, lint, layers,
+  raw values, i18n, unit tests, build) still runs on every pull request, draft or not.
+- **Marking ready runs them.** `pull_request` also listens to `ready_for_review`, so the moment a draft is marked ready
+  the full CI runs on its head. Without that type, the default triggers would not run CI again until the next push.
+- **No test is skipped before a merge.** Pull requests merge on a green, full CI of a ready head, and every push to
+  `main` runs the full CI that Staging and Production wait for (D-276, D-280). Locally, `npm run check` and the
+  relevant e2e still run before a push.
+
+**Why:** a draft is pushed to often while work is in progress; running the two slowest jobs on each of those pushes
+spent the month's free minutes. Running them once the work is ready, and on `main`, keeps the same guarantee at a
+fraction of the cost.
+
+**Amended 2026-11-12 (the orchestrator, about 16:18Z): the repository is public.** The owner made `Yuvaldon/sagol`
+public, so GitHub Actions minutes on standard runners are free and unlimited, and the limit above no longer applies.
+Before the change the orchestrator scanned the history and found no secrets; none are kept in files or commits, and the
+workflows read them from GitHub secrets only. The draft skip stays: it costs nothing to a ready pull request and keeps
+draft runs short. With outside pull requests now possible, Staging also runs only for a `main` push of this repository
+(`head_branch == 'main'` and `head_repository.full_name == github.repository`), as Production already did (D-280).
+
+**Amended 2026-11-12 (the orchestrator, about 16:44Z): no `supabase link` in CD.** The first Staging run on `main`
+(1887bd2) stopped at `supabase link`: CLI 2.122.0 reads `GET /v1/projects/{ref}/api-keys?reveal=true`, which needs
+`api_gateway_keys_secret_read`. That permission reveals the `service_role` key, more than CD needs, so the token does
+not get it. Staging and Production no longer link:
+- **Migrations** run `supabase db push --db-url` (the Production plan with `--dry-run` too). `scripts/supabase-db-url.sh`
+  builds the URL from `GET /v1/projects/{ref}/config/database/pooler` (the primary database's pooler host, user and
+  name) and the environment's database password, percent-encoded, on port 5432: the pooler's session mode, not
+  transaction mode. The direct `db.<ref>` host is IPv6 only, which the runners lack. The step masks the URL.
+- **The function** keeps `supabase functions deploy commands --project-ref`, which needs no link.
+- **The guard** probes only what the steps use: functions, the pooler config, and on Staging the secrets. The
+  `/api-keys`, `/postgrest` and `/config/auth` probes are gone; they served `link` only.
+
+Checked against CLI 2.122.0: its permission tables list `api_gateway_keys_*` for `link` only (`db push`: none with
+`--db-url`; `functions deploy`: `edge_functions_write`; `secrets set`: `edge_functions_secrets_write`). A `--debug`
+trace against a nonexistent ref shows `functions deploy --use-api` calling `POST /functions/deploy` and
+`GET /v1/projects/{ref}` only, and `db push --db-url` making no Management API call.

@@ -100,7 +100,7 @@ const COMMAND_METHODS = {
   tags: SORTED_EDIT,
   leave_type_groups: SORTED_EDIT,
   leave_types: SORTED_EDIT,
-  leaves: { create: true, update: true, transition: true, createBatch: true, duplicate: true },
+  leaves: { create: true, update: true, transition: true, createBatch: true, createMany: true, duplicate: true },
   leave_comments: { add: true, edit: true, archive: true },
   availability_rules: EDIT,
   property_definitions: SORTED_EDIT,

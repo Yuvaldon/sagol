@@ -19,6 +19,7 @@ export {
 export { CHANGE_FEED_CHANNEL, DEVICE_KEYS, INDEXED_DB_NAME, STORAGE_KEYS, type DeviceKey, type StorageKey } from './storage'
 export { INBOX, MINE } from './inbox'
 export { DAY_REPORT, DAY_REPORT_CATEGORIES, type DayReportCategory } from './report'
+export { LEAVE_SHEET } from './leaves'
 export { PWA } from './pwa'
 export { REMOTE } from './remote'
 export { ROUTES, type RoutePath } from './routes'
@@ -52,13 +53,16 @@ export {
 export {
   DRAG_ACTIVATION_PX,
   DROP_EDGE_FRACTION,
-  NAVIGATION_SECTIONS,
   NEW_ENTITY,
   QUICK_ENTRY,
   PANEL_IDS,
+  SETUP_SECTIONS,
   SETUP_STEPS,
+  type SetupPanel,
+  type SetupSectionId,
   type SetupStepId,
-  type NavigationSectionId,
+  WORK_SECTIONS,
+  type WorkSectionId,
   PanelId,
   TRANSFER_FILES,
   SHEET_DISMISS,

@@ -1,10 +1,18 @@
-import type { SetupStepId } from '@config'
-import { t, type I18nKey } from '@i18n'
-import { usePanel, useSetupProgress, useTemplateOffer, type SetupStep, type TemplateBase, type TemplateOutcome } from '@logic'
+import { t } from '@i18n'
+import {
+  nextSetupStep,
+  usePanel,
+  useSetupProgress,
+  useTemplateOffer,
+  type SetupStep,
+  type TemplateBase,
+  type TemplateOutcome,
+} from '@logic'
 import { Check, ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { Button } from '../../primitives/Button'
+import { STEP_KEYS, WORD, progressText } from './steps'
 import { TemplateStopped, TemplateWizard } from './TemplateWizard'
 
 // The organization's setup (D-033, D-180): the steps this actor may do, in order, each marked done once what it sets
@@ -12,26 +20,21 @@ import { TemplateStopped, TemplateWizard } from './TemplateWizard'
 // skipped or done again; nothing about the setup is stored. A fresh unit is first offered a template (D-262), until the
 // commander sets it aside; a template that stopped part way says where, above the checklist that finishes it.
 
-const STEP_KEYS: Readonly<Record<SetupStepId, { readonly title: I18nKey; readonly body: I18nKey }>> = {
-  unit_levels: { title: 'setup.steps.unit_levels.title', body: 'setup.steps.unit_levels.body' },
-  units: { title: 'setup.steps.units.title', body: 'setup.steps.units.body' },
-  command_ranks: { title: 'setup.steps.command_ranks.title', body: 'setup.steps.command_ranks.body' },
-  rank_bindings: { title: 'setup.steps.rank_bindings.title', body: 'setup.steps.rank_bindings.body' },
-  leave_types: { title: 'setup.steps.leave_types.title', body: 'setup.steps.leave_types.body' },
-  tags: { title: 'setup.steps.tags.title', body: 'setup.steps.tags.body' },
-  soldiers: { title: 'setup.steps.soldiers.title', body: 'setup.steps.soldiers.body' },
-  deployments: { title: 'setup.steps.deployments.title', body: 'setup.steps.deployments.body' },
-}
-
-/** Between the words of a line built from several strings. */
-const WORD = ' '
-
-function StepRow({ step, position }: { readonly step: SetupStep; readonly position: number }) {
-  const panel = usePanel()
+function StepRow({
+  step,
+  position,
+  isNext,
+  onGo,
+}: {
+  readonly step: SetupStep
+  readonly position: number
+  readonly isNext: boolean
+  readonly onGo: (step: SetupStep) => void
+}) {
   const keys = STEP_KEYS[step.id]
   const title = t(keys.title)
   return (
-    <li className="flex items-center gap-sm border-b border-line py-sm">
+    <li aria-current={isNext ? 'step' : undefined} className="flex items-center gap-sm border-b border-line py-sm">
       <span
         aria-hidden
         className={`flex size-control shrink-0 items-center justify-center rounded-pill text-micro font-semibold tabular-nums ${step.done ? 'bg-action-solid text-on-action' : 'bg-inner text-text-muted'}`}
@@ -42,18 +45,36 @@ function StepRow({ step, position }: { readonly step: SetupStep; readonly positi
         <span className="text-name font-semibold">{title}</span>
         <span className="text-micro text-text-muted">{t(keys.body)}</span>
         {/* The state in words too, not only by the mark's color (WCAG 1.4.1). */}
-        <span className="text-micro font-semibold">{t(step.done ? 'setup.done' : 'setup.notDone')}</span>
+        <span className="text-micro font-semibold">{t(step.done ? 'setup.done' : isNext ? 'setup.next' : 'setup.notDone')}</span>
       </span>
       <Button
         aria-label={[t('setup.go'), title].join(WORD)}
+        variant={isNext ? 'primary' : 'quiet'}
         onPress={() => {
-          panel.open(step.panel)
+          onGo(step)
         }}
       >
         {t('setup.go')}
         <ChevronLeft aria-hidden size={14} />
       </Button>
     </li>
+  )
+}
+
+/** The steps in order, the next one marked (D-285); a step opens the module that does it. */
+export function SetupChecklist({ steps, onGo }: { readonly steps: readonly SetupStep[]; readonly onGo: (step: SetupStep) => void }) {
+  const next = nextSetupStep(steps)
+  return (
+    <div className="flex flex-col gap-md">
+      <p role="status" className="text-name font-semibold tabular-nums">
+        {progressText(steps)}
+      </p>
+      <ol aria-label={t('setup.listLabel')} className="flex flex-col">
+        {steps.map((step, index) => (
+          <StepRow key={step.id} step={step} position={index + 1} isNext={step.id === next?.id} onGo={onGo} />
+        ))}
+      </ol>
+    </div>
   )
 }
 
@@ -76,27 +97,23 @@ export function SetupModule() {
       />
     )
   }
-  return <SetupChecklist stopped={stopped} />
+  return <SetupSteps stopped={stopped} />
 }
 
-function SetupChecklist({ stopped }: { readonly stopped: Extract<TemplateOutcome, { ok: false }> | null }) {
+function SetupSteps({ stopped }: { readonly stopped: Extract<TemplateOutcome, { ok: false }> | null }) {
+  const panel = usePanel()
   const progress = useSetupProgress()
   if (progress.status === 'failed') return <FailureNotice error={progress.error} />
   if (progress.status === 'loading') return <LoadingNotice />
-  const steps = progress.value
-  const done = steps.filter((step) => step.done).length
-  const summary = [String(done), t('setup.progressOf'), String(steps.length), t('setup.progressDone')].join(WORD)
   return (
     <div className="flex flex-col gap-md">
       {stopped === null ? null : <TemplateStopped outcome={stopped} />}
-      <p role="status" className="text-name font-semibold tabular-nums">
-        {summary}
-      </p>
-      <ol aria-label={t('setup.listLabel')} className="flex flex-col">
-        {steps.map((step, index) => (
-          <StepRow key={step.id} step={step} position={index + 1} />
-        ))}
-      </ol>
+      <SetupChecklist
+        steps={progress.value}
+        onGo={(step) => {
+          panel.open(step.panel)
+        }}
+      />
     </div>
   )
 }

@@ -75,10 +75,16 @@ const GROUPS: readonly ModuleGroup[] = [
   {
     titleKey: 'soldiers.title',
     sections: [
-      { panel: PANEL_IDS.soldiers, labelKey: 'soldiers.tabList', isAllowed: (access) => access.soldiers, Module: SoldiersModule },
+      { panel: PANEL_IDS.soldiers, labelKey: 'soldiers.title', isAllowed: (access) => access.soldiers, Module: SoldiersModule },
+    ],
+  },
+  {
+    // Command levels are part of the unit's structure, opened from setup, not a tab of the soldiers (D-285).
+    titleKey: 'commandRanks.title',
+    sections: [
       {
         panel: PANEL_IDS.commandRanks,
-        labelKey: 'soldiers.tabRanks',
+        labelKey: 'commandRanks.title',
         isAllowed: (access) => access.commandRanks,
         Module: CommandRanksModule,
       },
@@ -87,8 +93,14 @@ const GROUPS: readonly ModuleGroup[] = [
   {
     titleKey: 'tags.title',
     sections: [
-      { panel: PANEL_IDS.tags, labelKey: 'tags.tabTags', isAllowed: (access) => access.tags, Module: TagsModule },
-      { panel: PANEL_IDS.tagCategories, labelKey: 'tags.tabCategories', isAllowed: (access) => access.tags, Module: TagCategoriesModule },
+      { panel: PANEL_IDS.tags, labelKey: 'tags.title', isAllowed: (access) => access.tags, Module: TagsModule },
+    ],
+  },
+  {
+    // Tag categories are the setup's advanced part: a tag picks one, and seldom needs a new one (D-285).
+    titleKey: 'tagCategories.title',
+    sections: [
+      { panel: PANEL_IDS.tagCategories, labelKey: 'tagCategories.title', isAllowed: (access) => access.tags, Module: TagCategoriesModule },
     ],
   },
   {
