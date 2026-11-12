@@ -228,6 +228,7 @@ export {
   type UnitDropZone,
   type UnitTreeRow,
 } from './units/tree'
+export { unitChart, type UnitChart, type UnitChartFamily, type UnitChartNode } from './units/chart'
 export { formFieldIssues, unitFormIssues, unitLevelFormIssues, type UnitFormValues } from './units/forms'
 export {
   liveLevels,
