@@ -73,10 +73,12 @@ export interface SearchSelectFieldProps {
   readonly options: readonly string[]
   readonly onChange: (value: string) => void
   readonly error: I18nKey | null
+  /** While a change is being saved. */
+  readonly isDisabled?: boolean
 }
 
 /** Pick one of many values by typing. Values are technical names, shown left to right. */
-export function SearchSelectField({ labelKey, toggleLabelKey, name, value, options, onChange, error }: SearchSelectFieldProps) {
+export function SearchSelectField({ labelKey, toggleLabelKey, name, value, options, onChange, error, isDisabled = false }: SearchSelectFieldProps) {
   const { contains } = useFilter({ sensitivity: 'base' })
   return (
     <ComboBox
@@ -88,6 +90,7 @@ export function SearchSelectField({ labelKey, toggleLabelKey, name, value, optio
         if (typeof key === 'string') onChange(key)
       }}
       isInvalid={error !== null}
+      isDisabled={isDisabled}
       validationBehavior="aria"
       menuTrigger="focus"
       className={FIELD}

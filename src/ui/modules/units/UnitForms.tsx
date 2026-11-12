@@ -281,6 +281,7 @@ function TimezonePicker({ organization }: { readonly organization: Organization 
           })
         }}
         error={null}
+        isDisabled={setTimezone.isPending}
       />
       <p className="text-micro text-text-muted">{t('units.timezoneHint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}

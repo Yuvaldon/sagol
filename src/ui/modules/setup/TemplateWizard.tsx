@@ -1,4 +1,5 @@
 import { UNIT_TEMPLATE_IDS, UNIT_TEMPLATES, type UnitTemplateId } from '@config'
+import type { AppError } from '@contracts'
 import { t } from '@i18n'
 import {
   initialChoices,
@@ -12,6 +13,7 @@ import {
 } from '@logic'
 import { useState } from 'react'
 import { issueError } from '../../patterns/forms'
+import { FailureNotice } from '../../patterns/Notices'
 import { CheckList, RadioList, type Choice } from '../../primitives/ChoiceList'
 import { Button } from '../../primitives/Button'
 import { TextField } from '../../primitives/fields'
@@ -165,21 +167,25 @@ export function TemplateWizard({
   const [stage, setStage] = useState<Stage>('pick')
   const [choices, setChoices] = useState<TemplateChoices>(() => initialChoices(UNIT_TEMPLATE_IDS[0], sectionNameOf(UNIT_TEMPLATE_IDS[0])))
 
+  const [failure, setFailure] = useState<AppError | null>(null)
+
   const finish = async (chosen: TemplateChoices) => {
     if (templateChoiceIssues(chosen).length > 0) return
+    setFailure(null)
     onRunning(base)
-    const result = await apply.run({ base, choices: chosen, names: templateNames(chosen.templateId) })
-    if (!result.ok) {
+    // However the run ends, the base it held is let go.
+    try {
+      const result = await apply.run({ base, choices: chosen, names: templateNames(chosen.templateId) })
+      if (!result.ok) {
+        setFailure(result.error)
+        return
+      }
+      const outcome = result.value
+      if (outcome.ok) panel.close()
+      else onStop(outcome)
+    } finally {
       onRunning(null)
-      return
     }
-    const outcome = result.value
-    if (outcome.ok) {
-      panel.close()
-      return
-    }
-    onRunning(null)
-    onStop(outcome)
   }
   // A template with nothing to adjust is done from the pick.
   const adjustable = (id: UnitTemplateId) => {
@@ -207,6 +213,7 @@ export function TemplateWizard({
           {t('setup.wizard.applying')}
         </p>
       ) : null}
+      {failure === null ? null : <FailureNotice error={failure} />}
       <div className="flex flex-wrap gap-sm">
         <Button
           variant="primary"
