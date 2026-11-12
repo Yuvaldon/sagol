@@ -3,6 +3,7 @@
 // repositories by injection and never imports @data.
 export type { AuthPort, DataPort, DevicePort, DeviceStore, InstallOffer, LogicPorts, ShellPort, ShellState } from './ports'
 export { useAppUpdate, useInstallOffer } from './shell/hooks'
+export { useHome, type Home } from './home/hooks'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
 export { claimIssues, timeZoneChoices, type ClaimOrganizationValues } from './organization/claim'
@@ -175,6 +176,7 @@ export {
   useLeaveTransition,
   useMyLeaves,
   useMyLeavesAccess,
+  useMyNextDays,
   usePendingRequests,
 } from './leaves/workflowHooks'
 export {

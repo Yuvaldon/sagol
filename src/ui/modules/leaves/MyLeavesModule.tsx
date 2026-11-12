@@ -1,17 +1,16 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
-import type { Leave, LeaveType } from '@contracts'
+import { PANEL_IDS } from '@config'
+import { AvailabilityEffect, type Leave, type LeaveType } from '@contracts'
 import { t } from '@i18n'
-import { useLeaveTypes, useMyLeaves, useMyLeavesAccess, usePanel } from '@logic'
-import { Plus } from 'lucide-react'
+import { useLeaveTypes, useMyLeaves, useMyLeavesAccess, useMyNextDays, usePanel } from '@logic'
 import { Button as AriaButton } from 'react-aria-components'
+import { formatDate } from '../../patterns/dates'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { VirtualList } from '../../patterns/VirtualList'
-import { Button } from '../../primitives/Button'
 import { StatusChip, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, typeNameOf } from './leaveText'
 
-// "My requests" (D-167): the actor's own leaves, the open ones and the history, and "new request" on top. A row opens
-// the leave's details, where its steps and comments are (D-119).
+// "Mine" (D-265, D-167): the actor's next days, in or out, then their own leaves, the open ones and the history. A row
+// opens the leave's details, where its steps and comments are (D-119). A new request is the strip's quick action.
 
 const LINE_SEPARATOR = ' · '
 const NO_TYPES: readonly never[] = []
@@ -37,10 +36,39 @@ function MyLeaveRow({ leave, type }: { readonly leave: Leave; readonly type: Lea
   )
 }
 
+/** My next days, today first: in, or out under the leave that keeps me out. */
+function NextDays({ days, typeOf }: { readonly days: ReturnType<typeof useMyNextDays>; readonly typeOf: (leave: Leave['id']) => LeaveType | null }) {
+  if (days === null || days.status !== 'ready') return null
+  return (
+    <section className="flex flex-col gap-xs">
+      <h3 className="text-label font-semibold text-text-muted">{t('myLeaves.nextDaysTitle')}</h3>
+      <ul aria-label={t('myLeaves.nextDaysTitle')} className="flex flex-col">
+        {days.value.map((day, index) => {
+          const keeping = day.leaves.find((leave) => leave.counted) ?? null
+          const out = day.status === AvailabilityEffect.enum.unavailable
+          return (
+            <li key={day.date} className="flex min-h-touch items-center gap-sm border-b border-line px-xs py-xs">
+              <span className="flex min-w-none flex-1 flex-col gap-2xs">
+                <span className="truncate text-name font-semibold">
+                  {index === 0 ? t('myLeaves.today') : formatDate(day.date, 'weekdayShort')}
+                </span>
+                <span className="truncate text-micro text-text-muted tabular-nums">{formatDate(day.date, 'dayMonth')}</span>
+              </span>
+              <span className={out ? 'text-name font-semibold' : 'text-name text-text-muted'}>
+                {out ? (keeping === null ? t('myLeaves.dayOut') : typeNameOf(typeOf(keeping.leave_id))) : t('myLeaves.dayIn')}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
 export function MyLeavesModule() {
-  const panel = usePanel()
   const access = useMyLeavesAccess()
   const mine = useMyLeaves()
+  const next = useMyNextDays()
   const types = useLeaveTypes()
 
   if (mine.status === 'failed') return <FailureNotice error={mine.error} />
@@ -50,32 +78,25 @@ export function MyLeavesModule() {
   const typeList = types.status === 'ready' ? types.value : NO_TYPES
   const typeOf = (leave: Leave) => typeList.find((type) => type.id === leave.leave_type_id) ?? null
   const { open, history } = mine.value
-  const newRequest =
-    access?.create === true ? (
-      <div>
-        <Button
-          variant="primary"
-          onPress={() => {
-            panel.open(PANEL_IDS.leaves, { entity: NEW_ENTITY })
-          }}
-        >
-          <Plus aria-hidden size={14} />
-          {t('myLeaves.new')}
-        </Button>
-      </div>
-    ) : null
+  const all = [...open, ...history]
+  const typeOfLeave = (id: Leave['id']) => {
+    const leave = all.find((row) => row.id === id)
+    return leave === undefined ? null : typeOf(leave)
+  }
+  const nextDays = <NextDays days={next} typeOf={typeOfLeave} />
 
-  if (open.length === 0 && history.length === 0) {
+  if (all.length === 0) {
     return (
-      <EmptyNotice titleKey="myLeaves.emptyTitle" bodyKey={access?.create === true ? undefined : 'myLeaves.emptyReadOnly'}>
-        {newRequest}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        {nextDays}
+        <EmptyNotice titleKey="myLeaves.emptyTitle" bodyKey={access?.create === true ? 'myLeaves.emptyCreate' : 'myLeaves.emptyReadOnly'} />
+      </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-md">
-      {newRequest}
+      {nextDays}
       <section className="flex flex-col gap-xs">
         <h3 className="text-label font-semibold text-text-muted">{t('myLeaves.openTitle')}</h3>
         {open.length === 0 ? (

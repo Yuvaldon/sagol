@@ -19,7 +19,7 @@ import {
   type DateWindow,
   type ReadFilter,
 } from '@logic'
-import { ListChecks, Users } from 'lucide-react'
+import { ListChecks } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../patterns/Notices'
 import { Button } from '../primitives/Button'
@@ -110,29 +110,17 @@ function Board({
     return (
       <Centered>
         <EmptyNotice titleKey="timeline.emptyRosterTitle" bodyKey="timeline.emptyRosterBody" headingLevel={2}>
-          <div className="flex flex-wrap justify-center gap-sm">
-            {canSetUp ? (
-              <Button
-                variant="primary"
-                onPress={() => {
-                  open(PANEL_IDS.setup)
-                }}
-              >
-                <ListChecks aria-hidden size={14} />
-                {t('setup.open')}
-              </Button>
-            ) : null}
-            {access.soldiers ? (
-              <Button
-                onPress={() => {
-                  open(PANEL_IDS.soldiers)
-                }}
-              >
-                <Users aria-hidden size={14} />
-                {t('soldiers.open')}
-              </Button>
-            ) : null}
-          </div>
+          {canSetUp ? (
+            <Button
+              variant="primary"
+              onPress={() => {
+                open(PANEL_IDS.setup)
+              }}
+            >
+              <ListChecks aria-hidden size={14} />
+              {t('setup.open')}
+            </Button>
+          ) : null}
         </EmptyNotice>
       </Centered>
     )

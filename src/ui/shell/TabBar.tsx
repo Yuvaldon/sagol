@@ -1,19 +1,23 @@
 import { t } from '@i18n'
-import { useDateWindow, useNavigationPreferences, usePanel } from '@logic'
+import { useHome, usePanel } from '@logic'
 import { CalendarDays } from 'lucide-react'
 import { Button as AriaButton } from 'react-aria-components'
-import { EntryCount } from './ModuleButtons'
-import { useDailyEntries, useNavigationEntries, type ModuleEntry } from './moduleEntries'
+import { EntryCount } from './EntryCount'
+import { useDailyEntries, type ModuleEntry } from './moduleEntries'
 import { NavigationPanel } from './NavigationPanel'
 import { TAB, TAB_COLOR } from './tabStyle'
 
-// The phone's bottom bar (V20): destinations only, as a tab bar. The board first, then the soldier's own requests and
-// the inbox, then their pins, then the menu. Each tab is an icon over a short name; nothing toggles here, and the only
-// number is what waits on a destination.
+// The bottom strip's destinations (D-252), on every screen. The board first, then "mine" and the inbox, then
+// "ניהול" (D-254). Each tab is an icon over a short name; nothing toggles here, and the only number is what waits on
+// a destination.
 
 function Tab({ entry }: { readonly entry: ModuleEntry }) {
   return (
-    <AriaButton onPress={entry.onPress} className={`${TAB} ${TAB_COLOR.other}`}>
+    <AriaButton
+      aria-current={entry.current ? 'page' : false}
+      onPress={entry.onPress}
+      className={`${TAB} ${entry.current ? TAB_COLOR.current : TAB_COLOR.other}`}
+    >
       <entry.Icon aria-hidden size={18} />
       <span className="max-w-full truncate">{t(entry.labelKey)}</span>
       <EntryCount entry={entry} floating />
@@ -21,17 +25,17 @@ function Tab({ entry }: { readonly entry: ModuleEntry }) {
   )
 }
 
-/** The board: current while no panel is open. A press closes what is open and brings today back into sight. */
+/** The board: current while no panel is open. A press closes what is open, keeps the range, and makes it home (D-265). */
 function BoardTab() {
   const panel = usePanel()
-  const { window, goToToday } = useDateWindow()
+  const { choose } = useHome()
   const current = panel.panel === null
   return (
     <AriaButton
       aria-current={current ? 'page' : false}
       onPress={() => {
         panel.close()
-        if (window !== null && !window.holdsToday) goToToday()
+        choose(false)
       }}
       className={`${TAB} ${current ? TAB_COLOR.current : TAB_COLOR.other}`}
     >
@@ -43,19 +47,16 @@ function BoardTab() {
 
 export function TabBar() {
   const daily = useDailyEntries()
-  const navigation = useNavigationEntries()
-  const { pinned, editable } = useNavigationPreferences()
-  const pins = editable ? pinned.flatMap((module) => navigation.get(module) ?? []) : []
   return (
     <>
-      {/* Many pins scroll sideways rather than widen the page (D-155); the menu stays in place. */}
-      <div className="-m-xs flex min-w-none flex-1 items-center gap-2xs overflow-x-auto p-xs">
+      {/* A narrow screen scrolls the tabs sideways rather than widen the page (D-155); "ניהול" stays in place. */}
+      <div className="-m-xs flex min-w-none items-center gap-2xs overflow-x-auto p-xs">
         <BoardTab />
-        {[...daily, ...pins].map((entry) => (
+        {daily.map((entry) => (
           <Tab key={entry.id} entry={entry} />
         ))}
       </div>
-      <NavigationPanel variant="tab" />
+      <NavigationPanel />
     </>
   )
 }

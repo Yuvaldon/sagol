@@ -3,8 +3,8 @@ import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, navigation, OWNER } from './support/workspace.ts'
 
-// V20's layout checks: the bars fit on one line in every shape of screen, a phone on its side keeps the phone's bars
-// and room for the board (D-190), what can be pressed sits inside the safe area while the canvas paints edge to edge
+// The layout checks: the two strips fit on one line in every shape of screen, center on their edges and leave the
+// board its room (D-252), what can be pressed sits inside the safe area while the canvas paints edge to edge
 // (D-191), and the board's corner and name column stay one opaque surface while the days scroll under them (D-192).
 // Desktop, an upright phone and a phone on its side, RTL, with axe. Sample data, tests only.
 
@@ -56,8 +56,7 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     expect(page_).toBeLessThanOrEqual(0)
   })
 
-  // The desktop has one row of bars at the top.
-  if (testInfo.project.name !== 'desktop') await test.step('a phone keeps its destinations as tabs at the bottom, with room for the board', async () => {
+  await test.step('the destinations sit at the bottom on every screen, with room for the board', async () => {
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('no viewport')
     const tabs = await navigation(page).boundingBox()
@@ -72,6 +71,38 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
         .map((rect) => rect.bottom),
     )
     expect(tabs.y - Math.max(...tops)).toBeGreaterThanOrEqual(viewport.height * 0.5)
+  })
+
+  await test.step('each strip hugs its content and centers on its edge', async () => {
+    const viewport = page.viewportSize()
+    if (viewport === null) throw new Error('no viewport')
+    const strips = await page.evaluate(() =>
+      [...document.querySelectorAll('nav')]
+        .filter((bar) => bar.closest('[role=dialog]') === null)
+        .map((bar) => {
+          const rect = bar.getBoundingClientRect()
+          return { name: bar.getAttribute('aria-label') ?? '', left: rect.left, right: rect.right }
+        }),
+    )
+    expect(strips).toHaveLength(2)
+    for (const strip of strips) {
+      expect(Math.abs(strip.left - (viewport.width - strip.right)), `${strip.name} is off center`).toBeLessThanOrEqual(2)
+    }
+  })
+
+  await test.step('a phone, upright or on its side, keeps the sort in the view menu; a desktop gives it its own button', async () => {
+    const strip = page.getByRole('navigation', { name: he.workspace.viewBar })
+    const sortButton = strip.getByRole('button', { name: he.workspace.sort, exact: true })
+    const sortKeys = page.getByRole('menu').getByRole('group', { name: he.workspace.sortBy })
+    if (testInfo.project.name !== 'desktop') {
+      await expect(sortButton).toHaveCount(0)
+      await strip.getByRole('button', { name: new RegExp(`^${he.workspace.view} `) }).click()
+    } else {
+      await sortButton.click()
+    }
+    await expect(sortKeys.getByRole('menuitemradio')).toHaveCount(5)
+    await page.keyboard.press('Escape')
+    await expect(sortKeys).toHaveCount(0)
   })
 
   await expectNoAxeViolations(page)

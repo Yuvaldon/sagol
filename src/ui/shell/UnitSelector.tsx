@@ -4,10 +4,12 @@ import { unitTreeRows, useUnits, useViewFilter } from '@logic'
 import { ChevronDown, Network } from 'lucide-react'
 import { useMemo } from 'react'
 import { Button as AriaButton, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components'
+import { useIsDesktop } from '../patterns/media'
 
 // Which unit the views show (D-104): the whole organization, or one unit with its sub-units, chosen from
 // the tree the actor can see. The bar shows it as a compact label; a viewer whose tree has a single root reads that
-// root's name rather than "the whole organization" (D-173).
+// root's name rather than "the whole organization" (D-173). A phone's strip has no room for the name: the picker is its icon,
+// with the name read aloud, and a single unit, with nothing to choose, is not shown there (D-273).
 
 const ORGANIZATION_KEY = 'organization'
 const OTHER_KEY = 'other'
@@ -22,6 +24,7 @@ interface UnitChoice {
 export function UnitSelector() {
   const units = useUnits()
   const { unit, selectUnit } = useViewFilter()
+  const isDesktop = useIsDesktop()
   const rows = useMemo(() => (units.status === 'ready' ? unitTreeRows(units.value) : []), [units])
 
   const choices = useMemo((): UnitChoice[] => {
@@ -44,8 +47,9 @@ export function UnitSelector() {
   // A single unit in sight is the only scope there is: its name, not a picker (D-173).
   const only = rows.length === 1 && choices.length === 2 ? rows[0] : undefined
   if (only !== undefined) {
+    if (!isDesktop) return null
     return (
-      <span className="inline-flex min-h-touch max-w-unit-picker min-w-none items-center gap-xs rounded-pill bg-inner px-sm text-control font-semibold text-text md:min-h-control">
+      <span className="inline-flex min-h-touch max-w-unit-picker min-w-unit-floor items-center gap-xs rounded-pill bg-inner px-sm text-control font-semibold text-text md:min-h-control">
         <Network aria-hidden size={14} className="shrink-0 text-text-muted" />
         <span className="sr-only">{t('workspace.unit')}</span>
         <span className="truncate">{only.unit.name}</span>
@@ -63,14 +67,16 @@ export function UnitSelector() {
         if (choice === undefined || choice.key === OTHER_KEY) return
         selectUnit(choice.unitId)
       }}
-      className="min-w-none"
+      className={isDesktop ? 'max-w-unit-picker min-w-unit-floor' : 'shrink-0'}
     >
-      <AriaButton className="inline-flex min-h-touch max-w-unit-picker min-w-none cursor-pointer items-center gap-xs rounded-pill bg-inner ps-sm pe-sm text-control font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2 data-hovered:bg-line">
-        <Network aria-hidden size={14} className="shrink-0 text-text-muted" />
-        <SelectValue className="truncate">
+      <AriaButton
+        className={`inline-flex min-h-touch cursor-pointer items-center rounded-pill bg-inner text-control ${isDesktop ? 'max-w-full min-w-none gap-xs ps-sm pe-sm' : 'min-w-touch justify-center'} font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2 data-hovered:bg-line`}
+      >
+        <Network aria-hidden size={isDesktop ? 14 : 18} className="shrink-0 text-text-muted" />
+        <SelectValue className={isDesktop ? 'truncate' : 'sr-only'}>
           {({ selectedText }) => (selected === ORGANIZATION_KEY && anchor !== null ? anchor : selectedText)}
         </SelectValue>
-        <ChevronDown aria-hidden size={12} className="shrink-0" />
+        {isDesktop ? <ChevronDown aria-hidden size={12} className="shrink-0" /> : null}
       </AriaButton>
       <Popover className="glass-menu min-w-trigger overflow-auto rounded-panel">
         <ListBox className="max-h-list max-w-menu overflow-auto p-xs outline-none">
