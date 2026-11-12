@@ -1,6 +1,6 @@
 import { LeaveId, LeaveTypeId, OrganizationId, SoldierId, type LeaveType, type Soldier } from '@contracts'
 import { dictionary as he } from '@i18n'
-import type { TimelineItem, TimelineLeave } from '@logic'
+import type { BoardItem, BoardLeave } from '@logic'
 import { describe, expect, it, vi } from 'vitest'
 import { dayCells, timelineRows } from './model'
 
@@ -41,7 +41,7 @@ describe('the timeline adapter', () => {
   })
 
   it('names groups by path or by state, and reads muted days aloud', () => {
-    const items: TimelineItem[] = [
+    const items: BoardItem[] = [
       { kind: 'group', key: 'group:a', label: { kind: 'unit', path: ['מחלקה א', 'כיתה 1'] }, size: 1 },
       { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [false, true, false] },
       { kind: 'group', key: 'group:unknown', label: { kind: 'unknown' }, size: 0 },
@@ -54,7 +54,7 @@ describe('the timeline adapter', () => {
   })
 
   it('mutes and reads aloud the days "only who is missing" finds present (D-133)', () => {
-    const items: TimelineItem[] = [
+    const items: BoardItem[] = [
       { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [false, true, true], present: [false, true, false] },
     ]
     const [row] = timelineRows(items, DAYS, null, NO_LEAVES)
@@ -90,7 +90,7 @@ describe('leaves on a row (D-111, D-112)', () => {
     version: 1,
     archived_at: null,
   }
-  const leave = (n: number, start_date: string, end_date: string, overrides: Partial<TimelineLeave> = {}): TimelineLeave => ({
+  const leave = (n: number, start_date: string, end_date: string, overrides: Partial<BoardLeave> = {}): BoardLeave => ({
     id: LeaveId.parse(`00000000-0000-4000-8000-00000000004${String(n)}`),
     status: 'approved',
     start_date,
@@ -99,12 +99,12 @@ describe('leaves on a row (D-111, D-112)', () => {
     type,
     ...overrides,
   })
-  const item: TimelineItem = { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [true, true, true] }
+  const item: BoardItem = { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [true, true, true] }
   const opened: string[] = []
   const openLeave = (leaveId: string) => {
     opened.push(leaveId)
   }
-  const rowWith = (leaves: TimelineLeave[], colors: 'type' | 'uniform' = 'type', movable: (leaveId: string) => boolean = () => false) => {
+  const rowWith = (leaves: BoardLeave[], colors: 'type' | 'uniform' = 'type', movable: (leaveId: string) => boolean = () => false) => {
     const [row] = timelineRows([item], DAYS, null, {
       leaves: new Map([[dana.id, leaves]]),
       colors,

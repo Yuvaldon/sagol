@@ -12,7 +12,7 @@ import {
   type DateWindow,
   type LeaveDates,
 } from '@logic'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRuleGate, type RuleGate } from '../../../patterns/rules/ruleAnswer'
 import type { TimelineDrag, TimelineDragProps, TimelineDragTone } from '../view/model'
 
@@ -70,6 +70,15 @@ export function useBoardDrag(window: DateWindow, soldiers: readonly Soldier[]): 
   )
   const warnings = useLeaveRuleWarnings(move?.candidate ?? null, leave)
 
+  // Stable, so the rows the board draws are not rebuilt on every render (OI-097).
+  const movable = useCallback(
+    (leaveId: string) => {
+      const stored = leaveOf(leaveId)
+      return stored !== null && canMove(stored)
+    },
+    [leaveOf, canMove],
+  )
+
   const soldierOf = (rowKey: string) => soldiers.find((soldier) => soldier.id === rowKey) ?? null
 
   const drop = (dropped: TimelineDrag) => {
@@ -100,10 +109,7 @@ export function useBoardDrag(window: DateWindow, soldiers: readonly Soldier[]): 
   }
 
   return {
-    movable: (leaveId) => {
-      const stored = leaveOf(leaveId)
-      return stored !== null && canMove(stored)
-    },
+    movable,
     creatable: canCreate,
     props: {
       onChange: (next) => {

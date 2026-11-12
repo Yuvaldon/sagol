@@ -15,8 +15,8 @@ import {
 import type { ReactNode } from 'react'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 
-// The view menu lists what the engine registry holds, and nothing else (D-076, D-108). The timeline adds its
-// colors under their own heading (D-112), so the bars gain no control.
+// The view menu lists what the engine registry holds, and nothing else (D-076, D-108). The colors of
+// the leaves sit under their own heading (D-112), for every engine (D-174), so the bars gain no control.
 
 const ITEM =
   'flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-md text-control whitespace-nowrap outline-none md:min-h-control data-focused:bg-inner'
@@ -75,7 +75,6 @@ export function ViewSwitcher() {
               return <Item key={id} id={id} label={t(entry.labelKey)} icon={<entry.Icon aria-hidden size={14} />} />
             })}
           </MenuSection>
-          {view === 'timeline' ? (
             <MenuSection
               selectionMode="single"
               disallowEmptySelection
@@ -90,7 +89,6 @@ export function ViewSwitcher() {
                 <Item key={mode} id={mode} label={t(COLOR_LABELS[mode])} />
               ))}
             </MenuSection>
-          ) : null}
         </Menu>
       </Popover>
     </MenuTrigger>
