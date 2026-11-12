@@ -379,14 +379,16 @@ function DayReportBody() {
   const report = useDayReport(days, filter, rotations)
   const confirmations = useReportConfirmations(days, report, rotations)
   const confirmCommand = useConfirmDayReport()
-  const [refused, setRefused] = useState<AppError | null>(null)
+  // A refusal belongs to the date it was sent for: moving to days without it drops it.
+  const [refusal, setRefusal] = useState<{ readonly date: CalendarDate; readonly error: AppError } | null>(null)
+  const refused = refusal !== null && days.includes(refusal.date) ? refusal.error : null
   const confirm = useMemo(
     (): Confirm => ({
       isPending: confirmCommand.isPending,
       run: async (unitId, date, seenAt) => {
-        setRefused(null)
+        setRefusal(null)
         const result = await confirmCommand.run(unitId, date, seenAt)
-        if (!result.ok) setRefused(result.error)
+        if (!result.ok) setRefusal({ date, error: result.error })
       },
     }),
     [confirmCommand],
