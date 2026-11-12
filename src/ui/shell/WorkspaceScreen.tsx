@@ -23,8 +23,9 @@ import { WindowNavigator } from './WindowNavigator'
 
 const BAR = 'glass-bar pointer-events-auto flex min-w-none items-center gap-xs rounded-pill p-xs'
 
-function OrganizationName({ name, visible }: { readonly name: string; readonly visible: boolean }) {
-  return <h1 className={visible ? 'min-w-none truncate px-md text-control font-bold' : 'sr-only'}>{name}</h1>
+/** The page's heading, for readers: the bar shows the unit in scope instead, so two names never compete (D-175). */
+function OrganizationName({ name }: { readonly name: string }) {
+  return <h1 className="sr-only">{name}</h1>
 }
 
 /** The board's filter controls in the bar (D-173). They need a day, as every engine does. */
@@ -57,7 +58,7 @@ function DesktopBars({ name, identity }: { readonly name: string; readonly ident
       <div className="pointer-events-none absolute inset-x-lg top-lg flex justify-between gap-sm">
         <nav aria-label={t('workspace.viewBar')} className={BAR}>
           <NavigationPanel />
-          <OrganizationName name={name} visible />
+          <OrganizationName name={name} />
           <UnitSelector />
           <ViewSwitcher />
           <FilterControls />
@@ -91,8 +92,8 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
       </nav>
       <FilterRow />
       <nav aria-label={t('workspace.navigation')} className={`${BAR} bottom-safe absolute inset-x-lg justify-between`}>
-        {/* The name is read aloud; the scope label at the top says which unit is shown (D-173). */}
-        <OrganizationName name={name} visible={false} />
+        {/* The name is read aloud; the scope label at the top says which unit is shown (D-173, D-175). */}
+        <OrganizationName name={name} />
         {/* The controls scroll sideways when they outgrow the bar, so the bar never widens the page (D-155). Their room
             around them, the bar's own padding, keeps a focused control's outline whole. */}
         <div className="-m-xs flex min-w-none items-center gap-xs overflow-x-auto p-xs">

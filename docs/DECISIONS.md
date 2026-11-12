@@ -190,6 +190,7 @@ am = amends, ref = refines, ext = extends.
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | |
+| D-175 | The bar names the unit in scope, not the organization | ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
@@ -2306,6 +2307,15 @@ time; fixed ranges and one approver for the shared model keep the two branches f
 **Why:** at 1280 px the bar held eleven module buttons and cut the organization's name (OI-110); V13 adds more
 views. Setting up units, rules and roles is occasional work, so it moves out of the daily surface, and pins give back
 one-tap access to whoever needs a module daily. An empty heat row and an empty filter row only take room.
+
+## D-175 — The bar names the unit in scope, not the organization
+2026-11-12 · accepted · refines D-173 · decided under the owner's autonomy instruction of 2026-11-11
+- The organization's name is the page's level-one heading for readers only, on every screen size, as it already was on a
+  phone. The bar shows one name: the unit scope label of D-173, which says which unit the board shows.
+- The panel's choices are drawn so they can be seen: a radio's ring has the muted text color (at least 3:1 against
+  the panel, WCAG 1.4.11), and a pinned module's pin is filled as well as colored, with `aria-pressed` saying the state.
+**Why:** the organization's name beside a unit's name read as two competing units; the scope label alone answers
+"what am I looking at".
 
 ## D-200 — Backend: Supabase and Vercel, free plans
 2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170
