@@ -91,7 +91,8 @@ function Item({
           }}
           className={`inline-flex size-touch shrink-0 items-center justify-center rounded-pill text-text-muted md:size-control data-hovered:bg-inner data-selected:bg-inner data-selected:text-action-solid ${PRESS}`}
         >
-          <Pin aria-hidden size={14} />
+          {/* Filled while pinned, so the state shows beyond its color (WCAG 1.4.1). */}
+          {({ isSelected }) => <Pin aria-hidden size={14} fill={isSelected ? 'currentColor' : 'none'} />}
         </ToggleButton>
       ) : null}
     </li>
@@ -119,7 +120,7 @@ function DisplayChoices() {
           >
             <span
               aria-hidden
-              className="flex size-icon shrink-0 items-center justify-center rounded-pill border border-line bg-surface outline-focus outline-offset-2 group-data-focus-visible:outline-2 group-data-selected:border-action-solid group-data-selected:bg-action-solid"
+              className="flex size-icon shrink-0 items-center justify-center rounded-pill border border-text-muted bg-surface outline-focus outline-offset-2 group-data-focus-visible:outline-2 group-data-selected:border-action-solid group-data-selected:bg-action-solid"
             >
               <span className="size-dot rounded-pill bg-on-action opacity-0 group-data-selected:opacity-100" />
             </span>
