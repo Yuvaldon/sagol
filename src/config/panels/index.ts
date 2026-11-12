@@ -72,12 +72,13 @@ export type PanelId = z.infer<typeof PanelId>
 export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
 
 /**
- * The sections of the navigation panel and their modules, in order (D-173). The daily work stays in the bar; what sets
- * the organization up is here, and a soldier may pin any of it back to the bar.
+ * The groups of "ניהול יחידה" and their modules, in order (D-254): grouped by what the commander is doing. The daily
+ * work stays in the bottom strip; every module here is one press away, and nothing is pinned out of it.
  */
 export const NAVIGATION_SECTIONS = [
-  { id: 'structure', modules: ['units', 'soldiers'] },
-  { id: 'leaveSetup', modules: ['leave_types', 'rules', 'deployments', 'tags', 'properties'] },
+  { id: 'unit', modules: ['units', 'soldiers', 'deployments'] },
+  { id: 'presence', modules: ['leave_types', 'rules'] },
+  { id: 'soldierDetails', modules: ['tags', 'properties'] },
   { id: 'access', modules: ['roles', 'access_grants', 'account_links'] },
   { id: 'data', modules: ['data_transfer'] },
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
