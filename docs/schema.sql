@@ -267,7 +267,8 @@ CREATE TABLE IF NOT EXISTS "soldier_preferences" (
 	                                                 -- create_leaves_as_approved (D-121),
 	                                                 -- rules_row_placement (D-173), appearance (D-181);
 	                                                 -- missing keys read as defaults, unknown keys
-	                                                 -- (pinned_modules, D-221) are dropped on read
+	                                                 -- are dropped on read; pinned_modules (D-221)
+	                                                 -- is gone and never written (D-291)
 	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"version" INTEGER NOT NULL DEFAULT 1,
 	PRIMARY KEY("soldier_id")

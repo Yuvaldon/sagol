@@ -38,7 +38,7 @@ import {
 import { useRankBindings } from '../access/hooks'
 import { nextSortOrder } from '../forms/order'
 import { useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
-import { useCan } from '../permissions/hooks'
+import { useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import type { Loaded } from '../queries/loaded'
@@ -411,10 +411,12 @@ export function isFreshSetup(rows: {
  * actor may not write all of it. The checklist shows instead (D-180, D-262).
  */
 export function useTemplateOffer(): Loaded<TemplateBase | null> {
-  const can = useCan(TEMPLATE_CHECKS)
+  const { can, known } = useCanAnswers(TEMPLATE_CHECKS)
   const allowed = TEMPLATE_CHECKS.every((check) => can(check))
   const sources = [useUnits(), useUnitLevels(), useCommandRanks(), useRankBindings(), useLeaveTypes(), useTagCategories(), useLeaveTypeGroups()] as const
   const [units, levels, ranks, bindings, leaveTypes, tagCategories, leaveGroups] = sources
+  // Until the answers come, "nothing to offer" would be a guess, and the drawer hands over on it (D-297).
+  if (!TEMPLATE_CHECKS.every((check) => known(check))) return { status: 'loading' }
   if (!allowed) return { status: 'ready', value: null }
   for (const source of sources) {
     if (source.status === 'loading' || source.status === 'failed') return source

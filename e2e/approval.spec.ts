@@ -35,6 +35,14 @@ async function setUp(page: Page) {
   await createType(page, { name: 'רגילה', color: he.palette.teal, icon: he.icons.home })
   await createType(page, { name: 'מחלה', color: he.palette.red, requiresReason: true })
   await closeDrawer(page)
+  // The inbox is for who approves another soldier (D-299), so the unit holds one more.
+  await openModule(page, he.soldiers.open)
+  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
+  await page.getByLabel(he.soldiers.firstName).fill('רון')
+  await page.getByLabel(he.soldiers.lastName).fill('כהן')
+  await page.getByRole('button', { name: he.common.create }).click()
+  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText('רון כהן')).toBeVisible()
+  await closeDrawer(page)
   await requestLeave(page, { type: 'רגילה', from: ['09', '11', '2026'], to: ['10', '11', '2026'] })
   await expect(leavesOf(page)).toHaveCount(1)
 }

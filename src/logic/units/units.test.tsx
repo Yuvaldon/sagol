@@ -133,6 +133,15 @@ describe('what a drop means (D-092)', () => {
     expect(names(plan?.order ?? [])).toEqual(['U2', 'U1', 'U5'])
   })
 
+  it('plans nothing where the user may not move the unit, such as beside the root (OI-247)', () => {
+    const notTopLevel = (parentId: UnitId | null) => parentId !== null
+    expect(planUnitDrop(ALL, PLATOON_A.id, COMPANY.id, 'before', notTopLevel)).toBeNull()
+    expect(planUnitDrop(ALL, PLATOON_A.id, COMPANY.id, 'after', notTopLevel)).toBeNull()
+    expect(planUnitDrop(ALL, SQUAD.id, PLATOON_B.id, 'into', notTopLevel)).toEqual({ move: { parent_id: PLATOON_B.id }, order: null })
+    const reorderOnly = planUnitDrop(ALL, PLATOON_B.id, PLATOON_A.id, 'before', () => false)
+    expect(reorderOnly?.move).toBeNull()
+  })
+
   it('only reorders inside one parent', () => {
     const plan = planUnitDrop(ALL, PLATOON_B.id, PLATOON_A.id, 'before')
     expect(plan?.move).toBeNull()
