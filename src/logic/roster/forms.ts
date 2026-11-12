@@ -17,6 +17,7 @@ import {
   type UnitId,
   type UnitMembership,
 } from '@contracts'
+import { sameProperties, type WithProperties } from '../properties/properties'
 import { optionalText } from '@domain'
 import { formIssues } from '../forms/issues'
 import { formFieldIssues } from '../units/forms'
@@ -87,7 +88,7 @@ export interface NewSoldierValues extends Omit<SoldierFormValues, 'status'> {
   readonly private: { readonly personal_id: string; readonly invite_email?: string; readonly phone: string }
 }
 
-function newSoldierInput(values: NewSoldierValues) {
+function newSoldierInput(values: NewSoldierValues & WithProperties) {
   const personalId = blankToNull(values.private.personal_id)
   const inviteEmail = blankToNull((values.private.invite_email ?? '').trim())
   const phone = blankToNull(values.private.phone)
@@ -98,7 +99,7 @@ function newSoldierInput(values: NewSoldierValues) {
     nickname: blankToNull(values.nickname),
     command_rank_id: values.command_rank_id,
     status: SoldierStatus.enum.active,
-    properties: {},
+    properties: values.properties ?? {},
     private:
       personalId === null && inviteEmail === null && phone === null
         ? null
@@ -118,7 +119,7 @@ export function newSoldierIssues(values: NewSoldierValues): Issue[] {
   return formIssues(CreateSoldierInput, newSoldierInput(values))
 }
 
-export function toCreateSoldierInput(values: NewSoldierValues): CreateSoldierInput {
+export function toCreateSoldierInput(values: NewSoldierValues & WithProperties): CreateSoldierInput {
   return CreateSoldierInput.parse(newSoldierInput(values))
 }
 
@@ -132,7 +133,7 @@ export function soldierFormIssues(id: SoldierId, values: SoldierFormValues): Iss
   )
 }
 
-export function toUpdateSoldierInput(soldier: Soldier, openedVersion: number, values: SoldierFormValues): UpdateSoldierInput | null {
+export function toUpdateSoldierInput(soldier: Soldier, openedVersion: number, values: SoldierFormValues & WithProperties): UpdateSoldierInput | null {
   const content = soldierContent(values)
   const changes = {
     ...(content.first_name === soldier.first_name ? {} : { first_name: content.first_name }),
@@ -140,6 +141,7 @@ export function toUpdateSoldierInput(soldier: Soldier, openedVersion: number, va
     ...(content.nickname === soldier.nickname ? {} : { nickname: content.nickname }),
     ...(content.command_rank_id === soldier.command_rank_id ? {} : { command_rank_id: content.command_rank_id }),
     ...(content.status === soldier.status ? {} : { status: content.status }),
+    ...(values.properties === undefined || sameProperties(values.properties, soldier.properties) ? {} : { properties: values.properties }),
   }
   if (Object.keys(changes).length === 0) return null
   return { id: soldier.id, expected_version: openedVersion, changes }

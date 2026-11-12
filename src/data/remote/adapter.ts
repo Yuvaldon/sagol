@@ -79,6 +79,11 @@ const REPOSITORY_METHODS = {
   leave_events: LIST,
   leave_comments: REFERENCE,
   availability_rules: REFERENCE,
+  property_definitions: REFERENCE,
+  seniority_overrides: REFERENCE,
+  leave_batches: REFERENCE,
+  deployments: REFERENCE,
+  deployment_members: LIST,
 } as const satisfies MethodTable<RemoteDataAdapter['repositories']>
 
 const COMMAND_METHODS = {
@@ -95,9 +100,12 @@ const COMMAND_METHODS = {
   tags: SORTED_EDIT,
   leave_type_groups: SORTED_EDIT,
   leave_types: SORTED_EDIT,
-  leaves: { create: true, update: true, transition: true },
+  leaves: { create: true, update: true, transition: true, createBatch: true, duplicate: true },
   leave_comments: { add: true, edit: true, archive: true },
   availability_rules: EDIT,
+  property_definitions: SORTED_EDIT,
+  seniority_overrides: { create: true, revoke: true },
+  deployments: { ...EDIT, setMembers: true },
 } as const satisfies MethodTable<RemoteDataAdapter['commands']>
 
 type Call = (kind: string, group: string, method: string, args: readonly unknown[]) => Promise<Result<unknown>>

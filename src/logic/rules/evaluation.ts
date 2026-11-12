@@ -3,6 +3,8 @@ import {
   type AvailabilityRule,
   type AvailabilityRuleId,
   type CalendarDate,
+  type Deployment,
+  type DeploymentMember,
   type Leave,
   type LeaveType,
   type RuleGroupValue,
@@ -38,24 +40,24 @@ export interface RuleInputs {
   /** The pending and approved leaves the actor sees on the days evaluated. */
   readonly leaves: readonly Leave[]
   readonly types: readonly LeaveType[]
+  /** Archived ones too: a rule of an archived deployment counts nobody (D-071). */
+  readonly deployments: readonly Deployment[]
+  readonly deploymentMembers: readonly DeploymentMember[]
 }
 
-/**
- * The rows rule evaluation reads. Deployments arrive in V15 and seniority overrides and property values with their
- * slices (OI-080, OI-081); before them none can exist.
- */
-export function ruleDataOf({ source, tags, leaves, types }: RuleInputs): RuleData {
+/** The rows rule evaluation reads (OI-081, OI-096). */
+export function ruleDataOf({ source, tags, leaves, types, deployments, deploymentMembers }: RuleInputs): RuleData {
   return {
     units: source.unitTree,
     soldiers: source.soldiers,
     command_ranks: source.ranks,
     tags,
     soldier_tags: source.soldierTags,
-    seniority_overrides: [],
+    seniority_overrides: source.seniorityOverrides,
     unit_memberships: source.memberships,
-    property_definitions: [],
-    deployments: [],
-    deployment_members: [],
+    property_definitions: source.propertyDefinitions,
+    deployments,
+    deployment_members: deploymentMembers,
     leaves,
     leave_types: types,
   }

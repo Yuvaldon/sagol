@@ -1,20 +1,34 @@
-import type { CommandRank, FilterExpression, FilterNode, Soldier, SoldierTag, Unit, UnitMembership } from '@contracts'
+import type {
+  CommandRank,
+  FilterExpression,
+  FilterNode,
+  PropertyDefinition,
+  SeniorityOverride,
+  Soldier,
+  SoldierTag,
+  Unit,
+  UnitMembership,
+} from '@contracts'
 import { createFilterContext, type FilterContext } from '@domain'
 import { useMemo } from 'react'
 import type { Loaded } from '../queries/loaded'
+import { usePropertyDefinitions } from '../properties/hooks'
 import { useCommandRanks, useMemberships, useSoldiers, useUnitsWithArchived } from '../roster/hooks'
+import { useSeniorityOverrides } from '../seniority/hooks'
 import { useSoldierTags } from '../tags/hooks'
 import { useUnits } from '../units/hooks'
 
 // The one source of the data a filter reads (D-131, OI-079): every engine, the filter bar, the presence lists and the
-// rules read it, so a condition means the same everywhere (D-067, D-147). Seniority overrides join with V15 (OI-081) and property values with V14
-// (OI-080); before them none can exist.
+// rules read it, so a condition means the same everywhere (D-067, D-147). Property values are on the soldiers, and
+// their definitions here (OI-080), and a soldier's seniority reads their overrides (D-029, OI-081).
 
 export interface FilterSource {
   /** Live soldiers the actor sees. */
   readonly soldiers: readonly Soldier[]
   /** Archived ones too: a soldier keeps showing the rank they hold. */
   readonly ranks: readonly CommandRank[]
+  /** Revoked ones too: the evaluator skips them, and a soldier's page shows them as history. */
+  readonly seniorityOverrides: readonly SeniorityOverride[]
   /** The live units the actor sees. */
   readonly units: readonly Unit[]
   /**
@@ -24,6 +38,8 @@ export interface FilterSource {
   readonly unitTree: readonly Unit[]
   readonly memberships: readonly UnitMembership[]
   readonly soldierTags: readonly SoldierTag[]
+  /** Archived ones too: a filter on one keeps reading the values stored for it (D-016). */
+  readonly propertyDefinitions: readonly PropertyDefinition[]
 }
 
 /**
@@ -36,9 +52,9 @@ export function filterContextOf(source: FilterSource): FilterContext {
     soldiers: source.soldiers,
     soldier_tags: source.soldierTags,
     command_ranks: source.ranks,
-    seniority_overrides: [],
+    seniority_overrides: source.seniorityOverrides,
     unit_memberships: source.memberships,
-    property_definitions: [],
+    property_definitions: source.propertyDefinitions,
   })
   const seenOnly = seenOnlyOf(source)
   const guarded = new WeakMap<FilterExpression, FilterExpression>()
@@ -81,29 +97,35 @@ function seenOnlyOf(source: FilterSource): (node: FilterNode) => FilterNode {
 export function useFilterSource(): Loaded<FilterSource> {
   const soldiers = useSoldiers()
   const ranks = useCommandRanks()
+  const seniorityOverrides = useSeniorityOverrides()
   const units = useUnits()
   const unitTree = useUnitsWithArchived()
   const memberships = useMemberships()
   const soldierTags = useSoldierTags()
+  const propertyDefinitions = usePropertyDefinitions()
   return useMemo((): Loaded<FilterSource> => {
     if (soldiers.status !== 'ready') return soldiers
     if (ranks.status !== 'ready') return ranks
+    if (seniorityOverrides.status !== 'ready') return seniorityOverrides
     if (units.status !== 'ready') return units
     if (unitTree.status !== 'ready') return unitTree
     if (memberships.status !== 'ready') return memberships
     if (soldierTags.status !== 'ready') return soldierTags
+    if (propertyDefinitions.status !== 'ready') return propertyDefinitions
     return {
       status: 'ready',
       value: {
         soldiers: soldiers.value,
         ranks: ranks.value,
+        seniorityOverrides: seniorityOverrides.value,
         units: units.value,
         unitTree: unitTree.value,
         memberships: memberships.value,
         soldierTags: soldierTags.value,
+        propertyDefinitions: propertyDefinitions.value,
       },
     }
-  }, [soldiers, ranks, units, unitTree, memberships, soldierTags])
+  }, [soldiers, ranks, seniorityOverrides, units, unitTree, memberships, soldierTags, propertyDefinitions])
 }
 
 function mentionsStatus(node: FilterNode): boolean {

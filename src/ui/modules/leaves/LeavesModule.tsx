@@ -19,11 +19,13 @@ import {
   type NewLeaveDraft,
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
-import { Tags } from 'lucide-react'
+import { Tags, User, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
-import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
+import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
+import { PropertyFields } from '../../patterns/properties/PropertyFields'
+import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { Button } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
@@ -32,6 +34,7 @@ import { ComboField, TextField } from '../../primitives/fields'
 import { RuleGateDialog, RuleWarnings } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { leaveTypeOptions } from './typeOptions'
+import { LeaveBatchForm } from './LeaveBatchForm'
 import { LeaveDetails } from './LeaveDetails'
 
 // A new leave (D-115): who, what kind, which days, and why when the type asks. "Approve now" is there only for
@@ -67,6 +70,7 @@ function NewLeaveForm({
   const [state, setState] = useState(CLEAN_FORM)
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
+  const properties = usePropertyFields('leave')
   const form = useForm({
     defaultValues: newLeaveValues(today, approveNow, draft, soldiers.length === 1 ? (soldiers[0]?.id ?? null) : null),
     validators: { onSubmit: ({ value }) => validatorResult(newLeaveIssues(value, typeOf(value.leave_type_id))) },
@@ -76,10 +80,10 @@ function NewLeaveForm({
       const asApproved = value.as_approved && value.soldier_id !== null && canApprove(value.soldier_id)
       // A rule the command names opens the dialog, and acknowledging sends it again (D-047, D-142).
       await gate.run(
-        (acknowledged) => create.run({ ...value, as_approved: asApproved }, acknowledged),
+        (acknowledged) => create.run({ ...value, as_approved: asApproved, ...properties.withProperties }, acknowledged),
         (result) => {
           if (result.ok) panel.close()
-          else setState(formStateOf(result.error, LEAVE_FIELDS))
+          else setState(formStateOf(result.error, [...LEAVE_FIELDS, ...properties.fieldNames]))
         },
       )
     },
@@ -170,6 +174,7 @@ function NewLeaveForm({
           />
         )}
       </form.Field>
+      <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
       {soldierId !== null && canApprove(soldierId) ? (
         <form.Field name="as_approved">
           {(field) => <SwitchField labelKey="leaves.approveNow" name={field.name} value={field.state.value} onChange={field.handleChange} />}
@@ -192,6 +197,7 @@ function NewLeave() {
   const groups = useLeaveTypeGroups()
   const preferences = useMyPreferences()
   const creation = useLeaveCreation(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
+  const [collective, setCollective] = useState(false)
 
   for (const loaded of [soldiers, types, groups, preferences]) {
     if (loaded.status === 'failed') return <FailureNotice error={loaded.error} />
@@ -227,18 +233,43 @@ function NewLeave() {
         ? panel.draft
         : null
 
+  const shared = {
+    soldiers: creation.soldiers,
+    canApprove: creation.canApprove,
+    groups: groups.value,
+    types: liveTypes,
+    today,
+    approveNow: preferences.value.create_leaves_as_approved,
+  }
+  // A collective leave needs more than one soldier to choose from (D-179).
+  const switcher =
+    creation.soldiers.length > 1 ? (
+      <div>
+        <Button
+          onPress={() => {
+            setCollective((current) => !current)
+          }}
+        >
+          {collective ? <User aria-hidden size={14} /> : <Users aria-hidden size={14} />}
+          {t(collective ? 'leaves.single' : 'leaves.collective')}
+        </Button>
+      </div>
+    ) : null
+
   return (
-    <NewLeaveForm
-      // A new drag starts the form over from its own draft.
-      key={draft === null ? 'blank' : `${draft.soldier_id}:${draft.start_date}:${draft.end_date}`}
-      draft={draft}
-      soldiers={creation.soldiers}
-      canApprove={creation.canApprove}
-      groups={groups.value}
-      types={liveTypes}
-      today={today}
-      approveNow={preferences.value.create_leaves_as_approved}
-    />
+    <div className="flex flex-col gap-md">
+      {switcher}
+      {collective && creation.soldiers.length > 1 ? (
+        <LeaveBatchForm {...shared} />
+      ) : (
+        <NewLeaveForm
+          // A new drag starts the form over from its own draft.
+          key={draft === null ? 'blank' : `${draft.soldier_id}:${draft.start_date}:${draft.end_date}`}
+          draft={draft}
+          {...shared}
+        />
+      )}
+    </div>
   )
 }
 

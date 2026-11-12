@@ -14,6 +14,7 @@ import {
 } from '@contracts'
 import { compareDates, leaveReasonIssues, optionalText, planLeaveCreation, type AvailabilityLeave } from '@domain'
 import { formIssues } from '../forms/issues'
+import type { WithProperties } from '../properties/properties'
 import type { NewLeaveDraft } from '../view-state/draft'
 
 // The new-leave form (D-115), between its fields and `leaves.create`. Ids are generated here (D-044), and a
@@ -51,7 +52,7 @@ export function newLeaveValues(
   }
 }
 
-function createInput(values: NewLeaveValues, acknowledged: readonly AvailabilityRuleId[] = []) {
+function createInput(values: NewLeaveValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []) {
   return {
     id: LeaveId.parse(crypto.randomUUID()),
     soldier_id: values.soldier_id,
@@ -61,7 +62,7 @@ function createInput(values: NewLeaveValues, acknowledged: readonly Availability
     end_date: values.end_date === '' ? undefined : values.end_date,
     availability_effect_override: null,
     reason: optionalText(values.reason),
-    properties: {},
+    properties: values.properties ?? {},
     as_approved: values.as_approved,
     acknowledged_rule_ids: [...acknowledged],
     comment: null,
@@ -79,7 +80,7 @@ export function newLeaveIssues(values: NewLeaveValues, type: Pick<LeaveType, 're
   ]
 }
 
-export function toCreateLeaveInput(values: NewLeaveValues, acknowledged: readonly AvailabilityRuleId[] = []): CreateLeaveInput {
+export function toCreateLeaveInput(values: NewLeaveValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []): CreateLeaveInput {
   return CreateLeaveInput.parse(createInput(values, acknowledged))
 }
 

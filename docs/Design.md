@@ -117,7 +117,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   bottom bar on a phone. The grid ends with room for it.
 - **The navigation panel (D-173):** the menu button opens a `glass-drawer` panel from the inline start (the right), at
   most `sheet` wide, the full height, on every screen. Its sections, each a muted heading over its rows: מבנה (units,
-  soldiers), הגדרות היעדרות (leave types, rules, tags), הרשאות (roles, grants, account links), נתונים (import and
+  soldiers), הגדרות היעדרות (leave types, rules, tags, properties), הרשאות (roles, grants, account links), נתונים (import and
   export). A row is the module's icon, name and waiting count; pressing it closes the panel and opens the module, whose
   deep link is unchanged. Beside it a pin toggle ("הצמדה לסרגל" and the name) adds the module to the bar, after the
   daily buttons, in the order pinned. Under the sections, "תצוגה": where the rules row sits. A row the viewer may not
@@ -200,6 +200,19 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   the row's `ActionMenu` with a `SmallDialog`; the form has grantee, role, `ScopeFields`, first and last day (both
   optional, with hints) and a reason.
 - A soldier who may not view the organization and reads no soldier still sees the "no access yet" notice (D-160).
+
+## Deployments, collective leave and seniority (V15, D-179)
+
+- **`DeploymentsModule`** (`ui/modules/deployments`): the deployments list (name, "active" chip, unit · days · members),
+  an `ActionMenu` with "who is in the deployment" and archive (`SmallDialog`); the form has name, unit and two dates
+  (an open end allowed). Without a live unit the empty notice says a unit comes first.
+- **`DeploymentMembersForm`**: a `CheckList` of soldiers, then a row per member with two optional dates inside the
+  deployment's days.
+- **The new-leave drawer** has a "collective leave" switch when there is more than one soldier to choose; the
+  `LeaveBatchForm` has a name, a `CheckList` of soldiers, the type and the days. **`LeaveDuplicateForm`** opens from a
+  leave's drawer: soldiers, days, and "approve now" only for who approves all of them.
+- **`SenioritySection`** on the soldier's page: the overrides (current, permanent, revoked as history), a new one in a
+  dialog, revoke from the row.
 
 ## Patterns of a module
 
@@ -296,7 +309,11 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `RolesModule`, `RankBindingsModule`, `GrantsModule`, `ScopeFields` | `ui/modules/access` | Roles, their rank bindings, personal grants, and the scope picker |
 | `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
-| `FilterBar`, `FilterControl`, `OnlyMissingSwitch`, `PresenceButton` | `ui/shell` | The filter row (chips, clear all), and the bar's filter, "only who is missing" and presence controls |
+| `PropertiesModule` | `ui/modules/properties` | Property definitions by entity, their options and order (D-176) |
+| `DeploymentsModule`, `DeploymentForm`, `DeploymentMembersForm` | `ui/modules/deployments` | Deployments and who serves in them (D-179) |
+| `LeaveBatchForm`, `LeaveDuplicateForm`, `SenioritySection` | `ui/modules/leaves`, `ui/modules/soldiers` | A collective leave, copies of a leave, and personal seniority (D-179) |
+| `PropertyFields` | `ui/patterns/properties` | One field per live property of an entity, ending the soldier, unit and leave forms (D-176) |
+| `FilterBar`, `FilterControl`, `OnlyMissingSwitch`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, clear all), and the bar's filter, "only who is missing" and presence controls |
 | `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
 | `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
 | `RuleViolations`, `RuleBrief`, `RuleGateDialog`, `RuleWarnings` | `ui/patterns/rules` | Broken rules in full and in brief; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`), shared by modules and the timeline (D-143) |

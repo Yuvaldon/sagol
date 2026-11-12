@@ -21,10 +21,14 @@ export const PANEL_IDS = {
   /** Tags by category, and the categories (D-130). */
   tags: 'tags',
   tagCategories: 'tag_categories',
+  /** Custom property definitions, by entity type (D-016). */
+  properties: 'properties',
   /** Present and absent lists of a day (D-134). */
   presence: 'presence',
   /** Availability rules, their conflicts, and the broken rules of a day (D-140, D-141). */
   rules: 'rules',
+  /** Deployments and their members (D-019, D-179). */
+  deployments: 'deployments',
   /** Requests of an identity to link to a soldier, for review (D-150). */
   accountLinks: 'account_links',
   /** Roles with their permission sets and the baseline role, and the rank bindings (D-165). */
@@ -49,8 +53,10 @@ export const PanelId = z.enum([
   PANEL_IDS.myLeaves,
   PANEL_IDS.tags,
   PANEL_IDS.tagCategories,
+  PANEL_IDS.properties,
   PANEL_IDS.presence,
   PANEL_IDS.rules,
+  PANEL_IDS.deployments,
   PANEL_IDS.accountLinks,
   PANEL_IDS.roles,
   PANEL_IDS.rankBindings,
@@ -68,7 +74,7 @@ export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
  */
 export const NAVIGATION_SECTIONS = [
   { id: 'structure', modules: ['units', 'soldiers'] },
-  { id: 'leaveSetup', modules: ['leave_types', 'rules', 'tags'] },
+  { id: 'leaveSetup', modules: ['leave_types', 'rules', 'deployments', 'tags', 'properties'] },
   { id: 'access', modules: ['roles', 'access_grants', 'account_links'] },
   { id: 'data', modules: ['data_transfer'] },
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]

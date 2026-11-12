@@ -9,6 +9,7 @@ import {
   type UnitLevel,
   type UpdateUnitInput,
 } from '@contracts'
+import { sameProperties, type WithProperties } from '../properties/properties'
 import { formIssues } from '../forms/issues'
 import { siblingsUnder } from './tree'
 
@@ -28,7 +29,7 @@ function nextSortOrder(rows: readonly { sort_order: number }[]): number {
 }
 
 export function toCreateUnitInput(
-  values: UnitFormValues,
+  values: UnitFormValues & WithProperties,
   parentId: UnitId | null,
   units: readonly Unit[],
 ): CreateUnitInput {
@@ -41,7 +42,7 @@ export function toCreateUnitInput(
     kind: UnitKind.enum.standing,
     valid_from: null,
     valid_to: null,
-    properties: {},
+    properties: values.properties ?? {},
   }
 }
 
@@ -57,12 +58,13 @@ export function unitFormIssues(values: UnitFormValues): Issue[] {
 export function toUpdateUnitInput(
   unit: Unit,
   openedVersion: number,
-  values: UnitFormValues,
+  values: UnitFormValues & WithProperties,
 ): UpdateUnitInput | null {
   const changes = {
     ...(values.name === unit.name ? {} : { name: values.name }),
     ...(values.unit_level_id === unit.unit_level_id ? {} : { unit_level_id: values.unit_level_id }),
     ...(values.color_key === unit.color_key ? {} : { color_key: values.color_key }),
+    ...(values.properties === undefined || sameProperties(values.properties, unit.properties) ? {} : { properties: values.properties }),
   }
   if (Object.keys(changes).length === 0) return null
   return { id: unit.id, expected_version: openedVersion, changes }

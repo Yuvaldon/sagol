@@ -3,6 +3,8 @@ import {
   LeaveId,
   LeaveTypeId,
   OrganizationId,
+  PropertyDefinitionId,
+  PropertyOptionId,
   SoldierId,
   TagCategoryId,
   TagId,
@@ -19,7 +21,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import { presenceLists } from '../presence/presence'
 import { LeaveConditions, leaveMatches } from '../view-state/conditions'
-import { NO_CONDITIONS, readFilter, withTagChip, writeFilter } from '../view-state/filter'
+import { NO_CONDITIONS, readFilter, withPropertyChip, withTagChip, writeFilter } from '../view-state/filter'
 import { populationOf, type FilterSource } from './source'
 
 // Sample rows, test data only.
@@ -36,6 +38,10 @@ const MARITAL = TagCategoryId.parse(uuid(31))
 const MEDIC = TagId.parse(uuid(40))
 const DRIVER = TagId.parse(uuid(41))
 const SINGLE = TagId.parse(uuid(42))
+const BLOOD = PropertyDefinitionId.parse(uuid(50))
+const LICENSED = PropertyDefinitionId.parse(uuid(51))
+const TYPE_A = PropertyOptionId.parse(uuid(52))
+const TYPE_O = PropertyOptionId.parse(uuid(53))
 
 const categoryOf = (tagId: TagId) => (tagId === SINGLE ? MARITAL : tagId === MEDIC || tagId === DRIVER ? ROLE : undefined)
 
@@ -43,7 +49,7 @@ describe('the filter in the URL (D-131)', () => {
   it('writes one top-level and, a lone node unwrapped, nothing for no condition', () => {
     expect(writeFilter(NO_CONDITIONS)).toBeUndefined()
     expect(writeFilter({ ...NO_CONDITIONS, statuses: ['inactive'] })).toEqual({ where: { kind: 'soldier_status', statuses: ['inactive'] } })
-    expect(writeFilter({ unitId: UNIT, tagSets: [[MEDIC, DRIVER]], rankIds: [RANK], statuses: [] })).toEqual({
+    expect(writeFilter({ unitId: UNIT, tagSets: [[MEDIC, DRIVER]], rankIds: [RANK], statuses: [], properties: [] })).toEqual({
       where: {
         kind: 'and',
         nodes: [
@@ -56,7 +62,16 @@ describe('the filter in the URL (D-131)', () => {
   })
 
   it('reads back what it wrote, and anything else as another filter', () => {
-    const conditions = { unitId: UNIT, tagSets: [[MEDIC], [SINGLE]], rankIds: [RANK], statuses: ['active' as const] }
+    const conditions = {
+      unitId: UNIT,
+      tagSets: [[MEDIC], [SINGLE]],
+      rankIds: [RANK],
+      statuses: ['active' as const],
+      properties: [
+        { kind: 'options' as const, definitionId: BLOOD, optionIds: [TYPE_A, TYPE_O] },
+        { kind: 'boolean' as const, definitionId: LICENSED, value: false },
+      ],
+    }
     expect(readFilter(writeFilter(conditions) ?? null)).toEqual({ kind: 'conditions', conditions })
     expect(readFilter(null)).toEqual({ kind: 'conditions', conditions: NO_CONDITIONS })
     const others: FilterExpression[] = [
@@ -73,6 +88,18 @@ describe('the filter in the URL (D-131)', () => {
           ],
         },
       },
+      // Property conditions the bar does not read (D-177): another operator, an operand that is not options, twice.
+      { where: { kind: 'property', property_definition_id: BLOOD, operator: 'is_empty', value: null } },
+      { where: { kind: 'property', property_definition_id: BLOOD, operator: 'any_of', value: ['A'] } },
+      {
+        where: {
+          kind: 'and',
+          nodes: [
+            { kind: 'property', property_definition_id: LICENSED, operator: 'equals', value: true },
+            { kind: 'property', property_definition_id: LICENSED, operator: 'equals', value: false },
+          ],
+        },
+      },
     ]
     for (const filter of others) expect(readFilter(filter)).toEqual({ kind: 'other' })
   })
@@ -82,6 +109,18 @@ describe('the filter in the URL (D-131)', () => {
     expect(withTagChip(conditions, categoryOf, ROLE, [DRIVER]).tagSets).toEqual([[DRIVER], [SINGLE]])
     expect(withTagChip(conditions, categoryOf, ROLE, []).tagSets).toEqual([[SINGLE]])
     expect(withTagChip({ ...NO_CONDITIONS, tagSets: [[SINGLE]] }, categoryOf, ROLE, [MEDIC]).tagSets).toEqual([[SINGLE], [MEDIC]])
+  })
+
+  it("replaces one property's chip in its place, and removes it (D-177)", () => {
+    const options = { kind: 'options' as const, definitionId: BLOOD, optionIds: [TYPE_A] }
+    const yes = { kind: 'boolean' as const, definitionId: LICENSED, value: true }
+    const conditions = { ...NO_CONDITIONS, properties: [options, yes] }
+    const typeO = { ...options, optionIds: [TYPE_O] }
+    expect(withPropertyChip(conditions, BLOOD, typeO).properties).toEqual([typeO, yes])
+    expect(withPropertyChip(conditions, BLOOD, null).properties).toEqual([yes])
+    expect(withPropertyChip({ ...NO_CONDITIONS, properties: [yes] }, BLOOD, options).properties).toEqual([yes, options])
+    // A chip without options writes no condition.
+    expect(writeFilter({ ...NO_CONDITIONS, properties: [{ ...options, optionIds: [] }] })).toBeUndefined()
   })
 
   it('shows active soldiers only, unless the filter speaks of status (D-105, D-131)', () => {
@@ -201,10 +240,12 @@ describe('present and absent lists (D-134, OI-090)', () => {
   const source: FilterSource = {
     soldiers: [soldier(1), soldier(2), soldier(3), soldier(4, { status: 'inactive' }), soldier(5)],
     ranks: [],
+    seniorityOverrides: [],
     units: [unit],
     unitTree: [unit],
     memberships: [placed(1), placed(2), placed(3), placed(4)],
     soldierTags: [tagged],
+    propertyDefinitions: [],
   }
   const leaves = [
     leave(80, 1, home.id, 'approved'),

@@ -31,14 +31,19 @@ export interface DataPort {
     | 'leave_type_groups'
     | 'leave_types'
     | 'leaves'
+    | 'leave_batches'
     | 'leave_events'
     | 'leave_comments'
     | 'availability_rules'
+    | 'property_definitions'
     | 'soldier_accounts'
     | 'roles'
     | 'role_permissions'
     | 'rank_role_bindings'
     | 'access_grants'
+    | 'deployments'
+    | 'deployment_members'
+    | 'seniority_overrides'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -51,12 +56,15 @@ export interface DataPort {
     readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
-    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
+    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'createBatch' | 'duplicate' | 'update' | 'transition'>
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
+    readonly property_definitions: DataCommands['property_definitions']
     readonly roles: DataCommands['roles']
     readonly rank_role_bindings: DataCommands['rank_role_bindings']
     readonly access_grants: DataCommands['access_grants']
+    readonly deployments: DataCommands['deployments']
+    readonly seniority_overrides: DataCommands['seniority_overrides']
   }
   /** Import and export (D-171). */
   readonly transfer: DataTransfer

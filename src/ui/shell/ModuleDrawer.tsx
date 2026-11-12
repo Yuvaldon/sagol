@@ -3,6 +3,7 @@ import { t, type I18nKey } from '@i18n'
 import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, useTransferAccess } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { PropertiesModule } from '../modules/properties/PropertiesModule'
 import { AccountLinksModule } from '../modules/account-links/AccountLinksModule'
 import { GrantsModule } from '../modules/access/GrantsModule'
 import { RankBindingsModule } from '../modules/access/RankBindingsModule'
@@ -15,6 +16,7 @@ import { LeavesModule } from '../modules/leaves/LeavesModule'
 import { MyLeavesModule } from '../modules/leaves/MyLeavesModule'
 import { PresenceModule } from '../modules/presence/PresenceModule'
 import { RulesModule } from '../modules/rules/RulesModule'
+import { DeploymentsModule } from '../modules/deployments/DeploymentsModule'
 import { TagCategoriesModule } from '../modules/tags/TagCategoriesModule'
 import { TagsModule } from '../modules/tags/TagsModule'
 import { SoldiersModule } from '../modules/soldiers/SoldiersModule'
@@ -81,12 +83,24 @@ const GROUPS: readonly ModuleGroup[] = [
     ],
   },
   {
+    titleKey: 'properties.title',
+    sections: [
+      { panel: PANEL_IDS.properties, labelKey: 'properties.title', isAllowed: (access) => access.properties, Module: PropertiesModule },
+    ],
+  },
+  {
     titleKey: 'presence.title',
     sections: [{ panel: PANEL_IDS.presence, labelKey: 'presence.title', isAllowed: (access) => access.soldiers, Module: PresenceModule }],
   },
   {
     titleKey: 'rules.title',
     sections: [{ panel: PANEL_IDS.rules, labelKey: 'rules.title', isAllowed: (access) => access.rules, Module: RulesModule }],
+  },
+  {
+    titleKey: 'deployments.title',
+    sections: [
+      { panel: PANEL_IDS.deployments, labelKey: 'deployments.title', isAllowed: (access) => access.deployments, Module: DeploymentsModule },
+    ],
   },
   {
     titleKey: 'leaveTypes.title',

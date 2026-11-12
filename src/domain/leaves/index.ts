@@ -21,3 +21,4 @@ export {
 } from './workflow'
 export { COMMENT_PERMISSIONS, commentChangeIssues, isCommentAuthor } from './comments'
 export { archiveLeaveTypeGroupIssues } from './types'
+export { duplicatedLeaveColumns, type DuplicatedLeaveColumns } from './duplicate'

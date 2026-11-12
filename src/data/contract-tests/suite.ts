@@ -19,8 +19,10 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ContractAdapter, ContractHarness } from './harness'
 import { describeAccountContract } from './accounts'
+import { describeDeploymentContract } from './deployments'
 import { describeLeaveContract } from './leaves'
 import { describePermissionContract } from './permissions'
+import { describePropertyContract } from './properties'
 import { describeRosterContract } from './roster'
 import { describeRuleContract } from './rules'
 import { describeTransferContract } from './transfer'
@@ -402,5 +404,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
     describeRuleContract(() => harness, () => claim())
     describePermissionContract(() => harness, () => claim())
     describeTransferContract(() => harness, () => claim())
+    describePropertyContract(() => harness, () => claim())
+    describeDeploymentContract(() => harness, () => claim())
   })
 }

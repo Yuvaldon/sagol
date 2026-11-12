@@ -22,10 +22,11 @@ import { Button } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SoldierPrivateForm, SoldierProfileForm } from './SoldierForms'
+import { SenioritySection } from './SenioritySection'
 import { SoldierTagsSection } from './SoldierTags'
 import { unitOptions } from './unitOptions'
 
-// One soldier: the profile, the tags, the private fields and the placement. Each section has its own permission
+// One soldier: the profile, the tags, the private fields, the placement and the seniority. Each section has its own permission
 // (D-094, D-096, D-130), so each appears on its own.
 
 const NO_SELECTION = 'none'
@@ -297,6 +298,7 @@ export function SoldierPage({
           allowedUnit={permissions.moveTo}
         />
       ) : null}
+      <SenioritySection soldier={soldier} today={today} />
     </div>
   )
 }

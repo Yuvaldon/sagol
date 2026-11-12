@@ -7,6 +7,7 @@ import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
+import type { WithProperties } from '../properties/properties'
 import { usePorts } from '../runtime/context'
 import { toCreateUnitInput, toCreateUnitLevelInput, toUpdateUnitInput, type UnitFormValues } from './forms'
 import { siblingsUnder, steppedOrder, type UnitDropPlan } from './tree'
@@ -48,13 +49,13 @@ export function useUnitCommands() {
 
   const create = useCommand(
     [QUERY_KEYS.units],
-    ({ values, parentId, siblings }: { values: UnitFormValues; parentId: UnitId | null; siblings: readonly Unit[] }) =>
+    ({ values, parentId, siblings }: { values: UnitFormValues & WithProperties; parentId: UnitId | null; siblings: readonly Unit[] }) =>
       units.create(toCreateUnitInput(values, parentId, siblings)),
   )
 
   const update = useCommand(
     [QUERY_KEYS.units],
-    async ({ unit, openedVersion, values }: { unit: Unit; openedVersion: number; values: UnitFormValues }) => {
+    async ({ unit, openedVersion, values }: { unit: Unit; openedVersion: number; values: UnitFormValues & WithProperties }) => {
       const input = toUpdateUnitInput(unit, openedVersion, values)
       const unchanged: Result<Unit> = { ok: true, value: unit }
       return input === null ? unchanged : units.update(input)

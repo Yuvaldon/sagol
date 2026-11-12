@@ -20,6 +20,7 @@ import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
+import type { WithProperties } from '../properties/properties'
 import { usePorts } from '../runtime/context'
 import {
   toChangeMembershipInput,
@@ -131,11 +132,11 @@ export function useSoldierCommands() {
 
   const create = useCommand(
     [QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
-    (values: NewSoldierValues) => soldiers.create(toCreateSoldierInput(values)),
+    (values: NewSoldierValues & WithProperties) => soldiers.create(toCreateSoldierInput(values)),
   )
   const update = useCommand(
     [QUERY_KEYS.soldiers],
-    async ({ soldier, openedVersion, values }: { soldier: Soldier; openedVersion: number; values: SoldierFormValues }) => {
+    async ({ soldier, openedVersion, values }: { soldier: Soldier; openedVersion: number; values: SoldierFormValues & WithProperties }) => {
       const input = toUpdateSoldierInput(soldier, openedVersion, values)
       const unchanged: Result<Soldier> = { ok: true, value: soldier }
       return input === null ? unchanged : soldiers.update(input)

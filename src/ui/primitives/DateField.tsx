@@ -17,6 +17,7 @@ import {
   Popover,
   Text,
 } from 'react-aria-components'
+import { fieldLabel, type FieldLabel } from './label'
 
 // One calendar day, typed or picked. The value is the ISO string the contracts hold (D-042), and '' while
 // the field is empty. Like every field here it knows nothing about forms.
@@ -25,7 +26,7 @@ const NAV =
   'flex size-touch cursor-pointer items-center justify-center rounded-pill text-text-muted outline-focus md:size-control data-focus-visible:outline-2 data-hovered:bg-inner'
 
 export interface DateFieldProps {
-  readonly labelKey: I18nKey
+  readonly labelKey: FieldLabel
   readonly name: string
   readonly value: CalendarDate | ''
   readonly onChange: (value: CalendarDate | '') => void
@@ -44,7 +45,7 @@ export function DateField({ labelKey, name, value, onChange, error }: DateFieldP
       validationBehavior="aria"
       className="flex flex-col gap-xs"
     >
-      <Label className="text-label font-semibold text-text-muted">{t(labelKey)}</Label>
+      <Label className="text-label font-semibold text-text-muted">{fieldLabel(labelKey)}</Label>
       <Group className="flex min-h-touch w-full items-center justify-between gap-sm rounded-control border border-line bg-surface ps-md text-input text-text outline-focus outline-offset-1 md:min-h-control md:text-control data-focus-within:outline-2 data-invalid:border-status-rejected">
         <DateInput dir="ltr" className="flex">
           {(segment) => (

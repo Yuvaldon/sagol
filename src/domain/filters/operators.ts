@@ -104,6 +104,17 @@ function positiveMatch(
 }
 
 /**
+ * The operand of `any_of` on an option type without the options removed since it was written (D-177): they match no
+ * value, and the others still do. Any other operand as it is.
+ */
+function liveOperand(definition: OperandDefinition, operator: PropertyOperator, operand: JsonValue): JsonValue {
+  const optionType = definition.data_type === 'select' || definition.data_type === 'multi_select'
+  if (operator !== 'any_of' || !optionType || !Array.isArray(operand)) return operand
+  const item = itemDefinition(definition)
+  return operand.filter((value) => fitsPropertyType(item, value))
+}
+
+/**
  * True when a stored value satisfies a property condition. `stored` is `undefined` when the
  * entity has no value. The operator and operand are checked by `filterIssues` on write; an
  * unfit one never satisfies a positive operator (so `not_equals` then matches everyone).
@@ -123,9 +134,11 @@ export function propertyMatches(
       return !empty
     case 'not_equals':
       return !propertyMatches(definition, 'equals', operand, stored)
-    default:
+    default: {
       if (empty || value === null || !operatorFits(definition, operator)) return false
-      if (!operandFits(definition, operator, operand)) return false
-      return positiveMatch(definition, operator, operand, value)
+      const fitting = liveOperand(definition, operator, operand)
+      if (!operandFits(definition, operator, fitting)) return false
+      return positiveMatch(definition, operator, fitting, value)
+    }
   }
 }

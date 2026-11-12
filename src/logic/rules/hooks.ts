@@ -12,6 +12,7 @@ import type {
 import { EVERY_SOLDIER, compareDates, type AvailabilityLeave, type RuleData } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useDeploymentMembers, useDeployments } from '../deployments/hooks'
 import { useFilterSource } from '../filters/source'
 import { useLeaves, useLeaveTypes } from '../leaves/hooks'
 import { checkOf } from '../permissions/checks'
@@ -118,16 +119,27 @@ export function useRuleData(span: Span | null): Loaded<RuleData> {
   const tags = useTags()
   const leaves = useLeaves(span)
   const types = useLeaveTypes()
+  const deployments = useDeployments()
+  const members = useDeploymentMembers()
   return useMemo((): Loaded<RuleData> => {
     if (source.status !== 'ready') return source
     if (tags.status !== 'ready') return tags
     if (leaves.status !== 'ready') return leaves
     if (types.status !== 'ready') return types
+    if (deployments.status !== 'ready') return deployments
+    if (members.status !== 'ready') return members
     return {
       status: 'ready',
-      value: ruleDataOf({ source: source.value, tags: tags.value, leaves: leaves.value, types: types.value }),
+      value: ruleDataOf({
+        source: source.value,
+        tags: tags.value,
+        leaves: leaves.value,
+        types: types.value,
+        deployments: deployments.value,
+        deploymentMembers: members.value,
+      }),
     }
-  }, [source, tags, leaves, types])
+  }, [source, tags, leaves, types, deployments, members])
 }
 
 interface WindowRequest {
