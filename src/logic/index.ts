@@ -138,6 +138,15 @@ export {
 export { newLeaveCandidate, newLeaveIssues, newLeaveValues, soldiersOf, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
 export { requestRotation, useRequestRotation, type RequestRotation } from './leaves/rotation'
 export {
+  leaveSheetIssues,
+  newLeaveSheetValues,
+  newSheetRow,
+  sheetCandidates,
+  type LeaveSheetRow,
+  type LeaveSheetValues,
+  type RotationOf,
+} from './leaves/sheet'
+export {
   duplicateLeaveIssues,
   leaveBatchIssues,
   newDuplicateValues,
@@ -147,6 +156,7 @@ export {
 } from './leaves/batch'
 export {
   useCreateLeave,
+  useCreateLeaves,
   useLeaveBatchCommands,
   useLeaveCreation,
   useLeaveTypeCommands,

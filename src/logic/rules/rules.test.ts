@@ -321,12 +321,12 @@ describe('rule evaluation for a window (D-141, OI-091)', () => {
     const candidate = newLeaveCandidate(values)
     expect(candidate).not.toBeNull()
     if (candidate === null) return
-    const violations = leaveViolations(dataWith([]), [soft, twoMedicsPerPlatoon], candidate)
+    const violations = leaveViolations(dataWith([]), [soft, twoMedicsPerPlatoon], [candidate])
     expect(violations.map((violation) => violation.rule_id).sort()).toEqual([soft.id, twoMedicsPerPlatoon.id].sort())
     expect(acknowledgedRuleIds(violations)).toEqual([soft.id])
     // A pending request counts for no rule that does not count pending leaves.
     const pending = newLeaveCandidate({ ...values, as_approved: false })
-    expect(pending === null ? null : leaveViolations(dataWith([]), [soft], pending)).toEqual([])
+    expect(pending === null ? null : leaveViolations(dataWith([]), [soft], [pending])).toEqual([])
     expect(newLeaveCandidate({ ...values, end_date: '' })).toBeNull()
   })
 })
