@@ -3,7 +3,7 @@ import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { enterAsOwner } from './support/workspace.ts'
 
 // V18 (D-184): the user menu offers to install the app only when the browser offers it, and never on its own (D-076).
-// V28 (D-277): after sign-in the same offer shows once as a card that keeps the bars free; "not now" puts it away on
+// V28 (D-274): after sign-in the same offer shows once as a card that keeps the bars free; "not now" puts it away on
 // this device, and the menu item stays.
 
 test('the install offer appears only when the browser makes one', async ({ page }) => {
