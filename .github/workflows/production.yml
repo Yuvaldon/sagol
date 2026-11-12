@@ -4,6 +4,7 @@ name: Production
 # gets the same commit's pending migrations and its `commands` function. The owner may also start it by hand.
 # Production holds real data: nothing here deletes, resets or sets secrets, and a pending migration that drops,
 # truncates or deletes without a WHERE stops the run unless the migration carries the explicit marker.
+# No GitHub environment: the values are repository-level, and the main-only rule is the job's own checks below.
 
 on:
   workflow_run:
@@ -37,7 +38,6 @@ jobs:
         github.actor == github.repository_owner &&
         github.triggering_actor == github.repository_owner)
     runs-on: ubuntu-latest
-    environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
@@ -75,6 +75,7 @@ jobs:
       - name: Refuse any project but the exact production ref
         run: |
           test -n "$PROJECT_REF" || { echo "::error::PRODUCTION_PROJECT_REF is not set"; exit 1; }
+          test -n "$STAGING_REF" || { echo "::error::STAGING_PROJECT_REF is not readable at repository level"; exit 1; }
           if [ "$EVENT" = workflow_dispatch ]; then
             test "$CONFIRM_REF" = "$PROJECT_REF" || { echo "::error::the typed ref is not PRODUCTION_PROJECT_REF"; exit 1; }
           fi

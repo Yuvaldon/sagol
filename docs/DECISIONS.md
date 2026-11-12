@@ -3563,7 +3563,8 @@ dead space on any surface; a rule in the check keeps the next surface from bring
 
 ## D-280 — Production delivery: automatic after staging, guarded
 2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12; amended the same day: the owner
-approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z
+approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z;
+at about 15:55Z the owner chose repository-level values over a `production` environment
 - **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
   pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
   the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
@@ -3583,8 +3584,11 @@ approved the automatic run in the owner's own words ("אוטומטית"), relaye
   failure with a non-zero exit (checked with CLI 2.122.0 on a local database: the failing file left no table and no
   history row, the next file was not applied). The step fails, so the function deploy after it never runs; the
   project stays on the last migration that succeeded.
-- **The environment.** The job runs in the GitHub environment `production`, which the owner restricts to `main` and
-  which holds `SUPABASE_ACCESS_TOKEN`, `PRODUCTION_DB_PASSWORD` and the variable `PRODUCTION_PROJECT_REF` (OI-230). No
+- **No environment.** The job uses no GitHub environment: `SUPABASE_ACCESS_TOKEN` (one scoped token covering the
+  production and staging projects, which Staging reads as well), `PRODUCTION_DB_PASSWORD` and the variables
+  `PRODUCTION_PROJECT_REF` and `STAGING_PROJECT_REF` are repository-level (OI-230), so the owner keeps one copy of each.
+  The main-only rule is the job's own checks (`workflow_run` on `main` from this repository, or a dispatch on `main` by
+  the owner, then the commit must be on `main`), and the guard stops if `STAGING_PROJECT_REF` is not readable. No
   required-reviewer gate: GitHub offers it in private repositories only on paid plans, and anything paid is out
   (D-200); the owner's approval of the automatic run replaces it.
 **Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
