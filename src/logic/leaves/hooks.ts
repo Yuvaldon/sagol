@@ -258,6 +258,8 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
     [soldiers],
   )
   const can = useCan(checks)
+  const session = useSession()
+  const self = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null
   return useMemo(() => {
     const offered = soldiers.filter((soldier) => soldier.status === 'active' && soldier.archived_at === null).toSorted(byName)
     const creatable = offered.filter((soldier) => can(checkOn(LEAVE_PERMISSIONS.create, soldier.id)))
@@ -265,11 +267,11 @@ export function useLeaveCreation(soldiers: readonly Soldier[]) {
       /** The soldiers a leave can be created for, by name (D-094). */
       soldiers: creatable,
       any: creatable.length > 0,
-      /** Whether the actor may approve anyone they see: who the inbox is for (D-120). */
-      approvesAny: soldiers.some((soldier) => can(checkOn(LEAVE_PERMISSIONS.approve, soldier.id))),
+      /** Whether the actor may approve a soldier other than themselves: who the inbox is for (D-120, D-299). */
+      approvesOthers: soldiers.some((soldier) => soldier.id !== self && can(checkOn(LEAVE_PERMISSIONS.approve, soldier.id))),
       canApprove: (soldierId: SoldierId) => can(checkOn(LEAVE_PERMISSIONS.approve, soldierId)),
       /** Who a leave can be copied to (`leaves:duplicate`, D-049), by name. */
       duplicable: offered.filter((soldier) => can(checkOn(LEAVE_PERMISSIONS.duplicate, soldier.id))),
     }
-  }, [can, soldiers])
+  }, [can, self, soldiers])
 }
