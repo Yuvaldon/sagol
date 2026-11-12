@@ -149,6 +149,7 @@ const SOURCE: FilterSource = {
   soldiers: [soldier(1, 'Dana'), soldier(2, 'Eli'), soldier(3, 'Gal'), soldier(4, 'Tom')],
   ranks: [],
   units: UNITS,
+  unitTree: UNITS,
   memberships: [membership(1, 1, PLATOON_A), membership(2, 2, PLATOON_A), membership(3, 3, PLATOON_B), membership(4, 4, PLATOON_B)],
   soldierTags: [
     { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(1)), tag_id: MEDIC, created_at: AT, created_by: null },
@@ -159,7 +160,7 @@ const SOURCE: FilterSource = {
 }
 
 const dataWith = (leaves: readonly Leave[]) =>
-  ruleDataOf({ source: SOURCE, units: UNITS, tags: [tag(MEDIC), tag(DRIVER)], leaves, types: [TYPE] })
+  ruleDataOf({ source: SOURCE, tags: [tag(MEDIC), tag(DRIVER)], leaves, types: [TYPE] })
 
 const MEDICS = { kind: 'conditions', tagSets: [[MEDIC]], rankIds: [] } as const
 

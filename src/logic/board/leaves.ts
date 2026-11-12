@@ -10,10 +10,10 @@ import type {
 } from '@contracts'
 import { effectiveEffect } from '@domain'
 
-// The leaves a timeline row draws (D-111). Pure; the hook feeds it.
+// The leaves of each soldier in view, as the engines draw them (D-111, D-174). Pure; the hook feeds it.
 
 /** A leave as a row draws it. */
-export interface TimelineLeave {
+export interface BoardLeave {
   readonly id: LeaveId
   readonly status: LeaveStatus
   readonly start_date: CalendarDate
@@ -28,16 +28,16 @@ export interface TimelineLeave {
  * Each soldier's leaves, by first day. `types` holds archived types too, so a leave keeps its type (D-113); a
  * leave whose type is missing takes the default effect (D-070).
  */
-export function timelineLeaves(
+export function boardLeaves(
   leaves: readonly Leave[],
   types: readonly LeaveType[],
-): ReadonlyMap<SoldierId, readonly TimelineLeave[]> {
+): ReadonlyMap<SoldierId, readonly BoardLeave[]> {
   const typeById = new Map<LeaveTypeId, LeaveType>(types.map((type) => [type.id, type]))
-  const bySoldier = new Map<SoldierId, TimelineLeave[]>()
+  const bySoldier = new Map<SoldierId, BoardLeave[]>()
   const ordered = leaves.toSorted((a, b) => a.start_date.localeCompare(b.start_date) || a.id.localeCompare(b.id))
   for (const leave of ordered) {
     const type = typeById.get(leave.leave_type_id) ?? null
-    const drawn: TimelineLeave = {
+    const drawn: BoardLeave = {
       id: leave.id,
       status: leave.status,
       start_date: leave.start_date,

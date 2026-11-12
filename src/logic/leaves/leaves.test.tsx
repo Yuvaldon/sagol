@@ -15,7 +15,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { LogicPorts } from '../ports'
 import { fakePorts, organizationIn, wrapperOf } from '../testing/ports'
-import { timelineLeaves } from '../timeline/leaves'
+import { boardLeaves } from '../board/leaves'
 import { WorkspaceSearch } from '../view-state/search'
 import type { DateWindow } from '../view-state/window'
 import { newLeaveIssues, newLeaveValues, optimisticLeave, toCreateLeaveInput } from './forms'
@@ -162,7 +162,7 @@ describe('the leaves of a timeline row (D-111)', () => {
       leave(1, 30, '2026-11-08', '2026-11-09', { availability_effect_override: 'available' }),
       leave(3, 99, '2026-11-12', '2026-11-12'),
     ]
-    const drawn = timelineLeaves(leaves, types).get(YAEL) ?? []
+    const drawn = boardLeaves(leaves, types).get(YAEL) ?? []
     expect(drawn.map((row) => [row.start_date, row.effect, row.type?.name ?? null])).toEqual([
       ['2026-11-08', 'available', 'T30'],
       ['2026-11-10', 'available', 'T31'],
