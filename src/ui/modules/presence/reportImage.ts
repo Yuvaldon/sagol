@@ -1,6 +1,6 @@
 import { DAY_REPORT, DAY_REPORT_CATEGORIES } from '@config'
 import type { DayReport, ReportCounts, ReportWords } from '@logic'
-import { REPORT_IMAGE_FONT, REPORT_IMAGE_TONES } from '../../theme/reportImage'
+import { REPORT_IMAGE_FONT, REPORT_IMAGE_TONES, REPORT_IMAGE_WEIGHTS } from '../../theme/reportImage'
 
 // The day report as a PNG (D-196): drawn on a canvas from the report itself, in the light tokens, one tall image for a
 // span. The lines follow the text copy's order (D-195), so the two never say different things.
@@ -24,7 +24,8 @@ const SIZE: Record<Style, number> = {
   strong: image.bodyPx,
   muted: image.bodyPx,
 }
-const WEIGHT: Record<Style, number> = { title: 700, heading: 700, body: 400, strong: 700, muted: 400 }
+const { regular, bold } = REPORT_IMAGE_WEIGHTS
+const WEIGHT: Record<Style, number> = { title: bold, heading: bold, body: regular, strong: bold, muted: regular }
 const TONE: Record<Style, string> = {
   title: REPORT_IMAGE_TONES.text,
   heading: REPORT_IMAGE_TONES.text,
@@ -141,7 +142,7 @@ export async function reportImage(lines: readonly ImageLine[]): Promise<Blob> {
   for (const line of placed) {
     if (line.rule !== null) {
       context.fillStyle = REPORT_IMAGE_TONES.line
-      context.fillRect(image.paddingPx, line.rule, image.widthPx - 2 * image.paddingPx, 1)
+      context.fillRect(image.paddingPx, line.rule, image.widthPx - 2 * image.paddingPx, image.ruleWidthPx)
     }
     context.font = fontOf(line.style)
     context.fillStyle = TONE[line.style]
@@ -174,9 +175,12 @@ export function downloadFile(file: File): void {
   const link = document.createElement('a')
   link.href = url
   link.download = file.name
+  // Some browsers follow only a link in the document.
+  document.body.append(link)
   link.click()
-  // The download starts from the link; the address is freed once it has.
+  link.remove()
+  // The download starts from the address; it is freed once the browser has surely read it.
   setTimeout(() => {
     URL.revokeObjectURL(url)
-  })
+  }, image.revokeAfterMs)
 }

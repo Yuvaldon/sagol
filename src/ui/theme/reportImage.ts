@@ -9,3 +9,6 @@ export const REPORT_IMAGE_TONES = {
 } as const
 
 export const REPORT_IMAGE_FONT = '"Heebo Variable", system-ui, sans-serif'
+
+/** The font weights of the image's lines: titles and counts bold, names regular. */
+export const REPORT_IMAGE_WEIGHTS = { regular: 400, bold: 700 } as const

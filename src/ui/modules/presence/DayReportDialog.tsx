@@ -18,7 +18,7 @@ import {
   type ReportSection,
 } from '@logic'
 import { ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Share2, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button as AriaButton, Dialog, Disclosure, DisclosurePanel, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import { groupLabel } from '../../board/labels'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -32,11 +32,10 @@ import { CATEGORY_KEYS, entryDetails, entryName, reportWords } from './reportWor
 // The day report (D-193 … D-196): a centered dialog over the board, on the URL's day or span. The counts, then one
 // section per unit with its names; the reasons behind a switch kept on the device; a text copy and an image to send.
 
-const TOAST_MS = 2400
-
 const NOTICES = { copied: 'presence.copied', copyFailed: 'presence.copyFailed', imageFailed: 'presence.imageFailed' } as const satisfies Record<string, I18nKey>
 
-type Notice = keyof typeof NOTICES | null
+/** A notice and its count, so the same notice twice in a row shows its full time again. */
+type Notice = { readonly kind: keyof typeof NOTICES; readonly seq: number } | null
 
 /** The selected scope's name: the unit, the single root in sight, or the whole organization. */
 function useScopeName(): string {
@@ -132,6 +131,9 @@ function Day({ day, span, withReasons }: { readonly day: ReportDay; readonly spa
 
 function Actions({ report, scope, withReasons }: { readonly report: DayReport; readonly scope: string; readonly withReasons: boolean }) {
   const [notice, setNotice] = useState<Notice>(null)
+  const notify = useCallback((kind: keyof typeof NOTICES) => {
+    setNotice((previous) => ({ kind, seq: (previous?.seq ?? 0) + 1 }))
+  }, [])
   const [busy, setBusy] = useState(false)
   const shares = useMemo(() => canShareFiles(), [])
   const first = report.days[0]?.date
@@ -139,7 +141,7 @@ function Actions({ report, scope, withReasons }: { readonly report: DayReport; r
     if (notice === null) return undefined
     const timer = setTimeout(() => {
       setNotice(null)
-    }, TOAST_MS)
+    }, DAY_REPORT.noticeMs)
     return () => {
       clearTimeout(timer)
     }
@@ -148,24 +150,33 @@ function Actions({ report, scope, withReasons }: { readonly report: DayReport; r
   const words = reportWords(scope)
 
   const copy = () => {
+    // An insecure page or an old browser has no clipboard at all.
+    if (typeof navigator.clipboard?.writeText !== 'function') {
+      notify('copyFailed')
+      return
+    }
     navigator.clipboard.writeText(reportText(report, words, withReasons)).then(
       () => {
-        setNotice('copied')
+        notify('copied')
       },
       () => {
-        setNotice('copyFailed')
+        notify('copyFailed')
       },
     )
   }
   const sendImage = async () => {
     setBusy(true)
+    let file: File | null = null
     try {
-      const file = reportFile(await reportImage(imageLines(report, words, withReasons)), first)
+      file = reportFile(await reportImage(imageLines(report, words, withReasons)), first)
       if (shares) await navigator.share({ files: [file], title: t('presence.title') })
       else downloadFile(file)
     } catch (error) {
-      // Closing the share sheet is not a failure.
-      if (!(error instanceof DOMException && error.name === 'AbortError')) setNotice('imageFailed')
+      const name = error instanceof Error ? error.name : ''
+      // Closing the share sheet is not a failure; a share the browser refuses falls back to a download.
+      if (name === 'AbortError') return
+      if (file !== null && shares && (name === 'NotAllowedError' || name === 'TypeError')) downloadFile(file)
+      else notify('imageFailed')
     } finally {
       setBusy(false)
     }
@@ -190,7 +201,7 @@ function Actions({ report, scope, withReasons }: { readonly report: DayReport; r
       </div>
       <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-lg top-safe z-10 flex justify-center">
         {notice === null ? null : (
-          <div className="glass-card rounded-pill px-lg py-xs text-name font-semibold">{t(NOTICES[notice])}</div>
+          <div className="glass-card rounded-pill px-lg py-xs text-name font-semibold">{t(NOTICES[notice.kind])}</div>
         )}
       </div>
     </>
@@ -201,6 +212,13 @@ function SpanControl({ until, setUntil }: { readonly until: CalendarDate | null;
   const [open, setOpen] = useState(until !== null)
   // The field keeps what is typed, a year half written too; the URL takes only a day after the first one.
   const [draft, setDraft] = useState<CalendarDate | ''>(until ?? '')
+  // The URL may change the last day from outside (back, forward, a link): the field follows it.
+  const [seen, setSeen] = useState(until)
+  if (until !== seen) {
+    setSeen(until)
+    if (until !== (draft === '' ? null : draft)) setDraft(until ?? '')
+    if (until !== null) setOpen(true)
+  }
   if (!open && until === null) {
     return (
       <Button

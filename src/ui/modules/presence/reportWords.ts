@@ -1,4 +1,4 @@
-import type { DayReportCategory } from '@config'
+import { DAY_REPORT, type DayReportCategory } from '@config'
 import type { CalendarDate, LeaveType } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { fullName, type ReportEntry, type ReportWords } from '@logic'
@@ -15,9 +15,7 @@ export const CATEGORY_KEYS: Record<DayReportCategory | 'total', I18nKey> = {
   returning: 'presence.returning',
 }
 
-const SEPARATOR = ' · '
-const BULLET = '• '
-const DETAILS = ' – '
+const { separator: SEPARATOR, bullet: BULLET, details: DETAILS } = DAY_REPORT.text
 
 const typeName = (type: LeaveType | null) => type?.name ?? t('leaves.unknownType')
 
