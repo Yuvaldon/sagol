@@ -411,7 +411,7 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
    extension.
 
 **(c) A soldier requests an absence.**
-1. "בקשה חדשה", the strip's quick action. The soldier is the requester (a commander may pick another).
+1. The soldier lands on "שלי" (D-265); closed, it leaves the strip, whose quick action is "בקשה חדשה". The soldier is the requester (a commander may pick another).
 2. Type (by group), from and to (inside the rotation by default), the reason when the type needs one, and any פרטים
    נוספים; the rules' warnings show as the dates change. "בקשה נוספת" adds a row of its own type and days, and "חוזרת"
    repeats a row every so many days (D-275).
