@@ -2982,7 +2982,10 @@ which one they meant. Keeping the tenant in the model costs nothing and leaves r
 - **One primary quick action per role sits in the bottom strip,** at its inline end, set apart from the destinations
   as a filled round button with its name read aloud (on desktop a tooltip as well): "בקשה חדשה" for whoever may
   request, in a rotation's mode; "פתיחת סבב" in routine for whoever may create a rotation (D-257). A viewer with
-  neither has no quick action. It is an action, not a destination: it opens the form over the current screen.
+  neither has no quick action (D-076): a soldier in routine gets no "פתיחת סבב". The action is chosen per role first and
+  per mode second; which role gets which action in each mode (a routine-mode request too, if routine absences come)
+  is settled by the per-role journeys matrix (D-263, pending). It is an action, not a destination: it opens the form
+  over the current screen.
 - **Focus mode (V23) hides both strips and the chips row** and leaves one restore button; nothing else on the board
   floats, so the strips are the whole chrome V23 has to hide.
 - The page's `h1` is the root unit's name in scope (D-175), read aloud only.
