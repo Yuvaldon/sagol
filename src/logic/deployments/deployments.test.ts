@@ -158,11 +158,12 @@ describe('a new rotation from the previous one (D-222)', () => {
     expect(previousRotation([next], next)).toBeNull()
   })
 
-  it('closes once the planned end has come, or any day while the end is open (D-258)', () => {
+  it('closes once the planned end has come, or any day from the start while the end is open (D-258)', () => {
     const today = CalendarDate.parse('2026-09-15')
     expect(isRotationClosable(latest, today)).toBe(false)
     expect(isRotationClosable(earlier, today)).toBe(true)
-    expect(isRotationClosable(next, today)).toBe(true)
+    expect(isRotationClosable(next, today)).toBe(false)
+    expect(isRotationClosable(next, CalendarDate.parse('2026-12-01'))).toBe(true)
     expect(isRotationClosable(deployment({ ...earlier, closed_at: AT }), today)).toBe(false)
   })
 

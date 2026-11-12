@@ -142,9 +142,10 @@ export function deploymentMemberValues(members: readonly DeploymentMember[], dep
     .map((member) => ({ soldier_id: member.soldier_id, start_date: member.start_date ?? '', end_date: member.end_date ?? '' }))
 }
 
-/** A rotation closes once its planned end has come, or any day while its end is open (D-258). */
+/** A rotation closes once its planned end has come, or any day from its start while its end is open (D-258). */
 export function isRotationClosable(deployment: Deployment, today: CalendarDate): boolean {
-  return deployment.closed_at === null && (deployment.end_date === null || compareDates(deployment.end_date, today) <= 0)
+  const end = deployment.end_date ?? (compareDates(deployment.start_date, today) <= 0 ? today : null)
+  return deployment.closed_at === null && end !== null && compareDates(end, today) <= 0
 }
 
 /** The live rotation that ended last before `rotation` starts: what a new rotation copies from (D-222). */
