@@ -52,9 +52,9 @@ async function createSoldier(page: Page, firstName: string, lastName: string) {
   await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
 }
 
-/** Opens a filter chip's choices from "+", by the condition's name, and checks one value. */
+/** Opens a filter chip's choices from "filter" in the bar, by the condition's name, and checks one value. */
 async function addCondition(page: Page, condition: string, value: string) {
-  await filterBar(page).getByRole('button', { name: he.filters.add }).click()
+  await page.getByRole('button', { name: he.filters.add, exact: true }).click()
   await page.getByRole('dialog', { name: he.filters.add }).getByRole('button', { name: condition, exact: true }).click()
   await page.getByRole('dialog', { name: he.filters.add }).locator('label').filter({ hasText: value }).click()
   await page.keyboard.press('Escape')
@@ -110,8 +110,11 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await expectNoAxeViolations(page)
     await page.reload()
     await expect(rowNames(page)).toHaveText(['יעל שחר'])
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} תפקיד` }).click()
+    await testInfo.attach('filter-row', { body: await page.screenshot(), contentType: 'image/png' })
+    // "Clear all" empties the row, and the row goes with it (D-173).
+    await filterBar(page).getByRole('button', { name: he.filters.clearAll }).click()
     await expect(rowNames(page)).toHaveCount(3)
+    await expect(filterBar(page)).toBeHidden()
   })
 
   await test.step('leaves, and a leave-status chip keeps who has a pending one', async () => {
@@ -130,18 +133,18 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   })
 
   await test.step('only who is missing: the owner, with the days present muted', async () => {
-    await filterBar(page).getByRole('switch', { name: he.filters.onlyMissing }).click({ force: true })
+    await page.getByRole('switch', { name: he.filters.onlyMissing }).click({ force: true })
     await expect(page).toHaveURL(/missing=true/)
     await expect(rowNames(page)).toHaveText([OWNER.name])
     await expect(board(page).getByText(new RegExp(`${he.timeline.present}: `))).toHaveCount(1)
     await expectNoAxeViolations(page)
     await testInfo.attach('only-missing', { body: await page.screenshot(), contentType: 'image/png' })
-    await filterBar(page).getByRole('switch', { name: he.filters.onlyMissing }).click({ force: true })
+    await page.getByRole('switch', { name: he.filters.onlyMissing }).click({ force: true })
     await expect(rowNames(page)).toHaveCount(3)
   })
 
   await test.step('who is missing today, and who is present', async () => {
-    const button = filterBar(page).getByRole('button', { name: new RegExp(he.presence.missingToday) })
+    const button = page.getByRole('button', { name: new RegExp(he.presence.missingToday) })
     await expect(button).toContainText('1')
     await button.click()
     const absent = drawer(page).getByRole('list', { name: new RegExp(he.presence.absent) })

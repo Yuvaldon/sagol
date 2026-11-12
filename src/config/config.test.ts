@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AuthMode, ColorKey, DataAdapterMode, IconKey } from '@contracts'
+import { AuthMode, ColorKey, DataAdapterMode, IconKey, NavigationModule } from '@contracts'
 import {
   BAR_COLOR_MODES,
   BREAKPOINTS_PX,
@@ -9,6 +9,7 @@ import {
   DEFAULT_BAR_COLOR_MODE,
   DEFAULT_VIEW_ID,
   DESKTOP_MEDIA_QUERY,
+  NAVIGATION_SECTIONS,
   ENV_VARIABLES,
   ICON_KEYS,
   INDEXED_DB_NAME,
@@ -214,5 +215,10 @@ describe('panels (D-092)', () => {
   it('lists every panel id in the schema', () => {
     expect([...PanelId.options].sort()).toEqual(Object.values(PANEL_IDS).sort())
     expect(PanelId.safeParse('nothing').success).toBe(false)
+  })
+
+  it('places every navigation module in exactly one section (D-173)', () => {
+    const placed = NAVIGATION_SECTIONS.flatMap((section) => section.modules)
+    expect([...placed].sort()).toEqual([...NavigationModule.options].sort())
   })
 })

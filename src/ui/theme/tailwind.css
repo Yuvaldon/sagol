@@ -85,9 +85,12 @@
   /* Where the filter row floats: under the top bar and a gap (D-131). */
   --spacing-filter-row: 76px;
   --spacing-filter-row-md: 62px;
-  /* Where content starts under the floating top bar and the filter row: their offset, heights and a gap (D-108, D-131). */
-  --spacing-under-bars: 118px;
-  --spacing-under-bars-md: 90px;
+  /* Where content starts under the floating top bar: its offset, height and a gap (D-108). The filter row adds its own
+     height while it shows (D-173), below. */
+  --spacing-under-bars: 76px;
+  --spacing-under-bars-md: 62px;
+  --spacing-under-bars-filtered: 118px;
+  --spacing-under-bars-filtered-md: 90px;
   /* The remove button of a filter chip, from Stone 3. */
   --spacing-chip-close: 22px;
   /* Room for the bottom bar on mobile, so the last row can scroll above it. */
@@ -201,6 +204,25 @@
   from {
     transform: translateX(-100%);
   }
+}
+
+/* The navigation panel comes from the inline start: the right (D-173). */
+@keyframes start-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@utility enter-start-panel {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: start-panel-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+/* While the filter row shows, content starts under it too (D-131, D-173). */
+[data-filter-row='shown'] {
+  --spacing-under-bars: var(--spacing-under-bars-filtered);
+  --spacing-under-bars-md: var(--spacing-under-bars-filtered-md);
 }
 
 @utility enter-scrim {

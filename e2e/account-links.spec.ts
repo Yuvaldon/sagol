@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { choose, closeDrawer, drawer } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule, signIn, waitForSettledScreen } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn, waitForSettledScreen } from './support/workspace.ts'
 
 // V9's demo: a second identity asks to link and the owner reviews. Auto-link on the personal number and the invite
 // email, a link to a candidate, a new soldier from the request, a rejection, and the identity that waits. On desktop
@@ -57,12 +57,17 @@ async function ask(page: Page, who: { email: string; first: string; last: string
   await page.getByRole('button', { name: he.linkRequest.submit }).click()
 }
 
-function accountLinksButton(page: Page) {
-  return navigation(page).getByRole('button', { name: new RegExp(he.accountLinks.open) })
+/** The menu button carries what waits in the panel, the requests to link among it (D-173). */
+function menuButton(page: Page) {
+  return page.getByRole('button', { name: new RegExp(`^${he.navigation.open}`) })
+}
+
+async function openAccountLinks(page: Page) {
+  await openModule(page, new RegExp(`^${he.accountLinks.open}`))
 }
 
 async function openRequest(page: Page, name: string) {
-  await accountLinksButton(page).click()
+  await openAccountLinks(page)
   await expect(page.getByRole('heading', { name: he.accountLinks.title, exact: true })).toBeVisible()
   await page.getByRole('list', { name: he.accountLinks.listLabel }).getByRole('button', { name: new RegExp(name) }).click()
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible()
@@ -71,7 +76,7 @@ async function openRequest(page: Page, name: string) {
 /** From an identity waiting on the onboarding screen back to the owner, through the device's identity list. */
 async function backToOwner(page: Page) {
   await page.getByRole('button', { name: new RegExp(OWNER.email) }).click()
-  await expect(accountLinksButton(page)).toBeVisible()
+  await expect(menuButton(page)).toBeVisible()
 }
 
 test.describe('account linking', () => {
@@ -82,7 +87,7 @@ test.describe('account linking', () => {
     await addSoldier(page, ASHER.first, ASHER.last)
 
     await test.step('the owner has nothing to review, and the invite email is a private field', async () => {
-      await accountLinksButton(page).click()
+      await openAccountLinks(page)
       await expect(page.getByText(he.accountLinks.emptyTitle)).toBeVisible()
       await closeDrawer(page)
     })
@@ -120,7 +125,7 @@ test.describe('account linking', () => {
 
     await test.step('the owner sees the request, with the soldier whose name matches', async () => {
       await backToOwner(page)
-      await expect(accountLinksButton(page)).toContainText('1')
+      await expect(menuButton(page)).toContainText('1')
       await openRequest(page, `${ASHER.first} ${ASHER.last}`)
       const candidates = page.getByRole('list', { name: he.accountLinks.candidatesLabel })
       await expect(candidates.getByRole('listitem')).toHaveCount(1)
@@ -154,7 +159,7 @@ test.describe('account linking', () => {
       await ask(page, DANA)
       await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
       await backToOwner(page)
-      await expect(accountLinksButton(page)).toContainText('2')
+      await expect(menuButton(page)).toContainText('2')
     })
 
     await test.step('with no soldier to match, the owner creates one from the request', async () => {

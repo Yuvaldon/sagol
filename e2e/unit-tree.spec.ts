@@ -327,7 +327,7 @@ test('on a phone: 44 px targets, real touch drag, and the sheet closes by its gr
   }
 
   await enterAsOwner(page)
-  await expect(navigation(page).getByRole('button', { name: he.units.open })).toBeVisible()
+  await expect(page.getByRole('button', { name: he.navigation.open })).toBeVisible()
   await openUnits(page)
   await buildTree(page)
   await expectTouchTargets()

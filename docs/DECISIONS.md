@@ -120,11 +120,11 @@ am = amends, ref = refines, ext = extends.
 | D-101 | Commands store blank optional text as NULL | contracts, data, logic, backend | |
 | D-102 | Reading private fields and placements needs only their own `view` | data, logic, ui, backend | |
 | D-103 | The date window in the URL | logic, ui | ref D-129 |
-| D-104 | The unit selector writes the filter | config, logic, ui | ref D-131 |
+| D-104 | The unit selector writes the filter | config, logic, ui | ref D-131; ref D-173 |
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | ref D-160 |
-| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165 |
+| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
@@ -132,12 +132,12 @@ am = amends, ref = refines, ext = extends.
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143 |
-| D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154 |
+| D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154; ref D-173 |
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
 | D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143 |
 | D-120 | The requests inbox: pending and closed; `LeaveQuery.window` may be NULL | contracts, config, data, logic, ui, backend | |
-| D-121 | The "approve now" default lives in the user menu | data, logic, ui, backend | |
+| D-121 | The "approve now" default lives in the user menu | data, logic, ui, backend | ref D-173 |
 | D-122 | The board waits for the permission hints | logic, ui | |
 | D-123 | Editing a leave is one command | contracts, domain, data, logic, ui, backend | |
 | D-124 | A leave of an archived soldier can only be cancelled | domain, data, logic, ui, backend | |
@@ -147,7 +147,7 @@ am = amends, ref = refines, ext = extends.
 | D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | ref D-154 |
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | |
-| D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147 |
+| D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161 |
 | D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161 |
@@ -157,7 +157,7 @@ am = amends, ref = refines, ext = extends.
 | D-138 | What a rule violation reveals | contracts, domain, data, ui, backend | |
 | D-139 | The availability rule commands | domain, data, logic, backend | |
 | D-140 | The rules module | config, logic, ui | |
-| D-141 | The heat row | config, logic, ui | |
+| D-141 | The heat row | config, logic, ui | ref D-173 |
 | D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143; ref D-145, D-146; ref D-162 |
 | D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144 |
 | D-144 | The touch path of the timeline, and its lanes on a phone | config, ui | |
@@ -170,7 +170,7 @@ am = amends, ref = refines, ext = extends.
 | D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168 |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
-| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-170 |
+| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-170; ref D-172 |
 | D-155 | The phone's module buttons scroll inside the bottom bar | ui | ref D-165 |
 | D-156 | Every way of giving a role is guarded; a grant stays within the granter's reach | domain, data, backend | |
 | D-157 | A holder without seniority gets only `any`; a rank write is checked before and after | domain, data, backend | |
@@ -181,13 +181,15 @@ am = amends, ref = refines, ext = extends.
 | D-162 | Live rule warnings only for an actor who reads everything a rule counts | logic, ui | |
 | D-163 | Revoking an account link | contracts, data, logic, ui, backend | |
 | D-164 | Link-request candidates stay computed | data | |
-| D-165 | The roles and grants modules; "more" on a phone | config, logic, ui | |
+| D-165 | The roles and grants modules; "more" on a phone | config, logic, ui | ref D-173 |
 | D-166 | A grant's window is whole days in the organization's zone | logic, ui | ext D-169 |
 | D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | |
 | D-168 | A rejected link request is told to its identity | contracts, data, logic, ui | |
 | D-169 | The grants list moves to the next state on its own | logic | |
-| D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | |
-| D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | |
+| D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
+| D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
+| D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | |
 | D-202 | The database's own guarantees: triggers | backend | |
@@ -2256,6 +2258,46 @@ recommendations, which already follow the recorded decisions and the product's d
 name rows the earlier ones create, so checking them past a refusal would report errors that are not theirs. A restore
 that writes rows as stored would be a path around the commands' validation (rule 4); the one-time move to the backend
 is a server task, not a screen. A CSV of soldiers is the spreadsheet the owner already holds; everything else is JSON.
+
+## D-172 — Parallel tracks: two sessions build the roadmap at once
+2026-11-12 · accepted · refines D-154, D-170 · decided under the owner's autonomy instruction of 2026-11-11
+- An orchestrator session, acting for the owner, assigns roadmap rows to tracks; sessions never pick rows. Track A
+  builds the V rows (V12a, V13 … V17), track B the 8.x rows (the backend). A track edits only its own ROADMAP rows.
+- Number ranges keep ids from colliding: track A takes decisions D-171..D-199 and open items OI-109..OI-149; track B
+  takes D-200..D-249 and OI-150..OI-199. When both add index rows, a merge keeps both sides, in numeric order.
+- `docs/schema.sql` and `contracts` are shared: a track sends the orchestrator the exact change and waits for its
+  approval before committing a change to either.
+- Before every merge a track merges `main` into its branch, runs `npm run check` again, and merges only on green CI.
+- A5's deferral stays as D-170 records it: one combined audit at A6.
+**Why:** the backend and the remaining screens touch different layers, so building them side by side halves the wall
+time; fixed ranges and one approver for the shared model keep the two branches from contradicting each other.
+
+## D-173 — Navigation rebalance: daily work in the bar, setup in a side panel
+2026-11-12 · accepted · refines D-104, D-108, D-116, D-121, D-131, D-141, D-165, D-171 · OI-110 · decided under the owner's autonomy instruction of 2026-11-11
+- **The bar holds daily work only:** the view switcher, the date navigation, my leaves and the inbox with its count,
+  "only who is missing" and the present/absent lists, a new leave, the filter control, the soldier's pins and the
+  user menu. On a phone the same items share the top and bottom bars; "more" (D-165) is gone.
+- **The navigation panel** opens from a menu button at the start of the bar and slides in from the start side (the
+  right, in Hebrew). Its sections, in order, come from `NAVIGATION_SECTIONS` in config: structure (units, soldiers),
+  leave setup (leave types, rules, tags), access (roles, access grants, account links) and data (import and export,
+  moved out of the user menu). An item shows only to who may open its module (D-076); an empty section is not shown,
+  and when every section is empty the menu button is not shown either. Panels keep their URL, so deep links work.
+- **Pins.** A soldier may pin any panel module to the bar. Pins are stored in `soldier_preferences.preferences` as
+  `pinned_modules` (a list of `NavigationModule`, no duplicates, default empty), beside D-121's default, so the
+  table does not change. Every viewer of the board has a soldier row (an unlinked account sees only onboarding,
+  D-005), so there is no branch for one without. Nobody starts with pins, whatever their role: the bar holds the
+  dates, the view and the filters, and a soldier adds what they use. A pin to a module the viewer can no longer open
+  stays stored and is not shown; the bar filters pins by the same access check as the panel, at read time.
+- **Unit scope** reads as a compact label of the current unit, opening the picker. With no unit chosen it shows the
+  anchor: the name of the single root unit the viewer sees, otherwise "the whole organization". The picker offers only
+  the units the viewer can see; a viewer who sees a single unit gets its name as a label, with no picker.
+- **The filter row** is collapsed while no condition is set. A "filter" control in the bar opens the conditions; once
+  any condition is set the row shows, with a "clear all" that keeps the unit scope.
+- **The rules heat row** shows only when at least one live rule concerns the unit in scope. It sits under the soldier
+  list by default; `rules_row_placement` ('above' | 'below', default 'below') is chosen in the panel.
+**Why:** at 1280 px the bar held eleven module buttons and cut the organization's name (OI-110); V13 adds more
+views. Setting up units, rules and roles is occasional work, so it moves out of the daily surface, and pins give back
+one-tap access to whoever needs a module daily. An empty heat row and an empty filter row only take room.
 
 ## D-200 — Backend: Supabase and Vercel, free plans
 2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170

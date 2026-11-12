@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { MARK_NAME, NOW, board, closeDrawer, createType, drawer, leavesOf, requestLeave } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
 
 // V4's demo: leave types and their groups, a new leave from the floating "+", bars, lanes and a marker on the
 // board, and the uniform colors, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -81,10 +81,10 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
     await expectNoAxeViolations(page)
   })
 
-  await test.step('on a phone the modules and "more" are icons of a touch size, and the "+" too', async () => {
+  await test.step('on a phone the bar\'s controls and the menu are icons of a touch size, and the "+" too', async () => {
     if (testInfo.project.name !== 'mobile') return
-    for (const name of [he.myLeaves.open, he.units.open, he.more.open]) {
-      const box = await navigation(page).getByRole('button', { name }).boundingBox()
+    for (const name of [he.myLeaves.open, he.filters.add, he.navigation.open]) {
+      const box = await page.getByRole('button', { name, exact: true }).boundingBox()
       if (box === null) throw new Error(`no ${name}`)
       expect(box.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
       expect(box.width).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)

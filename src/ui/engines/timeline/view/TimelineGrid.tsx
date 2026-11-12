@@ -47,7 +47,7 @@ const HEAT_TONES: Record<TimelineHeatCell['tone'], string> = {
 }
 
 /**
- * The heat row under the days (D-141): a cell per day with the number of broken rules, solid when a hard rule breaks
+ * The heat row (D-141, D-173), under the days or under the list: a cell per day with the number of broken rules, solid when a hard rule breaks
  * and dashed when only soft ones do. A cell with something to show opens the rules of its day.
  */
 function HeatRow({ cells, layout, heightPx }: { readonly cells: readonly TimelineHeatCell[]; readonly layout: GridLayout; readonly heightPx: number }) {
@@ -388,13 +388,15 @@ function ResourceRow({
 export interface TimelineGridProps {
   readonly days: readonly TimelineDayCell[]
   readonly rows: readonly TimelineRowModel[]
-  /** The heat row (D-141); NULL when the actor sees no rule. */
+  /** The heat row (D-141); NULL when no rule the actor sees concerns the unit (D-173). */
   readonly heat: readonly TimelineHeatCell[] | null
+  /** The heat row sits above the list, under the days, or below it (D-173). */
+  readonly heatOnTop: boolean
   /** Dragging marks and days (D-143); NULL when nothing on the board moves. */
   readonly drag: TimelineDragProps | null
 }
 
-export function TimelineGrid({ days, rows, heat, drag }: TimelineGridProps) {
+export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGridProps) {
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
   const [content, setContent] = useState<HTMLDivElement | null>(null)
   const list = useRef<HTMLUListElement>(null)
@@ -409,10 +411,23 @@ export function TimelineGrid({ days, rows, heat, drag }: TimelineGridProps) {
   const place: Place = { layout, baseRowPx: rowPx, lanes, pressIsDrag: gesture.pressIsDrag }
 
   // Where the rows start inside what scrolls: under the bars and the days header, which grows with the heat row.
-  const hasHeat = heat !== null
+  const heatAbove = heatOnTop ? heat : null
+  const heatBelow = heatOnTop ? null : heat
+  const hasHeatAbove = heatAbove !== null
+  // What sits above the rows can grow without this grid rendering again (the filter row, D-173), so it is watched.
   useLayoutEffect(() => {
-    if (list.current !== null) setListTop(list.current.offsetTop)
-  }, [scroller, hasHeat, rowPx])
+    const element = list.current
+    if (element === null || content === null) return
+    const measure = () => {
+      setListTop(element.offsetTop)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(content)
+    return () => {
+      observer.disconnect()
+    }
+  }, [content, scroller, hasHeatAbove, rowPx])
 
   // TanStack Virtual hands out new functions each render, and nothing here memoizes them.
   // oxlint-disable-next-line react/incompatible-library
@@ -445,7 +460,7 @@ export function TimelineGrid({ days, rows, heat, drag }: TimelineGridProps) {
     >
       <div ref={setContent} className={`relative min-w-full ${gesture.active === null ? '' : 'select-none'}`} style={{ width: layout.widthPx }}>
         <div aria-hidden className="h-under-bars md:h-under-bars-md" />
-        <DaysHeader days={days} layout={layout} heat={heat} heatPx={rowPx} />
+        <DaysHeader days={days} layout={layout} heat={heatAbove} heatPx={rowPx} />
         <ul ref={list} aria-label={t('timeline.names')} className="relative" style={{ height: virtualizer.getTotalSize() }}>
           <Columns days={days} layout={layout} />
           {virtualizer.getVirtualItems().map((item) => {
@@ -474,6 +489,12 @@ export function TimelineGrid({ days, rows, heat, drag }: TimelineGridProps) {
             )
           })}
         </ul>
+        {heatBelow === null ? null : (
+          // Held at the bottom of the board, over the bottom bar and the floating "+", so every day stays in reach.
+          <div className="sticky bottom-above-bottom-bar z-3 bg-surface">
+            <HeatRow cells={heatBelow} layout={layout} heightPx={rowPx} />
+          </div>
+        )}
         {/* Room for the bottom bar on a phone, and for the floating "+" everywhere (D-115). */}
         <div aria-hidden className="h-above-bottom-bar" />
       </div>
