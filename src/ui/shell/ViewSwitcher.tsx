@@ -1,16 +1,19 @@
-import { BAR_COLOR_MODES, TOOLTIP, type BarColorMode } from '@config'
+import { BAR_COLOR_MODES, FOCUS_MODE, TOOLTIP, type BarColorMode } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { useActiveView, useBarColors } from '@logic'
-import { Button as AriaButton, Header, Menu, MenuSection, MenuTrigger, Popover, TooltipTrigger } from 'react-aria-components'
+import { Maximize2 } from 'lucide-react'
+import { Button as AriaButton, Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, TooltipTrigger } from 'react-aria-components'
 import { NameTooltip } from '../primitives/Button'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
+import { useFocusMode } from './focusMode'
 import { MenuChoice } from './menu'
 import { useIsDesktop, useViewDevice } from '../patterns/media'
 import { SortSections } from './SortControl'
-import { MENU_HEADER, MENU_LIST, MENU_POPOVER, MENU_TRIGGER, onlyKey } from './menuStyles'
+import { MENU_HEADER, MENU_ITEM, MENU_LIST, MENU_POPOVER, MENU_TRIGGER, onlyKey } from './menuStyles'
 
 // The view menu lists what the engine registry holds, and nothing else (D-076, D-108). The colors of
-// the leaves sit under their own heading (D-112), for every engine (D-174), so the bars gain no control.
+// the leaves sit under their own heading (D-112), for every engine (D-174), and so does focus mode (D-301), so the bars
+// gain no control.
 
 /** Between the menu's name and the view chosen, in its tooltip. */
 const LABEL_SEPARATOR = ': '
@@ -25,10 +28,12 @@ export function ViewSwitcher() {
   const colors = useBarColors()
   const current = engineOf(view)
   const isDesktop = useIsDesktop()
+  const focusMode = useFocusMode()
   return (
     <MenuTrigger>
       <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
-        <AriaButton className={MENU_TRIGGER}>
+        {/* Focus returns here when focus mode ends (D-301). */}
+        <AriaButton ref={focusMode.bind('control')} className={MENU_TRIGGER}>
           <current.Icon aria-hidden size={14} />
           <span className="sr-only">
             {t('workspace.view')} {t(current.labelKey)}
@@ -69,6 +74,19 @@ export function ViewSwitcher() {
           </MenuSection>
           {/* A phone's strip has no room for the sort's button: its sections follow the view's here (D-273). */}
           {isDesktop ? null : <SortSections />}
+          <MenuSection>
+            <MenuItem
+              id="focus-mode"
+              textValue={t('workspace.focusEnter')}
+              aria-keyshortcuts={FOCUS_MODE.shortcut}
+              onAction={focusMode.enter}
+              className={MENU_ITEM}
+            >
+              <Maximize2 aria-hidden size={14} />
+              <span className="flex-1">{t('workspace.focusEnter')}</span>
+              <kbd className="font-sans text-label text-text-muted">{FOCUS_MODE.shortcut}</kbd>
+            </MenuItem>
+          </MenuSection>
         </Menu>
       </Popover>
     </MenuTrigger>

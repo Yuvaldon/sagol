@@ -115,6 +115,8 @@ export const dictionary = {
   workspace: {
     navigation: 'ניווט ראשי',
     viewBar: 'יחידה, טווח ותצוגה',
+    focusEnter: 'מצב מיקוד',
+    focusExit: 'יציאה ממצב מיקוד',
     board: 'לוח',
     unit: 'יחידה',
     wholeOrganization: 'כל היחידה',
