@@ -17,7 +17,7 @@ import {
 import { archiveLeaveTypeGroupIssues } from '@domain'
 import { holds } from './actor'
 import { colorKeyIssues, iconKeyIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import {
   bySortOrder,

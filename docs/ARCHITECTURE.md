@@ -74,6 +74,10 @@ The data layer is written as if it were the server:
   suite, which is what makes the switch safe.
 - Repositories expose change subscriptions, so the UI has one live source of truth
   across tabs and views.
+- On the server (D-201) one function, the command gateway, runs the same command core over a
+  Postgres `Store`, in one SERIALIZABLE transaction per request, as the identity of the verified
+  token. `src/data/server/index.ts` is its entry; the app imports only `src/data/index.ts`.
+  `supabase/migrations` builds the database from `schema.sql`, plus triggers (D-202).
 
 ## Identity and access (D-001 … D-006)
 
@@ -279,14 +283,15 @@ src/
   domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/ text/
                json/ time/
   config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
-  data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
+  data/        local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
+               remote/ (phase 8)
                contract-tests/
   logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ timeline/
                tags/ filters/ presence/ rules/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/
-supabase/      migrations/ policies/ functions/ tests/   (phase 8)
+supabase/      migrations/ functions/commands/ (D-201)
 e2e/           Playwright specs
 docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md OPEN_ITEMS.md
                OPEN_ITEMS_ARCHIVE.md
@@ -301,4 +306,4 @@ commit that crosses layers (D-075). Guardrail details: `docs/ROADMAP.md`, sessio
 
 ## Open decisions
 
-- Backend provider (Supabase recommended, D-027), decided at phase 8.
+- None at present. The backend is Supabase and Vercel on free plans (D-200).

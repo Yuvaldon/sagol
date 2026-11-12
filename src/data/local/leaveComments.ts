@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   AddLeaveCommentInput,
   ArchiveLeaveCommentInput,
@@ -14,7 +14,7 @@ import {
 import { COMMENT_PERMISSIONS, commentChangeIssues, isCommentAuthor, soldierTarget } from '@domain'
 import type { z } from 'zod'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { canView, visibleLeave } from './leaves'
@@ -31,7 +31,7 @@ function canViewComment(scope: ActorScope, leave: Pick<Leave, 'soldier_id'>, com
 }
 
 /** The comment, or `not_found` when it, or its leave, is missing or invisible to the actor (D-046). */
-async function visibleComment(database: Dexie, scope: ActorScope, id: string): Promise<LeaveComment> {
+async function visibleComment(database: Store, scope: ActorScope, id: string): Promise<LeaveComment> {
   const stored = await tableOf(database, 'leave_comments').get(id)
   if (stored === undefined || stored.organization_id !== scope.organization_id) return fail({ code: 'not_found' })
   const leave = await tableOf(database, 'leaves').get(stored.leave_id)

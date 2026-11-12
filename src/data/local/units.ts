@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   ArchiveUnitInput,
   CreateUnitInput,
@@ -21,7 +21,7 @@ import {
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { colorKeyIssues, propertiesIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, failValidation, parseInput } from './failure'
 import {
@@ -39,12 +39,12 @@ import {
 
 // `units`: `parent_id` is the only source of ancestry (D-009), and changes only through `move`.
 
-async function organizationUnits(database: Dexie, scope: ActorScope): Promise<Unit[]> {
+async function organizationUnits(database: Store, scope: ActorScope): Promise<Unit[]> {
   return tableOf(database, 'units').where('organization_id').equals(scope.organization_id).toArray()
 }
 
 /** A new parent must exist, be visible and be live. */
-async function parentIssues(database: Dexie, scope: ActorScope, parentId: UnitId | null): Promise<Issue[]> {
+async function parentIssues(database: Store, scope: ActorScope, parentId: UnitId | null): Promise<Issue[]> {
   if (parentId === null) return []
   const parent = await tableOf(database, 'units').get(parentId)
   const visible =
@@ -99,7 +99,7 @@ const SPEC: ReferenceSpec<Unit> = {
 }
 
 /** Live sub-units and placements of soldiers who are not archived keep a unit (D-088). */
-async function archiveIssues(database: Dexie, scope: ActorScope, unit: Unit): Promise<Issue[]> {
+async function archiveIssues(database: Store, scope: ActorScope, unit: Unit): Promise<Issue[]> {
   const organizationId = scope.organization_id
   const [units, memberships, soldiers] = await Promise.all([
     organizationUnits(database, scope),

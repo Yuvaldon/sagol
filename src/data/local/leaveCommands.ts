@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   CreateLeaveInput,
   IssueCode,
@@ -36,7 +36,7 @@ import {
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { propertiesIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { LEAVE_TABLES, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } from './leaves'
@@ -49,7 +49,7 @@ import { LEAVE_TABLES, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } fro
 export type LocalLeaveCommands = Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
 
 /** A leave of an archived soldier can only be cancelled (D-124): the state step, after the version. */
-async function requireOpenSoldier(database: Dexie, leave: Leave, issues: (soldier: { archived_at: string | null }) => Issue[]) {
+async function requireOpenSoldier(database: Store, leave: Leave, issues: (soldier: { archived_at: string | null }) => Issue[]) {
   const soldier = await tableOf(database, 'soldiers').get(leave.soldier_id)
   const found = soldier === undefined ? [] : issues(soldier)
   if (found.length > 0) failValidation(found)
@@ -60,14 +60,14 @@ function requireCommentPermission(scope: ActorScope, comment: CommentDraft | nul
   if (comment !== null) requirePermission(scope, COMMENT_PERMISSIONS[comment.visibility].create, soldierTarget(soldierId))
 }
 
-async function commentIdIssues(database: Dexie, comment: CommentDraft | null): Promise<Issue[]> {
+async function commentIdIssues(database: Store, comment: CommentDraft | null): Promise<Issue[]> {
   if (comment === null || (await tableOf(database, 'leave_comments').get(comment.id)) === undefined) return []
   return [{ path: ['comment', 'id'], code: IssueCode.enum.already_exists }]
 }
 
 /** Only what this change makes worse counts (D-073). Hard rules refuse; soft ones need an acknowledgment. */
 async function passRuleGate(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   leave: Leave,
   acknowledged: readonly AvailabilityRuleId[],
@@ -88,7 +88,7 @@ interface LeaveWrite {
 }
 
 /** The leave, its event and its comment, inside the caller's transaction. Returns what the feed is told. */
-async function writeLeave(database: Dexie, scope: ActorScope, write: LeaveWrite): Promise<DataChange[]> {
+async function writeLeave(database: Store, scope: ActorScope, write: LeaveWrite): Promise<DataChange[]> {
   const { leave, comment } = write
   const eventId = LeaveEventId.parse(crypto.randomUUID())
   if (write.before === null) await tableOf(database, 'leaves').add(leave)

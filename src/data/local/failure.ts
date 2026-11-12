@@ -8,8 +8,9 @@ import {
 } from '@contracts'
 import { issuesFromSchema } from '@domain'
 import type { z } from 'zod'
+import { STORE_UNAVAILABLE } from './store'
 
-// Inside the adapter a refusal is an exception, because throwing is what aborts a Dexie
+// Inside the adapter a refusal is an exception, because throwing is what aborts a Store
 // transaction. `asResult` turns it into the `Result` every caller sees: nothing throws across a
 // layer (D-046).
 
@@ -30,13 +31,14 @@ export function failValidation(issues: readonly Issue[]): never {
   return fail({ code: 'validation_failed', issues: [...issues] })
 }
 
-/** Dexie errors that mean "the storage cannot be reached", which is safe to retry. */
+/** Storage errors that mean "the storage cannot be reached", which is safe to retry: Dexie's, and the server store's. */
 const STORAGE_ERROR_NAMES: readonly string[] = [
   'OpenFailedError',
   'DatabaseClosedError',
   'MissingAPIError',
   'QuotaExceededError',
   'VersionError',
+  STORE_UNAVAILABLE,
 ]
 
 export async function asResult<T>(work: () => Promise<T>): AsyncResult<T> {

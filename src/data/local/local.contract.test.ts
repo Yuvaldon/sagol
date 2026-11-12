@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
-import { STORES, openDatabase, tableOf } from './database'
+import { openDatabase } from './database'
+import { STORES, tableOf } from './store'
 import {
   AuthUserId,
   OrganizationId,

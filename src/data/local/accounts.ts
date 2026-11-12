@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   AccountLinkRequestQuery,
   AccountLinkRequestStatus,
@@ -37,7 +37,7 @@ import {
   type LinkMatchData,
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { permissionOf } from './reference'
@@ -75,7 +75,7 @@ export function createSoldierPreferencesRepository({
 // ------------------------------------------------------------------- the requests
 
 /** What matching reads: the organization's soldiers, their private rows and every account row (D-066). */
-async function matchDataOf(database: Dexie, organizationId: OrganizationId): Promise<LinkMatchData> {
+async function matchDataOf(database: Store, organizationId: OrganizationId): Promise<LinkMatchData> {
   const [soldiers, soldier_private, soldier_accounts] = await Promise.all([
     tableOf(database, 'soldiers').where('organization_id').equals(organizationId).toArray(),
     tableOf(database, 'soldier_private').where('organization_id').equals(organizationId).toArray(),
@@ -188,13 +188,13 @@ function requireIdentity({ identity }: LocalDependencies): AuthIdentity {
 }
 
 /** The identity's live link: links are unique among those not revoked (D-163). */
-async function holdsLiveLink(database: Dexie, organizationId: OrganizationId, authUserId: AuthIdentity['auth_user_id']) {
+async function holdsLiveLink(database: Store, organizationId: OrganizationId, authUserId: AuthIdentity['auth_user_id']) {
   const rows = await tableOf(database, 'soldier_accounts').where('auth_user_id').equals(authUserId).toArray()
   return rows.some((row) => row.organization_id === organizationId && row.revoked_at === null)
 }
 
 /** The soldier's live link (D-163). */
-async function soldierLinked(database: Dexie, soldierId: SoldierId) {
+async function soldierLinked(database: Store, soldierId: SoldierId) {
   const rows = await tableOf(database, 'soldier_accounts').where('soldier_id').equals(soldierId).toArray()
   return rows.some((row) => row.revoked_at === null)
 }
@@ -222,7 +222,7 @@ function accountRow(
 
 /** Approval fills a missing personal number of the soldier from the request; one another soldier holds is skipped (D-149). */
 async function enrichSoldier(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   request: AccountLinkRequest,
   soldierId: SoldierId,
