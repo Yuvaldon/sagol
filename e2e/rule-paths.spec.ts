@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, choose, closeDrawer, createType, drawer, leavesOf, typeDate } from './support/leaves.ts'
+import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // The rest of the rule paths on screen (OI-107): the warning on the edit form, and the acknowledgment dialog on the
@@ -48,6 +48,7 @@ async function setUp(page: Page) {
   await createType(page, { name: TYPE, color: he.palette.teal })
   await closeDrawer(page)
   await createRule(page, AT_LEAST_TWO, 'min', '2')
+  await openRotation(page, ['יעל שחר', 'נועם בר'])
 }
 
 /** A request of today, left pending: a pending leave does not count yet, so it breaks nothing. */

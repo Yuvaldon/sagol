@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
-import { OWNER } from './workspace.ts'
+import { OWNER, openModule } from './workspace.ts'
 
 // What the leave demos share: the board, the drawer, the fields of a form, a type and a new leave. Sample data,
 // tests only.
@@ -88,4 +88,42 @@ export async function requestLeave(page: Page, spec: LeaveSpec) {
   if (spec.reason !== undefined) await drawer(page).getByRole('textbox', { name: new RegExp(he.leaves.reason) }).fill(spec.reason)
   if (spec.approveNow === true) await press(page, 'switch', he.leaves.approveNow)
   await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
+}
+
+/** The rotation of these demos: November 2026, around NOW, so every request of a demo falls in it (D-216). */
+export const ROTATION = { name: 'סבב נובמבר', from: ['01', '11', '2026'], to: ['30', '11', '2026'] } as const
+
+/**
+ * Opens the demo's rotation from the deployments module, in its only unit (or `unit`), and has `members` serve in it.
+ * Creating it goes on to who serves, starting with the unit's soldiers (D-219); each of `members` is then checked.
+ */
+export async function openRotation(page: Page, members: readonly string[], unit?: string) {
+  await openModule(page, he.deployments.open)
+  await drawer(page).getByRole('button', { name: he.deployments.new }).first().click()
+  await page.getByLabel(he.deployments.name).fill(ROTATION.name)
+  if (unit !== undefined) await choose(page, he.deployments.unit, unit)
+  await typeDate(page, he.deployments.from, ...ROTATION.from)
+  await typeDate(page, he.deployments.to, ...ROTATION.to)
+  await page.getByRole('button', { name: he.common.create }).click()
+  await expect(drawer(page).getByRole('heading', { name: he.deployments.membersTitle })).toBeVisible()
+  for (const member of members) {
+    if (!(await drawer(page).getByRole('checkbox', { name: member, exact: true }).isChecked())) await press(page, 'checkbox', member)
+  }
+  await drawer(page).getByRole('button', { name: he.common.save }).click()
+  await expect(drawer(page).getByRole('list', { name: he.deployments.listLabel })).toContainText(ROTATION.name)
+  await closeDrawer(page)
+}
+
+/** The demos' unit, for the demos that need one only to hold their rotation. */
+export const ROTATION_UNIT = 'מחלקה א'
+
+/** A unit to hold the rotation, then the rotation, with `members` serving (D-216): what a request needs first. */
+export async function openRotationInNewUnit(page: Page, members: readonly string[]) {
+  await openModule(page, he.units.open)
+  await drawer(page).getByRole('button', { name: he.units.new }).first().click()
+  await page.getByLabel(he.units.name).fill(ROTATION_UNIT)
+  await page.getByRole('button', { name: he.common.create }).click()
+  await expect(drawer(page).getByText(ROTATION_UNIT, { exact: true })).toBeVisible()
+  await closeDrawer(page)
+  await openRotation(page, members)
 }

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press, requestLeave, typeDate } from './support/leaves.ts'
+import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press, requestLeave, typeDate, openRotationInNewUnit } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
 
 // V5's demo: a bar opens its leave; approve, edit, comment, reject and reopen; the inbox with its pending and closed
@@ -30,6 +30,7 @@ async function shot(page: Page, project: string, name: string) {
 async function setUp(page: Page) {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  await openRotationInNewUnit(page, [OWNER.name])
   await openModule(page, he.leaveTypes.open)
   await createType(page, { name: 'רגילה', color: he.palette.teal, icon: he.icons.home })
   await createType(page, { name: 'מחלה', color: he.palette.red, requiresReason: true })

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { MARK_NAME, NOW, board, closeDrawer, createType, drawer, leavesOf, requestLeave } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
+import { MARK_NAME, NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
 
 // V4's demo: leave types and their groups, a new leave from the floating "+", bars, lanes and a marker on the
 // board, and the uniform colors, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -19,6 +19,7 @@ async function createGroup(page: Page, name: string) {
 test('leave types, a new leave, and its bar on the board', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  await openRotationInNewUnit(page, [OWNER.name])
 
   await test.step('a new leave needs a type first, and the way to one is right there', async () => {
     await page.getByRole('button', { name: he.leaves.new }).click()
@@ -98,6 +99,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
 test('a link opens the new-leave form', async ({ page }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  await openRotationInNewUnit(page, [OWNER.name])
   await page.goto('/?panel=leaves&entity=new')
   await expect(drawer(page).getByRole('heading', { name: he.leaves.noTypesTitle })).toBeVisible()
 })

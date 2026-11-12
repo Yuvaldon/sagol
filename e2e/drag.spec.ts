@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, press, typeDate } from './support/leaves.ts'
+import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press, typeDate } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V8's demo: drag to create, move and resize leaves on the board, with the card that says what a drop would do and the
@@ -31,6 +31,9 @@ async function setUp(page: Page) {
   await openModule(page, he.leaveTypes.open)
   await createType(page, { name: 'בית', color: he.palette.teal })
   await closeDrawer(page)
+  await openRotation(page, [SOLDIER])
+  // The days below count from the week's first, so the board shows the week rather than the whole rotation (D-217).
+  await page.goto('/?range=week')
 }
 
 /** Where a day of the soldier's row is on screen: the grid starts at the row's right edge, after the names (RTL). */

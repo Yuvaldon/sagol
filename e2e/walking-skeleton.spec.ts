@@ -57,7 +57,9 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await claimOrganization(page)
     await expect(page).toHaveURL(/\/$/)
     await expect(organizationHeading(page)).toBeVisible()
-    await expect(page.getByRole('region', { name: he.timeline.label }).getByText(OWNER.name)).toBeVisible()
+    // A new organization has no rotation yet; its owner may open one from here (D-218).
+    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
     await expect(navigation(page).getByText(OWNER.name)).toBeVisible()
     await expectNoAxeViolations(page)
   })

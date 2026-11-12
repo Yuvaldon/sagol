@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, board, closeDrawer, drawer } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { NOW, board, closeDrawer, drawer, openRotationInNewUnit } from './support/leaves.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V14's demo: custom properties (D-016), their fields in a soldier's form, and their chips in the filter bar (D-177),
 // on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -73,6 +73,10 @@ test('custom properties: defined once, filled in a form, and filtered by', async
     await expect(drawer(page).getByRole('button', { name: /סוג דם$/ })).toContainText('A')
     await expectNoAxeViolations(page)
     await closeDrawer(page)
+  })
+
+  await test.step('a rotation they serve in, so the board and its filters are there (D-218)', async () => {
+    await openRotationInNewUnit(page, [OWNER.name, 'יעל שחר', 'נועם לב'])
   })
 
   await test.step('a property chip keeps who holds the answer', async () => {
