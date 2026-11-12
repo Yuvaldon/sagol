@@ -8,7 +8,6 @@ import {
   PropertyOptionId,
   SoldierId,
   SoldierTagId,
-  TagCategoryId,
   TagId,
   UnitId,
   UnitMembershipId,
@@ -29,8 +28,6 @@ import {
   readFilter,
   readRules,
   ruleHasValue,
-  withPropertyChip,
-  withTagChip,
   writeFilter,
   writeRules,
   type SoldierFilter,
@@ -47,8 +44,6 @@ const audit = { created_at: AT, created_by: null, updated_at: AT, updated_by: nu
 
 const UNIT = UnitId.parse(uuid(10))
 const RANK = CommandRankId.parse(uuid(20))
-const ROLE = TagCategoryId.parse(uuid(30))
-const MARITAL = TagCategoryId.parse(uuid(31))
 const MEDIC = TagId.parse(uuid(40))
 const DRIVER = TagId.parse(uuid(41))
 const SINGLE = TagId.parse(uuid(42))
@@ -56,8 +51,6 @@ const BLOOD = PropertyDefinitionId.parse(uuid(50))
 const LICENSED = PropertyDefinitionId.parse(uuid(51))
 const TYPE_A = PropertyOptionId.parse(uuid(52))
 const TYPE_O = PropertyOptionId.parse(uuid(53))
-
-const categoryOf = (tagId: TagId) => (tagId === SINGLE ? MARITAL : tagId === MEDIC || tagId === DRIVER ? ROLE : undefined)
 
 describe('the rules of the builder in the URL (D-312)', () => {
   const filter: SoldierFilter = {
@@ -187,23 +180,9 @@ describe('the filter in the URL (D-131)', () => {
     for (const filter of others) expect(readFilter(filter)).toEqual({ kind: 'other' })
   })
 
-  it("replaces one category's chip in its place, and removes it when empty", () => {
-    const conditions = { ...NO_CONDITIONS, tagSets: [[MEDIC], [SINGLE]] }
-    expect(withTagChip(conditions, categoryOf, ROLE, [DRIVER]).tagSets).toEqual([[DRIVER], [SINGLE]])
-    expect(withTagChip(conditions, categoryOf, ROLE, []).tagSets).toEqual([[SINGLE]])
-    expect(withTagChip({ ...NO_CONDITIONS, tagSets: [[SINGLE]] }, categoryOf, ROLE, [MEDIC]).tagSets).toEqual([[SINGLE], [MEDIC]])
-  })
-
-  it("replaces one property's chip in its place, and removes it (D-177)", () => {
-    const options = { kind: 'options' as const, definitionId: BLOOD, optionIds: [TYPE_A] }
-    const yes = { kind: 'boolean' as const, definitionId: LICENSED, value: true }
-    const conditions = { ...NO_CONDITIONS, properties: [options, yes] }
-    const typeO = { ...options, optionIds: [TYPE_O] }
-    expect(withPropertyChip(conditions, BLOOD, typeO).properties).toEqual([typeO, yes])
-    expect(withPropertyChip(conditions, BLOOD, null).properties).toEqual([yes])
-    expect(withPropertyChip({ ...NO_CONDITIONS, properties: [yes] }, BLOOD, options).properties).toEqual([yes, options])
-    // A chip without options writes no condition.
-    expect(writeFilter({ ...NO_CONDITIONS, properties: [{ ...options, optionIds: [] }] })).toBeUndefined()
+  it('writes no condition for a property chip without options', () => {
+    const options = { kind: 'options' as const, definitionId: BLOOD, optionIds: [] }
+    expect(writeFilter({ ...NO_CONDITIONS, properties: [options] })).toBeUndefined()
   })
 
   it('shows active soldiers only, unless the filter speaks of status (D-105, D-131)', () => {

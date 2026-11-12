@@ -11,7 +11,7 @@ import { filterUnitOf } from '../view-state/filter'
 import { DEFAULT_SORT_RULES, type SortRule } from '../view-state/sort-rules'
 import type { DateWindow } from '../view-state/window'
 import { boardLeaves, type BoardLeave } from './leaves'
-import { boardItems, type BoardItem, type BoardSort } from './rows'
+import { boardItems, type BoardItem } from './rows'
 
 // What every engine shows for a window, a filter and the board's own conditions (D-105, D-132, D-133, D-174): one model,
 // so the timeline, the list, the table and the calendar never disagree on who is in view (ARCHITECTURE "View engines").
@@ -35,10 +35,8 @@ export interface BoardConditions {
   readonly leaves: LeaveConditions
   /** "Only who is missing" (D-133). */
   readonly onlyMissing: boolean
-  /** The sort rules of the rows (D-313); without them, the single sort of D-214, or the default. */
-  readonly sorts?: readonly SortRule[]
-  /** The single sort of D-214, until every caller passes the rules. */
-  readonly sort?: BoardSort
+  /** The sort rules of the rows, in order (D-313). */
+  readonly sorts: readonly SortRule[]
 }
 
 const NO_BOARD_CONDITIONS: BoardConditions = {
@@ -58,8 +56,7 @@ export function useBoard(
   const leaveTypes = useLeaveTypes()
   const placements = usePlacementHints(source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS)
   const { onlyMissing } = board
-  const { sort: single, sorts: rules } = board
-  const sorts = useMemo(() => rules ?? (single === undefined ? DEFAULT_SORT_RULES : [single]), [rules, single])
+  const { sorts } = board
   const leaveConditions = board.leaves
 
   return useMemo((): Loaded<BoardModel> => {

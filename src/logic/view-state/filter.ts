@@ -6,7 +6,6 @@ import {
   type JsonValue,
   type PropertyDefinitionId,
   type SoldierStatus,
-  type TagCategoryId,
   type TagId,
   type UnitId,
 } from '@contracts'
@@ -55,18 +54,6 @@ function propertyNodeOf(chip: PropertyChip): FilterNode {
   return chip.kind === 'boolean'
     ? { kind: 'property', property_definition_id: chip.definitionId, operator: 'equals', value: chip.value }
     : { kind: 'property', property_definition_id: chip.definitionId, operator: 'any_of', value: [...chip.optionIds] }
-}
-
-/** The chip of one property replaced, in its place, or removed when NULL (D-177). */
-export function withPropertyChip(
-  conditions: SoldierConditions,
-  definitionId: PropertyDefinitionId,
-  chip: PropertyChip | null,
-): SoldierConditions {
-  const at = conditions.properties.findIndex((held) => held.definitionId === definitionId)
-  if (chip === null) return { ...conditions, properties: conditions.properties.filter((held) => held.definitionId !== definitionId) }
-  if (at < 0) return { ...conditions, properties: [...conditions.properties, chip] }
-  return { ...conditions, properties: conditions.properties.map((held, index) => (index === at ? chip : held)) }
 }
 
 export type ReadFilter =
@@ -280,34 +267,13 @@ export function filterUnitOf(filter: FilterExpression | null): FilterUnit {
   return unitId === null ? { kind: 'organization' } : { kind: 'unit', unitId }
 }
 
-/**
- * The tag chip of one category replaced by `tagIds` (D-131): the sets that hold a tag of the category give way, the
- * new set takes the place of the first of them, and an empty one removes the chip.
- */
-export function withTagChip(
-  conditions: SoldierConditions,
-  categoryOf: (tagId: TagId) => TagCategoryId | undefined,
-  categoryId: TagCategoryId,
-  tagIds: readonly TagId[],
-): SoldierConditions {
-  const inCategory = (set: readonly TagId[]) => set.some((tagId) => categoryOf(tagId) === categoryId)
-  const at = conditions.tagSets.findIndex(inCategory)
-  const others = conditions.tagSets.filter((set) => !inCategory(set))
-  if (tagIds.length === 0) return { ...conditions, tagSets: others }
-  const position = at < 0 ? others.length : conditions.tagSets.slice(0, at).filter((set) => !inCategory(set)).length
-  return { ...conditions, tagSets: [...others.slice(0, position), tagIds, ...others.slice(position)] }
-}
-
 export interface ViewFilterState {
   /** NULL selects everyone. */
   readonly filter: FilterExpression | null
-  readonly read: ReadFilter
   /** The unit and the soldier rules (D-312). */
   readonly rules: ReadRules
   readonly unit: FilterUnit
   selectUnit(unitId: UnitId | null): void
-  /** Writes the bar's conditions. */
-  setConditions(conditions: SoldierConditions): void
   /** Writes the unit and the soldier rules (D-312). */
   setRules(filter: SoldierFilter): void
   /** Removes every condition, the unit included. */
@@ -318,15 +284,8 @@ export function useViewFilter(): ViewFilterState {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
   const filter = search.filter ?? null
-  const read = useMemo(() => readFilter(filter), [filter])
   const rules = useMemo(() => readRules(filter), [filter])
   const unit = useMemo(() => filterUnitOf(filter), [filter])
-  const setConditions = useCallback(
-    (conditions: SoldierConditions) => {
-      change({ filter: writeFilter(conditions) })
-    },
-    [change],
-  )
   const setRules = useCallback(
     (next: SoldierFilter) => {
       change({ filter: writeRules(next) })
@@ -344,5 +303,5 @@ export function useViewFilter(): ViewFilterState {
   const clear = useCallback(() => {
     change({ filter: undefined })
   }, [change])
-  return { filter, read, rules, unit, selectUnit, setConditions, setRules, clear }
+  return { filter, rules, unit, selectUnit, setRules, clear }
 }

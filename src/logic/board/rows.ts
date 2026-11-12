@@ -17,9 +17,6 @@ import { byName, compareText, membershipsBySoldier, unitStateOn, type UnitState 
 import type { SortRule } from '../view-state/sort-rules'
 import { unitTreeRows } from '../units/tree'
 
-/** One sort key and direction, as the old single sort wrote it (D-214); the board now takes a list of rules (D-313). */
-export type BoardSort = Extract<SortRule, { readonly key: unknown }>
-
 // The rows of the board (D-105, D-174): who served in the selected unit during the window, grouped by
 // unit like the tree, in the order of the sort rules (D-214, D-313), most senior first by default. The bar's leave
 // conditions and "only who is missing" narrow them (D-132, D-133). Pure; the hook feeds it.

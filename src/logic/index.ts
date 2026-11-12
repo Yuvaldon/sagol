@@ -47,8 +47,6 @@ export {
   writeRules,
   unitFilterOf,
   useViewFilter,
-  withPropertyChip,
-  withTagChip,
   writeFilter,
   type FilterRule,
   type FilterUnit,
@@ -63,7 +61,6 @@ export {
 export { BoardLeaveStatus, LeaveConditions, hasLeaveConditions, leaveMatches } from './view-state/conditions'
 export {
   useBoardFilters,
-  useBoardSort,
   useLeaveConditions,
   useOnlyMissing,
   usePresenceDay,
@@ -71,7 +68,6 @@ export {
   useSortRules,
   useTableSort,
   type BoardFiltersState,
-  type BoardSortState,
   type SortRulesState,
   type TableSortState,
   type LeaveConditionsState,
@@ -113,10 +109,8 @@ export { useTimezone, useToday } from './session/today'
 export {
   useAppearance,
   useMyPreferences,
-  useNavigationPreferences,
   useUpdateMyPreferences,
   type AppearancePreference,
-  type NavigationPreferences,
   type PreferenceSaved,
 } from './session/preferences'
 export {
@@ -126,7 +120,6 @@ export {
   type BoardInput,
   type BoardItem,
   type BoardSoldierItem,
-  type BoardSort,
 } from './board/rows'
 export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
 export { boardLeaves, layerOf, type BoardLeave, type LeaveLayer } from './board/leaves'

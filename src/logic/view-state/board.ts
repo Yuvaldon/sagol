@@ -1,12 +1,8 @@
 import type { CalendarDate, Deployment, LeaveTypeId } from '@contracts'
 import {
-  BoardSortKey,
-  DEFAULT_BOARD_SORT_KEY,
-  DEFAULT_SORT_ORDER,
   DEFAULT_TABLE_SORT_ORDER,
   PANEL_IDS,
   TableSortKey,
-  type SortKey,
   type SortOrder,
 } from '@config'
 import { addDays, compareDates, daysBetween } from '@domain'
@@ -94,49 +90,6 @@ export function useOnlyMissing(): OnlyMissingState {
     [change],
   )
   return { on: search.missing === true, set }
-}
-
-export interface BoardSortState {
-  /** The key and direction the URL holds; NULL when it names none (D-214). */
-  readonly key: SortKey | null
-  readonly order: SortOrder
-  /** What the board's rows are ordered by: the URL's key when the board knows it, else the default. */
-  readonly board: { readonly key: BoardSortKey; readonly order: SortOrder }
-  /** Sorts by a key; with no direction, the key's own (D-214). The default order leaves both params out. */
-  set(key: SortKey, order?: SortOrder): void
-}
-
-function defaultOrderOf(key: SortKey): SortOrder {
-  const parsed = BoardSortKey.safeParse(key)
-  return parsed.success ? DEFAULT_SORT_ORDER[parsed.data] : 'asc'
-}
-
-/** The order of the board's rows and the table's lines (D-214), in the URL. */
-export function useBoardSort(): BoardSortState {
-  const search = useWorkspaceSearch()
-  const change = useChangeSearch()
-  const key = search.sort ?? null
-  const order = search.order ?? (key === null ? DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] : defaultOrderOf(key))
-  const boardKey = BoardSortKey.safeParse(key)
-  const board = useMemo(
-    () =>
-      boardKey.success
-        ? { key: boardKey.data, order }
-        : // A bare direction applies to the default key; a table-only key leaves the board in its default order.
-          { key: DEFAULT_BOARD_SORT_KEY, order: key === null ? order : DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] },
-    [boardKey.success, boardKey.data, key, order],
-  )
-  const set = useCallback(
-    (next: SortKey, nextOrder: SortOrder = defaultOrderOf(next)) => {
-      const isDefault = next === DEFAULT_BOARD_SORT_KEY && nextOrder === DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY]
-      change({
-        sort: isDefault ? undefined : next,
-        order: isDefault || nextOrder === defaultOrderOf(next) ? undefined : nextOrder,
-      })
-    },
-    [change],
-  )
-  return { key, order, board, set }
 }
 
 export interface TableSortState {
