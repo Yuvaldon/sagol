@@ -85,7 +85,8 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
   return (
     <>
       <nav aria-label={t('workspace.viewBar')} className={`${BAR} absolute inset-x-lg top-lg justify-between`}>
-        <div className="flex min-w-none items-center gap-xs">
+        {/* The dates keep their width; the unit's name gives way and truncates, so nothing overlaps (D-215). */}
+        <div className="flex shrink-0 items-center gap-xs">
           <NavigationPanel />
           <WindowNavigator />
         </div>
