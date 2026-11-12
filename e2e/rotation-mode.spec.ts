@@ -1,10 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, drawer, press, typeDate } from './support/leaves.ts'
-import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
 
 // V26's journey (b): routine until a rotation opens, a tag for that rotation only, the close and the reopen
-// (D-257 … D-260, D-222). Desktop and mobile, RTL, with axe. Sample data, tests only.
+// (D-257 … D-260, D-222), and Design.md (b) from the strip's quick action in each mode (D-296). The quick action's
+// full table of modes and roles is `quickActionOf`'s unit test. Desktop and mobile, RTL, with axe. Sample data, tests
+// only.
 
 const ROUTINE = he.workspace.routineTitle
 
@@ -105,5 +107,83 @@ test('routine, a rotation with a tag of its own, the close and the reopen', asyn
     await expect(page.getByRole('heading', { name: ROUTINE })).toHaveCount(0)
     await openOwnerCard(page)
     await expect(tagsSection(page)).toContainText('שמירה')
+  })
+})
+
+/** The strip's quick action, by its name; at most one shows (D-266). */
+function quickAction(page: Page, name: string) {
+  return navigation(page).getByRole('button', { name, exact: true })
+}
+
+async function fillRotation(page: Page, name: string, from: readonly [string, string, string], to: readonly [string, string, string]) {
+  await page.getByLabel(he.deployments.name).fill(name)
+  await typeDate(page, he.deployments.from, ...from)
+  await typeDate(page, he.deployments.to, ...to)
+}
+
+test('journey (b): the quick action in each mode, an overlap refused, a list that grows', async ({ page }) => {
+  await page.clock.setFixedTime(NOW)
+  await enterAsOwner(page)
+
+  await test.step('(b)1. in routine the strip offers "פתיחת סבב", which opens a new rotation', async () => {
+    await expect(page.getByRole('heading', { name: ROUTINE })).toBeVisible()
+    await expect(quickAction(page, he.leaves.new)).toHaveCount(0)
+    await quickAction(page, he.workspace.openRotation).click()
+    await expect(drawer(page).getByRole('heading', { name: he.deployments.newTitle })).toBeVisible()
+    await fillRotation(page, 'סבב סתיו', ['01', '10', '2026'], ['31', '10', '2026'])
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(drawer(page).getByRole('heading', { name: he.deployments.membersTitle })).toBeVisible()
+    await drawer(page).getByRole('button', { name: he.common.save }).click()
+    await expect(rotationRow(page, 'סבב סתיו')).toContainText(he.deployments.wholeUnit)
+    await closeDrawer(page)
+  })
+
+  await test.step('(b)5. ended and not closed: not routine, and no quick action', async () => {
+    await expect(page.getByRole('heading', { name: ROUTINE })).toHaveCount(0)
+    await expect(quickAction(page, he.workspace.openRotation)).toHaveCount(0)
+    await expect(quickAction(page, he.leaves.new)).toHaveCount(0)
+  })
+
+  await test.step('(b)5. the close brings routine and "פתיחת סבב" back', async () => {
+    await openModule(page, he.deployments.open)
+    await rowAction(page, 'סבב סתיו', he.deployments.close)
+    await expect(rotationRow(page, 'סבב סתיו')).toContainText(he.deployments.closed)
+    await closeDrawer(page)
+    await expect(page.getByRole('heading', { name: ROUTINE })).toBeVisible()
+    await expect(quickAction(page, he.workspace.openRotation)).toBeVisible()
+  })
+
+  await test.step('(b)2. dates over another rotation, closed too, are refused, and say why', async () => {
+    await quickAction(page, he.workspace.openRotation).click()
+    await fillRotation(page, 'סבב נובמבר', ['25', '10', '2026'], ['30', '11', '2026'])
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(drawer(page).getByText(he.issues.rotationOverlap)).toBeVisible()
+    await expectNoAxeViolations(page)
+    await typeDate(page, he.deployments.from, '01', '11', '2026')
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(drawer(page).getByRole('heading', { name: he.deployments.membersTitle })).toBeVisible()
+  })
+
+  await test.step('(b)1. "רשימה": the owner alone serves first', async () => {
+    await press(page, 'radio', he.deployments.listed)
+    await press(page, 'checkbox', OWNER.name)
+    await drawer(page).getByRole('button', { name: he.common.save }).click()
+    await expect(rotationRow(page, 'סבב נובמבר')).toContainText(`${he.deployments.memberCount} 1`)
+    await closeDrawer(page)
+  })
+
+  await test.step('(b)2–3. the rotation runs: the quick action is "בקשה חדשה"', async () => {
+    await expect(page.getByRole('heading', { name: ROUTINE })).toHaveCount(0)
+    await expect(quickAction(page, he.workspace.openRotation)).toHaveCount(0)
+    await expect(quickAction(page, he.leaves.new)).toBeVisible()
+  })
+
+  await test.step('(b)4. the list grows into the whole unit', async () => {
+    await openModule(page, he.deployments.open)
+    await rowAction(page, 'סבב נובמבר', he.deployments.editMembers)
+    await press(page, 'radio', he.deployments.wholeUnit)
+    await drawer(page).getByRole('button', { name: he.common.save }).click()
+    await expect(rotationRow(page, 'סבב נובמבר')).toContainText(he.deployments.wholeUnit)
+    await expectNoAxeViolations(page)
   })
 })
