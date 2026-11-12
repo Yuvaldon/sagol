@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // The rest of the rule paths on screen (OI-107): the warning on the edit form, and the acknowledgment dialog on the
 // details' approve step, the inbox's approve and the close dialog. Desktop and mobile, RTL, with axe. Sample data,
@@ -26,10 +26,7 @@ async function createRule(page: Page, name: string, bound: 'min' | 'max', value:
 /** A platoon with two soldiers, a type, and a soft rule that wants both of them there. */
 async function setUp(page: Page) {
   await openModule(page, he.units.open)
-  await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(PLATOON)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.units.listLabel }).getByText(PLATOON, { exact: true })).toBeVisible()
+  await addUnit(page, PLATOON)
   await closeDrawer(page)
   await openModule(page, he.soldiers.open)
   for (const [first, last] of [

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { choose, closeDrawer, drawer } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn, waitForSettledScreen } from './support/workspace.ts'
+import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn, waitForSettledScreen } from './support/workspace.ts'
 
 // V9's demo: a second identity asks to link and the owner reviews. Auto-link on the personal number and the invite
 // email, a link to a candidate, a new soldier from the request, a rejection, and the identity that waits. On desktop
@@ -12,6 +12,7 @@ const YAEL = { email: 'yael@example.test', first: 'יעל', last: 'שחר', pers
 const ASHER = { email: 'asher@example.test', first: 'אשר', last: 'פרץ' }
 const GIL = { email: 'gil@example.test', first: 'גיל', last: 'חדש', personalId: '7770001' }
 const DANA = { email: 'dana.k@example.test', first: 'דנה', last: 'כהן' }
+const ROTEM = { email: 'rotem@example.test', first: 'רותם', last: 'בר', personalId: '5566778' }
 
 async function userMenu(page: Page, item: string | RegExp) {
   await page.getByRole('button', { name: he.account.menu }).click()
@@ -25,10 +26,7 @@ async function signOut(page: Page) {
 
 async function createUnit(page: Page, name: string) {
   await openModule(page, he.units.open)
-  await page.getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(name)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(page.getByRole('list', { name: he.units.listLabel }).getByText(name, { exact: true })).toBeVisible()
+  await addUnit(page, name)
   await closeDrawer(page)
 }
 
@@ -198,6 +196,38 @@ test.describe('account linking', () => {
       // The form says the earlier request was not approved (D-168).
       await expect(page.getByRole('status').getByText(he.linkRequest.rejectedTitle)).toBeVisible()
       await expectNoAxeViolations(page)
+    })
+  })
+
+  test('approving several requests at once links only a certain match (D-283)', async ({ page }) => {
+    await enterAsOwner(page)
+    await createUnit(page, UNIT)
+    // The personal number alone, with no invite email, so the request waits for a reviewer.
+    await addSoldier(page, ROTEM.first, ROTEM.last, { personalId: ROTEM.personalId, email: '' })
+
+    await test.step('two identities ask, one with the number of a soldier', async () => {
+      await signOut(page)
+      await ask(page, ROTEM)
+      await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
+      await page.getByRole('button', { name: he.account.signOut }).click()
+      await ask(page, ASHER)
+      await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
+      await backToOwner(page)
+      await expect(menuButton(page)).toContainText('2')
+    })
+
+    await test.step('both are chosen and approved; the match is linked, the other is left for review', async () => {
+      await openAccountLinks(page)
+      await drawer(page).getByRole('button', { name: he.accountLinks.bulk.open }).click()
+      const chooser = drawer(page).getByRole('group', { name: he.accountLinks.bulk.choose })
+      await chooser.getByRole('checkbox', { name: new RegExp(ROTEM.first) }).click()
+      await chooser.getByRole('checkbox', { name: new RegExp(ASHER.first) }).click()
+      await expectNoAxeViolations(page)
+      await drawer(page).getByRole('button', { name: `${he.accountLinks.bulk.approve} 2` }).click()
+      const outcomes = drawer(page).getByRole('list', { name: he.accountLinks.bulk.outcomes })
+      await expect(outcomes.getByRole('listitem').filter({ hasText: ROTEM.first })).toContainText(he.accountLinks.bulk.linked)
+      await expect(outcomes.getByRole('listitem').filter({ hasText: ASHER.first })).toContainText(he.accountLinks.bulk.needsReview)
+      await expect(menuButton(page)).toContainText('1')
     })
   })
 })

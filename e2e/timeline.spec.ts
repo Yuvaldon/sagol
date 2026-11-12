@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, openRotation, typeDate } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
+import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
 // axe. Sample data, tests only.
@@ -23,26 +23,11 @@ function windowLabel(page: Page) {
   return page.getByRole('button', { name: new RegExp(he.workspace.window) })
 }
 
-function unitRow(page: Page, name: string) {
-  return page
-    .getByRole('list', { name: he.units.listLabel })
-    .getByRole('listitem')
-    .filter({ has: page.getByText(name, { exact: true }) })
-}
-
 /** A company with two platoons. */
 async function buildUnits(page: Page) {
   await openModule(page, he.units.open)
-  await page.getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill('פלוגה')
-  await page.getByRole('button', { name: he.common.create }).click()
-  for (const name of ['מחלקה א', 'מחלקה ב']) {
-    await unitRow(page, 'פלוגה').getByRole('button', { name: he.common.actions }).click()
-    await page.getByRole('menuitem', { name: he.units.addChild }).click()
-    await page.getByLabel(he.units.name).fill(name)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(unitRow(page, name)).toBeVisible()
-  }
+  await addUnit(page, 'פלוגה')
+  for (const name of ['מחלקה א', 'מחלקה ב']) await addUnit(page, name, 'פלוגה')
   await closeDrawer(page)
 }
 
@@ -78,9 +63,9 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
-  await test.step('with no rotation, routine shows the board under a band; with no unit yet, it sends to found one (D-257, D-222)', async () => {
+  await test.step('with no rotation, routine shows the board under a band; the root unit from the claim can hold one (D-257, D-223)', async () => {
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
-    await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
+    await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
     await expect(board(page)).toBeVisible()
     await expect(page).toHaveURL(/\/$/)
     await expectNoAxeViolations(page)

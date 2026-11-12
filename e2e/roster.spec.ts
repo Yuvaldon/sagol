@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V2's demo: ranks and soldiers, from a name to a unit history, on desktop and mobile, RTL, with axe.
 // Sample data, tests only.
@@ -53,10 +53,7 @@ async function createRank(page: Page, title: string, seniority?: string) {
 async function createUnits(page: Page, ...names: string[]) {
   await openModule(page, he.units.open)
   for (const name of names) {
-    await page.getByRole('button', { name: he.units.new }).first().click()
-    await page.getByLabel(he.units.name).fill(name)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(page.getByRole('list', { name: he.units.listLabel }).getByText(name, { exact: true })).toBeVisible()
+    await addUnit(page, name)
   }
   await closeDrawer(page)
 }

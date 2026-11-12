@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, openRotation } from './leaves.ts'
-import { enterAsOwner, navigation, openModule, signIn } from './workspace.ts'
+import { addUnit, enterAsOwner, navigation, openModule, signIn } from './workspace.ts'
 
 // What the fighter demos share: the owner's unit, a type, Yael who links on her own, the fighter role as the
 // baseline, and a rotation she serves in (D-167, D-216). Sample data, tests only.
@@ -30,10 +30,7 @@ export async function setUpFighter(page: Page) {
   await enterAsOwner(page)
 
   await openModule(page, he.units.open)
-  await page.getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(UNIT)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(page.getByRole('list', { name: he.units.listLabel }).getByText(UNIT, { exact: true })).toBeVisible()
+  await addUnit(page, UNIT)
   await closeDrawer(page)
 
   await openModule(page, he.leaveTypes.open)

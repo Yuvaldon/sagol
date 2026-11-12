@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
+import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
 
 // The bars keep the daily work; the modules that set the unit up sit in "ניהול יחידה" by group, each with its plain
 // line and none pinned out (D-254); the scope label names the single root unit; the rules row's place is the soldier's
@@ -29,14 +29,14 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
   await enterAsOwner(page)
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
 
-  await test.step('with no rotation, and no unit to hold one, the owner is sent to found a unit first (D-218)', async () => {
+  await test.step('with no rotation, the root unit from the claim holds one, so the owner is offered to open it (D-218, D-223)', async () => {
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
-    await expect(page.getByText(he.deployments.emptyNoUnits)).toBeVisible()
+    await expect(page.getByText(he.workspace.routineOpenBody)).toBeVisible()
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
     await expectNoAxeViolations(page)
-    await page.getByRole('button', { name: he.workspace.foundUnits }).click()
-    await expect(page).toHaveURL(/panel=units&entity=new/)
+    await page.getByRole('button', { name: he.workspace.openRotation }).click()
+    await expect(page).toHaveURL(/panel=deployments&entity=new/)
     await closeDrawer(page)
   })
 
@@ -62,10 +62,7 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
     await expect(navigationPanel(page)).toBeHidden()
     await openModule(page, he.units.open)
     await expect(navigationPanel(page)).toBeHidden()
-    await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-    await page.getByLabel(he.units.name).fill(COMPANY)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(drawer(page).getByRole('list', { name: he.units.listLabel }).getByText(COMPANY, { exact: true })).toBeVisible()
+    await addUnit(page, COMPANY)
     await closeDrawer(page)
     await openRotation(page, [OWNER.name])
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
@@ -99,10 +96,7 @@ test('a fighter sees only the modules their permissions open, and no unit picker
 
   await test.step('the owner sets up a unit, a soldier with an invite, and the fighter role as the baseline', async () => {
     await openModule(page, he.units.open)
-    await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-    await page.getByLabel(he.units.name).fill(COMPANY)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(drawer(page).getByRole('list', { name: he.units.listLabel }).getByText(COMPANY, { exact: true })).toBeVisible()
+    await addUnit(page, COMPANY)
     await closeDrawer(page)
     await openModule(page, he.soldiers.open)
     await page.getByRole('button', { name: he.soldiers.new }).first().click()

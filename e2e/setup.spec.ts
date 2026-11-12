@@ -11,6 +11,8 @@ const STEPS = ['unit_levels', 'units', 'command_ranks', 'rank_bindings', 'leave_
 test('the setup lists the steps, and a step is done once what it sets up exists', async ({ page }) => {
   await enterAsOwner(page)
   await openModule(page, he.setup.open)
+  // A fresh unit is offered the template first (D-262); this demo walks the checklist.
+  await drawer(page).getByRole('button', { name: he.setup.wizard.later }).click()
   const steps = drawer(page).getByRole('list', { name: he.setup.listLabel }).getByRole('listitem')
 
   await test.step('every step, in order, for the owner', async () => {

@@ -56,12 +56,45 @@ export function organizationHeading(page: Page, name = ORGANIZATION) {
   return page.getByRole('heading', { level: 1, name })
 }
 
-/** A new owner on an empty store, in the workspace. */
+/** The claim opens the setup over the board (V27): the drawer that offers the template. */
+export function setupDrawer(page: Page) {
+  return page.getByRole('dialog', { name: he.setup.title })
+}
+
+/** A new owner on an empty store, in the workspace, with the setup that the claim opens set aside. */
 export async function enterAsOwner(page: Page) {
   await page.goto('/')
   await signIn(page, OWNER.email, OWNER.name)
   await claimOrganization(page)
   await expect(organizationHeading(page)).toBeVisible()
+  await closeSetup(page)
+}
+
+/** Sets aside the setup that the claim opened, back to the board. */
+export async function closeSetup(page: Page) {
+  await expect(setupDrawer(page)).toBeVisible()
+  await setupDrawer(page).getByRole('button', { name: he.common.close }).click()
+  await expect(setupDrawer(page)).toBeHidden()
+}
+
+/** A row of the units tree, by the unit's name. */
+export function unitRow(page: Page, name: string) {
+  return page
+    .getByRole('list', { name: he.units.listLabel })
+    .getByRole('listitem')
+    .filter({ has: page.getByText(name, { exact: true }) })
+}
+
+/**
+ * A new unit under another, the root by default: the claim made the root unit (OI-212), and it stays the only one at
+ * the top (D-251). The units module is open.
+ */
+export async function addUnit(page: Page, name: string, parent = ORGANIZATION) {
+  await unitRow(page, parent).getByRole('button', { name: he.common.actions }).click()
+  await page.getByRole('menuitem', { name: he.units.addChild }).click()
+  await page.getByLabel(he.units.name).fill(name)
+  await page.getByRole('button', { name: he.common.create }).click()
+  await expect(unitRow(page, name)).toBeVisible()
 }
 
 /** The navigation panel (D-173), once open. */
