@@ -1,4 +1,5 @@
-import { REMOTE } from '../remote'
+// Imports by file, so `vite.config.ts` can read it for the service worker's routes (D-183).
+import { REMOTE } from '../remote/index.ts'
 
 // The installable app (D-182 … D-185): where the service worker lives, what it never answers, and how
 // often the open app asks for a new version.
