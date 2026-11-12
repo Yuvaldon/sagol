@@ -236,6 +236,13 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   (an open end allowed). Without a live unit the empty notice says a unit comes first.
 - **`DeploymentMembersForm`**: a `CheckList` of soldiers, then a row per member with two optional dates inside the
   deployment's days.
+- **The new-leave drawer is the sheet (D-275):** the soldier, then a bordered group per request ("בקשה 1", "בקשה 2", ...)
+  with its type, from and to, reason, and a "חוזרת" switch that opens "כל כמה ימים" and "חוזרת עד תאריך"; an X removes a
+  row while there is more than one, and "בקשה נוספת" adds one. Below the rows: פרטים נוספים, "approve now", and one rules
+  warning over every leave the sheet would create.
+- **The install card (D-274):** once after sign-in, a glass card above the bottom bar, clear of the top bar, "אפשר להתקין את סגול במכשיר
+  הזה" with "התקנה" and "לא עכשיו"; never on the sign-in screen or in the installed app, and gone on that device once
+  answered.
 - **The new-leave drawer** has a "collective leave" switch when there is more than one soldier to choose; the
   `LeaveBatchForm` has a name, a `CheckList` of soldiers, the type and the days. **`LeaveDuplicateForm`** opens from a
   leave's drawer: soldiers, days, and "approve now" only for who approves all of them.
@@ -411,9 +418,10 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
    extension.
 
 **(c) A soldier requests an absence.**
-1. "בקשה חדשה", the strip's quick action. The soldier is the requester (a commander may pick another).
+1. The soldier lands on "שלי" (D-265); closed, it leaves the strip, whose quick action is "בקשה חדשה". The soldier is the requester (a commander may pick another).
 2. Type (by group), from and to (inside the rotation by default), the reason when the type needs one, and any פרטים
-   נוספים; the rules' warnings show as the dates change.
+   נוספים; the rules' warnings show as the dates change. "בקשה נוספת" adds a row of its own type and days, and "חוזרת"
+   repeats a row every so many days (D-275).
 3. Send. The request shows in "שלי" as pending, and on the board as pending (a dashed edge, D-290).
 
 **(d) A commander approves.**
@@ -574,7 +582,7 @@ is absent. The owner sees everything because the owner role holds every permissi
 | Engine registry, `TimelineEngine`, `ListEngine`, `TableEngine`, `CalendarEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter, the others as adapters |
 | `BoardEngine`, `EngineScroller`, `LeaveChip` | `ui/board` | What every engine shares: the frame and its states, the scroller region, a leave as a chip |
 | `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
-| `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the new-leave form and its "+" |
+| `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `LeaveSheetForm`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the request sheet (D-275) and its "+" |
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |
 | `PendingRequestsModule`, `ClosedLeavesModule` | `ui/modules/leaves` | The requests inbox |
 | `MyLeavesModule` | `ui/modules/leaves` | The actor's own requests, open and history (D-167) |
