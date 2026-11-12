@@ -58,19 +58,24 @@ test('the production build is an installable app', async ({ page, request, brows
     expect(installabilityErrors).toEqual([])
   })
 
-  await test.step('the shell opens offline, and the gateway is never served from the cache', async () => {
+  await test.step('the shell opens offline, and the cache holds no gateway path', async () => {
     await page.context().setOffline(true)
     await page.reload()
     await expect(page.locator('#root')).not.toBeEmpty()
-    const gateway = await page.evaluate(async (path) => {
-      try {
-        const response = await fetch(path, { method: 'GET' })
-        return response.status
-      } catch {
-        return 'network-error'
+    // The backend is on another origin, so a fetch proves nothing: the caches themselves must hold no gateway path.
+    const cached = await page.evaluate(async () => {
+      const urls: string[] = []
+      for (const name of await caches.keys()) {
+        for (const request of await (await caches.open(name)).keys()) urls.push(request.url)
       }
-    }, PWA.networkOnlyPaths[0])
-    expect(gateway).toBe('network-error')
+      return urls
+    })
+    expect(cached.length).toBeGreaterThan(0)
+    for (const path of PWA.networkOnlyPaths) expect(cached.filter((url) => url.includes(path))).toEqual([])
     await page.context().setOffline(false)
+    // The worker has one route, the navigation fallback, and it skips the gateway and Auth.
+    const worker = await (await page.request.get(PWA.serviceWorkerPath)).text()
+    expect(worker.match(/registerRoute/g)).toHaveLength(1)
+    for (const path of PWA.networkOnlyPaths) expect(worker).toContain(path.replaceAll('/', '\\/'))
   })
 })
