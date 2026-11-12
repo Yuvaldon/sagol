@@ -7,8 +7,11 @@ import { Button } from '../primitives/Button'
 // its body and uses a named action (D-088).
 
 const OVERLAY = 'enter-scrim fixed inset-none flex items-center justify-center bg-scrim p-lg'
-const SURFACE = 'glass-menu max-h-full w-full max-w-sheet overflow-y-auto rounded-panel p-lg'
-const BODY = 'flex flex-col gap-md outline-none'
+// The surface is as tall as its content, up to the screen; past it the content scrolls, and the title and the actions
+// stay in sight (D-278).
+const SURFACE = 'glass-menu flex max-h-full w-full max-w-sheet flex-col overflow-hidden rounded-panel p-lg'
+const BODY = 'flex min-h-none flex-col gap-md outline-none'
+const CONTENT = 'flex min-h-none flex-col gap-md overflow-y-auto'
 
 export interface SmallDialogProps {
   readonly titleKey: I18nKey
@@ -45,8 +48,10 @@ export function SmallDialog({
           <Heading slot="title" className="text-body font-bold">
             {t(titleKey)}
           </Heading>
-          {hintKey === undefined ? null : <p className="text-name text-text-muted">{t(hintKey)}</p>}
-          {children}
+          <div className={CONTENT}>
+            {hintKey === undefined ? null : <p className="text-name text-text-muted">{t(hintKey)}</p>}
+            {children}
+          </div>
           <div className="flex flex-wrap justify-end gap-sm">
             <Button onPress={onCancel}>{t('common.cancel')}</Button>
             <Button variant="primary" isDisabled={isPending} onPress={onConfirm}>
@@ -81,7 +86,7 @@ export function InfoDialog({ titleKey, hintKey, onClose }: InfoDialogProps) {
           <Heading slot="title" className="text-body font-bold">
             {t(titleKey)}
           </Heading>
-          <p className="text-name text-text-muted">{t(hintKey)}</p>
+          <p className={`${CONTENT} text-name text-text-muted`}>{t(hintKey)}</p>
           <div className="flex justify-end">
             <Button variant="primary" onPress={onClose}>
               {t('common.close')}
