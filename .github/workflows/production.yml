@@ -114,6 +114,7 @@ jobs:
           done
           test "$blocked" -eq 0 || exit 1
           supabase db push --linked --workdir .
+      # Runs only when every step above succeeded: a failed db push stops the job before the function changes.
       - name: The commands function (the bundle of D-209)
         run: |
           npm run build:function

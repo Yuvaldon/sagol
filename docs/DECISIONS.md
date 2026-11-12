@@ -3579,6 +3579,10 @@ approved the automatic run in the owner's own words ("אוטומטית"), relaye
   scanned, comments stripped, statement by statement: `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE FROM` with no
   `WHERE` stops the run. A migration that means it carries the line `-- production: destructive change approved`,
   which its review then sees.
+- **A failing migration.** `db push` applies each file and its history row in one transaction and stops at the first
+  failure with a non-zero exit (checked with CLI 2.122.0 on a local database: the failing file left no table and no
+  history row, the next file was not applied). The step fails, so the function deploy after it never runs; the
+  project stays on the last migration that succeeded.
 - **The environment.** The job runs in the GitHub environment `production`, which the owner restricts to `main` and
   which holds `SUPABASE_ACCESS_TOKEN`, `PRODUCTION_DB_PASSWORD` and the variable `PRODUCTION_PROJECT_REF` (OI-230). No
   required-reviewer gate: GitHub offers it in private repositories only on paid plans, and anything paid is out
