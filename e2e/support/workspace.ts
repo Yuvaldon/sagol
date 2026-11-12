@@ -76,8 +76,14 @@ export function navigationPanel(page: Page) {
 export async function openModule(page: Page, name: string | RegExp) {
   // A string names the module exactly, so its pin ("pin <module>") never answers for it.
   const options = typeof name === 'string' ? { name, exact: true } : { name }
+  const panel = navigationPanel(page)
+  const dialogs = page.getByRole('dialog')
+  const othersOpen = async () => (await dialogs.count()) - ((await panel.isVisible()) ? 1 : 0)
+  const openedBefore = await othersOpen()
   await expect(async () => {
-    const panel = navigationPanel(page)
+    // A press that landed while the page was busy can still time out: when the module's drawer opened since, the
+    // step is done, and the caller checks what it opened.
+    if ((await othersOpen()) > openedBefore) return
     if (await panel.isVisible()) {
       const inPanel = panel.getByRole('button', options)
       if (await inPanel.isVisible()) {
