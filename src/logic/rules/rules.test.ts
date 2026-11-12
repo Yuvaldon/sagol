@@ -235,14 +235,25 @@ describe('rule evaluation for a window (D-141, OI-091)', () => {
     const data = dataWith([leave(1, 1, MONDAY, MONDAY)])
     const all = heatRow({ data, rules: [twoMedicsPerPlatoon], days: DAYS, unitId: null })
     // Platoon B has one medic: broken every day. Platoon A breaks on Monday.
-    expect(all.map((day) => [day.date, day.broken, day.worst])).toEqual([
+    expect(all?.map((day) => [day.date, day.broken, day.worst])).toEqual([
       [SUNDAY, 1, 'hard'],
       [MONDAY, 2, 'hard'],
       [TUESDAY, 1, 'hard'],
     ])
     const platoonA = heatRow({ data, rules: [twoMedicsPerPlatoon], days: DAYS, unitId: PLATOON_A })
-    expect(platoonA.map((day) => day.broken)).toEqual([0, 1, 0])
-    expect(platoonA[0]?.worst).toBeNull()
+    expect(platoonA?.map((day) => day.broken)).toEqual([0, 1, 0])
+    expect(platoonA?.[0]?.worst).toBeNull()
+  })
+
+  it('has no row for a unit that no rule concerns (D-173)', () => {
+    const medicsInB = rule(3, {
+      scope_unit_id: PLATOON_B,
+      population_filter: { where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } },
+      min_value: 2,
+    })
+    const data = dataWith([])
+    expect(heatRow({ data, rules: [medicsInB], days: DAYS, unitId: PLATOON_A })).toBeNull()
+    expect(heatRow({ data, rules: [medicsInB], days: DAYS, unitId: PLATOON_B })).not.toBeNull()
   })
 
   it('counts a target inside the unit even with nobody in it (D-072)', () => {
@@ -253,7 +264,7 @@ describe('rule evaluation for a window (D-141, OI-091)', () => {
       group_by: 'tag',
     })
     // Platoon A has no driver: its selected group is still judged.
-    expect(heatRow({ data: dataWith([]), rules: [drivers], days: [SUNDAY], unitId: PLATOON_A })[0]).toMatchObject({
+    expect(heatRow({ data: dataWith([]), rules: [drivers], days: [SUNDAY], unitId: PLATOON_A })?.[0]).toMatchObject({
       broken: 1,
       worst: 'soft',
     })

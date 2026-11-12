@@ -1,4 +1,10 @@
-import { SoldierPreferences, type Result, type SoldierPreferencesRecord } from '@contracts'
+import {
+  RulesRowPlacement,
+  SoldierPreferences,
+  type NavigationModule,
+  type Result,
+  type SoldierPreferencesRecord,
+} from '@contracts'
 import { useQuery } from '@tanstack/react-query'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
@@ -44,4 +50,36 @@ export function useUpdateMyPreferences() {
       preferences: { ...stored.preferences, ...changes },
     })
   })
+}
+
+export interface NavigationPreferences {
+  /** What the soldier pinned to the bar, in the order pinned; empty until the preferences load. */
+  readonly pinned: readonly NavigationModule[]
+  readonly rulesRow: RulesRowPlacement
+  /** FALSE while the preferences cannot be read, so nothing offers a change that cannot be saved (D-076, D-121). */
+  readonly editable: boolean
+  togglePin(module: NavigationModule): void
+  setRulesRow(placement: RulesRowPlacement): void
+}
+
+const NO_PINS: readonly NavigationModule[] = []
+
+/** The bar's pins and the heat row's place (D-173), kept in the soldier's own preferences so every device has them. */
+export function useNavigationPreferences(): NavigationPreferences {
+  const preferences = useMyPreferences()
+  const save = useUpdateMyPreferences()
+  const value = preferences.status === 'ready' ? preferences.value : null
+  const pinned = value?.pinned_modules ?? NO_PINS
+  return {
+    pinned,
+    rulesRow: value?.rules_row_placement ?? RulesRowPlacement.enum.below,
+    editable: value !== null,
+    togglePin(module) {
+      const next = pinned.includes(module) ? pinned.filter((one) => one !== module) : [...pinned, module]
+      void save.run({ pinned_modules: next })
+    },
+    setRulesRow(placement) {
+      void save.run({ rules_row_placement: placement })
+    },
+  }
 }
