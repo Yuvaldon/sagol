@@ -335,6 +335,18 @@ export {
   useUnitsWithArchived,
 } from './roster/hooks'
 export {
+  blankQuickEntryRow,
+  isBlankQuickEntryRow,
+  quickEntryIssues,
+  quickEntryRowsFromPaste,
+  readyQuickEntryRows,
+  useQuickEntrySave,
+  type QuickEntryAnswers,
+  type QuickEntryPlacement,
+  type QuickEntryRow,
+  type QuickEntryValues,
+} from './roster/quickEntry'
+export {
   NEW_LINK_REQUEST_VALUES,
   linkRequestIssues,
   newSoldierFromRequestIssues,
@@ -344,6 +356,7 @@ export {
   type NewSoldierFromRequestValues,
 } from './accounts/forms'
 export { candidateRows, type CandidateRow } from './accounts/review'
+export { certainCandidate, useBulkLinkApproval, type BulkLinkAnswer, type BulkLinkAnswers } from './accounts/bulk'
 export {
   useCancelLinkRequest,
   useLinkCandidates,
@@ -426,4 +439,21 @@ export {
   type SeniorityOverrideFormValues,
 } from './seniority/seniority'
 export { useSeniorityOverrideCommands, useSeniorityOverrides, useSeniorityPermissions } from './seniority/hooks'
-export { nextSetupStep, setupSteps, useSetupAccess, useSetupProgress, type SetupStep } from './organization/setup'
+export { useCanSetTimezone, useSetOrganizationTimezone } from './organization/timezone'
+export { nextSetupStep, setupSteps, useSetupAccess, useSetupProgress, useSetupUnfinished, type SetupStep } from './organization/setup'
+export {
+  applyTemplatePlan,
+  initialChoices,
+  isFreshSetup,
+  templateChoiceIssues,
+  templatePlan,
+  useApplyTemplate,
+  useTemplateOffer,
+  withSectionCount,
+  type TemplateBase,
+  type TemplateChoices,
+  type TemplateNames,
+  type TemplateOutcome,
+  type TemplateStage,
+  type TemplateStep,
+} from './organization/template'

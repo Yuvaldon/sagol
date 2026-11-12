@@ -8,6 +8,8 @@ import {
   SoldierAccountId,
   SoldierId,
   AccessGrantId,
+  UnitId,
+  UnitMembershipId,
   TABLE_SCHEMAS,
   type AuthIdentity,
   type TableName,
@@ -107,6 +109,8 @@ describe('local store', () => {
       owner_role: { id: roleId, name: 'Owner' },
       account_id: SoldierAccountId.parse(crypto.randomUUID()),
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+      root_unit_id: UnitId.parse(crypto.randomUUID()),
+      membership_id: UnitMembershipId.parse(crypto.randomUUID()),
     })
     expect(result).toEqual({ ok: false, error: { code: 'internal' } })
     expect(await harness.rows('organizations')).toEqual([])
@@ -140,6 +144,8 @@ describe('local store', () => {
       owner_role: { id: RoleId.parse(crypto.randomUUID()), name: 'Owner' },
       account_id: SoldierAccountId.parse(crypto.randomUUID()),
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+      root_unit_id: UnitId.parse(crypto.randomUUID()),
+      membership_id: UnitMembershipId.parse(crypto.randomUUID()),
     })
     expect(result.ok).toBe(true)
     expect(await heard).toContain('soldier_accounts')

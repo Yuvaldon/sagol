@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, signIn } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, signIn } from './support/workspace.ts'
 
 // V10's demo: the owner builds a role, gives it to a soldier for a while with a personal grant, the soldier sees the
 // board through it, and the board closes again when the grant is revoked (D-165, D-166). On desktop and mobile, RTL,
@@ -26,10 +26,7 @@ async function signOut(page: Page) {
 
 async function createUnit(page: Page) {
   await openModule(page, he.units.open)
-  await page.getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(UNIT)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(page.getByRole('list', { name: he.units.listLabel }).getByText(UNIT, { exact: true })).toBeVisible()
+  await addUnit(page, UNIT)
   await closeDrawer(page)
 }
 

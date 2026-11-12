@@ -13,6 +13,11 @@ const REQUIRED_COLUMNS: readonly SoldierCsvColumn[] = ['first_name', 'last_name'
 
 /** RFC 4180 cells: commas, quoted cells with doubled quotes, CRLF or LF. NULL: a quote is left open, or text follows one. */
 export function parseCsv(text: string): string[][] | null {
+  return parseDelimited(text, SEPARATOR)
+}
+
+/** The cells of delimited text, quoted as CSV quotes them, on any one separator (a spreadsheet copies with tabs). */
+function parseDelimited(text: string, separator: string): string[][] | null {
   const source = text.startsWith(BYTE_ORDER_MARK) ? text.slice(BYTE_ORDER_MARK.length) : text
   const rows: string[][] = []
   let row: string[] = []
@@ -36,11 +41,11 @@ export function parseCsv(text: string): string[][] | null {
       index += 1
       continue
     }
-    const breaksCell = char === SEPARATOR || char === '\n' || char === '\r'
+    const breaksCell = char === separator || char === '\n' || char === '\r'
     if (closed && !breaksCell) return null
     closed = false
     if (char === QUOTE && cell === '') quoted = true
-    else if (char === SEPARATOR) {
+    else if (char === separator) {
       row.push(cell)
       cell = ''
     } else if (char === '\n' || char === '\r') {
@@ -139,4 +144,51 @@ export function soldierCsvInput(row: SoldierCsvRow, id: SoldierId): CreateSoldie
     private: hasPrivate ? { personal_id: row.personal_id, invite_email: row.invite_email, phone: row.phone } : null,
     membership: null,
   }
+}
+
+const TAB = '\t'
+
+/** What was pasted into the quick entry (D-282): its rows, or why it cannot be read. */
+export type PastedSoldiers =
+  | { readonly ok: true; readonly rows: readonly SoldierCsvRow[] }
+  | { readonly ok: false; readonly problem: { readonly kind: 'unreadable' } | { readonly kind: 'row_length'; readonly row: number } }
+
+/**
+ * Rows pasted into the quick entry (D-282). Cells split on tabs when a line has one (a spreadsheet's copy), else on
+ * commas, quoted as CSV quotes them; blank lines are skipped. A first line whose every cell names a column, by its CSV
+ * name or by `labels` (the grid's own headings), sets the order; otherwise the cells follow `SOLDIER_CSV_COLUMNS`. A
+ * row may stop short; a cell past the last column is refused, so nothing pasted is dropped unseen.
+ */
+export function readPastedSoldiers(text: string, labels: Readonly<Record<SoldierCsvColumn, string>>): PastedSoldiers {
+  const cells = parseDelimited(text, text.includes(TAB) ? TAB : SEPARATOR)
+  if (cells === null) return { ok: false, problem: { kind: 'unreadable' } }
+  const columnOf = (cell: string): SoldierCsvColumn | undefined => {
+    const name = cell.trim().toLowerCase()
+    return SOLDIER_CSV_COLUMNS.find((column) => column === name || labels[column].trim().toLowerCase() === name)
+  }
+  const [first, ...rest] = cells
+  if (first === undefined) return { ok: true, rows: [] }
+  const named = first.filter((cell) => cell.trim() !== '').map(columnOf)
+  const isHeader = named.length > 0 && named.every((column) => column !== undefined) && new Set(named).size === named.length
+  const order: readonly (SoldierCsvColumn | undefined)[] = isHeader ? first.map(columnOf) : SOLDIER_CSV_COLUMNS
+  const data = isHeader ? rest : cells
+  const rows: SoldierCsvRow[] = []
+  for (const [index, values] of data.entries()) {
+    if (values.slice(order.length).some((value) => value.trim() !== '')) {
+      return { ok: false, problem: { kind: 'row_length', row: index + 1 } }
+    }
+    const valueOf = (column: SoldierCsvColumn) => {
+      const position = order.indexOf(column)
+      return position === -1 ? null : optionalText(values[position] ?? null)
+    }
+    rows.push({
+      first_name: valueOf('first_name'),
+      last_name: valueOf('last_name'),
+      nickname: valueOf('nickname'),
+      personal_id: valueOf('personal_id'),
+      phone: valueOf('phone'),
+      invite_email: valueOf('invite_email'),
+    })
+  }
+  return { ok: true, rows }
 }

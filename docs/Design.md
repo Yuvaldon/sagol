@@ -256,6 +256,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   explanation, "done" or "not yet" in words, and an "open" button to the step's own module.
 - It opens first in "ניהול יחידה" and from the empty board, as its one action (V25). From V32 it is the first section
   of "הגדרות היחידה", with its progress as a callout in "ניהול יחידה" (D-285).
+- **Template sheet** (V27, D-262): a fresh unit, the root alone, first sees pick, adjust, done; "סיום" runs the
+  template's commands and closes the drawer on the board in routine. A stop part way says where, above the checklist.
+- **Quick entry and bulk approval** (V27, D-282, D-283): "הוספה מהירה" in the soldiers list is a grid with a paste box,
+  one unit from today, saved row by row; "אישור הנבחרות" in the join requests links only a single match by personal number.
 
 ## Installed app (V18, D-182 … D-185)
 

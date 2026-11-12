@@ -5,9 +5,13 @@ export { DOM } from './dom'
 export { TOOLTIP } from './tooltip'
 export {
   ADAPTER_OF_AUTH_MODE,
+  APP_STAGES,
+  AppStage,
   ENV_VARIABLES,
   EnvSchema,
+  isStaging,
   parseEnv,
+  type AppStageName,
   type Env,
   type EnvIssue,
   type EnvIssueCode,
@@ -54,6 +58,7 @@ export {
   DRAG_ACTIVATION_PX,
   DROP_EDGE_FRACTION,
   NEW_ENTITY,
+  QUICK_ENTRY,
   PANEL_IDS,
   SETUP_SECTIONS,
   SETUP_STEPS,
@@ -86,3 +91,20 @@ export {
 } from './palette'
 export { ICON_KEYS, IconKeyName, isIconKey } from './icons'
 export { DATE_FORMATS, DATE_LOCALE, FIRST_DAY_OF_WEEK, MAX_TIMER_DELAY_MS, type DateFormat } from './dates'
+export {
+  COMPANY_TEMPLATE,
+  EMPTY_TEMPLATE,
+  UNIT_TEMPLATE_IDS,
+  UNIT_TEMPLATES,
+  type TemplateBinding,
+  type TemplateCount,
+  type TemplateLeaveGroup,
+  type TemplatePermissions,
+  type TemplateRank,
+  type TemplateRole,
+  type TemplateRule,
+  type TemplateStructure,
+  type TemplateTagCategory,
+  type UnitTemplate,
+  type UnitTemplateId,
+} from './templates'

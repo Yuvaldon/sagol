@@ -74,6 +74,8 @@ const COMMAND_FIELDS = new Set([
   'transition',
   'account_id',
   'access_grant_id',
+  'root_unit_id',
+  'membership_id',
   'owner_role',
   'organization',
   'soldier',

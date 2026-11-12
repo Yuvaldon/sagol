@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, drawer, press, typeDate } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V26's journey (b): routine until a rotation opens, a tag for that rotation only, the close and the reopen
 // (D-257 … D-260, D-222). Desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -33,10 +33,7 @@ test('routine, a rotation with a tag of its own, the close and the reopen', asyn
   await test.step('routine while no rotation is set', async () => {
     await expect(page.getByRole('heading', { name: ROUTINE })).toBeVisible()
     await openModule(page, he.units.open)
-    await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-    await page.getByLabel(he.units.name).fill('פלוגה ג')
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(drawer(page).getByText('פלוגה ג', { exact: true })).toBeVisible()
+    await addUnit(page, 'פלוגה ג')
     await closeDrawer(page)
   })
 

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AccessGrantId, RoleId, SoldierAccountId } from '../common/ids'
+import { AccessGrantId, RoleId, SoldierAccountId, UnitId, UnitMembershipId } from '../common/ids'
 import { Organization } from '../entities/organization'
 import { Role } from '../entities/permissions'
 import { Soldier } from '../entities/soldiers'
@@ -7,13 +7,16 @@ import { ExpectedVersion, changesOf } from './common'
 
 /**
  * `bootstrapOwner` (D-005): the first verified sign-in on an empty organization creates the
- * organization, the owner soldier, the account link, an owner role and its
- * organization-scope grant, atomically. Refused unless the identity's verified email
+ * organization, its root unit (named as the organization, D-251), the owner soldier placed in it from today, the
+ * account link, an owner role and its organization-scope grant, atomically. Refused unless the identity's verified email
  * matches the server secret. The identity comes from the session, never from input.
  */
 export const BootstrapOwnerInput = z.strictObject({
   organization: z.strictObject(Organization.pick({ id: true, name: true, timezone: true }).shape),
+  root_unit_id: UnitId,
   soldier: z.strictObject(Soldier.pick({ id: true, first_name: true, last_name: true }).shape),
+  /** The owner's primary membership in the root unit. */
+  membership_id: UnitMembershipId,
   /** The role name is user data: the UI proposes it, the owner may rename it later. */
   owner_role: z.strictObject({ id: RoleId, name: Role.shape.name }),
   account_id: SoldierAccountId,

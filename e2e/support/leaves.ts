@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
-import { OWNER, openModule } from './workspace.ts'
+import { addUnit, OWNER, openModule } from './workspace.ts'
 
 // What the leave demos share: the board, the drawer, the fields of a form, a type and a new leave. Sample data,
 // tests only.
@@ -125,10 +125,7 @@ export const ROTATION_UNIT = 'מחלקה א'
 /** A unit to hold the rotation, then the rotation, with `members` serving (D-216): what a request needs first. */
 export async function openRotationInNewUnit(page: Page, members: readonly string[]) {
   await openModule(page, he.units.open)
-  await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(ROTATION_UNIT)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByText(ROTATION_UNIT, { exact: true })).toBeVisible()
+  await addUnit(page, ROTATION_UNIT)
   await closeDrawer(page)
   await openRotation(page, members)
 }

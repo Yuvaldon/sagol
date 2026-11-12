@@ -465,7 +465,7 @@ export function DayReportDialog() {
       onOpenChange={(open) => {
         if (!open) panel.close()
       }}
-      className="enter-scrim fixed inset-none z-20 flex items-center justify-center bg-scrim p-sm md:p-lg"
+      className="enter-scrim fixed inset-screen z-20 flex items-center justify-center bg-scrim p-sm md:p-lg"
     >
       <Modal className="glass-menu flex max-h-sheet-height w-full max-w-drawer flex-col overflow-hidden rounded-panel">
         <Dialog className="flex min-h-none flex-col outline-none">

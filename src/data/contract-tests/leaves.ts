@@ -77,12 +77,13 @@ const CREATE_INTERNAL: Permission = { resource: 'internal_comments', action: 'cr
 
 export function describeLeaveContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
 
   describe('leaves', () => {
     let organization: OrganizationId
+    let root: UnitId
     let ownerId: SoldierId
     let owner: AuthIdentity
     let rotation: DeploymentId
@@ -90,6 +91,7 @@ export function describeLeaveContract(
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
       rotation = await seedRotation(harnessOf(), organization, [ownerId])
@@ -98,7 +100,7 @@ export function describeLeaveContract(
     const actorWith = (pairs: readonly Permission[], scope: Parameters<typeof seedActor>[3], home?: UnitId) =>
       seedActor(harnessOf(), organization, pairs, scope, home)
 
-    async function unit(name: string, parent_id: UnitId | null = null) {
+    async function unit(name: string, parent_id: UnitId | null = root) {
       return valueOf(
         await adapter().commands.units.create({
           id: newUnitId(),
@@ -552,12 +554,15 @@ export function describeLeaveContract(
 
     describe('the rule gate (D-047, D-073, OI-027)', () => {
       /** "At least one available in the organization", counting pending leaves. */
+      // The rule counts the platoon, not the organization: the owner is placed in the root unit (D-251).
+      let platoonId: UnitId
       const seedRule = (enforcement: RuleEnforcement) =>
-        seedSharedRule(harnessOf(), organization, { enforcement, count_pending_as_unavailable: true })
+        seedSharedRule(harnessOf(), organization, { enforcement, count_pending_as_unavailable: true, scope_unit_id: platoonId })
 
       async function lastSoldierStanding() {
         const type = await createType()
         const platoon = await unit('Platoon')
+        platoonId = platoon.id
         return { type, yael: await soldier(platoon.id) }
       }
 
@@ -585,12 +590,17 @@ export function describeLeaveContract(
 
       it('names who is unavailable each day, a soldier the actor cannot see included (D-138, OI-075)', async () => {
         const type = await createType()
-        const platoonA = await unit('A')
-        const platoonB = await unit('B')
+        const company = await unit('Company')
+        const platoonA = await unit('A', company.id)
+        const platoonB = await unit('B', company.id)
         const yael = await soldier(platoonA.id)
         const hidden = await soldier(platoonB.id, { first_name: 'Omer', last_name: 'Tal' })
         valueOf(await adapter().commands.leaves.create(leaveInput(hidden.id, type.id, { as_approved: true })))
-        const ruleId = await seedSharedRule(harnessOf(), organization, { min_value: 2, count_pending_as_unavailable: true })
+        const ruleId = await seedSharedRule(harnessOf(), organization, {
+          min_value: 2,
+          count_pending_as_unavailable: true,
+          scope_unit_id: company.id,
+        })
         const { identity } = await actorWith([VIEW_SOLDIERS, VIEW_TYPES, CREATE_LEAVES], {
           anchor_type: 'unit',
           anchor_unit_id: platoonA.id,

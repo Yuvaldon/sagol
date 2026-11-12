@@ -7,6 +7,14 @@ export const ENV_VARIABLES = {
   dataAdapter: 'VITE_DATA_ADAPTER',
   remoteUrl: 'VITE_REMOTE_URL',
   remoteAnonKey: 'VITE_REMOTE_ANON_KEY',
+  appStage: 'VITE_APP_ENV',
 } as const
 
 export type EnvVariable = (typeof ENV_VARIABLES)[keyof typeof ENV_VARIABLES]
+
+/**
+ * The deploys that mark themselves (D-300). Unset means production, which looks as built; `staging` shows a band on
+ * every screen and installs as a black icon with a suffixed name. The build reads this too, for the icon and manifest.
+ */
+export const APP_STAGES = { staging: 'staging' } as const
+export type AppStageName = (typeof APP_STAGES)[keyof typeof APP_STAGES]
