@@ -209,7 +209,10 @@ export function UnitTree({
         return
       }
       const rect = row.getBoundingClientRect()
-      setTarget({ id: over.id, zone: dropZoneAt(y, rect.top, rect.height) })
+      const zone = dropZoneAt(y, rect.top, rect.height)
+      // A zone the drop would refuse shows no indicator (OI-247).
+      const allowed = activeId !== null && planUnitDrop(units, activeId, over.id, zone, permissions.moveTo) !== null
+      setTarget(allowed ? { id: over.id, zone } : null)
     }
     const onMove = (event: PointerEvent) => {
       x = event.clientX
@@ -222,7 +225,7 @@ export function UnitTree({
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('scroll', update, true)
     }
-  }, [start, units])
+  }, [start, units, activeId, permissions])
 
   async function applyDrop(event: DragEndEvent) {
     const unit = unitOf(event.active.id)
@@ -231,7 +234,7 @@ export function UnitTree({
     setStart(null)
     setTarget(null)
     if (unit === null || dropped === null) return
-    const plan = planUnitDrop(units, unit.id, dropped.id, dropped.zone)
+    const plan = planUnitDrop(units, unit.id, dropped.id, dropped.zone, permissions.moveTo)
     if (plan === null) return
     onFailure(null)
     const result = await commands.drop.run({ unit, plan })

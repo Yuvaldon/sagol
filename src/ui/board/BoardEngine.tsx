@@ -23,6 +23,7 @@ import { ListChecks } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../patterns/Notices'
 import { Button } from '../primitives/Button'
+import { useOpenUnitSetup } from '../shell/navigationPanelState'
 
 // What every engine shares around the board model (D-174): the window, the filter and the board's own conditions from
 // the URL (D-103, D-104, D-131 to D-133), the states of an empty or loading board, and how a soldier or a leave opens.
@@ -78,6 +79,8 @@ function Board({
 }) {
   const access = useModuleAccess()
   const canSetUp = useSetupUnfinished()
+  // The setup's checklist is in "הגדרות היחידה" (D-297).
+  const openUnitSetup = useOpenUnitSetup()
   const panel = usePanel()
   const { mode } = useBarColors()
   const { open } = panel
@@ -111,12 +114,10 @@ function Board({
           {canSetUp ? (
             <Button
               variant="primary"
-              onPress={() => {
-                open(PANEL_IDS.setup)
-              }}
+              onPress={openUnitSetup}
             >
               <ListChecks aria-hidden size={14} />
-              {t('setup.open')}
+              {t('navigation.setupTitle')}
             </Button>
           ) : null}
         </EmptyNotice>

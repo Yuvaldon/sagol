@@ -14,7 +14,7 @@ export const OrganizationSettings = z
   .prefault({})
 export type OrganizationSettings = z.infer<typeof OrganizationSettings>
 
-/** `soldier_preferences.preferences`. A stored key no longer named here (`pinned_modules`, D-221; `rules_row_placement`, D-310) is dropped on read. */
+/** `soldier_preferences.preferences`. A stored key no longer named here (`pinned_modules`, D-221, D-291; `rules_row_placement`, D-310) is dropped on read. */
 export const SoldierPreferences = z
   .object({
     /** Pre-selects "create as approved" for actors who hold leaves:approve (D-013). */

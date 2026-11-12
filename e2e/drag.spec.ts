@@ -34,7 +34,7 @@ async function setUp(page: Page) {
   // The points below are measured on the week's board, so a drag waits until it has loaded and come to rest.
   await expect(page.getByRole('button', { name: `${he.workspace.window} 8–14 בנוב׳` })).toBeVisible()
   await expect(board(page).getByRole('button', { name: SOLDIER })).toBeVisible()
-  // A day takes a drag once the actor's permissions are in: the same check that shows the "+" (D-115).
+  // The quick action is in once the mode and the actor's own request are known (D-296).
   await expect(page.getByRole('button', { name: he.leaves.new, exact: true })).toBeVisible()
   await waitForSettledScreen(page)
 }
@@ -74,6 +74,18 @@ async function touchDrag(page: Page, from: { x: number; y: number }, to: { x: nu
   await cdp.detach()
 }
 
+/**
+ * A day takes a new leave once the actor's create permission on the row's soldier is in (D-115), a check no control on
+ * screen shows since the quick action reads the actor's own request (D-296). A gesture that lands before it opens
+ * nothing and leaves nothing behind, so it is made again.
+ */
+async function startNewLeave(page: Page, gesture: () => Promise<void>) {
+  await expect(async () => {
+    await gesture()
+    await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible({ timeout: 2_000 })
+  }).toPass()
+}
+
 async function finishNewLeave(page: Page, from: string, to: string) {
   await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
   await expect(page).toHaveURL(/draft=/)
@@ -98,7 +110,9 @@ test('drag to create, move and resize, with what a drop would break', async ({ p
   await setUp(page)
 
   await test.step('a drag across two empty days opens the new-leave form with the soldier and the days', async () => {
-    await mouseDrag(page, await dayPoint(page, 1), await dayPoint(page, 2))
+    await startNewLeave(page, async () => {
+      await mouseDrag(page, await dayPoint(page, 1), await dayPoint(page, 2))
+    })
     await finishNewLeave(page, '9', '10')
     await expect(bar(page)).toHaveAccessibleName(/9–10 בנוב׳/)
     await expectNoAxeViolations(page)
@@ -204,7 +218,9 @@ test('on a phone, a held finger creates and moves, and a bar is a 44 px target',
   await setUp(page)
 
   await test.step('holding an empty day opens the new-leave form for that day', async () => {
-    await touchDrag(page, await dayPoint(page, 1), await dayPoint(page, 1))
+    await startNewLeave(page, async () => {
+      await touchDrag(page, await dayPoint(page, 1), await dayPoint(page, 1))
+    })
     await finishNewLeave(page, '9', '9')
     await expect(bar(page)).toHaveAccessibleName(/9 בנוב׳/)
   })

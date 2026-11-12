@@ -165,8 +165,34 @@ describe('who the new-leave form offers (D-125, OI-078)', () => {
     const ports = fakePorts({ session: { can }, repositories: { organizations: organizationIn() }, now: () => AT })
     const { result } = renderHook(() => useLeaveCreation([active, inactive]), { wrapper: wrapperOf(ports) })
     await waitFor(() => {
-      expect(result.current.approvesAny).toBe(true)
+      expect(result.current.approvesOthers).toBe(true)
     })
     expect(result.current.soldiers.map((soldier) => soldier.id)).toEqual([active.id])
+  })
+
+  it('does not count approving oneself as an inbox to work through (D-299)', async () => {
+    const me = {
+      id: ACTOR,
+      organization_id: ORGANIZATION,
+      first_name: 'F',
+      last_name: 'L',
+      nickname: null,
+      command_rank_id: null,
+      status: 'active' as const,
+      properties: {},
+      ...audit,
+    }
+    const linked = { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION }
+    const can = (checks: readonly PermissionCheck[]) => Promise.resolve<Result<boolean[]>>({ ok: true, value: checks.map(() => true) })
+    const ports = fakePorts({
+      session: { can, current: () => Promise.resolve({ ok: true, value: linked }) },
+      repositories: { organizations: organizationIn() },
+      now: () => AT,
+    })
+    const { result } = renderHook(() => useLeaveCreation([me]), { wrapper: wrapperOf(ports) })
+    await waitFor(() => {
+      expect(result.current.any).toBe(true)
+    })
+    expect(result.current.approvesOthers).toBe(false)
   })
 })

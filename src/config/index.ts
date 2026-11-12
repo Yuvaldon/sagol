@@ -68,6 +68,7 @@ export {
   type SetupStepId,
   WORK_SECTIONS,
   type WorkSectionId,
+  type WorkModule,
   PanelId,
   TRANSFER_FILES,
   SHEET_DISMISS,

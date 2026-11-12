@@ -298,20 +298,27 @@ const NO_LEAVES: readonly never[] = []
 
 // ---------------------------------------------------------------- my requests
 
-/** What "my requests" offers the actor on their own soldier (D-167): NULL when the actor is not linked. */
-export function useMyLeavesAccess(): { readonly view: boolean; readonly create: boolean } | null {
+/**
+ * What "my requests" offers the actor on their own soldier (D-167): NULL when the actor is not linked. `approve` is
+ * whether they may approve their own requests: who the "approve now" switch is for (D-121, D-299).
+ */
+export function useMyLeavesAccess(): { readonly view: boolean; readonly create: boolean; readonly approve: boolean } | null {
   const actor = useActor()
   const checks = useMemo(
     () =>
       actor === null
         ? []
-        : [checkOn(LEAVE_PERMISSIONS.view, actor.soldier_id), checkOn(LEAVE_PERMISSIONS.create, actor.soldier_id)],
+        : [
+            checkOn(LEAVE_PERMISSIONS.view, actor.soldier_id),
+            checkOn(LEAVE_PERMISSIONS.create, actor.soldier_id),
+            checkOn(LEAVE_PERMISSIONS.approve, actor.soldier_id),
+          ],
     [actor],
   )
   const can = useCan(checks)
-  const [view, create] = checks
-  if (view === undefined || create === undefined) return null
-  return { view: can(view), create: can(create) }
+  const [view, create, approve] = checks
+  if (view === undefined || create === undefined || approve === undefined) return null
+  return { view: can(view), create: can(create), approve: can(approve) }
 }
 
 /** Every leave of the actor's own soldier; one list behind "my requests" and "my next days". */

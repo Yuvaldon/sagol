@@ -102,22 +102,6 @@ export type PropertyDataType = z.infer<typeof PropertyDataType>
 export const ReschedulePolicy = z.enum(['keep_if_can_approve', 'always_pending'])
 export type ReschedulePolicy = z.infer<typeof ReschedulePolicy>
 
-/** A module of the navigation panel that a soldier may pin to the bar (D-173). */
-export const NavigationModule = z.enum([
-  'units',
-  'soldiers',
-  'leave_types',
-  'rules',
-  'deployments',
-  'tags',
-  'properties',
-  'roles',
-  'access_grants',
-  'account_links',
-  'data_transfer',
-])
-export type NavigationModule = z.infer<typeof NavigationModule>
-
 /** The color scheme the soldier chose: light (the default), dark, or the device's (D-181). */
 export const Appearance = z.enum(['light', 'dark', 'system'])
 export type Appearance = z.infer<typeof Appearance>

@@ -6,7 +6,7 @@ import { useBoardShown } from './boardShown'
 import { useAppliedAppearance } from './appearance'
 import { ModuleDrawer } from './ModuleDrawer'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
-import { NewLeaveButton } from './NewLeaveButton'
+import { QuickActionButton } from './QuickActionButton'
 import { FilterBar, FilterButton } from './FilterBar'
 import { BuilderOpenContext, type BuilderOpen, type BuilderTarget } from './builderOpen'
 import { RuleBuilder } from './RuleBuilder'
@@ -17,6 +17,7 @@ import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { TabBar } from './TabBar'
 import { HomeLanding } from './HomeLanding'
 import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
+import { NavigationPanelContext, useNavigationPanelScope } from './navigationPanelState'
 import { InstallInvitation } from './InstallInvitation'
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { Viewport } from './Viewport'
@@ -84,7 +85,7 @@ function DestinationStrip() {
     <div className="pointer-events-none absolute inset-x-lg bottom-lg flex justify-center">
       <nav aria-label={t('workspace.navigation')} className={BAR}>
         <TabBar />
-        <NewLeaveButton />
+        <QuickActionButton />
       </nav>
     </div>
   )
@@ -99,6 +100,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   // What of "filter and sort" is open (D-312); the builder exists only with the board.
   const [building, setBuilding] = useState<BuilderTarget | null>(null)
   const builder = useMemo<BuilderOpen>(() => ({ open: setBuilding }), [])
+  const navigation = useNavigationPanelScope()
   useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
@@ -109,6 +111,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
     <FilterFocusContext value={focus}>
       <BuilderOpenContext value={builder}>
       <PreferenceFailureContext value={preferenceFailure}>
+      <NavigationPanelContext value={navigation}>
       <div
         data-filter-row={boardShown && active ? 'shown' : undefined}
         className="relative h-dvh bg-canvas"
@@ -135,6 +138,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           />
         ) : null}
       </div>
+      </NavigationPanelContext>
       </PreferenceFailureContext>
       </BuilderOpenContext>
     </FilterFocusContext>
