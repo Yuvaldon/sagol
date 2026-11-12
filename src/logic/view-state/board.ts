@@ -157,7 +157,7 @@ export interface PresenceDayState {
   readonly reportable: (day: CalendarDate) => boolean
   /** Whether a step back (-1) or forward (1) reaches a reportable day. */
   canShift(step: -1 | 1): boolean
-  /** The previous or next reportable day; a span keeps its last day where it was. */
+  /** The previous or next reportable day; a span's last day moves as far as its first, so it keeps its calendar length. */
   shift(step: -1 | 1): void
   goToToday(): void
   /** The span's last day; NULL turns it back to one day. */
