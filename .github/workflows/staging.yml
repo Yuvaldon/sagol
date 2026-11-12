@@ -46,14 +46,11 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.122.0
+      # Reads the one project, not the account's list, and tries the later steps' read calls first (D-276).
       - name: Refuse any project whose name does not end in -staging
-        run: |
-          test -n "$PROJECT_REF" || { echo "::error::STAGING_PROJECT_REF is not set"; exit 1; }
-          name=$(supabase projects list -o json | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref) | .name')
-          case "$name" in
-            *-staging) echo "Deploying to $name" ;;
-            *) echo "::error::project $PROJECT_REF is '$name', not a staging project"; exit 1 ;;
-          esac
+        run: >-
+          scripts/supabase-project-guard.sh staging /functions /secrets
+          -- /api-keys /config/database/pooler /postgrest /config/auth
       - name: Migrations
         run: |
           supabase link --project-ref "$PROJECT_REF" --workdir .

@@ -3525,7 +3525,8 @@ visit, and without a control that cannot act.
 
 ## D-276 — Staging: a second free Supabase project, updated from main after every green CI
 
-Refines D-209 and resolves OI-152. Track: docs.
+Refines D-209 and resolves OI-152. Track: docs. Amended 2026-11-12 (the orchestrator, about 16:04Z): the guard reads
+the one project, not the account's project list, and the access token is repository-level (D-280).
 
 - **A separate environment, never real data.** Staging is its own Supabase project, `sagol-staging`, on the free plan,
   with its own database, auth users and `commands` function. Nothing is copied from production: every unit, soldier
@@ -3536,9 +3537,14 @@ Refines D-209 and resolves OI-152. Track: docs.
   secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
   branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
 - **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
-  wrong project ref can never migrate production. Production migrations stay the manual, reviewed step they are.
+  wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
+  (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
+  account-wide `projects_read`. Before the name check it tries, read-only, the calls the later steps make (functions,
+  secrets; `supabase link`'s keys and configs as warnings), so a single run names every permission the token lacks.
+  Production follows by its own workflow (D-280).
 - **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
-  `staging` environment; the access token, the database password and the bootstrap owner's email are its secrets.
+  `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
+  the repository-level one Production uses too (D-280).
   Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
 - **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
   a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
@@ -3566,7 +3572,8 @@ dead space on any surface; a rule in the check keeps the next surface from bring
 2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12; amended the same day: the owner
 approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z;
 at about 15:55Z the owner chose repository-level values over a `production` environment, and the comparison with
-`STAGING_PROJECT_REF` was dropped (the orchestrator, about 15:59Z)
+`STAGING_PROJECT_REF` was dropped (the orchestrator, about 15:59Z); at about 16:04Z the guard moved from the account's
+project list to reading the one project, so the scoped token needs no `projects_read` (the orchestrator)
 - **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
   pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
   the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
@@ -3575,9 +3582,9 @@ at about 15:55Z the owner chose repository-level values over a `production` envi
   delivered, so production gets only what staging took first. The owner may also start it by hand
   (`workflow_dispatch`, on `main`, owner as actor and triggering actor), typing the production ref as the input. Either
   way it refuses a commit whose CI did not pass or that is not on `main`.
-- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, names a project of the account, and that
-  project's name does not end in `-staging`; on a manual run the typed ref must equal
-  it too. The ref lives in a variable, not in the file (rule 2).
+- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, the token can read that one project
+  (`scripts/supabase-project-guard.sh`, as in D-276, with the same read-only tries of the later steps' calls), and
+  its name does not end in `-staging`; on a manual run the typed ref must equal it too. The ref lives in a variable, not in the file (rule 2).
 - **Destructive migrations.** After the `--dry-run` plan and before the push, every pending migration the plan names is
   scanned, comments stripped, statement by statement: `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE FROM` with no
   `WHERE` stops the run. A migration that means it carries the line `-- production: destructive change approved`,

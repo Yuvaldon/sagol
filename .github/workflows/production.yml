@@ -77,12 +77,8 @@ jobs:
           if [ "$EVENT" = workflow_dispatch ]; then
             test "$CONFIRM_REF" = "$PROJECT_REF" || { echo "::error::the typed ref is not PRODUCTION_PROJECT_REF"; exit 1; }
           fi
-          name=$(supabase projects list -o json | jq -r --arg ref "$PROJECT_REF" '.[] | select(.id == $ref) | .name')
-          case "$name" in
-            '') echo "::error::no project $PROJECT_REF in this account"; exit 1 ;;
-            *-staging) echo "::error::project $PROJECT_REF is '$name', a staging project"; exit 1 ;;
-            *) echo "Deploying to $name ($PROJECT_REF)" ;;
-          esac
+          scripts/supabase-project-guard.sh production /functions \
+            -- /api-keys /config/database/pooler /postgrest /config/auth
       - name: Migrations (the plan, the destructive-change guard, then the push)
         run: |
           supabase link --project-ref "$PROJECT_REF" --workdir .
