@@ -219,26 +219,41 @@ export function useDateWindow(): DateWindowState {
         if (next !== undefined) change({ rotation: next.id })
         return
       }
-      change({ from: shiftedAnchor(window.kind, window.from, step), to: undefined })
+      // The kind is written back, so a rotation that fell out of scope leaves no stale rotation in the URL.
+      change({
+        range: window.kind === DEFAULT_RANGE_KIND ? undefined : window.kind,
+        rotation: undefined,
+        from: shiftedAnchor(window.kind, window.from, step),
+        to: undefined,
+      })
     },
     [change, window, rotations, rotationIndex],
   )
   const goToToday = useCallback(() => {
     if (window?.kind === 'rotation' && today !== null) {
       const running = rotations.find((candidate) => candidate.start_date <= today && (candidate.end_date ?? today) >= today)
+      // A rotation past its capped days runs today but cannot show it: today's week then.
+      const shown = running !== undefined && running.id === window.rotationId
       change(
-        running === undefined
+        running === undefined || shown
           ? { range: undefined, rotation: undefined, from: undefined, to: undefined }
           : { rotation: running.id, from: undefined, to: undefined },
       )
       return
     }
-    change({ from: undefined, to: undefined })
+    change({
+      range: window === null || window.kind === 'custom' || window.kind === DEFAULT_RANGE_KIND ? undefined : window.kind,
+      rotation: undefined,
+      from: undefined,
+      to: undefined,
+    })
   }, [change, window, rotations, today])
   const setRange = useCallback(
     (kind: Exclude<RangeKind, 'rotation'>) => {
-      // The new kind holds the days the window started on, or follows today when the window held it.
-      const anchor = window === null || window.holdsToday ? undefined : window.from
+      // The new kind holds the window's middle day, or follows today when the window held it: a week across two months
+      // becomes the month most of it lies in.
+      const anchor =
+        window === null || window.holdsToday ? undefined : addDays(window.from, Math.floor(daysBetween(window.from, window.to) / 2))
       change({ range: kind === DEFAULT_RANGE_KIND ? undefined : kind, rotation: undefined, from: anchor, to: undefined })
     },
     [change, window],

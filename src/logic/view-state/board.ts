@@ -124,8 +124,9 @@ export function useBoardSort(): BoardSortState {
     () =>
       boardKey.success
         ? { key: boardKey.data, order }
-        : { key: DEFAULT_BOARD_SORT_KEY, order: DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] },
-    [boardKey.success, boardKey.data, order],
+        : // A bare direction applies to the default key; a table-only key leaves the board in its default order.
+          { key: DEFAULT_BOARD_SORT_KEY, order: key === null ? order : DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] },
+    [boardKey.success, boardKey.data, key, order],
   )
   const set = useCallback(
     (next: SortKey, nextOrder: SortOrder = defaultOrderOf(next)) => {
