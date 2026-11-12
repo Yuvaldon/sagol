@@ -125,7 +125,14 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V18 | Installable app (PWA) | Sagol on the phone's home screen: the manifest and icons, a worker that caches the shell only, the update toast, the install item in the user menu, the offline screen (D-182 … D-185) | ☑ |
 | V19 | Time range, rotations, declutter | A range picker (day, week, month, a whole rotation) that every view honors, "סבב" in place of "פריסה", "only who is missing" as a filter condition, a sort control shared by the board and the table, and a calmer screen (D-211 … D-215) | ☑ |
 | V20 | Bars rebalance and declutter | On a phone the week and the avatar at the top, scope, view and filters in a row under it, a tab bar of destinations at the bottom; icons with tooltips on desktop (D-189); a phone on its side keeps the phone's bars, edge to edge inside the safe area, an opaque name column (D-190 to D-192) | ☑ |
+| V24 | Simplification: information architecture | Docs only: two vocabularies and a term map, one navigation model (a context strip and a destination strip, the profile, "ניהול יחידה", one requests hub), five journeys, a rotation as a mode of the system, templates (D-250 … D-264) | ☑ |
+| V25 | Navigation and words | The term map in every string, no "ארגון"; two floating strips on every screen; a personal profile; "ניהול יחידה" with groups and a line per module; one requests hub; one path per action (D-250 … D-256) | ☐ |
+| V23 | Focus mode | One control hides both strips and the chips; one restore button brings them back (OI-032, after V25) | ☐ |
+| V26 | Rotation as a mode | One rotation at a time, routine between them, the final close, the whole unit by default, tags for one rotation (D-257 … D-260; schema change) | ☐ |
+| V27 | Templates and setup | The claim creates the root unit; the "פלוגה" template; pick, adjust, done (D-251, D-261, D-262) | ☐ |
 | A7 | audit | Whole product | ☐ |
+
+Order (D-264): track A runs V24 → V22 → V25 → V23; track B runs V26 → V27, and V21 follows V27.
 
 ## Later (no schema change required)
 
