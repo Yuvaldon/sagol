@@ -70,7 +70,6 @@ export {
   DESKTOP_MIN_HEIGHT_PX,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
-  WIDE_PHONE_MEDIA_QUERY,
   type Breakpoint,
 } from './breakpoints'
 export { PALETTE_KEYS, PaletteKey, isPaletteKey } from './palette'
