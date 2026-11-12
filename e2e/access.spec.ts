@@ -21,7 +21,7 @@ const VIEWS = [
 async function signOut(page: Page) {
   await page.getByRole('button', { name: he.account.menu }).click()
   await page.getByRole('menuitem', { name: he.account.signOut }).click()
-  await expect(page).toHaveURL(/\/sign-in$/)
+  await expect(page).toHaveURL(/\/sign-in(\?view=\w+)?$/)
 }
 
 async function createUnit(page: Page) {

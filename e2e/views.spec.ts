@@ -38,8 +38,7 @@ test('the list, the table and the calendar show the board\'s leaves', async ({ p
     // A phone opens on the list and a desktop on the timeline, and the address names only a view chosen over it (D-290).
     await expect(isMobile ? region(page, he.engines.listLabel) : board(page)).toBeVisible()
     await selectView(page, he.workspace.views.list)
-    if (isMobile) await expect(page).not.toHaveURL(/view=/)
-    else await expect(page).toHaveURL(/view=list/)
+    await expect(page).toHaveURL(/view=list/)
     const list = region(page, he.engines.listLabel)
     await expect(list.getByRole('button', { name: OWNER.name })).toBeVisible()
     await expect(list.getByRole('button', { name: REGULAR })).toBeVisible()

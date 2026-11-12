@@ -21,7 +21,7 @@ const SELF_PERMISSIONS: readonly (readonly [string, readonly string[]])[] = [
 export async function signOut(page: Page) {
   await page.getByRole('button', { name: he.account.menu }).click()
   await page.getByRole('menuitem', { name: he.account.signOut }).click()
-  await expect(page).toHaveURL(/\/sign-in$/)
+  await expect(page).toHaveURL(/\/sign-in(\?view=\w+)?$/)
 }
 
 /** The owner's setup: a unit, a type, Yael with the fields auto-link reads, the fighter role as the baseline, a rotation. */
