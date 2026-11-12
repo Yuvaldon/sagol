@@ -109,6 +109,7 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: false,
       pinned_modules: [],
       rules_row_placement: 'below',
+      appearance: 'light',
     })
   })
 
@@ -117,12 +118,18 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: true,
       pinned_modules: [],
       rules_row_placement: 'below',
+      appearance: 'light',
     })
   })
 
   it('refuses a module pinned twice, or one that is not a navigation module (D-173)', () => {
     expect(SoldierPreferences.safeParse({ pinned_modules: ['units', 'units'] }).success).toBe(false)
     expect(SoldierPreferences.safeParse({ pinned_modules: ['leaves'] }).success).toBe(false)
+  })
+
+  it('reads the appearance, and refuses one that is not a choice (D-181)', () => {
+    expect(SoldierPreferences.parse({ appearance: 'dark' }).appearance).toBe('dark')
+    expect(SoldierPreferences.safeParse({ appearance: 'sepia' }).success).toBe(false)
     expect(SoldierPreferences.safeParse({ rules_row_placement: 'side' }).success).toBe(false)
   })
 
