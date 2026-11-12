@@ -1,4 +1,4 @@
-import { BAR_COLOR_MODES, type BarColorMode } from '@config'
+import { BAR_COLOR_MODES, TOOLTIP, type BarColorMode } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { useActiveView, useBarColors } from '@logic'
 import { Check } from 'lucide-react'
@@ -10,8 +10,10 @@ import {
   MenuSection,
   MenuTrigger,
   Popover,
+  TooltipTrigger,
   type Selection,
 } from 'react-aria-components'
+import { NameTooltip } from '../primitives/Button'
 import type { ReactNode } from 'react'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 
@@ -20,6 +22,9 @@ import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 
 const ITEM =
   'flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-md text-control whitespace-nowrap outline-none md:min-h-control data-focused:bg-inner'
+/** Between the menu's name and the view chosen, in its tooltip. */
+const LABEL_SEPARATOR = ': '
+
 const HEADER = 'px-md pt-xs pb-2xs text-label font-semibold text-text-muted'
 
 const COLOR_LABELS: Record<BarColorMode, I18nKey> = {
@@ -53,11 +58,15 @@ export function ViewSwitcher() {
   const current = engineOf(view)
   return (
     <MenuTrigger>
-      <AriaButton className="inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center gap-xs rounded-pill bg-inner px-sm text-control font-semibold text-text outline-focus outline-offset-2 md:min-h-control md:min-w-control data-focus-visible:outline-2 data-hovered:bg-line">
-        <current.Icon aria-hidden size={14} />
-        <span className="sr-only">{t('workspace.view')}</span>
-        <span className="sr-only md:not-sr-only">{t(current.labelKey)}</span>
-      </AriaButton>
+      <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
+        <AriaButton className="inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-pill bg-inner text-text outline-focus outline-offset-2 md:min-h-control md:min-w-control data-focus-visible:outline-2 data-hovered:bg-line">
+          <current.Icon aria-hidden size={14} />
+          <span className="sr-only">
+            {t('workspace.view')} {t(current.labelKey)}
+          </span>
+        </AriaButton>
+        <NameTooltip>{[t('workspace.view'), t(current.labelKey)].join(LABEL_SEPARATOR)}</NameTooltip>
+      </TooltipTrigger>
       <Popover className="glass-menu min-w-trigger rounded-panel p-xs">
         <Menu aria-label={t('workspace.view')} className="flex max-w-menu flex-col gap-2xs outline-none">
           <MenuSection

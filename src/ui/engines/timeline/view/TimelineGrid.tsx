@@ -103,7 +103,7 @@ function DaysHeader({
       </div>
       <div
         aria-hidden
-        className="glass-card absolute inset-y-none end-none rounded-pill"
+        className="absolute inset-y-none end-none"
         style={{ insetInlineStart: layout.nameColumnPx }}
       >
         {days.map((day, index) => (

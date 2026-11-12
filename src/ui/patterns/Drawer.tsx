@@ -48,7 +48,7 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
       onOpenChange={(open) => {
         if (!open) onClose()
       }}
-      className="enter-scrim fixed inset-none flex items-end bg-scrim md:items-stretch md:justify-end md:p-sm"
+      className="enter-scrim fixed inset-none flex items-end justify-center bg-scrim px-safe md:items-stretch md:justify-end md:p-sm"
     >
       <MotionModal
         drag="y"
@@ -61,7 +61,7 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
           const fast = info.velocity.y > SHEET_DISMISS.velocityPxPerSecond
           if (far || fast) onClose()
         }}
-        className="enter-surface glass-drawer flex max-h-sheet-height w-full flex-col overflow-hidden rounded-t-sheet md:max-h-full md:max-w-drawer md:rounded-panel"
+        className="enter-surface glass-drawer flex max-h-sheet-height w-full max-w-drawer flex-col overflow-hidden rounded-t-sheet md:max-h-full md:rounded-panel"
       >
         <Dialog ref={dialog} className="flex min-h-none flex-1 flex-col outline-none">
           <div
