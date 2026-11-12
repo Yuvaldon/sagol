@@ -41,23 +41,23 @@ import {
   type PropertyChip,
   type SoldierConditions,
 } from '@logic'
-import { ChevronRight, ListFilter, UserMinus, UserX, X } from 'lucide-react'
+import { ChevronRight, ListFilter, UserX, X } from 'lucide-react'
 import { useState, type ReactNode, useEffect } from 'react'
-import { Button as AriaButton, Dialog, DialogTrigger, Popover, Switch } from 'react-aria-components'
+import { Button as AriaButton, Dialog, DialogTrigger, Popover } from 'react-aria-components'
 import { useFilterFocus } from './filterFocus'
 import { useIsDesktop } from '../patterns/media'
 import { toneOf } from '../theme/palette'
 import { CheckList, type Choice, type ChoiceText } from '../primitives/ChoiceList'
 
-// The board's filters (D-131 to D-134, D-173). The bar holds "filter" to add a condition, the "only who is missing"
-// switch and the presence button. The row under the bars shows only while a condition is set: a chip per condition,
+// The board's filters (D-131 to D-134, D-173, D-213). The bar holds "filter" to add a condition, "only who is missing"
+// among them, and the presence button. The row under the bars shows only while a condition is set: a chip per condition,
 // and "clear all". A chip opens its values; its "x" removes it. The unit stays in the scope label of the top bar (D-104).
 
 const PILL = 'glass-bar pointer-events-auto inline-flex min-h-touch shrink-0 items-center rounded-pill text-control text-text md:min-h-control'
-const PRESS = 'cursor-pointer outline-focus outline-offset-2 data-focus-visible:outline-2'
+export const PRESS = 'cursor-pointer outline-focus outline-offset-2 data-focus-visible:outline-2'
 const POPOVER = 'glass-menu max-h-list w-menu overflow-auto rounded-panel p-md'
 /** A control of the bar: its icon alone on a phone, its name still read aloud. */
-const BAR_CONTROL =
+export const BAR_CONTROL =
   'relative inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center gap-xs rounded-pill px-sm text-control font-semibold whitespace-nowrap text-text md:min-h-control md:bg-inner md:px-md data-hovered:bg-line'
 
 const SEPARATOR = ', '
@@ -130,8 +130,10 @@ interface Condition {
   readonly name: string
   readonly values: readonly string[]
   readonly onRemove: () => void
-  /** NULL when its values cannot be chosen here (a filter the bar does not read). */
+  /** NULL when its values cannot be chosen here (a filter the bar does not read), or when it has none. */
   readonly choices: ChipChoices | null
+  /** A condition with no values (D-213): picking it in "filter" sets it at once. */
+  readonly apply?: () => void
 }
 
 /**
@@ -176,7 +178,12 @@ function AddCondition({
                 <AriaButton
                   key={condition.key}
                   onPress={() => {
-                    setPicked(condition.key)
+                    if (condition.apply === undefined) {
+                      setPicked(condition.key)
+                      return
+                    }
+                    condition.apply()
+                    onOpenChange(false)
                   }}
                   className={`flex min-h-touch items-center rounded-control px-xs text-start text-control md:min-h-control data-hovered:bg-inner ${PRESS}`}
                 >
@@ -390,7 +397,23 @@ function useConditions(): ConditionSets {
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
   const properties = usePropertyDefinitions()
+  const missing = useOnlyMissing()
 
+  // "Only who is missing" is a condition like the others (D-213): a chip while it is on, an entry in "filter" while off.
+  const onlyMissing: Condition = {
+    key: 'onlyMissing',
+    name: t('filters.onlyMissing'),
+    values: [],
+    onRemove: () => {
+      missing.set(false)
+    },
+    choices: null,
+    apply: () => {
+      missing.set(true)
+    },
+  }
+  const missingShown = missing.on ? [onlyMissing] : []
+  const missingAddable = missing.on ? [] : [onlyMissing]
   const leave = leaveConditionsOf(
     leaves,
     types.status === 'ready' ? types.value : [],
@@ -398,8 +421,8 @@ function useConditions(): ConditionSets {
   )
   if (filter.read.kind === 'other') {
     return {
-      shown: [{ key: 'other', name: t('filters.other'), values: [], onRemove: filter.clear, choices: null }, ...leave.shown],
-      addable: leave.addable,
+      shown: [{ key: 'other', name: t('filters.other'), values: [], onRemove: filter.clear, choices: null }, ...leave.shown, ...missingShown],
+      addable: [...leave.addable, ...missingAddable],
     }
   }
   const conditions = filter.read.conditions
@@ -517,22 +540,7 @@ function useConditions(): ConditionSets {
   if (conditions.statuses.length > 0) shown.push(status)
   else addable.push(status)
 
-  return { shown: [...shown, ...leave.shown], addable: [...addable, ...leave.addable] }
-}
-
-/** "Only who is missing" (D-133): the switch's track, and its name beside it from a desktop. */
-export function OnlyMissingSwitch() {
-  const missing = useOnlyMissing()
-  const isDesktop = useIsDesktop()
-  return (
-    <Switch isSelected={missing.on} onChange={missing.set} className={`group ${BAR_CONTROL} gap-sm ${PRESS}`}>
-      {isDesktop ? null : <UserMinus aria-hidden size={18} className="text-text-muted" />}
-      <span aria-hidden className="flex h-icon w-control shrink-0 items-center rounded-pill border border-line bg-inner p-2xs group-data-selected:border-action-solid group-data-selected:bg-action-solid">
-        <span className="size-dot rounded-pill bg-text-muted group-data-selected:ms-auto group-data-selected:bg-on-action" />
-      </span>
-      <span className={isDesktop ? '' : 'sr-only'}>{t('filters.onlyMissing')}</span>
-    </Switch>
-  )
+  return { shown: [...shown, ...leave.shown, ...missingShown], addable: [...addable, ...leave.addable, ...missingAddable] }
 }
 
 /** How many are missing today, under the board's filter; it opens the lists of today (D-134). */

@@ -41,7 +41,9 @@
 --   + CHECK lists on leave_events.from_status and to_status (OI-013)
 -- =============================================================================
 
-CREATE EXTENSION IF NOT EXISTS "btree_gist";
+-- Extensions live outside the app's schema (D-188).
+CREATE SCHEMA IF NOT EXISTS "extensions";
+CREATE EXTENSION IF NOT EXISTS "btree_gist" WITH SCHEMA "extensions";
 
 -- -----------------------------------------------------------------------------
 -- Tenancy

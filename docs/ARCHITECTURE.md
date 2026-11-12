@@ -246,7 +246,9 @@ The current state, in short (D-128). The entries hold the reasons.
   in `config`, shown by `create` permission and marked done from live rows (`useSetupProgress`, D-180).
 - All view state lives in **typed URL search params** (TanStack Router + Zod): active view
   id, date window, filters, open panel and its entity. Switching views keeps filters. Deep
-  links and the back button work. Parameter names come from `config`.
+  links and the back button work. Parameter names come from `config`. The window's kind (`range`: day, week, month,
+  a rotation) and the board's sort (`sort`, `order`, shared with the table) live there too; `useDateWindow` and
+  `useBoardSort` in `logic/view-state` read and write them (D-211, D-214).
 - Other routes exist only for sign-in and onboarding.
 
 ## View engines (inside `ui/engines`)

@@ -4,10 +4,18 @@
 export const SEARCH_PARAMS = {
   /** Active view id (`ViewId`). */
   view: 'view',
-  /** First day of the visible date window (ISO calendar date). */
+  /** First day of the visible date window, or the day a range kind is anchored on (ISO calendar date). */
   from: 'from',
-  /** Last day of the visible date window (ISO calendar date). */
+  /** Last day of a free date window from an older link (ISO calendar date); a range kind ignores it (D-211). */
   to: 'to',
+  /** The kind of the date window (`RangeKind`, D-211): a day, a week, a month or a whole rotation. */
+  range: 'range',
+  /** The rotation (a deployment id) of the "whole rotation" range (D-211). */
+  rotation: 'rotation',
+  /** The key the board's rows are sorted by (`BoardSortKey`, D-214), or a column of the table. */
+  sort: 'sort',
+  /** The direction of that sort (`SortOrder`, D-214). */
+  order: 'order',
   /** Active filter (a serialized `FilterExpression`). */
   filter: 'filter',
   /** Open drawer or sheet module. */

@@ -18,9 +18,9 @@ function groupHeading(page: Page, label: string) {
   return board(page).getByRole('heading', { level: 2, name: new RegExp(`^${label} ${he.timeline.soldiersInGroup}`) })
 }
 
-/** The window as the bar writes it, announced when it changes. */
+/** The window as the bar writes it on the range picker's button, announced when it changes (D-211). */
 function windowLabel(page: Page) {
-  return page.locator('p[aria-live="polite"]')
+  return page.getByRole('button', { name: new RegExp(he.workspace.window) })
 }
 
 function unitRow(page: Page, name: string) {
@@ -112,7 +112,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   })
 
   await test.step('the week moves, the back button returns, and "today" comes back to this week', async () => {
-    await page.getByRole('button', { name: he.workspace.nextWindow }).click()
+    await page.getByRole('button', { name: he.workspace.nextWindow.week }).click()
     await expect(windowLabel(page)).toContainText(NEXT_WEEK)
     await expect(page).toHaveURL(/from=2026-11-15/)
     await expect(board(page)).toHaveCount(0)
@@ -123,7 +123,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
     await expect(boardRows(page)).toHaveCount(2)
 
-    await page.getByRole('button', { name: he.workspace.nextWindow }).click()
+    await page.getByRole('button', { name: he.workspace.nextWindow.week }).click()
     await page.getByRole('button', { name: he.workspace.today, exact: true }).click()
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
     await expect(page).not.toHaveURL(/from=/)
@@ -132,7 +132,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
 
   await test.step('a link reopens the same unit and week', async () => {
     await pickUnit(page, he.workspace.wholeOrganization)
-    await page.getByRole('button', { name: he.workspace.nextWindow }).click()
+    await page.getByRole('button', { name: he.workspace.nextWindow.week }).click()
     await pickUnit(page, 'פלוגה')
     await page.reload()
     await expect(windowLabel(page)).toContainText(NEXT_WEEK)

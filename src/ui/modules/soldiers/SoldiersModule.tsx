@@ -121,7 +121,7 @@ function SoldiersContent({
 
   if (rows.length === 0) {
     return (
-      <EmptyNotice titleKey="soldiers.emptyTitle" bodyKey={permissions.create ? 'soldiers.emptyBody' : 'soldiers.emptyReadOnly'}>
+      <EmptyNotice titleKey="soldiers.emptyTitle" bodyKey={permissions.create ? undefined : 'soldiers.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newSoldier}>
             <Plus aria-hidden size={14} />

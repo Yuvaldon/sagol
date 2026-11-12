@@ -55,7 +55,7 @@ function UnitsContent({ units, levels }: { readonly units: readonly Unit[]; read
 
   if (units.length === 0) {
     return (
-      <EmptyNotice titleKey="units.emptyTitle" bodyKey={canCreateTop ? 'units.emptyBody' : 'units.emptyReadOnly'}>
+      <EmptyNotice titleKey="units.emptyTitle" bodyKey={canCreateTop ? undefined : 'units.emptyReadOnly'}>
         {canCreateTop ? (
           <Button variant="primary" onPress={newUnit}>
             <Plus aria-hidden size={14} />

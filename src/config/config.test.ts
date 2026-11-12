@@ -26,6 +26,7 @@ import {
   TIMELINE_DRAG,
   TIMELINE_LANES,
   TIMELINE_LANES_TOUCH,
+  TIMELINE_DENSITY,
   TIMELINE_LAYOUT,
   VIEW_IDS,
   ViewId,
@@ -186,7 +187,8 @@ describe('views, url, storage, breakpoints, dates', () => {
   })
 
   it('keeps the handles of a bar apart from its body (D-143)', () => {
-    expect(TIMELINE_DRAG.handlePx * 3).toBeLessThan(TIMELINE_LAYOUT.minDayPx)
+    // A one-day bar of a week keeps its handles apart; a narrower day shrinks them (drag.ts).
+    expect(TIMELINE_DRAG.handlePx * 3).toBeLessThan(TIMELINE_DENSITY.bands[0].minDayPx)
     expect(TIMELINE_DRAG.holdTolerancePx).toBeGreaterThan(0)
   })
 

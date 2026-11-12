@@ -173,7 +173,7 @@ export function TagCategoriesModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="tagCategories.emptyTitle" bodyKey={permissions.create ? 'tagCategories.emptyBody' : 'tagCategories.emptyReadOnly'}>
+      <EmptyNotice titleKey="tagCategories.emptyTitle" bodyKey={permissions.create ? undefined : 'tagCategories.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newCategory}>
             <Plus aria-hidden size={14} />
@@ -215,7 +215,6 @@ export function TagCategoriesModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('tagCategories.hint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}
       <ul aria-label={t('tagCategories.listLabel')} className="flex flex-col">
         {live.map((category, index) => {

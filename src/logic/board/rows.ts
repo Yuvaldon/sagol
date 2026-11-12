@@ -1,3 +1,4 @@
+import type { BoardSortKey, SortOrder } from '@config'
 import type {
   CalendarDate,
   CommandRank,
@@ -8,13 +9,20 @@ import type {
   Unit,
   UnitId,
 } from '@contracts'
+import { effectiveSeniority } from '@domain'
 import { filterContextOf, populationOf, type FilterSource } from '../filters/source'
 import { byName, membershipsBySoldier, unitStateOn, type UnitState } from '../roster/roster'
 import { unitTreeRows } from '../units/tree'
 
 // The rows of the board (D-105, D-174): who served in the selected unit during the window, grouped by
-// unit like the tree, most senior first. The bar's leave conditions and "only who is missing" narrow them
-// (D-132, D-133). Pure; the hook feeds it.
+// unit like the tree, in the order the sort control asks for (D-214), most senior first by default. The bar's leave
+// conditions and "only who is missing" narrow them (D-132, D-133). Pure; the hook feeds it.
+
+/** How the rows are ordered (D-214). */
+export interface BoardSort {
+  readonly key: BoardSortKey
+  readonly order: SortOrder
+}
 
 /** The filter source, and the window and conditions the board shows it for. */
 export interface BoardInput extends FilterSource {
@@ -33,6 +41,9 @@ export interface BoardInput extends FilterSource {
   readonly marked: ((soldierId: SoldierId) => boolean) | null
   /** With "only who is missing": whether the soldier is unavailable, one flag per day (D-133). NULL when off. */
   readonly absent: ((soldierId: SoldierId) => readonly boolean[]) | null
+  readonly sort: BoardSort
+  /** With the `absent` sort key: the soldier's approved days away in the window (D-214). NULL otherwise. */
+  readonly daysAway: ((soldierId: SoldierId) => number) | null
 }
 
 /** What a group header says: a unit by its path, or one of the states of D-106. */
@@ -66,14 +77,43 @@ export type BoardItem = BoardGroupItem | BoardSoldierItem
 const EVERYONE: FilterExpression = {}
 const STATE_GROUPS = ['none', 'other', 'unknown'] as const
 
-/** The most senior rank first, no rank last, then by name (D-094, D-105). */
-function bySeniorityThenName(a: BoardSoldierItem, b: BoardSoldierItem): number {
-  if (a.rank === null || b.rank === null) {
-    if (a.rank !== b.rank) return a.rank === null ? 1 : -1
-  } else if (a.rank.seniority !== b.rank.seniority) {
-    return b.rank.seniority - a.rank.seniority
+/** What a row is sorted by, beside its name. */
+interface SortValues {
+  readonly rank: number | null
+  readonly seniority: number | null
+  readonly daysAway: number
+}
+
+/**
+ * Orders rows by the sort's key in its direction (D-214): a row with no value for the key comes last either way, and
+ * the name breaks ties. The unit key orders the groups, so inside one the rows keep the default, most senior first.
+ */
+function rowOrder(sort: BoardSort, values: ReadonlyMap<SoldierId, SortValues>): (a: BoardSoldierItem, b: BoardSoldierItem) => number {
+  const sign = sort.order === 'asc' ? 1 : -1
+  const byValue = (pick: (row: SortValues) => number | null, direction: number) => (a: BoardSoldierItem, b: BoardSoldierItem) => {
+    const left = values.get(a.key)
+    const right = values.get(b.key)
+    const x = left === undefined ? null : pick(left)
+    const y = right === undefined ? null : pick(right)
+    if (x === null || y === null) {
+      if (x !== y) return x === null ? 1 : -1
+    } else if (x !== y) {
+      return (x - y) * direction
+    }
+    return byName(a.soldier, b.soldier)
   }
-  return byName(a.soldier, b.soldier)
+  switch (sort.key) {
+    case 'name':
+      return (a, b) => byName(a.soldier, b.soldier) * sign
+    case 'rank':
+      return byValue((row) => row.rank, sign)
+    case 'seniority':
+      return byValue((row) => row.seniority, sign)
+    case 'absent':
+      return byValue((row) => row.daysAway, sign)
+    case 'unit':
+      return byValue((row) => row.seniority, -1)
+  }
 }
 
 /** The names from below the selected unit down to `unitId`; the selected unit names itself. */
@@ -105,6 +145,7 @@ export function boardItems(input: BoardInput): BoardItem[] {
   const unitById = new Map<UnitId, Unit>(input.unitTree.map((unit) => [unit.id, unit]))
   const bySoldier = membershipsBySoldier(input.memberships)
   const todayIndex = days.indexOf(today)
+  const values = new Map<SoldierId, SortValues>()
 
   const groups = new Map<string, { label: BoardGroupLabel; rows: BoardSoldierItem[] }>()
   for (const soldier of input.soldiers) {
@@ -126,16 +167,28 @@ export function boardItems(input: BoardInput): BoardItem[] {
     const label: BoardGroupLabel =
       state.kind === 'unit' ? { kind: 'unit', path: pathOf(state.unit.id, unitById, input.scopeUnitId) } : { kind: state.kind }
     const rank = soldier.command_rank_id === null ? null : (rankById.get(soldier.command_rank_id) ?? null)
+    const seniorityDay = referenceDay ?? days[0]
+    values.set(soldier.id, {
+      rank: rank?.seniority ?? null,
+      seniority:
+        seniorityDay === undefined
+          ? (rank?.seniority ?? null)
+          : effectiveSeniority(rank?.seniority ?? null, input.seniorityOverrides, soldier.id, seniorityDay),
+      daysAway: input.daysAway === null ? 0 : input.daysAway(soldier.id),
+    })
     const group = groups.get(key) ?? { label, rows: [] }
     group.rows.push({ kind: 'soldier', key: soldier.id, soldier, rank, inScope, ...(present === null ? {} : { present }) })
     groups.set(key, group)
   }
 
-  const order: string[] = [...unitTreeRows(input.unitTree).map((row) => row.unit.id), ...STATE_GROUPS]
+  const unitOrder = unitTreeRows(input.unitTree).map((row) => row.unit.id)
+  if (input.sort.key === 'unit' && input.sort.order === 'desc') unitOrder.reverse()
+  const order: string[] = [...unitOrder, ...STATE_GROUPS]
+  const compare = rowOrder(input.sort, values)
   return order.flatMap((key) => {
     const group = groups.get(key)
     if (group === undefined) return []
     const header: BoardGroupItem = { kind: 'group', key: `group:${key}`, label: group.label, size: group.rows.length }
-    return [header, ...group.rows.sort(bySeniorityThenName)]
+    return [header, ...group.rows.sort(compare)]
   })
 }

@@ -33,7 +33,7 @@ export interface IconButtonProps extends Omit<AriaButtonProps, 'className' | 'ch
 }
 
 /**
- * A button that shows only an icon (V20). Its name is read aloud, and shows as a tooltip on hover or keyboard focus,
+ * A button that shows only an icon (D-189, D-215). Its name is read aloud, and shows as a tooltip on hover or keyboard focus,
  * so no control needs a word on screen to be understood.
  */
 export function IconButton({ labelKey, children, ...props }: IconButtonProps) {
@@ -43,7 +43,7 @@ export function IconButton({ labelKey, children, ...props }: IconButtonProps) {
       <AriaButton
         {...props}
         aria-label={label}
-        className="inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-pill text-text-muted outline-focus outline-offset-2 md:min-h-control md:min-w-control data-focus-visible:outline-2 data-hovered:bg-inner"
+        className="inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-pill text-text-muted outline-focus outline-offset-2 md:min-h-control md:min-w-control data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-hovered:bg-inner"
       >
         {children}
       </AriaButton>
@@ -53,7 +53,7 @@ export function IconButton({ labelKey, children, ...props }: IconButtonProps) {
 }
 
 /**
- * The tooltip that shows a control's name: a small solid pill, in the text color on the surface's inverse. It renders
+ * The tooltip that shows a control's name, on the menus' glass (D-215). It renders
  * inside the landmark or dialog that holds its trigger, found from a hidden anchor beside it, never loose in the body.
  */
 export function NameTooltip({ children }: { readonly children: string }) {
@@ -67,7 +67,7 @@ export function NameTooltip({ children }: { readonly children: string }) {
       <Tooltip
         {...(container === null ? {} : { UNSTABLE_portalContainer: container })}
         offset={TOOLTIP.offsetPx}
-        className="pointer-events-none rounded-pill bg-text px-sm py-2xs text-label font-semibold text-surface shadow-float"
+        className="glass-menu pointer-events-none rounded-control px-sm py-2xs text-micro font-semibold text-text"
       >
         {children}
       </Tooltip>

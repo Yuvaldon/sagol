@@ -11,8 +11,54 @@ export type ViewId = z.infer<typeof ViewId>
 /** The view shown when the URL names none (D-074). */
 export const DEFAULT_VIEW_ID: ViewId = 'timeline'
 
-/** The date window (D-103): a week by default, and at most this many days from a link. */
-export const DATE_WINDOW = { days: 7, maxDays: 62 } as const
+/**
+ * The date window (D-103, D-211): a week by default, and at most this many days, from a link or a rotation. A rotation
+ * that is longer, or has no end yet, shows its first `maxDays` days.
+ */
+export const DATE_WINDOW = { days: 7, maxDays: 186 } as const
+
+/** The kinds of date window the range picker offers (D-211); the navigator steps by the chosen one. */
+export const RANGE_KINDS = ['day', 'week', 'month', 'rotation'] as const
+export const RangeKind = z.enum(RANGE_KINDS)
+export type RangeKind = z.infer<typeof RangeKind>
+
+/** The kind when the URL names none and holds no free window. */
+export const DEFAULT_RANGE_KIND = 'week' satisfies RangeKind
+
+/**
+ * What the board's rows can be sorted by (D-214): the name, the command rank, the seniority on the window's first day,
+ * the unit, and the approved days away in the window. The rows stay grouped by unit (D-105).
+ */
+export const BOARD_SORT_KEYS = ['name', 'rank', 'seniority', 'unit', 'absent'] as const
+export const BoardSortKey = z.enum(BOARD_SORT_KEYS)
+export type BoardSortKey = z.infer<typeof BoardSortKey>
+
+/** The board's order when the URL names none: seniority, then name, as before D-214. */
+export const DEFAULT_BOARD_SORT_KEY: BoardSortKey = 'seniority'
+
+/**
+ * The table's own columns (D-214): its rows are leaves, so it can also sort by them. The board ignores these keys and
+ * keeps its default order; the table's soldier and unit columns sort by the board's `name` and `unit` keys.
+ */
+export const TABLE_SORT_KEYS = ['type', 'from', 'to', 'days', 'status'] as const
+export type TableSortKey = (typeof TABLE_SORT_KEYS)[number]
+
+/** Every key the URL's sort can hold. */
+export const SortKey = z.enum([...BOARD_SORT_KEYS, ...TABLE_SORT_KEYS])
+export type SortKey = z.infer<typeof SortKey>
+
+export const SORT_ORDERS = ['asc', 'desc'] as const
+export const SortOrder = z.enum(SORT_ORDERS)
+export type SortOrder = z.infer<typeof SortOrder>
+
+/** The direction a key sorts in when the URL names none (D-214): the most senior first, the most days away first. */
+export const DEFAULT_SORT_ORDER: Readonly<Record<BoardSortKey, SortOrder>> = {
+  name: 'asc',
+  rank: 'desc',
+  seniority: 'desc',
+  unit: 'asc',
+  absent: 'desc',
+}
 
 /**
  * The timeline's density, in CSS pixels (Stone 3, D-077, D-108). Layout math and the row virtualizer read the
@@ -25,8 +71,21 @@ export const TIMELINE_LAYOUT = {
   groupRowPx: 32,
   headerPx: 28,
   nameColumnPx: 124,
-  minDayPx: 64,
   overscanRows: 10,
+} as const
+
+/**
+ * A day's narrowest column by the length of the window (D-211): a week reads its weekdays, a month fits a laptop, a
+ * rotation scrolls sideways. The first band whose `upToDays` holds the window wins. Below `weekdayMinPx` a day's
+ * header shows its number only.
+ */
+export const TIMELINE_DENSITY = {
+  bands: [
+    { upToDays: 7, minDayPx: 64 },
+    { upToDays: 31, minDayPx: 32 },
+    { upToDays: DATE_WINDOW.maxDays, minDayPx: 24 },
+  ],
+  weekdayMinPx: 44,
 } as const
 
 /** Lanes of overlapping leaves in a timeline row (D-111), in CSS pixels, from Stone 3. */

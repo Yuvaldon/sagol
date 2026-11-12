@@ -378,7 +378,7 @@ export function PropertiesModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="properties.emptyTitle" bodyKey={permissions.create ? 'properties.emptyBody' : 'properties.emptyReadOnly'}>
+      <EmptyNotice titleKey="properties.emptyTitle" bodyKey={permissions.create ? undefined : 'properties.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newDefinition}>
             <Plus aria-hidden size={14} />
@@ -423,7 +423,6 @@ export function PropertiesModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('properties.hint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}
       {sections.map((section) => (
         <EntitySection key={section.type} title={t(ENTITY_TYPE_KEYS[section.type])}>

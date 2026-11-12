@@ -1,4 +1,4 @@
-import { TIMELINE_DRAG, TIMELINE_LANES, TIMELINE_LANES_TOUCH, TIMELINE_LAYOUT } from '@config'
+import { TIMELINE_DENSITY, TIMELINE_DRAG, TIMELINE_LANES, TIMELINE_LANES_TOUCH, TIMELINE_LAYOUT } from '@config'
 import { t } from '@i18n'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useLayoutEffect, useRef, useState } from 'react'
@@ -6,7 +6,7 @@ import { Button as AriaButton } from 'react-aria-components'
 import { useIsDesktop } from '../../../patterns/media'
 import { rangeInWindow } from '../core/drag'
 import { badgeStart, barSpan, laneTop, rowHeightFor, type LaneSizes } from '../core/lanes'
-import { dayOffset, gridLayout, spansOf, type GridLayout } from '../core/layout'
+import { dayOffset, gridLayout, minDayPxFor, spansOf, type GridLayout } from '../core/layout'
 import type {
   TimelineDayCell,
   TimelineDrag,
@@ -112,7 +112,7 @@ function DaysHeader({
             className={`absolute inset-y-none flex items-center justify-center gap-xs text-label tabular-nums ${day.isToday ? 'font-bold text-text' : 'text-text-muted'}`}
             style={{ insetInlineStart: dayOffset(layout, index) - layout.nameColumnPx, width: layout.dayPx }}
           >
-            <span>{day.weekday}</span>
+            {layout.dayPx < TIMELINE_DENSITY.weekdayMinPx ? null : <span>{day.weekday}</span>}
             <span className={day.isToday ? 'inline-flex min-w-icon items-center justify-center rounded-pill bg-today px-xs text-on-action' : ''}>
               {day.dayNumber}
             </span>
@@ -402,7 +402,10 @@ export function TimelineGrid({ days, rows, heat, heatOnTop, drag }: TimelineGrid
   const [content, setContent] = useState<HTMLDivElement | null>(null)
   const list = useRef<HTMLUListElement>(null)
   const [listTop, setListTop] = useState(0)
-  const layout = gridLayout(useWidthOf(scroller), days.length, TIMELINE_LAYOUT)
+  const layout = gridLayout(useWidthOf(scroller), days.length, {
+    nameColumnPx: TIMELINE_LAYOUT.nameColumnPx,
+    minDayPx: minDayPxFor(days.length, TIMELINE_DENSITY.bands),
+  })
   // A name is a touch target on mobile, so the row grows there (OI-033), and so do the lanes (D-144).
   const isDesktop = useIsDesktop()
   const rowPx = isDesktop ? TIMELINE_LAYOUT.rowPx : TIMELINE_LAYOUT.rowTouchPx

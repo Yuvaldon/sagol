@@ -140,7 +140,7 @@ export function LeaveTypeGroupsModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="leaveTypeGroups.emptyTitle" bodyKey={permissions.create ? 'leaveTypeGroups.emptyBody' : 'leaveTypeGroups.emptyReadOnly'}>
+      <EmptyNotice titleKey="leaveTypeGroups.emptyTitle" bodyKey={permissions.create ? undefined : 'leaveTypeGroups.emptyReadOnly'}>
         {permissions.create ? (
           <Button variant="primary" onPress={newGroup}>
             <Plus aria-hidden size={14} />
@@ -182,7 +182,6 @@ export function LeaveTypeGroupsModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      <p className="text-name text-text-muted">{t('leaveTypeGroups.hint')}</p>
       {failure === null ? null : <FailureNotice error={failure} />}
       <ul aria-label={t('leaveTypeGroups.listLabel')} className="flex flex-col">
         {live.map((group, index) => (
