@@ -4,6 +4,7 @@
 export type { AuthPort, DataPort, DevicePort, DeviceStore, InstallOffer, LogicPorts, ShellPort, ShellState } from './ports'
 export { useAppUpdate, useInstallInvitation, useInstallOffer } from './shell/hooks'
 export { useHome, type Home } from './home/hooks'
+export { useQuickAction, type QuickAction } from './home/quickAction'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
 export { claimIssues, timeZoneChoices, type ClaimOrganizationValues } from './organization/claim'

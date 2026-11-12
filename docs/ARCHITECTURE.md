@@ -273,9 +273,9 @@ The current state, in short (D-128). The entries hold the reasons.
 - One main workspace route. Management modules and details open as floating surfaces:
   side drawer on desktop, bottom sheet on mobile. Navigation is two floating strips that hug their content on every
   screen (V25, D-252): a context strip at the top (scope, range, view, filters) and a destination strip at the bottom
-  (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action, "בקשה חדשה", at its inline end. "ניהול יחידה" is
+  (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action by mode (`useQuickAction` in `logic`, D-296) at its inline end. "ניהול יחידה" is
   a panel from the inline start, a plain line per module and no pins (D-254). From V32 it holds daily work only,
-  grouped by `WORK_SECTIONS` in `config`, with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
+  grouped by `WORK_SECTIONS` in `config`, each module loaded lazily (OI-118), with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
   `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
   (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
   anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's

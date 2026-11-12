@@ -91,6 +91,8 @@ export function planUnitDrop(
   activeId: UnitId,
   overId: UnitId,
   zone: UnitDropZone,
+  /** Whether the user may move a unit under this parent: a drop the server would refuse plans nothing (OI-247). */
+  moveTo: (parentId: UnitId | null) => boolean = () => true,
 ): UnitDropPlan | null {
   const active = units.find((unit) => unit.id === activeId)
   const over = units.find((unit) => unit.id === overId)
@@ -103,6 +105,7 @@ export function planUnitDrop(
   const landsLast = insertAt === others.length
 
   if (active.parent_id !== parentId) {
+    if (!moveTo(parentId)) return null
     return { move: { parent_id: parentId }, order: landsLast ? null : order }
   }
   return sameOrder(order, siblingsUnder(units, parentId)) ? null : { move: null, order }
