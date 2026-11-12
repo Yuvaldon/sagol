@@ -3,8 +3,7 @@
 # through the Management API, which a project-scoped token may do, and stops unless the name fits the run:
 # `staging` needs a name ending in -staging, `production` refuses one. Before that it tries, read-only, the calls the
 # later steps make, so one run names every permission the token lacks: those the steps cannot run without stop the run
-# (`supabase link` stops without the revealed keys, `GET /api-keys?reveal=true`), those it only warns about are listed
-# as warnings.
+# (the pooler config the database URL is built from, D-289), those after `--` only warn.
 # Usage: supabase-project-guard.sh <staging|production> [required path]... [-- optional path...]
 set -euo pipefail
 

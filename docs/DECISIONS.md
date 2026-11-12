@@ -3541,8 +3541,8 @@ the one project, not the account's project list, and the access token is reposit
   wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
   (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
   account-wide `projects_read`. Before the name check it tries, read-only, the calls the later steps make (functions,
-  secrets, the revealed API keys `supabase link` stops without; `link`'s configs as warnings), so a single run names
-  every permission the token lacks.
+  secrets, the pooler config the database URL comes from; D-289), so a single run names every permission the token
+  lacks.
   Production follows by its own workflow (D-280).
 - **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
   `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
@@ -3657,3 +3657,20 @@ Before the change the orchestrator scanned the history and found no secrets; non
 workflows read them from GitHub secrets only. The draft skip stays: it costs nothing to a ready pull request and keeps
 draft runs short. With outside pull requests now possible, Staging also runs only for a `main` push of this repository
 (`head_branch == 'main'` and `head_repository.full_name == github.repository`), as Production already did (D-280).
+
+**Amended 2026-11-12 (the orchestrator, about 16:44Z): no `supabase link` in CD.** The first Staging run on `main`
+(1887bd2) stopped at `supabase link`: CLI 2.122.0 reads `GET /v1/projects/{ref}/api-keys?reveal=true`, which needs
+`api_gateway_keys_secret_read`. That permission reveals the `service_role` key, more than CD needs, so the token does
+not get it. Staging and Production no longer link:
+- **Migrations** run `supabase db push --db-url` (the Production plan with `--dry-run` too). `scripts/supabase-db-url.sh`
+  builds the URL from `GET /v1/projects/{ref}/config/database/pooler` (the primary database's pooler host, user and
+  name) and the environment's database password, percent-encoded, on port 5432: the pooler's session mode, not
+  transaction mode. The direct `db.<ref>` host is IPv6 only, which the runners lack. The step masks the URL.
+- **The function** keeps `supabase functions deploy commands --project-ref`, which needs no link.
+- **The guard** probes only what the steps use: functions, the pooler config, and on Staging the secrets. The
+  `/api-keys`, `/postgrest` and `/config/auth` probes are gone; they served `link` only.
+
+Checked against CLI 2.122.0: its permission tables list `api_gateway_keys_*` for `link` only (`db push`: none with
+`--db-url`; `functions deploy`: `edge_functions_write`; `secrets set`: `edge_functions_secrets_write`). A `--debug`
+trace against a nonexistent ref shows `functions deploy --use-api` calling `POST /functions/deploy` and
+`GET /v1/projects/{ref}` only, and `db push --db-url` making no Management API call.

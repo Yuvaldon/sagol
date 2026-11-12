@@ -77,12 +77,13 @@ jobs:
           if [ "$EVENT" = workflow_dispatch ]; then
             test "$CONFIRM_REF" = "$PROJECT_REF" || { echo "::error::the typed ref is not PRODUCTION_PROJECT_REF"; exit 1; }
           fi
-          scripts/supabase-project-guard.sh production /functions '/api-keys?reveal=true' \
-            -- /config/database/pooler /postgrest /config/auth
+          scripts/supabase-project-guard.sh production /functions /config/database/pooler
+      # No `supabase link`: it needs the revealed API keys, which CD does not (D-289).
       - name: Migrations (the plan, the destructive-change guard, then the push)
         run: |
-          supabase link --project-ref "$PROJECT_REF" --workdir .
-          supabase db push --linked --workdir . --dry-run 2>&1 | tee "$RUNNER_TEMP/plan.txt"
+          db_url=$(scripts/supabase-db-url.sh)
+          echo "::add-mask::$db_url"
+          supabase db push --db-url "$db_url" --workdir . --dry-run 2>&1 | tee "$RUNNER_TEMP/plan.txt"
           test "${PIPESTATUS[0]}" -eq 0 || exit 1
           blocked=0
           for file in $(grep -oE '[0-9]{14}_[A-Za-z0-9_]+\.sql' "$RUNNER_TEMP/plan.txt" | sort -u); do
@@ -107,7 +108,7 @@ jobs:
             fi
           done
           test "$blocked" -eq 0 || exit 1
-          supabase db push --linked --workdir .
+          supabase db push --db-url "$db_url" --workdir .
       # Runs only when every step above succeeded: a failed db push stops the job before the function changes.
       - name: The commands function (the bundle of D-209)
         run: |
