@@ -89,18 +89,30 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Layout
 
-- **Workspace (D-023, D-108, D-173):** a `surface` panel on the `canvas`, filled by the active engine. Glass bars float
-  over it and hold the daily work only. From `md`, two bars at the top: on the inline start the menu button, the
-  organization's name (the page's `h1`), the scope label, the view switcher, "סינון", "רק מי שחסר" and the presence
-  pill; on the inline end the week, "today", my requests, the inbox, the pins and the user menu. Below `md`, the menu,
-  the week, the scope and the view at the top; at the bottom the filter controls, my requests, the inbox and the pins,
-  scrolling sideways, and the user menu, with the name read aloud only. Content starts under the top bar
-  (`under-bars`, `under-bars-md`), ends above the bottom bar (`above-bottom-bar`), and scrolls under the glass. A
+- **Workspace (D-023, D-108, D-173, D-189):** a `surface` panel on the `canvas`, filled by the active engine. Glass
+  bars float over it and hold the daily work only. From `md`, two bars at the top: on the inline start the menu button,
+  the organization's name (the page's `h1`), the scope label, the view switcher, "סינון", "רק מי שחסר" and the presence
+  count; on the inline end the week, "today", my requests, the inbox, the pins and the avatar. Below `md`, the top bar
+  holds the week and the avatar; a context row under it holds the scope, the view and the filter controls, then the
+  chips, scrolling sideways; the bottom bar is a tab bar: the board, my requests, the inbox, the pins and "תפריט",
+  each an icon over its name, with the `h1` read aloud only. Content starts under the top rows (`under-bars`,
+  `under-bars-md`, `under-bars-filtered`), ends above the bottom bar (`above-bottom-bar`), and scrolls under the glass. A
   structure that differs by screen uses `useIsDesktop`; anything else is CSS.
-- **Timeline (D-108):** sizes come from `TIMELINE_LAYOUT` in `config`, because the geometry and the virtualizer need the
+- **Landscape and wide phones (D-190):** `md` and `useIsDesktop` need 512 px of height too, so a phone on its side keeps
+  the phone's bars and tab bar. From `sm` (`useIsWidePhone`) the scope, view and filter controls join the top row at
+  its inline start, the range and the avatar at its inline end, and the chips row shows only while a condition is set.
+  No bar label wraps and the page never scrolls sideways.
+- **Safe area (D-191):** `viewport-fit=cover`; the canvas paints every edge, and the workspace's content, drawers and
+  the navigation panel sit inside the insets (`--safe-top`, `--safe-bottom`, `--safe-inline`; `inset-safe`,
+  `frame-safe`, `px-safe`, `top-safe`). The inline inset is the larger side on both sides.
+- **Icons and tooltips (D-189):** every `IconButton`, and every control shown as an icon alone (the destinations on
+  desktop, the view switcher, "סינון", the presence count, the avatar), has its name as its accessible name and as a
+  `NameTooltip`: a dark pill, `label` type, after `TOOLTIP.delayMs`. No hint prose sits beside a control.
+- **Timeline (D-108, D-192):** sizes come from `TIMELINE_LAYOUT` in `config`, because the geometry and the virtualizer need the
   same numbers: rows 36 (44 on mobile, where a name is a touch target), group rows 32, the days header 28, names 124,
-  days at least 64 and sharing any extra width. The days header is a glass pill that sticks under the bars. The name
-  column sticks to the inline start on `surface`, so days pass under it when the grid scrolls sideways. A group header
+  days at least 64 and sharing any extra width. The days header is a flat `surface` strip that sticks under the bars.
+  The name column and the corner stick to the inline start on the same opaque `surface`, so days pass under them with no
+  fade or seam when the grid scrolls sideways. A group header
   row sits on `canvas`. Days a row is out of the selected unit are muted with `inner` and read aloud as ranges.
   Positions are inline offsets from the core, so RTL needs no mirroring.
 - **Leaves on the timeline (D-111, D-112):** sizes come from `TIMELINE_LANES` in `config`: bars 20 high, inset 3 inside
@@ -143,11 +155,11 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   root's name. A viewer who sees a single unit reads its name, with no picker and no chevron.
 - **The inbox button (D-120):** first among the module buttons, for who may approve someone. It carries the number of
   requests waiting as a small dark pill, read aloud with the button's name.
-- **Module buttons (D-116):** icon and name from `md`; below it the icon alone in a 44 px `IconButton`, its name still
-  read aloud.
-- **The filter controls (D-131 to D-134, D-173):** in the bar, "סינון" (a filter icon and the name from `md`, the icon
-  alone below), the "רק מי שחסר" switch and the presence pill ("חסרים היום" and today's count), shaped like the module
-  buttons. "סינון" is absent when every condition is set.
+- **Module buttons (D-116, D-189):** an icon with a tooltip from `md`; below it a tab of the bottom bar, the icon over
+  its short name, 44 px at least.
+- **The filter controls (D-131 to D-134, D-173):** in the bar from `md` and in the context row below it, "סינון" (a
+  filter icon with a tooltip), the "רק מי שחסר" switch and the presence count (an icon and today's count, "חסרים היום"
+  read aloud and as a tooltip). "סינון" is absent when every condition is set.
 - **The filter row (D-131, D-173):** a `search` landmark under the top bars, there only while a condition is set: from
   `md` under the bar with the scope (`top-filter-row-md`), below `md` under the top bar (`top-filter-row`), scrolling
   sideways. It holds the chips and "ניקוי הכול". Each is a `glass-bar` pill, `control` high from `md` and `touch` below;
@@ -174,8 +186,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Onboarding of an identity with no account** (`ui/shell/LinkRequest.tsx`): under the "no access yet" sheet, a form with
   first name, last name and an optional personal number, or, with a pending request, a notice with the name sent and a
   "cancel request" button. Neither says whether anything matched.
-- **The account-links button** in the bar, as the inbox button: icon and name on desktop, icon alone on a phone, with the
-  count of pending requests; shown only to who may review.
+- **The account-links button** in the bar, as the inbox button: an icon with a tooltip on desktop, a tab on a phone, with
+  the count of pending requests; shown only to who may review.
 - **`AccountLinksModule`** (`ui/modules/account-links`): a `VirtualList` of requests (name, email, when); a request shows
   its fields, its candidates (why each matches, a "link" button) and "new soldier" and "reject". Link and reject confirm in
   a `SmallDialog`; the new soldier is an `EntityForm` (rank, unit, date placed).
@@ -322,9 +334,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   count. A cell is a button named by its day, its count and the worst rule. By default it sits below the list instead,
   sticky above the bottom bar; the soldier picks the place in the navigation panel (D-173). It is absent when no rule
   concerns the scope.
-- **On a phone** the user menu shows its icon only, its name still read aloud, so the bottom bar keeps every module (OI-095).
-- **The phone's bottom bar** never widens the page: its module icons scroll sideways in their own row when they outgrow it,
-  the organization's name and the user menu staying in place (D-155).
+- **The user menu** is an avatar at the top bar's inline end on every screen; the soldier's name is its tooltip and is
+  read aloud with "תפריט משתמש" (D-189).
+- **The phone's tab bar** never widens the page: its tabs share the width, and scroll sideways in their own row only when
+  the pins outgrow it, "תפריט" staying in place (D-155, D-189).
 - **A unit the actor does not see:** `unitStateLabel` says "ללא יחידה", "יחידה אחרת" or "לא ידוע" (D-106), the same in
   every list.
 

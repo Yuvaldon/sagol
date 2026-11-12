@@ -1,4 +1,4 @@
-import { NAVIGATION_SECTIONS, PANEL_IDS, type NavigationSectionId } from '@config'
+import { NAVIGATION_SECTIONS, PANEL_IDS, TOOLTIP, type NavigationSectionId } from '@config'
 import { RulesRowPlacement, type NavigationModule } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { useModuleAccess, useNavigationPreferences, usePanel, useSetupAccess } from '@logic'
@@ -14,10 +14,12 @@ import {
   Radio,
   RadioGroup,
   ToggleButton,
+  TooltipTrigger,
 } from 'react-aria-components'
-import { IconButton } from '../primitives/Button'
+import { IconButton, NameTooltip } from '../primitives/Button'
 import { EntryCount } from './ModuleButtons'
 import { useNavigationEntries, type ModuleEntry } from './moduleEntries'
+import { TAB, TAB_COLOR } from './tabStyle'
 import { useReportPreferenceSave } from './preferenceFailure'
 
 // The navigation panel (D-173): the modules that set the organization up, by section, sliding in from the inline start.
@@ -152,8 +154,21 @@ function DisplayChoices() {
   )
 }
 
-/** The menu button and its panel. Neither exists when the panel would hold nothing for this viewer (D-076). */
-export function NavigationPanel() {
+/** What waits in the panel, on its button; a pending request is not hidden behind the menu. */
+function Waiting({ count }: { readonly count: number }) {
+  if (count === 0) return null
+  return (
+    <span className="absolute end-none top-none inline-flex min-w-icon items-center justify-center rounded-pill bg-action-solid px-xs text-micro text-on-action tabular-nums">
+      {count}
+      <span className="sr-only"> {t('navigation.waiting')}</span>
+    </span>
+  )
+}
+
+/** The menu button and its panel. Neither exists when the panel would hold nothing for this viewer (D-076). On a phone
+ * the button is the last tab of the bottom bar, with a short name under it (V20); in a desktop bar, an icon whose name
+ * shows on hover. */
+export function NavigationPanel({ variant = 'bar' }: { readonly variant?: 'bar' | 'tab' }) {
   const [isOpen, setOpen] = useState(false)
   const sections = useSections()
   const access = useModuleAccess()
@@ -164,6 +179,9 @@ export function NavigationPanel() {
   if (sections.length === 0 && !display && !setup) return null
   const close = () => {
     setOpen(false)
+  }
+  const open = () => {
+    setOpen(true)
   }
   // What waits in the panel shows on its button, so a pending request is not hidden behind it.
   // A pinned module shows its own count in the bar, so it is not counted twice.
@@ -177,27 +195,31 @@ export function NavigationPanel() {
   )
   return (
     <>
-      <AriaButton
-        aria-expanded={isOpen}
-        onPress={() => {
-          setOpen(true)
-        }}
-        className={`relative inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded-pill text-text-muted md:min-h-control md:min-w-control data-hovered:bg-inner ${PRESS}`}
-      >
-        <MenuIcon aria-hidden size={18} />
-        <span className="sr-only">{t('navigation.open')}</span>
-        {waiting > 0 ? (
-          <span className="absolute end-none top-none inline-flex min-w-icon items-center justify-center rounded-pill bg-action-solid px-xs text-micro text-on-action tabular-nums">
-            {waiting}
-            <span className="sr-only"> {t('navigation.waiting')}</span>
-          </span>
-        ) : null}
-      </AriaButton>
+      {variant === 'tab' ? (
+        <AriaButton aria-expanded={isOpen} aria-label={t('navigation.open')} onPress={open} className={`${TAB} ${TAB_COLOR.other} flex-none`}>
+          <MenuIcon aria-hidden size={18} />
+          <span aria-hidden>{t('navigation.tab')}</span>
+          <Waiting count={waiting} />
+        </AriaButton>
+      ) : (
+        <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
+          <AriaButton
+            aria-expanded={isOpen}
+            aria-label={t('navigation.open')}
+            onPress={open}
+            className={`relative inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded-pill text-text-muted md:min-h-control md:min-w-control data-hovered:bg-inner ${PRESS}`}
+          >
+            <MenuIcon aria-hidden size={18} />
+            <Waiting count={waiting} />
+          </AriaButton>
+          <NameTooltip>{t('navigation.open')}</NameTooltip>
+        </TooltipTrigger>
+      )}
       <ModalOverlay
         isOpen={isOpen}
         onOpenChange={setOpen}
         isDismissable
-        className="enter-scrim fixed inset-none flex justify-start bg-scrim p-sm"
+        className="enter-scrim fixed inset-none flex justify-start bg-scrim frame-safe"
       >
         <Modal className="enter-start-panel glass-drawer flex h-full w-full max-w-sheet flex-col overflow-hidden rounded-panel">
           <Dialog className="flex min-h-none flex-1 flex-col outline-none">

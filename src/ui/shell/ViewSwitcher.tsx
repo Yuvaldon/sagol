@@ -1,13 +1,17 @@
-import { BAR_COLOR_MODES, type BarColorMode } from '@config'
+import { BAR_COLOR_MODES, TOOLTIP, type BarColorMode } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { useActiveView, useBarColors } from '@logic'
-import { Button as AriaButton, Header, Menu, MenuSection, MenuTrigger, Popover } from 'react-aria-components'
+import { Button as AriaButton, Header, Menu, MenuSection, MenuTrigger, Popover, TooltipTrigger } from 'react-aria-components'
+import { NameTooltip } from '../primitives/Button'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 import { MenuChoice } from './menu'
 import { MENU_HEADER, MENU_LIST, MENU_POPOVER, MENU_TRIGGER, onlyKey } from './menuStyles'
 
 // The view menu lists what the engine registry holds, and nothing else (D-076, D-108). The colors of
 // the leaves sit under their own heading (D-112), for every engine (D-174), so the bars gain no control.
+
+/** Between the menu's name and the view chosen, in its tooltip. */
+const LABEL_SEPARATOR = ': '
 
 const COLOR_LABELS: Record<BarColorMode, I18nKey> = {
   type: 'workspace.colorsByType',
@@ -20,11 +24,15 @@ export function ViewSwitcher() {
   const current = engineOf(view)
   return (
     <MenuTrigger>
-      <AriaButton className={MENU_TRIGGER}>
-        <current.Icon aria-hidden size={14} />
-        <span className="sr-only">{t('workspace.view')}</span>
-        <span className="sr-only md:not-sr-only">{t(current.labelKey)}</span>
-      </AriaButton>
+      <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
+        <AriaButton className={MENU_TRIGGER}>
+          <current.Icon aria-hidden size={14} />
+          <span className="sr-only">
+            {t('workspace.view')} {t(current.labelKey)}
+          </span>
+        </AriaButton>
+        <NameTooltip>{[t('workspace.view'), t(current.labelKey)].join(LABEL_SEPARATOR)}</NameTooltip>
+      </TooltipTrigger>
       <Popover className={MENU_POPOVER}>
         <Menu aria-label={t('workspace.view')} className={MENU_LIST}>
           <MenuSection
