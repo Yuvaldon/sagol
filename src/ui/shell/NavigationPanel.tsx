@@ -1,4 +1,4 @@
-import { NAVIGATION_SECTIONS } from '@config'
+import { NAVIGATION_SECTIONS, type NavigationSectionId } from '@config'
 import { RulesRowPlacement, type NavigationModule } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { useModuleAccess, useNavigationPreferences } from '@logic'
@@ -25,13 +25,20 @@ import { useNavigationEntries, type ModuleEntry } from './moduleEntries'
 const PRESS = 'cursor-pointer outline-focus outline-offset-2 data-focus-visible:outline-2'
 const ROW = `flex min-h-touch flex-1 items-center gap-sm rounded-control px-sm text-control md:min-h-control data-hovered:bg-inner ${PRESS}`
 
+const SECTION_KEYS: Record<NavigationSectionId, I18nKey> = {
+  structure: 'navigation.sections.structure',
+  leaveSetup: 'navigation.sections.leaveSetup',
+  access: 'navigation.sections.access',
+  data: 'navigation.sections.data',
+}
+
 const PLACEMENT_KEYS: Record<RulesRowPlacement, I18nKey> = {
   above: 'navigation.rulesRowAbove',
   below: 'navigation.rulesRowBelow',
 }
 
 interface PanelSection {
-  readonly id: (typeof NAVIGATION_SECTIONS)[number]['id']
+  readonly id: NavigationSectionId
   readonly items: readonly { readonly module: NavigationModule; readonly entry: ModuleEntry }[]
 }
 
@@ -175,7 +182,7 @@ export function NavigationPanel() {
               {sections.map((section) => (
                 <section key={section.id} aria-labelledby={`navigation-${section.id}`} className="flex flex-col gap-2xs">
                   <h3 id={`navigation-${section.id}`} className="px-sm text-label font-semibold text-text-muted">
-                    {t(`navigation.sections.${section.id}`)}
+                    {t(SECTION_KEYS[section.id])}
                   </h3>
                   <ul className="flex flex-col gap-2xs">
                     {section.items.map((item) => (
