@@ -50,7 +50,7 @@ function RoutineBand() {
   return (
     <section
       aria-labelledby="routine-band"
-      className="flex flex-wrap items-center justify-between gap-sm border-b border-line bg-inner px-lg py-sm"
+      className="flex flex-wrap items-center justify-between gap-sm border-b border-line bg-inner px-lg pt-under-bars pb-sm md:pt-under-bars-md"
     >
       <div className="flex flex-col gap-2xs">
         <h2 id="routine-band" className="text-name font-bold">
@@ -89,7 +89,8 @@ export function Viewport() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <RoutineBand />
-      <div className="flex-1 overflow-hidden">
+      {/* The band clears the floating bars, so the board under it starts at its top. */}
+      <div className="flex-1 overflow-hidden below-bars">
         <Engine />
       </div>
     </div>
