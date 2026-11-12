@@ -216,11 +216,15 @@ am = amends, ref = refines, ext = extends.
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
 | D-188 | Postgres extensions live in the `extensions` schema | backend, docs | |
-| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | |
-| D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | |
+| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217 |
+| D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | ref D-219 |
 | D-213 | "Only who is missing" is a filter condition | logic, ui | |
 | D-214 | The board's sort | config, logic, ui | |
 | D-215 | Data and controls, not prose | i18n, ui | |
+| D-216 | Every request belongs to a rotation | contracts, data, logic, backend | |
+| D-217 | The workspace is scoped to the active or upcoming rotation, silently | logic, ui | |
+| D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
+| D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 
 ---
 
@@ -2854,3 +2858,56 @@ board's frame. One state for the board and the table means a link reopens the sa
   stays clean. An i18n key no screen uses is deleted.
 **Why:** the owner asked for a calmer screen. Hints repeated what the controls already say, and on a phone they pushed
 the data below the fold.
+
+## D-216 — Every request belongs to a rotation
+2026-11-12 · accepted · refines D-012, D-179 · V19 · decided under D-170
+- **Model.** `leaves.deployment_id` (NOT NULL, FK to `deployments`). The leave's soldier is a member of that deployment
+  (`deployment_members`), and its dates fall within the member's dates; a NULL member side means the deployment's own,
+  and a deployment with no end bounds nothing at the end.
+- **Commands.** `createLeave` names the rotation; `createLeaveBatch` names one rotation for all its leaves; a copy of
+  `duplicateLeave` stays in the source's rotation. The rotation is live (`reference_archived` otherwise), the soldier is
+  its member (`not_a_member`) and the dates fit (`outside_rotation`). `updateLeave` never moves a leave to another
+  rotation; new dates must still fit. Changing a member's dates, removing a member or changing a rotation's dates is
+  refused with `leaves_outside_rotation` when it would strand a live request (pending or approved); cancelled and
+  rejected requests do not hold a rotation in place.
+- **Server.** The gateway runs the same checks (D-201). Constraint triggers, deferred to commit, re-check every live
+  leave of a changed pair (`20261112000200_leave_deployment.sql`), so a write that skipped the commands fails as
+  `internal`. RLS is unchanged: a leave is read and written as before, by its soldier's unit (D-082).
+- **Migration.** Non-destructive and applied by the orchestrator: the column is added, filled where exactly one live
+  rotation fits, and set NOT NULL. A leave no rotation fits stops the migration, which rolls back; the file holds the
+  query that counts them first.
+- **Export.** `EXPORT_FORMAT_VERSION` 2: leaves carry `deployment_id`. The loader accepts 2 only.
+**Why:** the owner runs the unit by rotations: a request outside a rotation has no commander to answer it and no board
+to show on. The database guarantees it because the dates and the membership change in other commands than the leave's.
+
+## D-217 — The workspace is scoped to the active or upcoming rotation, silently
+2026-11-12 · accepted · refines D-211, D-103 · V19 · decided under D-170
+- **Default.** With no range in the URL, the workspace opens on the rotation in scope (D-211's scope) that runs today,
+  else the next one to start; its window is the whole rotation (`rotation` kind). The day, week and month kinds work
+  inside it as before.
+- **No control, no label.** The bars gain no rotation control, and no label names the rotation: the dates say it.
+  Past and upcoming rotations are reached only from the range picker's "whole rotation" choice; with more than one
+  rotation in scope it opens a short list of them, by start.
+- **Editing** rotations stays in the navigation panel's deployments module and in the empty state (D-218).
+- **Helpers** for other slices: `rotationOn(rotations, date)` says which rotation holds a date, and `scopeRotation`
+  picks the active or upcoming one; both in `logic/view-state`, with the window model they feed.
+**Why:** the owner asked for a workspace that is about the rotation without spending bar space on it. The range picker
+already holds rotations, so it is the one place to switch.
+
+## D-218 — No request surface without a rotation in scope; one empty state
+2026-11-12 · accepted · refines D-076, D-215 · V19 · decided under D-170
+- With no rotation running or to come in scope, the request surfaces do not exist (D-076): the inbox, "my requests",
+  the new-request button and the request filters. Permanent modules (soldiers, units, settings and the rest) stay.
+- A soldier sees the request surfaces only for rotations they are a member of; a manager sees them for the rotations in
+  their scope.
+- The viewport shows one empty state, "אין סבב פעיל". Whoever may create a deployment gets "פתיחת סבב", which opens the
+  deployment form; anyone else gets one line saying their commander opens it.
+**Why:** a request needs a rotation (D-216); a button that cannot lead anywhere is a dead control.
+
+## D-219 — The setup wizard ends by opening the first rotation
+2026-11-12 · accepted · refines D-180, D-212 · V19 · decided under D-170
+- The "first rotation" step is the wizard's last. It asks for the dates and the unit, and its members default to all
+  of the unit's soldiers (the unit and its sub-units, placed on the start date); the form's member list can narrow it.
+- Done once a live deployment exists, as before.
+**Why:** after D-216 nothing can be requested before a rotation exists, so the wizard leaves the organization ready to
+work.
