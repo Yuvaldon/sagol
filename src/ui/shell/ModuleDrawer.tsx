@@ -1,6 +1,6 @@
 import { PANEL_IDS, type PanelId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, useTransferAccess } from '@logic'
+import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, useSetupAccess, useTransferAccess } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { PropertiesModule } from '../modules/properties/PropertiesModule'
@@ -16,6 +16,7 @@ import { LeavesModule } from '../modules/leaves/LeavesModule'
 import { MyLeavesModule } from '../modules/leaves/MyLeavesModule'
 import { PresenceModule } from '../modules/presence/PresenceModule'
 import { RulesModule } from '../modules/rules/RulesModule'
+import { SetupModule } from '../modules/setup/SetupModule'
 import { DeploymentsModule } from '../modules/deployments/DeploymentsModule'
 import { TagCategoriesModule } from '../modules/tags/TagCategoriesModule'
 import { TagsModule } from '../modules/tags/TagsModule'
@@ -36,6 +37,7 @@ type ModuleAccess = ReturnType<typeof useModuleAccess> & {
   readonly grants: boolean
   readonly myLeaves: boolean
   readonly transfer: boolean
+  readonly setup: boolean
 }
 
 interface ModuleSection {
@@ -51,6 +53,11 @@ interface ModuleGroup {
 }
 
 const GROUPS: readonly ModuleGroup[] = [
+  {
+    // Opened from the navigation panel and from an empty board (D-180).
+    titleKey: 'setup.title',
+    sections: [{ panel: PANEL_IDS.setup, labelKey: 'setup.title', isAllowed: (access) => access.setup, Module: SetupModule }],
+  },
   {
     titleKey: 'units.title',
     sections: [
@@ -173,6 +180,7 @@ export function ModuleDrawer() {
     grants: useGrantsAccess(),
     myLeaves: useMyLeavesAccess()?.view === true,
     transfer: useTransferAccess().any,
+    setup: useSetupAccess().length > 0,
   }
   const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []

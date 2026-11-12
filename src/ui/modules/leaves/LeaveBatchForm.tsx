@@ -4,7 +4,7 @@ import { fullName, leaveBatchIssues, newLeaveBatchValues, useLeaveBatchCommands,
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
-import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
+import { CLEAN_FORM, fieldError, formStateOf, issueError, rowIssuesOnFields, validatorResult } from '../../patterns/forms'
 import { PropertyFields } from '../../patterns/properties/PropertyFields'
 import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { RuleGateDialog } from '../../patterns/rules/RuleGate'
@@ -19,6 +19,9 @@ import { leaveTypeOptions } from './typeOptions'
 
 // A collective leave (D-012, D-179): one name, one type and the same days for every soldier chosen, created together
 // or not at all. "Approve now" is there only for who may approve every soldier chosen (D-013).
+
+/** A leave of the batch answers on the batch's own fields (OI-114). */
+const ROW_FIELDS = { soldier_id: 'soldier_ids' } as const
 
 const BATCH_FIELDS: readonly string[] = ['name', 'description', 'soldier_ids', 'leave_type_id', 'start_date', 'end_date', 'reason']
 
@@ -58,7 +61,7 @@ export function LeaveBatchForm({
         (acknowledged) => createBatch.run({ values, acknowledged }),
         (result) => {
           if (result.ok) panel.close()
-          else setState(formStateOf(result.error, [...BATCH_FIELDS, ...properties.fieldNames]))
+          else setState(formStateOf(rowIssuesOnFields(result.error, 'leaves', ROW_FIELDS), [...BATCH_FIELDS, ...properties.fieldNames]))
         },
       )
     },

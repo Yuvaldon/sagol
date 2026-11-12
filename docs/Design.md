@@ -214,6 +214,13 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **`SenioritySection`** on the soldier's page: the overrides (current, permanent, revoked as history), a new one in a
   dialog, revoke from the row.
 
+## Organization setup (V16, D-180)
+
+- **`SetupModule`** (`ui/modules/setup`): a drawer with an intro, "X of Y steps done" (a status line), and an
+  ordered list of the steps the actor may do. Each row has a number (a check once done), the step's title and
+  explanation, "done" or "not yet" in words, and an "open" button to the step's own module.
+- It opens first in the navigation panel (not pinnable) and from the empty board, beside "soldiers".
+
 ## Patterns of a module
 
 - **List:** rows with a bottom hairline. A row has an optional handle, an optional color dot, the name as a

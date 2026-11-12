@@ -1,8 +1,8 @@
-import { NAVIGATION_SECTIONS, type NavigationSectionId } from '@config'
+import { NAVIGATION_SECTIONS, PANEL_IDS, type NavigationSectionId } from '@config'
 import { RulesRowPlacement, type NavigationModule } from '@contracts'
 import { t, type I18nKey } from '@i18n'
-import { useModuleAccess, useNavigationPreferences } from '@logic'
-import { Menu as MenuIcon, Pin, X } from 'lucide-react'
+import { useModuleAccess, useNavigationPreferences, usePanel, useSetupAccess } from '@logic'
+import { ListChecks, Menu as MenuIcon, Pin, X } from 'lucide-react'
 import { useState } from 'react'
 import {
   Button as AriaButton,
@@ -99,6 +99,23 @@ function Item({
   )
 }
 
+/** The organization's setup, first in the panel and never pinned: it is for setting up, not for daily work (D-180). */
+function SetupItem({ onOpen }: { readonly onOpen: () => void }) {
+  const panel = usePanel()
+  return (
+    <AriaButton
+      onPress={() => {
+        onOpen()
+        panel.open(PANEL_IDS.setup)
+      }}
+      className={ROW}
+    >
+      <ListChecks aria-hidden size={16} className="text-text-muted" />
+      <span className="flex-1 text-start font-semibold">{t('setup.open')}</span>
+    </AriaButton>
+  )
+}
+
 function DisplayChoices() {
   const preferences = useNavigationPreferences()
   return (
@@ -140,7 +157,8 @@ export function NavigationPanel() {
   const preferences = useNavigationPreferences()
   // The placement choice is for who sees the rules, once the preferences it is saved in have loaded.
   const display = access.rules && preferences.editable
-  if (sections.length === 0 && !display) return null
+  const setup = useSetupAccess().length > 0
+  if (sections.length === 0 && !display && !setup) return null
   const close = () => {
     setOpen(false)
   }
@@ -189,6 +207,7 @@ export function NavigationPanel() {
               </IconButton>
             </header>
             <nav aria-label={t('navigation.title')} className="flex min-h-none flex-1 flex-col gap-md overflow-y-auto px-md pb-lg">
+              {setup ? <SetupItem onOpen={close} /> : null}
               {sections.map((section) => (
                 <section key={section.id} aria-labelledby={`navigation-${section.id}`} className="flex flex-col gap-2xs">
                   <h3 id={`navigation-${section.id}`} className="px-sm text-label font-semibold text-text-muted">

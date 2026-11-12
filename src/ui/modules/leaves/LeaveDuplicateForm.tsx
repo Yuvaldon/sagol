@@ -3,7 +3,7 @@ import { duplicateLeaveIssues, fullName, newDuplicateValues, useLeaveBatchComman
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
-import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
+import { CLEAN_FORM, fieldError, formStateOf, rowIssuesOnFields, validatorResult } from '../../patterns/forms'
 import { RuleGateDialog } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { CheckList } from '../../primitives/ChoiceList'
@@ -13,6 +13,9 @@ import { FieldMessage } from './LeaveBatchForm'
 
 // A leave's copies (`leaves:duplicate`, D-049, D-179): the same type, reason and properties, for the soldiers chosen
 // and the days given, all or none. "Approve now" is there only for who may approve every soldier chosen (D-013).
+
+/** A copy answers on the form's own fields (OI-114). */
+const ROW_FIELDS = { soldier_id: 'soldier_ids' } as const
 
 const DUPLICATE_FIELDS: readonly string[] = ['soldier_ids', 'start_date', 'end_date']
 
@@ -43,7 +46,7 @@ export function LeaveDuplicateForm({
         (acknowledged) => duplicate.run({ source: leave, values, acknowledged }),
         (result) => {
           if (result.ok) onDone()
-          else setState(formStateOf(result.error, DUPLICATE_FIELDS))
+          else setState(formStateOf(rowIssuesOnFields(result.error, 'copies', ROW_FIELDS), DUPLICATE_FIELDS))
         },
       )
     },
