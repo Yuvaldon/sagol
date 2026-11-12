@@ -3351,6 +3351,11 @@ and tags. Splitting by layer keeps the two tracks off each other's files.
 - **Home is derived from permissions.** Whoever approves or manages someone else lands on the board, scoped to their
   widest scope. Everyone else lands on "שלי". The two are one press apart in the bottom strip, and the last one chosen
   is remembered on the device; a link that names a panel or a view still wins.
+- **"Manages someone else", in permissions:** may approve or read the leaves of a soldier other than oneself, or may
+  create in a module across the organization. Viewing a module is no sign of it, since a view of one's own record opens
+  one too, and approving only one's own leaves is not either. A choice made before every answer has arrived is not
+  kept, and "שלי" is landed on only while it is a destination (D-218); what the soldier opened meanwhile stays open.
+  Refined in V28 after the review of V25, under the owner's autonomy instruction of 2026-11-11.
 - **"שלי" is a destination for whoever has a soldier record:** my next days, in or out; my requests and their status
   (D-167's open and history); the quick action. The "בקשות" destination is the approval inbox, for whoever may approve
   someone: "ממתינות לאישורי" with its count, then the closed requests, with the approve-now switch in its header (D-255).
