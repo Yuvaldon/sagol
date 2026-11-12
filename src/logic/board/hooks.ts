@@ -20,6 +20,8 @@ export interface BoardModel {
   readonly items: readonly BoardItem[]
   /** Each row's leaves in the window that meet the leave conditions (D-111, D-132). A soldier with none is absent. */
   readonly leaves: ReadonlyMap<SoldierId, readonly BoardLeave[]>
+  /** Each row's approved leaves in the window, whatever the leave conditions draw: who is away (D-133, D-134). */
+  readonly approved: ReadonlyMap<SoldierId, readonly BoardLeave[]>
   /** How many soldiers the rows hold, headers aside. */
   readonly soldierCount: number
   /** How many live soldiers the actor sees at all, so an empty board can tell "nobody yet" from "nobody here". */
@@ -60,6 +62,10 @@ export function useBoard(
       leaveTypes.value,
     )
     // Availability counts every leave, whatever the leave conditions draw (D-133).
+    const approved = boardLeaves(
+      leaves.value.filter((leave) => leave.status === 'approved'),
+      leaveTypes.value,
+    )
     const availability = onlyMissing ? createAvailabilityContext({ leaves: leaves.value, leave_types: leaveTypes.value }) : null
     const items = boardItems({
       ...source.value,
@@ -76,7 +82,7 @@ export function useBoard(
     })
     const soldierCount = items.filter((item) => item.kind === 'soldier').length
     const rosterCount = source.value.soldiers.length
-    return { status: 'ready', value: { days: window.days, today, items, leaves: drawn, soldierCount, rosterCount } }
+    return { status: 'ready', value: { days: window.days, today, items, leaves: drawn, approved, soldierCount, rosterCount } }
   }, [source, leaves, leaveTypes, window, today, filter, leaveConditions, onlyMissing, placements])
 }
 

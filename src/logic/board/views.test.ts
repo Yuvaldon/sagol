@@ -49,6 +49,11 @@ function model(): BoardModel {
       [one.id, [leave(50, '2026-11-01', '2026-11-09'), leave(51, '2026-11-09', '2026-11-09', { effect: 'available' })]],
       [two.id, [leave(52, '2026-11-11', '2026-11-20', { status: 'pending' })]],
     ]),
+    approved: new Map([
+      [one.id, [leave(50, '2026-11-01', '2026-11-09'), leave(51, '2026-11-09', '2026-11-09', { effect: 'available' })]],
+      // Approved and not drawn: the leave conditions leave it out of the board, and it still counts as away.
+      [two.id, [leave(53, '2026-11-10', '2026-11-10')]],
+    ]),
     soldierCount: 2,
     rosterCount: 2,
   }
@@ -69,7 +74,7 @@ describe('the list, the table and the calendar read the board (D-174)', () => {
     expect(summary).toEqual([
       ['2026-11-08', ['50'], 1],
       ['2026-11-09', ['50', '51'], 1],
-      ['2026-11-10', [], 0],
+      ['2026-11-10', [], 1],
       // A pending absence is drawn and not counted.
       ['2026-11-11', ['52'], 0],
       // A muted day of the row adds nothing.

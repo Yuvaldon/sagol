@@ -101,7 +101,8 @@ export function boardItems(input: BoardInput): BoardItem[] {
   const context = filterContextOf(input)
   const inPopulation = populationOf(input.filter)
   const rankById = new Map<CommandRankId, CommandRank>(input.ranks.map((rank) => [rank.id, rank]))
-  const unitById = new Map<UnitId, Unit>(input.units.map((unit) => [unit.id, unit]))
+  // The tree holds archived units too, so a soldier in an archived sub-unit keeps its heading (D-147).
+  const unitById = new Map<UnitId, Unit>(input.unitTree.map((unit) => [unit.id, unit]))
   const bySoldier = membershipsBySoldier(input.memberships)
   const todayIndex = days.indexOf(today)
 
@@ -130,7 +131,7 @@ export function boardItems(input: BoardInput): BoardItem[] {
     groups.set(key, group)
   }
 
-  const order: string[] = [...unitTreeRows(input.units).map((row) => row.unit.id), ...STATE_GROUPS]
+  const order: string[] = [...unitTreeRows(input.unitTree).map((row) => row.unit.id), ...STATE_GROUPS]
   return order.flatMap((key) => {
     const group = groups.get(key)
     if (group === undefined) return []

@@ -51,11 +51,16 @@ export function boardDays(model: BoardModel): BoardDay[] {
     const inView = new Set(rows.filter((row) => row.inScope[index] === true).map((row) => row.soldier.id))
     const onDay = all.filter((entry) => inView.has(entry.soldier.id) && entry.leave.start_date <= day && entry.leave.end_date >= day)
     const absences = onDay.filter((entry) => entry.leave.effect === 'unavailable')
-    const away = new Set(absences.filter((entry) => entry.leave.status === 'approved').map((entry) => entry.soldier.id))
+    // Counted from every approved absence, whatever the leave conditions draw (D-133, D-134).
+    const away = [...inView].filter((soldierId) =>
+      (model.approved.get(soldierId) ?? []).some(
+        (leave) => leave.effect === 'unavailable' && leave.start_date <= day && leave.end_date >= day,
+      ),
+    )
     return {
       day,
       entries: [...absences, ...onDay.filter((entry) => entry.leave.effect !== 'unavailable')],
-      away: away.size,
+      away: away.length,
     }
   })
 }

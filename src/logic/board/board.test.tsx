@@ -273,7 +273,7 @@ describe('the rows of the board (D-105)', () => {
   it('keeps who serves in an archived sub-unit under the selected unit (D-147, OI-098)', () => {
     // כיתה 1 is archived: the live units leave it out, the tree still holds it under מחלקה א.
     const live = units.filter((entry) => entry.id !== UnitId.parse(uuid(13)))
-    const names = (unitTree: readonly Unit[]) =>
+    const items = (unitTree: readonly Unit[]) =>
       boardItems(
         base({
           units: live,
@@ -283,10 +283,11 @@ describe('the rows of the board (D-105)', () => {
           soldiers: [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן')],
           memberships: [membership(70, 1, 13, '2026-01-01', null), membership(71, 2, 12, '2026-01-01', null)],
         }),
-      ).flatMap((item) => (item.kind === 'soldier' ? [item.soldier.first_name] : []))
-    expect(names(units)).toEqual(['אבי'])
+      )
+    // Under its own heading, not "another unit".
+    expect(describeItems(items(units))).toEqual(['# כיתה 1 (1)', 'אבי ■■■■■■■'])
     // Read from the live units alone, the archived sub-unit would drop out of "מחלקה א and below".
-    expect(names(live)).toEqual([])
+    expect(items(live)).toEqual([])
   })
 
   it('leaves out inactive and archived soldiers', () => {
