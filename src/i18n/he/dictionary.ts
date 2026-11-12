@@ -98,8 +98,7 @@ export const dictionary = {
   },
   workspace: {
     navigation: 'ניווט ראשי',
-    viewBar: 'יחידה ותצוגה',
-    topBar: 'טווח וחשבון',
+    viewBar: 'יחידה, טווח ותצוגה',
     board: 'לוח',
     unit: 'יחידה',
     wholeOrganization: 'כל היחידה',

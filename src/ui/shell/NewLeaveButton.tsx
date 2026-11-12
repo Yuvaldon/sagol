@@ -20,7 +20,7 @@ export function NewLeaveButton() {
       onPress={() => {
         panel.open(PANEL_IDS.leaves, { entity: NEW_ENTITY })
       }}
-      className="glass-action absolute end-xl bottom-above-bottom-bar flex size-touch cursor-pointer items-center justify-center rounded-pill outline-focus outline-offset-2 md:bottom-xl data-focus-visible:outline-2"
+      className="glass-action absolute end-xl bottom-above-bottom-bar flex size-touch cursor-pointer items-center justify-center rounded-pill outline-focus outline-offset-2 data-focus-visible:outline-2"
     >
       <Plus aria-hidden size={18} strokeWidth={2.4} />
     </AriaButton>

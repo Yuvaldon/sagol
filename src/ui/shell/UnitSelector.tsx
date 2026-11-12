@@ -45,7 +45,7 @@ export function UnitSelector() {
   const only = rows.length === 1 && choices.length === 2 ? rows[0] : undefined
   if (only !== undefined) {
     return (
-      <span className="inline-flex min-h-touch max-w-unit-picker min-w-none items-center gap-xs rounded-pill bg-inner px-sm text-control font-semibold text-text md:min-h-control">
+      <span className="inline-flex min-h-touch max-w-unit-picker min-w-unit-floor items-center gap-xs rounded-pill bg-inner px-sm text-control font-semibold text-text md:min-h-control">
         <Network aria-hidden size={14} className="shrink-0 text-text-muted" />
         <span className="sr-only">{t('workspace.unit')}</span>
         <span className="truncate">{only.unit.name}</span>
@@ -63,9 +63,9 @@ export function UnitSelector() {
         if (choice === undefined || choice.key === OTHER_KEY) return
         selectUnit(choice.unitId)
       }}
-      className="min-w-none"
+      className="max-w-unit-picker min-w-unit-floor"
     >
-      <AriaButton className="inline-flex min-h-touch max-w-unit-picker min-w-none cursor-pointer items-center gap-xs rounded-pill bg-inner ps-sm pe-sm text-control font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2 data-hovered:bg-line">
+      <AriaButton className="inline-flex min-h-touch max-w-full min-w-none cursor-pointer items-center gap-xs rounded-pill bg-inner ps-sm pe-sm text-control font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2 data-hovered:bg-line">
         <Network aria-hidden size={14} className="shrink-0 text-text-muted" />
         <SelectValue className="truncate">
           {({ selectedText }) => (selected === ORGANIZATION_KEY && anchor !== null ? anchor : selectedText)}

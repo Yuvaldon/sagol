@@ -15,7 +15,7 @@ async function chooseFromUserMenu(page: Page, item: string) {
   await page.getByRole('menuitem', { name: item }).click()
 }
 
-test('an owner claims the empty organization and reaches the workspace', async ({ page }, testInfo) => {
+test('an owner claims the empty organization and reaches the workspace', async ({ page }) => {
   await test.step('sign-in is in Hebrew, RTL, and has no axe violations', async () => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/sign-in$/)
@@ -62,12 +62,11 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await expectNoAxeViolations(page)
   })
 
-  await test.step('navigation floats on top on desktop and at the bottom on mobile', async () => {
+  await test.step('the destinations float at the bottom on every screen (D-252)', async () => {
     const box = await navigation(page).boundingBox()
     const viewport = page.viewportSize()
     if (box === null || viewport === null) throw new Error('navigation has no box')
-    const inUpperHalf = box.y < viewport.height * BOTTOM_BAR_LIMIT
-    expect(inUpperHalf).toBe(testInfo.project.name === 'desktop')
+    expect(box.y).toBeGreaterThan(viewport.height * BOTTOM_BAR_LIMIT)
   })
 
   await test.step('the bars keep the page as wide as the screen, so a phone never zooms out (D-155)', async () => {

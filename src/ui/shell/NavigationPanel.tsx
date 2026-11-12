@@ -1,12 +1,12 @@
-import { NAVIGATION_SECTIONS, PANEL_IDS, TOOLTIP, type NavigationSectionId } from '@config'
+import { NAVIGATION_SECTIONS, PANEL_IDS, type NavigationSectionId } from '@config'
 import type { NavigationModule } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { usePanel, useSetupAccess } from '@logic'
 import { ListChecks, Menu as MenuIcon, X } from 'lucide-react'
 import { useId, useState } from 'react'
-import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay, TooltipTrigger } from 'react-aria-components'
-import { IconButton, NameTooltip } from '../primitives/Button'
-import { EntryCount } from './ModuleButtons'
+import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
+import { IconButton } from '../primitives/Button'
+import { EntryCount } from './EntryCount'
 import { useNavigationEntries, type ModuleEntry } from './moduleEntries'
 import { TAB, TAB_COLOR } from './tabStyle'
 
@@ -120,10 +120,9 @@ function Waiting({ count }: { readonly count: number }) {
   )
 }
 
-/** The menu button and its panel. Neither exists when the panel would hold nothing for this viewer (D-076). On a phone
- * the button is the last tab of the bottom bar, with a short name under it (V20); in a desktop bar, an icon whose name
- * shows on hover. */
-export function NavigationPanel({ variant = 'bar' }: { readonly variant?: 'bar' | 'tab' }) {
+/** The menu button and its panel. Neither exists when the panel would hold nothing for this viewer (D-076). The button
+ * is the last destination of the bottom strip, "ניהול" under its icon (D-252, D-254). */
+export function NavigationPanel() {
   const [isOpen, setOpen] = useState(false)
   const sections = useSections()
   const setup = useSetupAccess().length > 0
@@ -141,26 +140,11 @@ export function NavigationPanel({ variant = 'bar' }: { readonly variant?: 'bar' 
   )
   return (
     <>
-      {variant === 'tab' ? (
-        <AriaButton aria-expanded={isOpen} aria-label={t('navigation.open')} onPress={open} className={`${TAB} ${TAB_COLOR.other} flex-none`}>
-          <MenuIcon aria-hidden size={18} />
-          <span aria-hidden>{t('navigation.tab')}</span>
-          <Waiting count={waiting} />
-        </AriaButton>
-      ) : (
-        <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
-          <AriaButton
-            aria-expanded={isOpen}
-            aria-label={t('navigation.open')}
-            onPress={open}
-            className={`relative inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded-pill text-text-muted md:min-h-control md:min-w-control data-hovered:bg-inner ${PRESS}`}
-          >
-            <MenuIcon aria-hidden size={18} />
-            <Waiting count={waiting} />
-          </AriaButton>
-          <NameTooltip>{t('navigation.open')}</NameTooltip>
-        </TooltipTrigger>
-      )}
+      <AriaButton aria-expanded={isOpen} aria-label={t('navigation.open')} onPress={open} className={`${TAB} ${TAB_COLOR.other}`}>
+        <MenuIcon aria-hidden size={18} />
+        <span aria-hidden>{t('navigation.tab')}</span>
+        <Waiting count={waiting} />
+      </AriaButton>
       <ModalOverlay
         isOpen={isOpen}
         onOpenChange={setOpen}

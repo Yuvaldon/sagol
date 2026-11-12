@@ -122,6 +122,8 @@
   --container-menu: 260px;
   --container-drawer: 440px;
   --container-unit-picker: 200px;
+  /* The unit in the top strip gives way down to this, so its name still shows on a narrow phone (D-252). */
+  --container-unit-floor: 88px;
 
   --radius-bar: 6px;
   --radius-control: 10px;

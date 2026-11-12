@@ -41,7 +41,7 @@ function DragCard({ card }: { readonly card: DragCardState }) {
 function Floating({ children }: { readonly children: ReactNode }) {
   // Glass makes a containing block, so what is fixed renders outside it (Design.md "Glass").
   return createPortal(
-    <div className="pointer-events-none fixed inset-x-none bottom-above-bottom-bar z-5 flex justify-center px-lg md:bottom-lg">
+    <div className="pointer-events-none fixed inset-x-none bottom-above-bottom-bar z-5 flex justify-center px-lg">
       <div className="flex w-full max-w-sheet flex-col gap-sm">{children}</div>
     </div>,
     document.body,
