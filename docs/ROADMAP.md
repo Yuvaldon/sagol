@@ -123,6 +123,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V16 | Setup wizard | Guided first run over the existing forms (D-033, D-180) | ☑ |
 | V17 | Dark Mode | Second token set, the soldier's choice in the user menu (D-181) | ☑ |
 | V18 | Installable app (PWA) | Sagol on the phone's home screen: the manifest and icons, a worker that caches the shell only, the update toast, the install item in the user menu, the offline screen (D-182 … D-185) | ☑ |
+| V19 | Time range, rotations, declutter | A range picker (day, week, month, a whole rotation) that every view honors, "סבב" in place of "פריסה", "only who is missing" as a filter condition, a sort control shared by the board and the table, and a calmer screen (D-211 … D-215) | ☑ |
 | A7 | audit | Whole product | ☐ |
 
 ## Later (no schema change required)

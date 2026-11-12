@@ -246,6 +246,18 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Offline**: a centered sheet "אין חיבור לרשת" with "ניסיון חוזר"; the app opens by itself when the network
   returns.
 
+## Range, sort and a calm screen (V19, D-211 … D-215)
+
+- **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / חודש, then "סבב שלם" with the
+  scope's running and coming rotations and their dates; with none, "סבב חדש" for whoever may create one. The arrows'
+  names follow the kind ("שבוע הבא", "חודש הבא", "סבב הבא"). The timeline narrows its days for a long range and drops
+  the weekday name below 44 px. On a phone "היום" is an icon with its name in a tooltip.
+- **Sort**: "מיון" in the bar, next to the filter, an icon with its name on desktop. Two lists: by name, rank,
+  seniority, unit or days absent; ascending or descending.
+- **"Only who is missing"** is a condition in the filter dialog and a chip while on (D-213).
+- **Calm**: no explanatory hints (presence and seniority keep theirs); empty states are a title and an action; icon
+  buttons have a tooltip with their name (D-215). The interface says סבב for a deployment (D-212).
+
 ## Patterns of a module
 
 - **List:** rows with a bottom hairline. A row has an optional handle, an optional color dot, the name as a
@@ -345,7 +357,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `DeploymentsModule`, `DeploymentForm`, `DeploymentMembersForm` | `ui/modules/deployments` | Deployments and who serves in them (D-179) |
 | `LeaveBatchForm`, `LeaveDuplicateForm`, `SenioritySection` | `ui/modules/leaves`, `ui/modules/soldiers` | A collective leave, copies of a leave, and personal seniority (D-179) |
 | `PropertyFields` | `ui/patterns/properties` | One field per live property of an entity, ending the soldier, unit and leave forms (D-176) |
-| `FilterBar`, `FilterControl`, `OnlyMissingSwitch`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, clear all), and the bar's filter, "only who is missing" and presence controls |
+| `FilterBar`, `FilterControl`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, "only who is missing", clear all), and the bar's filter and presence controls (D-213) |
+| `SortControl` | `ui/shell` | The board's sort, shared with the table (D-214) |
+| `MenuChoice`, `menuStyles` | `ui/shell` | A menu item with a check while selected, and the bar menus' classes |
 | `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
 | `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
 | `RuleViolations`, `RuleBrief`, `RuleGateDialog`, `RuleWarnings` | `ui/patterns/rules` | Broken rules in full and in brief; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`), shared by modules and the timeline (D-143) |

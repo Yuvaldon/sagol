@@ -92,7 +92,7 @@ am = amends, ref = refines, ext = extends.
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142; ref D-146 |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132; ref D-185 |
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154 |
-| D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152 |
+| D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152; ref D-215 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111 |
 | D-078 | Audits follow milestones | docs | |
 | D-079 | The bootstrap owner role holds every valid permission pair | data, backend | |
@@ -119,9 +119,9 @@ am = amends, ref = refines, ext = extends.
 | D-100 | A new required port lands in `app` before `logic` | logic, app, docs | sup D-127 |
 | D-101 | Commands store blank optional text as NULL | contracts, data, logic, backend | |
 | D-102 | Reading private fields and placements needs only their own `view` | data, logic, ui, backend | |
-| D-103 | The date window in the URL | logic, ui | ref D-129 |
+| D-103 | The date window in the URL | logic, ui | ref D-129; ref D-211 |
 | D-104 | The unit selector writes the filter | config, logic, ui | ref D-131; ref D-173 |
-| D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133 |
+| D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133; ref D-214 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | ref D-160 |
 | D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173; ref D-174 |
@@ -149,7 +149,7 @@ am = amends, ref = refines, ext = extends.
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
-| D-133 | "Only who is missing" | config, logic, ui | ref D-161 |
+| D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
 | D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161 |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
 | D-136 | The new-leave form stays with active soldiers | logic, ui | |
@@ -189,13 +189,13 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181 |
-| D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; ref D-213 |
+| D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214 |
 | D-175 | The bar names the unit in scope, not the organization | ui | |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
 | D-177 | Property chips in the filter bar | logic, ui | |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | |
-| D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | |
+| D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212 |
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
@@ -216,6 +216,11 @@ am = amends, ref = refines, ext = extends.
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
 | D-188 | Postgres extensions live in the `extensions` schema | backend, docs | |
+| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | |
+| D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | |
+| D-213 | "Only who is missing" is a filter condition | logic, ui | |
+| D-214 | The board's sort | config, logic, ui | |
+| D-215 | Data and controls, not prose | i18n, ui | |
 
 ---
 
@@ -2784,3 +2789,67 @@ in the app fails without saying so.
 functions are executable by `anon` and `authenticated` and sit on the Data API's RPC surface. `supabase_admin` owns
 them and granted that, so D-203's revokes, run as `postgres`, cannot take it back. They are harmless operator helpers,
 but D-203's rule is that the API roles reach nothing in the app's schema; outside it, the rule holds without them.
+
+## D-211 — The range picker: day, week, month or a whole rotation
+2026-11-12 · accepted · refines D-103 · V19 · decided under D-170
+- **URL.** `range` holds the kind (`day`, `week`, `month`, `rotation`); absent means a week (`DEFAULT_RANGE_KIND`).
+  `from` is the anchor: the window is the day, the week or the month that holds it. Without `from`, a day, week or
+  month holds today and follows the clock (D-107). `rotation` holds the rotation's id with `range=rotation`.
+- **Older links.** A `from`..`to` pair with no `range` is still a free window (`custom`), as D-103 had it. A one-sided,
+  inverted or too long pair is the week of its anchor, so a link never breaks the workspace.
+- **Cap and density.** A window holds at most `DATE_WINDOW.maxDays` = 186 days (about six months). A longer rotation,
+  or one with no end yet, shows its first 186 days. The timeline's least day width depends on the length:
+  `TIMELINE_DENSITY` bands of 64 px up to a week, 32 px up to a month, 24 px beyond; the weekday name hides below 44 px,
+  the date stays. Every engine reads the same window, so every engine honors the range.
+- **Navigation.** The arrows step by the kind: a day, a week or a month; a rotation steps to the scope's previous or next
+  rotation, and an arrow with nowhere to go is disabled. "Today" keeps the kind on today; from a rotation it opens the
+  rotation running today, else this week. It shows only while the window does not hold today (D-076). An unknown or
+  unreadable rotation falls back to the week, so a link never breaks.
+- **Picker.** The window label opens a menu: the kinds, then the scope's rotations (the selected unit's, its ancestors'
+  and descendants'; all of them for the whole organization) that are running or still to come, with their dates. With
+  none, it offers "סבב חדש" only to whoever may create a deployment in a live unit, opening the deployment form; to
+  anyone else the section is absent (D-076). Nothing persists: it is URL state, so D-082 has nothing to port.
+**Why:** the owner plans by rotations and months as well as weeks. 186 days covers the longest rotation the owner
+described with room, and keeps the timeline's rows a size the browser lays out quickly; the density bands keep a
+month and a rotation on screen without a horizontal scroll that hides the point of the range.
+
+## D-212 — "סבב" in the interface; `deployment` in code
+2026-11-12 · accepted · refines D-179 · V19 · decided under D-170
+- Every Hebrew string that said פריסה / פריסות says סבב / סבבים. Code, contracts, the schema and the URL keep
+  `deployment`; only `i18n` changes.
+- The setup wizard gains a "first rotation" step (`SETUP_STEPS`), shown by `deployments:create` and done once a live
+  deployment exists (D-180).
+**Why:** סבב is the word the units use. Renaming the model would touch the schema, the backend and every layer for a
+word only the screen shows.
+
+## D-213 — "Only who is missing" is a filter condition
+2026-11-12 · accepted · refines D-133, D-173 · V19 · decided under D-170
+- The bar's switch is gone. "Only who is missing" is one of the conditions in the filter control's dialog; on, it
+  shows as a chip in the filter row like any condition, and the chip's remove and "clear all" turn it off. Off, nothing
+  shows (D-173). The search param stays `missing`, and D-133's meaning is unchanged.
+**Why:** a switch that is always in the bar is clutter for a choice most screens do not make; as a condition it sits
+where the other narrowing choices are and is seen only while it acts.
+
+## D-214 — The board's sort
+2026-11-12 · accepted · refines D-105, D-174 · V19 · decided under D-170
+- **Keys.** Name, command rank, seniority (effective, with overrides, D-179), unit and days absent in the window
+  (approved `unavailable` leave, D-133's meaning). Ascending or descending. In the URL as `sort` and `order`; the default,
+  seniority descending, writes neither.
+- **Order.** Rows stay grouped by unit (D-105). The unit key orders the groups by the unit tree, reversed when
+  descending, and inside a group keeps the default. Other keys order the rows inside each group. A row with no value
+  (no rank) comes last either way; the name breaks ties.
+- **The table** shares the state: its soldier column is `name`, its unit column `unit` (tree order), and its own
+  leave columns (`type`, `from`, `to`, `days`, `status`) write the same params. A board key with no table column keeps
+  the board's order. A control in the bar ("מיון"), next to the filter, holds both lists.
+**Why:** commanders look for the most senior, the most absent or a name; grouping stays because the unit is the
+board's frame. One state for the board and the table means a link reopens the same order in either.
+
+## D-215 — Data and controls, not prose
+2026-11-12 · accepted · refines D-076 · V19 · decided under D-170
+- A screen shows data and the controls that act on it. Explanatory hints are removed; the presence and seniority hints
+  stay because they say what a number means.
+- An empty state is a title and its action. A body shows only when there is no action, to say why.
+- An icon-only button carries an accessible name and a tooltip with the same words. Touch targets stay 44 px; axe
+  stays clean. An i18n key no screen uses is deleted.
+**Why:** the owner asked for a calmer screen. Hints repeated what the controls already say, and on a phone they pushed
+the data below the fold.
