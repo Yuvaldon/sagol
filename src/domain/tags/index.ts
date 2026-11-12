@@ -1,7 +1,9 @@
 import {
   IssueCode,
   TagSelectionMode,
+  type DeploymentId,
   type Issue,
+  type SoldierId,
   type SoldierTag,
   type Tag,
   type TagCategory,
@@ -50,7 +52,7 @@ export function selectionModeChangeIssues(
   categoryId: TagCategoryId,
   mode: TagSelectionMode,
   tags: Iterable<TagShape>,
-  soldierTags: Iterable<Pick<SoldierTag, 'soldier_id' | 'tag_id'>>,
+  soldierTags: Iterable<Pick<SoldierTag, 'soldier_id' | 'tag_id' | 'deployment_id'>>,
 ): Issue[] {
   if (mode !== TagSelectionMode.enum.single) return []
   const inCategory = new Set<TagId>()
@@ -60,10 +62,12 @@ export function selectionModeChangeIssues(
   const holders = new Set<string>()
   for (const row of soldierTags) {
     if (!inCategory.has(row.tag_id)) continue
-    if (holders.has(row.soldier_id)) {
+    // `single` holds within each scope: the persistent set, or one rotation's (D-221).
+    const holder = `${row.soldier_id}|${row.deployment_id ?? ''}`
+    if (holders.has(holder)) {
       return [{ path: ['selection_mode'], code: IssueCode.enum.tag_single_selection }]
     }
-    holders.add(row.soldier_id)
+    holders.add(holder)
   }
   return []
 }
@@ -80,4 +84,54 @@ export function archiveTagCategoryIssues(
     if (tag.category_id === categoryId && tag.archived_at === null) return [{ path: [], code: IssueCode.enum.group_in_use }]
   }
   return []
+}
+
+type ScopedTag = Pick<SoldierTag, 'soldier_id' | 'tag_id' | 'deployment_id'>
+
+/**
+ * The tags a soldier holds in a rotation (D-260, D-221): the persistent ones plus that rotation's, where a rotation tag
+ * of a `single` category replaces the persistent tag of that category. With no rotation, only the persistent ones.
+ * Rows keep their shape, so the result feeds every reader of `soldier_tags`.
+ */
+export function effectiveSoldierTags<Row extends ScopedTag>(
+  soldierTags: Iterable<Row>,
+  rotationId: DeploymentId | null,
+  tags: Iterable<TagShape>,
+  categories: Iterable<CategoryShape>,
+): Row[] {
+  const categoryOf = new Map<TagId, TagCategoryId>()
+  for (const tag of tags) categoryOf.set(tag.id, tag.category_id)
+  const single = new Set<TagCategoryId>()
+  for (const category of categories) {
+    if (category.selection_mode === TagSelectionMode.enum.single) single.add(category.id)
+  }
+  const persistent: Row[] = []
+  const rotation: Row[] = []
+  for (const row of soldierTags) {
+    if (row.deployment_id === null) persistent.push(row)
+    else if (row.deployment_id === rotationId) rotation.push(row)
+  }
+  const replaced = new Set<string>()
+  for (const row of rotation) {
+    const categoryId = categoryOf.get(row.tag_id)
+    if (categoryId !== undefined && single.has(categoryId)) replaced.add(`${row.soldier_id}|${categoryId}`)
+  }
+  const kept = persistent.filter((row) => {
+    const categoryId = categoryOf.get(row.tag_id)
+    return categoryId === undefined || !replaced.has(`${row.soldier_id}|${categoryId}`)
+  })
+  return [...kept, ...rotation]
+}
+
+/** A soldier's tags of one scope (D-221): the persistent set when `rotationId` is NULL, else that rotation's. */
+export function scopeTagIds(
+  soldierTags: Iterable<ScopedTag>,
+  soldierId: SoldierId,
+  rotationId: DeploymentId | null,
+): TagId[] {
+  const ids: TagId[] = []
+  for (const row of soldierTags) {
+    if (row.soldier_id === soldierId && row.deployment_id === rotationId) ids.push(row.tag_id)
+  }
+  return ids
 }

@@ -75,7 +75,11 @@ const S = Object.fromEntries(SOLDIER_NAMES.map((name, index) => [name, SoldierId
 const nameOf = (name: SoldierName) => ({ id: S[name], first_name: name, last_name: name.toUpperCase() })
 const byId = (a: { id: string }, b: { id: string }) => compareCodeUnits(a.id, b.id)
 const TYPE = { vacation: LeaveTypeId.parse(uuid(71)), exam: LeaveTypeId.parse(uuid(72)) }
-const DEPLOYMENT = { alert: DeploymentId.parse(uuid(81)), archived: DeploymentId.parse(uuid(82)) }
+const DEPLOYMENT = {
+  alert: DeploymentId.parse(uuid(81)),
+  archived: DeploymentId.parse(uuid(82)),
+  whole: DeploymentId.parse(uuid(83)),
+}
 const ARCHIVED_AT = '2026-11-01T08:00:00Z'
 
 const D = ['2026-12-01', '2026-12-02', '2026-12-03', '2026-12-04', '2026-12-05'] as const
@@ -160,8 +164,9 @@ function world(leaves: AvailabilityLeave[] = []): World {
     })),
     property_definitions: [],
     deployments: [
-      { id: DEPLOYMENT.alert, start_date: D[1], end_date: D[3], archived_at: null },
-      { id: DEPLOYMENT.archived, start_date: D[0], end_date: null, archived_at: ARCHIVED_AT },
+      { id: DEPLOYMENT.alert, unit_id: UNIT.COMP, start_date: D[1], end_date: D[3], archived_at: null },
+      { id: DEPLOYMENT.archived, unit_id: UNIT.COMP, start_date: D[0], end_date: null, archived_at: ARCHIVED_AT },
+      { id: DEPLOYMENT.whole, unit_id: UNIT.P2, start_date: D[0], end_date: null, archived_at: null },
     ],
     deployment_members: [
       { deployment_id: DEPLOYMENT.alert, soldier_id: S.a1, start_date: null, end_date: null },
@@ -332,6 +337,13 @@ describe('rule targets and populations (D-071)', () => {
     expect(members(targets[0])).toEqual(ids('a1'))
     expect(members(targets[1])).toEqual(ids('a1', 'a2'))
     expect(evaluate([rule({ deployment_id: DEPLOYMENT.archived })]).targets).toEqual([])
+  })
+
+  it('holds the whole unit in a rotation with no member rows, by its memberships there (D-221)', () => {
+    const { targets } = evaluate([rule({ deployment_id: DEPLOYMENT.whole })])
+    // m leaves P2 after D2.
+    expect(members(onDay(targets, D[1])[0])).toEqual(ids('b1', 'b2', 'm'))
+    expect(members(onDay(targets, D[2])[0])).toEqual(ids('b1', 'b2'))
   })
 
   it('combines the scope with the population filter on the same day', () => {
