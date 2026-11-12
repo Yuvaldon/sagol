@@ -53,48 +53,35 @@ function storeOf() {
   return { ports, updateMyPreferences, elsewhere }
 }
 
-describe('navigation preferences (D-173)', () => {
-  it('starts with no pins and the rules row below', async () => {
+describe('navigation preferences (D-173, D-253)', () => {
+  it('starts with the rules row below', async () => {
     const { ports } = storeOf()
     const { result } = renderHook(() => useNavigationPreferences(), { wrapper: wrapperOf(ports) })
     expect(result.current.settled).toBe(false)
     await waitFor(() => {
       expect(result.current.settled).toBe(true)
     })
-    expect(result.current.pinned).toEqual([])
     expect(result.current.rulesRow).toBe('below')
     expect(result.current.editable).toBe(true)
   })
 
-  it('keeps two quick pins: each save builds on the one before', async () => {
+  it('keeps two quick saves: each one builds on the one before', async () => {
     const { ports, updateMyPreferences } = storeOf()
-    const { result } = renderHook(() => useNavigationPreferences(), { wrapper: wrapperOf(ports) })
+    const { result } = renderHook(() => ({ navigation: useNavigationPreferences(), appearance: useAppearance() }), {
+      wrapper: wrapperOf(ports),
+    })
     await waitFor(() => {
-      expect(result.current.editable).toBe(true)
+      expect(result.current.navigation.editable).toBe(true)
     })
     act(() => {
-      result.current.togglePin('units')
-      result.current.togglePin('rules')
+      result.current.navigation.setRulesRow('above')
+      result.current.appearance.setAppearance('dark')
     })
     await waitFor(() => {
-      expect(result.current.pinned).toEqual(['units', 'rules'])
+      expect(result.current.appearance.appearance).toBe('dark')
     })
+    expect(result.current.navigation.rulesRow).toBe('above')
     expect(updateMyPreferences).toHaveBeenCalledTimes(2)
-  })
-
-  it('a second press on the same pin takes it off again', async () => {
-    const { ports } = storeOf()
-    const { result } = renderHook(() => useNavigationPreferences(), { wrapper: wrapperOf(ports) })
-    await waitFor(() => {
-      expect(result.current.editable).toBe(true)
-    })
-    act(() => {
-      result.current.togglePin('units')
-      result.current.togglePin('units')
-    })
-    await waitFor(() => {
-      expect(result.current.pinned).toEqual([])
-    })
   })
 })
 
@@ -105,14 +92,14 @@ describe('a save that fails (D-187)', () => {
     await waitFor(() => {
       expect(result.current.editable).toBe(true)
     })
-    elsewhere({ pinned_modules: ['rules'] })
-    let saved: Awaited<ReturnType<typeof result.current.togglePin>> | undefined
+    elsewhere({ rules_row_placement: 'above' })
+    let saved: Awaited<ReturnType<typeof result.current.setRulesRow>> | undefined
     await act(async () => {
-      saved = await result.current.togglePin('units')
+      saved = await result.current.setRulesRow('below')
     })
     expect(saved).toEqual({ ok: false, error: { code: 'stale_version' } })
     await waitFor(() => {
-      expect(result.current.pinned).toEqual(['rules'])
+      expect(result.current.rulesRow).toBe('above')
     })
   })
 })
@@ -133,7 +120,7 @@ describe('appearance (D-181)', () => {
       expect(result.current.appearance).toBe('dark')
     })
     expect(updateMyPreferences).toHaveBeenCalledWith(
-      expect.objectContaining({ preferences: expect.objectContaining({ appearance: 'dark', pinned_modules: [] }) }),
+      expect.objectContaining({ preferences: expect.objectContaining({ appearance: 'dark', rules_row_placement: 'below' }) }),
     )
   })
 })
