@@ -41,9 +41,6 @@ function parentOptions(units: readonly Unit[], allowed: (id: UnitId | null) => b
   ]
 }
 
-
-
-
 export function UnitCreateForm({
   units,
   levels,
@@ -58,7 +55,9 @@ export function UnitCreateForm({
   const panel = usePanel()
   const { create } = useUnitCommands()
   const [state, setState] = useState(CLEAN_FORM)
-  const initialValues: CreateValues = { name: '', unit_level_id: null, color_key: null, parent_id: parentId }
+  const options = parentOptions(units, allowedParent)
+  // With no parent named, the first place the actor may use: the root, once it exists (D-251).
+  const initialValues: CreateValues = { name: '', unit_level_id: null, color_key: null, parent_id: parentId ?? options[0]?.value ?? null }
   const backToList = () => {
     panel.open(PANEL_IDS.units)
   }
@@ -105,7 +104,7 @@ export function UnitCreateForm({
             labelKey="units.parent"
             name={field.name}
             value={field.state.value}
-            options={parentOptions(units, allowedParent)}
+            options={options}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
           />
