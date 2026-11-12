@@ -32,26 +32,13 @@ export function FailureScreen({ error }: { readonly error: AppError }) {
   )
 }
 
-/** The env is invalid, or names a provider that is not built yet (D-086). */
-export type StartupFailure =
-  | { readonly kind: 'invalid_env'; readonly issues: readonly EnvIssue[] }
-  | { readonly kind: 'not_built' }
-
-export function StartupFailureScreen({ failure }: { readonly failure: StartupFailure }) {
-  if (failure.kind === 'not_built') {
-    return (
-      <CenteredSheet titleKey="startup.title">
-        <p role="alert" className="text-name">
-          {t('startup.unsupported')}
-        </p>
-      </CenteredSheet>
-    )
-  }
+/** The env is invalid: every problem, by variable (D-074, D-207). */
+export function StartupFailureScreen({ issues }: { readonly issues: readonly EnvIssue[] }) {
   return (
     <CenteredSheet titleKey="startup.title" hintKey="startup.hint">
       <div role="alert">
         <ul className="flex flex-col gap-xs text-name">
-          {failure.issues.map((issue) => (
+          {issues.map((issue) => (
             <li key={issue.variable} className="flex flex-wrap items-baseline gap-sm">
               <code dir="ltr">{issue.variable}</code>
               <span className="text-text-muted">{t(envIssueKey(issue.code))}</span>
