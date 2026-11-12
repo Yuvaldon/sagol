@@ -3,7 +3,7 @@ import type {
   DataCommands,
   DataRepositories,
   DataTransfer,
-  LocalAuthProvider,
+  AuthProvider,
   SessionPermissions,
   SessionService,
   TimeSource,
@@ -71,8 +71,8 @@ export interface DataPort {
   readonly changes: ChangeFeed
 }
 
-/** The only auth provider built so far is the local one (row 8.4 adds Google). */
-export type AuthPort = LocalAuthProvider
+/** The env's provider: local identities in development, Google otherwise (D-006, D-207). */
+export type AuthPort = AuthProvider
 
 export interface LogicPorts {
   readonly data: DataPort

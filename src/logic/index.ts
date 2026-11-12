@@ -7,8 +7,10 @@ export { fieldNameOf, formIssues } from './forms/issues'
 export { claimIssues, timeZoneChoices, type ClaimOrganizationValues } from './organization/claim'
 export type { Loaded } from './queries/loaded'
 export {
+  useAuthMode,
   useClaimOrganization,
   useCurrentOrganization,
+  useGoogleSignIn,
   useKnownIdentities,
   useOnboarding,
   useSession,

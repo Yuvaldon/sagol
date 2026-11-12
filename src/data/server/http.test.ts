@@ -59,6 +59,17 @@ describe('createCommandHandler', () => {
     expect(foreign.headers.get('access-control-allow-origin')).toBeNull()
   })
 
+  it('admits a preview origin by pattern, inside one DNS label only (D-209)', async () => {
+    const serve = createCommandHandler({ gateway: vi.fn(), verify: () => Promise.resolve(null), origins: ['https://sagol-*-team.vercel.app'] })
+    const corsOf = async (origin: string) =>
+      (await serve(new Request('https://functions.example/commands', { method: 'OPTIONS', headers: { origin } }))).headers.get('access-control-allow-origin')
+    expect(await corsOf('https://sagol-git-8-4-team.vercel.app')).toBe('https://sagol-git-8-4-team.vercel.app')
+    expect(await corsOf('https://sagol--team.vercel.app')).toBeNull()
+    expect(await corsOf('https://sagol-x.evil.example-team.vercel.app')).toBeNull()
+    expect(await corsOf('https://sagol-a-team.vercel.app.evil.example')).toBeNull()
+    expect(await corsOf('https://sagolX-a-teamXvercel.app')).toBeNull()
+  })
+
   it('refuses an oversized body before parsing it', async () => {
     const { gateway, serve } = setup()
     expect((await serve(post('x'.repeat(1_000_001)))).status).toBe(413)

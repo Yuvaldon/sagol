@@ -693,6 +693,9 @@ CREATE INDEX IF NOT EXISTS "idx_availability_rules_scope"   ON "availability_rul
 -- Commands:  one server function, the command gateway, runs the adapter's command
 --            code in a SERIALIZABLE transaction (D-201): bootstrap, account links,
 --            leaves, grants and the last-admin check (D-059) included.
+--            Only the address in the function secret BOOTSTRAP_OWNER_EMAIL may
+--            claim the empty organization (D-005, D-208).
+-- Load:      one SQL function loads a local export into the empty backend, once (D-206).
 -- RLS:       enabled on every table with no policy, and anon/authenticated hold no
 --            privilege on any table, sequence or function, now or by default (D-203).
 --            Every read and write goes through the gateway, which runs the domain

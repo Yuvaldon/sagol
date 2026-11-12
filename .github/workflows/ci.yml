@@ -81,6 +81,8 @@ jobs:
           deno-version: v2.x
       - name: Type-check the server function (Deno)
         run: deno check --config supabase/functions/commands/deno.json supabase/functions/commands/index.ts
+      - name: The deployable function bundle resolves on its own (D-209)
+        run: npm run build:function && deno check --no-config dist/functions/commands/index.ts
       - name: Migrations, schema drift, triggers, contract suite over the gateway
         run: npm run test:db
         env:

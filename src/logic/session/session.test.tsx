@@ -18,7 +18,10 @@ import { fakePorts as portsOf, wrapperOf } from '../testing/ports'
 import {
   useClaimOrganization,
   useCurrentOrganization,
+  useAuthMode,
+  useGoogleSignIn,
   useKnownIdentities,
+  useSignIn,
   useOnboarding,
   useSession,
 } from './hooks'
@@ -191,6 +194,21 @@ describe('session hooks', () => {
     await waitFor(() => {
       expect(onboarding.result.current).toMatchObject({ status: 'ready', value: { bootstrap_available: true } })
       expect(identities.result.current).toEqual({ status: 'ready', value: [IDENTITY] })
+    })
+  })
+
+  it('follows the provider: Google signs in by redirect, the local hooks refuse (D-207)', async () => {
+    const signIn = vi.fn(() => Promise.resolve<Result<null>>({ ok: true, value: null }))
+    const ports = portsOf({
+      auth: { mode: 'google', current: () => null, subscribe: () => () => undefined, signIn, signOut: () => Promise.resolve({ ok: true, value: null }) },
+    })
+    const { result } = renderHook(() => ({ mode: useAuthMode(), google: useGoogleSignIn(), local: useSignIn() }), { wrapper: wrapperOf(ports) })
+    expect(result.current.mode).toBe('google')
+    expect(await act(() => result.current.google.signIn())).toEqual({ ok: true, value: null })
+    expect(signIn).toHaveBeenCalledOnce()
+    expect(await act(() => result.current.local.signIn({ email: 'dana@example.test', display_name: null }))).toEqual({
+      ok: false,
+      error: { code: 'forbidden' },
     })
   })
 

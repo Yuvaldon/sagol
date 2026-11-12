@@ -45,10 +45,15 @@ export interface TimeSource {
   now(): Timestamp
 }
 
-/** Google sign-in (production, phase 8). */
+/** Google sign-in (production, D-207). */
 export interface GoogleAuthProvider extends IdentitySource {
   readonly mode: 'google'
-  signIn(): AsyncResult<AuthIdentity>
+  /**
+   * Starts the OAuth redirect and answers once it has started. The page leaves; the identity
+   * arrives through `current()` and `subscribe()` when the browser comes back (D-207).
+   */
+  signIn(): AsyncResult<null>
+  /** Ends the session on this device. */
   signOut(): AsyncResult<null>
 }
 

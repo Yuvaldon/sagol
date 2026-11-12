@@ -2,6 +2,7 @@ import { CHANGE_FEED_CHANNEL, INDEXED_DB_NAME } from '@config'
 import type { IdentitySource, TimeSource } from '@contracts'
 import { createChangeFeed } from './changes'
 import { createAdapterCore, type LocalDataAdapter } from './core'
+import { anyClaimant } from './dependencies'
 import { openDatabase } from './database'
 
 export type { LocalDataAdapter } from './core'
@@ -28,6 +29,7 @@ export function createLocalDataAdapter(
     identity,
     time,
     changes: createChangeFeed(names.channel),
+    claimant: anyClaimant,
   })
 }
 

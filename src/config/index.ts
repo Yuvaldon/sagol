@@ -3,6 +3,7 @@
 // names, breakpoints, palette and icon keys, date formats. Nothing is hardcoded elsewhere.
 export { DOM } from './dom'
 export {
+  ADAPTER_OF_AUTH_MODE,
   ENV_VARIABLES,
   EnvSchema,
   parseEnv,
