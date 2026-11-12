@@ -103,7 +103,7 @@ M3 and M4 do not depend on each other. The owner picks their order at the end of
 
 | # | Track | Content | Status |
 |---|-------|---------|--------|
-| V12 | slice | Import and export | ☐ |
+| V12 | slice | Import and export | ☑ |
 | 8.1 | backend | Provider decision (D-027), migrations from `schema.sql`, triggers, server functions | ☑ D-200 … D-202 |
 | 8.2 | backend | RLS policies + policy matrix run against the database | ☑ D-203 |
 | 8.3 | data | Remote adapter passing the repository contract suite | ☐ |

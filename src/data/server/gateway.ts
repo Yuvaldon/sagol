@@ -9,10 +9,16 @@ import { createPostgresStore, type SqlClient, type StoreCatalog } from './postgr
 // over the request's Postgres transaction, as the identity the caller's verified token names. The
 // caller never chooses the actor, and every check runs on the server, so no path skips one.
 
-const GROUP_KINDS = ['session', 'repositories', 'commands'] as const
+const GROUP_KINDS = ['session', 'transfer', 'repositories', 'commands'] as const
 
-/** The session methods a client may call; `subscribe` stays on the client, over the change feed. */
-const SESSION_METHODS: readonly string[] = ['current', 'onboardingState', 'can']
+/**
+ * The methods of the adapter's single services a client may call; the session's `subscribe` stays on the client,
+ * over the change feed.
+ */
+const SERVICE_METHODS = {
+  session: ['current', 'onboardingState', 'can'],
+  transfer: ['importBatch', 'exportOrganization'],
+} as const satisfies { readonly [K in 'session' | 'transfer']: readonly (keyof LocalDataAdapter[K])[] }
 
 export const GatewayRequest = z.strictObject({
   kind: z.enum(GROUP_KINDS),
@@ -56,8 +62,11 @@ function collectingFeed(): LocalChangeFeed & { collected: DataChange[] } {
 type Method = (...args: unknown[]) => Promise<Result<unknown>>
 
 function methodOf(adapter: LocalDataAdapter, request: GatewayRequest): Method | null {
-  if (request.kind === 'session') {
-    return SESSION_METHODS.includes(request.method) ? (adapter.session[request.method as 'current'] as Method) : null
+  if (request.kind === 'session' || request.kind === 'transfer') {
+    const methods: readonly string[] = SERVICE_METHODS[request.kind]
+    if (request.group !== request.kind || !methods.includes(request.method)) return null
+    const service = adapter[request.kind] as unknown as Record<string, unknown>
+    return service[request.method] as Method
   }
   const groups: Record<string, unknown> = adapter[request.kind]
   if (!Object.hasOwn(groups, request.group)) return null

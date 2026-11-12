@@ -19,6 +19,7 @@ import {
   type TableName,
   type UnitId,
   type UnitMembership,
+  type UnitMembershipId,
 } from '@contracts'
 import {
   can,
@@ -185,6 +186,13 @@ export interface NewSoldier {
   readonly private: CreateSoldierInput['private']
 }
 
+/** Ids are the caller's (D-044): one already taken is `already_exists`, not a failed write (OI-050). */
+async function requireFreeMembershipId(database: Store, id: UnitMembershipId, path: readonly (string | number)[]): Promise<void> {
+  if ((await tableOf(database, 'unit_memberships').get(id)) !== undefined) {
+    failValidation([{ path: [...path], code: IssueCode.enum.already_exists }])
+  }
+}
+
 /**
  * The checks and the writes of a new soldier, once the caller has checked the permissions it needs. `prefix` says where
  * the input sits in the caller's input, so a refusal names the caller's field. A new soldier from a link review (D-149)
@@ -216,6 +224,7 @@ export async function insertSoldier(
     ...(await personalIdIssues(database, scope, soldier.id, personalId, [...prefix, 'private', 'personal_id'])),
   ]
   if (issues.length > 0) return failValidation(issues)
+  if (membership !== null) await requireFreeMembershipId(database, membership.id, [...prefix, 'membership', 'id'])
 
   await tableOf(database, 'soldiers').add(soldier)
   if (membership !== null) {
@@ -498,6 +507,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
               if (overlap.length > 0) {
                 return failValidation(overlap.map((issue) => ({ ...issue, path: ['effective_date'] })))
               }
+              await requireFreeMembershipId(database, opened.id, ['new_membership', 'id'])
               await table.add(opened)
               answer.push(opened)
             }

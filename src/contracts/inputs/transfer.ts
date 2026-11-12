@@ -24,23 +24,11 @@ import {
 } from '../entities/soldiers'
 import { SoldierTag, Tag, TagCategory } from '../entities/tags'
 import { AppError } from '../errors'
-import { CreateDeploymentInput, SetDeploymentMembersInput } from './deployments'
 import { CreateUnitInput, CreateUnitLevelInput } from './hierarchy'
-import {
-  CreateLeaveBatchInput,
-  CreateLeaveInput,
-  CreateLeaveTypeGroupInput,
-  CreateLeaveTypeInput,
-} from './leaves'
+import { CreateLeaveInput, CreateLeaveTypeGroupInput, CreateLeaveTypeInput } from './leaves'
 import { CreateRankRoleBindingInput, CreateRoleInput, GrantAccessInput } from './permissions'
-import { CreatePropertyDefinitionInput } from './properties'
 import { CreateAvailabilityRuleInput } from './rules'
-import {
-  CreateCommandRankInput,
-  CreateSeniorityOverrideInput,
-  CreateSoldierInput,
-  SetSoldierTagsInput,
-} from './soldiers'
+import { CreateCommandRankInput, CreateSoldierInput, SetSoldierTagsInput } from './soldiers'
 import { CreateTagCategoryInput, CreateTagInput } from './tags'
 
 // Import and export (D-022, D-050). Import runs the same commands as the UI, so it has no
@@ -50,14 +38,16 @@ function operation<C extends string, I extends z.ZodType>(command: C, input: I) 
   return z.strictObject({ command: z.literal(command), input })
 }
 
-/** One step of an import: a command name and its input. Ids are caller-generated (D-044). */
+/**
+ * One step of an import: a command name and its input. Ids are caller-generated (D-044). Only commands that are built
+ * are here; a slice that builds a create command adds its operation (D-171).
+ */
 export const ImportOperation = z.discriminatedUnion('command', [
   operation('create_unit_level', CreateUnitLevelInput),
   operation('create_unit', CreateUnitInput),
   operation('create_command_rank', CreateCommandRankInput),
   operation('create_soldier', CreateSoldierInput),
   operation('set_soldier_tags', SetSoldierTagsInput),
-  operation('create_seniority_override', CreateSeniorityOverrideInput),
   operation('create_role', CreateRoleInput),
   operation('create_rank_role_binding', CreateRankRoleBindingInput),
   operation('grant_access', GrantAccessInput),
@@ -66,11 +56,7 @@ export const ImportOperation = z.discriminatedUnion('command', [
   operation('create_leave_type_group', CreateLeaveTypeGroupInput),
   operation('create_leave_type', CreateLeaveTypeInput),
   operation('create_leave', CreateLeaveInput),
-  operation('create_leave_batch', CreateLeaveBatchInput),
-  operation('create_deployment', CreateDeploymentInput),
-  operation('set_deployment_members', SetDeploymentMembersInput),
   operation('create_availability_rule', CreateAvailabilityRuleInput),
-  operation('create_property_definition', CreatePropertyDefinitionInput),
 ])
 export type ImportOperation = z.infer<typeof ImportOperation>
 
@@ -79,7 +65,8 @@ export type ImportCommand = ImportOperation['command']
 
 /**
  * `importBatch`: operations run in order inside one transaction, all or nothing.
- * `dry_run` validates and reports without writing (the import preview).
+ * `dry_run` validates and reports without writing (the import preview). The run stops at the first operation that is
+ * refused (D-171).
  */
 export const ImportBatchInput = z.strictObject({
   dry_run: z.boolean(),
@@ -87,12 +74,23 @@ export const ImportBatchInput = z.strictObject({
 })
 export type ImportBatchInput = z.infer<typeof ImportBatchInput>
 
-/** Outcome per operation, by position. `error` NULL = the operation is valid. */
+/**
+ * Outcome per operation, by position. `error` NULL = the operation is valid. When every operation is well formed, the
+ * results end at the first refused one: the ones after it were not run. When some are malformed, nothing runs and every
+ * operation is reported on its form alone (D-171).
+ */
 export const ImportReport = z.object({
   committed: z.boolean(),
   results: z.array(z.object({ index: Integer.min(0), error: AppError.nullable() })),
 })
 export type ImportReport = z.infer<typeof ImportReport>
+
+/**
+ * The columns of a soldiers CSV file, the import's spreadsheet form (D-171). The header row names them; each row becomes
+ * one `create_soldier`. Every column but the names may be left out or empty.
+ */
+export const SOLDIER_CSV_COLUMNS = ['first_name', 'last_name', 'nickname', 'personal_id', 'phone', 'invite_email'] as const
+export type SoldierCsvColumn = (typeof SOLDIER_CSV_COLUMNS)[number]
 
 /** Version of the export file format. Bumped on any incompatible change. */
 export const EXPORT_FORMAT_VERSION = 1
