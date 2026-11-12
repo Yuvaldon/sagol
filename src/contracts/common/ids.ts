@@ -49,6 +49,9 @@ export type TagCategoryId = z.infer<typeof TagCategoryId>
 export const TagId = z.uuid().brand<'TagId'>()
 export type TagId = z.infer<typeof TagId>
 
+export const SoldierTagId = z.uuid().brand<'SoldierTagId'>()
+export type SoldierTagId = z.infer<typeof SoldierTagId>
+
 export const LeaveTypeGroupId = z.uuid().brand<'LeaveTypeGroupId'>()
 export type LeaveTypeGroupId = z.infer<typeof LeaveTypeGroupId>
 

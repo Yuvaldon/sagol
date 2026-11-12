@@ -2,7 +2,8 @@ import { z } from 'zod'
 import { auditColumns, createdColumns } from '../common/audit'
 import { DeploymentId, OrganizationId, SoldierId, UnitId } from '../common/ids'
 import { checkDateRange } from '../common/refinements'
-import { CalendarDate, label } from '../common/scalars'
+import { SchemaIssue } from '../common/issues'
+import { CalendarDate, Timestamp, label } from '../common/scalars'
 
 /** Columns of `deployments`, without row checks. */
 export const DeploymentColumns = z.object({
@@ -12,12 +13,18 @@ export const DeploymentColumns = z.object({
   unit_id: UnitId,
   start_date: CalendarDate,
   end_date: CalendarDate.nullable(),
+  /** The explicit close (D-258). NULL = open. */
+  closed_at: Timestamp.nullable(),
+  closed_by: SoldierId.nullable(),
   ...auditColumns,
 })
 
-/** `deployments`: reserve duty periods. "Active" is derived from dates (D-019). */
+/** `deployments`: reserve duty periods. "Active" is derived from dates (D-019); closed is explicit (D-258). */
 export const Deployment = DeploymentColumns.superRefine((row, ctx) => {
   checkDateRange(ctx, row.start_date, row.end_date, 'end_date')
+  if ((row.closed_at === null) !== (row.closed_by === null) || (row.closed_at !== null && row.end_date === null)) {
+    ctx.addIssue({ code: 'custom', message: SchemaIssue.enum.close_incomplete, path: ['closed_at'] })
+  }
 })
 export type Deployment = z.infer<typeof Deployment>
 

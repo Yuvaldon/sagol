@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { CommandRankId, SeniorityOverrideId, SoldierId, TagId, UnitMembershipId } from '../common/ids'
+import { CommandRankId, DeploymentId, SeniorityOverrideId, SoldierId, TagId, UnitMembershipId } from '../common/ids'
 import { checkDateRange } from '../common/refinements'
 import { CalendarDate } from '../common/scalars'
 import {
@@ -78,12 +78,13 @@ export const UpdateSoldierPrivateInput = z.strictObject({
 export type UpdateSoldierPrivateInput = z.infer<typeof UpdateSoldierPrivateInput>
 
 /**
- * Replaces the soldier's tag set (`soldiers:update`, D-040). Bumps the soldier's version.
- * Domain enforces `single` categories.
+ * Replaces the soldier's tag set in one scope (`soldiers:update`, D-040): the persistent tags when `deployment_id` is
+ * NULL, else that rotation's (D-260). Bumps the soldier's version. Domain enforces `single` categories per scope.
  */
 export const SetSoldierTagsInput = z.strictObject({
   soldier_id: SoldierId,
   expected_version: ExpectedVersion,
+  deployment_id: DeploymentId.nullable(),
   tag_ids: distinctIds(TagId),
 })
 export type SetSoldierTagsInput = z.infer<typeof SetSoldierTagsInput>
