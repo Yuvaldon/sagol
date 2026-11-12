@@ -410,14 +410,14 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 | The mode of the screen | | the rotation holding today, else the nearest upcoming, else the latest open, else שגרה |
 | A feature's context | each card says: rotation, routine or both | |
 | Who is in it | member rows, only for a list | no rows: the unit's soldiers for its days |
-| A rotation tag | `soldier_tags.deployment_id` (V26) | |
-| A category's lifetime | `tag_categories.lifetime` (V26) | |
+| A tag's lifetime (persistent or this rotation) | `soldier_tags.deployment_id` (V26), per assignment | |
+| The lifetime pre-selected when assigning | `tag_categories.default_lifetime` (V26) | |
 
 ### Templates (D-261, D-262)
 
 "פלוגה" in `config`, names in `i18n`: the company (root) with מפל"ג and three platoons of three squads; unit types
 פלוגה, מחלקה, כיתה; command levels מ"פ, סמ"פ, מ"מ, סמל, מ"כ, לוחם, each bound to a permission level; persistent tag
-categories "הכשרות" (נהג, חובש, קשר, נגביסט, מטול) with colors, and a rotation category "תפקיד בסבב"; absence types
+categories "הכשרות" (נהג, חובש, קשר, נגביסט, מטול) with colors, and a category "תפקיד בסבב" whose tags default to this rotation; absence types
 in groups (בית: יציאה הביתה, יציאה מיוחדת; בריאות: מחלה, גימלים; אחר: קורס, אירוע משפחתי); rule defaults sized to a
 company. V27 fixes the exact lists and colors in config.
 

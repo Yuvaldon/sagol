@@ -3115,25 +3115,28 @@ says, and a stored copy would drift when the unit changes.
 
 ## D-260 — Tags have two lifetimes: persistent, or for one rotation
 2026-11-12 · accepted · refines D-015, D-130 · V24 · decided under the owner's autonomy instruction of 2026-11-11
-- **The lifetime belongs to the category:** `tag_categories.lifetime` is `persistent` (a course, a skill, a vehicle
-  licence) or `rotation` (a post or a duty in this rotation). The category form chooses it; it cannot change once the
-  category has tags in use.
-- **A rotation tag is held for one rotation:** `soldier_tags.deployment_id UUID NULL REFERENCES deployments`, required
-  for a `rotation` category and NULL for a `persistent` one (domain and trigger). The key becomes an `id`, with
-  one live row per soldier and tag for persistent tags, and per soldier, tag and rotation for rotation tags.
+- **The lifetime belongs to the assignment, not the category:** the same tag can be persistent for one soldier and
+  for one rotation for another. "מ\"כ" is persistent for the squad's leader and this rotation only for a soldier filling
+  in; "מפעיל רחפן" is a qualification for one soldier and this rotation's assignment for another.
+- **A rotation tag is held for one rotation:** `soldier_tags.deployment_id UUID NULL REFERENCES deployments`, allowed
+  for every category: NULL is persistent, set is that rotation only. The key becomes an `id`, with at most one row per
+  soldier and tag where `deployment_id` is NULL and one per soldier, tag and rotation where it is set.
+- **The category keeps a default only:** `tag_categories.default_lifetime` (`persistent` or `rotation`) pre-selects the
+  choice when a tag is assigned; it never constrains a row, and changing it changes no existing row.
 - The board and the filters read persistent tags and the current rotation's tags; a closed rotation's tags stay as its
   history and are read only inside it. Nothing copies tags silently: a rotation started "מסבב קודם" copies them once
   (D-258), and the soldier's card offers "כמו בסבב הקודם" as one command that adds the same rows for one soldier.
 - V26 makes the change in `schema.sql`, `DECISIONS.md` and `contracts` together, first in the slice (rule 5).
-**Why:** a driver is a driver in every rotation; the kitchen duty of this rotation is not. Putting the lifetime on the
-category lets the commander decide once, and the rotation reference makes "this rotation's tags" a query.
+**Why:** a driver is a driver in every rotation, and the kitchen duty of this rotation is not; but whether a tag lasts
+depends on who holds it and why, so the row says it. The category's default keeps the common case one tap, and the
+rotation reference makes "this rotation's tags" a query.
 
 ## D-261 — Templates: a starter unit in config, names in i18n, applied through the commands
 2026-11-12 · accepted · refines D-022, D-033 · V24 · decided under the owner's autonomy instruction of 2026-11-11
 - A template is structure in `config` (ids and relations only) with every name in `i18n`. The first and only one in
   V27 is **"פלוגה"**: the company as the root unit with מפל"ג and three platoons of three squads; unit types (פלוגה,
   מחלקה, כיתה); command levels (מ"פ, סמ"פ, מ"מ, סמל, מ"כ, לוחם) bound to permission levels; qualification tags
-  (persistent) with colors; absence types in their groups; and rule defaults sized to a company.
+  (persistent by default) with colors; absence types in their groups; and rule defaults sized to a company.
 - **Applying a template is a sequence of the ordinary commands** the actor may run, through the same validation and
   permission checks (rule 4); there is no import path or bulk insert for it. A failure stops at the step that failed
   and says which, and what was created stays and shows in the setup.
