@@ -65,6 +65,8 @@ function memoryStore(): IdentityStore {
   }
 }
 
+const QUIET_SHELL = { updateReady: false, install: 'none' } as const
+
 /** A fresh database, an owner signed in and an organization claimed. */
 async function ownerPorts(): Promise<LogicPorts> {
   const time = { now: () => NOW }
@@ -82,7 +84,8 @@ async function ownerPorts(): Promise<LogicPorts> {
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
     }),
   )
-  return { auth, data, time }
+  const shell = { subscribe: () => () => undefined, current: () => QUIET_SHELL, applyUpdate: () => undefined, install: () => Promise.resolve() }
+  return { auth, data, time, shell }
 }
 
 interface World {
