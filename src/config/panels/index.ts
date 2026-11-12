@@ -1,3 +1,4 @@
+import type { NavigationModule } from '@contracts'
 import { z } from 'zod'
 
 // Drawer and sheet modules of the workspace (D-023, D-092). A panel id and the entity open inside it
@@ -60,6 +61,18 @@ export type PanelId = z.infer<typeof PanelId>
 
 /** A long list renders only what is in sight (TanStack Virtual). The height is a first guess, then measured. */
 export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
+
+/**
+ * The sections of the navigation panel and their modules, in order (D-173). The daily work stays in the bar; what sets
+ * the organization up is here, and a soldier may pin any of it back to the bar.
+ */
+export const NAVIGATION_SECTIONS = [
+  { id: 'structure', modules: ['units', 'soldiers'] },
+  { id: 'leaveSetup', modules: ['leave_types', 'rules', 'tags'] },
+  { id: 'access', modules: ['roles', 'access_grants', 'account_links'] },
+  { id: 'data', modules: ['data_transfer'] },
+] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
+export type NavigationSectionId = (typeof NAVIGATION_SECTIONS)[number]['id']
 
 /** How many module buttons a phone's bottom bar shows before "more" opens the rest (D-165). */
 export const PHONE_BAR_MODULES = 4

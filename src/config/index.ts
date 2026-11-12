@@ -33,8 +33,10 @@ export {
 export {
   DRAG_ACTIVATION_PX,
   DROP_EDGE_FRACTION,
+  NAVIGATION_SECTIONS,
   NEW_ENTITY,
   PANEL_IDS,
+  type NavigationSectionId,
   PanelId,
   PHONE_BAR_MODULES,
   TRANSFER_FILES,
