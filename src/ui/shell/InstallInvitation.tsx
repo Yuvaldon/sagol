@@ -1,5 +1,5 @@
 import { t } from '@i18n'
-import { useInstallInvitation } from '@logic'
+import { useInstallInvitation, usePanel } from '@logic'
 import { useState } from 'react'
 import { InfoDialog } from '../patterns/Dialogs'
 import { Button } from '../primitives/Button'
@@ -10,6 +10,8 @@ import { Button } from '../primitives/Button'
  */
 export function InstallInvitation() {
   const { offer, install, answer } = useInstallInvitation()
+  // It floats over the workspace, never over an open drawer, whose actions sit where it does on a phone.
+  const { panel } = usePanel()
   const [iosHintOpen, setIosHintOpen] = useState(false)
   if (iosHintOpen) {
     return (
@@ -23,7 +25,7 @@ export function InstallInvitation() {
       />
     )
   }
-  if (offer === 'none') return null
+  if (offer === 'none' || panel !== null) return null
   return (
     <div className="pointer-events-none fixed inset-x-lg bottom-above-bottom-bar z-10 flex justify-center">
       <section

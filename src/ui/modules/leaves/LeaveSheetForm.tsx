@@ -141,7 +141,9 @@ export function LeaveSheetForm({
                         onPress={() => {
                           // The answer named rows by their place; once one goes, it names the wrong ones.
                           setState(CLEAN_FORM)
-                          void rowsField.removeValue(index)
+                          rowsField.removeValue(index)
+                          // The sheet's own issues are named by place too: once it has been sent, judge it again.
+                          if (form.state.submissionAttempts > 0) void form.validate('submit')
                         }}
                       >
                         <X aria-hidden size={14} />
