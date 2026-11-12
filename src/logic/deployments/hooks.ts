@@ -64,7 +64,14 @@ export function useDeploymentCommands() {
     ({ deployment, openedVersion, members }: { deployment: Deployment; openedVersion: number; members: readonly DeploymentMemberValues[] }) =>
       deployments.setMembers(toSetDeploymentMembersInput(deployment, openedVersion, members)),
   )
-  return { create, update, archive, setMembers }
+  /** Closes an ended rotation, or opens it again (D-258). */
+  const close = useCommand(keys, (deployment: Deployment) =>
+    deployments.close({ id: deployment.id, expected_version: deployment.version }),
+  )
+  const reopen = useCommand(keys, (deployment: Deployment) =>
+    deployments.reopen({ id: deployment.id, expected_version: deployment.version }),
+  )
+  return { create, update, archive, setMembers, close, reopen }
 }
 
 // ---------------------------------------------------------------------- hints

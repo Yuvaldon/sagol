@@ -30,7 +30,7 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
 
   await test.step('with no rotation, and no unit to hold one, the owner is sent to found a unit first (D-218)', async () => {
-    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByText(he.deployments.emptyNoUnits)).toBeVisible()
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
@@ -141,7 +141,7 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await page.getByLabel(he.linkRequest.personalId).fill(soldier.personalId)
     await page.getByRole('button', { name: he.linkRequest.submit }).click()
     // No rotation yet, and the fighter may not open one: the workspace says who does, with nothing to request (D-218).
-    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByText(he.workspace.noRotationBody)).toBeVisible()
     await expect(page.getByRole('button', { name: he.workspace.openRotation })).toHaveCount(0)
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)

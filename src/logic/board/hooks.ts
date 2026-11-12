@@ -2,6 +2,7 @@ import { DEFAULT_BOARD_SORT_KEY, DEFAULT_SORT_ORDER } from '@config'
 import type { CalendarDate, FilterExpression, SoldierId } from '@contracts'
 import { APPROVED_ONLY, createAvailabilityContext } from '@domain'
 import { useMemo } from 'react'
+import { useRotationScope } from '../view-state/rotation'
 import { useFilterSource } from '../filters/source'
 import type { Loaded } from '../queries/loaded'
 import { useLeaves, useLeaveTypes } from '../leaves/hooks'
@@ -50,7 +51,7 @@ export function useBoard(
   filter: FilterExpression | null,
   board: BoardConditions = NO_BOARD_CONDITIONS,
 ): Loaded<BoardModel> {
-  const source = useFilterSource()
+  const source = useFilterSource(useRotationScope().rotation?.id ?? null)
   const leaves = useLeaves(window)
   const leaveTypes = useLeaveTypes()
   const placements = usePlacementHints(source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS)

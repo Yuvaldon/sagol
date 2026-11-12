@@ -18,6 +18,8 @@ export interface DeploymentFormProps {
   readonly deployment: Deployment | null
   readonly units: readonly Unit[]
   readonly today: CalendarDate
+  /** The other live rotations: one runs at a time, checked before the command answers it (D-257). */
+  readonly others: readonly Deployment[]
   /** Where the deployment may be placed. */
   readonly placeable: (unitId: UnitId) => boolean
   readonly onReload: () => void
@@ -25,7 +27,7 @@ export interface DeploymentFormProps {
   readonly onCreated?: (deployment: Deployment) => void
 }
 
-export function DeploymentForm({ deployment, units, today, placeable, onReload, onCreated }: DeploymentFormProps) {
+export function DeploymentForm({ deployment, units, today, others, placeable, onReload, onCreated }: DeploymentFormProps) {
   const panel = usePanel()
   const { create, update } = useDeploymentCommands()
   const [opened] = useState(deployment)
@@ -41,7 +43,7 @@ export function DeploymentForm({ deployment, units, today, placeable, onReload, 
 
   const form = useForm({
     defaultValues: opened === null ? newDeploymentValues(today, options[0]?.value ?? null) : deploymentFormValues(opened),
-    validators: { onSubmit: ({ value }) => validatorResult(deploymentFormIssues(value)) },
+    validators: { onSubmit: ({ value }) => validatorResult(deploymentFormIssues(value, others, opened?.id ?? null)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
       if (opened === null) {

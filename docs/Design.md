@@ -431,11 +431,12 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 | No overlap per organization | exclusion constraint (V26) | |
 | Upcoming, running, ended | | today against the dates |
 | Closed (explicit, reversible) | `closed_at`, `closed_by` (V26) | |
-| The mode of the screen | | the rotation holding today, else the nearest upcoming, else the latest open, else שגרה |
+| The mode of the screen | | of the rotations not closed: the one holding today, else the nearest upcoming, else the latest ended, else שגרה (D-222) |
 | A feature's context | each card says: rotation, routine or both | |
 | Who is in it | member rows, only for a list | no rows: the unit's soldiers for its days |
 | A tag's lifetime (persistent or this rotation) | `soldier_tags.deployment_id` (V26), per assignment | |
 | The lifetime pre-selected when assigning | `tag_categories.default_lifetime` (V26) | |
+| Rotation tags from the previous rotation | | "כמו בסבב הקודם" on the soldier's card, per soldier (D-222) |
 
 ### Templates (D-261, D-262)
 

@@ -98,21 +98,21 @@ export function runsOn(rotation: Pick<Deployment, 'start_date' | 'end_date'>, da
   return compareDates(rotation.start_date, day) <= 0 && (rotation.end_date === null || compareDates(day, rotation.end_date) <= 0)
 }
 
-/** A day is reportable when the scope has no rotation, or one of them runs on it (D-193). */
+/** A day is reportable when one of the scope's rotations runs on it (D-193); routine has no report (D-222). */
 export function isReportable(rotations: readonly Pick<Deployment, 'start_date' | 'end_date'>[], day: CalendarDate): boolean {
-  return rotations.length === 0 || rotations.some((rotation) => runsOn(rotation, day))
+  return rotations.some((rotation) => runsOn(rotation, day))
 }
 
 /**
  * The next reportable day from `day` in the direction of `step`, skipping the days no rotation runs on; NULL past the
- * last rotation's end, or before the first one's start.
+ * last rotation's end, before the first one's start, or with no rotation at all.
  */
 export function steppedReportDay(
   rotations: readonly Pick<Deployment, 'start_date' | 'end_date'>[],
   day: CalendarDate,
   step: -1 | 1,
 ): CalendarDate | null {
-  if (rotations.length === 0) return addDays(day, step)
+  if (rotations.length === 0) return null
   const first = rotations.reduce((least, rotation) => (compareDates(rotation.start_date, least) < 0 ? rotation.start_date : least), rotations[0]?.start_date ?? day)
   const open = rotations.some((rotation) => rotation.end_date === null)
   const last = rotations.reduce<CalendarDate>(

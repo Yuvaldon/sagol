@@ -16,9 +16,10 @@ export interface RequestRotation {
 }
 
 const NONE: RequestRotation = { deployment_id: null, issues: [] }
+const WHOLE_UNIT = { start_date: null, end_date: null }
 
 /**
- * The first rotation, `preferred` first, then by start, that holds the request for every soldier. Otherwise the issues
+ * The first open rotation, `preferred` first, then by start, that holds the request for every soldier. Otherwise the issues
  * of the first rotation every soldier serves in, else `not_a_member` on the soldier. Incomplete dates answer nothing:
  * the schema answers them.
  */
@@ -33,11 +34,15 @@ export function requestRotation(
   if (soldierIds.length === 0 || start_date === '' || end_date === '') return NONE
   const span = { start_date, end_date }
   const byKey = new Map(members.map((member) => [`${member.deployment_id}:${member.soldier_id}`, member]))
-  const candidates = [...rotations].sort(
+  const listed = new Set<string>(members.map((member) => member.deployment_id))
+  const candidates = rotations.filter((rotation) => rotation.closed_at === null).sort(
     (a, b) => Number(b.id === preferred) - Number(a.id === preferred) || compareDates(a.start_date, b.start_date) || compareCodeUnits(a.id, b.id),
   )
+  // A rotation with no member row in view may hold the whole unit (D-259): its dates decide here, the command the rest.
+  const memberOf = (rotation: Deployment, soldierId: SoldierId) =>
+    listed.has(rotation.id) ? (byKey.get(`${rotation.id}:${soldierId}`) ?? null) : WHOLE_UNIT
   const issuesIn = (rotation: Deployment) =>
-    soldierIds.flatMap((soldierId) => leaveRotationIssues(rotation, byKey.get(`${rotation.id}:${soldierId}`) ?? null, span))
+    soldierIds.flatMap((soldierId) => leaveRotationIssues(rotation, memberOf(rotation, soldierId), span))
   let fallback: readonly Issue[] | null = null
   for (const rotation of candidates) {
     const issues = issuesIn(rotation)

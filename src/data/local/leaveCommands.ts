@@ -36,7 +36,7 @@ import {
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { propertiesIssues } from './checks'
-import { isLiveLeave, leaveRotationCheck } from './leaveRotation'
+import { closedRotationOf, isLiveLeave, leaveRotationCheck } from './leaveRotation'
 import { tableOf } from './store'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
@@ -66,14 +66,19 @@ async function commentIdIssues(database: Store, comment: CommentDraft | null): P
   return [{ path: ['comment', 'id'], code: IssueCode.enum.already_exists }]
 }
 
-/** Only what this change makes worse counts (D-073). Hard rules refuse; soft ones need an acknowledgment. */
+/**
+ * Only what this change makes worse counts (D-073). Hard rules refuse; soft ones need an acknowledgment. The tags
+ * counted are the ones the soldiers hold in the change's rotation (D-222): a change spans one rotation, else none.
+ */
 export async function passRuleGate(
   database: Store,
   scope: ActorScope,
   leaves: readonly Leave[],
   acknowledged: readonly AvailabilityRuleId[],
 ): Promise<AvailabilityRuleId[]> {
-  const { data, rules } = await ruleData(database, scope.organization_id)
+  const rotations = new Set(leaves.map((leave) => leave.deployment_id))
+  const rotationId = rotations.size === 1 ? ([...rotations][0] ?? null) : null
+  const { data, rules } = await ruleData(database, scope.organization_id, rotationId)
   const gate = ruleGate(leaveChangeViolations(data, rules, leaves), acknowledged)
   return gate.ok ? gate.value : fail(gate.error)
 }
@@ -197,6 +202,8 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
       )
       if (!plan.allowed) return failValidation(plan.issues)
       await requireOpenSoldier(database, before, (soldier) => archivedSoldierIssues(soldier, 'update', []))
+      const closed = await closedRotationOf(database, before)
+      if (closed.length > 0) return failValidation(closed)
 
       const after = editedLeave(scope, before, columns, plan.next)
       if (Array.isArray(after)) return failValidation(withPathPrefix(prefix, after))
@@ -325,6 +332,8 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
           if (before.version !== input.expected_version) return fail({ code: 'stale_version' })
           if (!plan.allowed) return failValidation(plan.issues)
           await requireOpenSoldier(database, before, (soldier) => archivedSoldierIssues(soldier, input.transition, ['transition']))
+          const closed = await closedRotationOf(database, before)
+          if (closed.length > 0) return failValidation(closed)
           const issues = await commentIdIssues(database, comment)
           if (issues.length > 0) return failValidation(issues)
 
