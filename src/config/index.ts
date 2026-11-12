@@ -17,7 +17,7 @@ export {
   type RawEnv,
 } from './env'
 export { CHANGE_FEED_CHANNEL, DEVICE_KEYS, INDEXED_DB_NAME, STORAGE_KEYS, type DeviceKey, type StorageKey } from './storage'
-export { INBOX } from './inbox'
+export { INBOX, MINE } from './inbox'
 export { DAY_REPORT, DAY_REPORT_CATEGORIES, type DayReportCategory } from './report'
 export { PWA } from './pwa'
 export { REMOTE } from './remote'
@@ -70,7 +70,6 @@ export {
   DESKTOP_MIN_HEIGHT_PX,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
-  WIDE_PHONE_MEDIA_QUERY,
   type Breakpoint,
 } from './breakpoints'
 export { PALETTE_KEYS, PaletteKey, isPaletteKey } from './palette'

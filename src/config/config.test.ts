@@ -11,7 +11,6 @@ import {
   DEFAULT_VIEW_ID,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
-  WIDE_PHONE_MEDIA_QUERY,
   NAVIGATION_SECTIONS,
   ENV_VARIABLES,
   ICON_KEYS,
@@ -212,7 +211,6 @@ describe('views, url, storage, breakpoints, dates', () => {
     const widths = Object.values(BREAKPOINTS_PX)
     expect([...widths].sort((a, b) => a - b)).toEqual(widths)
     expect(DESKTOP_MEDIA_QUERY).toBe('(min-width: 768px) and (min-height: 512px)')
-    expect(WIDE_PHONE_MEDIA_QUERY).toBe('(min-width: 640px)')
     expect(DARK_SCHEME_MEDIA_QUERY).toBe('(prefers-color-scheme: dark)')
   })
 

@@ -6,3 +6,10 @@ export const INBOX = {
   /** ...up to this many days ahead. A closed leave outside the span stays on the soldier's own list. */
   closedFutureDays: 365,
 } as const
+
+// "Mine" (D-265): the soldier's own next days, in or out.
+
+export const MINE = {
+  /** How many days, from today, "my next days" shows. */
+  nextDays: 7,
+} as const

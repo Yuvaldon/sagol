@@ -1,4 +1,4 @@
-import { INBOX } from '@config'
+import { INBOX, MINE } from '@config'
 import {
   IssueCode,
   LeaveCommentId,
@@ -34,7 +34,10 @@ import {
   optionalText,
   planLeaveEdit,
   planLeaveTransition,
+  APPROVED_ONLY,
+  createAvailabilityContext,
   type AvailabilityLeave,
+  type SoldierDay,
 } from '@domain'
 import { formIssues } from '../forms/issues'
 
@@ -282,6 +285,19 @@ export function myLeaveGroups(leaves: readonly Leave[], today: CalendarDate): My
       .filter((leave) => !isOpen(leave, today))
       .toSorted((a, b) => compareInstants(b.updated_at, a.updated_at) || a.id.localeCompare(b.id)),
   }
+}
+
+/** The soldier's next days from today, in or out by their approved leaves: "my next days" in "mine" (D-265). */
+export function myNextDays(
+  soldierId: SoldierId,
+  leaves: readonly Leave[],
+  leaveTypes: readonly LeaveType[],
+  today: CalendarDate,
+): readonly SoldierDay[] {
+  const availability = createAvailabilityContext({ leaves, leave_types: leaveTypes })
+  return Array.from({ length: MINE.nextDays }, (_, index) =>
+    availability.on(soldierId, addDays(today, index), APPROVED_ONLY),
+  )
 }
 
 /** How many days a leave covers, both ends included (D-012). */

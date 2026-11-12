@@ -1,4 +1,4 @@
-import { INBOX } from '@config'
+import { INBOX, MINE } from '@config'
 import { addDays } from '@domain'
 import {
   DeploymentId,
@@ -42,6 +42,7 @@ import {
   leaveSteps,
   leaveThread,
   myLeaveGroups,
+  myNextDays,
   pendingRequests,
   toTransitionInput,
 } from './workflow'
@@ -234,6 +235,18 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
     const groups = myLeaveGroups(rows, today)
     expect(groups.open.map((row) => row.id)).toEqual([leave(2).id, leave(1).id])
     expect(groups.history.map((row) => row.id)).toEqual([leave(4).id, leave(3).id])
+  })
+
+  it('tells my next days in or out by my approved leaves only (D-265)', () => {
+    const today = CalendarDate.parse('2026-11-10')
+    const rows = [
+      leave(1, { status: 'approved', start_date: '2026-11-11', end_date: '2026-11-12' }),
+      leave(2, { start_date: '2026-11-14', end_date: '2026-11-14' }),
+    ]
+    const days = myNextDays(ACTOR, rows.map((row) => ({ ...row, soldier_id: ACTOR })), [], today)
+    expect(days).toHaveLength(MINE.nextDays)
+    expect(days[0]?.date).toBe(today)
+    expect(days.map((day) => day.status).slice(0, 5)).toEqual(['available', 'unavailable', 'unavailable', 'available', 'available'])
   })
 
   it('counts both ends of a leave', () => {

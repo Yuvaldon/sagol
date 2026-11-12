@@ -99,7 +99,7 @@ test('the edit form warns, and approving or closing asks before a soft rule is b
 
   await test.step('approving in the inbox asks too', async () => {
     await requestToday(page, 'נועם בר')
-    await openModule(page, new RegExp(`^${he.inbox.open}`))
+    await openModule(page, new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`))
     const list = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
     await expect(list.getByText('נועם בר')).toBeVisible()
     await list.getByRole('button', { name: he.leaves.approve }).click()

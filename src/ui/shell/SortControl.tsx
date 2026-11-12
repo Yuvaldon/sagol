@@ -23,49 +23,58 @@ const ORDER_LABELS: Record<SortOrder, I18nKey> = {
   desc: 'workspace.sortOrders.desc',
 }
 
-export function SortControl() {
+/** The sort's two sections: the key and the direction. The sort button holds them, and on a phone the view menu does (D-273). */
+export function SortSections() {
   const sort = useBoardSort()
-  const isDesktop = useIsDesktop()
   // A table-only key selects no board key here, and the direction shown is the one the board's rows follow.
   const boardKey = BOARD_SORT_KEYS.find((key) => key === (sort.key ?? sort.board.key))
   const order = boardKey === undefined ? sort.board.order : sort.order
   return (
+    <>
+      <MenuSection
+        selectionMode="single"
+        selectedKeys={boardKey === undefined ? [] : [boardKey]}
+        onSelectionChange={(selection) => {
+          const next = BOARD_SORT_KEYS.find((key) => key === onlyKey(selection))
+          if (next !== undefined) sort.set(next)
+        }}
+      >
+        <Header className={MENU_HEADER}>{t('workspace.sortBy')}</Header>
+        {BOARD_SORT_KEYS.map((key) => (
+          <MenuChoice key={key} id={key} label={t(KEY_LABELS[key])} />
+        ))}
+      </MenuSection>
+      <MenuSection
+        selectionMode="single"
+        disallowEmptySelection
+        selectedKeys={[order]}
+        onSelectionChange={(selection) => {
+          const next = SORT_ORDERS.find((order) => order === onlyKey(selection))
+          if (next !== undefined) sort.set(boardKey ?? sort.board.key, next)
+        }}
+      >
+        <Header className={MENU_HEADER}>{t('workspace.sortOrder')}</Header>
+        {SORT_ORDERS.map((order) => (
+          <MenuChoice key={order} id={order} label={t(ORDER_LABELS[order])} />
+        ))}
+      </MenuSection>
+    </>
+  )
+}
+
+/** The sort's own button, on a desktop; a phone's strip has no room for it, and its sections sit in the view menu (D-273). */
+export function SortControl() {
+  const isDesktop = useIsDesktop()
+  if (!isDesktop) return null
+  return (
     <MenuTrigger>
       <AriaButton aria-label={t('workspace.sort')} className={`${BAR_CONTROL} ${PRESS}`}>
-        <ArrowDownUp aria-hidden size={isDesktop ? 14 : 18} className="text-text-muted md:text-text" />
-        <span aria-hidden className={isDesktop ? '' : 'sr-only'}>
-          {t('workspace.sort')}
-        </span>
+        <ArrowDownUp aria-hidden size={14} />
+        <span aria-hidden>{t('workspace.sort')}</span>
       </AriaButton>
       <Popover className={MENU_POPOVER}>
         <Menu aria-label={t('workspace.sort')} className={MENU_LIST}>
-          <MenuSection
-            selectionMode="single"
-            selectedKeys={boardKey === undefined ? [] : [boardKey]}
-            onSelectionChange={(selection) => {
-              const next = BOARD_SORT_KEYS.find((key) => key === onlyKey(selection))
-              if (next !== undefined) sort.set(next)
-            }}
-          >
-            <Header className={MENU_HEADER}>{t('workspace.sortBy')}</Header>
-            {BOARD_SORT_KEYS.map((key) => (
-              <MenuChoice key={key} id={key} label={t(KEY_LABELS[key])} />
-            ))}
-          </MenuSection>
-          <MenuSection
-            selectionMode="single"
-            disallowEmptySelection
-            selectedKeys={[order]}
-            onSelectionChange={(selection) => {
-              const next = SORT_ORDERS.find((order) => order === onlyKey(selection))
-              if (next !== undefined) sort.set(boardKey ?? sort.board.key, next)
-            }}
-          >
-            <Header className={MENU_HEADER}>{t('workspace.sortOrder')}</Header>
-            {SORT_ORDERS.map((order) => (
-              <MenuChoice key={order} id={order} label={t(ORDER_LABELS[order])} />
-            ))}
-          </MenuSection>
+          <SortSections />
         </Menu>
       </Popover>
     </MenuTrigger>

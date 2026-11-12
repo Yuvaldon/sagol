@@ -253,12 +253,15 @@ The current state, in short (D-128). The entries hold the reasons.
 ## Workspace, routing and view state (D-023)
 
 - One main workspace route. Management modules and details open as floating surfaces:
-  side drawer on desktop, bottom sheet on mobile. Navigation is a floating top bar on
-  desktop and a bottom bar on mobile, holding the daily work; the set-up modules sit in a navigation panel from the
-  inline start, by section, and a soldier's pins bring any of them to the bar (D-173). Pins and the rules row's place
-  live in the soldier's preferences (`useNavigationPreferences`); the sections are `NAVIGATION_SECTIONS` in `config`.
-  The organization's setup (`setup` panel) is first in that panel and on an empty board; its steps are `SETUP_STEPS`
-  in `config`, shown by `create` permission and marked done from live rows (`useSetupProgress`, D-180).
+  side drawer on desktop, bottom sheet on mobile. Navigation is two floating strips that hug their content on every
+  screen (V25, D-252): a context strip at the top (scope, range, view, filters) and a destination strip at the bottom
+  (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action, "בקשה חדשה", at its inline end. "ניהול יחידה" is
+  a panel from the inline start, grouped by `NAVIGATION_SECTIONS` in `config`, a plain line per module and no pins
+  (D-254). The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
+  anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's
+  preferences (`useNavigationPreferences`). The organization's setup (`setup` panel) is first in that panel and the
+  empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
+  done from live rows (`useSetupProgress`, D-180).
 - All view state lives in **typed URL search params** (TanStack Router + Zod): active view
   id, date window, filters, open panel and its entity. Switching views keeps filters. Deep
   links and the back button work. Parameter names come from `config`. The window's kind (`range`: day, week, month,

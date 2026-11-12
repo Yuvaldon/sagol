@@ -89,19 +89,17 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Layout
 
-- **Workspace (D-023, D-108, D-173, D-189):** a `surface` panel on the `canvas`, filled by the active engine. Glass
-  bars float over it and hold the daily work only. From `md`, two bars at the top: on the inline start the menu button,
-  the organization's name (the page's `h1`), the scope label, the view switcher, "סינון", "רק מי שחסר" and the presence
-  count; on the inline end the week, "today", my requests, the inbox, the pins and the avatar. Below `md`, the top bar
-  holds the week and the avatar; a context row under it holds the scope, the view and the filter controls, then the
-  chips, scrolling sideways; the bottom bar is a tab bar: the board, my requests, the inbox, the pins and "תפריט",
-  each an icon over its name, with the `h1` read aloud only. Content starts under the top rows (`under-bars`,
-  `under-bars-md`, `under-bars-filtered`), ends above the bottom bar (`above-bottom-bar`), and scrolls under the glass. A
-  structure that differs by screen uses `useIsDesktop`; anything else is CSS.
-- **Landscape and wide phones (D-190):** `md` and `useIsDesktop` need 512 px of height too, so a phone on its side keeps
-  the phone's bars and tab bar. From `sm` (`useIsWidePhone`) the scope, view and filter controls join the top row at
-  its inline start, the range and the avatar at its inline end, and the chips row shows only while a condition is set.
-  No bar label wraps and the page never scrolls sideways.
+- **Workspace (D-023, D-108, D-189, D-252):** a `surface` panel on the `canvas`, filled by the active engine. Two glass
+  strips float over it and hug their content, centered, on every screen and orientation (V25): the context strip at the
+  top (the scope label, the range, the view, the filter and sort controls, the avatar) and the destination strip at the
+  bottom (לוח, שלי, בקשות, דוח 1, ניהול, then the role's quick action). On a phone the top strip fits without
+  scrolling (D-273): the sort's sections sit in the view menu, the unit picker is its icon, and a single unit is not
+  shown. The organization's name is the page's `h1`, read
+  aloud only. Content starts under the top strip (`under-bars`, `under-bars-md`, `under-bars-filtered`), ends above the
+  bottom one (`above-bottom-bar`), and scrolls under the glass. A structure that differs by screen uses `useIsDesktop`;
+  anything else is CSS.
+- **Landscape and wide phones (D-190, D-252):** the same two strips; no bar label wraps and the page never scrolls
+  sideways. The wide phone's folded row is gone.
 - **Safe area (D-191):** `viewport-fit=cover`; the canvas paints every edge, and the workspace's content, drawers and
   the navigation panel sit inside the insets (`--safe-top`, `--safe-bottom`, `--safe-inline`; `inset-safe`,
   `frame-safe`, `px-safe`, `top-safe`). The inline inset is the larger side on both sides.
@@ -139,29 +137,27 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   `RuleBrief`. A refused drop shows a `FailureNotice` in the same place with "סגירה". On touch a finger holds
   `TIMELINE_DRAG.holdMs` first, and a finger that moves still scrolls. Every drag has a way without one: the edit form
   and the "+".
-- **The floating "+" (D-115):** a 44 px round `glass-action` at the bottom inline-end corner of the board, above the
-  bottom bar on a phone. The grid ends with room for it.
-- **The navigation panel (D-173):** the menu button opens a `glass-drawer` panel from the inline start (the right), at
-  most `sheet` wide, the full height, on every screen. Its sections, each a muted heading over its rows: מבנה (units,
-  soldiers), הגדרות היעדרות (leave types, rules, tags, properties), הרשאות (roles, grants, account links), נתונים (import and
-  export). A row is the module's icon, name and waiting count; pressing it closes the panel and opens the module, whose
-  deep link is unchanged. Beside it a pin toggle ("הצמדה לסרגל" and the name) adds the module to the bar, after the
-  daily buttons, in the order pinned. Under the sections, "תצוגה": where the rules row sits. A row the viewer may not
-  open is absent; with nothing to show, the panel and its button are absent. The button carries the sum of the
-  panel's waiting counts. A soldier with no management permission sees no panel and no menu button; nobody starts
-  with pins, so the bar holds the dates, the view and the filters.
+- **The quick action (D-252, D-266):** a filled round button at the destination strip's inline end, "בקשה חדשה" for who
+  may create a request while the screen has a rotation; it replaced the floating "+". "פתיחת סבב" in routine comes with
+  V26.
+- **ניהול יחידה (D-173, D-254):** "ניהול", the last destination, opens a `glass-drawer` panel from the inline start (the
+  right), at most `sheet` wide, the full height, on every screen. "הקמת היחידה" first while unfinished, then its groups,
+  each a muted heading over its rows: היחידה, נוכחות, פרטי חיילים, הרשאות, נתונים. A row is the module's icon, name, one
+  plain line and its waiting count; pressing it closes the panel and opens the module, whose deep link is unchanged. No
+  pins. A row the viewer may not open is absent; with nothing to show, the panel and its destination are absent. The
+  destination carries the sum of the panel's waiting counts.
 - **The scope label (D-104, D-173):** a compact `inner` pill with a unit icon, the scope's name cut by width, and a
   chevron, opening the unit picker. With the whole organization chosen and a single root unit in sight, it reads that
   root's name. A viewer who sees a single unit reads its name, with no picker and no chevron.
-- **The inbox button (D-120):** first among the module buttons, for who may approve someone. It carries the number of
-  requests waiting as a small dark pill, read aloud with the button's name.
-- **Module buttons (D-116, D-189):** an icon with a tooltip from `md`; below it a tab of the bottom bar, the icon over
-  its short name, 44 px at least.
+- **The inbox destination (D-120, D-255):** "בקשות", for who may approve someone. It carries the number of requests
+  waiting as a small dark pill, read aloud with its name.
+- **Destinations (D-116, D-189, D-252):** an icon with a tooltip from `md`; below it the icon over its short name, 44 px
+  at least.
 - **The filter controls (D-131 to D-134, D-173):** in the bar from `md` and in the context row below it, "סינון" (a
   filter icon with a tooltip) and the "רק מי שחסר" switch. "סינון" is absent when every condition is set. Today's report
   is a destination, "דוח 1", after the requests (D-252); the bar holds no presence count.
-- **The filter row (D-131, D-173):** a `search` landmark under the top bars, there only while a condition is set: from
-  `md` under the bar with the scope (`top-filter-row-md`), below `md` under the top bar (`top-filter-row`), scrolling
+- **The filter row (D-131, D-173):** a `search` landmark under the top strip, there only while a condition is set: from
+  `md` under the bar with the scope (`top-filter-row-md`), below `md` under the top strip (`top-filter-row`), scrolling
   sideways. It holds the chips and "ניקוי הכול". Each is a `glass-bar` pill, `control` high from `md` and `touch` below;
   only the pills take presses. The board starts under the bars (`under-bars`), and under the row while it shows
   (`data-filter-row="shown"` on the workspace swaps in `under-bars-filtered`).
@@ -214,8 +210,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Roles and access (V10, D-165, D-166)
 
-- **Module buttons** (`ui/shell/ModuleButtons.tsx`): my requests and the inbox, then the soldier's pins. The other modules
-  sit in the navigation panel (D-173), which replaced the phone's "more" menu.
+- **Destinations** (`ui/shell/TabBar.tsx`, `moduleEntries.ts`): the board, "שלי", the inbox and דוח 1 by permission, then
+  "ניהול" (D-252); the other modules sit in "ניהול יחידה" (D-254).
 - **`RolesModule`** (`ui/modules/access`): the roles list (name, color, count of pairs, "baseline" on the baseline role) and a form with
   name, description, color and a permission grid, a `CheckList` per resource of D-040's valid pairs; the baseline role is
   a select above the list. **`RankBindingsModule`**: a role select, then that role's bindings (rank and scope in words)
@@ -245,7 +241,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **`SetupModule`** (`ui/modules/setup`): a drawer with an intro, "X of Y steps done" (a status line), and an
   ordered list of the steps the actor may do. Each row has a number (a check once done), the step's title and
   explanation, "done" or "not yet" in words, and an "open" button to the step's own module.
-- It opens first in the navigation panel (not pinnable) and from the empty board, beside "soldiers".
+- It opens first in "ניהול יחידה" and from the empty board, as its one action (V25).
 
 ## Installed app (V18, D-182 … D-185)
 
@@ -300,6 +296,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 The target that V25, V26 and V27 build. Where an earlier section of this file disagrees, this one wins once its slice
 lands, and that slice rewrites the earlier lines.
+
+Built in V25: the words, the two strips, the profile, "ניהול יחידה", the requests hub, "שלי" and the home, and one path
+per action; `e2e/journeys.spec.ts` walks journeys (c), (d) and (e). The routine notice and "פתיחת סבב" wait for V26.
 
 ### Words (D-250, D-251)
 
@@ -504,12 +503,12 @@ company. V27 fixes the exact lists and colors in config.
 - **The heat row (D-141):** under the days header, inside its sticky frame, a row the height of a timeline row with the
   label "כללים" and one cell per day: empty, a dashed `status-pending` cell, or a solid `status-rejected` one, with the
   count. A cell is a button named by its day, its count and the worst rule. By default it sits below the list instead,
-  sticky above the bottom bar; the soldier picks the place in the navigation panel (D-173). It is absent when no rule
+  sticky above the bottom strip; the soldier picks the place in the profile (D-253). It is absent when no rule
   concerns the scope.
-- **The user menu** is an avatar at the top bar's inline end on every screen; the soldier's name is its tooltip and is
+- **The user menu** is an avatar at the top strip's inline end on every screen; the soldier's name is its tooltip and is
   read aloud with "תפריט משתמש" (D-189).
 - **The phone's tab bar** never widens the page: its tabs share the width, and scroll sideways in their own row only when
-  the pins outgrow it, "תפריט" staying in place (D-155, D-189).
+  they outgrow it (D-155, D-189).
 - **A unit the actor does not see:** `unitStateLabel` says "ללא יחידה", "יחידה אחרת" or "לא ידוע" (D-106), the same in
   every list.
 
@@ -536,8 +535,8 @@ company. V27 fixes the exact lists and colors in config.
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |
 | `PendingRequestsModule`, `ClosedLeavesModule` | `ui/modules/leaves` | The requests inbox |
 | `MyLeavesModule` | `ui/modules/leaves` | The actor's own requests, open and history (D-167) |
-| `ModuleButtons` | `ui/shell` | The bar's daily module buttons and the soldier's pins (D-173) |
-| `NavigationPanel` | `ui/shell` | The menu button and the panel of set-up modules by section, with pins (D-173) |
+| `TabBar`, `moduleEntries` | `ui/shell` | The bottom strip's destinations and the entries they open (D-252) |
+| `NavigationPanel` | `ui/shell` | "ניהול יחידה": the set-up modules by section (D-173, V25) |
 | `RolesModule`, `RankBindingsModule`, `GrantsModule`, `ScopeFields` | `ui/modules/access` | Roles, their rank bindings, personal grants, and the scope picker |
 | `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
