@@ -6,8 +6,11 @@ import {
   UpdatePropertyDefinitionInput,
   type DataCommands,
   type DataRepositories,
+  type Permission,
+  type PropertyEntityType,
 } from '@contracts'
-import { propertyDefinitionIssues } from '@domain'
+import { missingPermissions, propertyDefinitionIssues } from '@domain'
+import type { ActorScope } from './actor'
 import {
   bySortOrder,
   createReferenceCommands,
@@ -22,6 +25,32 @@ import type { LocalDependencies } from './dependencies'
 
 const ORGANIZATION = { kind: 'organization' } as const
 
+/** Creating or changing the entity a definition describes. */
+const WRITES_OF: Record<PropertyEntityType, readonly Permission[]> = {
+  soldier: [
+    { resource: 'soldiers', action: 'create' },
+    { resource: 'soldiers', action: 'update' },
+  ],
+  unit: [
+    { resource: 'units', action: 'create' },
+    { resource: 'units', action: 'update' },
+  ],
+  leave: [
+    { resource: 'leaves', action: 'create' },
+    { resource: 'leaves', action: 'update' },
+  ],
+}
+
+/**
+ * Who creates or changes an entity on any target reads that entity type's definitions, live and archived, so its form
+ * shows every required field (D-186). The `properties` module stays for `properties:*` holders.
+ */
+function writesEntityOf(scope: ActorScope, row: PropertyDefinition): boolean {
+  return WRITES_OF[row.entity_type].some(
+    (permission) => missingPermissions(scope.context, scope.soldier_id, [permission]).length === 0,
+  )
+}
+
 const SPEC: ReferenceSpec<PropertyDefinition> = {
   table: 'property_definitions',
   resource: 'properties',
@@ -30,6 +59,7 @@ const SPEC: ReferenceSpec<PropertyDefinition> = {
   optionalText: [],
   targetOf: () => ORGANIZATION,
   rowIssues: ({ row }) => Promise.resolve(propertyDefinitionIssues(row)),
+  alsoReadableBy: writesEntityOf,
 }
 
 /** By `sort_order` inside an entity type. */
