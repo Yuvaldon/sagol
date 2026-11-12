@@ -3146,7 +3146,9 @@ the database's guards hold what can be held without refusing a faithful restore.
 - **Tag lifetimes** are chosen per category in the soldier's tags dialog, pre-selected from the category's
   `default_lifetime`; the category form sets that default. Rotation tags are copied per soldier with "כמו בסבב הקודם"
   on the card (D-221), not in bulk when a rotation is created: the copy of OI-217 is this action and the member list's
-  start, both ordinary commands.
+  start, both ordinary commands. A save that changes both lifetimes sends two `setTags` calls, the persistent scope
+  first: `setTags` replaces one scope at a time (D-221), so a failure on the second keeps the first, the dialog says
+  so, and saving again sends the rest.
 - **Whose tags count.** The board, the filters and the heat row read the effective tags of the mode's rotation. A
   leave's live warning and the data its rules read use the leave's own rotation, so a request for another rotation is
   judged by that rotation's tags; a candidate with no rotation is NULL, since its fields already refuse it (D-216).
