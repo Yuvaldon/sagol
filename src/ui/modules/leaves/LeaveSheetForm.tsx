@@ -68,8 +68,12 @@ export function LeaveSheetForm({
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
   const properties = usePropertyFields('leave')
+  // Each row carries a key of its own, so the sheet's first values are made once, not on every render.
+  const [defaultValues] = useState(() =>
+    newLeaveSheetValues(today, approveNow, draft, soldiers.length === 1 ? (soldiers[0]?.id ?? null) : null),
+  )
   const form = useForm({
-    defaultValues: newLeaveSheetValues(today, approveNow, draft, soldiers.length === 1 ? (soldiers[0]?.id ?? null) : null),
+    defaultValues,
     validators: { onSubmit: ({ value }) => validatorResult(leaveSheetIssues(value, typeOf, rotationOf)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
