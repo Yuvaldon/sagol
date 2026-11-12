@@ -111,13 +111,14 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
 
 /**
  * The daily modules: a soldier's own requests first, then the inbox, then today's report (D-120, D-167, D-252). The
- * first two are request surfaces, so they exist only while a rotation they can be about does (D-218).
+ * first two are request surfaces, so they exist only while a rotation they can be about does (D-218); the report is
+ * about a rotation's day, so routine has none (D-222).
  */
 export function useDailyEntries(): ModuleEntry[] {
   const panel = usePanel()
   const access = useModuleAccess()
   const { openToday } = usePresenceDay()
-  const { requests } = useRotationScope()
+  const { requests, rotation } = useRotationScope()
   const inbox = useInboxAccess()
   const pending = usePendingRequests()
   const mine = useMyLeavesAccess()
@@ -142,7 +143,8 @@ export function useDailyEntries(): ModuleEntry[] {
       },
       count: { value: pending.status === 'ready' ? pending.value.length : 0, labelKey: 'inbox.pendingCount' },
     },
-    access.soldiers && { id: 'dayReport', Icon: FileText, labelKey: 'presence.title', onPress: openToday, count: null },
+    rotation !== null &&
+      access.soldiers && { id: 'dayReport', Icon: FileText, labelKey: 'presence.title', onPress: openToday, count: null },
   ]
   return entries.filter((entry) => entry !== false)
 }
