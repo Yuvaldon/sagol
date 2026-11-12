@@ -94,7 +94,8 @@ test('a fighter asks for a leave from "my requests", and sees it approved', asyn
   })
 
   await test.step('the new request names Yael already, and waits for approval', async () => {
-    await drawer(page).getByRole('button', { name: he.myLeaves.new }).click()
+    await closeDrawer(page)
+    await page.getByRole('button', { name: he.leaves.new }).click()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
     await expect(drawer(page).getByRole('combobox', { name: he.leaves.soldier })).toHaveValue(`${YAEL.first} ${YAEL.last}`)
     await choose(page, he.leaves.type, TYPE)

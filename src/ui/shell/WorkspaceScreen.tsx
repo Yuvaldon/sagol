@@ -12,6 +12,7 @@ import { UnitSelector } from './UnitSelector'
 import { UserMenu } from './UserMenu'
 import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { TabBar } from './TabBar'
+import { HomeLanding } from './HomeLanding'
 import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { ViewSwitcher } from './ViewSwitcher'
@@ -21,7 +22,7 @@ import { WindowNavigator } from './WindowNavigator'
 /**
  * The workspace (D-023, D-108, D-252): the viewport fills the screen, and two glass pills float over it, the same on
  * every screen size and orientation. The top strip is context: the unit in scope, the range, the view, the filter and
- * the sort, and the account at its inline end. The bottom strip holds the destinations. Each hugs its content and
+ * the sort, and the account at its inline end. The bottom strip holds the destinations and the role's quick action. Each hugs its content and
  * centers on its edge, and scrolls sideways inside itself only when its content cannot fit. Everything sits inside the
  * safe area; the canvas paints under the cutout (D-191).
  */
@@ -75,12 +76,13 @@ function ContextStrip({ name, identity }: { readonly name: string; readonly iden
   )
 }
 
-/** The bottom strip: the daily destinations, then "ניהול" (D-252, D-254). */
+/** The bottom strip: the daily destinations, then "ניהול", then the role's quick action (D-252, D-254, D-266). */
 function DestinationStrip() {
   return (
     <div className="pointer-events-none absolute inset-x-lg bottom-lg flex justify-center">
       <nav aria-label={t('workspace.navigation')} className={BAR}>
         <TabBar />
+        <NewLeaveButton />
       </nav>
     </div>
   )
@@ -109,11 +111,11 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
             <Viewport />
           </main>
-          <NewLeaveButton />
           <ContextStrip name={name} identity={identity} />
           <FilterRow />
           <DestinationStrip />
         </div>
+        <HomeLanding />
         <ModuleDrawer />
         <DayReportDialog />
         <PreferenceFailureNotice />

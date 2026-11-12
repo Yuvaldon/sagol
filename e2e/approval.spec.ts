@@ -200,14 +200,14 @@ test('the "approve now" default, and a link to a leave that is not there', async
   await setUp(page)
   await expect(leavesOf(page).first()).toHaveAccessibleName(PENDING_BAR)
 
-  await test.step('the user menu holds the default, and the new-leave form starts from it', async () => {
-    await page.getByRole('button', { name: new RegExp(he.account.menu) }).click()
-    const item = page.getByRole('menuitemcheckbox', { name: he.account.approveNowDefault })
-    await expect(item).toHaveAttribute('aria-checked', 'false')
+  await test.step('the inbox holds the default, and the new-leave form starts from it', async () => {
+    await openModule(page, new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`))
+    const item = drawer(page).getByRole('switch', { name: he.account.approveNowDefault })
+    await expect(item).not.toBeChecked()
     await expectNoAxeViolations(page)
-    await item.click()
-    await expect(item).toHaveAttribute('aria-checked', 'true')
-    await page.keyboard.press('Escape')
+    await press(page, 'switch', he.account.approveNowDefault)
+    await expect(item).toBeChecked()
+    await closeDrawer(page)
 
     await requestLeave(page, { type: 'רגילה', from: ['13', '11', '2026'], to: ['13', '11', '2026'] })
     // The bar shows before the command answers; the drawer closes once it has.
@@ -215,9 +215,9 @@ test('the "approve now" default, and a link to a leave that is not there', async
     await expect(leavesOf(page)).toHaveCount(2)
     await expect(leavesOf(page).nth(1)).toHaveAccessibleName(`רגילה, ${he.leaves.statusApproved}, 13 בנוב׳`)
     await page.reload()
-    await page.getByRole('button', { name: new RegExp(he.account.menu) }).click()
-    await expect(page.getByRole('menuitemcheckbox', { name: he.account.approveNowDefault })).toHaveAttribute('aria-checked', 'true')
-    await page.keyboard.press('Escape')
+    await openModule(page, new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`))
+    await expect(drawer(page).getByRole('switch', { name: he.account.approveNowDefault })).toBeChecked()
+    await closeDrawer(page)
   })
 
   await test.step('an id that is no leave says "not found"', async () => {

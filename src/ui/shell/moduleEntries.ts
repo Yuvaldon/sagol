@@ -2,6 +2,7 @@ import { NAVIGATION_SECTIONS, PANEL_IDS } from '@config'
 import type { NavigationModule } from '@contracts'
 import type { I18nKey } from '@i18n'
 import {
+  useHome,
   useLinkReviewAccess,
   useModuleAccess,
   useMyLeavesAccess,
@@ -14,7 +15,6 @@ import {
 import {
   ArrowDownUp,
   CalendarRange,
-  ClipboardList,
   FileText,
   Inbox,
   KeyRound,
@@ -25,6 +25,7 @@ import {
   Tag,
   Tags,
   UserCheck,
+  User,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -38,6 +39,8 @@ export interface ModuleEntry {
   readonly Icon: LucideIcon
   readonly labelKey: I18nKey
   readonly onPress: () => void
+  /** Whether the destination is the one in sight; a module of the panel never is. */
+  readonly current?: boolean
   /** What waits for the actor, read with the module's name (D-120, D-150). */
   readonly count: { readonly value: number; readonly labelKey: I18nKey } | null
 }
@@ -108,9 +111,12 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
   return allowed
 }
 
-/** The daily modules: a soldier's own requests first, then the inbox, then today's report (D-120, D-167, D-252). */
+const INBOX_PANELS: readonly string[] = [PANEL_IDS.leaveInbox, PANEL_IDS.leaveClosed]
+
+/** The daily destinations: "mine" first, then the inbox, then today's report (D-120, D-252, D-265). */
 export function useDailyEntries(): ModuleEntry[] {
   const panel = usePanel()
+  const { choose } = useHome()
   const access = useModuleAccess()
   const { openToday } = usePresenceDay()
   const inbox = useInboxAccess()
@@ -119,11 +125,13 @@ export function useDailyEntries(): ModuleEntry[] {
   const entries: (ModuleEntry | false)[] = [
     mine?.view === true && {
       id: 'myLeaves',
-      Icon: ClipboardList,
+      Icon: User,
       labelKey: 'myLeaves.open',
       onPress: () => {
         panel.open(PANEL_IDS.myLeaves)
+        choose(true)
       },
+      current: panel.panel === PANEL_IDS.myLeaves,
       count: null,
     },
     inbox && {
@@ -133,6 +141,7 @@ export function useDailyEntries(): ModuleEntry[] {
       onPress: () => {
         panel.open(PANEL_IDS.leaveInbox)
       },
+      current: panel.panel !== null && INBOX_PANELS.includes(panel.panel),
       count: { value: pending.status === 'ready' ? pending.value.length : 0, labelKey: 'inbox.pendingCount' },
     },
     access.soldiers && { id: 'dayReport', Icon: FileText, labelKey: 'presence.title', onPress: openToday, count: null },
