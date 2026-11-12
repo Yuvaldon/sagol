@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:function": "node scripts/build-function.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "lint": "oxlint --deny-warnings && node scripts/lint-custom.ts",
