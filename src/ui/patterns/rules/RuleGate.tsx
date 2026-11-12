@@ -1,6 +1,6 @@
 import { RuleEnforcement, type Leave, type RuleViolation } from '@contracts'
 import { t } from '@i18n'
-import { acknowledgedRuleIds, useLeaveRuleWarnings, type LeaveCandidate } from '@logic'
+import { acknowledgedRuleIds, useLeaveRuleCheck, type LeaveCandidate } from '@logic'
 import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import { Button } from '../../primitives/Button'
 import { RuleViolations } from './RuleViolations'
@@ -62,9 +62,20 @@ export function RuleGateDialog({ gate, isPending }: { readonly gate: RuleGate; r
   )
 }
 
-/** What the change would break, while the form is filled (D-142). Nothing while it breaks nothing. */
+/**
+ * What the change would break, while the form is filled (D-142). Nothing while it breaks nothing; a line while the
+ * rules are read, or when they cannot be, since only an answer may say "nothing broken" (OI-099).
+ */
 export function RuleWarnings({ candidate, stored = null }: { readonly candidate: LeaveCandidate | null; readonly stored?: Leave | null }) {
-  const violations: readonly RuleViolation[] = useLeaveRuleWarnings(candidate, stored)
+  const check = useLeaveRuleCheck(candidate, stored)
+  if (check.status !== 'ready') {
+    return (
+      <p role="status" className="text-micro text-text-muted">
+        {t(check.status === 'loading' ? 'rules.checking' : 'rules.checkFailed')}
+      </p>
+    )
+  }
+  const violations: readonly RuleViolation[] = check.value
   if (violations.length === 0) return null
   const hard = violations.some((violation) => violation.enforcement === RuleEnforcement.enum.hard)
   return (

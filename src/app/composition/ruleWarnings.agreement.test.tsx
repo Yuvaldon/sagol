@@ -27,7 +27,7 @@ import {
   leaveEditValues,
   newLeaveCandidate,
   newLeaveValues,
-  useLeaveRuleWarnings,
+  useLeaveRuleCheck,
   type LeaveCandidate,
   type LogicPorts,
 } from '@logic'
@@ -213,21 +213,37 @@ async function warningOf(ports: LogicPorts, candidate: LeaveCandidate | null, st
   const wrapper = ({ children }: { readonly children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>
   const { result, unmount } = renderHook(
     () => {
-      const warnings = useLeaveRuleWarnings(candidate, stored)
+      const check = useLeaveRuleCheck(candidate, stored)
       const queries = useQueryClient().getQueryCache().getAll()
       const leavesAsked = queries.some((query) => query.queryKey.includes('leaves') && query.state.status === 'success')
       // A disabled query (the leaves of no span, before the span is known) stays pending without fetching.
       const settled = leavesAsked && queries.every((query) => query.state.status !== 'error' && query.state.fetchStatus === 'idle')
-      return { warnings, settled }
+      return { check, settled }
     },
     { wrapper },
   )
   await waitFor(() => {
     expect(result.current.settled).toBe(true)
   })
-  const { warnings } = result.current
+  const { check } = result.current
   unmount()
-  return warnings
+  if (check.status !== 'ready') throw new Error(`the settled warning is ${check.status}`)
+  return check.value
+}
+
+/** The same ports, with the leaves read through `list` instead. */
+function withLeavesList(ports: LogicPorts, list: LogicPorts['data']['repositories']['leaves']['list']): LogicPorts {
+  const { repositories } = ports.data
+  return { ...ports, data: { ...ports.data, repositories: { ...repositories, leaves: { ...repositories.leaves, list } } } }
+}
+
+/** A promise and the hand that settles it. */
+function deferred<T>() {
+  let settle: (value: T) => void = () => undefined
+  const promise = new Promise<T>((resolve) => {
+    settle = resolve
+  })
+  return { promise, settle }
 }
 
 const idsOf = (violations: readonly RuleViolation[]) => [...new Set(violations.map((violation) => violation.rule_id))].sort()
@@ -327,5 +343,78 @@ describe('a live rule warning is the command’s answer (OI-100, D-142)', () => 
   it('an edit that moves a leave off a full day breaks nothing', async () => {
     const warnings = await checkMove(world.leaves.a1Away, D5, D6)
     expect(warnings).toEqual([])
+  })
+})
+
+describe('a live rule warning says when it has no answer (OI-099)', () => {
+  let world: World
+
+  beforeEach(async () => {
+    world = await buildWorld()
+  })
+
+  const candidateOn = (start_date: CalendarDate, end_date: CalendarDate) =>
+    newLeaveCandidate({
+      ...newLeaveValues(D1, false),
+      soldier_id: world.soldiers.a2,
+      start_date,
+      end_date,
+      as_approved: false,
+      leave_type_id: world.type,
+      reason: '',
+    })
+
+  function render(ports: LogicPorts, candidate: LeaveCandidate | null) {
+    const wrapper = ({ children }: { readonly children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>
+    return renderHook(({ changed }) => useLeaveRuleCheck(changed), { wrapper, initialProps: { changed: candidate } })
+  }
+
+  it('is loading, not "nothing broken", until the leaves are read', async () => {
+    const leaves = world.ports.data.repositories.leaves
+    const held = deferred<null>()
+    const ports = withLeavesList(world.ports, async (query) => {
+      await held.promise
+      return leaves.list(query)
+    })
+    const { result, unmount } = render(ports, candidateOn(D1, D1))
+    expect(result.current.status).toBe('loading')
+    held.settle(null)
+    await waitFor(() => {
+      expect(result.current.status).toBe('ready')
+    })
+    if (result.current.status === 'ready') expect(idsOf(result.current.value)).toEqual([world.soft.id])
+    unmount()
+  })
+
+  it('fails when the leaves cannot be read', async () => {
+    const ports = withLeavesList(world.ports, () => Promise.resolve({ ok: false, error: { code: 'unavailable' } }))
+    const { result, unmount } = render(ports, candidateOn(D1, D1))
+    await waitFor(() => {
+      expect(result.current.status).toBe('failed')
+    })
+    unmount()
+  })
+
+  it('keeps its last answer while a new span is read', async () => {
+    const leaves = world.ports.data.repositories.leaves
+    let held: Promise<null> = Promise.resolve(null)
+    const ports = withLeavesList(world.ports, async (query) => {
+      await held
+      return leaves.list(query)
+    })
+    const { result, rerender, unmount } = render(ports, candidateOn(D1, D1))
+    await waitFor(() => {
+      expect(result.current.status).toBe('ready')
+    })
+    const answered = result.current
+    const next = deferred<null>()
+    held = next.promise
+    rerender({ changed: candidateOn(D5, D6) })
+    expect(result.current).toEqual(answered)
+    next.settle(null)
+    await waitFor(() => {
+      expect(result.current).toEqual({ status: 'ready', value: [] })
+    })
+    unmount()
   })
 })
