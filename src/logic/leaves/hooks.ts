@@ -89,6 +89,26 @@ export function useLeaves(window: LeaveSpan | null): Loaded<readonly Leave[]> {
   )
 }
 
+/**
+ * The leaves of every status the actor may see that overlap the window: a rejected or cancelled leave still changed
+ * what a day showed (D-293). Loading while there is no window.
+ */
+export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly Leave[]> {
+  const { data } = usePorts()
+  const query = useMemo(
+    (): LeaveQuery | null =>
+      window === null ? null : { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: null },
+    [window],
+  )
+  return loaded(
+    useQuery({
+      queryKey: leaveListKey(query ?? NO_WINDOW_QUERY),
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.leaves.list(query))),
+      enabled: query !== null,
+    }),
+  )
+}
+
 /** Never asked: the key of a list that waits for its window. */
 const NO_WINDOW_QUERY: LeaveQuery = { window: null, soldier_ids: [], statuses: DRAWN_STATUSES }
 

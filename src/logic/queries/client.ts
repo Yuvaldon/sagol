@@ -38,6 +38,7 @@ export const QUERY_KEYS = {
   rolePermissions: [TABLE_SCOPE, 'role_permissions'],
   rankRoleBindings: [TABLE_SCOPE, 'rank_role_bindings'],
   accessGrants: [TABLE_SCOPE, 'access_grants'],
+  reportConfirmations: [TABLE_SCOPE, 'report_confirmations'],
   /** Every table at once: an import may write to any of them (D-171). */
   tables: [TABLE_SCOPE],
   can: ['can'],

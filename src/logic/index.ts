@@ -69,7 +69,14 @@ export {
 } from './view-state/board'
 export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
 export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
-export { useDayReport, usePresence } from './presence/hooks'
+export { useConfirmDayReport, useDayReport, usePresence, useReportConfirmations } from './presence/hooks'
+export {
+  dayConfirmations,
+  type ConfirmationSummary,
+  type DayConfirmations,
+  type DayConfirmationsInput,
+  type SectionConfirmation,
+} from './presence/confirmations'
 export {
   dayReport,
   isReportable,
