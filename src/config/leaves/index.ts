@@ -11,7 +11,7 @@ export const LEAVE_SHEET = {
   maxLeaves: 60,
 } as const
 
-// The leave-round planner (D-270, D-286): a rhythm of days in and days home, for groups of soldiers in a rotation.
+// The leave-round planner (D-270, D-316): a rhythm of days in and days home, for groups of soldiers in a rotation.
 
 export const LEAVE_ROUNDS = {
   /** A plan starts at the routine rhythm: 8 days in, then 6 home. */

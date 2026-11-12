@@ -256,7 +256,7 @@ describe('views, url, storage, breakpoints, dates', () => {
   })
 })
 
-describe('leave rounds (D-286)', () => {
+describe('leave rounds (D-316)', () => {
   it('starts at a rhythm the planner accepts, and plans no more than a sheet allows per soldier', () => {
     for (const days of [LEAVE_ROUNDS.defaultDaysIn, LEAVE_ROUNDS.defaultDaysHome]) {
       expect(Number.isInteger(days)).toBe(true)
