@@ -1,7 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation, organizationHeading, OWNER } from './support/workspace.ts'
+import {
+  enterAsOwner,
+  expectNoAxeViolations,
+  navigation,
+  openBoardOnTimeline,
+  organizationHeading,
+  OWNER,
+} from './support/workspace.ts'
 
 // Focus mode (D-301): "מצב מיקוד" in the view menu and Alt+Shift+F hide both strips and the chips row; one restore button, the same key
 // and Escape bring them back, and focus follows. The board takes the top's room, a day still opens its report, and a
@@ -44,8 +51,9 @@ async function boardTop(page: Page) {
   return box?.y ?? 0
 }
 
-test('focus mode: in and out by the view menu, the key and Escape', async ({ page }) => {
+test('focus mode: in and out by the view menu, the key and Escape', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
+  await openBoardOnTimeline(page, isMobile)
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
   await expect(board(page)).toBeVisible()
