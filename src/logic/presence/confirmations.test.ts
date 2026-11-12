@@ -13,6 +13,7 @@ import {
   type Soldier,
   type Timestamp,
 } from '@contracts'
+import { buildUnitTree } from '@domain'
 import { describe, expect, it } from 'vitest'
 import { dayConfirmations, type DayConfirmationsInput } from './confirmations'
 import type { ReportDay, ReportEntry, ReportSection } from './report'
@@ -29,6 +30,15 @@ const audit = { created_at: AT, created_by: null, updated_at: AT, updated_by: nu
 const COMPANY = UnitId.parse(uuid(10))
 const SQUAD = UnitId.parse(uuid(11))
 const OTHER = UnitId.parse(uuid(12))
+const ELSEWHERE = UnitId.parse(uuid(13))
+const LEVEL = null
+// The company holds the squad and the other unit; ELSEWHERE stands beside it, outside the rotation.
+const TREE = buildUnitTree([
+  { id: COMPANY, parent_id: null, unit_level_id: LEVEL },
+  { id: SQUAD, parent_id: COMPANY, unit_level_id: LEVEL },
+  { id: OTHER, parent_id: COMPANY, unit_level_id: LEVEL },
+  { id: ELSEWHERE, parent_id: null, unit_level_id: LEVEL },
+])
 const OWNER = SoldierId.parse(uuid(1))
 const ACTOR = SoldierId.parse(uuid(2))
 
@@ -129,6 +139,7 @@ function input(overrides: Partial<DayConfirmationsInput> = {}): DayConfirmations
     leaves: [],
     confirmable: (unitId, date) => unitId === SQUAD && date === DAY,
     mayConfirm: () => true,
+    tree: TREE,
     actorId: ACTOR,
     seenAt: SEEN_AT,
     ...overrides,
@@ -184,5 +195,16 @@ describe('the daily report confirmations (D-293)', () => {
     expect(dayConfirmations(input({ day: ownedDay, shown: ownedDay })).summary).toBeNull()
     expect(dayConfirmations(input()).summary).toEqual({ total: 2, confirmed: 0, changed: 0 })
     expect(dayConfirmations(input({ mayConfirm: () => false })).summary).toBeNull()
+  })
+
+  it('gives no status to a section no rotation covers, unless it may be confirmed or a confirmation stands', () => {
+    const outside = day([rotation()], [...WHOLE, section(ELSEWHERE, [9])])
+    const bare = dayConfirmations(input({ day: outside, shown: outside }))
+    expect(bare.sections.has(ELSEWHERE)).toBe(false)
+    expect(bare.summary).toEqual({ total: 2, confirmed: 0, changed: 0 })
+    const kept = dayConfirmations(input({ day: outside, shown: outside, confirmations: [confirmation(ELSEWHERE)] }))
+    expect(kept.sections.get(ELSEWHERE)?.status).toBe('confirmed')
+    const offered = dayConfirmations(input({ day: outside, shown: outside, confirmable: (unitId) => unitId === ELSEWHERE }))
+    expect(offered.sections.get(ELSEWHERE)?.canConfirm).toBe(true)
   })
 })

@@ -11,9 +11,8 @@ import {
   type Result,
   type Soldier,
   type SoldierId,
-  type Timestamp,
 } from '@contracts'
-import { instantAt, LEAVE_PERMISSIONS } from '@domain'
+import { LEAVE_PERMISSIONS } from '@domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOn } from '../permissions/checks'
@@ -92,25 +91,21 @@ export function useLeaves(window: LeaveSpan | null): Loaded<readonly Leave[]> {
 
 /**
  * The leaves of every status the actor may see that overlap the window: a rejected or cancelled leave still changed
- * what a day showed (D-293), and when the client last read them. Loading while there is no window.
+ * what a day showed (D-293). Loading while there is no window.
  */
-export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<{ readonly leaves: readonly Leave[]; readonly readAt: Timestamp }> {
+export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly Leave[]> {
   const { data } = usePorts()
   const query = useMemo(
     (): LeaveQuery | null =>
       window === null ? null : { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: null },
     [window],
   )
-  const result = useQuery({
-    queryKey: leaveListKey(query ?? NO_WINDOW_QUERY),
-    queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.leaves.list(query))),
-    enabled: query !== null,
-  })
-  const leaves = loaded(result)
-  const readAt = result.dataUpdatedAt
-  return useMemo(
-    () => (leaves.status === 'ready' ? { status: 'ready', value: { leaves: leaves.value, readAt: instantAt(readAt) } } : leaves),
-    [leaves, readAt],
+  return loaded(
+    useQuery({
+      queryKey: leaveListKey(query ?? NO_WINDOW_QUERY),
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.leaves.list(query))),
+      enabled: query !== null,
+    }),
   )
 }
 

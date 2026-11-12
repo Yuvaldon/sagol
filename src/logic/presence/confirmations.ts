@@ -1,5 +1,5 @@
 import type { CalendarDate, Leave, ReportConfirmation, SoldierId, Timestamp, UnitId } from '@contracts'
-import { addDays, compareDates, confirmationStatus, type ConfirmationStatus } from '@domain'
+import { addDays, compareDates, confirmationStatus, isAncestorOrSelf, type ConfirmationStatus, type UnitTree } from '@domain'
 import type { ReportDay, ReportSection } from './report'
 
 // The daily report workflow (D-269, D-293): where each unit's section of a day stands, who may confirm it, and the
@@ -18,18 +18,24 @@ export interface SectionConfirmation {
 }
 
 export interface ConfirmationSummary {
-  /** The unit sections of the day. */
+  /** The unit sections of the day that a rotation covers. */
   readonly total: number
   readonly confirmed: number
   readonly changed: number
 }
 
 export interface DayConfirmations {
-  /** By the section's key; a section with no unit (D-106) has none. */
+  /**
+   * By the section's key. A section with no unit (D-106) has none, nor one that no rotation of the day covers, unless
+   * the actor may confirm it or a confirmation of it stands: there is no report of it to confirm (D-293).
+   */
   readonly sections: ReadonlyMap<string, SectionConfirmation>
   /** NULL where the actor does not read the summary: not the owner, nor, with no owner named, a confirmer. */
   readonly summary: ConfirmationSummary | null
-  /** When the client last read the leaves the statuses come from: a confirmation sent from this view holds from then. */
+  /**
+   * The latest write among the leaves the statuses come from, as the server stamped it: a confirmation sent from this
+   * view holds from then, with no reliance on the client's clock.
+   */
   readonly seenAt: Timestamp
 }
 
@@ -46,6 +52,8 @@ export interface DayConfirmationsInput {
   readonly confirmable: (unitId: UnitId, date: CalendarDate) => boolean
   /** The permission on a rotation's unit, for who reads the summary where no owner is named. */
   readonly mayConfirm: (unitId: UnitId) => boolean
+  /** The live units' tree, for the units a rotation of the day covers. */
+  readonly tree: UnitTree
   readonly actorId: SoldierId | null
   readonly seenAt: Timestamp
 }
@@ -81,11 +89,14 @@ export function dayConfirmations(input: DayConfirmationsInput): DayConfirmations
     const unitId = section.unitId
     if (unitId === null) continue
     const confirmable = input.confirmable(unitId, day.date)
+    const row = byUnit.get(unitId) ?? null
+    const covered = day.rotations.some((rotation) => isAncestorOrSelf(input.tree, rotation.unit_id, unitId))
+    if (!confirmable && row === null && !covered) continue
     const inView = shown.get(section.key)
     const hidden = inView !== undefined && soldiersOf(inView).size < soldiersOf(section).size
     sections.set(section.key, {
       unitId,
-      status: confirmationStatus(byUnit.get(unitId) ?? null, changedAtOf(section, day.date, input.leaves)),
+      status: confirmationStatus(row, changedAtOf(section, day.date, input.leaves)),
       canConfirm: confirmable && !hidden,
       needsFullList: confirmable && hidden,
     })

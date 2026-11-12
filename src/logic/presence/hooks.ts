@@ -12,7 +12,7 @@ import {
   type Timestamp,
   type UnitId,
 } from '@contracts'
-import { addDays, compareCodeUnits, CONFIRM_DAY_REPORT, dayReportTarget } from '@domain'
+import { addDays, buildUnitTree, compareCodeUnits, compareInstants, CONFIRM_DAY_REPORT, dayReportTarget, instantAt } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { useRotationScope } from '../view-state/rotation'
@@ -28,6 +28,7 @@ import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
 import { dateWindowOf } from '../view-state/window'
 import { usePlacementHints } from '../roster/hooks'
+import { useUnits } from '../units/hooks'
 import { filterUnitOf } from '../view-state/filter'
 import { presenceLists, type PresenceLists } from './presence'
 import { dayConfirmations, type DayConfirmations } from './confirmations'
@@ -188,7 +189,8 @@ export function useReportConfirmations(
   }, [reportDays])
   const confirmable = useConfirmable(reportDays === null ? [] : days, units)
   const session = useSession()
-  const actorId = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null
+  const live = useUnits()
+  const tree = useMemo(() => (live.status === 'ready' ? buildUnitTree(live.value) : null), [live])
   const checks = useMemo(
     (): readonly PermissionCheck[] => [...new Set<UnitId>(rotations.map((rotation) => rotation.unit_id))].map(confirmCheckOf),
     [rotations],
@@ -200,11 +202,15 @@ export function useReportConfirmations(
     if (confirmations.status !== 'ready') return confirmations
     if (leaves.status !== 'ready') return leaves
     if (confirmable.status !== 'ready') return confirmable
+    if (session.status !== 'ready') return session
+    if (tree === null) return { status: 'loading' }
     // A button never shows a moment late, as the report's soldiers never do (D-122).
     if (!checks.every(answers.known)) return { status: 'loading' }
     const pairs = new Set(confirmable.value.map((pair) => pairKeyOf(pair.unit_id, pair.report_date)))
     const shownDays = new Map(shown.value.days.map((day) => [day.date, day] as const))
     const mayConfirm = (unitId: UnitId) => answers.can(confirmCheckOf(unitId))
+    const actorId = session.value.status === 'linked' ? session.value.soldier_id : null
+    const seenAt = leaves.value.reduce((latest, leave) => (compareInstants(leave.updated_at, latest) > 0 ? leave.updated_at : latest), instantAt(0))
     return {
       status: 'ready',
       value: new Map(
@@ -214,16 +220,17 @@ export function useReportConfirmations(
             day,
             shown: shownDays.get(day.date) ?? day,
             confirmations: confirmations.value,
-            leaves: leaves.value.leaves,
+            leaves: leaves.value,
             confirmable: (unitId, date) => pairs.has(pairKeyOf(unitId, date)),
             mayConfirm,
+            tree,
             actorId,
-            seenAt: leaves.value.readAt,
+            seenAt,
           }),
         ]),
       ),
     }
-  }, [report, shown, confirmations, leaves, confirmable, checks, answers, actorId])
+  }, [report, shown, confirmations, leaves, confirmable, session, tree, checks, answers])
 }
 
 const pairKeyOf = (unitId: UnitId, date: CalendarDate) => `${date} ${unitId}`
