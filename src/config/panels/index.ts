@@ -1,4 +1,4 @@
-import type { NavigationModule } from '@contracts'
+import type { NavigationModule, PermissionResource } from '@contracts'
 import { z } from 'zod'
 
 // Drawer and sheet modules of the workspace (D-023, D-092). A panel id and the entity open inside it
@@ -38,6 +38,8 @@ export const PANEL_IDS = {
   accessGrants: 'access_grants',
   /** Import from a file, with its dry-run preview, and the organization's export (D-171). */
   dataTransfer: 'data_transfer',
+  /** The organization's setup steps, each opening its own module (D-033, D-180). */
+  setup: 'setup',
 } as const
 
 export const PanelId = z.enum([
@@ -62,6 +64,7 @@ export const PanelId = z.enum([
   PANEL_IDS.rankBindings,
   PANEL_IDS.accessGrants,
   PANEL_IDS.dataTransfer,
+  PANEL_IDS.setup,
 ])
 export type PanelId = z.infer<typeof PanelId>
 
@@ -80,6 +83,21 @@ export const NAVIGATION_SECTIONS = [
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
 export type NavigationSectionId = (typeof NAVIGATION_SECTIONS)[number]['id']
 
+
+/**
+ * The organization's setup, in order (D-033, D-180): each step opens the module that does it, for who may create what
+ * it sets up across the organization. Whether a step is done is read from the data, never stored.
+ */
+export const SETUP_STEPS = [
+  { id: 'unit_levels', panel: PANEL_IDS.unitLevels, resource: 'unit_levels' },
+  { id: 'units', panel: PANEL_IDS.units, resource: 'units' },
+  { id: 'command_ranks', panel: PANEL_IDS.commandRanks, resource: 'command_ranks' },
+  { id: 'rank_bindings', panel: PANEL_IDS.rankBindings, resource: 'roles' },
+  { id: 'leave_types', panel: PANEL_IDS.leaveTypes, resource: 'leave_types' },
+  { id: 'tags', panel: PANEL_IDS.tagCategories, resource: 'tags' },
+  { id: 'soldiers', panel: PANEL_IDS.soldiers, resource: 'soldiers' },
+] as const satisfies readonly { readonly id: string; readonly panel: PanelId; readonly resource: PermissionResource }[]
+export type SetupStepId = (typeof SETUP_STEPS)[number]['id']
 
 /** The `entity` value of a form for a row that does not exist yet. */
 export const NEW_ENTITY = 'new'

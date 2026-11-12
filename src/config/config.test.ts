@@ -15,6 +15,7 @@ import {
   INDEXED_DB_NAME,
   PALETTE_KEYS,
   PANEL_IDS,
+  SETUP_STEPS,
   PanelId,
   SEARCH_PARAMS,
   STORAGE_KEYS,
@@ -220,5 +221,10 @@ describe('panels (D-092)', () => {
   it('places every navigation module in exactly one section (D-173)', () => {
     const placed = NAVIGATION_SECTIONS.flatMap((section) => section.modules)
     expect([...placed].sort()).toEqual([...NavigationModule.options].sort())
+  })
+
+  it('gives each setup step its own panel (D-180)', () => {
+    expect(new Set(SETUP_STEPS.map((step) => step.id)).size).toBe(SETUP_STEPS.length)
+    expect(new Set(SETUP_STEPS.map((step) => step.panel)).size).toBe(SETUP_STEPS.length)
   })
 })

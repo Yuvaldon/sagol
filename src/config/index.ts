@@ -38,6 +38,8 @@ export {
   NAVIGATION_SECTIONS,
   NEW_ENTITY,
   PANEL_IDS,
+  SETUP_STEPS,
+  type SetupStepId,
   type NavigationSectionId,
   PanelId,
   TRANSFER_FILES,
