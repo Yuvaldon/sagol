@@ -78,12 +78,22 @@ export async function openModule(page: Page, name: string | RegExp) {
   const options = typeof name === 'string' ? { name, exact: true } : { name }
   await expect(async () => {
     const panel = navigationPanel(page)
+    if (await panel.isVisible()) {
+      const inPanel = panel.getByRole('button', options)
+      if (await inPanel.isVisible()) {
+        await inPanel.click({ timeout: 1_000 })
+        return
+      }
+      // Opened while the bar was still filling: the module is in the bar after all.
+      await page.keyboard.press('Escape')
+      await expect(panel).toBeHidden({ timeout: 1_000 })
+    }
     const inBar = navigation(page).getByRole('button', options)
-    if (!(await panel.isVisible()) && (await inBar.isVisible())) {
+    if (await inBar.isVisible()) {
       await inBar.click({ timeout: 1_000 })
       return
     }
-    if (!(await panel.isVisible())) await page.getByRole('button', { name: he.navigation.open }).click({ timeout: 1_000 })
+    await page.getByRole('button', { name: he.navigation.open }).click({ timeout: 1_000 })
     await panel.getByRole('button', options).click({ timeout: 1_000 })
   }).toPass({ timeout: 10_000 })
 }

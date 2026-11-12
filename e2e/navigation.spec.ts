@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { closeDrawer, drawer, press } from './support/leaves.ts'
+import { choose, closeDrawer, drawer, press } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
 
 // V12a's demo: the bars keep the daily work, the modules that set the organization up sit in the navigation panel by
@@ -8,6 +8,12 @@ import { enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openM
 // is the soldier's own choice (D-173). On desktop and mobile, RTL, with axe. Sample data, tests only.
 
 const COMPANY = 'פלוגה א'
+const ROLE = 'לוחם'
+/** A fighter's own record and own requests (D-003), and nothing that sets the organization up. */
+const SELF_PERMISSIONS: readonly (readonly [string, readonly string[]])[] = [
+  [he.permissionLabels.resources.soldiers, [he.permissionLabels.actions.view]],
+  [he.permissionLabels.resources.leaves, [he.permissionLabels.actions.view, he.permissionLabels.actions.create]],
+]
 
 function menuButton(page: Page) {
   return page.getByRole('button', { name: new RegExp(`^${he.navigation.open}`) })
@@ -52,8 +58,9 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
     await closeDrawer(page)
   })
 
-  await test.step('a single root unit names the scope', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toContainText(COMPANY)
+  await test.step('a single unit in sight names the scope, as a label and not a picker', async () => {
+    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await expect(page.getByText(COMPANY, { exact: true })).toBeVisible()
   })
 
   await test.step('a pinned module joins the bar, and leaves it when unpinned', async () => {
@@ -87,11 +94,11 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
   })
 })
 
-test('a soldier with no management permission sees no panel and no picker', async ({ page }) => {
+test('a fighter sees only the modules their permissions open, and no unit picker', async ({ page }) => {
   const soldier = { email: 'noa@example.test', first: 'נועה', last: 'בר', personalId: '5566778' }
   await enterAsOwner(page)
 
-  await test.step('the owner sets up a unit and a soldier with an invite', async () => {
+  await test.step('the owner sets up a unit, a soldier with an invite, and the fighter role as the baseline', async () => {
     await openModule(page, he.units.open)
     await drawer(page).getByRole('button', { name: he.units.new }).first().click()
     await page.getByLabel(he.units.name).fill(COMPANY)
@@ -106,6 +113,21 @@ test('a soldier with no management permission sees no panel and no picker', asyn
     await page.getByLabel(he.soldiers.inviteEmail).fill(soldier.email)
     await page.getByRole('button', { name: he.common.create }).click()
     await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(`${soldier.first} ${soldier.last}`, { exact: true })).toBeVisible()
+    await closeDrawer(page)
+    await openModule(page, he.roles.open)
+    await drawer(page).getByRole('button', { name: he.roles.new }).click()
+    await page.getByLabel(he.roles.name).fill(ROLE)
+    for (const [resource, actions] of SELF_PERMISSIONS) {
+      const group = drawer(page).getByRole('group', { name: resource, exact: true })
+      for (const action of actions) {
+        await group.locator('label').filter({ has: page.getByRole('checkbox', { name: action, exact: true }) }).click()
+      }
+    }
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(drawer(page).getByRole('list', { name: he.roles.listLabel }).getByText(ROLE, { exact: true })).toBeVisible()
+    // The baseline applies to each linked soldier on their own record (D-003).
+    await choose(page, he.roles.baseline, ROLE)
+    await expect(drawer(page).getByText(he.roles.isBaseline)).toBeVisible()
     await closeDrawer(page)
   })
 
@@ -122,13 +144,17 @@ test('a soldier with no management permission sees no panel and no picker', asyn
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
   })
 
-  await test.step('no menu button, no module they cannot open, and the single unit is a label', async () => {
-    await expect(menuButton(page)).toHaveCount(0)
-    for (const name of [he.units.open, he.soldiers.open, he.tags.open, he.roles.open, he.grants.open, he.transfer.open]) {
+  await test.step('the panel holds only what the fighter may open: their own record', async () => {
+    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await openPanel(page)
+    // Viewing their own record opens the soldiers module (D-053); nothing else of the panel is theirs.
+    await expect(navigationPanel(page).getByRole('button', { name: he.soldiers.open, exact: true })).toBeVisible()
+    for (const name of [he.units.open, he.leaveTypes.open, he.tags.open, he.roles.open, he.grants.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
-    await expect(page.getByText(COMPANY, { exact: true })).toBeVisible()
+    for (const section of [he.navigation.sections.leaveSetup, he.navigation.sections.access, he.navigation.sections.data]) {
+      await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toHaveCount(0)
+    }
     await expectNoAxeViolations(page)
   })
 })
