@@ -65,8 +65,9 @@ describe('closing a rotation (D-258, D-221)', () => {
       end_date: day('2026-11-05'),
     })
   })
-  it('refuses one that ends after today, or is closed already', () => {
+  it('refuses one that ends after today, has not started, or is closed already', () => {
     expect(rotationCloseEnd({ ...CLOSED, closed_at: null }, today)).toEqual({ issues: [{ path: ['id'], code: 'rotation_not_ended' }] })
+    expect(rotationCloseEnd({ ...OPEN, closed_at: null }, today)).toEqual({ issues: [{ path: ['id'], code: 'rotation_not_ended' }] })
     expect(rotationCloseEnd({ ...CLOSED, closed_at: '2026-11-12T08:00:00Z' }, today)).toEqual({
       issues: [{ path: ['id'], code: 'rotation_closed' }],
     })

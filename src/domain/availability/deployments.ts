@@ -107,8 +107,9 @@ export function rotationCloseEnd(
 ): { readonly end_date: CalendarDate } | { readonly issues: Issue[] } {
   if (isClosedRotation(rotation)) return { issues: rotationClosedIssues(rotation, ['id']) }
   if (rotation.end_date === null) {
-    // A rotation that starts after today and runs open closes on its first day.
-    return { end_date: compareDates(today, rotation.start_date) < 0 ? rotation.start_date : today }
+    // Closing takes today as the end, so a rotation that has not started has no day to close on (D-258).
+    if (compareDates(today, rotation.start_date) < 0) return { issues: [{ path: ['id'], code: IssueCode.enum.rotation_not_ended }] }
+    return { end_date: today }
   }
   if (compareDates(rotation.end_date, today) > 0) return { issues: [{ path: ['id'], code: IssueCode.enum.rotation_not_ended }] }
   return { end_date: rotation.end_date }
