@@ -411,3 +411,19 @@ export {
 } from './seniority/seniority'
 export { useSeniorityOverrideCommands, useSeniorityOverrides, useSeniorityPermissions } from './seniority/hooks'
 export { setupSteps, useSetupAccess, useSetupProgress, type SetupStep } from './organization/setup'
+export {
+  applyTemplatePlan,
+  initialChoices,
+  isFreshSetup,
+  templateChoiceIssues,
+  templatePlan,
+  useApplyTemplate,
+  useTemplateOffer,
+  withSectionCount,
+  type TemplateBase,
+  type TemplateChoices,
+  type TemplateNames,
+  type TemplateOutcome,
+  type TemplateStage,
+  type TemplateStep,
+} from './organization/template'

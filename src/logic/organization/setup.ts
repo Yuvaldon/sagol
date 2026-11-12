@@ -48,9 +48,10 @@ export function useSetupAccess(): readonly SetupStepId[] {
 /** The steps this actor may do, each with whether it is done. */
 export function useSetupProgress(): Loaded<readonly SetupStep[]> {
   const allowed = useSetupAccess()
+  const units = useUnits()
   const sources: Readonly<Record<SetupStepId, Loaded<SetupRows>>> = {
     unit_levels: useUnitLevels(),
-    units: useUnits(),
+    units,
     command_ranks: useCommandRanks(),
     rank_bindings: useRankBindings(),
     leave_types: useLeaveTypes(),
@@ -64,5 +65,7 @@ export function useSetupProgress(): Loaded<readonly SetupStep[]> {
     if (source.status !== 'ready') return source
     rows[id] = source.value
   }
+  // The root comes with the claim (D-251), so the units step is done once a unit under it exists (D-223).
+  if (units.status === 'ready' && rows.units !== undefined) rows.units = units.value.filter((unit) => unit.parent_id !== null)
   return { status: 'ready', value: setupSteps(allowed, rows) }
 }
