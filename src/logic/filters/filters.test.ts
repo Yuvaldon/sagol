@@ -241,6 +241,7 @@ describe('present and absent lists (D-134, OI-090)', () => {
     soldiers: [soldier(1), soldier(2), soldier(3), soldier(4, { status: 'inactive' }), soldier(5)],
     ranks: [],
     units: [unit],
+    unitTree: [unit],
     memberships: [placed(1), placed(2), placed(3), placed(4)],
     soldierTags: [tagged],
     propertyDefinitions: [],
@@ -297,6 +298,16 @@ describe('present and absent lists (D-134, OI-090)', () => {
       readsLeavesOf: READS_ALL,
     })
     expect([...outside.absent, ...outside.present].map((entry) => entry.soldier.first_name).toSorted()).toEqual(['F1', 'F2', 'F3', 'F5'])
+  })
+
+  it('keeps who serves in an archived sub-unit under the chosen unit (D-147, OI-098)', () => {
+    const SQUAD = UnitId.parse(uuid(11))
+    const archived: Unit = { ...unit, id: SQUAD, name: 'S', parent_id: UNIT }
+    const inSquad: UnitMembership = { ...placed(5), unit_id: SQUAD }
+    const withSquad = { ...source, unitTree: [unit, archived], memberships: [...source.memberships, inSquad] }
+    const inUnit = { where: { kind: 'unit' as const, unit_ids: [UNIT], include_descendants: true } }
+    const lists = presenceLists({ source: withSquad, filter: inUnit, leaves, types: [home, exam], day: DAY, readsLeavesOf: READS_ALL })
+    expect([...lists.absent, ...lists.present].map((entry) => entry.soldier.first_name)).toEqual(['F1', 'F2', 'F3', 'F5'])
   })
 
   it('leaves out soldiers whose leaves the actor cannot read, from both lists (D-161)', () => {

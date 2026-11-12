@@ -94,6 +94,12 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   pending, square on a side the window cuts. A marker is a 20 px round badge on `surface` with its icon, on each day,
   over any bar. Overlaps take lanes, and a row grows by a lane step for each lane beyond the first. In the uniform mode
   every bar is `absence`, with a dot of the type's color and its name inside, and badges are `marker`.
+- **The other views (D-174):** each fills the same frame under the bars, a focusable region named for the view. The
+  list is the board's rows: group headings, then a soldier's name, rank and leave chips with their dates. The table has
+  a row per leave with sortable headers that stick under the bars. The calendar shows the window in whole weeks, seven
+  columns from `md` and one day per line below it; a day's heading holds its weekday, its number (today in the dark
+  pill) and how many are out, then a chip per leave with the soldier's name. A chip is a `pill` of `text-label`, a dot of
+  the leave's color, solid edge when approved and dashed in the type's edge color when pending.
 - **Lanes on a phone (D-144, OI-067):** `TIMELINE_LANES_TOUCH` makes bars 28 high with a lane step of 44, so a bar's hit
   area is 44 high and a badge's 44 wide; a row of one lane stays 44.
 - **A mark is a control (D-119):** a bar is a button named by its type, its status and its days, and it opens the leave.
@@ -278,7 +284,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `UserMenu`, `IdentityList` | `ui/shell` | Who is signed in, sign-out, dev identity switcher, import and export |
 | `ModuleDrawer` | `ui/shell` | The map of what opens in the drawer, with each group's sections |
 | `Viewport`, `UnitSelector`, `ViewSwitcher`, `WindowNavigator` | `ui/shell` | The engine in the middle, and the controls of the bars |
-| Engine registry, `TimelineEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter |
+| Engine registry, `TimelineEngine`, `ListEngine`, `TableEngine`, `CalendarEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter, the others as adapters |
+| `BoardEngine`, `EngineScroller`, `LeaveChip` | `ui/board` | What every engine shares: the frame and its states, the scroller region, a leave as a chip |
 | `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
 | `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the new-leave form and its "+" |
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |

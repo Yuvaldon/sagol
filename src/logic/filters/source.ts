@@ -12,13 +12,13 @@ import { createFilterContext, type FilterContext } from '@domain'
 import { useMemo } from 'react'
 import type { Loaded } from '../queries/loaded'
 import { usePropertyDefinitions } from '../properties/hooks'
-import { useCommandRanks, useMemberships, useSoldiers } from '../roster/hooks'
+import { useCommandRanks, useMemberships, useSoldiers, useUnitsWithArchived } from '../roster/hooks'
 import { useSoldierTags } from '../tags/hooks'
 import { useUnits } from '../units/hooks'
 
-// The one source of the data a filter reads (D-131, OI-079): the board, the filter bar and the presence lists
-// read it, and V7's rules do. Property values are on the soldiers, and their definitions here (OI-080). Seniority
-// overrides join with V15 (OI-081); before it none can exist.
+// The one source of the data a filter reads (D-131, OI-079): every engine, the filter bar, the presence lists and the
+// rules read it, so a condition means the same everywhere (D-067, D-147). Property values are on the soldiers, and
+// their definitions here (OI-080). Seniority overrides join with V15 (OI-081); before it none can exist.
 
 export interface FilterSource {
   /** Live soldiers the actor sees. */
@@ -27,6 +27,11 @@ export interface FilterSource {
   readonly ranks: readonly CommandRank[]
   /** The live units the actor sees. */
   readonly units: readonly Unit[]
+  /**
+   * Every unit the actor sees, archived ones too: "a unit and below" counts the days a soldier served in a sub-unit
+   * archived later, as rules and commands do (D-147).
+   */
+  readonly unitTree: readonly Unit[]
   readonly memberships: readonly UnitMembership[]
   readonly soldierTags: readonly SoldierTag[]
   /** Archived ones too: a filter on one keeps reading the values stored for it (D-016). */
@@ -39,7 +44,7 @@ export interface FilterSource {
  */
 export function filterContextOf(source: FilterSource): FilterContext {
   const context = createFilterContext({
-    units: source.units,
+    units: source.unitTree,
     soldiers: source.soldiers,
     soldier_tags: source.soldierTags,
     command_ranks: source.ranks,
@@ -63,7 +68,7 @@ export function filterContextOf(source: FilterSource): FilterContext {
   }
 }
 
-/** Drops the units and ranks the actor does not see from a filter, so a condition on them alone matches nobody. */
+/** Drops the live units and the ranks the actor does not see from a filter, so a condition on them alone matches nobody. */
 function seenOnlyOf(source: FilterSource): (node: FilterNode) => FilterNode {
   const units = new Set<string>(source.units.map((unit) => unit.id))
   const ranks = new Set<string>(source.ranks.map((rank) => rank.id))
@@ -89,6 +94,7 @@ export function useFilterSource(): Loaded<FilterSource> {
   const soldiers = useSoldiers()
   const ranks = useCommandRanks()
   const units = useUnits()
+  const unitTree = useUnitsWithArchived()
   const memberships = useMemberships()
   const soldierTags = useSoldierTags()
   const propertyDefinitions = usePropertyDefinitions()
@@ -96,6 +102,7 @@ export function useFilterSource(): Loaded<FilterSource> {
     if (soldiers.status !== 'ready') return soldiers
     if (ranks.status !== 'ready') return ranks
     if (units.status !== 'ready') return units
+    if (unitTree.status !== 'ready') return unitTree
     if (memberships.status !== 'ready') return memberships
     if (soldierTags.status !== 'ready') return soldierTags
     if (propertyDefinitions.status !== 'ready') return propertyDefinitions
@@ -105,12 +112,13 @@ export function useFilterSource(): Loaded<FilterSource> {
         soldiers: soldiers.value,
         ranks: ranks.value,
         units: units.value,
+        unitTree: unitTree.value,
         memberships: memberships.value,
         soldierTags: soldierTags.value,
         propertyDefinitions: propertyDefinitions.value,
       },
     }
-  }, [soldiers, ranks, units, memberships, soldierTags, propertyDefinitions])
+  }, [soldiers, ranks, units, unitTree, memberships, soldierTags, propertyDefinitions])
 }
 
 function mentionsStatus(node: FilterNode): boolean {

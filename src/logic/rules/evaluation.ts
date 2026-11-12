@@ -9,7 +9,6 @@ import {
   type RuleViolation,
   type SoldierId,
   type Tag,
-  type Unit,
   type UnitId,
 } from '@contracts'
 import {
@@ -32,9 +31,8 @@ import type { FilterSource } from '../filters/source'
 // the commands use, so a warning says what the command would (D-142).
 
 export interface RuleInputs {
+  /** Its unit tree holds archived units: an archived child keeps its soldiers in its parent's tree, as the command counts them. */
   readonly source: FilterSource
-  /** Archived ones too: an archived child keeps its soldiers in its parent's tree, as the command counts them. */
-  readonly units: readonly Unit[]
   /** Archived ones too: they form no group, which domain decides (D-072). */
   readonly tags: readonly Tag[]
   /** The pending and approved leaves the actor sees on the days evaluated. */
@@ -46,9 +44,9 @@ export interface RuleInputs {
  * The rows rule evaluation reads. Deployments and seniority overrides arrive in V15 (OI-081, OI-096); before it none
  * can exist.
  */
-export function ruleDataOf({ source, units, tags, leaves, types }: RuleInputs): RuleData {
+export function ruleDataOf({ source, tags, leaves, types }: RuleInputs): RuleData {
   return {
-    units,
+    units: source.unitTree,
     soldiers: source.soldiers,
     command_ranks: source.ranks,
     tags,

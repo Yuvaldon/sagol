@@ -3,33 +3,21 @@ import type {
   CommandRank,
   CommandRankId,
   FilterExpression,
-  PropertyDefinition,
   Soldier,
   SoldierId,
-  SoldierTag,
   Unit,
   UnitId,
-  UnitMembership,
 } from '@contracts'
-import { filterContextOf, populationOf } from '../filters/source'
+import { filterContextOf, populationOf, type FilterSource } from '../filters/source'
 import { byName, membershipsBySoldier, unitStateOn, type UnitState } from '../roster/roster'
 import { unitTreeRows } from '../units/tree'
 
-// The rows of the timeline (D-105): who served in the selected unit during the window, grouped by
+// The rows of the board (D-105, D-174): who served in the selected unit during the window, grouped by
 // unit like the tree, most senior first. The bar's leave conditions and "only who is missing" narrow them
 // (D-132, D-133). Pure; the hook feeds it.
 
-export interface TimelineInput {
-  readonly soldiers: readonly Soldier[]
-  /** Archived ones too: a soldier keeps showing the rank they hold. */
-  readonly ranks: readonly CommandRank[]
-  /** The live units the actor can see. */
-  readonly units: readonly Unit[]
-  readonly memberships: readonly UnitMembership[]
-  /** Every tag row of the soldiers, which the filter reads (D-131). */
-  readonly soldierTags: readonly SoldierTag[]
-  /** Archived ones too, as the filter source holds them (OI-080). */
-  readonly propertyDefinitions: readonly PropertyDefinition[]
+/** The filter source, and the window and conditions the board shows it for. */
+export interface BoardInput extends FilterSource {
   readonly days: readonly CalendarDate[]
   readonly today: CalendarDate
   /** NULL selects everyone. */
@@ -48,21 +36,21 @@ export interface TimelineInput {
 }
 
 /** What a group header says: a unit by its path, or one of the states of D-106. */
-export type TimelineGroupLabel =
+export type BoardGroupLabel =
   | { readonly kind: 'unit'; readonly path: readonly string[] }
   | { readonly kind: 'none' }
   | { readonly kind: 'other' }
   | { readonly kind: 'unknown' }
 
-export interface TimelineGroupItem {
+export interface BoardGroupItem {
   readonly kind: 'group'
   readonly key: string
-  readonly label: TimelineGroupLabel
+  readonly label: BoardGroupLabel
   /** How many soldiers the group holds. */
   readonly size: number
 }
 
-export interface TimelineSoldierItem {
+export interface BoardSoldierItem {
   readonly kind: 'soldier'
   readonly key: SoldierId
   readonly soldier: Soldier
@@ -73,13 +61,13 @@ export interface TimelineSoldierItem {
   readonly present?: readonly boolean[]
 }
 
-export type TimelineItem = TimelineGroupItem | TimelineSoldierItem
+export type BoardItem = BoardGroupItem | BoardSoldierItem
 
 const EVERYONE: FilterExpression = {}
 const STATE_GROUPS = ['none', 'other', 'unknown'] as const
 
 /** The most senior rank first, no rank last, then by name (D-094, D-105). */
-function bySeniorityThenName(a: TimelineSoldierItem, b: TimelineSoldierItem): number {
+function bySeniorityThenName(a: BoardSoldierItem, b: BoardSoldierItem): number {
   if (a.rank === null || b.rank === null) {
     if (a.rank !== b.rank) return a.rank === null ? 1 : -1
   } else if (a.rank.seniority !== b.rank.seniority) {
@@ -107,24 +95,18 @@ function groupKeyOf(state: UnitState): string {
   return state.kind === 'unit' ? state.unit.id : state.kind
 }
 
-export function timelineItems(input: TimelineInput): TimelineItem[] {
+export function boardItems(input: BoardInput): BoardItem[] {
   const { days, today } = input
   const filter = input.filter ?? EVERYONE
-  const context = filterContextOf({
-    soldiers: input.soldiers,
-    ranks: input.ranks,
-    units: input.units,
-    memberships: input.memberships,
-    soldierTags: input.soldierTags,
-    propertyDefinitions: input.propertyDefinitions,
-  })
+  const context = filterContextOf(input)
   const inPopulation = populationOf(input.filter)
   const rankById = new Map<CommandRankId, CommandRank>(input.ranks.map((rank) => [rank.id, rank]))
-  const unitById = new Map<UnitId, Unit>(input.units.map((unit) => [unit.id, unit]))
+  // The tree holds archived units too, so a soldier in an archived sub-unit keeps its heading (D-147).
+  const unitById = new Map<UnitId, Unit>(input.unitTree.map((unit) => [unit.id, unit]))
   const bySoldier = membershipsBySoldier(input.memberships)
   const todayIndex = days.indexOf(today)
 
-  const groups = new Map<string, { label: TimelineGroupLabel; rows: TimelineSoldierItem[] }>()
+  const groups = new Map<string, { label: BoardGroupLabel; rows: BoardSoldierItem[] }>()
   for (const soldier of input.soldiers) {
     if (!inPopulation(soldier)) continue
     if (input.marked !== null && !input.marked(soldier.id)) continue
@@ -141,7 +123,7 @@ export function timelineItems(input: TimelineInput): TimelineItem[] {
     if (reads === null && own.length === 0) continue
     const state = unitStateOn(own, unitById, soldier.id, referenceDay, reads === true)
     const key = groupKeyOf(state)
-    const label: TimelineGroupLabel =
+    const label: BoardGroupLabel =
       state.kind === 'unit' ? { kind: 'unit', path: pathOf(state.unit.id, unitById, input.scopeUnitId) } : { kind: state.kind }
     const rank = soldier.command_rank_id === null ? null : (rankById.get(soldier.command_rank_id) ?? null)
     const group = groups.get(key) ?? { label, rows: [] }
@@ -149,11 +131,11 @@ export function timelineItems(input: TimelineInput): TimelineItem[] {
     groups.set(key, group)
   }
 
-  const order: string[] = [...unitTreeRows(input.units).map((row) => row.unit.id), ...STATE_GROUPS]
+  const order: string[] = [...unitTreeRows(input.unitTree).map((row) => row.unit.id), ...STATE_GROUPS]
   return order.flatMap((key) => {
     const group = groups.get(key)
     if (group === undefined) return []
-    const header: TimelineGroupItem = { kind: 'group', key: `group:${key}`, label: group.label, size: group.rows.length }
+    const header: BoardGroupItem = { kind: 'group', key: `group:${key}`, label: group.label, size: group.rows.length }
     return [header, ...group.rows.sort(bySeniorityThenName)]
   })
 }

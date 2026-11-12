@@ -20,7 +20,6 @@ import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
-import { useUnitsWithArchived } from '../roster/hooks'
 import { usePorts } from '../runtime/context'
 import { useTags } from '../tags/hooks'
 import {
@@ -116,21 +115,19 @@ interface Span {
 /** What rule evaluation reads on the days of a span, over what the actor reads. Loading while there is no span. */
 export function useRuleData(span: Span | null): Loaded<RuleData> {
   const source = useFilterSource()
-  const units = useUnitsWithArchived()
   const tags = useTags()
   const leaves = useLeaves(span)
   const types = useLeaveTypes()
   return useMemo((): Loaded<RuleData> => {
     if (source.status !== 'ready') return source
-    if (units.status !== 'ready') return units
     if (tags.status !== 'ready') return tags
     if (leaves.status !== 'ready') return leaves
     if (types.status !== 'ready') return types
     return {
       status: 'ready',
-      value: ruleDataOf({ source: source.value, units: units.value, tags: tags.value, leaves: leaves.value, types: types.value }),
+      value: ruleDataOf({ source: source.value, tags: tags.value, leaves: leaves.value, types: types.value }),
     }
-  }, [source, units, tags, leaves, types])
+  }, [source, tags, leaves, types])
 }
 
 interface WindowRequest {

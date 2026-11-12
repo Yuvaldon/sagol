@@ -34,7 +34,7 @@ import { WorkspaceSearch, useWorkspaceSearch } from '../view-state/search'
 import { usePresenceDay } from '../view-state/board'
 import { useActiveView } from '../view-state/view'
 import { dateWindowOf, shiftedWindow, useDateWindow } from '../view-state/window'
-import { timelineItems, type TimelineInput, type TimelineItem } from './rows'
+import { boardItems, type BoardInput, type BoardItem } from './rows'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -181,16 +181,17 @@ describe('what a row knows about its unit (D-106, OI-048)', () => {
   })
 })
 
-describe('the rows of the timeline (D-105)', () => {
+describe('the rows of the board (D-105)', () => {
   // פלוגה › מחלקה א › כיתה 1, and מחלקה ב beside מחלקה א.
   const units = [unit(10, 'פלוגה', null), unit(11, 'מחלקה א', 10, 0), unit(12, 'מחלקה ב', 10, 1), unit(13, 'כיתה 1', 11)]
   const ranks = [rank(20, 1), rank(21, 5)]
   const PLATOON_A = UnitId.parse(uuid(11))
 
-  const base = (overrides: Partial<TimelineInput>): TimelineInput => ({
+  const base = (overrides: Partial<BoardInput>): BoardInput => ({
     soldiers: [],
     ranks,
     units,
+    unitTree: units,
     memberships: [],
     soldierTags: [],
     propertyDefinitions: [],
@@ -204,7 +205,7 @@ describe('the rows of the timeline (D-105)', () => {
     ...overrides,
   })
 
-  const describeItems = (items: readonly TimelineItem[]) =>
+  const describeItems = (items: readonly BoardItem[]) =>
     items.map((item) =>
       item.kind === 'group'
         ? `# ${item.label.kind === 'unit' ? item.label.path.join(' · ') : item.label.kind} (${item.size})`
@@ -214,7 +215,7 @@ describe('the rows of the timeline (D-105)', () => {
   it('groups by unit in tree order, the most senior first, then by name', () => {
     const fighter = CommandRankId.parse(uuid(20))
     const commander = CommandRankId.parse(uuid(21))
-    const items = timelineItems(
+    const items = boardItems(
       base({
         soldiers: [
           soldier(1, 'אבי', 'כהן', { command_rank_id: fighter }),
@@ -244,7 +245,7 @@ describe('the rows of the timeline (D-105)', () => {
   })
 
   it('keeps who served one day of the week, mutes the other days, and names paths below the selected unit', () => {
-    const items = timelineItems(
+    const items = boardItems(
       base({
         filter: unitFilterOf(PLATOON_A) ?? null,
         scopeUnitId: PLATOON_A,
@@ -270,8 +271,28 @@ describe('the rows of the timeline (D-105)', () => {
     ])
   })
 
+  it('keeps who serves in an archived sub-unit under the selected unit (D-147, OI-098)', () => {
+    // כיתה 1 is archived: the live units leave it out, the tree still holds it under מחלקה א.
+    const live = units.filter((entry) => entry.id !== UnitId.parse(uuid(13)))
+    const items = (unitTree: readonly Unit[]) =>
+      boardItems(
+        base({
+          units: live,
+          unitTree,
+          filter: unitFilterOf(PLATOON_A) ?? null,
+          scopeUnitId: PLATOON_A,
+          soldiers: [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן')],
+          memberships: [membership(70, 1, 13, '2026-01-01', null), membership(71, 2, 12, '2026-01-01', null)],
+        }),
+      )
+    // Under its own heading, not "another unit".
+    expect(describeItems(items(units))).toEqual(['# כיתה 1 (1)', 'אבי ■■■■■■■'])
+    // Read from the live units alone, the archived sub-unit would drop out of "מחלקה א and below".
+    expect(items(live)).toEqual([])
+  })
+
   it('leaves out inactive and archived soldiers', () => {
-    const items = timelineItems(
+    const items = boardItems(
       base({
         soldiers: [soldier(1, 'אבי', 'כהן', { status: 'inactive' }), soldier(2, 'בני', 'כהן', { archived_at: AT }), soldier(3, 'גיל', 'כהן')],
       }),
@@ -280,7 +301,7 @@ describe('the rows of the timeline (D-105)', () => {
   })
 
   it('puts soldiers without a visible unit last, by what the actor can know', () => {
-    const items = timelineItems(
+    const items = boardItems(
       base({
         soldiers: [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן'), soldier(3, 'גיל', 'כהן'), soldier(4, 'דן', 'כהן')],
         memberships: [membership(70, 2, 99, '2026-01-01', null), membership(71, 4, 10, '2026-01-01', null)],
@@ -300,7 +321,7 @@ describe('the rows of the timeline (D-105)', () => {
   })
 
   it('keeps a soldier out while their own hint has not answered, unless their placements were read (OI-093)', () => {
-    const items = timelineItems(
+    const items = boardItems(
       base({
         soldiers: [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן')],
         memberships: [membership(71, 2, 10, '2026-01-01', null)],
@@ -312,12 +333,12 @@ describe('the rows of the timeline (D-105)', () => {
 
   it('groups by today when the soldier is in the view today, else by the first day they are', () => {
     const memberships = [membership(70, 1, 13, '2026-01-01', '2026-11-12'), membership(71, 1, 11, '2026-11-13', null)]
-    const withToday = timelineItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships }))
+    const withToday = boardItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships }))
     expect(describeItems(withToday)[0]).toBe('# פלוגה · מחלקה א · כיתה 1 (1)')
-    const later = timelineItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships, today: '2026-11-20' }))
+    const later = boardItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships, today: '2026-11-20' }))
     expect(describeItems(later)[0]).toBe('# פלוגה · מחלקה א · כיתה 1 (1)')
     const nextWeek = ['2026-11-15', '2026-11-16']
-    expect(describeItems(timelineItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships, days: nextWeek })))[0]).toBe(
+    expect(describeItems(boardItems(base({ soldiers: [soldier(1, 'אבי', 'כהן')], memberships, days: nextWeek })))[0]).toBe(
       '# פלוגה · מחלקה א (1)',
     )
   })
@@ -325,16 +346,16 @@ describe('the rows of the timeline (D-105)', () => {
   const MEDIC = TagId.parse(uuid(40))
   const everyoneInA = [membership(70, 1, 11, '2026-01-01', null), membership(71, 2, 11, '2026-01-01', null), membership(72, 3, 11, '2026-01-01', null)]
   const three = [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן', { status: 'inactive' }), soldier(3, 'גיל', 'כהן')]
-  const names = (items: readonly TimelineItem[]) => items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier.first_name] : []))
+  const names = (items: readonly BoardItem[]) => items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier.first_name] : []))
 
   it('reads soldier tags, and a status condition brings inactive soldiers back (D-131)', () => {
     const tagged = { soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, organization_id: ORGANIZATION, created_at: AT, created_by: null }
-    const medics = timelineItems(
+    const medics = boardItems(
       base({ soldiers: three, memberships: everyoneInA, soldierTags: [tagged], filter: { where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } } }),
     )
     expect(names(medics)).toEqual(['גיל'])
-    expect(names(timelineItems(base({ soldiers: three, memberships: everyoneInA })))).toEqual(['אבי', 'גיל'])
-    const inactive = timelineItems(
+    expect(names(boardItems(base({ soldiers: three, memberships: everyoneInA })))).toEqual(['אבי', 'גיל'])
+    const inactive = boardItems(
       base({ soldiers: three, memberships: everyoneInA, filter: { where: { kind: 'soldier_status', statuses: ['inactive'] } } }),
     )
     expect(names(inactive)).toEqual(['בני'])
@@ -342,7 +363,7 @@ describe('the rows of the timeline (D-105)', () => {
 
   it('keeps only rows with a matching mark under a leave condition (D-132)', () => {
     const marked = (id: SoldierId) => id === SoldierId.parse(uuid(1))
-    expect(names(timelineItems(base({ soldiers: three, memberships: everyoneInA, marked })))).toEqual(['אבי'])
+    expect(names(boardItems(base({ soldiers: three, memberships: everyoneInA, marked })))).toEqual(['אבי'])
   })
 
   it('keeps who is absent on a day in the view, and mutes the days they are present (D-133)', () => {
@@ -352,7 +373,7 @@ describe('the rows of the timeline (D-105)', () => {
       [SoldierId.parse(uuid(3)), [false, false, false, false, false, false, true]],
     ])
     const memberships = [membership(70, 1, 11, '2026-01-01', null), membership(72, 3, 11, '2026-01-01', '2026-11-13')]
-    const items = timelineItems(
+    const items = boardItems(
       base({
         soldiers: three,
         memberships,
