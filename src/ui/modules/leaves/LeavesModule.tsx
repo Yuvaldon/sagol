@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import { t } from '@i18n'
 import {
   useLeaveCreation,
+  useLeaveRoundSetup,
   useLeaveTypeGroups,
   useLeaveTypePermissions,
   useLeaveTypes,
@@ -11,12 +12,14 @@ import {
   useSoldiers,
   useToday,
 } from '@logic'
-import { Tags, User, Users } from 'lucide-react'
+import { CalendarSync, Tags, User, Users, type LucideIcon } from 'lucide-react'
+import type { I18nKey } from '@i18n'
 import { useState } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { Button } from '../../primitives/Button'
 import { LeaveBatchForm } from './LeaveBatchForm'
 import { LeaveDetails } from './LeaveDetails'
+import { LeaveRoundPlanner } from './LeaveRoundPlanner'
 import { LeaveSheetForm } from './LeaveSheetForm'
 
 /** What the panel shows before the form: what is missing, and the way to it when the actor may take it. */
@@ -30,7 +33,8 @@ function NewLeave() {
   const groups = useLeaveTypeGroups()
   const preferences = useMyPreferences()
   const creation = useLeaveCreation(soldiers.status === 'ready' ? soldiers.value : NO_SOLDIERS)
-  const [collective, setCollective] = useState(false)
+  const rounds = useLeaveRoundSetup()
+  const [mode, setMode] = useState<LeaveMode>('single')
 
   for (const loaded of [soldiers, types, groups, preferences]) {
     if (loaded.status === 'failed') return <FailureNotice error={loaded.error} />
@@ -74,26 +78,40 @@ function NewLeave() {
     today,
     approveNow: preferences.value.create_leaves_as_approved,
   }
-  // A collective leave needs more than one soldier to choose from (D-179).
+  // A collective leave needs more than one soldier to choose from (D-179), and a round plan an open rotation too (D-286).
+  const many = creation.soldiers.length > 1
+  const planIn = many && rounds.context !== null && rounds.preferred !== null ? { context: rounds.context, preferred: rounds.preferred } : null
+  const offered = LEAVE_MODES.filter((candidate) => candidate === 'single' || (candidate === 'collective' ? many : planIn !== null))
+  const current = offered.includes(mode) ? mode : 'single'
   const switcher =
-    creation.soldiers.length > 1 ? (
-      <div>
-        <Button
-          onPress={() => {
-            setCollective((current) => !current)
-          }}
-        >
-          {collective ? <User aria-hidden size={14} /> : <Users aria-hidden size={14} />}
-          {t(collective ? 'leaves.single' : 'leaves.collective')}
-        </Button>
+    offered.length > 1 ? (
+      <div className="flex flex-wrap gap-sm">
+        {offered
+          .filter((candidate) => candidate !== current)
+          .map((candidate) => {
+            const { icon: Icon, labelKey } = MODE_BUTTONS[candidate]
+            return (
+              <Button
+                key={candidate}
+                onPress={() => {
+                  setMode(candidate)
+                }}
+              >
+                <Icon aria-hidden size={14} />
+                {t(labelKey)}
+              </Button>
+            )
+          })}
       </div>
     ) : null
 
   return (
     <div className="flex flex-col gap-md">
       {switcher}
-      {collective && creation.soldiers.length > 1 ? (
+      {current === 'collective' ? (
         <LeaveBatchForm {...shared} />
+      ) : current === 'rounds' && planIn !== null ? (
+        <LeaveRoundPlanner {...shared} {...planIn} />
       ) : (
         <LeaveSheetForm
           // A new drag starts the form over from its own draft.
@@ -107,6 +125,16 @@ function NewLeave() {
 }
 
 const NO_SOLDIERS: readonly never[] = []
+
+/** The ways to ask for leave: one soldier, several on the same days, or groups taking turns in a rotation. */
+const LEAVE_MODES = ['single', 'collective', 'rounds'] as const
+type LeaveMode = (typeof LEAVE_MODES)[number]
+
+const MODE_BUTTONS: Record<LeaveMode, { readonly icon: LucideIcon; readonly labelKey: I18nKey }> = {
+  single: { icon: User, labelKey: 'leaves.single' },
+  collective: { icon: Users, labelKey: 'leaves.collective' },
+  rounds: { icon: CalendarSync, labelKey: 'leaves.rounds' },
+}
 
 /** The `leaves` panel: the new-leave form, or the details of the leave `entity` names (D-115, D-119). */
 export function LeavesModule() {
