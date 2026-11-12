@@ -322,20 +322,26 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 - **Top strip (context):** unit in scope · time (the rotation's name or "שגרה", the range, its arrows, "היום" while
   away from today) · view · filter · sort · avatar. A floating pill that hugs its content, centered at the top.
 - **Bottom strip (destinations):** לוח · בקשות (count awaiting me) · דוח 1 · ניהול (sum of waiting counts, commanders
-  only). A floating pill that hugs its content, centered at the bottom. The same two pills on a phone, a phone on its
-  side, a tablet and a desktop.
+  only), then the role's one primary quick action, a filled round button at the strip's inline end: "בקשה חדשה" in a
+  rotation, "פתיחת סבב" in routine for who may create one. A floating pill that hugs its content, centered at the
+  bottom. The same two pills on a phone, a phone on its side, a tablet and a desktop.
+- **The rule (D-256):** one entry per destination, plus one primary quick action per role.
 - **Profile (avatar):** name · appearance (light or dark, the rules row's place) · install · identity switch (local) ·
   sign-out.
 - **ניהול יחידה:** הקמת היחידה (while unfinished) · היחידה: מבנה היחידה, חיילים, סבבים · נוכחות: סוגי היעדרות, כללי
   נוכחות · פרטי חיילים: תגיות, פרטים נוספים · הרשאות: רמות הרשאה, הרשאות אישיות, בקשות הצטרפות · נתונים: ייבוא
   וייצוא. No pins.
-- **Requests hub:** בקשה חדשה · the approve-now switch (who may) · ממתינות לאישורי (who approves) · הבקשות שלי · closed.
-- **Gone:** the floating "+", the "הבקשות שלי" tab, pins, the presence count in the bar, the empty board's second
+- **Requests hub:** the approve-now switch (who may) · ממתינות לאישורי (who approves) · הבקשות שלי · closed. A new
+  request starts from the strip's quick action.
+- **Gone:** the separate floating "+" (its action is now in the strip), the "הבקשות שלי" tab, pins, the presence count in the bar, the empty board's second
   button, "סבב חדש" in the range menu, the full-width phone bars and the folded wide-phone row.
 - **Focus mode (V23):** both strips and the chips row hide; one restore button stays in a corner that does not cover
   the name column.
 
 ### Journeys (D-263)
+
+**Pending the owner's per-role matrix** (soldier, mid-level commander, company headquarters and clerk, company
+commander; daily, weekly, per rotation, once). It will replace this draft and set the home screen per role.
 
 **(a) First sign-in to a running unit.**
 1. Sign in. With no organization yet, the claim sheet asks for the unit's name and your name; the time zone is the
@@ -343,21 +349,24 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 2. "הקמת היחידה" opens: pick "פלוגה" (or "ריקה").
 3. Adjust: how many platoons and squads and their names, which absence types and tags to keep; each prefilled.
 4. "סיום": the template runs through the commands; the board opens in routine mode with the roster's empty units.
-5. Add soldiers in חיילים, or import them (ייבוא וייצוא), then "פתיחת סבב" from the routine notice.
+5. Add soldiers in חיילים, or import them (ייבוא וייצוא), then "פתיחת סבב", the strip's quick action in routine.
 
 **(b) A rotation, from call-up to close.**
-1. In routine, "פתיחת סבב" (the notice) or ניהול → סבבים → new: name, dates (an open end allowed), unit (the root by
-   default), who: "כל היחידה" (default) or "רשימה" (for example command staff first).
+1. In routine, "פתיחת סבב" (the strip's quick action) or ניהול → סבבים → new, empty or "מסבב קודם" (its list and
+   rotation tags copied): name, dates (an open end allowed), unit (the root by default), who: "כל היחידה" (default) or
+   "רשימה" (for example command staff first).
 2. Saving checks there is no overlapping rotation and says so before the command. The mode becomes the rotation's
    (upcoming, then running): the top strip names it and the range opens on it.
 3. Life in the rotation: rotation tags on the soldiers' cards ("כמו בסבב הקודם" copies the last rotation's), requests
    and approvals in the hub, דוח 1 every morning.
 4. A "רשימה" rotation grows: add soldiers to the list, or turn it to "כל היחידה".
-5. After the last day the rotation is ended; the commander settles open requests, then "סגירת סבב". The rotation turns
-   read-only, the screen returns to routine, and its tags and leaves stay as its history.
+5. After the last day the rotation is ended but stays open, and stays the mode while no other holds today or is
+   upcoming; the commander settles open requests, then its creator (or who may manage rotations) presses "סגירת סבב".
+   The rotation turns read-only and its tags and leaves stay as its history; "פתיחה מחדש" reopens it, for an
+   extension.
 
 **(c) A soldier requests an absence.**
-1. בקשות → "בקשה חדשה". The soldier is the requester (a commander may pick another).
+1. "בקשה חדשה", the strip's quick action. The soldier is the requester (a commander may pick another).
 2. Type (by group), from and to (inside the rotation by default), the reason when the type needs one, and any פרטים
    נוספים; the rules' warnings show as the dates change.
 3. Send. The request shows in "הבקשות שלי" as pending, and on the board as a dashed bar.
@@ -381,8 +390,9 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 | The rotation's days | `start_date`, `end_date` | |
 | No overlap per organization | exclusion constraint (V26) | |
 | Upcoming, running, ended | | today against the dates |
-| Closed | `closed_at`, `closed_by` (V26) | |
-| The mode of the screen | | the running rotation, else the next, else שגרה |
+| Closed (explicit, reversible) | `closed_at`, `closed_by` (V26) | |
+| The mode of the screen | | the rotation holding today, else the nearest upcoming, else the latest open, else שגרה |
+| A feature's context | each card says: rotation, routine or both | |
 | Who is in it | member rows, only for a list | no rows: the unit's soldiers for its days |
 | A rotation tag | `soldier_tags.deployment_id` (V26) | |
 | A category's lifetime | `tag_categories.lifetime` (V26) | |

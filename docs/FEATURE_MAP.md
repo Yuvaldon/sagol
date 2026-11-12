@@ -328,6 +328,9 @@ database; remote adapter passing the same contract suite; Google auth, environme
 
 ### M6 — Complete
 
+From V24 on, every card names its context (D-257): **rotation**, **routine** or **both**. Routine is a real mode, and
+its own features come in later slices.
+
 | Slice | Owner sees | Decisions |
 |-------|------------|-----------|
 | V13 More views | List, table/agenda and calendar engines beside the timeline | D-023, D-026 |
@@ -336,18 +339,18 @@ database; remote adapter passing the same contract suite; Google auth, environme
 | V16 Setup wizard | Guided first run over the existing forms; progress derived from data | D-033 |
 | V17 Dark Mode | Second token set (was row 8.5) | D-024, D-077 |
 | V18 Installable app (PWA) | Sagol on the home screen, a worker for the shell only, the update toast, the install item, the offline screen | D-182 … D-185 |
-| V24 Simplification: information architecture | Docs only: the term map, the navigation model, five journeys, the rotation as a mode, templates, in `docs/Design.md` | D-212, D-215, D-250 … D-264 |
-| V25 Navigation and words | Every string by the term map, no "ארגון"; a context pill at the top and a destination pill at the bottom (לוח, בקשות, דוח 1, ניהול) on every screen; the profile personal only; "ניהול יחידה" grouped, with a line per module and no pins; one requests hub with the approve-now switch; the floating "+", the second requests tab and the other duplicates gone. `i18n`, `config` and `ui` only. Tests: journeys (c), (d), (e) on desktop and a phone, axe | D-121, D-173, D-189, D-190, D-250 … D-256, D-263 |
-| V23 Focus mode | A control in the top strip and a key hide both strips and the chips row; one restore button in a corner clear of the name column; Escape restores; the day report still opens from a day. Tests: enter and leave by control, key and Escape, the button's size, axe | D-252, OI-032 |
-| V26 Rotation as a mode | One rotation at a time (domain rule and exclusion constraint), the mode derived (running, next, שגרה), the routine notice with "פתיחת סבב", the final close, the whole unit unless a list is chosen, rotation tags and category lifetimes, `pinned_modules` dropped. Model change first. Tests: domain rules, the constraint against the database, journey (b) | D-019, D-179, D-188, D-211, D-257 … D-260, D-263 |
-| V27 Templates and setup | The claim creates the root unit with the organization; the "פלוגה" template in config and i18n, applied through the commands; pick, adjust, done, into routine mode; the time zone in the root unit's form. Tests: the template's command sequence, journey (a) | D-005, D-033, D-180, D-251, D-261, D-262, D-263 |
+| V24 Simplification: information architecture | Context: both. Docs only: the term map, the navigation model, five journeys, the rotation as a mode, templates, in `docs/Design.md` | D-212, D-215, D-250 … D-264 |
+| V25 Navigation and words | Context: both. Every string by the term map, no "ארגון"; a context pill at the top and a destination pill at the bottom (לוח, בקשות, דוח 1, ניהול) on every screen; the profile personal only; "ניהול יחידה" grouped, with a line per module and no pins; one requests hub with the approve-now switch; the role's one primary quick action in the bottom strip ("בקשה חדשה", or "פתיחת סבב" in routine) in place of the floating "+"; the second requests tab and the other duplicates gone. `i18n`, `config` and `ui` only. Tests: journeys (c), (d), (e) on desktop and a phone, axe | D-121, D-173, D-189, D-190, D-250 … D-256, D-263 |
+| V23 Focus mode | Context: both. A control in the top strip and a key hide both strips and the chips row; one restore button in a corner clear of the name column; Escape restores; the day report still opens from a day. Tests: enter and leave by control, key and Escape, the button's size, axe | D-252, OI-032 |
+| V26 Rotation as a mode | Context: both (it defines the two). One rotation at a time by dates (domain rule and exclusion constraint), the mode derived (holding today, nearest upcoming, latest open, שגרה), routine as a real mode with its notice and "פתיחת סבב" as the quick action, the explicit and reversible close by the creator or who may manage rotations, a new rotation from a previous one, the whole unit unless a list is chosen, rotation tags and category lifetimes, `pinned_modules` dropped. Model change first. Tests: domain rules, the constraint against the database, journey (b) | D-019, D-179, D-188, D-211, D-257 … D-260, D-263 |
+| V27 Templates and setup | Context: routine (the setup lands in routine). The claim creates the root unit with the organization; the "פלוגה" template in config and i18n, applied through the commands; pick, adjust, done, into routine mode; the time zone in the root unit's form. Tests: the template's command sequence, journey (a) | D-005, D-033, D-180, D-251, D-261, D-262, D-263 |
 
 From M6 on, each slice also updates the remote adapter and server functions, and the contract
 suite holds both to the same behavior (D-082). Open items: V13 OI-088; V14 OI-037, OI-073, OI-080;
 V15 OI-069, OI-074, OI-081.
 
 Focus mode (the mock's "מצב מיקוד", OI-032) is V23, after V25 gives it the two strips to hide (D-252, D-264).
-Open items: V25 OI-200 … OI-206; V26 OI-207 … OI-211; V27 OI-212 … OI-215; V22 OI-216.
+Open items: V25 OI-200 … OI-206; V26 OI-207 … OI-211 and OI-217; V27 OI-212 … OI-215; V22 OI-216.
 
 ## 5. Audits (D-078)
 

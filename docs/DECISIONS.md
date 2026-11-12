@@ -233,7 +233,7 @@ am = amends, ref = refines, ext = extends.
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | |
 | D-256 | One path for each action | ui | |
 | D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | |
-| D-258 | A rotation's life: dates, plus one stored fact for the final close | contracts, domain, data, logic, ui, backend | |
+| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | |
 | D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | |
 | D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
@@ -2979,6 +2979,10 @@ which one they meant. Keeping the tenant in the model costs nothing and leaves r
   of what waits for the viewer's approval) and, once V22 lands, דוח 1 (today's report, D-193); then "ניהול" for whoever
   may manage anything (D-254). A destination shows only when the viewer may use it; a soldier with no management
   permission sees לוח and בקשות.
+- **One primary quick action per role sits in the bottom strip,** at its inline end, set apart from the destinations
+  as a filled round button with its name read aloud (on desktop a tooltip as well): "בקשה חדשה" for whoever may
+  request, in a rotation's mode; "פתיחת סבב" in routine for whoever may create a rotation (D-257). A viewer with
+  neither has no quick action. It is an action, not a destination: it opens the form over the current screen.
 - **Focus mode (V23) hides both strips and the chips row** and leaves one restore button; nothing else on the board
   floats, so the strips are the whole chrome V23 has to hide.
 - The page's `h1` is the root unit's name in scope (D-175), read aloud only.
@@ -3014,24 +3018,29 @@ One entry, grouped by what the commander is doing, with a line that says what ea
 
 ## D-255 — One requests hub: mine, awaiting me, and a new request
 2026-11-12 · accepted · supersedes D-115's floating "+", D-167's own tab and D-120's separate destination; refines D-119, D-121, D-145 · V24 · decided under the owner's autonomy instruction of 2026-11-11
-- **"בקשות"** is one destination. Its sheet opens with "בקשה חדשה" (the new-leave form, D-115's fields), then, for
-  whoever may approve someone, "ממתינות לאישורי" with its count first, then "הבקשות שלי" (D-167's open and history),
+- **"בקשות"** is one destination. Its sheet holds, for whoever may approve someone, "ממתינות לאישורי" with its count
+  first, then "הבקשות שלי" (D-167's open and history),
   then the closed requests the viewer approved or rejected (D-120's closed section). A soldier who approves no one
-  sees "בקשה חדשה" and "הבקשות שלי" only.
+  sees "הבקשות שלי" only.
+- **"בקשה חדשה" is the bottom strip's primary quick action (D-252),** not a button inside the hub and not a separate
+  floating button: the main journey keeps one press to start a request from any screen.
 - **The approve-now default** (D-121) is a switch in the hub's header, "לאשר מיד בקשות שאני יוצר", shown only to who
   may approve their own requests; the form's switch still starts from it.
-- **Removed:** the floating "+" and the second requests tab. A drag on the timeline still creates a request (D-143),
-  because it is the board's own gesture, not another entry.
+- **Removed:** the floating "+" as a separate button (its action moves into the strip) and the second requests tab.
+  A drag on the timeline still creates a request (D-143), because it is the board's own gesture, not another entry.
 - The panel keys (`my_leaves`, `leave_inbox`, `leaves`) stay as the hub's sections, so old links still land.
 **Why:** a request could start from three places and be followed from two, and its preference lived in a third. One
 hub holds the whole life of a request for both sides.
 
 ## D-256 — One path for each action
 2026-11-12 · accepted · refines D-173, D-180, D-189, D-211, D-252 · V24 · decided under the owner's autonomy instruction of 2026-11-11
+- **The rule: one entry per destination, plus one primary quick action per role (D-252).** Shortcuts are not banned;
+  a second entry to the same destination is.
 - The empty board shows one action: "הקמת היחידה" for who may, otherwise its title alone; the second "soldiers"
   button goes.
-- A rotation is created in "ניהול יחידה → סבבים", and, in routine mode only, from the board's routine notice
-  (D-257), which opens the same form; the range menu lists rotations to view and offers no "סבב חדש".
+- A rotation is created in "ניהול יחידה → סבבים", and, in routine mode, from the strip's quick action "פתיחת סבב"
+  (D-252, D-257), which opens the same form; the routine notice names the mode and holds no button of its own, and the
+  range menu lists rotations to view and offers no "סבב חדש".
 - "היום" is the range's own control; the לוח destination returns to the board and does not move the dates.
 - The presence count in the bar goes; דוח 1 is the destination, and a day's heading still opens that day (D-193).
 - The setup's steps open the modules themselves, not copies of their forms (D-180 as before).
@@ -3040,33 +3049,48 @@ is found once and trusted.
 
 ## D-257 — A rotation is a mode of the system: one at a time, and routine without one
 2026-11-12 · accepted · refines D-179, D-189, D-211, D-212 · V24 · decided under the owner's autonomy instruction of 2026-11-11
-- **One rotation at a time per organization.** No two live (not archived) deployments of an organization overlap in
-  dates. V26 enforces it in the database with an exclusion constraint over `organization_id` and the date range (an
+- **One rotation at a time per organization, by dates.** No two live (not archived) deployments of an organization
+  overlap in dates. The rule is about dates, not about being open: an ended rotation that is not closed yet may stand
+  beside a future one. V26 enforces it in the database with an exclusion constraint over `organization_id` and the date range (an
   open end is unbounded), with `btree_gist` from `extensions` (D-188), and in the domain with the same rule and its
   own error, so the form says it before the command fails.
-- **The mode is derived from today and the rotations:** a running rotation, else the next one to start, else routine
-  (שגרה). Nothing stores the mode.
+- **The mode is derived from today and the rotations:** the rotation whose dates hold today, else the nearest
+  upcoming one, else the most recently ended one that is still open (not closed, D-258), else routine (שגרה). Nothing
+  stores the mode.
+- **Routine is a real mode, not an empty state.** Every feature declares its context: rotation, routine or both
+  (the slice cards in `FEATURE_MAP.md` carry it). Routine's own features come in later slices and join the same strips
+  as their destinations and its quick action; nothing in the strips assumes a rotation exists.
 - **In a rotation's mode** the range opens on that rotation (D-211), the top strip names it, the requests hub and
   דוח 1 are destinations, and a new request's dates default inside it.
 - **In routine** the board shows the roster with the persistent tags and a routine notice; for who may create a
-  rotation the notice holds "פתיחת סבב". The requests hub and דוח 1 are not destinations (D-189's rule, now with the
+  rotation the strip's quick action is "פתיחת סבב" (D-252). The requests hub and דוח 1 are not destinations (D-189's rule, now with the
   model behind it); existing leaves stay valid data and stay on the board.
 - A rotation keeps its `unit_id`; the form defaults it to the root unit (D-251).
 **Why:** a reserve unit lives from call-up to call-up; between them there is nothing to request or report. One
 rotation at a time makes "the current rotation" a fact the whole screen can lean on, and a derived mode cannot go
 stale.
 
-## D-258 — A rotation's life: dates, plus one stored fact for the final close
+## D-258 — A rotation's life: dates, plus one stored fact for its close
 2026-11-12 · accepted · refines D-019, D-179 · V24 · decided under the owner's autonomy instruction of 2026-11-11
 - **Stages, derived:** upcoming (before `start_date`), running (from `start_date` to `end_date`, or open-ended), ended
   (after `end_date`, not closed) and closed.
+- **A rotation never closes on its end date.** Work after the last day is normal (requests to settle, the report), so
+  it stays open until it is closed explicitly.
 - **The one stored fact is the close:** `deployments.closed_at TIMESTAMPTZ NULL` with `closed_by`, set by an explicit
-  "סגירת סבב" command (V26). Closing needs an end date on or before today; a rotation without one gets today's date in
-  the same command. A closed rotation is read-only: its dates, members and rotation tags no longer change, and its
-  leaves stay as history.
+  "סגירת סבב" command (V26) that only the rotation's creator (`created_by`) or whoever holds the permission to manage
+  rotations may run. Closing needs an end date on or before today; a rotation without one gets today's date in the
+  same command.
+- **Closing is not deletion.** A closed rotation stays readable, with its dates, members, rotation tags and leaves as
+  its history, and none of them change while it is closed. **"פתיחה מחדש"** (the same actors) clears `closed_at` and
+  `closed_by`, so an extension is an ordinary edit of the dates; the no-overlap rule (D-257) still holds.
+- **"סבב חדש מסבב קודם":** a new rotation may start from a previous one. It copies, as ordinary commands, the member
+  list when the previous one had a list (D-259) and its rotation tags (posts and duties, D-260) to the new rotation;
+  the dates and the name are new. Nothing links the two after the copy.
 - Nothing else is stored: not "active", not "ended", not the mode (D-019).
 **Why:** the end of a rotation in the calendar is not the end of its work: commanders settle requests and the report
-after the last day. Only the moment they say "done" is a fact the dates cannot give.
+after the last day, and extensions happen. Only the moment they say "done" is a fact the dates cannot give, and it must
+be reversible. Amended on 2026-11-12 with the owner's lifecycle (explicit close, reopen, a new rotation from a previous
+one).
 
 ## D-259 — Who is in a rotation: the whole unit by default, a list when chosen
 2026-11-12 · accepted · refines D-179 · V24 · decided under the owner's autonomy instruction of 2026-11-11
@@ -3088,8 +3112,8 @@ says, and a stored copy would drift when the unit changes.
   for a `rotation` category and NULL for a `persistent` one (domain and trigger). The key becomes an `id`, with
   one live row per soldier and tag for persistent tags, and per soldier, tag and rotation for rotation tags.
 - The board and the filters read persistent tags and the current rotation's tags; a closed rotation's tags stay as its
-  history and are read only inside it. Nothing copies tags from one rotation to the next; the soldier's card offers
-  "כמו בסבב הקודם" as one command that adds the same rows for the new rotation.
+  history and are read only inside it. Nothing copies tags silently: a rotation started "מסבב קודם" copies them once
+  (D-258), and the soldier's card offers "כמו בסבב הקודם" as one command that adds the same rows for one soldier.
 - V26 makes the change in `schema.sql`, `DECISIONS.md` and `contracts` together, first in the slice (rule 5).
 **Why:** a driver is a driver in every rotation; the kitchen duty of this rotation is not. Putting the lifetime on the
 category lets the commander decide once, and the rotation reference makes "this rotation's tags" a query.
@@ -3121,6 +3145,9 @@ anything later in the modules where it lives.
 
 ## D-263 — Five journeys are the acceptance tests of V25, V26 and V27
 2026-11-12 · accepted · refines D-154 · V24 · decided under the owner's autonomy instruction of 2026-11-11
+- **Pending:** the journeys are being characterized per role (soldier, mid-level commander, company headquarters and
+  clerk, company commander) and per tier (daily, weekly, per rotation, once) with the owner. The agreed matrix will
+  replace the draft below and decide the home screen per role; until then the draft stands.
 - `docs/Design.md` writes five journeys step by step: the first sign-in to a running unit, a rotation from call-up to
   its close, a soldier's request, a commander's approval, and the daily report. Each slice that touches one makes its
   e2e walk the journey's steps as written, and updates the steps in the same commit when it changes them.
