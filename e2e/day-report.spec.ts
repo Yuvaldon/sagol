@@ -12,7 +12,7 @@ import {
   requestLeave,
   typeDate,
 } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
+import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
 
 // V22's demo: the day report opens from a day of the timeline and of the calendar, holds the counts and the names per
 // unit, shows the reasons behind a switch kept on the device, spans days, and leaves as text and as an image, on
@@ -121,10 +121,7 @@ const SOLDIER = 'יעל שחר'
 /** A unit with one soldier placed in it, and the rotation over it: a unit section the report can confirm. */
 async function soldierInRotation(page: Page) {
   await openModule(page, he.units.open)
-  await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(ROTATION_UNIT)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByText(ROTATION_UNIT, { exact: true })).toBeVisible()
+  await addUnit(page, ROTATION_UNIT)
   await closeDrawer(page)
   await openModule(page, he.soldiers.open)
   await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
