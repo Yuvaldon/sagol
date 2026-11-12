@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
 
 // V7's demo: a rule builder, the heat row, a soft rule that asks for an acknowledgment, a hard rule that refuses,
 // and a configuration conflict, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -10,10 +10,7 @@ const PLATOON = 'מחלקה א'
 
 async function createUnit(page: Page, name: string) {
   await openModule(page, he.units.open)
-  await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(name)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.units.listLabel }).getByText(name, { exact: true })).toBeVisible()
+  await addUnit(page, name)
   await closeDrawer(page)
 }
 

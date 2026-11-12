@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { ORGANIZATION, OWNER, claimOrganization, expectNoAxeViolations, navigation, organizationHeading, signIn } from './support/workspace.ts'
+import { ORGANIZATION, OWNER, claimOrganization, closeSetup, expectNoAxeViolations, navigation, organizationHeading, signIn } from './support/workspace.ts'
 
 // V0's demo: sign in, claim the organization, see the empty workspace, keep the session across a
 // reload, and see that a second identity gets no data. Each test starts on an empty browser
@@ -53,13 +53,17 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await expect(zone).toHaveValue('America/New_York')
   })
 
-  await test.step('claiming opens the empty workspace', async () => {
+  await test.step('claiming creates the root unit and opens its setup over the board', async () => {
     await claimOrganization(page)
-    await expect(page).toHaveURL(/\/$/)
     await expect(organizationHeading(page)).toBeVisible()
-    // A new organization has no rotation yet, nor a unit to hold one; its owner is sent to found the unit (D-218).
+    await expect(page.getByRole('dialog', { name: he.setup.title })).toBeVisible()
+    await expect(page.getByRole('radio', { name: he.setup.wizard.templates.company.title })).toBeChecked()
+    await expectNoAxeViolations(page)
+    await closeSetup(page)
+    await expect(page).toHaveURL(/\/$/)
+    // The claim made the root unit, with its owner in it (OI-212): what is missing is a rotation (D-218).
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
-    await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
+    await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
     await expect(page.getByRole('button', { name: `${he.account.menu} ${OWNER.name}` })).toBeVisible()
     await expectNoAxeViolations(page)
   })
@@ -104,6 +108,7 @@ test('a second identity sees no access and no data', async ({ page }) => {
   await signIn(page, OWNER.email, OWNER.name)
   await claimOrganization(page)
   await expect(organizationHeading(page)).toBeVisible()
+  await closeSetup(page)
 
   await test.step('after sign-out the app returns to sign-in', async () => {
     await chooseFromUserMenu(page, he.account.signOut)
@@ -171,7 +176,9 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   await expectTouchTargets()
   await claimOrganization(page)
   await expect(organizationHeading(page)).toBeVisible()
+  await expectTouchTargets()
+  await closeSetup(page)
   // The settled workspace: its empty state is in place before anything is measured.
-  await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
+  await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
   await expectTouchTargets()
 })

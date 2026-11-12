@@ -95,3 +95,21 @@ export function moveUnitIssues(
   if (!isAncestorOrSelf(tree, unitId, newParentId)) return []
   return [{ path: ['parent_id'], code: IssueCode.enum.unit_cycle }]
 }
+
+/**
+ * One root unit per organization (D-251): a unit goes without a parent only while no other live unit does.
+ * An organization that already has several roots keeps them; it only gains no new one.
+ */
+export function rootIssues(
+  units: Iterable<Pick<Unit, 'id' | 'parent_id' | 'archived_at'>>,
+  unitId: UnitId,
+  parentId: UnitId | null,
+): Issue[] {
+  if (parentId !== null) return []
+  for (const unit of units) {
+    if (unit.id !== unitId && unit.parent_id === null && unit.archived_at === null) {
+      return [{ path: ['parent_id'], code: IssueCode.enum.required }]
+    }
+  }
+  return []
+}

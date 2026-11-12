@@ -12,7 +12,7 @@ import {
   useOnlyMissing,
   usePanel,
   usePresenceDay,
-  useSetupAccess,
+  useSetupUnfinished,
   useViewFilter,
   type BoardConditions,
   type BoardModel,
@@ -79,7 +79,7 @@ function Board({
   readonly draw: Draw
 }) {
   const access = useModuleAccess()
-  const canSetUp = useSetupAccess().length > 0
+  const canSetUp = useSetupUnfinished()
   const panel = usePanel()
   const { mode } = useBarColors()
   const { open } = panel

@@ -30,7 +30,7 @@ const levelOperation = (name: string, id = UnitLevelId.parse(crypto.randomUUID()
 
 export function describeTransferContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
   const transfer = () => adapter().transfer
@@ -38,11 +38,13 @@ export function describeTransferContract(
 
   describe('import and export', () => {
     let organization: OrganizationId
+    let root: UnitId
     let owner: AuthIdentity
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       owner = claimed.owner
     })
 
@@ -202,7 +204,7 @@ export function describeTransferContract(
         valueOf(
           await adapter().commands.units.create({
             id: UnitId.parse(crypto.randomUUID()),
-            parent_id: null,
+            parent_id: root,
             sort_order: 0,
             name: 'Platoon',
             code: null,

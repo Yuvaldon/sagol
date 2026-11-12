@@ -1,15 +1,28 @@
 import { PANEL_IDS } from '@config'
-import type { Unit, UnitId, UnitLevel, UnitLevelId } from '@contracts'
-import { liveLevels, unitFormIssues, unitTreeRows, usePanel, useUnitCommands, type UnitFormValues } from '@logic'
+import { t } from '@i18n'
+import type { AppError, Organization, Unit, UnitId, UnitLevel, UnitLevelId } from '@contracts'
+import {
+  liveLevels,
+  timeZoneChoices,
+  unitFormIssues,
+  unitTreeRows,
+  useCanSetTimezone,
+  useCurrentOrganization,
+  usePanel,
+  useSetOrganizationTimezone,
+  useUnitCommands,
+  type UnitFormValues,
+} from '@logic'
 import { useForm } from '@tanstack/react-form'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
+import { FailureNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
 import { PropertyFields } from '../../patterns/properties/PropertyFields'
 import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { ColorField } from '../../primitives/ColorField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
-import { TextField } from '../../primitives/fields'
+import { SearchSelectField, TextField } from '../../primitives/fields'
 import { UnitLevelInPlace } from '../unit-levels/UnitLevelsModule'
 
 // The fields on screen are name, level and color (D-092).
@@ -42,9 +55,6 @@ function parentOptions(units: readonly Unit[], allowed: (id: UnitId | null) => b
   ]
 }
 
-
-
-
 export function UnitCreateForm({
   units,
   levels,
@@ -59,7 +69,9 @@ export function UnitCreateForm({
   const panel = usePanel()
   const { create } = useUnitCommands()
   const [state, setState] = useState(CLEAN_FORM)
-  const initialValues: CreateValues = { name: '', unit_level_id: null, color_key: null, parent_id: parentId }
+  const options = parentOptions(units, allowedParent)
+  // With no parent named, the first place the actor may use: the root, once it exists (D-251).
+  const initialValues: CreateValues = { name: '', unit_level_id: null, color_key: null, parent_id: parentId ?? options[0]?.value ?? null }
   const backToList = () => {
     panel.open(PANEL_IDS.units)
   }
@@ -106,7 +118,7 @@ export function UnitCreateForm({
             labelKey="units.parent"
             name={field.name}
             value={field.state.value}
-            options={parentOptions(units, allowedParent)}
+            options={options}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
           />
@@ -246,18 +258,55 @@ function UnitEditFields({
   )
 }
 
+/** The organization's time zone, on the root unit's form (OI-215): saved as it is picked, on its own. */
+function TimezonePicker({ organization }: { readonly organization: Organization }) {
+  const setTimezone = useSetOrganizationTimezone()
+  const zones = useMemo(() => {
+    const { zones: known } = timeZoneChoices()
+    return [...new Set([organization.timezone, ...known])]
+  }, [organization.timezone])
+  const [failure, setFailure] = useState<AppError | null>(null)
+  return (
+    <div className="flex flex-col gap-xs">
+      <SearchSelectField
+        labelKey="units.timezone"
+        toggleLabelKey="units.timezoneToggle"
+        name="timezone"
+        value={organization.timezone}
+        options={zones}
+        onChange={(timezone) => {
+          setFailure(null)
+          void setTimezone.run({ organization, timezone }).then((result) => {
+            if (!result.ok) setFailure(result.error)
+          })
+        }}
+        error={null}
+        isDisabled={setTimezone.isPending}
+      />
+      <p className="text-micro text-text-muted">{t('units.timezoneHint')}</p>
+      {failure === null ? null : <FailureNotice error={failure} />}
+    </div>
+  )
+}
+
 export function UnitEditForm({ unit, levels }: { readonly unit: Unit; readonly levels: readonly UnitLevel[] }) {
   // A new generation opens the latest row, after someone else changed it.
   const [generation, setGeneration] = useState(0)
+  const organization = useCurrentOrganization()
+  const canSetTimezone = useCanSetTimezone()
+  const current = organization.status === 'ready' ? organization.value : null
   return (
-    <UnitEditFields
-      key={generation}
-      unit={unit}
-      levels={levels}
-      onReload={() => {
-        setGeneration((current) => current + 1)
-      }}
-    />
+    <div className="flex flex-col gap-md">
+      <UnitEditFields
+        key={generation}
+        unit={unit}
+        levels={levels}
+        onReload={() => {
+          setGeneration((current) => current + 1)
+        }}
+      />
+      {unit.parent_id === null && canSetTimezone && current !== null ? <TimezonePicker organization={current} /> : null}
+    </div>
   )
 }
 

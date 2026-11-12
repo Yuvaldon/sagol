@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
+import { ORGANIZATION, enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
 
 // V1's demo: the units drawer, from levels to archive, on desktop and mobile, RTL, with axe.
 
@@ -32,8 +32,9 @@ async function openUnits(page: Page) {
   await expect(page.getByRole('heading', { name: he.units.title, exact: true })).toBeVisible()
 }
 
+/** A unit under the root, which the claim made (V27). */
 async function createUnit(page: Page, name: string) {
-  await page.getByRole('button', { name: he.units.new }).click()
+  await rowAction(page, ORGANIZATION, he.units.addChild)
   await page.getByLabel(he.units.name).fill(name)
   await page.getByRole('button', { name: he.common.create }).click()
   await expect(row(page, name)).toBeVisible()
@@ -65,9 +66,9 @@ async function dragOnto(page: Page, from: string, to: string, part: number) {
 
 /** A company with two platoons, and a squad under the first. */
 async function buildTree(page: Page) {
-  await createUnit(page, 'פלוגה')
-  await addChild(page, 'פלוגה', 'מחלקה א')
-  await addChild(page, 'פלוגה', 'מחלקה ב')
+  await createUnit(page, 'מפקדה')
+  await addChild(page, 'מפקדה', 'מחלקה א')
+  await addChild(page, 'מפקדה', 'מחלקה ב')
   await addChild(page, 'מחלקה א', 'כיתה')
 }
 
@@ -85,7 +86,7 @@ test('levels: create, rename, reorder and archive', async ({ page }) => {
     await expectNoAxeViolations(page)
     await page.getByLabel(he.unitLevels.name).fill('גדוד')
     await page.getByRole('button', { name: he.common.create }).click()
-    for (const name of ['מחלקה', 'פלוגה']) {
+    for (const name of ['מחלקה', 'מפקדה']) {
       await page.getByRole('button', { name: he.unitLevels.new }).click()
       await page.getByLabel(he.unitLevels.name).fill(name)
       await page.getByRole('button', { name: he.common.create }).click()
@@ -96,10 +97,10 @@ test('levels: create, rename, reorder and archive', async ({ page }) => {
   const levels = page.getByRole('list', { name: he.unitLevels.listLabel }).getByRole('listitem')
 
   await test.step('the menu moves a level, and dragging moves it too', async () => {
-    await expect(levels).toHaveText(['גדוד', 'מחלקה', 'פלוגה'])
-    await levels.filter({ hasText: 'פלוגה' }).getByRole('button', { name: he.common.actions }).click()
+    await expect(levels).toHaveText(['גדוד', 'מחלקה', 'מפקדה'])
+    await levels.filter({ hasText: 'מפקדה' }).getByRole('button', { name: he.common.actions }).click()
     await page.getByRole('menuitem', { name: he.common.stepUp }).click()
-    await expect(levels).toHaveText(['גדוד', 'פלוגה', 'מחלקה'])
+    await expect(levels).toHaveText(['גדוד', 'מפקדה', 'מחלקה'])
 
     const handle = await levels.nth(2).getByTestId('drag-handle').boundingBox()
     const target = await levels.nth(0).boundingBox()
@@ -108,21 +109,21 @@ test('levels: create, rename, reorder and archive', async ({ page }) => {
     await page.mouse.down()
     await page.mouse.move(handle.x + handle.width / 2, target.y + 2, { steps: STEPS })
     await page.mouse.up()
-    await expect(levels).toHaveText(['מחלקה', 'גדוד', 'פלוגה'])
+    await expect(levels).toHaveText(['מחלקה', 'גדוד', 'מפקדה'])
   })
 
   await test.step('a level is renamed, and archived after a warning', async () => {
     await page.getByRole('button', { name: 'מחלקה', exact: true }).click()
     await page.getByLabel(he.unitLevels.name).fill('צוות')
     await page.getByRole('button', { name: he.common.save }).click()
-    await expect(levels).toHaveText(['צוות', 'גדוד', 'פלוגה'])
+    await expect(levels).toHaveText(['צוות', 'גדוד', 'מפקדה'])
 
     await levels.filter({ hasText: 'צוות' }).getByRole('button', { name: he.common.actions }).click()
     await page.getByRole('menuitem', { name: he.common.archive }).click()
     await expect(page.getByRole('alertdialog')).toContainText(he.unitLevels.archiveBody)
     await expectNoAxeViolations(page)
     await page.getByRole('alertdialog').getByRole('button', { name: he.common.archive }).click()
-    await expect(levels).toHaveText(['גדוד', 'פלוגה'])
+    await expect(levels).toHaveText(['גדוד', 'מפקדה'])
   })
 })
 
@@ -146,7 +147,7 @@ test('the tree: create, rename, color, level, reorder, move and archive', async 
   })
 
   await test.step('a form reports a blank name, and has no axe violations', async () => {
-    await page.getByRole('button', { name: he.units.new }).click()
+    await rowAction(page, ORGANIZATION, he.units.addChild)
     await expect(page).toHaveURL(/entity=new/)
     await page.getByRole('button', { name: he.common.create }).click()
     await expect(page.getByText(he.issues.required)).toBeVisible()
@@ -156,8 +157,8 @@ test('the tree: create, rename, color, level, reorder, move and archive', async 
 
   await test.step('a tree is built', async () => {
     await buildTree(page)
-    expect(await namesInOrder(page)).toEqual(['פלוגה', 'מחלקה א', 'כיתה', 'מחלקה ב'])
-    expect(await depthOf(page, 'כיתה')).toBe(`${he.units.depth} 3`)
+    expect(await namesInOrder(page)).toEqual([ORGANIZATION, 'מפקדה', 'מחלקה א', 'כיתה', 'מחלקה ב'])
+    expect(await depthOf(page, 'כיתה')).toBe(`${he.units.depth} 4`)
     await expectNoAxeViolations(page)
   })
 
@@ -182,24 +183,24 @@ test('the tree: create, rename, color, level, reorder, move and archive', async 
 
   await test.step('the menu reorders among siblings', async () => {
     await rowAction(page, 'מחלקה ג', he.common.stepUp)
-    await expect.poll(() => namesInOrder(page)).toEqual(['פלוגה', 'מחלקה ג', 'מחלקה א', 'כיתה'])
+    await expect.poll(() => namesInOrder(page)).toEqual([ORGANIZATION, 'מפקדה', 'מחלקה ג', 'מחלקה א', 'כיתה'])
   })
 
   await test.step('dragging onto the edge of a row reorders', async () => {
     await dragOnto(page, 'מחלקה א', 'מחלקה ג', 0.05)
-    await expect.poll(() => namesInOrder(page)).toEqual(['פלוגה', 'מחלקה א', 'כיתה', 'מחלקה ג'])
+    await expect.poll(() => namesInOrder(page)).toEqual([ORGANIZATION, 'מפקדה', 'מחלקה א', 'כיתה', 'מחלקה ג'])
   })
 
   await test.step('dragging onto the middle of a row moves into it', async () => {
     await dragOnto(page, 'כיתה', 'מחלקה ג', 0.5)
-    await expect.poll(() => namesInOrder(page)).toEqual(['פלוגה', 'מחלקה א', 'מחלקה ג', 'כיתה'])
-    expect(await depthOf(page, 'כיתה')).toBe(`${he.units.depth} 3`)
+    await expect.poll(() => namesInOrder(page)).toEqual([ORGANIZATION, 'מפקדה', 'מחלקה א', 'מחלקה ג', 'כיתה'])
+    expect(await depthOf(page, 'כיתה')).toBe(`${he.units.depth} 4`)
   })
 
   await test.step('a cycle is refused with a clear message, and nothing moves', async () => {
-    await dragOnto(page, 'פלוגה', 'כיתה', 0.5)
+    await dragOnto(page, 'מפקדה', 'כיתה', 0.5)
     await expect(page.getByRole('alert')).toContainText(he.issues.unitCycle)
-    expect(await namesInOrder(page)).toEqual(['פלוגה', 'מחלקה א', 'מחלקה ג', 'כיתה'])
+    expect(await namesInOrder(page)).toEqual([ORGANIZATION, 'מפקדה', 'מחלקה א', 'מחלקה ג', 'כיתה'])
     await expectNoAxeViolations(page)
   })
 
@@ -211,10 +212,10 @@ test('the tree: create, rename, color, level, reorder, move and archive', async 
       .click()
     await expect(page.getByRole('option', { name: 'כיתה' })).toHaveCount(0)
     await expectNoAxeViolations(page)
-    await page.getByRole('option', { name: he.units.parentTop }).click()
+    await page.getByRole('option', { name: ORGANIZATION, exact: true }).click()
     await page.getByRole('button', { name: he.units.moveSubmit }).click()
-    await expect.poll(() => depthOf(page, 'מחלקה ג')).toBe(`${he.units.depth} 1`)
-    expect(await namesInOrder(page)).toEqual(['פלוגה', 'מחלקה א', 'מחלקה ג', 'כיתה'])
+    await expect.poll(() => depthOf(page, 'מחלקה ג')).toBe(`${he.units.depth} 2`)
+    expect(await namesInOrder(page)).toEqual([ORGANIZATION, 'מפקדה', 'מחלקה א', 'מחלקה ג', 'כיתה'])
   })
 
   await test.step('a unit with sub-units is not archived, an empty one is, after a warning', async () => {
@@ -241,25 +242,25 @@ test('the tree: create, rename, color, level, reorder, move and archive', async 
 test('a deep link reopens the drawer and the form, also after a reload', async ({ page }) => {
   await enterAsOwner(page)
   await openUnits(page)
-  await createUnit(page, 'פלוגה')
-  await list(page).getByRole('button', { name: 'פלוגה' }).click()
+  await createUnit(page, 'מפקדה')
+  await list(page).getByRole('button', { name: 'מפקדה' }).click()
   await expect(page).toHaveURL(/entity=/)
   const deepLink = page.url()
 
   await page.reload()
-  await expect(page.getByLabel(he.units.name)).toHaveValue('פלוגה')
+  await expect(page.getByLabel(he.units.name)).toHaveValue('מפקדה')
 
   await page.goto('/?panel=unit_levels')
   await expect(page.getByText(he.unitLevels.emptyTitle)).toBeVisible()
 
   await page.goto(deepLink)
-  await expect(page.getByLabel(he.units.name)).toHaveValue('פלוגה')
+  await expect(page.getByLabel(he.units.name)).toHaveValue('מפקדה')
 
   await test.step('a row that does not exist says so', async () => {
     await page.goto('/?panel=units&entity=00000000-0000-4000-8000-000000000000')
     await expect(page.getByText(he.units.notFound)).toBeVisible()
     await page.getByRole('button', { name: he.common.backToList }).click()
-    await expect(row(page, 'פלוגה')).toBeVisible()
+    await expect(row(page, 'מפקדה')).toBeVisible()
   })
 
   await test.step('a value that means nothing is ignored', async () => {
@@ -272,11 +273,11 @@ test('a deep link reopens the drawer and the form, also after a reload', async (
 test('two tabs stay in sync, and a stale edit gets a clear message', async ({ page, context }) => {
   await enterAsOwner(page)
   await openUnits(page)
-  await createUnit(page, 'פלוגה')
+  await createUnit(page, 'מפקדה')
 
   const other = await context.newPage()
   await other.goto('/?panel=units')
-  await expect(row(other, 'פלוגה')).toBeVisible()
+  await expect(row(other, 'מפקדה')).toBeVisible()
 
   await test.step('a unit created in one tab appears in the other', async () => {
     await createUnit(page, 'גדוד')
@@ -284,10 +285,10 @@ test('two tabs stay in sync, and a stale edit gets a clear message', async ({ pa
   })
 
   await test.step('saving over a change from another tab is refused, then continues from it', async () => {
-    await list(other).getByRole('button', { name: 'פלוגה' }).click()
+    await list(other).getByRole('button', { name: 'מפקדה' }).click()
     await other.getByLabel(he.units.name).fill('השם של הלשונית השנייה')
 
-    await list(page).getByRole('button', { name: 'פלוגה' }).click()
+    await list(page).getByRole('button', { name: 'מפקדה' }).click()
     await page.getByLabel(he.units.name).fill('השם של הלשונית הראשונה')
     await page.getByRole('button', { name: he.common.save }).click()
     await expect(row(page, 'השם של הלשונית הראשונה')).toBeVisible()
@@ -333,7 +334,7 @@ test('on a phone: 44 px targets, real touch drag, and the sheet closes by its gr
   await expectTouchTargets()
 
   await test.step('forms are touch sized', async () => {
-    await page.getByRole('button', { name: he.units.new }).click()
+    await rowAction(page, ORGANIZATION, he.units.addChild)
     await expect(page.getByLabel(he.units.name)).toBeVisible()
     await expectTouchTargets()
     await page.getByRole('button', { name: he.common.cancel }).click()
@@ -349,7 +350,7 @@ test('on a phone: 44 px targets, real touch drag, and the sheet closes by its gr
       target.x + target.width / 2,
       target.y + target.height / 2,
     )
-    await expect.poll(() => namesInOrder(page)).toEqual(['פלוגה', 'מחלקה א', 'מחלקה ב', 'כיתה'])
+    await expect.poll(() => namesInOrder(page)).toEqual([ORGANIZATION, 'מפקדה', 'מחלקה א', 'מחלקה ב', 'כיתה'])
   })
 
   await test.step('dragging the grip down closes the sheet', async () => {
@@ -393,7 +394,7 @@ test('a drag still lands right after the list scrolled under it', async ({ page 
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: STEPS })
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2 + 1, { steps: 2 })
   await page.mouse.up()
-  await expect.poll(() => depthOf(page, nameOf(1))).toBe(`${he.units.depth} 2`)
+  await expect.poll(() => depthOf(page, nameOf(1))).toBe(`${he.units.depth} 3`)
   const order = await namesInOrder(page)
   expect(order.indexOf(nameOf(1))).toBe(order.indexOf(chosen?.name ?? '') + 1)
 })

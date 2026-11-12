@@ -1,5 +1,7 @@
 import {
   AccessGrantId,
+  UnitId,
+  UnitMembershipId,
   BootstrapOwnerInput,
   OrganizationId,
   RoleId,
@@ -27,6 +29,8 @@ export function toBootstrapInput(values: ClaimOrganizationValues): BootstrapOwne
     owner_role: { id: RoleId.parse(crypto.randomUUID()), name: values.owner_role_name },
     account_id: SoldierAccountId.parse(crypto.randomUUID()),
     access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+    root_unit_id: UnitId.parse(crypto.randomUUID()),
+    membership_id: UnitMembershipId.parse(crypto.randomUUID()),
   }
 }
 

@@ -145,18 +145,20 @@ export function useUnitPermissions(units: readonly Unit[]) {
     [units],
   )
   const can = useCan(checks)
-  return useMemo(
-    () => ({
-      createUnder: (parentId: UnitId | null) => can(check('create', placementTarget(parentId))),
-      moveTo: (parentId: UnitId | null) => can(check('update', placementTarget(parentId))),
+  // One root unit (D-251): once it exists, a unit is made or moved under a parent, never beside it.
+  return useMemo(() => {
+    const rooted = units.some((unit) => unit.parent_id === null)
+    const placeable = (parentId: UnitId | null) => parentId !== null || !rooted
+    return {
+      createUnder: (parentId: UnitId | null) => placeable(parentId) && can(check('create', placementTarget(parentId))),
+      moveTo: (parentId: UnitId | null) => placeable(parentId) && can(check('update', placementTarget(parentId))),
       update: (unit: Unit) => can(check('update', unitTarget(unit))),
       archive: (unit: Unit) => can(check('delete', unitTarget(unit))),
       /** Every live sibling in sight. The command also counts the ones out of sight (D-089). */
       reorderAround: (unit: Unit) =>
         siblingsUnder(units, unit.parent_id).every((sibling) => can(check('update', unitTarget(sibling)))),
-    }),
-    [can, units],
-  )
+    }
+  }, [can, units])
 }
 
 const LEVEL_CHECKS = {

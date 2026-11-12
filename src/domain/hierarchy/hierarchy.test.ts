@@ -12,6 +12,7 @@ import {
   membershipChangeIssues,
   membershipOverlapIssues,
   moveUnitIssues,
+  rootIssues,
   planMembershipChange,
   primaryUnitOn,
   type MembershipSpan,
@@ -88,6 +89,17 @@ describe('hierarchy', () => {
     expect(moveUnitIssues(tree, P1, P2)).toEqual([])
     expect(moveUnitIssues(tree, C, LONE)).toEqual([])
     expect(moveUnitIssues(tree, P1, null)).toEqual([])
+  })
+
+  it('keeps one live root: a parentless unit only while no other live one exists (D-251)', () => {
+    const live = (id: UnitId, parent: UnitId | null) => ({ id, parent_id: parent, archived_at: null })
+    const required = [{ path: ['parent_id'], code: 'required' }]
+    const one = [live(C, null), live(P1, C)]
+    expect(rootIssues(one, P1, null)).toEqual(required)
+    expect(rootIssues(one, C, null)).toEqual([])
+    expect(rootIssues(one, unit(99), C)).toEqual([])
+    expect(rootIssues([], unit(99), null)).toEqual([])
+    expect(rootIssues([{ ...live(C, null), archived_at: '2026-11-01T00:00:00Z' }], unit(99), null)).toEqual([])
   })
 
   it('terminates on corrupt cyclic data', () => {

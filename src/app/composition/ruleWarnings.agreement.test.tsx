@@ -83,6 +83,8 @@ async function ownerPorts(): Promise<LogicPorts> {
       owner_role: { id: RoleId.parse(crypto.randomUUID()), name: 'Owner' },
       account_id: SoldierAccountId.parse(crypto.randomUUID()),
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+      root_unit_id: UnitId.parse(crypto.randomUUID()),
+      membership_id: UnitMembershipId.parse(crypto.randomUUID()),
     }),
   )
   const shell = { subscribe: () => () => undefined, current: () => QUIET_SHELL, applyUpdate: () => undefined, install: () => Promise.resolve() }
@@ -108,7 +110,7 @@ interface World {
 async function buildWorld(): Promise<World> {
   const ports = await ownerPorts()
   const { commands } = ports.data
-  const unit = async (name: string, parent_id: UnitId | null) =>
+  const unit = async (name: string, parent_id: UnitId) =>
     valueOf(
       await commands.units.create({
         id: UnitId.parse(crypto.randomUUID()),
@@ -124,7 +126,12 @@ async function buildWorld(): Promise<World> {
         properties: {},
       }),
     ).id
-  const company = await unit('Company', null)
+  // The company hangs under the root unit the claim created (D-251), which holds the owner: the rules count the company.
+  const root = valueOf(await ports.data.repositories.units.list({ include_archived: false })).find(
+    (row) => row.parent_id === null,
+  )?.id
+  if (root === undefined) throw new Error('no root unit')
+  const company = await unit('Company', root)
   const platoonA = await unit('Platoon A', company)
   const platoonB = await unit('Platoon B', company)
   const soldier = async (first_name: string, unit_id: UnitId) =>

@@ -115,6 +115,9 @@ export type SetupStepId = (typeof SETUP_STEPS)[number]['id']
 /** The `entity` value of a form for a row that does not exist yet. */
 export const NEW_ENTITY = 'new'
 
+/** The `entity` value of the soldiers' quick entry (D-282): a grid of new soldiers, not one soldier's form. */
+export const QUICK_ENTRY = 'quick'
+
 /** A sheet closes when its grip is dragged this far down, or released this fast. */
 export const SHEET_DISMISS = { offsetPx: 96, velocityPxPerSecond: 500 } as const
 

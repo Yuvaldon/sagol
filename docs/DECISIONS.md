@@ -237,6 +237,7 @@ am = amends, ref = refines, ext = extends.
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
 | D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | |
 | D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | |
+| D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
@@ -267,6 +268,8 @@ am = amends, ref = refines, ext = extends.
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
+| D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | |
+| D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
@@ -3142,8 +3145,9 @@ soldier serves in, without a second place that decides it.
   `deployments` gains `closed_at` and `closed_by`: the export format moves to 3. The local database moves the tags of a
   soldier through a temporary table, since IndexedDB cannot change a primary key, and fills the new columns of the
   stored rows (persistent, open).
-- **`preferences.pinned_modules` stays** until V25 removes the pins and their control (OI-203): the model drops
-  the key with the last code that reads it.
+- **`preferences.pinned_modules` is dropped** in V27, after V25 removed the pins and their control (OI-203): the
+  contract no longer names it, and a stored row that still holds it parses, the key dropped on read. No migration
+  rewrites the stored rows; the next save of the preferences writes them without it.
 **Why:** these are the edges D-257..D-260 left to the implementation; each one keeps a single place that decides, and
 the database's guards hold what can be held without refusing a faithful restore.
 
@@ -3169,6 +3173,30 @@ the database's guards hold what can be held without refusing a faithful restore.
   judged by that rotation's tags; a candidate with no rotation is NULL, since its fields already refuse it (D-216).
 **Why:** each surface reads one rotation, named where it is read, so the mode and a request for another rotation never
 mix their tags; a close the screen offers only when the command would take it.
+
+## D-223 — The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval
+2026-11-12 · accepted · refines D-251, D-262, D-282, D-283 · V27 · decided under D-170
+- **The claim** creates the root unit, named after the organization, with the claimer as its first soldier, and the
+  time zone chosen in the claim form. The root's form edits the time zone on its own: saving it changes nothing else.
+  One root only (D-251): neither the units module nor "move to" offers the top level once it exists, and the
+  permissions read the same rule, so no control leads to a refusal.
+- **The setup opens over the board** once the claim lands. While the root is fresh it shows the template wizard
+  (pick, adjust, "סיום"); "אחר כך" hands over to the checklist. "סיום" closes it on the board in routine. A refused step
+  stops the run, keeps what ran, and the stop shows above the checklist, which finishes the rest. The checklist shows
+  only while something is unfinished; its units step counts units under the root, since the root always exists.
+- **Template details.** Squads are named by their position ("כיתה 1"...), and rules keep a null description. The
+  staging data is not migrated by this slice: organizations claimed before it have no root, and get one the first time
+  the owner creates a unit, as before.
+- **Quick entry** is offered only for units where the actor may place a soldier and set the private fields, since every
+  row carries them. A pasted header is recognized by the column labels as the screen shows them. Rows are independent:
+  each is checked and saved on its own, a refusal stays on its row, and the rest are saved.
+- **Bulk approval** shows only with more than one pending request. A request is linked only when exactly one live
+  soldier matches its personal number; the candidates are re-read for each request at the time it runs, so a soldier
+  linked by an earlier request of the same run is not offered again. Every other request is named for its own review.
+- **e2e:** the helpers `enterAsOwner` (which sets the opened setup aside with `closeSetup`) and `addUnit` (a unit under
+  the root through the row's actions) follow the claim; tests that built a top unit build it under the root.
+**Why:** journey (a) of Design.md runs end to end with no dead end, and every bulk path is the single path repeated, so
+no check is skipped.
 
 ## D-250 — Two vocabularies: everyday words, and the words of managing a unit
 2026-11-12 · accepted · refines D-212, D-215 · V24 · decided under the owner's autonomy instruction of 2026-11-11
@@ -3667,6 +3695,44 @@ Extends D-276. Track: tooling.
 **Why:** trying the app on staging needs a believable unit, and typing one in by hand after every reset is slow. A
 re-runnable script that cannot reach production gives that without real personal numbers and without the app carrying
 seed code.
+
+## D-282 — Quick entry of several soldiers: a grid that runs the soldier's own command per row
+2026-11-12 · accepted · refines D-022, D-050, D-171 · V27 · decided under D-170
+- **Where.** "הוספה מהירה" sits beside "חייל חדש" in the soldiers module, which is daily work (D-285), for who may
+  create a soldier there (D-076). It opens a grid of editable rows with the columns of the soldiers CSV (D-171): first
+  name, last name, nickname, personal number, phone and invite email. One unit above the grid places every row,
+  from today, the way the soldier's form places one; it may stay empty, and the soldiers are then unplaced.
+- **Paste.** Pasting several lines into a cell fills rows from there: a line is a row, its cells split by tabs (what a
+  spreadsheet copies) or else by commas (the CSV form, quotes as D-171 reads them). A first line that names the
+  columns as the CSV does decides their order; without one, the columns are in the grid's order. Empty lines are
+  skipped, and new rows are added as needed.
+- **Preview before saving.** Every row is checked as it is typed, on the form of `create_soldier` (the same check the
+  import runs on each operation before anything runs), and two rows of the grid with the same personal number are
+  both marked. A row with a problem shows it under its cells; "שמירה" names how many rows are ready.
+- **Save.** Each ready row runs `soldiers.create` on its own, in order: the same command the soldier's form and the
+  import's `create_soldier` run, with every validation and permission check (rule 4), and no batch command beside
+  it. A saved row leaves the grid; a refused row stays with the command's reason in its own words (a personal number
+  taken, a unit the actor may not place in), and the commander fixes it or removes it. Nothing is all or nothing:
+  the import's all-or-nothing batch (D-171) is for a file that must arrive whole, and needs `data_transfer`, which a
+  commander adding soldiers does not hold.
+**Why:** the owner's commanders add a platoon at a time from a list they already have; a form per soldier is thirty
+openings, and the import asks for a file and a permission they do not have. Running the soldier's own command per row
+keeps one path for creating a soldier and its guarantees, and keeps a refused row in front of who can fix it.
+
+## D-283 — Approving several join requests: each one linked by its own review
+2026-11-12 · accepted · refines D-149, D-150, D-163 · V27 · decided under D-170
+- **Where.** The join requests list (work, D-285) gains a check box on each request and "אישור הנבחרות" once one is
+  chosen, for who may review the requests (D-163). Opening a request for its full review stays as it is.
+- **What approval means in bulk.** A request is approved by linking it to its soldier, and in bulk only when that
+  soldier is certain: exactly one candidate, matched by personal number (D-066). Each such request runs the same
+  review command a single link runs (`accounts.reviewLink`, kind `link`), one after the other; there is no bulk
+  command. A request without that single match (no candidate, a match by name only, several candidates) is not run:
+  its row says that it needs its own review, which is where a new soldier is created or the right one is chosen.
+- **Per-row result.** Each chosen row shows its outcome: linked (it leaves the list), refused with the command's
+  reason, or left for its own review. Rejecting stays one request at a time, since a rejection is a judgment.
+**Why:** after a quick entry the soldiers sign in and ask to join, each one matching a soldier by personal number;
+approving them one by one is a page per soldier. Linking only the certain matches keeps the bulk action safe, and
+running the single review command keeps one path and its checks.
 
 ## D-284 — Launch order: V32 before V28, then the audit
 2026-11-12 · accepted · amends D-271, D-078 · V32 · decided under the owner's autonomy instruction of 2026-11-11

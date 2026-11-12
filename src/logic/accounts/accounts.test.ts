@@ -8,6 +8,7 @@ import {
   toReviewLinkInput,
 } from './forms'
 import { candidateRows } from './review'
+import { certainCandidate } from './bulk'
 import type { SoldierRow } from '../roster/roster'
 
 // Test data only (iron rule 4).
@@ -86,5 +87,17 @@ describe('candidateRows', () => {
       { candidate: candidates[0], row: null },
       { candidate: candidates[1], row },
     ])
+  })
+})
+
+describe('approving in bulk (D-283)', () => {
+  it('links only the one candidate matched by personal number', () => {
+    const one = SoldierId.parse(uuid(30))
+    const two = SoldierId.parse(uuid(31))
+    const byId: LinkCandidate = { soldier_id: one, match: 'personal_id' }
+    expect(certainCandidate([byId])).toBe(one)
+    expect(certainCandidate([])).toBeNull()
+    expect(certainCandidate([{ soldier_id: one, match: 'name' }])).toBeNull()
+    expect(certainCandidate([byId, { soldier_id: two, match: 'name' }])).toBeNull()
   })
 })

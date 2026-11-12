@@ -77,24 +77,26 @@ function bindingInput(command_rank_id: CommandRankId, role_id: RoleId): CreateRa
 
 export function describePermissionContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
 
   describe('roles and access', () => {
     let organization: OrganizationId
+    let root: UnitId
     let ownerId: SoldierId
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
     })
 
     const actorWith = (pairs: readonly Permission[], scope: Parameters<typeof seedActor>[3], home?: UnitId) =>
       seedActor(harnessOf(), organization, pairs, scope, home)
 
-    async function unit(name: string, parent_id: UnitId | null = null) {
+    async function unit(name: string, parent_id: UnitId | null = root) {
       return valueOf(
         await adapter().commands.units.create({
           id: newUnitId(),
