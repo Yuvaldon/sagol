@@ -59,7 +59,7 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
   })
 
   await test.step('a single unit in sight names the scope, as a label and not a picker', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
     await expect(page.getByText(COMPANY, { exact: true })).toBeVisible()
   })
 
@@ -128,7 +128,7 @@ test('a fighter sees only the modules their permissions open, and no unit picker
   })
 
   await test.step('the panel holds only what the fighter may open: their own record', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
     await openPanel(page)
     // Viewing their own record opens the soldiers module (D-053); nothing else of the panel is theirs.
     await expect(navigationPanel(page).getByRole('button', { name: he.soldiers.open, exact: true })).toBeVisible()

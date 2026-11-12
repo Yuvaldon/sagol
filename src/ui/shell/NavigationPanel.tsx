@@ -64,13 +64,13 @@ function Item({
   readonly onOpen: () => void
 }) {
   const lineId = useId()
+  const countId = useId()
   const name = t(entry.labelKey)
   return (
     <li>
-      {/* The module is named by its name alone; its line describes it, so the name stays short to read and to find. */}
+      {/* The module is named by its visible name alone; its line and its count describe it, so the name stays short to read and to find. */}
       <AriaButton
-        aria-label={name}
-        aria-describedby={lineId}
+        aria-describedby={`${lineId} ${countId}`}
         onPress={() => {
           onOpen()
           entry.onPress()
@@ -80,11 +80,13 @@ function Item({
         <entry.Icon aria-hidden size={16} className="shrink-0 text-text-muted" />
         <span className="flex min-w-none flex-1 flex-col text-start">
           <span>{name}</span>
-          <span id={lineId} className="text-label text-text-muted">
+          <span id={lineId} aria-hidden className="text-label text-text-muted">
             {t(LINE_KEYS[module])}
           </span>
         </span>
-        <EntryCount entry={entry} floating={false} />
+        <span id={countId} aria-hidden>
+          <EntryCount entry={entry} floating={false} />
+        </span>
       </AriaButton>
     </li>
   )

@@ -11,7 +11,7 @@ const TOUCH_TARGET_PX = 44
 const PENDING_BAR = `רגילה, ${he.leaves.statusPending}, 9–10 בנוב׳`
 
 function inboxButton(page: Page) {
-  return navigation(page).getByRole('button', { name: new RegExp(`^${he.inbox.open}`) })
+  return navigation(page).getByRole('button', { name: new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`) })
 }
 
 function thread(page: Page) {

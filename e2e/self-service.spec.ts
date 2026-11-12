@@ -120,7 +120,7 @@ test('a fighter asks for a leave from "my requests", and sees it approved', asyn
   await test.step('the owner approves it in the inbox', async () => {
     await signOut(page)
     await signIn(page, OWNER.email)
-    await openModule(page, new RegExp(`^${he.inbox.open}`))
+    await openModule(page, new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`))
     const list = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
     await expect(list.getByText(`${YAEL.first} ${YAEL.last}`)).toBeVisible()
     await list.getByRole('button', { name: he.leaves.approve }).click()

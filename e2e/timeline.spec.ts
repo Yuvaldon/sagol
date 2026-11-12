@@ -70,7 +70,7 @@ async function buildRoster(page: Page) {
 }
 
 async function pickUnit(page: Page, name: string) {
-  await page.getByRole('button', { name: new RegExp(he.workspace.unit) }).click()
+  await page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) }).click()
   await page.getByRole('option', { name, exact: true }).click()
 }
 
@@ -84,7 +84,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
     await expect(page.getByRole('button', { name: he.workspace.today, exact: true })).toHaveCount(0)
     // No unit exists yet, so there is nothing to choose (D-076).
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
     await expect(page).toHaveURL(/\/$/)
     await expectNoAxeViolations(page)
   })
@@ -136,7 +136,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await pickUnit(page, 'פלוגה')
     await page.reload()
     await expect(windowLabel(page)).toContainText(NEXT_WEEK)
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toContainText('פלוגה')
+    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toContainText('פלוגה')
     await expect(groupHeading(page, 'מחלקה ב')).toBeVisible()
     await expect(groupHeading(page, he.soldiers.noUnit)).toHaveCount(0)
   })
