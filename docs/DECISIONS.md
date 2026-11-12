@@ -3113,16 +3113,17 @@ soldier serves in, without a second place that decides it.
   reopen would overlap another live rotation; the database holds it with `deployments_one_at_a_time`. The migration
   stops, naming the pairs, when live rotations already overlap.
 - **Close and reopen** are their own commands on `deployments`, allowed to the rotation's `created_by` or to
-  `deployments:update` on its unit (the "manage" of D-258). Closing an open-ended rotation sets its end to today; one that ends after today answers
-  `rotation_not_ended`. A closed rotation answers `rotation_closed` to an edit of its dates, unit or name, to its
+  `deployments:update` on its unit (the "manage" of D-258). Closing an open-ended rotation sets its end to today, so one that has not started, like one that ends
+  after today, answers `rotation_not_ended`. A closed rotation answers `rotation_closed` to an edit of its dates, unit or name, to its
   members, to its rotation tags and to its requests (create, edit, transition); archive still works. The database
   guards only the closed row itself (`deployments_closed_unchanged`): the children are guarded by the commands, since a
   child or deferred guard would refuse `load_organization_export`, which writes a closed rotation with its history.
 - **The whole unit** (no member rows) holds a soldier on the days of any of their memberships, primary or attached, in
   the rotation's unit or below it. A request outside those days is `not_a_member`; outside the rotation's dates it is
   `outside_rotation`, as with a list. The database trigger checks the same with the soldier's memberships in the
-  unit's subtree. A membership change does not check requests again: moving a soldier is a fact the unit already
-  records, and the request stays as history.
+  unit's subtree. A move or an end of a membership re-checks that soldier's live requests in whole-unit rotations, in
+  the command and by a deferred trigger on `unit_memberships`, and is refused with `leaves_outside_rotation` when one
+  would be stranded; a new membership only widens the days. Moving a unit under another parent is not re-checked.
 - **Tag scopes.** A soldier's tag set is replaced one scope at a time: the persistent set, or one rotation's.
   `single` holds within each scope; in the effective set of a rotation (persistent plus that rotation's), a rotation
   tag of a `single` category replaces the persistent tag of that category. "כמו בסבב הקודם" sets the rotation scope
@@ -3145,7 +3146,7 @@ the database's guards hold what can be held without refusing a faithful restore.
   the screen offers it to a request and the command answers `not_a_member`; closed rotations are not offered.
 - **The rotation form** chooses "כל היחידה" or "רשימה"; a list starts from the previous rotation's list for all the new
   days when it had one, else from the soldiers placed in the unit on the first day (D-219). The overlap of D-221 is
-  shown on the start date before saving. "סגירת הסבב" shows once the planned end has come or while the end is open;
+  shown on the start date before saving. "סגירת הסבב" shows once the planned end has come, or from the start while the end is open;
   "פתיחה מחדש" on a closed one. Both are row actions, with no confirmation, since each undoes the other.
 - **Tag lifetimes** are chosen per category in the soldier's tags dialog, pre-selected from the category's
   `default_lifetime`; the category form sets that default. Rotation tags are copied per soldier with "כמו בסבב הקודם"
