@@ -1,6 +1,6 @@
 import { DEVICE_KEYS, FOCUS_MODE } from '@config'
 import { useDeviceFlag } from '@logic'
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 
 // Focus mode (D-301): one control and one key hide both strips and the chips row; one restore button, the same key
 // and Escape bring them back. Focus moves with the change, so the control pressed never vanishes under the keyboard.
@@ -77,22 +77,30 @@ export function useFocusModeScope(boardShown: boolean): FocusMode {
     return () => cancelAnimationFrame(frame)
   }, [on])
 
+  // The listener reads the mode as last committed, so a key pressed right after a change meets the new mode, not the
+  // listener of the render before it.
+  const current = useRef(on)
+  useLayoutEffect(() => {
+    current.current = on
+  }, [on])
   useEffect(() => {
     if (!boardShown) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return
       if (isShortcut(event)) {
         event.preventDefault()
-        if (on) leave()
+        if (current.current) leave()
         else enter()
-      } else if (event.key === 'Escape' && on && !inOverlay(event)) {
+      } else if (event.key === 'Escape' && current.current && !inOverlay(event)) {
         event.preventDefault()
         leave()
       }
     }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [boardShown, on, enter, leave])
+    // On the window, capturing: ahead of a tooltip's own Escape on the document, so one Escape leaves; a real overlay
+    // still closes first, through `inOverlay`.
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [boardShown, enter, leave])
 
   return useMemo(() => ({ on, enter, leave, bind }), [on, enter, leave, bind])
 }
