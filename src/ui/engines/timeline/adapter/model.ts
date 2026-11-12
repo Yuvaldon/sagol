@@ -118,7 +118,8 @@ function markOf(
 
 /**
  * Bars and badges take lanes apart: a badge sits over a bar, as in Stone 3 (D-111). A round's absence is a band under
- * them all and takes no lane (D-268); its markers are badges like any other.
+ * them all (D-268); rounds that overlap stack, each in its share of the row's height (OI-246). Its markers are badges
+ * like any other.
  */
 function marksOf(leaves: readonly BoardLeave[], days: readonly CalendarDate[], options: TimelineMarkOptions) {
   const placed = leaves.flatMap((leave) => {
@@ -128,16 +129,17 @@ function marksOf(leaves: readonly BoardLeave[], days: readonly CalendarDate[], o
   const bands = placed.filter((item) => item.leave.effect !== 'available' && item.leave.layer === 'round')
   const bars = placed.filter((item) => item.leave.effect !== 'available' && item.leave.layer === 'request')
   const badges = placed.filter((item) => item.leave.effect === 'available')
+  const bandLanes = assignLanes(bands)
   const barLanes = assignLanes(bars)
   const badgeLanes = assignLanes(badges)
   const [first] = days
-  if (first === undefined) return { marks: [], lanes: 1 }
+  if (first === undefined) return { marks: [], lanes: 1, bandLanes: 1 }
   const marks = [
-    ...bands.map((item) => markOf(item, 0, first, options)),
+    ...bands.map((item, index) => markOf(item, bandLanes.lanes[index] ?? 0, first, options)),
     ...bars.map((item, index) => markOf(item, barLanes.lanes[index] ?? 0, first, options)),
     ...badges.map((item, index) => markOf(item, badgeLanes.lanes[index] ?? 0, first, options)),
   ]
-  return { marks, lanes: Math.max(barLanes.count, badgeLanes.count) }
+  return { marks, lanes: Math.max(barLanes.count, badgeLanes.count), bandLanes: bandLanes.count }
 }
 
 export function timelineRows(

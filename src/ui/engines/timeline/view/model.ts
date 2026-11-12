@@ -41,6 +41,8 @@ export interface TimelineResourceRow {
   readonly marks: readonly TimelineMark[]
   /** How many lanes the row needs, at least one. */
   readonly lanes: number
+  /** How many bands stack in the row where its rounds overlap, at least one (OI-246). */
+  readonly bandLanes: number
 }
 
 export type TimelineRowModel = TimelineGroupRow | TimelineResourceRow
@@ -54,8 +56,8 @@ export interface TimelineTone {
 }
 
 /**
- * A bar over a run of days, or a badge on each of them (a marker). A band is a round's absence (D-268): the whole
- * height of the row, under the requests' bars, taking no lane. Days are indexes in the window; a side the window cuts
+ * A bar over a run of days, or a badge on each of them (a marker). A band is a round's absence (D-268): the row's
+ * height, under the requests' bars, shared by lane with the rounds it overlaps (OI-246). Days are indexes in the window; a side the window cuts
  * has no inset.
  */
 export interface TimelineMark {
