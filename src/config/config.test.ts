@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AuthMode, ColorKey, DataAdapterMode, IconKey, NavigationModule } from '@contracts'
 import {
+  ADAPTER_OF_AUTH_MODE,
   BAR_COLOR_MODES,
   BREAKPOINTS_PX,
   BarColorMode,
@@ -118,14 +119,18 @@ describe('env', () => {
     })
   })
 
-  it('accepts exactly the contract vocabularies', () => {
+  it('accepts each auth mode with its own adapter only (D-207)', () => {
     for (const authMode of AuthMode.options) {
       for (const dataAdapter of DataAdapterMode.options) {
         const result = parseEnv(
           { ...REMOTE, VITE_AUTH_MODE: authMode, VITE_DATA_ADAPTER: dataAdapter },
           DEV,
         )
-        expect(result.ok).toBe(true)
+        expect(result).toEqual(
+          ADAPTER_OF_AUTH_MODE[authMode] === dataAdapter
+            ? expect.objectContaining({ ok: true })
+            : { ok: false, issues: [{ variable: 'VITE_DATA_ADAPTER', code: 'unpaired' }] },
+        )
       }
     }
   })

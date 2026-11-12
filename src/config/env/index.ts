@@ -47,6 +47,8 @@ export type EnvIssueCode =
   | 'development_only'
   /** The remote adapter needs this variable. */
   | 'required_for_remote'
+  /** The data adapter does not pair with the auth mode (D-207). */
+  | 'unpaired'
 
 export interface EnvIssue {
   readonly variable: EnvVariable
@@ -63,6 +65,15 @@ export interface EnvOptions {
 }
 
 export type RawEnv = Readonly<Record<string, unknown>>
+
+/**
+ * The one data adapter each auth mode runs with (D-207): local identities write the local
+ * database (D-006), and a Google session is what the command gateway verifies (D-204).
+ */
+export const ADAPTER_OF_AUTH_MODE: Readonly<Record<AuthMode, DataAdapterMode>> = {
+  local: 'local',
+  google: 'remote',
+}
 
 function isDevelopmentOnly(mode: AuthMode): boolean {
   return DEVELOPMENT_ONLY_AUTH_MODES.some((candidate) => candidate === mode)
@@ -89,6 +100,9 @@ export function parseEnv(raw: RawEnv, options: EnvOptions): EnvResult {
   const issues: EnvIssue[] = []
   if (options.production && isDevelopmentOnly(authMode)) {
     issues.push({ variable: ENV_VARIABLES.authMode, code: 'development_only' })
+  }
+  if (ADAPTER_OF_AUTH_MODE[authMode] !== dataAdapter) {
+    issues.push({ variable: ENV_VARIABLES.dataAdapter, code: 'unpaired' })
   }
   if (dataAdapter === 'remote') {
     if (url === undefined) issues.push({ variable: ENV_VARIABLES.remoteUrl, code: 'required_for_remote' })
