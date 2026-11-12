@@ -37,3 +37,6 @@ export const LEAVE_TYPE_PALETTE_KEYS: readonly PaletteKey[] = PALETTE_KEYS.filte
 export function isLeaveTypePaletteKey(value: string): value is PaletteKey {
   return isPaletteKey(value) && !NOT_FOR_LEAVES.has(value)
 }
+
+/** What an imported type stored green comes in as (D-290): the quietest key a leave type may take. */
+export const IMPORTED_LEAVE_TYPE_STAND_IN: PaletteKey = 'gray'
