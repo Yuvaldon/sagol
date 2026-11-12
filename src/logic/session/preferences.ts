@@ -5,7 +5,7 @@ import {
   type Result,
   type SoldierPreferencesRecord,
 } from '@contracts'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
@@ -38,17 +38,38 @@ export function useMyPreferences(): Loaded<SoldierPreferences> {
   return record.status === 'ready' ? { status: 'ready', value: record.value.preferences } : record
 }
 
-/** Saves a change over what is stored, at the stored version; a save that missed a change answers `stale_version`. */
+type PreferenceChange = Partial<SoldierPreferences> | ((current: SoldierPreferences) => Partial<SoldierPreferences>)
+
+/** One save at a time per client: each one reads what the previous one stored, so quick presses do not collide. */
+const saving = new WeakMap<QueryClient, Promise<unknown>>()
+
+/**
+ * Saves a change over what is stored, at the stored version. Saves run in turn, each over the latest stored row, so a
+ * change made while another is saving builds on it; a save that missed a change elsewhere answers `stale_version`.
+ */
 export function useUpdateMyPreferences() {
   const { data } = usePorts()
-  const record = useMyPreferenceRecord()
-  const stored = record.status === 'ready' ? record.value : null
-  return useCommand([QUERY_KEYS.soldierPreferences], (changes: Partial<SoldierPreferences>): Promise<Result<SoldierPreferencesRecord>> => {
-    if (stored === null) return Promise.resolve({ ok: false, error: { code: 'unavailable' } })
-    return data.commands.accounts.updateMyPreferences({
-      expected_version: stored.version,
-      preferences: { ...stored.preferences, ...changes },
-    })
+  const client = useQueryClient()
+  return useCommand([QUERY_KEYS.soldierPreferences], (change: PreferenceChange): Promise<Result<SoldierPreferencesRecord>> => {
+    const save = async (): Promise<Result<SoldierPreferencesRecord>> => {
+      const stored = client.getQueryData<MyPreferences>(QUERY_KEYS.soldierPreferences)
+      if (stored === undefined) return { ok: false, error: { code: 'unavailable' } }
+      const changes = typeof change === 'function' ? change(stored.preferences) : change
+      const result = await data.commands.accounts.updateMyPreferences({
+        expected_version: stored.version,
+        preferences: { ...stored.preferences, ...changes },
+      })
+      if (result.ok) {
+        client.setQueryData<MyPreferences>(QUERY_KEYS.soldierPreferences, {
+          preferences: result.value.preferences,
+          version: result.value.version,
+        })
+      }
+      return result
+    }
+    const next = (saving.get(client) ?? Promise.resolve()).then(save, save)
+    saving.set(client, next.catch(() => undefined))
+    return next
   })
 }
 
@@ -58,6 +79,8 @@ export interface NavigationPreferences {
   readonly rulesRow: RulesRowPlacement
   /** FALSE while the preferences cannot be read, so nothing offers a change that cannot be saved (D-076, D-121). */
   readonly editable: boolean
+  /** FALSE until the preferences are read or have failed, so nothing is placed by a default and then moved. */
+  readonly settled: boolean
   togglePin(module: NavigationModule): void
   setRulesRow(placement: RulesRowPlacement): void
 }
@@ -74,9 +97,13 @@ export function useNavigationPreferences(): NavigationPreferences {
     pinned,
     rulesRow: value?.rules_row_placement ?? RulesRowPlacement.enum.below,
     editable: value !== null,
+    settled: preferences.status !== 'loading',
     togglePin(module) {
-      const next = pinned.includes(module) ? pinned.filter((one) => one !== module) : [...pinned, module]
-      void save.run({ pinned_modules: next })
+      void save.run((current) => ({
+        pinned_modules: current.pinned_modules.includes(module)
+          ? current.pinned_modules.filter((one) => one !== module)
+          : [...current.pinned_modules, module],
+      }))
     },
     setRulesRow(placement) {
       void save.run({ rules_row_placement: placement })
