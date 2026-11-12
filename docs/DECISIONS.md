@@ -23,7 +23,7 @@ am = amends, ref = refines, ext = extends.
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
 | D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149 |
 | D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
-| D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035 |
+| D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035; ref D-203 |
 | D-008 | Server-authoritative data layer | data, backend | ref D-090; ref D-201 |
 | D-009 | Unit hierarchy: `parent_id` only, derived ancestry | contracts, domain, data, backend | |
 | D-010 | Memberships are time-bounded rows | contracts, domain, data, backend | ref D-097 |
@@ -136,7 +136,7 @@ am = amends, ref = refines, ext = extends.
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
 | D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143 |
-| D-120 | The requests inbox: pending and closed; `LeaveQuery.window` may be NULL | contracts, config, data, logic, ui, backend | |
+| D-120 | The requests inbox: pending and closed; `LeaveQuery.window` may be NULL | contracts, config, data, logic, ui, backend | ref D-205 |
 | D-121 | The "approve now" default lives in the user menu | data, logic, ui, backend | ref D-173 |
 | D-122 | The board waits for the permission hints | logic, ui | |
 | D-123 | Editing a leave is one command | contracts, domain, data, logic, ui, backend | |
@@ -189,11 +189,16 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | |
+| D-175 | The bar names the unit in scope, not the organization | ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
-| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | |
-| D-202 | The database's own guarantees: triggers | backend | |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204 |
+| D-202 | The database's own guarantees: triggers | backend | am D-203 |
+| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | |
+| D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | |
+| D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
+| D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 
 ---
 
@@ -2325,6 +2330,15 @@ one-tap access to whoever needs a module daily. An empty heat row and an empty f
 them from disagreeing on who is in view; a shared frame keeps the empty and failed states the same. The window stays a
 week for now (OI-111).
 
+## D-175 — The bar names the unit in scope, not the organization
+2026-11-12 · accepted · refines D-173 · decided under the owner's autonomy instruction of 2026-11-11
+- The organization's name is the page's level-one heading for readers only, on every screen size, as it already was on a
+  phone. The bar shows one name: the unit scope label of D-173, which says which unit the board shows.
+- The panel's choices are drawn so they can be seen: a radio's ring has the muted text color (at least 3:1 against
+  the panel, WCAG 1.4.11), and a pinned module's pin is filled as well as colored, with `aria-pressed` saying the state.
+**Why:** the organization's name beside a unit's name read as two competing units; the scope label alone answers
+"what am I looking at".
+
 ## D-200 — Backend: Supabase and Vercel, free plans
 2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170
 Supabase hosts the database (Postgres), authentication (Google) and the server function (an Edge Function). Vercel
@@ -2383,3 +2397,82 @@ The functions listed in `schema.sql`'s server-side block are the gateway's comma
 policies come with 8.2.
 **Why:** derived data (the closure) and history must stay right even for a write that does not come through the gateway,
 such as a migration or a manual fix.
+
+## D-203 — No client reaches a table: the policy stays in the domain
+2026-11-11 · accepted · amends D-202 · refines D-201, D-007 · OI-022
+- **No row policies, no `has_permission()`.** Row-level security stays on for every table with no policy (D-202), and a
+  migration (`20261111000200_rls.sql`) revokes every privilege on the public schema's tables, sequences and functions
+  from the API roles (`anon`, `authenticated`, and `PUBLIC` for functions), now and by default for later objects. The
+  Data API answers nothing to a publishable key or a session token; the only way in is the command gateway (D-201),
+  which connects as the owner and runs the domain policy (D-003, D-053 … D-060) itself. D-053 … D-060 are not ported to
+  SQL.
+- **The matrix against the database.** The sample world and `MATRIX` move to `src/domain/testing` (D-135), read by the
+  domain's own test and by `src/data/server/policy.dbtest.ts`. The DB test writes the world through the migrated schema
+  (its constraints and triggers), loads the policy snapshot through the Postgres store the gateway reads, and checks every
+  row with `can`. `rls.dbtest.ts` checks that every table holds RLS, that the API roles hold no privilege, and that each
+  of them is refused a read and a write of every table, and that a table created later starts closed.
+- **The Data API itself.** `src/data/server/rls.resttest.ts` (`npm run test:rest`, in the CI `db` job after `test:db`)
+  asks a real PostgREST, in front of the migrated database, for a read, an insert and a delete of every table, with an
+  `anon` token (what a publishable key acts as) and an `authenticated` one; each is refused with `42501`.
+  `db-reset` grants the API roles everything by default first, as Supabase does, so the migration's revokes are what
+  the tests prove.
+- **Advisors.** Supabase's advisors report "RLS enabled, no policy" (INFO) for every table. That is this decision, not a
+  finding: an audit leaves it be.
+- **Imports.** A layer's `testing/index.ts` may be imported by other layers' test files, `*.dbtest.ts` included, through an
+  alias (`@domain/testing`); dependency-cruiser allows only that file and only from tests.
+- **Local roles.** `scripts/db-reset.ts` creates `anon` and `authenticated` (no login) when missing, with Supabase's
+  default grants, so the migration and the tests run the same locally, in CI and on Supabase.
+**Why:** a second copy of the policy in SQL would have to agree with the domain forever, the same reason D-201 runs one
+command core on both sides. With every read and write behind the gateway, row policies would only guard a door that is
+already shut; revoking the privileges shuts it explicitly, and the tests prove it stays shut.
+
+## D-204 — The remote adapter: one POST per call to the command gateway
+2026-11-12 · accepted · refines D-201 · OI-020
+- **Shape.** `createRemoteDataAdapter` (`src/data/remote/adapter.ts`) has the local adapter's type: every group and method
+  of one exists on the other (a method table the compiler checks, D-076). Each call is one `POST` of
+  `{kind, group, method, args}` to `REMOTE.commandsPath` under the backend URL, with the publishable key (`apikey`) and,
+  when someone is signed in, `Authorization: Bearer <access token>`. Nothing is decided on the client: the server derives
+  the actor from the token and runs every check (D-201).
+- **Access token (OI-020).** The adapter takes `accessToken: () => Promise<string | null>` as a dependency, from the auth
+  provider's client that `app` creates. `IdentitySource` in `contracts` is unchanged: the token is transport, not identity.
+- **Errors.** A 401 answers `unauthenticated`; a 5xx, a network failure, a timeout (`REMOTE.requestTimeoutMs`) or a body
+  that is not JSON answers `unavailable`; any other non-OK status, or an answer of the wrong shape (checked with zod),
+  answers `internal`. Otherwise the result is the server's own `Result`.
+- **Changes.** The answer's `changes` go to the adapter's change feed, which reaches the other tabs too
+  (`CHANGE_FEED_CHANNEL`). A change made on another device is not heard until a read runs again (OI-151).
+- **Session.** The session is read again when the identity source reports a change.
+- **Tests.** The repository contract suite runs over the remote adapter end to end, through the gateway on Postgres
+  (`remote.contract.dbtest.ts`, replacing `postgres.contract.dbtest.ts`); `adapter.test.ts` covers what the gateway never
+  answers (status codes, wrong shapes, headers).
+- **Gateway token check.** The function checks the token itself with the auth server (D-201), so it is deployed with the
+  platform's JWT check off: publishable keys are not JWTs.
+**Why:** one implementation on both sides (D-201) leaves the client only the transport; keeping the token out of the
+contract keeps `IdentitySource` the same for the local and the Google identity.
+
+## D-205 — The inbox's closed section reads a span of dates around today
+2026-11-12 · accepted · refines D-120 · OI-065
+The pending section reads every pending leave (it empties as leaves are answered). The closed section reads rejected and
+cancelled leaves whose dates meet `today - INBOX.closedPastDays` … `today + INBOX.closedFutureDays` (60 days back, a year
+ahead) through the repository's date window, and loads until today is known. A closed leave outside the span stays on
+the soldier's own list (D-167). No paging: the span bounds the read.
+**Why:** the closed list only grows, and on a server every read crosses the network. Old closed requests are history,
+not inbox work; a span uses the read the repository already has instead of a new paging contract.
+
+## D-206 — A local export loads into the backend once, through a SQL function
+2026-11-12 · accepted · OI-109
+- `load_organization_export(payload jsonb) RETURNS uuid` (migration `20261112000000_load_export.sql`) stores an export
+  (`transfer.exportOrganization`, format 1) as it is: every row with its audit columns, leave history and account links.
+  Only the database owner runs it, from the SQL editor or psql; every privilege on it is revoked from the API roles
+  (D-203). It is not a screen and not a path around the commands for users (D-050, D-171).
+- It refuses (SQLSTATE 22023) another format version, an export without exactly one organization, a table that is not a
+  public base table or is derived (`unit_closure`), a value that is not a list, and a row of another organization; it
+  refuses an organization already in the backend with 23505. A refusal writes nothing.
+- One statement writes every table (data-modifying CTEs), so the cyclic foreign keys (an organization's baseline role,
+  `created_by` soldiers, an owner's rank) are checked once every row is in. Units go parents first, so the triggers
+  derive `unit_closure`; no row is updated, so the version guard (D-202) is not involved. Leave events go in their stored
+  order; the order trigger moves a tie a millisecond later, as on every server write (the local adapter keeps ties).
+- The accepted version is a constant in the function; `load.dbtest.ts` holds it equal to `EXPORT_FORMAT_VERSION` and
+  checks that the server exports the loaded organization again, row for row.
+**Why:** a script outside the layers cannot reach the adapter's code, and the server must keep stored history as it is,
+which the commands cannot (they write new events and audit values). One function runs where the data lands, in one
+transaction.

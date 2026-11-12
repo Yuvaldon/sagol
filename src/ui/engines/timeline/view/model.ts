@@ -102,8 +102,11 @@ export interface TimelineDrag {
   readonly range: DayRange
 }
 
-/** The worst a drag would break, as the edge of its ghost says it: nothing, a soft rule or a hard one. */
-export type TimelineDragTone = 'ok' | 'soft' | 'hard'
+/**
+ * The worst a drag would break, as the edge of its ghost says it: nothing, a soft rule or a hard one; `unknown` while
+ * the rules are read or cannot be (OI-099).
+ */
+export type TimelineDragTone = 'ok' | 'soft' | 'hard' | 'unknown'
 
 /** What the view tells about a drag, and what it hears back. */
 export interface TimelineDragProps {

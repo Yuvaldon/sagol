@@ -56,6 +56,17 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
+      # The public Data API, as Supabase runs it in front of the database (D-203). It retries until
+      # Postgres is up; `test:rest` makes it reload the schema once the migrations have run.
+      postgrest:
+        image: postgrest/postgrest:v12.2.3
+        env:
+          PGRST_DB_URI: postgres://postgres:postgres@postgres:5432/sagol_test
+          PGRST_DB_SCHEMAS: public
+          PGRST_DB_ANON_ROLE: anon
+          # A throwaway signing key for this CI container only; it guards nothing.
+          PGRST_JWT_SECRET: ci-only-postgrest-signing-key-not-a-secret
+        ports: ['3000:3000']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,3 +85,9 @@ jobs:
         run: npm run test:db
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/sagol_test
+      - name: The Data API refuses the API roles every table
+        run: npm run test:rest
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/sagol_test
+          POSTGREST_URL: http://localhost:3000
+          POSTGREST_JWT_SECRET: ci-only-postgrest-signing-key-not-a-secret

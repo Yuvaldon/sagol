@@ -6,10 +6,11 @@ import {
   newLeaveDraft,
   sameDates,
   useEditLeave,
-  useLeaveRuleWarnings,
+  useLeaveRuleCheck,
   usePanel,
   useTimelineEditing,
   type DateWindow,
+  type Loaded,
   type LeaveDates,
 } from '@logic'
 import { useCallback, useMemo, useState } from 'react'
@@ -26,7 +27,8 @@ export interface DragCardState {
   readonly dates: LeaveDates
   /** An approved leave that the move returns to pending (D-064). */
   readonly returnsToPending: boolean
-  readonly warnings: readonly RuleViolation[]
+  /** What the move would break, loading or failed until the rules are read (OI-099). */
+  readonly warnings: Loaded<readonly RuleViolation[]>
 }
 
 export interface BoardDrag {
@@ -43,7 +45,9 @@ export interface BoardDrag {
   readonly isPending: boolean
 }
 
-function toneOf(warnings: readonly RuleViolation[]): TimelineDragTone {
+function toneOf(check: Loaded<readonly RuleViolation[]>): TimelineDragTone {
+  if (check.status !== 'ready') return 'unknown'
+  const warnings = check.value
   if (warnings.some((violation) => violation.enforcement === RuleEnforcement.enum.hard)) return 'hard'
   return warnings.length > 0 ? 'soft' : 'ok'
 }
@@ -68,7 +72,7 @@ export function useBoardDrag(window: DateWindow, soldiers: readonly Soldier[]): 
     () => (leave === null || startDate === null || endDate === null ? null : moveOf(leave, { start_date: startDate, end_date: endDate })),
     [moveOf, leave, startDate, endDate],
   )
-  const warnings = useLeaveRuleWarnings(move?.candidate ?? null, leave)
+  const warnings = useLeaveRuleCheck(move?.candidate ?? null, leave)
 
   // Stable, so the rows the board draws are not rebuilt on every render (OI-097).
   const movable = useCallback(

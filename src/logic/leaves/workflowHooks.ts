@@ -25,13 +25,13 @@ import { useCurrentOrganization, useSession } from '../session/hooks'
 import { useToday } from '../session/today'
 import { cachedLeaves, leaveKey, leaveListKey, restoreLeaves, showLeave } from './cache'
 import {
-  CLOSED_QUERY,
   EDIT_PERMISSION,
   PENDING_QUERY,
   myLeaveGroups,
   myLeavesQuery,
   type MyLeaves,
   closedLeaves,
+  closedQuery,
   editReturnsToPending,
   isEditable,
   leaveAfterStep,
@@ -271,19 +271,24 @@ export function usePendingRequests(): Loaded<readonly Leave[]> {
   }, [pending, can])
 }
 
-/** The rejected and cancelled leaves the actor sees, the last changed first (D-120). */
+/** The rejected and cancelled leaves the actor sees near today, the last changed first (D-120, D-205). */
 export function useClosedLeaves(): Loaded<readonly Leave[]> {
   const { data } = usePorts()
+  const today = useToday()
+  const query = today === null ? null : closedQuery(today)
   const closed: Loaded<readonly Leave[]> = loaded(
     useQuery({
-      queryKey: leaveListKey(CLOSED_QUERY),
-      queryFn: () => unwrap(data.repositories.leaves.list(CLOSED_QUERY)),
+      queryKey: query === null ? [...QUERY_KEYS.leaves, { statuses: null }] : leaveListKey(query),
+      queryFn: (): Promise<readonly Leave[]> =>
+        query === null ? Promise.resolve(NO_LEAVES) : unwrap(data.repositories.leaves.list(query)),
+      enabled: query !== null,
     }),
   )
   return useMemo((): Loaded<readonly Leave[]> => {
+    if (today === null) return { status: 'loading' }
     if (closed.status !== 'ready') return closed
     return { status: 'ready', value: closedLeaves(closed.value) }
-  }, [closed])
+  }, [closed, today])
 }
 
 const NO_LEAVES: readonly never[] = []

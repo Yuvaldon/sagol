@@ -28,7 +28,11 @@ function DragCard({ card }: { readonly card: DragCardState }) {
       <p className="text-name tabular-nums">{datesText(card.dates)}</p>
       {card.creating ? <p className="text-micro text-text-muted">{t('timeline.dragNewHint')}</p> : null}
       {card.returnsToPending ? <p className="text-micro text-status-pending-text">{t('leaves.returnsToPending')}</p> : null}
-      {card.warnings.length === 0 ? null : <RuleBrief violations={card.warnings} />}
+      {card.warnings.status !== 'ready' ? (
+        <p className="text-micro text-text-muted">{t(card.warnings.status === 'loading' ? 'rules.checking' : 'rules.checkFailed')}</p>
+      ) : card.warnings.value.length === 0 ? null : (
+        <RuleBrief violations={card.warnings.value} />
+      )}
     </div>
   )
 }
