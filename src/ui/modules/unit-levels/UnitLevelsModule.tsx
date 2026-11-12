@@ -19,6 +19,7 @@ import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
+import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -33,17 +34,21 @@ function LevelForm({
   level,
   levels,
   onReload,
+  onDone,
 }: {
   readonly level: UnitLevel | null
   readonly levels: readonly UnitLevel[]
-  readonly onReload: () => void
+  readonly onReload?: () => void
+  /** Made in place (D-285): gets what was saved, or null when left; the panel stays where it is. */
+  readonly onDone?: (saved: UnitLevel | null) => void
 }) {
   const panel = usePanel()
   const { create, update } = useUnitLevelCommands()
   const [opened] = useState(level)
   const [state, setState] = useState(CLEAN_FORM)
   const backToList = () => {
-    panel.open(PANEL_IDS.unitLevels)
+    if (onDone === undefined) panel.open(PANEL_IDS.unitLevels)
+    else onDone(null)
   }
 
   const form = useForm({
@@ -59,8 +64,10 @@ function LevelForm({
         opened === null
           ? await create.run({ name: value.name, existing: levels })
           : await update.run({ id: opened.id, expected_version: opened.version, changes: { name: value.name } })
-      if (result.ok) backToList()
-      else setState(formStateOf(result.error, LEVEL_FIELDS))
+      if (result.ok) {
+        if (onDone === undefined) backToList()
+        else onDone(result.value)
+      } else setState(formStateOf(result.error, LEVEL_FIELDS))
     },
   })
 
@@ -315,5 +322,38 @@ export function UnitLevelsModule() {
         </div>
       ) : null}
     </div>
+  )
+}
+
+/** A unit type made from another form's field (D-285): the module's own form and command over the drawer. The field takes
+ * what was saved; who may not create one reads that it is missing. */
+export function UnitLevelInPlace({
+  isMissing,
+  onCreated,
+}: {
+  readonly isMissing: boolean
+  readonly onCreated: (level: UnitLevel) => void
+}) {
+  const permissions = useUnitLevelPermissions()
+  const levels = useUnitLevels()
+  return (
+    <CreateInPlace labelKey="unitLevels.new" canCreate={permissions.create} isMissing={isMissing}>
+      {(close) =>
+        levels.status === 'ready' ? (
+          <LevelForm
+            level={null}
+            levels={levels.value}
+            onDone={(saved) => {
+              close()
+              if (saved !== null) onCreated(saved)
+            }}
+          />
+        ) : levels.status === 'failed' ? (
+          <FailureNotice error={levels.error} />
+        ) : (
+          <LoadingNotice />
+        )
+      }
+    </CreateInPlace>
   )
 }

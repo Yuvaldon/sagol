@@ -1,6 +1,6 @@
 import { PANEL_IDS } from '@config'
 import type { Unit, UnitId, UnitLevel, UnitLevelId } from '@contracts'
-import { unitFormIssues, unitTreeRows, usePanel, useUnitCommands, type UnitFormValues } from '@logic'
+import { liveLevels, unitFormIssues, unitTreeRows, usePanel, useUnitCommands, type UnitFormValues } from '@logic'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -10,6 +10,7 @@ import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { ColorField } from '../../primitives/ColorField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
+import { UnitLevelInPlace } from '../unit-levels/UnitLevelsModule'
 
 // The fields on screen are name, level and color (D-092).
 
@@ -113,14 +114,22 @@ export function UnitCreateForm({
       </form.Field>
       <form.Field name="unit_level_id">
         {(field) => (
-          <SelectField
-            labelKey="units.level"
-            name={field.name}
-            value={field.state.value}
-            options={levelOptions(levels, null)}
-            onChange={field.handleChange}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
+          <>
+            <SelectField
+              labelKey="units.level"
+              name={field.name}
+              value={field.state.value}
+              options={levelOptions(levels, null)}
+              onChange={field.handleChange}
+              error={fieldError(field.state.meta.errors, field.name, state.answered)}
+            />
+            <UnitLevelInPlace
+              isMissing={liveLevels(levels).length === 0}
+              onCreated={(level) => {
+                field.handleChange(level.id)
+              }}
+            />
+          </>
         )}
       </form.Field>
       <form.Field name="color_key">
@@ -203,14 +212,22 @@ function UnitEditFields({
       </form.Field>
       <form.Field name="unit_level_id">
         {(field) => (
-          <SelectField
-            labelKey="units.level"
-            name={field.name}
-            value={field.state.value}
-            options={levelOptions(levels, opened.unit_level_id)}
-            onChange={field.handleChange}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
+          <>
+            <SelectField
+              labelKey="units.level"
+              name={field.name}
+              value={field.state.value}
+              options={levelOptions(levels, opened.unit_level_id)}
+              onChange={field.handleChange}
+              error={fieldError(field.state.meta.errors, field.name, state.answered)}
+            />
+            <UnitLevelInPlace
+              isMissing={liveLevels(levels).length === 0}
+              onCreated={(level) => {
+                field.handleChange(level.id)
+              }}
+            />
+          </>
         )}
       </form.Field>
       <form.Field name="color_key">

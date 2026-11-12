@@ -34,7 +34,10 @@ async function openSoldiers(page: Page) {
 }
 
 async function openRanks(page: Page) {
-  await page.getByRole('button', { name: he.soldiers.tabRanks }).click()
+  // The ranks are their own module of the setup (D-285): whatever drawer is open closes first.
+  const close = page.getByRole('button', { name: he.common.close })
+  if (await close.isVisible()) await close.click()
+  await openModule(page, he.commandRanks.open)
   await expect(page.getByLabel(he.commandRanks.name).or(page.getByText(he.commandRanks.emptyTitle)).or(rankList(page)).first()).toBeVisible()
 }
 
@@ -172,7 +175,8 @@ test('ranks: most senior first, editable, and kept while someone holds them', as
   await page.getByRole('button', { name: he.common.save }).click()
   await expect.poll(async () => (await titles())[0]).toBe('מפקד מחלקה')
 
-  await page.getByRole('button', { name: he.soldiers.tabList }).click()
+  await closeDrawer(page)
+  await openSoldiers(page)
   await startNewSoldier(page, 'אורי', 'כהן')
   await choose(page, he.soldiers.rank, 'לוחם')
   await page.getByRole('button', { name: he.common.create }).click()
