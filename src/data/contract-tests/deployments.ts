@@ -36,6 +36,11 @@ const TODAY = "2026-11-08";
 const TOMORROW = "2026-11-09";
 const MID_MONTH = "2026-11-15";
 const MONTH_END = "2026-11-30";
+const EARLIER_START = "2025-06-01";
+const EARLIER_END = "2025-06-10";
+const BEFORE_NARROW = "2025-07-01";
+const NARROW_DAY = "2025-07-02";
+const ELSEWHERE_DAY = "2025-08-01";
 const NEXT_MONTH = "2026-12-01";
 
 const newDeploymentId = () => DeploymentId.parse(crypto.randomUUID());
@@ -867,14 +872,15 @@ export function describeDeploymentContract(
         const type = await leaveType();
         const person = await soldier(null, "Avi");
         await serve(person.id);
-        const second = await seedRotation(harnessOf(), organization, [person.id]);
+        // One live rotation at a time (D-221): the others are earlier than the test's rotation, which starts on PAST_DATE.
+        const second = await seedRotation(harnessOf(), organization, [person.id], { start_date: EARLIER_START, end_date: EARLIER_END });
         const { soldier_id: _soldier, ...row } = draft(person.id, type.id);
         const created = valueOf(
           await adapter().commands.leaves.createMany({
             soldier_id: person.id,
             leaves: [
               { ...row, deployment_id: rotation },
-              { ...row, id: newLeaveId(), start_date: MID_MONTH, end_date: MONTH_END, deployment_id: second },
+              { ...row, id: newLeaveId(), start_date: EARLIER_START, end_date: EARLIER_END, deployment_id: second },
             ],
             as_approved: false,
             acknowledged_rule_ids: [],
@@ -882,14 +888,14 @@ export function describeDeploymentContract(
         );
         expect(created.map((leave) => leave.deployment_id)).toEqual([rotation, second]);
 
-        const narrow = await seedRotation(harnessOf(), organization, [person.id], { start_date: TOMORROW, end_date: TOMORROW });
-        const elsewhere = await seedRotation(harnessOf(), organization);
+        const narrow = await seedRotation(harnessOf(), organization, [person.id], { start_date: NARROW_DAY, end_date: NARROW_DAY });
+        const elsewhere = await seedRotation(harnessOf(), organization, [], { start_date: ELSEWHERE_DAY, end_date: ELSEWHERE_DAY });
         const sheet = (leaves: Parameters<ReturnType<typeof adapter>["commands"]["leaves"]["createMany"]>[0]["leaves"]) =>
           adapter().commands.leaves.createMany({ soldier_id: person.id, leaves, as_approved: false, acknowledged_rule_ids: [] });
-        expect(issuesOf(await sheet([{ ...row, id: newLeaveId(), deployment_id: narrow }]))).toEqual([
+        expect(issuesOf(await sheet([{ ...row, id: newLeaveId(), start_date: BEFORE_NARROW, end_date: NARROW_DAY, deployment_id: narrow }]))).toEqual([
           { path: ["leaves", 0, "start_date"], code: "outside_rotation" },
         ]);
-        expect(issuesOf(await sheet([{ ...row, id: newLeaveId(), deployment_id: elsewhere }]))).toEqual([
+        expect(issuesOf(await sheet([{ ...row, id: newLeaveId(), start_date: ELSEWHERE_DAY, end_date: ELSEWHERE_DAY, deployment_id: elsewhere }]))).toEqual([
           { path: ["leaves", 0, "soldier_id"], code: "not_a_member" },
         ]);
         const twice = newLeaveId();
