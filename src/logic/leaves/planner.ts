@@ -18,7 +18,7 @@ import { addDays, compareDates, leaveReasonIssues, optionalText, roundDays, type
 import { formIssues } from '../forms/issues'
 import type { WithProperties } from '../properties/properties'
 
-// The leave-round planner (D-270, D-286): inside one rotation, groups of soldiers each go home on the same rhythm, from
+// The leave-round planner (D-270, D-316): inside one rotation, groups of soldiers each go home on the same rhythm, from
 // their own first day home. It sends one collective leave (D-179) with a leave per soldier and round, so the rounds are
 // ordinary leaves of one batch (D-268); only the leaves are stored (D-019). Pure.
 

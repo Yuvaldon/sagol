@@ -8,7 +8,7 @@ import { usePorts } from '../runtime/context'
 import { scopeRotation, useDateWindow } from '../view-state/window'
 import { roundAnswerIssues, toLeaveRoundInput, type LeaveRoundValues, type RoundContext } from './planner'
 
-// The leave-round planner's reads and its command (D-270, D-286).
+// The leave-round planner's reads and its command (D-270, D-316).
 
 export interface LeaveRoundSetup {
   /** NULL while the rotations or their members load. */

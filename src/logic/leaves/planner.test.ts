@@ -67,7 +67,7 @@ function plan(overrides: Partial<LeaveRoundValues> = {}): LeaveRoundValues {
   }
 }
 
-describe('a new plan (D-286)', () => {
+describe('a new plan (D-316)', () => {
   it('runs from the later of today and the rotation start to its end, at the routine rhythm', () => {
     const values = newLeaveRoundValues('2026-11-12', ROTATION)
     expect(values).toMatchObject({ deployment_id: ROTATION.id, start_date: '2026-12-01', end_date: '2026-12-31' })
@@ -83,7 +83,7 @@ describe('a new plan (D-286)', () => {
   })
 })
 
-describe('the planned rounds (D-270, D-286)', () => {
+describe('the planned rounds (D-270, D-316)', () => {
   it('previews a group on the rhythm within the plan', () => {
     const values = plan()
     const [first, second] = values.groups
@@ -126,7 +126,7 @@ describe('the planned rounds (D-270, D-286)', () => {
   })
 })
 
-describe('the plan form (D-286)', () => {
+describe('the plan form (D-316)', () => {
   it('passes a whole plan', () => {
     expect(leaveRoundIssues(plan(), null, WHOLE_UNIT)).toEqual([])
   })
