@@ -253,6 +253,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   rounded square; the maskable and Apple icons pad it on `surface`. Name "סגול", standalone, right to left; the bar color is `canvas`, and follows the dark set at runtime.
 - **Update toast**: a glass pill at the top, below the safe area: "גרסה חדשה זמינה" and a primary "רענון". It
   waits for the soldier; it never reloads on its own.
+- **Preference failure** (D-187): a pin, the rules row, the appearance or "approve now" that does not save shows a
+  glass pill at the top in `status-rejected` with a close icon; another device's change reads "ההעדפות שונו במכשיר אחר",
+  and the menu or panel shows the stored choice.
 - **Install**: "התקנת האפליקציה" in the user menu, above sign-out, only when the browser offers it; on an iPhone,
   a dialog explains Share → "הוספה למסך הבית". Nothing shows once installed.
 - **Offline**: a centered sheet "אין חיבור לרשת" with "ניסיון חוזר"; the app opens by itself when the network

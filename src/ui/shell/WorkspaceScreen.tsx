@@ -13,6 +13,8 @@ import { UnitSelector } from './UnitSelector'
 import { UserMenu } from './UserMenu'
 import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { TabBar } from './TabBar'
+import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
+import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { ViewSwitcher } from './ViewSwitcher'
 import { Viewport } from './Viewport'
 import { WindowNavigator } from './WindowNavigator'
@@ -157,6 +159,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const { active } = useBoardFilters()
   const { window } = useDateWindow()
   const focus = useFilterFocusScope()
+  const preferenceFailure = usePreferenceFailureScope()
   useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
@@ -166,6 +169,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
     // The row under the bars pushes the board's first row down while it shows: on an upright phone always, elsewhere
     // only while a condition is set (D-173, D-190).
     <FilterFocusContext value={focus}>
+      <PreferenceFailureContext value={preferenceFailure}>
       <div
         data-filter-row={window !== null && (active || !(isDesktop || isWidePhone)) ? 'shown' : undefined}
         className="relative h-dvh bg-canvas"
@@ -178,7 +182,9 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           <Bars name={name} identity={identity} />
         </div>
         <ModuleDrawer />
+        <PreferenceFailureNotice />
       </div>
+      </PreferenceFailureContext>
     </FilterFocusContext>
   )
 }

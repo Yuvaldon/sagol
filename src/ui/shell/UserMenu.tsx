@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { InfoDialog } from '../patterns/Dialogs'
 import { NameTooltip } from '../primitives/Button'
 import { useInboxAccess } from './inboxAccess'
+import { useReportPreferenceSave } from './preferenceFailure'
 import {
   Button as AriaButton,
   Header,
@@ -46,6 +47,7 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   const preferences = useMyPreferences()
   const savePreferences = useUpdateMyPreferences()
   const appearance = useAppearance()
+  const reportSave = useReportPreferenceSave()
   // The account is an avatar at the bar's inline end (V20); its name shows on hover and is read aloud.
   const name = identity.display_name ?? identity.email
   const approveNow = preferences.status === 'ready' && preferences.value.create_leaves_as_approved
@@ -72,7 +74,7 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
                 selectionMode="multiple"
                 selectedKeys={approveNow ? [APPROVE_NOW] : []}
                 onSelectionChange={(keys) => {
-                  void savePreferences.run({ create_leaves_as_approved: keys === 'all' || keys.has(APPROVE_NOW) })
+                  reportSave(savePreferences.run({ create_leaves_as_approved: keys === 'all' || keys.has(APPROVE_NOW) }))
                 }}
                 className="flex flex-col gap-2xs border-b border-line pb-xs"
               >
@@ -92,7 +94,7 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
                 selectedKeys={[appearance.appearance]}
                 onSelectionChange={(keys) => {
                   const chosen = APPEARANCES.find((one) => keys !== 'all' && keys.has(one.key))
-                  if (chosen !== undefined) appearance.setAppearance(chosen.key)
+                  if (chosen !== undefined) reportSave(appearance.setAppearance(chosen.key))
                 }}
                 className="flex flex-col gap-2xs border-b border-line pb-xs"
               >

@@ -65,6 +65,9 @@ export function useUpdateMyPreferences() {
           preferences: result.value.preferences,
           version: result.value.version,
         })
+      } else {
+        // The screen shows the row as stored again, and the soldier chooses over it (D-187).
+        await client.invalidateQueries({ queryKey: QUERY_KEYS.soldierPreferences })
       }
       return result
     }
@@ -82,9 +85,12 @@ export interface NavigationPreferences {
   readonly editable: boolean
   /** FALSE until the preferences are read or have failed, so nothing is placed by a default and then moved. */
   readonly settled: boolean
-  togglePin(module: NavigationModule): void
-  setRulesRow(placement: RulesRowPlacement): void
+  togglePin(module: NavigationModule): Promise<PreferenceSaved>
+  setRulesRow(placement: RulesRowPlacement): Promise<PreferenceSaved>
 }
+
+/** A preference save's answer: a failure is shown, never dropped (D-187). */
+export type PreferenceSaved = Result<SoldierPreferencesRecord>
 
 const NO_PINS: readonly NavigationModule[] = []
 
@@ -100,14 +106,14 @@ export function useNavigationPreferences(): NavigationPreferences {
     editable: value !== null,
     settled: preferences.status !== 'loading',
     togglePin(module) {
-      void save.run((current) => ({
+      return save.run((current) => ({
         pinned_modules: current.pinned_modules.includes(module)
           ? current.pinned_modules.filter((one) => one !== module)
           : [...current.pinned_modules, module],
       }))
     },
     setRulesRow(placement) {
-      void save.run({ rules_row_placement: placement })
+      return save.run({ rules_row_placement: placement })
     },
   }
 }
@@ -117,7 +123,7 @@ export interface AppearancePreference {
   readonly appearance: Appearance
   /** FALSE while the preferences cannot be read, so the choice is not offered (D-076). */
   readonly editable: boolean
-  setAppearance(appearance: Appearance): void
+  setAppearance(appearance: Appearance): Promise<PreferenceSaved>
 }
 
 /** The soldier's color scheme (D-181), kept in their own preferences so every device has it. */
@@ -129,7 +135,7 @@ export function useAppearance(): AppearancePreference {
     appearance: value?.appearance ?? Appearance.enum.light,
     editable: value !== null,
     setAppearance(appearance) {
-      void save.run({ appearance })
+      return save.run({ appearance })
     },
   }
 }

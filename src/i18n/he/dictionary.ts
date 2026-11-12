@@ -751,6 +751,7 @@ export const dictionary = {
     installIosTitle: 'התקנה במסך הבית',
     installIosHint: 'בספארי: הקישו על כפתור השיתוף ואז על ״הוספה למסך הבית״.',
     signOut: 'יציאה',
+    preferenceChangedElsewhere: 'ההעדפות שונו במכשיר אחר. מוצגת הבחירה השמורה, אפשר לבחור שוב.',
   },
   startup: {
     title: 'לא ניתן להפעיל את המערכת',
