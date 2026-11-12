@@ -118,6 +118,11 @@ test('the day report: counts and names, reasons, a span, a text copy and an imag
 
 const SOLDIER = 'יעל שחר'
 
+/** The rotation unit's section of the open report; the root unit, with the owner in it, has its own (D-293). */
+function section(page: Page) {
+  return report(page).getByRole('heading', { name: new RegExp(ROTATION_UNIT) }).locator('xpath=..')
+}
+
 /** A unit with one soldier placed in it, and the rotation over it: a unit section the report can confirm. */
 async function soldierInRotation(page: Page) {
   await openModule(page, he.units.open)
@@ -148,12 +153,12 @@ test('each unit confirms its report, a change shows, and it confirms again (D-29
 
   await test.step('the unit is not yet confirmed, and confirms', async () => {
     await dayControl(page, '12 בנוב').click()
-    await expect(report(page).getByText(he.presence.statusNotYet, { exact: true })).toBeVisible()
+    await expect(section(page).getByText(he.presence.statusNotYet, { exact: true })).toBeVisible()
     await expect(report(page).getByText(he.presence.summaryConfirmed)).toBeVisible()
     await expectNoAxeViolations(page)
-    await report(page).getByRole('button', { name: he.presence.confirm }).click()
-    await expect(report(page).getByText(he.presence.statusConfirmed, { exact: true })).toBeVisible()
-    await expect(report(page).getByRole('button', { name: he.presence.confirm })).toHaveCount(0)
+    await section(page).getByRole('button', { name: he.presence.confirm }).click()
+    await expect(section(page).getByText(he.presence.statusConfirmed, { exact: true })).toBeVisible()
+    await expect(section(page).getByRole('button', { name: he.presence.confirm })).toHaveCount(0)
     await report(page).getByRole('button', { name: he.common.close }).click()
     await expect(report(page)).toBeHidden()
   })
@@ -163,10 +168,10 @@ test('each unit confirms its report, a change shows, and it confirms again (D-29
     await requestLeave(page, { ...leave, from: ['13', '11', '2026'], to: ['13', '11', '2026'] })
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await dayControl(page, '12 בנוב').click()
-    await expect(report(page).getByText(he.presence.statusChanged, { exact: true })).toBeVisible()
+    await expect(section(page).getByText(he.presence.statusChanged, { exact: true })).toBeVisible()
     await expect(report(page).getByText(he.presence.summaryChanged)).toBeVisible()
     await expectNoAxeViolations(page)
-    await report(page).getByRole('button', { name: he.presence.confirmAgain }).click()
-    await expect(report(page).getByText(he.presence.statusConfirmed, { exact: true })).toBeVisible()
+    await section(page).getByRole('button', { name: he.presence.confirmAgain }).click()
+    await expect(section(page).getByText(he.presence.statusConfirmed, { exact: true })).toBeVisible()
   })
 })
