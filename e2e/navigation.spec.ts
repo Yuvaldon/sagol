@@ -168,3 +168,24 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await expectNoAxeViolations(page)
   })
 })
+
+test('on a tablet held upright, no row of the panel stretches to fill it', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one tablet shape, set here')
+  await page.setViewportSize({ width: 768, height: 1024 })
+  await page.clock.setFixedTime(NOW)
+  await enterAsOwner(page)
+  await openPanel(page)
+  // The unit is not set up yet, so its setup sits above the groups, a row like the others.
+  const setup = navigationPanel(page).getByRole('button', { name: he.setup.open, exact: true })
+  await expect(setup).toBeVisible()
+  await testInfo.attach('panel, tablet upright', { body: await page.screenshot(), contentType: 'image/png' })
+  const heights = await navigationPanel(page)
+    .getByRole('navigation', { name: he.navigation.title })
+    .getByRole('button')
+    .evaluateAll((buttons) => buttons.map((button) => ({ name: button.textContent ?? '', height: button.getBoundingClientRect().height })))
+  expect(heights.length).toBeGreaterThan(1)
+  // A row is one or two lines tall, never the panel's leftover height.
+  for (const row of heights) expect(row.height, row.name).toBeLessThanOrEqual(64)
+  const setupBox = await setup.boundingBox()
+  expect(setupBox?.height ?? 0).toBeLessThanOrEqual(44)
+})
