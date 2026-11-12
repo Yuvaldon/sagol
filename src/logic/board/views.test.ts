@@ -27,7 +27,7 @@ function soldier(n: number): Soldier {
 }
 
 function leave(n: number, start_date: CalendarDate, end_date: CalendarDate, overrides: Partial<BoardLeave> = {}): BoardLeave {
-  return { id: LeaveId.parse(uuid(n)), status: 'approved', start_date, end_date, effect: 'unavailable', type: null, ...overrides }
+  return { id: LeaveId.parse(uuid(n)), status: 'approved', start_date, end_date, effect: 'unavailable', type: null, layer: 'request', ...overrides }
 }
 
 const ALL_WEEK = WEEK.map(() => true)

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
 
 // The rest of the rule paths on screen (OI-107): the warning on the edit form, and the acknowledgment dialog on the
 // details' approve step, the inbox's approve and the close dialog. Desktop and mobile, RTL, with axe. Sample data,
@@ -66,6 +66,11 @@ function ackDialog(page: Page) {
 function actions(page: Page) {
   return drawer(page).getByRole('group', { name: he.leaves.actionsLabel })
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('the edit form warns, and approving or closing asks before a soft rule is broken', async ({ page }) => {
   await page.clock.setFixedTime(NOW)

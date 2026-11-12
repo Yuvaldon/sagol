@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press, requestLeave, typeDate, openRotationInNewUnit } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, navigation, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 
 // V5's demo: a bar opens its leave; approve, edit, comment, reject and reopen; the inbox with its pending and closed
 // lists; the "approve now" default; and an edit that another tab made stale. Desktop and mobile, RTL, with axe.
@@ -38,6 +38,11 @@ async function setUp(page: Page) {
   await requestLeave(page, { type: 'רגילה', from: ['09', '11', '2026'], to: ['10', '11', '2026'] })
   await expect(leavesOf(page)).toHaveCount(1)
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('a leave from its bar to a decision, and back', async ({ page }, testInfo) => {
   const project = testInfo.project.name

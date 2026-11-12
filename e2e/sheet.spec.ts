@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
 
 // V28's demo: the request sheet (D-275). One soldier, two requests of their own types and days, the second repeating
 // every week; one send puts every leave on the board and in "my requests". Desktop and mobile, RTL, with axe.
@@ -20,6 +20,11 @@ async function typeDateIn(page: Page, scope: Locator, label: string, day: string
   await scope.getByRole('group', { name: label, exact: true }).getByRole('spinbutton').first().click()
   await page.keyboard.type(`${day}${month}${year}`)
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('one sheet sends several requests, one of them repeating every week', async ({ page }) => {
   await page.clock.setFixedTime(NOW)

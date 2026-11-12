@@ -7,6 +7,7 @@ import {
   claimOrganization,
   expectNoAxeViolations,
   navigation,
+  openBoardOnTimeline,
   openModule,
   setupDrawer,
   signIn,
@@ -67,7 +68,7 @@ test('journey (a): the claim, the setup from a template, soldiers, then a rotati
   })
 })
 
-test('journeys (c), (d) and (e): a soldier requests, a commander approves, the daily report', async ({ page, context }) => {
+test('journeys (c), (d) and (e): a soldier requests, a commander approves, the daily report', async ({ page, context, isMobile }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await setUpFighter(page)
   await signOut(page)
@@ -89,6 +90,13 @@ test('journeys (c), (d) and (e): a soldier requests, a commander approves, the d
     await drawer(page).getByRole('textbox', { name: new RegExp(he.leaves.reason) }).fill(REASON)
     await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
     await expect(drawer(page)).toBeHidden()
+    // The steps read the timeline's bars, which a phone opens only when asked (D-290); asked only now, so Yael's
+    // address was bare and she landed on "שלי" (D-265).
+    if (isMobile) {
+      await page.getByRole('button', { name: new RegExp(he.workspace.view) }).click()
+      await page.getByRole('menuitemradio', { name: he.workspace.views.timeline }).click()
+    }
+    await openBoardOnTimeline(page, isMobile)
     await expect(leavesOf(page).first()).toHaveAccessibleName(new RegExp(`^${TYPE}, ${he.leaves.statusPending}, `))
     await openModule(page, he.myLeaves.open)
     const row = drawer(page).getByRole('list', { name: he.myLeaves.openTitle }).getByRole('button', { name: new RegExp(TYPE) })

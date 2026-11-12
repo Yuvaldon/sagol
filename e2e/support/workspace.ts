@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, type Page } from '@playwright/test'
+import { DEFAULT_VIEW_BY_DEVICE } from '../../src/config/views/index.ts'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 
 // What the slice demos share: signing in, claiming the organization, axe. Sample data, tests only.
@@ -59,6 +60,20 @@ export function organizationHeading(page: Page, name = ORGANIZATION) {
 /** The claim opens the setup over the board (V27): the drawer that offers the template. */
 export function setupDrawer(page: Page) {
   return page.getByRole('dialog', { name: he.setup.title })
+}
+
+/**
+ * A phone opens the board on the list (D-290). A spec about the timeline's bars names the timeline on every load of
+ * the board, as a link to it would, so a phone shows the same board as a desktop. Call it before the first load.
+ */
+export async function openBoardOnTimeline(page: Page, isMobile: boolean) {
+  if (!isMobile) return
+  await page.addInitScript((view) => {
+    const url = new URL(window.location.href)
+    if (url.pathname !== '/' || url.searchParams.has('view')) return
+    url.searchParams.set('view', view)
+    window.history.replaceState(window.history.state, '', url)
+  }, DEFAULT_VIEW_BY_DEVICE.desktop)
 }
 
 /** A new owner on an empty store, in the workspace, with the setup that the claim opens set aside. */

@@ -1,4 +1,5 @@
 import { DARK_SCHEME_MEDIA_QUERY, DESKTOP_MEDIA_QUERY } from '@config'
+import type { ViewDevice } from '@logic'
 import { useSyncExternalStore } from 'react'
 
 // Media queries the screen follows live. CSS decides most layout by itself; this is for the few places where a number
@@ -25,6 +26,11 @@ const darkScheme = { subscribe: subscribeTo(DARK_SCHEME_MEDIA_QUERY), snapshot: 
 
 export function useIsDesktop(): boolean {
   return useSyncExternalStore(desktop.subscribe, desktop.snapshot, () => false)
+}
+
+/** The device whose view the board opens on when the URL names none (D-290). */
+export function useViewDevice(): ViewDevice {
+  return useIsDesktop() ? 'desktop' : 'phone'
 }
 
 /** Whether the device asks for a dark screen, following a change while the screen is open. */

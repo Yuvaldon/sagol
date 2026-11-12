@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, press, requestLeave } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 
 // V6's demo: tag categories and tags, a soldier's tags, filter chips, leave conditions, "only who is missing" and
 // the present and absent lists, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -73,6 +73,11 @@ async function addCondition(page: Page, condition: string, value: string) {
   await page.getByRole('dialog', { name: he.filters.add }).locator('label').filter({ hasText: value }).click()
   await page.keyboard.press('Escape')
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('tags, filter chips, only who is missing, and who is present today', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)

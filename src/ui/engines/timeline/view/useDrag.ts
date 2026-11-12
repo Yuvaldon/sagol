@@ -122,7 +122,7 @@ export function useDrag(layout: GridLayout, elements: Elements, handlers: Timeli
         if (mark === undefined || mark.drag === null) return
         const box = target.getBoundingClientRect()
         const ends = mark.drag.resize ? { start: !mark.cut.start, end: !mark.cut.end } : { start: false, end: false }
-        kind = mark.kind === 'bar' ? grabOf(inlineOffset(event.clientX, box, rtl), box.width, TIMELINE_DRAG.handlePx, ends) : 'move'
+        kind = mark.kind !== 'badge' ? grabOf(inlineOffset(event.clientX, box, rtl), box.width, TIMELINE_DRAG.handlePx, ends) : 'move'
         markKey = mark.key
         origin = mark.range
       }

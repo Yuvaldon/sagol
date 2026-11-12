@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
 
 // V7's demo: a rule builder, the heat row, a soft rule that asks for an acknowledgment, a hard rule that refuses,
 // and a configuration conflict, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -55,6 +55,11 @@ async function startLeave(page: Page, soldier: string) {
 function heatRow(page: Page) {
   return page.getByRole('group', { name: he.rules.heatRow })
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuses', async ({ page }) => {
   await page.clock.setFixedTime(NOW)

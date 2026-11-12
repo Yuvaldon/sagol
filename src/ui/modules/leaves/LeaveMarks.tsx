@@ -1,7 +1,7 @@
 import type { LeaveStatus, LeaveType } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { glyphOf } from '../../theme/icons'
-import { swatchClassOf } from '../../theme/palette'
+import { leaveTypeToneOf } from '../../theme/palette'
 
 // The two small signs of a leave in a list: its status and its type (D-119, D-120).
 
@@ -31,9 +31,10 @@ export function StatusChip({ status }: { readonly status: LeaveStatus }) {
 /** The type's color and icon, beside its name. Decoration: the name carries the meaning. */
 export function TypeMark({ type }: { readonly type: LeaveType | null }) {
   const Icon = glyphOf(type?.icon_key ?? null)?.Icon ?? null
-  const swatch = swatchClassOf(type?.color_key ?? null)
+  // Green never means away (D-290): a type stored green shows the absence tone, as on the board.
+  const swatch = leaveTypeToneOf(type?.color_key ?? null).fill
   return (
-    <span aria-hidden className={`flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${swatch ?? 'bg-absence'}`}>
+    <span aria-hidden className={`flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${swatch}`}>
       {Icon === null ? null : <Icon size={10} strokeWidth={2.6} />}
     </span>
   )

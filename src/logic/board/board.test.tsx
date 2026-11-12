@@ -497,7 +497,7 @@ describe('view state in the URL (D-103, D-104)', () => {
     const panel = usePanel()
     const window = useDateWindow()
     const filter = useViewFilter()
-    const view = useActiveView(['timeline'])
+    const view = useActiveView(['timeline'], 'desktop')
     const presence = usePresenceDay()
     return (
       <div>

@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, openRotation, typeDate } from './support/leaves.ts'
-import { ORGANIZATION, OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, ORGANIZATION, OWNER, waitForSettledScreen } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
 // axe. Sample data, tests only.
@@ -59,6 +59,11 @@ async function pickUnit(page: Page, name: string) {
   await page.getByRole('option', { name, exact: true }).click()
 }
 
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
+
 test('the board: rows by unit, a unit and a week in the URL, and the soldier behind a name', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
@@ -67,7 +72,8 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
     await expect(board(page)).toBeVisible()
-    await expect(page).toHaveURL(/\/$/)
+    // Nothing is added to the address; a phone's load here names the timeline it asked for (D-290).
+    await expect(page).toHaveURL(/\/(\?view=timeline)?$/)
     await expectNoAxeViolations(page)
   })
 

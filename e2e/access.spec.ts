@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
-import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, signIn } from './support/workspace.ts'
 
 // V10's demo: the owner builds a role, gives it to a soldier for a while with a personal grant, the soldier sees the
 // board through it, and the board closes again when the grant is revoked (D-165, D-166). On desktop and mobile, RTL,
@@ -21,7 +21,7 @@ const VIEWS = [
 async function signOut(page: Page) {
   await page.getByRole('button', { name: he.account.menu }).click()
   await page.getByRole('menuitem', { name: he.account.signOut }).click()
-  await expect(page).toHaveURL(/\/sign-in$/)
+  await expect(page).toHaveURL(/\/sign-in(\?view=\w+)?$/)
 }
 
 async function createUnit(page: Page) {
@@ -47,12 +47,17 @@ async function addYael(page: Page) {
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */
 async function enterAsYael(page: Page) {
   await signIn(page, YAEL.email)
-  await expect(page).toHaveURL(/\/onboarding$/)
+  await expect(page).toHaveURL(/\/onboarding(\?view=\w+)?$/)
   await page.getByLabel(he.linkRequest.firstName).fill(YAEL.first)
   await page.getByLabel(he.linkRequest.lastName).fill(YAEL.last)
   await page.getByLabel(he.linkRequest.personalId).fill(YAEL.personalId)
   await page.getByRole('button', { name: he.linkRequest.submit }).click()
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test.describe('roles and access', () => {
   test('a role, a personal grant that opens the board, and its revocation', async ({ page }) => {

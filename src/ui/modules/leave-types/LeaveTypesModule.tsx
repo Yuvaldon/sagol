@@ -1,4 +1,4 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
+import { LEAVE_TYPE_PALETTE_KEYS, NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, AvailabilityEffect, LeaveType, LeaveTypeGroup, LeaveTypeGroupId } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -32,7 +32,7 @@ import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { TextField } from '../../primitives/fields'
 import { glyphOf } from '../../theme/icons'
-import { toneOf } from '../../theme/palette'
+import { leaveTypeToneOf } from '../../theme/palette'
 
 // The types section of the leave types drawer (D-113): types under their groups, each with the color and icon
 // the board shows. Up and down in the row menu order a type inside its group.
@@ -152,6 +152,7 @@ function TypeForm({
           <ColorField
             labelKey="palette.label"
             name={field.name}
+            keys={LEAVE_TYPE_PALETTE_KEYS}
             value={field.state.value}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
@@ -195,7 +196,7 @@ function TypeEditor(props: {
 function TypeSwatch({ type }: { readonly type: LeaveType }) {
   const glyph = glyphOf(type.icon_key)
   return (
-    <span aria-hidden className={`ms-xs flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${toneOf(type.color_key).fill}`}>
+    <span aria-hidden className={`ms-xs flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${leaveTypeToneOf(type.color_key).fill}`}>
       {glyph === null ? null : <glyph.Icon size={10} strokeWidth={2.6} />}
     </span>
   )

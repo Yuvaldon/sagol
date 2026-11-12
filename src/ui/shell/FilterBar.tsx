@@ -42,7 +42,7 @@ import { useState, type ReactNode, useEffect } from 'react'
 import { Button as AriaButton, Dialog, DialogTrigger, Popover } from 'react-aria-components'
 import { useFilterFocus } from './filterFocus'
 import { useIsDesktop } from '../patterns/media'
-import { toneOf } from '../theme/palette'
+import { leaveTypeToneOf, toneOf } from '../theme/palette'
 import { CheckList, type Choice, type ChoiceText } from '../primitives/ChoiceList'
 
 // The board's filters (D-131 to D-134, D-173, D-213). The bar holds "filter" to add a condition, "only who is missing"
@@ -359,7 +359,7 @@ function leaveConditionsOf(
   const typeIds = leaves.conditions.type_ids ?? []
   const typeName = (id: LeaveTypeId) => allTypes.find((type) => type.id === id)?.name ?? t('filters.unavailable')
   const typeChoices: Choice[] = [
-    ...liveTypes.map((type) => ({ key: type.id, label: { text: type.name }, dot: toneOf(type.color_key).fill })),
+    ...liveTypes.map((type) => ({ key: type.id, label: { text: type.name }, dot: leaveTypeToneOf(type.color_key).fill })),
     ...typeIds.filter((id) => !liveTypes.some((type) => type.id === id)).map((id) => ({ key: id, label: { text: typeName(id) } })),
   ]
   const leaveType: Condition = {
