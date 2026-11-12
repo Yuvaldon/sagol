@@ -1,3 +1,4 @@
+import { DEFAULT_BOARD_SORT_KEY, DEFAULT_SORT_ORDER } from '@config'
 import type { CalendarDate, FilterExpression, SoldierId } from '@contracts'
 import { APPROVED_ONLY, createAvailabilityContext } from '@domain'
 import { useMemo } from 'react'
@@ -9,7 +10,7 @@ import { hasLeaveConditions, leaveMatches, type LeaveConditions } from '../view-
 import { filterUnitOf } from '../view-state/filter'
 import type { DateWindow } from '../view-state/window'
 import { boardLeaves, type BoardLeave } from './leaves'
-import { boardItems, type BoardItem } from './rows'
+import { boardItems, type BoardItem, type BoardSort } from './rows'
 
 // What every engine shows for a window, a filter and the board's own conditions (D-105, D-132, D-133, D-174): one model,
 // so the timeline, the list, the table and the calendar never disagree on who is in view (ARCHITECTURE "View engines").
@@ -33,9 +34,15 @@ export interface BoardConditions {
   readonly leaves: LeaveConditions
   /** "Only who is missing" (D-133). */
   readonly onlyMissing: boolean
+  /** The order of the rows (D-214). */
+  readonly sort: BoardSort
 }
 
-const NO_BOARD_CONDITIONS: BoardConditions = { leaves: {}, onlyMissing: false }
+const NO_BOARD_CONDITIONS: BoardConditions = {
+  leaves: {},
+  onlyMissing: false,
+  sort: { key: DEFAULT_BOARD_SORT_KEY, order: DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] },
+}
 
 export function useBoard(
   window: DateWindow,
@@ -47,7 +54,7 @@ export function useBoard(
   const leaves = useLeaves(window)
   const leaveTypes = useLeaveTypes()
   const placements = usePlacementHints(source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS)
-  const { onlyMissing } = board
+  const { onlyMissing, sort } = board
   const leaveConditions = board.leaves
 
   return useMemo((): Loaded<BoardModel> => {
@@ -66,7 +73,11 @@ export function useBoard(
       leaves.value.filter((leave) => leave.status === 'approved'),
       leaveTypes.value,
     )
-    const availability = onlyMissing ? createAvailabilityContext({ leaves: leaves.value, leave_types: leaveTypes.value }) : null
+    const countsAway = sort.key === 'absent'
+    const availability =
+      onlyMissing || countsAway ? createAvailabilityContext({ leaves: leaves.value, leave_types: leaveTypes.value }) : null
+    const awayDays = (soldierId: SoldierId) =>
+      window.days.map((day) => availability?.isAvailable(soldierId, day, APPROVED_ONLY) === false)
     const items = boardItems({
       ...source.value,
       days: window.days,
@@ -75,15 +86,14 @@ export function useBoard(
       scopeUnitId: unit.kind === 'unit' ? unit.unitId : null,
       readsPlacements: placements.readsOrPending,
       marked: hasLeaveConditions(leaveConditions) ? (soldierId) => drawn.has(soldierId) : null,
-      absent:
-        availability === null
-          ? null
-          : (soldierId) => window.days.map((day) => !availability.isAvailable(soldierId, day, APPROVED_ONLY)),
+      absent: onlyMissing ? awayDays : null,
+      sort,
+      daysAway: countsAway ? (soldierId) => awayDays(soldierId).filter(Boolean).length : null,
     })
     const soldierCount = items.filter((item) => item.kind === 'soldier').length
     const rosterCount = source.value.soldiers.length
     return { status: 'ready', value: { days: window.days, today, items, leaves: drawn, approved, soldierCount, rosterCount } }
-  }, [source, leaves, leaveTypes, window, today, filter, leaveConditions, onlyMissing, placements])
+  }, [source, leaves, leaveTypes, window, today, filter, leaveConditions, onlyMissing, sort, placements])
 }
 
 const NO_SOLDIERS: readonly never[] = []

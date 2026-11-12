@@ -242,7 +242,15 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
 
 // ------------------------------------------------------------------- the hooks
 
-const WINDOW: DateWindow = { from: '2026-11-08', to: '2026-11-14', days: [], followsToday: true, holdsToday: true }
+const WINDOW: DateWindow = {
+  kind: 'week',
+  rotationId: null,
+  from: '2026-11-08',
+  to: '2026-11-14',
+  days: [],
+  followsToday: true,
+  holdsToday: true,
+}
 
 interface Fakes {
   readonly stored: Leave[]

@@ -20,7 +20,18 @@ export {
 export { useCan, useModuleAccess, type CanAnswer } from './permissions/hooks'
 export { WorkspaceSearch, useWorkspaceSearch } from './view-state/search'
 export { usePanel, type PanelState, type PanelTarget } from './view-state/panel'
-export { dateWindowOf, shiftedWindow, useDateWindow, type DateWindow, type DateWindowState } from './view-state/window'
+export {
+  dateWindowOf,
+  pickableRotations,
+  rotationDays,
+  scopeRotations,
+  shiftedAnchor,
+  shiftedWindow,
+  useDateWindow,
+  type DateWindow,
+  type DateWindowState,
+  type WindowKind,
+} from './view-state/window'
 export {
   NO_CONDITIONS,
   filterUnitOf,
@@ -39,11 +50,13 @@ export {
 export { BoardLeaveStatus, LeaveConditions, hasLeaveConditions, leaveMatches } from './view-state/conditions'
 export {
   useBoardFilters,
+  useBoardSort,
   useLeaveConditions,
   useOnlyMissing,
   usePresenceDay,
   useRulesDay,
   type BoardFiltersState,
+  type BoardSortState,
   type LeaveConditionsState,
   type OnlyMissingState,
   type PresenceDayState,
@@ -70,6 +83,7 @@ export {
   type BoardInput,
   type BoardItem,
   type BoardSoldierItem,
+  type BoardSort,
 } from './board/rows'
 export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
 export { boardLeaves, type BoardLeave } from './board/leaves'

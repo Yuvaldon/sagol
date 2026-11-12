@@ -1,6 +1,7 @@
 import { SETUP_STEPS, type PanelId, type SetupStepId } from '@config'
 import type { PermissionCheck } from '@contracts'
 import { useRankBindings } from '../access/hooks'
+import { useDeployments } from '../deployments/hooks'
 import { useLeaveTypes } from '../leaves/hooks'
 import { useCan } from '../permissions/hooks'
 import type { Loaded } from '../queries/loaded'
@@ -55,6 +56,7 @@ export function useSetupProgress(): Loaded<readonly SetupStep[]> {
     leave_types: useLeaveTypes(),
     tags: useTags(),
     soldiers: useSoldiers(),
+    deployments: useDeployments(),
   }
   const rows: Partial<Record<SetupStepId, SetupRows>> = {}
   for (const id of allowed) {
