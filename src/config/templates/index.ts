@@ -217,7 +217,7 @@ export const COMPANY_TEMPLATE = {
     {
       key: 'outings',
       types: [
-        { key: 'vacation', color: 'green', icon: 'home', effect: 'unavailable', requiresReason: false },
+        { key: 'vacation', color: 'cyan', icon: 'home', effect: 'unavailable', requiresReason: false },
         { key: 'errands', color: 'teal', icon: 'family', effect: 'unavailable', requiresReason: false },
       ],
     },

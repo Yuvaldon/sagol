@@ -28,6 +28,7 @@ import {
   TIMELINE_DRAG,
   TIMELINE_LANES,
   TIMELINE_LANES_TOUCH,
+  UNIT_TEMPLATES,
   TIMELINE_DENSITY,
   TIMELINE_LAYOUT,
   VIEW_IDS,
@@ -154,6 +155,11 @@ describe('palette', () => {
     expect(isPaletteKey('teal')).toBe(true)
     expect(isPaletteKey('Teal')).toBe(false)
     expect(isPaletteKey('')).toBe(false)
+  })
+
+  it('gives every template leave type a key a leave type may take (D-290)', () => {
+    for (const template of Object.values(UNIT_TEMPLATES))
+      for (const group of template.leaveGroups) for (const type of group.types) expect(isLeaveTypePaletteKey(type.color)).toBe(true)
   })
 })
 
