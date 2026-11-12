@@ -14,12 +14,18 @@ import type { TimelineDayCell, TimelineHeatCell, TimelineMark, TimelineRowModel 
 // group headers, days become header cells, and leaves become bars and badges (ARCHITECTURE "View engines").
 // Pure.
 
-export function dayCells(days: readonly CalendarDate[], today: CalendarDate): TimelineDayCell[] {
+export function dayCells(
+  days: readonly CalendarDate[],
+  today: CalendarDate,
+  openDay: ((day: CalendarDate) => (() => void) | null) | null,
+): TimelineDayCell[] {
   return days.map((day) => ({
     key: day,
     weekday: formatDate(day, 'weekdayNarrow'),
     dayNumber: formatDate(day, 'day'),
     isToday: day === today,
+    label: formatDate(day, 'full'),
+    onOpen: openDay === null ? null : openDay(day),
   }))
 }
 

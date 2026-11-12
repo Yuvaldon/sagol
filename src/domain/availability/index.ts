@@ -41,3 +41,4 @@ export {
   withinMemberSpan,
   type DeploymentMemberDates,
 } from './deployments'
+export { dayMovements, soldierMovement, type DayMovements, type SoldierMovement } from './movements'

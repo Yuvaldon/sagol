@@ -26,10 +26,10 @@ export const RAW_COLOR_ALLOWED_IN: readonly string[] = ['src/ui/theme/']
 export const RAW_DATE_ALLOWED_IN: readonly string[] = ['src/app/time/']
 
 /**
- * `localStorage` / `sessionStorage` allowed modules: only the local identity (D-006, D-074).
- * Data lives in IndexedDB (D-021).
+ * `localStorage` / `sessionStorage` allowed modules: the local identity (D-006, D-074) and the device store of
+ * one screen's conveniences (D-197). Data lives in IndexedDB (D-021).
  */
-export const WEB_STORAGE_ALLOWED_IN: readonly string[] = ['src/data/local/identity/']
+export const WEB_STORAGE_ALLOWED_IN: readonly string[] = ['src/data/local/identity/', 'src/data/device/']
 
 /** Folders whose files are pure engine logic: never `.tsx` (ARCHITECTURE "View engines"). */
 export const PURE_CORE_FOLDER = /(^|\/)core\//

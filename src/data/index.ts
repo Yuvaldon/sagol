@@ -6,6 +6,8 @@
 // pairs, Dexie included, in the entry chunk of every build.
 export type { LocalAdapterDependencies, LocalDataAdapter } from './local/adapter'
 export type { IdentityStore } from './local/identity'
+// The device store is a few lines with no dependency, so it is static (D-197).
+export { browserDeviceStores, deviceStoreOver, type DeviceStore } from './device'
 export type { RemoteAdapterDependencies, RemoteDataAdapter } from './remote/adapter'
 export type { GoogleAuth, GoogleAuthOptions, SupabaseAuthServerAddress } from './remote/googleAuth'
 

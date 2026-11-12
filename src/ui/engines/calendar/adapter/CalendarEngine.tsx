@@ -1,6 +1,7 @@
 import { t } from '@i18n'
 import { boardDays, calendarWeeks, fullName, type BoardDay } from '@logic'
 import { useMemo } from 'react'
+import { Button as AriaButton } from 'react-aria-components'
 import { formatDate } from '../../../patterns/dates'
 import { BoardEngine, type BoardFrame } from '../../../board/BoardEngine'
 import { EngineScroller } from '../../../board/EngineScroller'
@@ -10,25 +11,42 @@ import { LeaveChip } from '../../../board/LeaveChip'
 // absences first. A day grows with its leaves; nothing hides behind a "+N". Below md the days stack, one under the other.
 // The places before the window's first day and after its last stay empty: the board reads no day outside the window.
 
+const HEADING = 'flex items-center gap-sm'
+
 function Day({ day, frame }: { readonly day: BoardDay; readonly frame: BoardFrame }) {
   const isToday = day.day === frame.model.today
+  // A day with a report opens it from its heading (D-193).
+  const open = frame.openDay === null ? null : frame.openDay(day.day)
+  const face = (
+    <>
+      <span className="text-text-muted">{formatDate(day.day, 'weekdayShort')}</span>
+      <span
+        className={`tabular-nums font-semibold ${isToday ? 'inline-flex min-w-icon items-center justify-center rounded-pill bg-today px-xs text-on-action' : ''}`}
+      >
+        {formatDate(day.day, 'day')}
+      </span>
+      <span className="sr-only">{formatDate(day.day, 'dayMonth')}</span>
+      {day.away === 0 ? null : (
+        <span className="ms-auto text-label text-text-muted tabular-nums">
+          {t('engines.away')} {day.away}
+        </span>
+      )}
+    </>
+  )
   return (
     <li
       className="flex min-w-none flex-col gap-xs border-b border-line bg-surface p-sm md:border-s"
       aria-current={isToday ? 'date' : undefined}
     >
-      <h2 className="flex items-center gap-sm text-name">
-        <span className="text-text-muted">{formatDate(day.day, 'weekdayShort')}</span>
-        <span
-          className={`tabular-nums font-semibold ${isToday ? 'inline-flex min-w-icon items-center justify-center rounded-pill bg-today px-xs text-on-action' : ''}`}
-        >
-          {formatDate(day.day, 'day')}
-        </span>
-        <span className="sr-only">{formatDate(day.day, 'dayMonth')}</span>
-        {day.away === 0 ? null : (
-          <span className="ms-auto text-label text-text-muted tabular-nums">
-            {t('engines.away')} {day.away}
-          </span>
+      <h2 className="text-name">
+        {open === null ? <div className={HEADING}>{face}</div> : (
+          <AriaButton
+            onPress={open}
+            className={`${HEADING} -m-xs w-full cursor-pointer rounded-control p-xs text-start outline-focus data-focus-visible:outline-2 data-hovered:bg-inner`}
+          >
+            <span className="sr-only">{t('presence.openDay')}</span>
+            {face}
+          </AriaButton>
         )}
       </h2>
       {day.entries.length === 0 ? null : (

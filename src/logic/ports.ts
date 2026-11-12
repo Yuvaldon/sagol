@@ -8,6 +8,7 @@ import type {
   SessionService,
   TimeSource,
 } from '@contracts'
+import type { DeviceKey } from '@config'
 
 // What `logic` needs from the outside, narrowed to what exists (D-076). `app` provides it, and
 // `logic` never imports `data`. Each slice widens these ports as it adds a group.
@@ -96,10 +97,25 @@ export interface ShellPort {
   readonly install: () => Promise<void>
 }
 
+/** One kind of web storage for the conveniences of one screen (D-197): never data, never a permission. */
+export interface DeviceStore {
+  /** The value under `key` for `scope`, the signed-in soldier; NULL when none or when storage is unavailable. */
+  readonly read: (key: DeviceKey, scope: string) => string | null
+  /** NULL forgets it. A storage that refuses loses the convenience, nothing more. */
+  readonly write: (key: DeviceKey, scope: string, value: string | null) => void
+}
+
+/** What lasts on this device, and what lasts the session of this tab (D-197). */
+export interface DevicePort {
+  readonly local: DeviceStore
+  readonly session: DeviceStore
+}
+
 export interface LogicPorts {
   readonly data: DataPort
   readonly auth: AuthPort
   /** The same source the adapter gets (D-083). */
   readonly time: TimeSource
   readonly shell: ShellPort
+  readonly device: DevicePort
 }

@@ -86,7 +86,9 @@ async function ownerPorts(): Promise<LogicPorts> {
     }),
   )
   const shell = { subscribe: () => () => undefined, current: () => QUIET_SHELL, applyUpdate: () => undefined, install: () => Promise.resolve() }
-  return { auth, data, time, shell }
+  // The agreement reads no convenience of the device (D-197).
+  const nothingKept = { read: () => null, write: () => undefined }
+  return { auth, data, time, shell, device: { local: nothingKept, session: nothingKept } }
 }
 
 interface World {

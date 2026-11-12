@@ -54,4 +54,3 @@ Status: `open` · `closed`
 | OI-214 | V27 | V24 | The setup as pick, adjust, done, landing in routine mode; the D-180 checklist only for an unfinished setup; e2e walks journey (a) (D-262, D-263). | open | |
 | OI-215 | V27 | V24 | The time zone shows and can be changed in the root unit's form, since the claim takes it from the device (D-262). | open | |
 | OI-219 | V28 | V24 | The quick action follows the mode once V26 derives it (OI-211): "בקשה חדשה" while a rotation is current or upcoming, "פתיחת סבב" in routine for who may create a rotation, none otherwise (D-266). | open | |
-| OI-216 | V22 | V24 | Fit the daily report's entry to D-252: "דוח 1" is a bottom destination that opens today's report, and the presence count leaves the bar (D-256). | open | |
