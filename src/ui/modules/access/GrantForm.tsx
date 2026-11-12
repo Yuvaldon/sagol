@@ -17,6 +17,7 @@ import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { TextAreaField } from '../../primitives/TextAreaField'
 import { ComboField } from '../../primitives/fields'
+import { RoleInPlace } from './RolesModule'
 import { ScopeFields } from './ScopeFields'
 
 // A personal access grant (D-028, D-165, D-166): a role given to one soldier, in a scope, for a window of days.
@@ -116,6 +117,12 @@ export function GrantForm({
           change({ role_id })
         }}
         error={errorOf('role_id')}
+      />
+      <RoleInPlace
+        isMissing={roles.status === 'ready' && liveRoles(roles.value).length === 0}
+        onCreated={(role) => {
+          change({ role_id: role.id })
+        }}
       />
       <ScopeFields values={values} onChange={change} errorOf={errorOf} />
       <div className="flex flex-col gap-2xs">

@@ -35,6 +35,7 @@ import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
 import { RuleGateDialog, RuleWarnings } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
+import { LeaveTypeInPlace } from '../leave-types/LeaveTypesModule'
 import { leaveTypeOptions } from './typeOptions'
 import { LeaveBatchForm } from './LeaveBatchForm'
 import { LeaveDetails } from './LeaveDetails'
@@ -135,14 +136,22 @@ function NewLeaveForm({
       </form.Field>
       <form.Field name="leave_type_id">
         {(field) => (
-          <SelectField
-            labelKey="leaves.type"
-            name={field.name}
-            value={field.state.value}
-            options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
-            onChange={field.handleChange}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
+          <>
+            <SelectField
+              labelKey="leaves.type"
+              name={field.name}
+              value={field.state.value}
+              options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
+              onChange={field.handleChange}
+              error={fieldError(field.state.meta.errors, field.name, state.answered)}
+            />
+            <LeaveTypeInPlace
+              isMissing={leaveTypeOptions(groups, types).length === 0}
+              onCreated={(type) => {
+                field.handleChange(type.id)
+              }}
+            />
+          </>
         )}
       </form.Field>
       <div className="grid grid-cols-2 gap-md">

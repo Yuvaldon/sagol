@@ -25,6 +25,7 @@ import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
+import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { CLEAN_FORM, formStateOf, issueError } from '../../patterns/forms'
 import { Button } from '../../primitives/Button'
 import { CheckList } from '../../primitives/ChoiceList'
@@ -79,10 +80,13 @@ function RoleForm({
   role,
   stored,
   onReload,
+  onDone,
 }: {
   readonly role: Role | null
   readonly stored: readonly Permission[]
-  readonly onReload: () => void
+  readonly onReload?: () => void
+  /** In place (D-285): the field that opened the form takes the saved role, or nothing when it is left. */
+  readonly onDone?: (saved: Role | null) => void
 }) {
   const panel = usePanel()
   const { create, update } = useRoleCommands()
@@ -94,7 +98,8 @@ function RoleForm({
   const own: readonly Issue[] = submitted ? formFieldIssues(roleFormIssues(values)) : []
   const errorOf = (name: string) => issueError(own, state.answered, name)
   const backToList = () => {
-    panel.open(PANEL_IDS.roles)
+    if (onDone === undefined) panel.open(PANEL_IDS.roles)
+    else onDone(null)
   }
   const change = (next: Partial<RoleFormValues>) => {
     setValues((current) => ({ ...current, ...next }))
@@ -108,8 +113,10 @@ function RoleForm({
       opened === null
         ? await create.run(values)
         : await update.run({ role: opened, stored: openedPermissions, openedVersion: opened.version, values })
-    if (result.ok) backToList()
-    else setState(formStateOf(result.error, ROLE_FIELDS))
+    if (result.ok) {
+      if (onDone === undefined) backToList()
+      else onDone(result.value)
+    } else setState(formStateOf(result.error, ROLE_FIELDS))
   }
 
   return (
@@ -346,5 +353,24 @@ export function RolesModule() {
         />
       )}
     </div>
+  )
+}
+
+/** A new role from the field that needs one (D-285): the roles form over the drawer, for who may create roles. */
+export function RoleInPlace({ isMissing, onCreated }: { readonly isMissing: boolean; readonly onCreated: (role: Role) => void }) {
+  const permissions = useRolePermissionHints()
+  return (
+    <CreateInPlace labelKey="roles.new" canCreate={permissions.create} isMissing={isMissing}>
+      {(close) => (
+        <RoleForm
+          role={null}
+          stored={[]}
+          onDone={(saved) => {
+            close()
+            if (saved !== null) onCreated(saved)
+          }}
+        />
+      )}
+    </CreateInPlace>
   )
 }

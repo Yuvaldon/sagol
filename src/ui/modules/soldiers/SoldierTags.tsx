@@ -19,6 +19,7 @@ import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formStateOf } from '../../patterns/forms'
 import { Button } from '../../primitives/Button'
 import { CheckList, RadioList, type Choice } from '../../primitives/ChoiceList'
+import { TagInPlace } from '../tags/TagsModule'
 import { toneOf } from '../../theme/palette'
 
 // A soldier's tags on their page (D-130): what they hold, by category, and an edit for who may update the soldier.
@@ -114,6 +115,17 @@ function TagsDialog({
           )
         })}
       </div>
+      <TagInPlace
+        isMissing={groups.length === 0}
+        onCreated={(tag) => {
+          // The new tag is chosen at once: alone in a single-choice category, added to the rest otherwise.
+          const single = categories.find((category) => category.id === tag.category_id)?.selection_mode === 'single'
+          setChosen((current) => {
+            const before = current.get(tag.category_id) ?? groups.find((group) => group.category.id === tag.category_id)?.selected ?? []
+            return new Map(current).set(tag.category_id, single ? [tag.id] : [...before, tag.id])
+          })
+        }}
+      />
       {failure === null ? null : <FailureNotice error={failure} />}
     </SmallDialog>
   )
@@ -141,7 +153,8 @@ export function SoldierTagsSection({
   const held = tagsBySoldier(rows.value).get(soldier.id) ?? []
   const groups = soldierTagGroups(categories.value, tags.value, held)
   const shown = groups.filter((group) => group.selected.length > 0)
-  const canEdit = canSet && soldier.archived_at === null && groups.length > 0
+  // With no tag yet, the dialog offers one in place, or says who sets them up (D-285).
+  const canEdit = canSet && soldier.archived_at === null
   // Nothing to show and nothing to choose: the section stays away (D-076).
   if (shown.length === 0 && !canEdit) return null
   const byId = new Map(tags.value.map((tag) => [tag.id, tag]))

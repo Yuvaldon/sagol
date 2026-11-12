@@ -21,6 +21,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
+import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -57,18 +58,22 @@ function TypeForm({
   groups,
   types,
   onReload,
+  onDone,
 }: {
   readonly type: LeaveType | null
   readonly groups: readonly LeaveTypeGroup[]
   readonly types: readonly LeaveType[]
-  readonly onReload: () => void
+  readonly onReload?: () => void
+  /** Made in place (D-285): gets what was saved, or null when left; the panel stays where it is. */
+  readonly onDone?: (saved: LeaveType | null) => void
 }) {
   const panel = usePanel()
   const { create, update } = useLeaveTypeCommands()
   const [opened] = useState(type)
   const [state, setState] = useState(CLEAN_FORM)
   const backToList = () => {
-    panel.open(PANEL_IDS.leaveTypes)
+    if (onDone === undefined) panel.open(PANEL_IDS.leaveTypes)
+    else onDone(null)
   }
 
   const form = useForm({
@@ -80,8 +85,10 @@ function TypeForm({
         opened === null
           ? await create.run({ values: value, all: types })
           : await update.run({ type: opened, openedVersion: opened.version, values: value })
-      if (result.ok) backToList()
-      else setState(formStateOf(result.error, TYPE_FIELDS))
+      if (result.ok) {
+        if (onDone === undefined) backToList()
+        else onDone(result.value)
+      } else setState(formStateOf(result.error, TYPE_FIELDS))
     },
   })
 
@@ -369,5 +376,42 @@ export function LeaveTypesModule() {
         />
       )}
     </div>
+  )
+}
+
+/** An absence type made from another form's field (D-285): the module's own form and command over the drawer. The field takes
+ * what was saved; who may not create one reads that it is missing. */
+export function LeaveTypeInPlace({
+  isMissing,
+  onCreated,
+}: {
+  readonly isMissing: boolean
+  readonly onCreated: (type: LeaveType) => void
+}) {
+  const permissions = useLeaveTypePermissions()
+  const types = useLeaveTypes()
+  const groups = useLeaveTypeGroups()
+  return (
+    <CreateInPlace labelKey="leaveTypes.new" canCreate={permissions.create} isMissing={isMissing}>
+      {(close) =>
+        types.status === 'ready' && groups.status === 'ready' ? (
+          <TypeForm
+            type={null}
+            groups={groups.value}
+            types={types.value}
+            onDone={(saved) => {
+              close()
+              if (saved !== null) onCreated(saved)
+            }}
+          />
+        ) : types.status === 'failed' ? (
+          <FailureNotice error={types.error} />
+        ) : groups.status === 'failed' ? (
+          <FailureNotice error={groups.error} />
+        ) : (
+          <LoadingNotice />
+        )
+      }
+    </CreateInPlace>
   )
 }

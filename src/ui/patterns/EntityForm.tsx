@@ -14,7 +14,7 @@ export interface EntityFormProps {
   readonly isPending: boolean
   readonly failure: AppError | null
   /** Someone else changed the row: offers to continue from their version (D-012). */
-  readonly onReload?: () => void
+  readonly onReload?: (() => void) | undefined
   readonly onSubmit: () => void
   readonly onCancel: () => void
   readonly children: ReactNode
@@ -36,6 +36,8 @@ export function EntityForm({
       className="flex flex-col gap-lg"
       onSubmit={(event) => {
         event.preventDefault()
+        // A form made in place sits in a portal over another form, and its submit must not reach that one (D-285).
+        event.stopPropagation()
         onSubmit()
       }}
     >
