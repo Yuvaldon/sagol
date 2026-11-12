@@ -24,7 +24,7 @@ export function dayCells(
     weekday: formatDate(day, 'weekdayNarrow'),
     dayNumber: formatDate(day, 'day'),
     isToday: day === today,
-    label: `${t('presence.openDay')} ${formatDate(day, 'full')}`,
+    label: formatDate(day, 'full'),
     onOpen: openDay === null ? null : openDay(day),
   }))
 }

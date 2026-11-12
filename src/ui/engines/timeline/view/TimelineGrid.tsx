@@ -107,11 +107,8 @@ function DaysHeader({
           const style = { insetInlineStart: dayOffset(layout, index) - layout.nameColumnPx, width: layout.dayPx }
           const face = (
             <>
-              {layout.dayPx < TIMELINE_DENSITY.weekdayMinPx ? null : <span aria-hidden>{day.weekday}</span>}
-              <span
-                aria-hidden
-                className={day.isToday ? 'inline-flex min-w-icon items-center justify-center rounded-pill bg-today px-xs text-on-action' : ''}
-              >
+              {layout.dayPx < TIMELINE_DENSITY.weekdayMinPx ? null : <span>{day.weekday}</span>}
+              <span className={day.isToday ? 'inline-flex min-w-icon items-center justify-center rounded-pill bg-today px-xs text-on-action' : ''}>
                 {day.dayNumber}
               </span>
             </>
@@ -124,12 +121,13 @@ function DaysHeader({
           ) : (
             <AriaButton
               key={day.key}
-              aria-label={day.label}
               onPress={day.onOpen}
               className={`${className} cursor-pointer rounded-pill outline-focus outline-offset-1 data-focus-visible:outline-2 data-hovered:bg-inner`}
               style={style}
             >
+              <span className="sr-only">{t('presence.openDay')}</span>
               {face}
+              <span className="sr-only">{day.label}</span>
             </AriaButton>
           )
         })}

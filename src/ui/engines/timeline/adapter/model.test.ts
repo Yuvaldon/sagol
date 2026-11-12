@@ -44,7 +44,7 @@ describe('the timeline adapter', () => {
     const open = vi.fn()
     const cells = dayCells(DAYS, '2026-11-09', (day) => (day === '2026-11-10' ? null : () => open(day)))
     expect(cells.map((cell) => cell.onOpen === null)).toEqual([false, false, true])
-    expect(cells[0]?.label.startsWith(he.presence.openDay)).toBe(true)
+    expect(cells[0]?.label).toContain('2026')
     cells[1]?.onOpen?.()
     expect(open).toHaveBeenCalledWith('2026-11-09')
   })

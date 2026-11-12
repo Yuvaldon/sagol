@@ -81,11 +81,12 @@ function Names({ entries, withReasons }: { readonly entries: readonly ReportEntr
   )
 }
 
-function UnitSection({ section, withReasons }: { readonly section: ReportSection; readonly withReasons: boolean }) {
+function UnitSection({ section, withReasons, level }: { readonly section: ReportSection; readonly withReasons: boolean; readonly level: 3 | 4 }) {
+  const ListHeading = level === 3 ? 'h4' : 'h5'
   const lists = [...DAY_REPORT.text.listed, 'present' as const].filter((category) => section[category].length > 0)
   return (
     <Disclosure className="group rounded-control border border-line">
-      <Heading level={4}>
+      <Heading level={level}>
         <AriaButton
           slot="trigger"
           className="flex min-h-touch w-full cursor-pointer flex-col gap-2xs rounded-control px-sm py-xs text-start outline-focus md:min-h-control data-focus-visible:outline-2 data-hovered:bg-inner"
@@ -100,9 +101,9 @@ function UnitSection({ section, withReasons }: { readonly section: ReportSection
       <DisclosurePanel className="flex flex-col gap-sm px-sm pb-sm">
         {lists.map((category) => (
           <section key={category} className="flex flex-col gap-2xs">
-            <h5 className="text-label font-semibold text-text-muted">
+            <ListHeading className="text-label font-semibold text-text-muted">
               {t(CATEGORY_KEYS[category])} <span className="tabular-nums">{section[category].length}</span>
-            </h5>
+            </ListHeading>
             <Names entries={section[category]} withReasons={withReasons && category !== 'present'} />
           </section>
         ))}
@@ -122,7 +123,7 @@ function Day({ day, span, withReasons }: { readonly day: ReportDay; readonly spa
       {day.counts.absent === 0 ? <p className="text-name text-text-muted">{t('presence.noneAbsent')}</p> : null}
       <div className="flex flex-col gap-xs">
         {day.units.map((section) => (
-          <UnitSection key={section.key} section={section} withReasons={withReasons} />
+          <UnitSection key={section.key} section={section} withReasons={withReasons} level={span ? 4 : 3} />
         ))}
       </div>
     </section>
@@ -196,8 +197,10 @@ function Actions({ report, scope, withReasons }: { readonly report: DayReport; r
   )
 }
 
-function SpanControl({ day, until, setUntil }: { readonly day: CalendarDate; readonly until: CalendarDate | null; readonly setUntil: (next: CalendarDate | null) => void }) {
+function SpanControl({ until, setUntil }: { readonly until: CalendarDate | null; readonly setUntil: (next: CalendarDate | null) => void }) {
   const [open, setOpen] = useState(until !== null)
+  // The field keeps what is typed, a year half written too; the URL takes only a day after the first one.
+  const [draft, setDraft] = useState<CalendarDate | ''>(until ?? '')
   if (!open && until === null) {
     return (
       <Button
@@ -214,15 +217,17 @@ function SpanControl({ day, until, setUntil }: { readonly day: CalendarDate; rea
       <DateField
         labelKey="presence.until"
         name="until"
-        value={until ?? ''}
+        value={draft}
         onChange={(next) => {
-          setUntil(next === '' || next <= day ? null : next)
+          setDraft(next)
+          setUntil(next === '' ? null : next)
         }}
         error={null}
       />
       <Button
         onPress={() => {
           setOpen(false)
+          setDraft('')
           setUntil(null)
         }}
       >
@@ -271,7 +276,7 @@ function DayReportBody() {
       </div>
       <div className="flex flex-wrap items-center gap-sm">
         {day === null || day === today ? null : <Button onPress={goToToday}>{t('presence.today')}</Button>}
-        {day === null ? null : <SpanControl key={day} day={day} until={until} setUntil={setUntil} />}
+        {day === null ? null : <SpanControl key={day} until={until} setUntil={setUntil} />}
       </div>
       <p className="text-name text-text-muted">{t('presence.hint')}</p>
       {day !== null && days.length === 0 ? <p className="text-name">{t('presence.notReportable')}</p> : null}
