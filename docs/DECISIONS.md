@@ -245,10 +245,10 @@ am = amends, ref = refines, ext = extends.
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
 | D-256 | One path for each action | ui | ref D-285 |
-| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221 |
-| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221 |
-| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221 |
-| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221 |
+| D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221, D-222 |
+| D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
+| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221, D-222 |
+| D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |

@@ -258,8 +258,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   of "הגדרות היחידה", with its progress as a callout in "ניהול יחידה" (D-285).
 - **Template sheet** (V27, D-262): a fresh unit, the root alone, first sees pick, adjust, done; "סיום" runs the
   template's commands and closes the drawer on the board in routine. A stop part way says where, above the checklist.
-- **Quick entry and bulk approval** (V27, D-282, D-283): "הזנה מהירה" in the soldiers list is a grid with a paste box,
-  one unit from today, saved row by row; "אישור כמה בקשות" in the join requests links only a single match by personal number.
+- **Quick entry and bulk approval** (V27, D-282, D-283): "הוספה מהירה" in the soldiers list is a grid with a paste box,
+  one unit from today, saved row by row; "אישור הנבחרות" in the join requests links only a single match by personal number.
 
 ## Installed app (V18, D-182 … D-185)
 
