@@ -92,7 +92,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Workspace (D-023, D-108, D-189, D-252):** a `surface` panel on the `canvas`, filled by the active engine. Two glass
   strips float over it and hug their content, centered, on every screen and orientation (V25): the context strip at the
   top (the scope label, the range, the view, the filter and sort controls, the avatar) and the destination strip at the
-  bottom (לוח, שלי, בקשות, דוח 1, ניהול, then the role's quick action). The organization's name is the page's `h1`, read
+  bottom (לוח, שלי, בקשות, דוח 1, ניהול, then the role's quick action). On a phone the top strip fits without
+  scrolling (D-273): the sort's sections sit in the view menu, the unit picker is its icon, and a single unit is not
+  shown. The organization's name is the page's `h1`, read
   aloud only. Content starts under the top strip (`under-bars`, `under-bars-md`, `under-bars-filtered`), ends above the
   bottom one (`above-bottom-bar`), and scrolls under the glass. A structure that differs by screen uses `useIsDesktop`;
   anything else is CSS.
