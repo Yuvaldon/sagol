@@ -2,7 +2,8 @@ name: Staging
 
 # Continuous delivery to the staging environment (D-276): after CI passes on main, the staging
 # Supabase project gets main's pending migrations, main's `commands` function and its secrets, and
-# the `staging` branch moves to the same commit, so Vercel builds its Preview at a stable address.
+# `staging` gets a new commit with main's tree whose only parent is main's commit, which Vercel builds as the branch's
+# Preview at a stable address (D-292): Vercel's GitHub integration does not build a push that brings no new commits.
 # Production is never touched here: its migrations stay a manual, reviewed step.
 
 on:
@@ -70,5 +71,23 @@ jobs:
           mkdir -p dist/staging/supabase/functions/commands
           cp dist/functions/commands/index.ts dist/staging/supabase/functions/commands/index.ts
           supabase functions deploy commands --project-ref "$PROJECT_REF" --no-verify-jwt --use-api --workdir dist/staging
-      - name: Move the staging branch, which Vercel builds as the staging Preview
-        run: git push --force origin "$SHA:refs/heads/staging"
+      # A new commit, so Vercel builds it; same tree as main, so staging runs exactly main's code (D-292).
+      - name: Move the staging branch
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          lease=""
+          if git fetch origin staging; then lease=$(git rev-parse FETCH_HEAD); fi
+          commit=$(git commit-tree "$SHA^{tree}" -p "$SHA" -m "staging: deploy $SHA")
+          git push --force-with-lease="refs/heads/staging:$lease" origin "$commit:refs/heads/staging"
+      - name: Check that staging holds main's tree on main's commit
+        run: |
+          git fetch origin staging
+          test "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$(git rev-parse "$SHA^{tree}")" ||
+            { echo "::error::staging's tree differs from $SHA's" >&2; exit 1; }
+          test "$(git rev-parse 'FETCH_HEAD^@')" = "$SHA" ||
+            { echo "::error::staging's only parent is not $SHA" >&2; exit 1; }
+          echo "staging $(git rev-parse FETCH_HEAD) = tree of $SHA, parent $SHA"
