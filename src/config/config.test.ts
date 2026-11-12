@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AuthMode, ColorKey, DataAdapterMode, IconKey, NavigationModule } from '@contracts'
+import { AuthMode, ColorKey, DataAdapterMode, IconKey } from '@contracts'
 import {
   ADAPTER_OF_AUTH_MODE,
   BAR_COLOR_MODES,
@@ -11,7 +11,8 @@ import {
   DEFAULT_VIEW_ID,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
-  NAVIGATION_SECTIONS,
+  SETUP_SECTIONS,
+  WORK_SECTIONS,
   ENV_VARIABLES,
   ICON_KEYS,
   INDEXED_DB_NAME,
@@ -228,9 +229,11 @@ describe('panels (D-092)', () => {
     expect(PanelId.safeParse('nothing').success).toBe(false)
   })
 
-  it('places every navigation module in exactly one section (D-173)', () => {
-    const placed = NAVIGATION_SECTIONS.flatMap((section) => section.modules)
-    expect([...placed].sort()).toEqual([...NavigationModule.options].sort())
+  it('places each work module and each setup panel once (D-285)', () => {
+    const work = WORK_SECTIONS.flatMap((section) => section.modules)
+    expect(new Set(work).size).toBe(work.length)
+    const setup = SETUP_SECTIONS.flatMap((section) => section.panels)
+    expect(new Set(setup).size).toBe(setup.length)
   })
 
   it('gives each setup step its own panel (D-180)', () => {

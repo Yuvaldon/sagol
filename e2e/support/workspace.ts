@@ -64,9 +64,15 @@ export async function enterAsOwner(page: Page) {
   await expect(organizationHeading(page)).toBeVisible()
 }
 
-/** The navigation panel (D-173), once open. */
+/** The navigation panel (D-173), once open: at the work, or a step in at the unit's setup (D-285). */
 export function navigationPanel(page: Page) {
-  return page.getByRole('dialog', { name: he.navigation.title })
+  return page.getByRole('dialog', { name: new RegExp(`^(${he.navigation.title}|${he.navigation.setupTitle})$`) })
+}
+
+/** Opens the unit's setup from the open panel's foot row (D-285). */
+export async function openSetup(page: Page) {
+  await navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click()
+  await expect(navigationPanel(page).getByRole('heading', { name: he.navigation.setupTitle, exact: true })).toBeVisible()
 }
 
 /**
@@ -84,9 +90,16 @@ export async function openModule(page: Page, name: string | RegExp) {
     // A press that landed while the page was busy can still time out: when the module's drawer opened since, the
     // step is done, and the caller checks what it opened.
     if ((await othersOpen()) > openedBefore) return
+    const inPanel = panel.getByRole('button', options)
+    // A module of the unit's setup is a step in, behind the panel's foot row (D-285).
+    const toSetup = panel.getByRole('button', { name: he.navigation.setupOpen, exact: true })
     if (await panel.isVisible()) {
-      const inPanel = panel.getByRole('button', options)
       if (await inPanel.isVisible()) {
+        await inPanel.click({ timeout: 1_000 })
+        return
+      }
+      if (await toSetup.isVisible()) {
+        await toSetup.click({ timeout: 1_000 })
         await inPanel.click({ timeout: 1_000 })
         return
       }
@@ -100,6 +113,8 @@ export async function openModule(page: Page, name: string | RegExp) {
       return
     }
     await page.getByRole('button', { name: he.navigation.open }).click({ timeout: 1_000 })
-    await panel.getByRole('button', options).click({ timeout: 1_000 })
+    await inPanel.or(toSetup).first().waitFor({ timeout: 1_000 })
+    if (!(await inPanel.isVisible())) await toSetup.click({ timeout: 1_000 })
+    await inPanel.click({ timeout: 1_000 })
   }).toPass({ timeout: 10_000 })
 }

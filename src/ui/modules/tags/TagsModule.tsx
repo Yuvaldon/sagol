@@ -21,6 +21,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
+import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -29,9 +30,11 @@ import { ColorField } from '../../primitives/ColorField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
 import { toneOf } from '../../theme/palette'
+import { TagCategoryInPlace } from './TagCategoriesModule'
 
 // The tags section of the tags drawer (D-130): tags under their categories, each with its color. Up and down in the
-// row menu order a tag inside its category. A tag's category is chosen when it is created.
+// row menu order a tag inside its category. A tag's category is chosen when it is created: the first live one unless
+// changed, and with none yet the field makes one in place (D-285).
 
 const TAG_FIELDS: readonly string[] = ['name', 'category_id', 'color_key']
 
@@ -44,18 +47,22 @@ function TagForm({
   categories,
   tags,
   onReload,
+  onDone,
 }: {
   readonly tag: Tag | null
   readonly categories: readonly TagCategory[]
   readonly tags: readonly Tag[]
-  readonly onReload: () => void
+  readonly onReload?: () => void
+  /** Made in place (D-285): gets what was saved, or null when left; the panel stays where it is. */
+  readonly onDone?: (saved: Tag | null) => void
 }) {
   const panel = usePanel()
   const { create, update } = useTagCommands()
   const [opened] = useState(tag)
   const [state, setState] = useState(CLEAN_FORM)
   const backToList = () => {
-    panel.open(PANEL_IDS.tags)
+    if (onDone === undefined) panel.open(PANEL_IDS.tags)
+    else onDone(null)
   }
   const firstCategory = liveCategories(categories)[0]?.id ?? null
 
@@ -68,8 +75,10 @@ function TagForm({
         opened === null
           ? await create.run({ values: value, all: tags })
           : await update.run({ tag: opened, openedVersion: opened.version, values: value })
-      if (result.ok) backToList()
-      else setState(formStateOf(result.error, TAG_FIELDS))
+      if (result.ok) {
+        if (onDone === undefined) backToList()
+        else onDone(result.value)
+      } else setState(formStateOf(result.error, TAG_FIELDS))
     },
   })
 
@@ -101,14 +110,24 @@ function TagForm({
       {opened === null ? (
         <form.Field name="category_id">
           {(field) => (
-            <SelectField
-              labelKey="tags.category"
-              name={field.name}
-              value={field.state.value}
-              options={categoryOptions(categories)}
-              onChange={field.handleChange}
-              error={fieldError(field.state.meta.errors, field.name, state.answered)}
-            />
+            <>
+              <SelectField
+                labelKey="tags.category"
+                name={field.name}
+                value={field.state.value}
+                options={categoryOptions(categories)}
+                onChange={field.handleChange}
+                error={fieldError(field.state.meta.errors, field.name, state.answered)}
+              />
+              {/* A unit's first category is offered with a name in it, and saved before the tag (D-285). */}
+              <TagCategoryInPlace
+                isMissing={firstCategory === null}
+                initialName={firstCategory === null ? t('tags.firstCategoryName') : undefined}
+                onCreated={(category) => {
+                  field.handleChange(category.id)
+                }}
+              />
+            </>
           )}
         </form.Field>
       ) : null}
@@ -209,24 +228,6 @@ export function TagsModule() {
   const newTag = () => {
     setFailure(null)
     panel.open(PANEL_IDS.tags, { entity: NEW_ENTITY })
-  }
-
-  if (sections.length === 0) {
-    return (
-      <EmptyNotice titleKey="tags.needsCategoryTitle" bodyKey="tags.needsCategoryBody">
-        {permissions.create ? (
-          <Button
-            variant="primary"
-            onPress={() => {
-              panel.open(PANEL_IDS.tagCategories, { entity: NEW_ENTITY })
-            }}
-          >
-            <Plus aria-hidden size={14} />
-            {t('tagCategories.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
-    )
   }
 
   if (panel.entity === NEW_ENTITY) return <TagEditor tag={null} categories={categories.value} tags={all} />
@@ -342,5 +343,36 @@ export function TagsModule() {
         />
       )}
     </div>
+  )
+}
+
+/** A tag made from another form's field (D-285): the module's own form and command over the drawer. The field takes
+ * what was saved; who may not create one reads that it is missing. */
+export function TagInPlace({ isMissing, onCreated }: { readonly isMissing: boolean; readonly onCreated: (tag: Tag) => void }) {
+  const permissions = useTagPermissions()
+  const tags = useTags()
+  const categories = useTagCategories()
+  return (
+    <CreateInPlace labelKey="tags.new" canCreate={permissions.create} isMissing={isMissing}>
+      {(close) =>
+        tags.status === 'ready' && categories.status === 'ready' ? (
+          <TagForm
+            tag={null}
+            categories={categories.value}
+            tags={tags.value}
+            onDone={(saved) => {
+              close()
+              if (saved !== null) onCreated(saved)
+            }}
+          />
+        ) : tags.status === 'failed' ? (
+          <FailureNotice error={tags.error} />
+        ) : categories.status === 'failed' ? (
+          <FailureNotice error={categories.error} />
+        ) : (
+          <LoadingNotice />
+        )
+      }
+    </CreateInPlace>
   )
 }

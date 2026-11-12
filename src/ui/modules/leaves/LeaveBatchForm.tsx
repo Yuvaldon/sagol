@@ -15,6 +15,7 @@ import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { TextAreaField } from '../../primitives/TextAreaField'
 import { TextField } from '../../primitives/fields'
+import { LeaveTypeInPlace } from '../leave-types/LeaveTypesModule'
 import { leaveTypeOptions } from './typeOptions'
 
 // A collective leave (D-012, D-179): one name, one type and the same days for every soldier chosen, created together
@@ -113,14 +114,22 @@ export function LeaveBatchForm({
       </form.Field>
       <form.Field name="leave_type_id">
         {(field) => (
-          <SelectField
-            labelKey="leaves.type"
-            name={field.name}
-            value={field.state.value}
-            options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
-            onChange={field.handleChange}
-            error={error(field.state.meta.errors, field.name)}
-          />
+          <>
+            <SelectField
+              labelKey="leaves.type"
+              name={field.name}
+              value={field.state.value}
+              options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
+              onChange={field.handleChange}
+              error={error(field.state.meta.errors, field.name)}
+            />
+            <LeaveTypeInPlace
+              isMissing={leaveTypeOptions(groups, types).length === 0}
+              onCreated={(type) => {
+                field.handleChange(type.id)
+              }}
+            />
+          </>
         )}
       </form.Field>
       <div className="grid grid-cols-2 gap-md">
