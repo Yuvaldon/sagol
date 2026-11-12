@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   IssueCode,
   ReferenceQuery,
@@ -54,7 +54,7 @@ export function permissionOf(resource: ReferenceResource, action: ReferenceActio
 
 /** What the row checks of a table get. `before` is NULL when the row is being created. */
 export interface RowCheck<Row> {
-  readonly database: Dexie
+  readonly database: Store
   readonly scope: ActorScope
   readonly row: Row
   readonly before: Row | null
@@ -74,8 +74,8 @@ export interface ReferenceSpec<Row extends ReferenceRow> {
   readonly rowIssues: (check: RowCheck<Row>) => Promise<Issue[]>
 }
 
-function tableFor<Row extends ReferenceRow>(database: Dexie, spec: ReferenceSpec<Row>) {
-  return database.table<Row, string>(spec.table)
+function tableFor<Row extends ReferenceRow>(database: Store, spec: ReferenceSpec<Row>) {
+  return database.table<Row>(spec.table)
 }
 
 export function tablesOf<Row extends ReferenceRow>(spec: ReferenceSpec<Row>): TableName[] {
@@ -83,13 +83,13 @@ export function tablesOf<Row extends ReferenceRow>(spec: ReferenceSpec<Row>): Ta
 }
 
 /** Live and archived rows of the organization. */
-function rowsOf<Row extends ReferenceRow>(database: Dexie, spec: ReferenceSpec<Row>, organizationId: OrganizationId) {
+function rowsOf<Row extends ReferenceRow>(database: Store, spec: ReferenceSpec<Row>, organizationId: OrganizationId) {
   return tableFor(database, spec).where('organization_id').equals(organizationId).toArray()
 }
 
 /** The stored row, or `not_found` when it is missing or invisible to the actor (D-046). */
 export async function visibleRow<Row extends ReferenceRow>(
-  database: Dexie,
+  database: Store,
   spec: ReferenceSpec<Row>,
   scope: ActorScope,
   id: string,
@@ -178,7 +178,7 @@ export interface ReferenceInputs<Row extends ReferenceRow, Create, Update, Archi
   /** Further targets an update needs `update` over, beside the stored row's (a rule moved to another unit). */
   readonly updateTargetsOf?: (input: Update, before: Row) => readonly PolicyTarget[]
   /** Why this row may not be archived, on top of the shared checks. */
-  readonly archiveIssues?: (database: Dexie, scope: ActorScope, row: Row) => Promise<Issue[]>
+  readonly archiveIssues?: (database: Store, scope: ActorScope, row: Row) => Promise<Issue[]>
   /** Invariants of the state after an update or an archive. A refusal undoes the write. */
   readonly afterWrite?: (check: RowCheck<Row>) => Promise<void>
 }

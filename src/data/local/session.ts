@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import type {
   AuthIdentity,
   ChangeFeed,
@@ -10,14 +10,14 @@ import type {
   SoldierId,
 } from '@contracts'
 import { compareInstants } from '@domain'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { asResult, fail, parsedRow } from './failure'
 
 // The session is derived from the identity on every call, never accepted from a caller (D-008).
 
 const ACCOUNT_TABLES = ['organizations', 'soldier_accounts', 'account_link_requests'] as const
 
-export async function resolveSession(database: Dexie, identity: AuthIdentity | null): Promise<Session> {
+export async function resolveSession(database: Store, identity: AuthIdentity | null): Promise<Session> {
   if (identity === null) return { status: 'signed_out' }
   const accounts = await tableOf(database, 'soldier_accounts')
     .where('auth_user_id')
@@ -44,7 +44,7 @@ export function requireLinked(session: Session): {
 }
 
 /** Local bootstrap rule (D-005, D-006, D-086): a verified identity, no organization, no account. */
-export async function bootstrapAllowed(database: Dexie, identity: AuthIdentity): Promise<boolean> {
+export async function bootstrapAllowed(database: Store, identity: AuthIdentity): Promise<boolean> {
   if (!identity.email_verified) return false
   const [organizations, accounts] = await Promise.all([
     tableOf(database, 'organizations').count(),
@@ -54,7 +54,7 @@ export async function bootstrapAllowed(database: Dexie, identity: AuthIdentity):
 }
 
 export function createSessionService(
-  database: Dexie,
+  database: Store,
   identity: IdentitySource,
   changes: ChangeFeed,
 ): SessionService {

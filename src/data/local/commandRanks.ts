@@ -8,7 +8,7 @@ import {
 } from '@contracts'
 import { archiveRankIssues } from '@domain'
 import { colorKeyIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { createReferenceCommands, createReferenceRepository, type ReferenceSpec } from './reference'
 

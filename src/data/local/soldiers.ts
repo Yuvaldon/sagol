@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   ArchiveSoldierInput,
   ChangeMembershipInput,
@@ -36,7 +36,7 @@ import {
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { propertiesIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import {
@@ -87,7 +87,7 @@ async function rankIssues({ database, scope, row, before }: RowCheck<Soldier>): 
 }
 
 /** D-157: a rank write passes the permission check on the soldier as stored after the write too. */
-async function requireAfterRankWrite(database: Dexie, scope: ActorScope, action: 'create' | 'update', soldierId: SoldierId) {
+async function requireAfterRankWrite(database: Store, scope: ActorScope, action: 'create' | 'update', soldierId: SoldierId) {
   const { context } = await loadPolicySnapshot(database, scope.organization_id, scope.now)
   const permission = permissionOf('soldiers', action)
   const target = soldierTarget(soldierId)
@@ -126,7 +126,7 @@ function blankPrivateText<Raw>(raw: Raw, key: 'private' | 'changes'): Raw {
 }
 
 /** A unit a soldier is placed in must exist, be visible and be live. */
-async function placementIssues(database: Dexie, scope: ActorScope, unitId: UnitId, path: readonly string[]): Promise<Issue[]> {
+async function placementIssues(database: Store, scope: ActorScope, unitId: UnitId, path: readonly string[]): Promise<Issue[]> {
   const unit = await tableOf(database, 'units').get(unitId)
   const visible =
     unit !== undefined &&
@@ -139,7 +139,7 @@ async function placementIssues(database: Dexie, scope: ActorScope, unitId: UnitI
 
 /** `uq_soldier_private_personal_id`: archived soldiers keep their number too (D-098). */
 export async function personalIdIssues(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   soldierId: SoldierId,
   personalId: string | null,
@@ -187,7 +187,7 @@ export interface NewSoldier {
 }
 
 /** Ids are the caller's (D-044): one already taken is `already_exists`, not a failed write (OI-050). */
-async function requireFreeMembershipId(database: Dexie, id: UnitMembershipId, path: readonly (string | number)[]): Promise<void> {
+async function requireFreeMembershipId(database: Store, id: UnitMembershipId, path: readonly (string | number)[]): Promise<void> {
   if ((await tableOf(database, 'unit_memberships').get(id)) !== undefined) {
     failValidation([{ path: [...path], code: IssueCode.enum.already_exists }])
   }
@@ -199,7 +199,7 @@ async function requireFreeMembershipId(database: Dexie, id: UnitMembershipId, pa
  * and `soldiers.create` write it one way.
  */
 export async function insertSoldier(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   input: NewSoldier,
   prefix: readonly string[],

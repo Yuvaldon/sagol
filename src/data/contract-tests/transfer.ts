@@ -143,10 +143,15 @@ export function describeTransferContract(
     describe('export', () => {
       it('holds the organization and its own rows, and no other organization', async () => {
         valueOf(await adapter().commands.unit_levels.create({ id: UnitLevelId.parse(crypto.randomUUID()), name: 'Company', sort_order: 0 }))
+        // Another organization and a row of its own; a server's foreign keys need the organization first.
+        const [stored] = await harnessOf().rows('organizations')
+        if (stored === undefined) throw new Error('no organization')
+        const elsewhere = OrganizationId.parse(crypto.randomUUID())
+        await harnessOf().seed('organizations', [{ ...stored, id: elsewhere, name: 'Elsewhere' }])
         await harnessOf().seed('unit_levels', [
           {
             id: UnitLevelId.parse(crypto.randomUUID()),
-            organization_id: OrganizationId.parse(crypto.randomUUID()),
+            organization_id: elsewhere,
             name: 'Elsewhere',
             sort_order: 0,
             created_at: NOW,

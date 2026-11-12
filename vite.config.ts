@@ -47,6 +47,11 @@ export default defineConfig({
           setupFiles: ['./vitest.setup.ts'],
         },
       },
+      {
+        // The gateway over a migrated Postgres (D-201): `npm run test:db`, never part of `check`.
+        extends: true,
+        test: { name: 'db', environment: 'node', include: ['src/**/*.dbtest.ts'], fileParallelism: false },
+      },
     ],
   },
 })

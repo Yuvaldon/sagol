@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "@config": "../../../src/config/index.ts",
+    "@contracts": "../../../src/contracts/index.ts",
+    "@data/server": "../../../src/data/server/index.ts",
+    "@domain": "../../../src/domain/index.ts",
+    "@internationalized/date": "npm:@internationalized/date@3.12.4",
+    "postgres": "npm:postgres@3.4.9",
+    "zod": "npm:zod@4.6.7"
+  },
+  "unstable": ["sloppy-imports"]
+}

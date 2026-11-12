@@ -24,7 +24,7 @@ am = amends, ref = refines, ext = extends.
 | D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149 |
 | D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
 | D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035 |
-| D-008 | Server-authoritative data layer | data, backend | ref D-090 |
+| D-008 | Server-authoritative data layer | data, backend | ref D-090; ref D-201 |
 | D-009 | Unit hierarchy: `parent_id` only, derived ancestry | contracts, domain, data, backend | |
 | D-010 | Memberships are time-bounded rows | contracts, domain, data, backend | ref D-097 |
 | D-011 | Multi-tenant from day one | contracts, data, backend | |
@@ -43,7 +43,7 @@ am = amends, ref = refines, ext = extends.
 | D-024 | First designed component | ui | ref D-077 |
 | D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075 |
 | D-026 | Libraries | all | ext D-034, D-077, D-080 |
-| D-027 | Backend target (**proposed**) | backend | |
+| D-027 | Backend target (superseded) | backend | sup D-200 |
 | D-028 | Unified scope model with relative anchors | contracts, domain, data, backend | ref D-053, D-054, D-055 |
 | D-029 | Effective seniority with personal overrides | contracts, domain, backend | ref D-057 |
 | D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149; ref D-163 |
@@ -191,6 +191,9 @@ am = amends, ref = refines, ext = extends.
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | |
+| D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | |
+| D-202 | The database's own guarantees: triggers | backend | |
 
 ---
 
@@ -511,7 +514,7 @@ code path. Each step can be skipped and revisited. Step completion is **derived 
 existing data**, not stored as a flag. Import/export (D-022) stays as well.
 
 ## D-027 — Backend target (provisional)
-2026-11-03 · proposed
+2026-11-03 · superseded by D-200
 Supabase is recommended: Postgres matches `schema.sql`, Row Level Security matches the
 server-authoritative policy model, Google OAuth is built in, and SQL functions host the
 commands. Cloudflare D1 is SQLite without RLS, so all authorization would live in Worker
@@ -2321,3 +2324,62 @@ one-tap access to whoever needs a module daily. An empty heat row and an empty f
 **Why:** OI-088 asked to separate the timeline's pieces before more engines arrived. Every view reading one model keeps
 them from disagreeing on who is in view; a shared frame keeps the empty and failed states the same. The window stays a
 week for now (OI-111).
+
+## D-200 — Backend: Supabase and Vercel, free plans
+2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170
+Supabase hosts the database (Postgres), authentication (Google) and the server function (an Edge Function). Vercel
+hosts the built app. Both run on their free plans: nothing that costs money is created or enabled; a step that would
+cost money becomes an open item instead. Public client values (the project URL and its anon key) live in the hosting
+provider's environment variables, and `.env.example` lists their names only; no secret is in the repository.
+The Supabase project is `sagol` (ref `etmyjbhkqoufoqsjbhev`, region `eu-central-1`, free plan); the Vercel project is
+`sagol` (Hobby plan, linked to the repository, so every push gets a preview deploy).
+**Why:** the reasons of D-027 (Postgres matches `schema.sql`, row-level security matches the policy model, Google sign-in is
+built in), and the owner's instruction to use these two providers at no cost.
+
+## D-201 — One command gateway runs the adapter's own code on Postgres
+2026-11-11 · accepted · refines D-008 · OI-025, OI-029
+- **Migrations.** `supabase/migrations` is the executable form of `docs/schema.sql`: the first migration is the schema
+  itself, later ones add server objects (D-202) and, from 8.2, policies. `npm run test:db` rebuilds a local database from
+  the migrations (`scripts/db-reset.ts`, which refuses a non-local URL) and compares its catalog (columns, constraints,
+  indexes) with a database built from `schema.sql` (`scripts/db-schema-drift.ts`); a difference fails the run. CI runs it
+  on a Postgres 16 service.
+- **The gateway.** Instead of one SQL function per command, one server function (`supabase/functions/commands`) takes
+  `{kind, group, method, args}` and runs the local adapter's command core (`src/data/local/core.ts`) over a `Store` backed
+  by Postgres (`src/data/server/postgresStore.ts`), in one SERIALIZABLE transaction per request. Validation, visibility,
+  policy, state and integrity checks (D-090) are the same code on both sides, so they cannot drift; a lost serialization
+  race runs the request again, up to four tries, then answers `unavailable`. The answer carries the result and the
+  changes, for the caller's change feed. The kinds are `session`, `transfer`, `repositories` and `commands`; `session`
+  and `transfer` are single services, so their group is the kind itself. An import (`transfer.importBatch`) runs inside
+  the request's transaction, a dry run and a refusal roll back through a savepoint, and the body cap bounds its size.
+- **Identity.** The actor comes only from the bearer token, which the function checks with Supabase's auth server
+  (`/auth/v1/user`); only a Google identity is accepted. No token means signed out. A token the server refuses answers 401;
+  an unreachable auth server answers 503. The request body never names an actor.
+- **Server entry.** `src/data/server/index.ts` is a second entry of `data`, imported only by the function. It holds no
+  driver and pulls in no browser code (Dexie, storage events); the app's layers keep using `src/data/index.ts`. The
+  function's `deno.json` maps the aliases to `src`, and CI runs `deno check` on it.
+- **Driver.** `postgres` (postgres.js) 3.4.9, pinned exactly (D-037), in the function and in the DB tests. The 4.x line was
+  weeks old, and Deno's minimum dependency age refused it.
+- **Tests.** The repository contract suite runs over the gateway (`postgres.contract.dbtest.ts`), each call crossing a JSON
+  boundary as over HTTP. `triggers.dbtest.ts` checks the database's own guarantees in plain SQL.
+**Why:** a second implementation of every command in SQL would have to agree with the first forever (OI-025, OI-029 asked
+for shared tests to keep them aligned); running one implementation on both sides removes the question. SERIALIZABLE gives
+each request the single-writer view the local adapter has in an IndexedDB transaction, so post-write checks such as the
+one that keeps an organization's last administrator (D-059) cannot be raced.
+
+## D-202 — The database's own guarantees: triggers
+2026-11-11 · accepted · OI-064
+The gateway checks every rule before it writes; these hold whatever writes the row, and refuse with SQLSTATE 23514:
+- `unit_closure` is maintained from `units.parent_id` only (insert, move, detach); a cycle or a parent of another
+  organization is refused (D-009).
+- A soldier holds at most one tag of a `single` category, checked at the end of the statement, so a set can be replaced
+  in one transaction (D-015).
+- An update of a versioned row must raise `version` by exactly one (D-017). The writer sets `updated_at` and `updated_by`
+  from its own clock and actor (D-083).
+- `leave_events` is append-only, and the events of one leave get strictly increasing times: an event written at or
+  before the leave's last event lands 1 ms after it (OI-064).
+- Row-level security is on for every table with no policy until 8.2, so the Data API answers nothing; the gateway
+  connects as the database owner.
+The functions listed in `schema.sql`'s server-side block are the gateway's commands (D-201); `has_permission()` and the
+policies come with 8.2.
+**Why:** derived data (the closure) and history must stay right even for a write that does not come through the gateway,
+such as a migration or a manual fix.
