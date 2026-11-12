@@ -150,6 +150,13 @@ function MembersEditor({
   )
 }
 
+/** Who may own a rotation's report: the active soldiers, and whoever already does (D-293). */
+function ownerChoices(soldiers: readonly Soldier[], current: Deployment['report_owner_id']): Soldier[] {
+  return soldiers
+    .filter((soldier) => (soldier.status === 'active' && soldier.archived_at === null) || soldier.id === current)
+    .toSorted((first, second) => fullName(first).localeCompare(fullName(second)))
+}
+
 function previousMembers(deployment: Deployment, rotations: readonly Deployment[], members: readonly DeploymentMember[]) {
   const previous = previousRotation(rotations, deployment)
   return previous === null ? [] : members.filter((member) => member.deployment_id === previous.id)
@@ -198,6 +205,7 @@ export function DeploymentsModule() {
       <DeploymentEditor
         deployment={null}
         units={units.value}
+        soldiers={ownerChoices(soldiers.value, null)}
         today={today}
         others={live}
         placeable={permissions.createIn}
@@ -216,6 +224,7 @@ export function DeploymentsModule() {
         key={deployment.id}
         deployment={deployment}
         units={units.value}
+        soldiers={ownerChoices(soldiers.value, deployment.report_owner_id)}
         today={today}
         others={live}
         placeable={permissions.moveTo}

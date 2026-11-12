@@ -511,6 +511,14 @@ export const dictionary = {
     share: 'שיתוף תמונה',
     download: 'הורדת תמונה',
     imageFailed: 'לא הצלחנו ליצור את התמונה. אפשר לנסות שוב.',
+    confirm: 'אימות הדוח',
+    confirmAgain: 'אימות מחדש',
+    statusConfirmed: 'אומת',
+    statusNotYet: 'טרם אומת',
+    statusChanged: 'השתנה מאז האימות',
+    summaryConfirmed: 'אומתו',
+    summaryOf: 'מתוך',
+    summaryChanged: 'השתנו מאז:',
   },
   leaves: {
     title: 'היעדרויות',
@@ -725,6 +733,8 @@ export const dictionary = {
     emptyNoUnits: 'סבב שייך ליחידה. קודם מגדירים יחידה במבנה היחידות.',
     name: 'שם הסבב',
     unit: 'יחידה',
+    reportOwner: 'אחראי דוח 1 (לא חובה)',
+    reportOwnerToggle: 'הצגת רשימת החיילים',
     from: 'מתאריך',
     to: 'עד תאריך (כולל, לא חובה)',
     until: 'עד',
@@ -959,6 +969,7 @@ export const dictionary = {
       access_grants: 'הרשאות אישיות',
       accounts: 'חשבונות',
       data_transfer: 'ייבוא וייצוא',
+      day_reports: 'דוח 1',
     },
     actions: {
       view: 'צפייה',
@@ -969,6 +980,7 @@ export const dictionary = {
       approve: 'אישור',
       export: 'ייצוא',
       import: 'ייבוא',
+      confirm: 'אימות',
     },
   },
   navigation: {
@@ -1079,5 +1091,6 @@ export const dictionary = {
     rotationOverlap: 'התאריכים חופפים לסבב אחר: רק סבב אחד בכל פעם',
     rotationClosed: 'הסבב סגור: אי אפשר לשנות אותו או את הבקשות שלו',
     rotationNotEnded: 'אפשר לסגור סבב רק מהיום האחרון שלו',
+    notReportable: 'אף סבב של היחידה לא רץ ביום הזה, ולכן אין לו דוח לאמת.',
   },
 } as const
