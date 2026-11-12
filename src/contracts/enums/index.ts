@@ -104,6 +104,7 @@ export const NavigationModule = z.enum([
   'soldiers',
   'leave_types',
   'rules',
+  'deployments',
   'tags',
   'properties',
   'roles',
