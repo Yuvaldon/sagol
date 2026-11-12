@@ -38,7 +38,6 @@ export {
   PANEL_IDS,
   type NavigationSectionId,
   PanelId,
-  PHONE_BAR_MODULES,
   TRANSFER_FILES,
   SHEET_DISMISS,
   VIRTUAL_LIST,

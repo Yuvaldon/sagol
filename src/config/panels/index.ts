@@ -74,8 +74,6 @@ export const NAVIGATION_SECTIONS = [
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
 export type NavigationSectionId = (typeof NAVIGATION_SECTIONS)[number]['id']
 
-/** How many module buttons a phone's bottom bar shows before "more" opens the rest (D-165). */
-export const PHONE_BAR_MODULES = 4
 
 /** The `entity` value of a form for a row that does not exist yet. */
 export const NEW_ENTITY = 'new'
