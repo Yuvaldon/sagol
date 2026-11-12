@@ -24,6 +24,7 @@ import { UnitLevelsModule } from '../modules/unit-levels/UnitLevelsModule'
 import { TransferModule } from '../modules/transfer/TransferModule'
 import { UnitsModule } from '../modules/units/UnitsModule'
 import { Drawer } from '../patterns/Drawer'
+import { ApproveNowSwitch } from './ApproveNowSwitch'
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
 // The map of what opens in the drawer (D-092). A drawer holds one or more sections, and each section is
@@ -49,6 +50,8 @@ interface ModuleSection {
 interface ModuleGroup {
   readonly titleKey: I18nKey
   readonly sections: readonly ModuleSection[]
+  /** What the group's header holds under its sections, for the whole group. */
+  readonly Header?: ComponentType
 }
 
 const GROUPS: readonly ModuleGroup[] = [
@@ -127,6 +130,8 @@ const GROUPS: readonly ModuleGroup[] = [
   },
   {
     titleKey: 'inbox.title',
+    // The approve-now default sits where approving happens (D-265).
+    Header: ApproveNowSwitch,
     sections: [
       { panel: PANEL_IDS.leaveInbox, labelKey: 'inbox.tabPending', isAllowed: (access) => access.inbox, Module: PendingRequestsModule },
       { panel: PANEL_IDS.leaveClosed, labelKey: 'inbox.tabClosed', isAllowed: (access) => access.inbox, Module: ClosedLeavesModule },
@@ -187,21 +192,26 @@ export function ModuleDrawer() {
       titleKey={group.titleKey}
       onClose={panel.close}
       header={
-        sections.length < 2 ? null : (
-          <nav aria-label={t('common.sections')} className="flex gap-xs rounded-pill bg-inner p-2xs">
-            {sections.map((section) => (
-              <AriaButton
-                key={section.panel}
-                aria-current={section.panel === open.panel ? 'page' : false}
-                onPress={() => {
-                  panel.open(section.panel)
-                }}
-                className={`flex min-h-touch flex-1 cursor-pointer items-center justify-center rounded-pill text-control font-semibold outline-focus md:min-h-control data-focus-visible:outline-2 ${section.panel === open.panel ? 'bg-surface text-text' : 'text-text-muted'}`}
-              >
-                {t(section.labelKey)}
-              </AriaButton>
-            ))}
-          </nav>
+        sections.length < 2 && group.Header === undefined ? null : (
+          <div className="flex flex-col gap-xs">
+            {sections.length < 2 ? null : (
+              <nav aria-label={t('common.sections')} className="flex gap-xs rounded-pill bg-inner p-2xs">
+                {sections.map((section) => (
+                  <AriaButton
+                    key={section.panel}
+                    aria-current={section.panel === open.panel ? 'page' : false}
+                    onPress={() => {
+                      panel.open(section.panel)
+                    }}
+                    className={`flex min-h-touch flex-1 cursor-pointer items-center justify-center rounded-pill text-control font-semibold outline-focus md:min-h-control data-focus-visible:outline-2 ${section.panel === open.panel ? 'bg-surface text-text' : 'text-text-muted'}`}
+                  >
+                    {t(section.labelKey)}
+                  </AriaButton>
+                ))}
+              </nav>
+            )}
+            {group.Header === undefined ? null : <group.Header />}
+          </div>
         )
       }
     >

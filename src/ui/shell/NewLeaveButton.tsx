@@ -1,11 +1,13 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
+import { NEW_ENTITY, PANEL_IDS, TOOLTIP } from '@config'
 import { t } from '@i18n'
 import { useLeaveCreation, usePanel, useRotationScope, useSoldiers } from '@logic'
 import { Plus } from 'lucide-react'
-import { Button as AriaButton } from 'react-aria-components'
+import { Button as AriaButton, TooltipTrigger } from 'react-aria-components'
+import { NameTooltip } from '../primitives/Button'
 
-// The floating "+" of Stone 3 (D-115): the bottom inline-end corner of the board, above the bottom bar on a phone.
-// It shows for who may create a leave for a soldier they see (D-076), while a rotation a request can be about exists (D-218).
+// The role's quick action (D-266): a filled round button at the bottom strip's inline end. Until the mode exists it
+// is "בקשה חדשה", for who may create a leave for a soldier they see (D-076, OI-219), while a rotation a request can be
+// about exists (D-218).
 
 const NO_SOLDIERS: readonly never[] = []
 
@@ -16,14 +18,17 @@ export function NewLeaveButton() {
   const { requests } = useRotationScope()
   if (!creation.any || !requests) return null
   return (
-    <AriaButton
-      aria-label={t('leaves.new')}
-      onPress={() => {
-        panel.open(PANEL_IDS.leaves, { entity: NEW_ENTITY })
-      }}
-      className="glass-action absolute end-xl bottom-above-bottom-bar flex size-touch cursor-pointer items-center justify-center rounded-pill outline-focus outline-offset-2 md:bottom-xl data-focus-visible:outline-2"
-    >
-      <Plus aria-hidden size={18} strokeWidth={2.4} />
-    </AriaButton>
+    <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
+      <AriaButton
+        aria-label={t('leaves.new')}
+        onPress={() => {
+          panel.open(PANEL_IDS.leaves, { entity: NEW_ENTITY })
+        }}
+        className="flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-pill bg-action-solid text-on-action outline-focus outline-offset-2 data-focus-visible:outline-2"
+      >
+        <Plus aria-hidden size={18} strokeWidth={2.4} />
+      </AriaButton>
+      <NameTooltip>{t('leaves.new')}</NameTooltip>
+    </TooltipTrigger>
   )
 }

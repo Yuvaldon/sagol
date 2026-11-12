@@ -63,7 +63,7 @@ const MODULE_CHECKS = {
   deployments: { permission: { resource: 'deployments', action: 'view' }, target: { kind: 'organization' } },
 } as const satisfies Record<string, PermissionCheck>
 
-const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
+export const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
 
 export function useModuleAccess() {
   const can = useCan(MODULE_CHECK_LIST)

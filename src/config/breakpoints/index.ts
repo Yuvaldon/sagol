@@ -22,11 +22,5 @@ export const DESKTOP_MIN_HEIGHT_PX = 512
 
 export const DESKTOP_MEDIA_QUERY = `(min-width: ${BREAKPOINTS_PX[DESKTOP_BREAKPOINT]}px) and (min-height: ${DESKTOP_MIN_HEIGHT_PX}px)`
 
-/**
- * Below the desktop layout, from this width up the phone is on its side (or a small tablet): its top bar has room for
- * the scope, the view and the filters, so the row under it folds into the bar and the board keeps the height (D-190).
- */
-export const WIDE_PHONE_MEDIA_QUERY = `(min-width: ${BREAKPOINTS_PX.sm}px)`
-
 /** The device asks for a dark screen; "the device's" appearance follows it (D-181). */
 export const DARK_SCHEME_MEDIA_QUERY = '(prefers-color-scheme: dark)'

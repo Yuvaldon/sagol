@@ -25,6 +25,8 @@ export const STORAGE_KEYS = {
 export const DEVICE_KEYS = {
   /** The day report's reasons switch (D-194). */
   dayReportReasons: `${STORAGE_PREFIX}.day-report-reasons`,
+  /** The last home chosen differs from the one the permissions give (D-265). */
+  homeAway: `${STORAGE_PREFIX}.home-away`,
 } as const
 
 export type DeviceKey = (typeof DEVICE_KEYS)[keyof typeof DEVICE_KEYS]

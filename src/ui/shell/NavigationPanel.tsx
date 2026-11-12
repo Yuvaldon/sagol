@@ -1,46 +1,41 @@
-import { NAVIGATION_SECTIONS, PANEL_IDS, TOOLTIP, type NavigationSectionId } from '@config'
-import { RulesRowPlacement, type NavigationModule } from '@contracts'
+import { NAVIGATION_SECTIONS, PANEL_IDS, type NavigationSectionId } from '@config'
+import type { NavigationModule } from '@contracts'
 import { t, type I18nKey } from '@i18n'
-import { useModuleAccess, useNavigationPreferences, usePanel, useSetupAccess } from '@logic'
-import { ListChecks, Menu as MenuIcon, Pin, X } from 'lucide-react'
-import { useState } from 'react'
-import {
-  Button as AriaButton,
-  Dialog,
-  Heading,
-  Label,
-  Modal,
-  ModalOverlay,
-  Radio,
-  RadioGroup,
-  ToggleButton,
-  TooltipTrigger,
-} from 'react-aria-components'
-import { IconButton, NameTooltip } from '../primitives/Button'
-import { EntryCount } from './ModuleButtons'
+import { usePanel, useSetupAccess } from '@logic'
+import { ListChecks, Menu as MenuIcon, X } from 'lucide-react'
+import { useId, useState } from 'react'
+import { Button as AriaButton, Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
+import { IconButton } from '../primitives/Button'
+import { EntryCount } from './EntryCount'
 import { useNavigationEntries, type ModuleEntry } from './moduleEntries'
 import { TAB, TAB_COLOR } from './tabStyle'
-import { useReportPreferenceSave } from './preferenceFailure'
 
-// The navigation panel (D-173): the modules that set the organization up, by section, sliding in from the inline start.
-// Each item opens its module and may be pinned to the bar; the soldier's display choices close the panel's list.
+// "ניהול יחידה" (D-254): the modules that set the unit up, grouped by what the commander is doing, sliding in from the
+// inline start. Each item opens its module and says in one plain line what it is for (D-250); nothing is pinned out.
 
 const PRESS = 'cursor-pointer outline-focus outline-offset-2 data-focus-visible:outline-2'
-const ROW = `flex min-h-touch flex-1 items-center gap-sm rounded-control px-sm text-control md:min-h-control data-hovered:bg-inner ${PRESS}`
-
-/** Between the pin's action and the module it names, read as one label. */
-const NAME_SEPARATOR = ' '
+const ROW = `flex min-h-touch w-full items-center gap-sm rounded-control px-sm py-xs text-control md:min-h-control data-hovered:bg-inner ${PRESS}`
 
 const SECTION_KEYS: Record<NavigationSectionId, I18nKey> = {
-  structure: 'navigation.sections.structure',
-  leaveSetup: 'navigation.sections.leaveSetup',
+  unit: 'navigation.sections.unit',
+  presence: 'navigation.sections.presence',
+  soldierDetails: 'navigation.sections.soldierDetails',
   access: 'navigation.sections.access',
   data: 'navigation.sections.data',
 }
 
-const PLACEMENT_KEYS: Record<RulesRowPlacement, I18nKey> = {
-  above: 'navigation.rulesRowAbove',
-  below: 'navigation.rulesRowBelow',
+const LINE_KEYS: Record<NavigationModule, I18nKey> = {
+  units: 'navigation.lines.units',
+  soldiers: 'navigation.lines.soldiers',
+  deployments: 'navigation.lines.deployments',
+  leave_types: 'navigation.lines.leave_types',
+  rules: 'navigation.lines.rules',
+  tags: 'navigation.lines.tags',
+  properties: 'navigation.lines.properties',
+  roles: 'navigation.lines.roles',
+  access_grants: 'navigation.lines.access_grants',
+  account_links: 'navigation.lines.account_links',
+  data_transfer: 'navigation.lines.data_transfer',
 }
 
 interface PanelSection {
@@ -68,42 +63,36 @@ function Item({
   readonly entry: ModuleEntry
   readonly onOpen: () => void
 }) {
-  const preferences = useNavigationPreferences()
-  const reportSave = useReportPreferenceSave()
+  const lineId = useId()
+  const countId = useId()
   const name = t(entry.labelKey)
-  const pinLabel = `${t('navigation.pin')}${NAME_SEPARATOR}${name}`
   return (
-    <li className="flex items-center gap-2xs">
+    <li>
+      {/* The module is named by its visible name alone; its line and its count describe it, so the name stays short to read and to find. */}
       <AriaButton
+        aria-describedby={`${lineId} ${countId}`}
         onPress={() => {
           onOpen()
           entry.onPress()
         }}
         className={ROW}
       >
-        <entry.Icon aria-hidden size={16} className="text-text-muted" />
-        <span className="flex-1 text-start">{name}</span>
-        <EntryCount entry={entry} floating={false} />
+        <entry.Icon aria-hidden size={16} className="shrink-0 text-text-muted" />
+        <span className="flex min-w-none flex-1 flex-col text-start">
+          <span>{name}</span>
+          <span id={lineId} aria-hidden className="text-label text-text-muted">
+            {t(LINE_KEYS[module])}
+          </span>
+        </span>
+        <span id={countId} aria-hidden>
+          <EntryCount entry={entry} floating={false} />
+        </span>
       </AriaButton>
-      {/* Pins are offered once the preferences they are saved in have loaded (D-076, D-121). */}
-      {preferences.editable ? (
-        <ToggleButton
-          aria-label={pinLabel}
-          isSelected={preferences.pinned.includes(module)}
-          onChange={() => {
-            reportSave(preferences.togglePin(module))
-          }}
-          className={`inline-flex size-touch shrink-0 items-center justify-center rounded-pill text-text-muted md:size-control data-hovered:bg-inner data-selected:bg-inner data-selected:text-action-solid ${PRESS}`}
-        >
-          {/* Filled while pinned, so the state shows beyond its color (WCAG 1.4.1). */}
-          {({ isSelected }) => <Pin aria-hidden size={14} fill={isSelected ? 'currentColor' : 'none'} />}
-        </ToggleButton>
-      ) : null}
     </li>
   )
 }
 
-/** The organization's setup, first in the panel and never pinned: it is for setting up, not for daily work (D-180). */
+/** The unit's setup, above the groups while it is not done: it is for setting up, not for daily work (D-180, D-254). */
 function SetupItem({ onOpen }: { readonly onOpen: () => void }) {
   const panel = usePanel()
   return (
@@ -120,40 +109,6 @@ function SetupItem({ onOpen }: { readonly onOpen: () => void }) {
   )
 }
 
-function DisplayChoices() {
-  const preferences = useNavigationPreferences()
-  const reportSave = useReportPreferenceSave()
-  return (
-    <section className="flex flex-col gap-xs border-t border-line pt-md">
-      <h3 className="px-sm text-label font-semibold text-text-muted">{t('navigation.display')}</h3>
-      <RadioGroup
-        value={preferences.rulesRow}
-        onChange={(value) => {
-          reportSave(preferences.setRulesRow(RulesRowPlacement.parse(value)))
-        }}
-        className="flex flex-col gap-2xs px-sm"
-      >
-        <Label className="text-control font-semibold">{t('navigation.rulesRow')}</Label>
-        {RulesRowPlacement.options.map((placement) => (
-          <Radio
-            key={placement}
-            value={placement}
-            className="group flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-xs text-control outline-none md:min-h-control data-hovered:bg-inner"
-          >
-            <span
-              aria-hidden
-              className="flex size-icon shrink-0 items-center justify-center rounded-pill border border-text-muted bg-surface outline-focus outline-offset-2 group-data-focus-visible:outline-2 group-data-selected:border-action-solid group-data-selected:bg-action-solid"
-            >
-              <span className="size-dot rounded-pill bg-on-action opacity-0 group-data-selected:opacity-100" />
-            </span>
-            {t(PLACEMENT_KEYS[placement])}
-          </Radio>
-        ))}
-      </RadioGroup>
-    </section>
-  )
-}
-
 /** What waits in the panel, on its button; a pending request is not hidden behind the menu. */
 function Waiting({ count }: { readonly count: number }) {
   if (count === 0) return null
@@ -165,56 +120,31 @@ function Waiting({ count }: { readonly count: number }) {
   )
 }
 
-/** The menu button and its panel. Neither exists when the panel would hold nothing for this viewer (D-076). On a phone
- * the button is the last tab of the bottom bar, with a short name under it (V20); in a desktop bar, an icon whose name
- * shows on hover. */
-export function NavigationPanel({ variant = 'bar' }: { readonly variant?: 'bar' | 'tab' }) {
+/** The menu button and its panel. Neither exists when the panel would hold nothing for this viewer (D-076). The button
+ * is the last destination of the bottom strip, "ניהול" under its icon (D-252, D-254). */
+export function NavigationPanel() {
   const [isOpen, setOpen] = useState(false)
   const sections = useSections()
-  const access = useModuleAccess()
-  const preferences = useNavigationPreferences()
-  // The placement choice is for who sees the rules, once the preferences it is saved in have loaded.
-  const display = access.rules && preferences.editable
   const setup = useSetupAccess().length > 0
-  if (sections.length === 0 && !display && !setup) return null
+  if (sections.length === 0 && !setup) return null
   const close = () => {
     setOpen(false)
   }
   const open = () => {
     setOpen(true)
   }
-  // What waits in the panel shows on its button, so a pending request is not hidden behind it.
-  // A pinned module shows its own count in the bar, so it is not counted twice.
+  // What waits in the panel shows on its button as one sum, so a pending request is not hidden behind it (D-254).
   const waiting = sections.reduce(
-    (sum, section) =>
-      section.items.reduce(
-        (inner, item) => (preferences.pinned.includes(item.module) ? inner : inner + (item.entry.count?.value ?? 0)),
-        sum,
-      ),
+    (sum, section) => section.items.reduce((inner, item) => inner + (item.entry.count?.value ?? 0), sum),
     0,
   )
   return (
     <>
-      {variant === 'tab' ? (
-        <AriaButton aria-expanded={isOpen} aria-label={t('navigation.open')} onPress={open} className={`${TAB} ${TAB_COLOR.other} flex-none`}>
-          <MenuIcon aria-hidden size={18} />
-          <span aria-hidden>{t('navigation.tab')}</span>
-          <Waiting count={waiting} />
-        </AriaButton>
-      ) : (
-        <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
-          <AriaButton
-            aria-expanded={isOpen}
-            aria-label={t('navigation.open')}
-            onPress={open}
-            className={`relative inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded-pill text-text-muted md:min-h-control md:min-w-control data-hovered:bg-inner ${PRESS}`}
-          >
-            <MenuIcon aria-hidden size={18} />
-            <Waiting count={waiting} />
-          </AriaButton>
-          <NameTooltip>{t('navigation.open')}</NameTooltip>
-        </TooltipTrigger>
-      )}
+      <AriaButton aria-expanded={isOpen} aria-label={t('navigation.open')} onPress={open} className={`${TAB} ${TAB_COLOR.other}`}>
+        <MenuIcon aria-hidden size={18} />
+        <span aria-hidden>{t('navigation.tab')}</span>
+        <Waiting count={waiting} />
+      </AriaButton>
       <ModalOverlay
         isOpen={isOpen}
         onOpenChange={setOpen}
@@ -245,7 +175,6 @@ export function NavigationPanel({ variant = 'bar' }: { readonly variant?: 'bar' 
                   </ul>
                 </section>
               ))}
-              {display ? <DisplayChoices /> : null}
             </nav>
           </Dialog>
         </Modal>

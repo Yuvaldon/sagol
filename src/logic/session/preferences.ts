@@ -2,7 +2,6 @@ import {
   Appearance,
   RulesRowPlacement,
   SoldierPreferences,
-  type NavigationModule,
   type Result,
   type SoldierPreferencesRecord,
 } from '@contracts'
@@ -39,8 +38,6 @@ export function useMyPreferences(): Loaded<SoldierPreferences> {
   return record.status === 'ready' ? { status: 'ready', value: record.value.preferences } : record
 }
 
-type PreferenceChange = Partial<SoldierPreferences> | ((current: SoldierPreferences) => Partial<SoldierPreferences>)
-
 /** One save at a time per client: each one reads what the previous one stored, so quick presses do not collide. */
 const saving = new WeakMap<QueryClient, Promise<unknown>>()
 
@@ -51,11 +48,10 @@ const saving = new WeakMap<QueryClient, Promise<unknown>>()
 export function useUpdateMyPreferences() {
   const { data } = usePorts()
   const client = useQueryClient()
-  return useCommand([QUERY_KEYS.soldierPreferences], (change: PreferenceChange): Promise<Result<SoldierPreferencesRecord>> => {
+  return useCommand([QUERY_KEYS.soldierPreferences], (changes: Partial<SoldierPreferences>): Promise<Result<SoldierPreferencesRecord>> => {
     const save = async (): Promise<Result<SoldierPreferencesRecord>> => {
       const stored = client.getQueryData<MyPreferences>(QUERY_KEYS.soldierPreferences)
       if (stored === undefined) return { ok: false, error: { code: 'unavailable' } }
-      const changes = typeof change === 'function' ? change(stored.preferences) : change
       const result = await data.commands.accounts.updateMyPreferences({
         expected_version: stored.version,
         preferences: { ...stored.preferences, ...changes },
@@ -78,40 +74,27 @@ export function useUpdateMyPreferences() {
 }
 
 export interface NavigationPreferences {
-  /** What the soldier pinned to the bar, in the order pinned; empty until the preferences load. */
-  readonly pinned: readonly NavigationModule[]
   readonly rulesRow: RulesRowPlacement
   /** FALSE while the preferences cannot be read, so nothing offers a change that cannot be saved (D-076, D-121). */
   readonly editable: boolean
   /** FALSE until the preferences are read or have failed, so nothing is placed by a default and then moved. */
   readonly settled: boolean
-  togglePin(module: NavigationModule): Promise<PreferenceSaved>
   setRulesRow(placement: RulesRowPlacement): Promise<PreferenceSaved>
 }
 
 /** A preference save's answer: a failure is shown, never dropped (D-187). */
 export type PreferenceSaved = Result<SoldierPreferencesRecord>
 
-const NO_PINS: readonly NavigationModule[] = []
-
-/** The bar's pins and the heat row's place (D-173), kept in the soldier's own preferences so every device has them. */
+/** The rules row's place (D-173, D-253), kept in the soldier's own preferences so every device has them. */
 export function useNavigationPreferences(): NavigationPreferences {
   const preferences = useMyPreferences()
   const save = useUpdateMyPreferences()
   const value = preferences.status === 'ready' ? preferences.value : null
-  const pinned = value?.pinned_modules ?? NO_PINS
+  // The stored pins are no longer read (D-254); V26 removes their key from the model.
   return {
-    pinned,
     rulesRow: value?.rules_row_placement ?? RulesRowPlacement.enum.below,
     editable: value !== null,
     settled: preferences.status !== 'loading',
-    togglePin(module) {
-      return save.run((current) => ({
-        pinned_modules: current.pinned_modules.includes(module)
-          ? current.pinned_modules.filter((one) => one !== module)
-          : [...current.pinned_modules, module],
-      }))
-    },
     setRulesRow(placement) {
       return save.run({ rules_row_placement: placement })
     },

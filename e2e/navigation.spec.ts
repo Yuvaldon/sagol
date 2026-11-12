@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, choose, closeDrawer, drawer, openRotation, press } from './support/leaves.ts'
+import { NOW, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
 
-// V12a's demo: the bars keep the daily work, the modules that set the organization up sit in the navigation panel by
-// section, a module pinned there joins the bar, the scope label names the single root unit, and the rules row's place
-// is the soldier's own choice (D-173). On desktop and mobile, RTL, with axe. Sample data, tests only.
+// The bars keep the daily work; the modules that set the unit up sit in "ניהול יחידה" by group, each with its plain
+// line and none pinned out (D-254); the scope label names the single root unit; the rules row's place is the soldier's
+// own choice, in the profile (D-173, D-253). On desktop and mobile, RTL, with axe. Sample data, tests only.
 
 const COMPANY = 'פלוגה א'
 const ROLE = 'לוחם'
@@ -24,7 +24,7 @@ async function openPanel(page: Page) {
   await expect(navigationPanel(page)).toBeVisible()
 }
 
-test('the navigation panel, pins, the scope label and the rules row placement', async ({ page }, testInfo) => {
+test('"ניהול יחידה", the scope label and the rules row placement', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
@@ -48,14 +48,14 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
 
   await test.step('the panel lists the modules by section, and opens one', async () => {
     await openPanel(page)
-    for (const section of [
-      he.navigation.sections.structure,
-      he.navigation.sections.leaveSetup,
-      he.navigation.sections.access,
-      he.navigation.sections.data,
-    ]) {
+    for (const section of Object.values(he.navigation.sections)) {
       await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toBeVisible()
     }
+    // Each module says what it is for, and none can be pinned to the bar (D-250, D-254).
+    await expect(navigationPanel(page).getByRole('button', { name: he.soldiers.open, exact: true })).toHaveAccessibleDescription(
+      he.navigation.lines.soldiers,
+    )
+    await expect(navigationPanel(page).locator('[aria-pressed]')).toHaveCount(0)
     await expectNoAxeViolations(page)
     await testInfo.attach('panel', { body: await page.screenshot(), contentType: 'image/png' })
     await page.keyboard.press('Escape')
@@ -71,41 +71,24 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
   })
 
-  await test.step('a single unit in sight names the scope, as a label and not a picker', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
-    await expect(page.getByText(COMPANY, { exact: true })).toBeVisible()
+  await test.step('a single unit in sight names the scope, as a label and not a picker; a phone has no room for it', async () => {
+    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
+    const label = page.getByRole('navigation', { name: he.workspace.viewBar }).getByText(COMPANY, { exact: true })
+    // A phone's strip shows no scope with nothing to choose (D-273).
+    if (testInfo.project.name === 'mobile') await expect(label).toHaveCount(0)
+    else await expect(label).toBeVisible()
   })
 
-  await test.step('a pinned module joins the bar, and leaves it when unpinned', async () => {
-    const pin = `${he.navigation.pin} ${he.soldiers.open}`
-    await openPanel(page)
-    const toggle = navigationPanel(page).getByRole('button', { name: pin })
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
-    await toggle.click()
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
-    await page.keyboard.press('Escape')
-    const pinned = navigation(page).getByRole('button', { name: he.soldiers.open, exact: true })
-    await expect(pinned).toBeVisible()
-    await page.reload()
-    await expect(pinned).toBeVisible()
-    await testInfo.attach('pinned', { body: await page.screenshot(), contentType: 'image/png' })
-    await pinned.click()
-    await expect(drawer(page).getByRole('heading', { name: he.soldiers.title, exact: true })).toBeVisible()
-    await closeDrawer(page)
-    await openPanel(page)
-    await navigationPanel(page).getByRole('button', { name: pin }).click()
-    await page.keyboard.press('Escape')
-    await expect(pinned).toHaveCount(0)
-  })
-
-  await test.step('the rules row placement is kept', async () => {
-    await openPanel(page)
-    await press(page, 'radio', he.navigation.rulesRowAbove)
-    await expect(page.getByRole('radio', { name: he.navigation.rulesRowAbove })).toBeChecked()
+  await test.step('the rules row placement is kept, in the profile', async () => {
+    const above = page.getByRole('menuitemradio', { name: he.account.rulesRowAbove })
+    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
+    await above.click()
+    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
+    await expect(above).toHaveAttribute('aria-checked', 'true')
     await page.keyboard.press('Escape')
     await page.reload()
-    await openPanel(page)
-    await expect(page.getByRole('radio', { name: he.navigation.rulesRowAbove })).toBeChecked()
+    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
+    await expect(above).toHaveAttribute('aria-checked', 'true')
     await page.keyboard.press('Escape')
   })
 })
@@ -167,16 +150,42 @@ test('a fighter sees only the modules their permissions open, and no unit picker
   })
 
   await test.step('the panel holds only what the fighter may open: their own record', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
     await openPanel(page)
     // Viewing their own record opens the soldiers module (D-053); nothing else of the panel is theirs.
     await expect(navigationPanel(page).getByRole('button', { name: he.soldiers.open, exact: true })).toBeVisible()
     for (const name of [he.units.open, he.leaveTypes.open, he.tags.open, he.roles.open, he.grants.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }
-    for (const section of [he.navigation.sections.leaveSetup, he.navigation.sections.access, he.navigation.sections.data]) {
+    for (const section of [
+      he.navigation.sections.presence,
+      he.navigation.sections.soldierDetails,
+      he.navigation.sections.access,
+      he.navigation.sections.data,
+    ]) {
       await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toHaveCount(0)
     }
     await expectNoAxeViolations(page)
   })
+})
+
+test('on a tablet held upright, no row of the panel stretches to fill it', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one tablet shape, set here')
+  await page.setViewportSize({ width: 768, height: 1024 })
+  await page.clock.setFixedTime(NOW)
+  await enterAsOwner(page)
+  await openPanel(page)
+  // The unit is not set up yet, so its setup sits above the groups, a row like the others.
+  const setup = navigationPanel(page).getByRole('button', { name: he.setup.open, exact: true })
+  await expect(setup).toBeVisible()
+  await testInfo.attach('panel, tablet upright', { body: await page.screenshot(), contentType: 'image/png' })
+  const heights = await navigationPanel(page)
+    .getByRole('navigation', { name: he.navigation.title })
+    .getByRole('button')
+    .evaluateAll((buttons) => buttons.map((button) => ({ name: button.textContent ?? '', height: button.getBoundingClientRect().height })))
+  expect(heights.length).toBeGreaterThan(1)
+  // A row is one or two lines tall, never the panel's leftover height.
+  for (const row of heights) expect(row.height, row.name).toBeLessThanOrEqual(64)
+  const setupBox = await setup.boundingBox()
+  expect(setupBox?.height ?? 0).toBeLessThanOrEqual(44)
 })

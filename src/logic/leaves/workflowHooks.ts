@@ -10,7 +10,7 @@ import {
   type PermissionCheck,
   type Result,
 } from '@contracts'
-import { COMMENT_PERMISSIONS, LEAVE_PERMISSIONS } from '@domain'
+import { COMMENT_PERMISSIONS, LEAVE_PERMISSIONS, type SoldierDay } from '@domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOn } from '../permissions/checks'
@@ -24,11 +24,13 @@ import { usePorts } from '../runtime/context'
 import { useSoldiersWithArchived } from '../roster/hooks'
 import { useCurrentOrganization, useSession } from '../session/hooks'
 import { useToday } from '../session/today'
+import { useLeaveTypes } from './hooks'
 import { cachedLeaves, leaveKey, leaveListKey, restoreLeaves, showLeave } from './cache'
 import {
   EDIT_PERMISSION,
   PENDING_QUERY,
   myLeaveGroups,
+  myNextDays,
   myLeavesQuery,
   type MyLeaves,
   closedLeaves,
@@ -312,13 +314,12 @@ export function useMyLeavesAccess(): { readonly view: boolean; readonly create: 
   return { view: can(view), create: can(create) }
 }
 
-/** The actor's own leaves, open and history (D-167). Today is the organization's day. */
-export function useMyLeaves(): Loaded<MyLeaves> {
+/** Every leave of the actor's own soldier; one list behind "my requests" and "my next days". */
+function useMyLeaveRows(): Loaded<readonly Leave[]> {
   const { data } = usePorts()
   const actor = useActor()
-  const today = useToday()
   const query = actor === null ? null : myLeavesQuery(actor.soldier_id)
-  const leaves: Loaded<readonly Leave[]> = loaded(
+  return loaded(
     useQuery({
       queryKey: query === null ? [...QUERY_KEYS.leaves, { soldier_ids: null }] : leaveListKey(query),
       queryFn: (): Promise<readonly Leave[]> =>
@@ -326,9 +327,31 @@ export function useMyLeaves(): Loaded<MyLeaves> {
       enabled: query !== null,
     }),
   )
+}
+
+/** The actor's own leaves, open and history (D-167). Today is the organization's day. */
+export function useMyLeaves(): Loaded<MyLeaves> {
+  const today = useToday()
+  const leaves = useMyLeaveRows()
   return useMemo((): Loaded<MyLeaves> => {
     if (leaves.status !== 'ready') return leaves
     if (today === null) return { status: 'loading' }
     return { status: 'ready', value: myLeaveGroups(leaves.value, today) }
   }, [leaves, today])
+}
+
+/** The actor's next days, in or out (D-265); NULL when the actor is not linked. */
+export function useMyNextDays(): Loaded<readonly SoldierDay[]> | null {
+  const actor = useActor()
+  const today = useToday()
+  const leaves = useMyLeaveRows()
+  const types = useLeaveTypes()
+  const soldierId = actor?.soldier_id ?? null
+  return useMemo((): Loaded<readonly SoldierDay[]> | null => {
+    if (soldierId === null) return null
+    if (leaves.status !== 'ready') return leaves
+    if (types.status !== 'ready') return types
+    if (today === null) return { status: 'loading' }
+    return { status: 'ready', value: myNextDays(soldierId, leaves.value, types.value, today) }
+  }, [soldierId, leaves, types, today])
 }
