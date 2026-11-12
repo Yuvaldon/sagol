@@ -211,7 +211,7 @@ am = amends, ref = refines, ext = extends.
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
-| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280 |
+| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280; ext D-295 |
 | D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | ref D-183 |
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
@@ -263,7 +263,7 @@ am = amends, ref = refines, ext = extends.
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
-| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292 |
+| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
@@ -271,6 +271,7 @@ am = amends, ref = refines, ext = extends.
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
+| D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
 
 ---
 
@@ -2513,7 +2514,7 @@ hosts the built app. Both run on their free plans: nothing that costs money is c
 cost money becomes an open item instead. Public client values (the project URL and its anon key) live in the hosting
 provider's environment variables, and `.env.example` lists their names only; no secret is in the repository.
 The Supabase project is `sagol` (ref `etmyjbhkqoufoqsjbhev`, region `eu-central-1`, free plan); the Vercel project is
-`sagol` (Hobby plan, linked to the repository, so every push gets a preview deploy).
+`sagol` (Hobby plan, linked to the repository; since D-295 only `main` and `staging` are built).
 **Why:** the reasons of D-027 (Postgres matches `schema.sql`, row-level security matches the policy model, Google sign-in is
 built in), and the owner's instruction to use these two providers at no cost.
 
@@ -3582,8 +3583,8 @@ the one project, not the account's project list, and the access token is reposit
   `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
   the repository-level one Production uses too (D-280).
   Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
-- **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
-  a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
+- **Every Preview runs on staging.** The only Preview is the `staging` branch's (D-295): a pull request gets none, and a
+  slice is tried locally (`npm run dev`, the local adapter) and by CI's e2e.
 
 **Why:** the owner wants to try units, soldiers and flows freely, without touching real personal numbers, without
 slowing development, and without using up the real organization's first setup. A second project that follows `main`
@@ -3779,3 +3780,24 @@ trace against a nonexistent ref shows `functions deploy --use-api` calling `POST
 
 **Why:** every Staging run must end with a Preview of main's code, on its own and without an owner step. A commit with
 the same tree on top of main is the smallest change Vercel's integration builds.
+
+## D-295 — Vercel builds only `main` and `staging`; other branches get no preview
+
+2026-11-12 · accepted · asked by the orchestrator at about 18:14Z. Track: tooling. Extends D-209 and D-276.
+
+- **The gap.** The Hobby plan allows 100 deployments a day. Every push to every branch was built as a Preview, and on
+  2026-11-12 at about 18:13Z Vercel refused builds for a day (`api-deployments-free-per-day`). That blocked the
+  production frontend and the staging Preview with them. Nobody uses the pull request previews: CI's e2e covers the
+  branches.
+- **The rule.** `vercel.json` sets `git.deploymentEnabled` to `{ "**": false, "main": true, "staging": true }`. Vercel
+  reads it from the pushed commit, and a branch that matches a `true` rule is built even when it also matches a
+  `false` one. So `main` (Production) and `staging` (D-276, D-292) build. Every other branch does not, including names
+  with `/`, which `**` matches. `staging` holds main's tree, so it carries the same file.
+- **Until it merges.** A branch is skipped only once its own commit has the file, so a branch that has not merged
+  `main` yet still builds.
+- **Rejected.** A paid plan, because only free plans are allowed. An ignored-build command: Vercel still creates a
+  deployment for each push and then cancels it, and the command lives in the project's settings, not in the
+  repository.
+
+**Why:** the daily budget goes to the two deployments someone uses, Production and staging. A single line in the
+repository, reviewed like the rest, does that.
