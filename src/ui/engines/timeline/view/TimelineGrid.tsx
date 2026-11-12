@@ -165,6 +165,7 @@ const GHOST_TONES: Record<TimelineDragTone, string> = {
   ok: 'outline-2 outline-marker',
   soft: 'outline-2 outline-dashed outline-status-pending',
   hard: 'outline-2 outline-status-rejected',
+  unknown: 'outline-2 outline-dotted outline-marker',
 }
 
 /** How a mark is filled: solid when approved, a dashed edge over a faint fill when pending (D-111). */

@@ -560,6 +560,8 @@ export const dictionary = {
     heatSoft: 'כללים רכים בלבד',
     warningTitle: 'הבקשה תשבור כלל',
     warningHardTitle: 'כלל קשיח יחסום את הבקשה',
+    checking: 'בודק את הכללים…',
+    checkFailed: 'לא ניתן לבדוק את הכללים כרגע. הם ייבדקו בשמירה.',
     ackTitle: 'הבקשה שוברת כלל רך',
     ackHint: 'אפשר לשמור בכל זאת. האישור יירשם בהיסטוריה של הבקשה.',
     ackConfirm: 'שמירה בכל זאת',
