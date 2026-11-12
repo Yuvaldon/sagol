@@ -90,6 +90,8 @@ interface SheetDays {
 export function rowDays(row: LeaveSheetRow, index: number): SheetDays[] {
   const first: SheetDays = { row: index, start_date: row.start_date, end_date: row.end_date }
   if (!row.repeats || repeatIssues(row).length > 0 || row.start_date === '' || row.end_date === '' || row.until === '') return [first]
+  // Days that end before they start are the row's own issue; repeating them would only repeat it.
+  if (compareDates(row.start_date, row.end_date) > 0) return [first]
   const length = daysBetween(row.start_date, row.end_date)
   const days: SheetDays[] = []
   // Bounded past the sheet's limit, so the count's issue is still raised without walking an endless rhythm.
@@ -213,21 +215,24 @@ function countIssues(values: LeaveSheetValues, days: readonly SheetDays[]): Issu
 }
 
 /**
- * An issue of `leaves.createMany` on the sheet's fields: a leave's soldier is the sheet's, a leave's field is its row's,
- * and the list itself is the first row's start. Anything else keeps its path.
+ * An issue of `leaves.createMany` on the sheet's fields: a leave's soldier and properties are the sheet's, its rotation
+ * follows its row's start, a leave's other field is its row's, and the list itself is the first row's start. A leave's
+ * id has no field, and keeps its path for the form's general message.
  */
 function sheetIssue(issue: Issue, days: readonly SheetDays[]): Issue {
   const [head, index, field, ...rest] = issue.path
   if (head !== 'leaves') return issue
   if (typeof index !== 'number') return { ...issue, path: ['rows', 0, 'start_date'] }
-  if (field === 'soldier_id') return { ...issue, path: ['soldier_id', ...rest] }
+  if (field === 'soldier_id' || field === 'properties') return { ...issue, path: [field, ...rest] }
+  if (field === 'id') return issue
   const row = days[index]?.row ?? 0
-  return { ...issue, path: ['rows', row, ...(field === undefined ? ['start_date'] : [field, ...rest])] }
+  if (field === undefined || field === 'deployment_id') return { ...issue, path: ['rows', row, 'start_date'] }
+  return { ...issue, path: ['rows', row, field, ...rest] }
 }
 
-/** The sheet's answer from `leaves.createMany`, on the sheet's fields (D-275). */
+/** The sheet's answer from `leaves.createMany`, on the sheet's fields (D-275): a repeating row's issue once. */
 export function sheetIssues(issues: readonly Issue[], days: readonly SheetDays[]): Issue[] {
-  return issues.map((issue) => sheetIssue(issue, days))
+  return dedupe(issues.map((issue) => sheetIssue(issue, days)))
 }
 
 function dedupe(issues: readonly Issue[]): Issue[] {

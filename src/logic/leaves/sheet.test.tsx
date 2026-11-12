@@ -14,6 +14,7 @@ import {
   sheetCandidates,
   leavesOfInput,
   sheetDays,
+  sheetIssues,
   toCreateLeavesInput,
   type LeaveSheetRow,
   type LeaveSheetValues,
@@ -91,6 +92,33 @@ describe('the request sheet (D-275)', () => {
     expect(leaveSheetIssues({ ...sheet(row({ end_date: '' })), soldier_id: null }, () => null, rotationOf)).toEqual([
       { path: ['soldier_id'], code: 'required' },
       { path: ['rows', 0, 'end_date'], code: 'required' },
+    ])
+  })
+
+  it('does not repeat days that end before they start', () => {
+    expect(sheetDays(sheet(row({ start_date: '2026-11-10', end_date: '2026-11-09', repeats: true, every_days: '7', until: '2026-12-31' })))).toHaveLength(1)
+  })
+
+  it('puts the answer on the sheet\'s own fields, a repeating row\'s issue once', () => {
+    const days = sheetDays(sheet(row(), row({ start_date: '2026-11-20', end_date: '2026-11-20', repeats: true, every_days: '7', until: '2026-11-27' })))
+    expect(
+      sheetIssues(
+        [
+          { path: ['leaves', 1, 'reason'], code: 'reason_required' },
+          { path: ['leaves', 2, 'reason'], code: 'reason_required' },
+          { path: ['leaves', 0, 'properties', 'size'], code: 'required' },
+          { path: ['leaves', 2, 'deployment_id'], code: 'reference_archived' },
+          { path: ['leaves', 0, 'id'], code: 'already_exists' },
+          { path: ['leaves'], code: 'too_big' },
+        ],
+        days,
+      ),
+    ).toEqual([
+      { path: ['rows', 1, 'reason'], code: 'reason_required' },
+      { path: ['properties', 'size'], code: 'required' },
+      { path: ['rows', 1, 'start_date'], code: 'reference_archived' },
+      { path: ['leaves', 0, 'id'], code: 'already_exists' },
+      { path: ['rows', 0, 'start_date'], code: 'too_big' },
     ])
   })
 

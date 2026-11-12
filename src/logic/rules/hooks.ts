@@ -203,7 +203,8 @@ export function useLeaveRuleCheck(
   stored: Leave | null = null,
 ): Loaded<readonly RuleViolation[]> {
   // One leave, or the leaves of a sheet judged together (D-073, D-275); none while the form is not complete.
-  const changed = changes === null ? null : listOf(changes)
+  // Made once per value passed, so one stable leave keeps one judgment, not one per render.
+  const changed = useMemo(() => (changes === null ? null : listOf(changes)), [changes])
   const some = changed !== null && changed.length > 0 ? changed : null
   const { can, known } = useCanAnswers(READS_EVERYTHING)
   const readsEverything = READS_EVERYTHING.every(can)
