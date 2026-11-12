@@ -1,6 +1,5 @@
 import {
   type AvailabilityRuleId,
-  type CreateLeaveInput,
   type CreateLeavesInput,
   type DeploymentId,
   type Leave,
@@ -30,7 +29,7 @@ import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
 import type { DateWindow } from '../view-state/window'
 import { toCreateLeaveBatchInput, toDuplicateLeaveInput, type DuplicateLeaveValues, type LeaveBatchValues } from './batch'
-import { optimisticLeave, toCreateLeaveInput, type NewLeaveValues } from './forms'
+import { optimisticLeave } from './forms'
 import { leavesOfInput, sheetIssues, toCreateLeavesInput, type LeaveSheetValues, type RotationOf } from './sheet'
 import {
   toCreateLeaveTypeGroupInput,
@@ -92,48 +91,6 @@ export function useLeaves(window: LeaveSpan | null): Loaded<readonly Leave[]> {
 
 /** Never asked: the key of a list that waits for its window. */
 const NO_WINDOW_QUERY: LeaveQuery = { window: null, soldier_ids: [], statuses: DRAWN_STATUSES }
-
-/**
- * `leaves.create` with an optimistic update (D-115): the leave joins every cached window it overlaps at once,
- * and a refusal takes it back. The change feed and the refetch then bring the stored row.
- */
-export function useCreateLeave() {
-  const { data, time } = usePorts()
-  const session = useSession()
-  const client = useQueryClient()
-  const actor = session.status === 'ready' && session.value.status === 'linked' ? session.value : null
-
-  const mutation = useMutation({
-    mutationFn: (input: CreateLeaveInput): Promise<Result<Leave>> => data.commands.leaves.create(input),
-    // Pending, and the board, show the leave at once; a rule that asks for an acknowledgment takes it back (D-142).
-    onMutate: async (input) => {
-      await client.cancelQueries({ queryKey: QUERY_KEYS.leaves })
-      const previous = cachedLeaves(client)
-      if (actor !== null) {
-        const leave = optimisticLeave(input, actor, time.now())
-        showLeave(client, leave)
-      }
-      return { previous }
-    },
-    onSettled: async (result, _error, _input, context) => {
-      if (result?.ok !== true && context !== undefined) {
-        restoreLeaves(client, context.previous)
-      }
-      await Promise.all(
-        [QUERY_KEYS.leaves, QUERY_KEYS.can].map((queryKey) => client.invalidateQueries({ queryKey })),
-      )
-    },
-  })
-  return {
-    /**
-     * `deploymentId` is the rotation the form picked for the request (D-220); `acknowledged` are the soft rules the
-     * actor agreed to break, sent again after the dialog (D-047, D-142).
-     */
-    run: (values: NewLeaveValues & WithProperties, deploymentId: DeploymentId | null, acknowledged: readonly AvailabilityRuleId[] = []) =>
-      mutation.mutateAsync(toCreateLeaveInput(values, deploymentId, acknowledged)),
-    isPending: mutation.isPending,
-  }
-}
 
 /**
  * The request sheet (`leaves.createMany`, D-275) with an optimistic update: every leave joins the cached windows it

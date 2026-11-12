@@ -4,6 +4,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { fakePorts, wrapperOf } from '../testing/ports'
 import type { DateWindow } from '../view-state/window'
+import { optimisticLeave } from './forms'
 import { useCreateLeaves, useLeaves } from './hooks'
 import type { RequestRotation } from './rotation'
 import {
@@ -11,6 +12,7 @@ import {
   newLeaveSheetValues,
   newSheetRow,
   sheetCandidates,
+  leavesOfInput,
   sheetDays,
   toCreateLeavesInput,
   type LeaveSheetRow,
@@ -111,6 +113,14 @@ describe('the request sheet (D-275)', () => {
     expect(new Set(input.leaves.map((leave) => leave.id)).size).toBe(2)
   })
 
+  it('shows each leave as the command will write it', () => {
+    const actor = { soldier_id: ACTOR, organization_id: ORGANIZATION }
+    const [pending] = leavesOfInput(toCreateLeavesInput(sheet(row()), rotationOf, []).input)
+    expect(pending && optimisticLeave(pending, actor, AT)).toMatchObject({ status: 'pending', reviewed_by: null, soldier_id: YAEL })
+    const [approved] = leavesOfInput(toCreateLeavesInput({ ...sheet(row()), as_approved: true }, rotationOf, []).input)
+    expect(approved && optimisticLeave(approved, actor, AT)).toMatchObject({ status: 'approved', reviewed_by: ACTOR, reviewed_at: AT, created_by: ACTOR })
+  })
+
   it('judges every leave the sheet would create, each with an id no row has', () => {
     const values = sheet(row({ repeats: true, every_days: '14', until: '2026-11-23' }), row({ leave_type_id: null }))
     const candidates = sheetCandidates(values)
@@ -126,8 +136,9 @@ describe('the request sheet (D-275)', () => {
 describe('sending the sheet with an optimistic update (D-275)', () => {
   const WINDOW: DateWindow = { kind: 'week', rotationId: null, from: '2026-11-08', to: '2026-11-30', days: [], followsToday: true, holdsToday: true }
 
+  const list = vi.fn((_query: LeaveQuery) => Promise.resolve<Result<Leave[]>>({ ok: true, value: [] }))
+
   function render(createMany: (input: CreateLeavesInput) => Promise<Result<Leave[]>>) {
-    const list = vi.fn((_query: LeaveQuery) => Promise.resolve<Result<Leave[]>>({ ok: true, value: [] }))
     const session = { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION }
     const ports = fakePorts({
       session: { current: () => Promise.resolve({ ok: true, value: session }) },
@@ -161,6 +172,18 @@ describe('sending the sheet with an optimistic update (D-275)', () => {
     await waitFor(() => {
       expect(datesOf(result.current.week)).toEqual([])
     })
+  })
+
+  it('asks the adapter again once the command answers', async () => {
+    const { result } = render(() => Promise.resolve({ ok: true, value: [] }))
+    await waitFor(() => {
+      expect(datesOf(result.current.week)).toEqual([])
+    })
+    const before = list.mock.calls.length
+    await act(async () => {
+      await result.current.create.run(values, rotationOf)
+    })
+    expect(list.mock.calls.length).toBeGreaterThan(before)
   })
 
   it('puts the answer\'s issues on the rows the leaves came from', async () => {

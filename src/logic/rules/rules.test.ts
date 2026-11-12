@@ -21,7 +21,7 @@ import {
 } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import type { FilterSource } from '../filters/source'
-import { newLeaveCandidate, newLeaveValues } from '../leaves/forms'
+import { newSheetRow, sheetCandidates, type LeaveSheetValues } from '../leaves/sheet'
 import { acknowledgedRuleIds, dayViolations, heatRow, leaveViolations, ruleDataOf, windowConflicts } from './evaluation'
 import {
   NEW_RULE_VALUES,
@@ -317,16 +317,18 @@ describe('rule evaluation for a window (D-141, OI-091)', () => {
 
   it('warns a form with what the command would answer, and acknowledges the soft rules only (D-142)', () => {
     const soft = rule(5, { scope_unit_id: PLATOON_A, min_value: 2 })
-    const values = { ...newLeaveValues(MONDAY), soldier_id: SoldierId.parse(uuid(1)), leave_type_id: HOME, as_approved: true }
-    const candidate = newLeaveCandidate(values)
-    expect(candidate).not.toBeNull()
-    if (candidate === null) return
+    const row = { ...newSheetRow(MONDAY), leave_type_id: HOME }
+    const values: LeaveSheetValues = { soldier_id: SoldierId.parse(uuid(1)), rows: [row], as_approved: true }
+    const [candidate] = sheetCandidates(values)
+    expect(candidate).toBeDefined()
+    if (candidate === undefined) return
     const violations = leaveViolations(dataWith([]), [soft, twoMedicsPerPlatoon], [candidate])
     expect(violations.map((violation) => violation.rule_id).sort()).toEqual([soft.id, twoMedicsPerPlatoon.id].sort())
     expect(acknowledgedRuleIds(violations)).toEqual([soft.id])
     // A pending request counts for no rule that does not count pending leaves.
-    const pending = newLeaveCandidate({ ...values, as_approved: false })
-    expect(pending === null ? null : leaveViolations(dataWith([]), [soft], [pending])).toEqual([])
-    expect(newLeaveCandidate({ ...values, end_date: '' })).toBeNull()
+    const pending = sheetCandidates({ ...values, as_approved: false })
+    expect(pending).toHaveLength(1)
+    expect(leaveViolations(dataWith([]), [soft], pending)).toEqual([])
+    expect(sheetCandidates({ ...values, rows: [{ ...row, end_date: '' }] })).toEqual([])
   })
 })
