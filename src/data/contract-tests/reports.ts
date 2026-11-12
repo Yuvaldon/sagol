@@ -34,7 +34,7 @@ const UNIT_SCOPE = (anchor_unit_id: UnitId) => ({ anchor_type: 'unit', anchor_un
 export function describeReportContract(
   harnessOf: () => ContractHarness,
   claim: () => Promise<{
-    input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } };
+    input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId };
     owner: AuthIdentity;
   }>,
 ): void {
@@ -44,15 +44,18 @@ export function describeReportContract(
     let organization: OrganizationId
     let ownerId: SoldierId
     let owner: AuthIdentity
+    // Every unit hangs under the claim's root unit: an organization has one live root (D-251).
+    let root: UnitId
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
     })
 
-    async function unit(name: string, parent_id: UnitId | null = null) {
+    async function unit(name: string, parent_id: UnitId = root) {
       return valueOf(
         await adapter().commands.units.create({
           id: UnitId.parse(crypto.randomUUID()),
