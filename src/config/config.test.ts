@@ -273,11 +273,11 @@ describe('panels (D-092)', () => {
     expect(PanelId.safeParse('nothing').success).toBe(false)
   })
 
-  it('places each work module and each setup panel once (D-285)', () => {
-    const work = WORK_SECTIONS.flatMap((section) => section.modules)
-    expect(new Set(work).size).toBe(work.length)
-    const setup = SETUP_SECTIONS.flatMap((section) => section.panels)
-    expect(new Set(setup).size).toBe(setup.length)
+  it('places each panel once, across work and setup (D-285, OI-252)', () => {
+    const work: readonly PanelId[] = WORK_SECTIONS.flatMap((section) => section.modules)
+    const setup: readonly PanelId[] = SETUP_SECTIONS.flatMap((section) => section.panels)
+    const placed = [...work, ...setup]
+    expect(new Set(placed).size).toBe(placed.length)
   })
 
   it('gives each setup step its own panel (D-180)', () => {
