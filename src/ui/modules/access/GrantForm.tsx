@@ -72,7 +72,8 @@ export function GrantForm({
     if (grantFormIssues(values, timezone).length > 0) return
     const result = await grant.run(values)
     if (result.ok) onDone()
-    else setState(formStateOf(result.error, GRANT_FIELDS))
+    // A grantee given by the card has no field here, so an issue about it is the form's failure, not a hidden one.
+    else setState(formStateOf(result.error, grantee === null ? GRANT_FIELDS : GRANT_FIELDS.filter((field) => field !== 'grantee_soldier_id')))
   }
 
   const grantees = soldiers.filter(grantTo)

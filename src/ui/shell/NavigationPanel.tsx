@@ -280,7 +280,12 @@ export function NavigationPanel() {
                 <>
                   {stepsAllowed ? <WithSteps>{(steps) => <SetupCallout steps={steps} onPress={toSetup} />}</WithSteps> : null}
                   <Sections sections={work} onOpen={close} />
-                  {hasSetup ? <SetupRow onPress={toSetup} /> : null}
+                  {/* With no setup module of theirs, the row leads only to steps still open, never to an empty view. */}
+                  {setup.length > 0 ? (
+                    <SetupRow onPress={toSetup} />
+                  ) : stepsAllowed ? (
+                    <WithSteps>{(steps) => (nextSetupStep(steps) === null ? null : <SetupRow onPress={toSetup} />)}</WithSteps>
+                  ) : null}
                 </>
               )}
             </nav>

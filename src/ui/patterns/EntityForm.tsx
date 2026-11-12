@@ -36,8 +36,6 @@ export function EntityForm({
       className="flex flex-col gap-lg"
       onSubmit={(event) => {
         event.preventDefault()
-        // A form made in place sits in a portal over another form, and its submit must not reach that one (D-285).
-        event.stopPropagation()
         onSubmit()
       }}
     >

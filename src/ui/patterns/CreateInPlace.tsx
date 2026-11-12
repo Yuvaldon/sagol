@@ -49,7 +49,14 @@ export function CreateInPlace({ labelKey, canCreate, isMissing, children }: Crea
         >
           <Modal className={SURFACE}>
             <Dialog aria-label={t(labelKey)} className="outline-none">
-              {children(close)}
+              {/* The form sits in a portal over another form, and React passes its submit up to that one: stop it here (D-285). */}
+              <div
+                onSubmit={(event) => {
+                  event.stopPropagation()
+                }}
+              >
+                {children(close)}
+              </div>
             </Dialog>
           </Modal>
         </ModalOverlay>
