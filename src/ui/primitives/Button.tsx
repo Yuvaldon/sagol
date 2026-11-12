@@ -1,5 +1,6 @@
+import { TOOLTIP } from '@config'
 import { t, type I18nKey } from '@i18n'
-import type { ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import {
   Button as AriaButton,
   Tooltip,
@@ -31,11 +32,14 @@ export interface IconButtonProps extends Omit<AriaButtonProps, 'className' | 'ch
   readonly children: ReactNode
 }
 
-/** A button that shows only an icon. Its name is read aloud, and shown on hover or keyboard focus (D-215). */
+/**
+ * A button that shows only an icon (D-189, D-215). Its name is read aloud, and shows as a tooltip on hover or keyboard focus,
+ * so no control needs a word on screen to be understood.
+ */
 export function IconButton({ labelKey, children, ...props }: IconButtonProps) {
   const label = t(labelKey)
   return (
-    <TooltipTrigger>
+    <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
       <AriaButton
         {...props}
         aria-label={label}
@@ -43,7 +47,30 @@ export function IconButton({ labelKey, children, ...props }: IconButtonProps) {
       >
         {children}
       </AriaButton>
-      <Tooltip className="glass-menu rounded-control px-sm py-2xs text-micro font-semibold text-text">{label}</Tooltip>
+      <NameTooltip>{label}</NameTooltip>
     </TooltipTrigger>
+  )
+}
+
+/**
+ * The tooltip that shows a control's name, on the menus' glass (D-215). It renders
+ * inside the landmark or dialog that holds its trigger, found from a hidden anchor beside it, never loose in the body.
+ */
+export function NameTooltip({ children }: { readonly children: string }) {
+  const [container, setContainer] = useState<Element | null>(null)
+  const anchor = useCallback((node: HTMLSpanElement | null) => {
+    setContainer(node?.closest(TOOLTIP.containerSelector) ?? null)
+  }, [])
+  return (
+    <>
+      <span ref={anchor} hidden />
+      <Tooltip
+        {...(container === null ? {} : { UNSTABLE_portalContainer: container })}
+        offset={TOOLTIP.offsetPx}
+        className="glass-menu pointer-events-none rounded-control px-sm py-2xs text-micro font-semibold text-text"
+      >
+        {children}
+      </Tooltip>
+    </>
   )
 }

@@ -1,3 +1,4 @@
+import { TOOLTIP } from '@config'
 import { Appearance, type AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -10,10 +11,10 @@ import {
   useInstallOffer,
   useUpdateMyPreferences,
 } from '@logic'
-import { Check, ChevronDown, CircleUser, Download, LogOut } from 'lucide-react'
+import { Check, CircleUser, Download, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { InfoDialog } from '../patterns/Dialogs'
-import { useIsDesktop } from '../patterns/media'
+import { NameTooltip } from '../primitives/Button'
 import { useInboxAccess } from './inboxAccess'
 import { useReportPreferenceSave } from './preferenceFailure'
 import {
@@ -24,6 +25,7 @@ import {
   MenuSection,
   MenuTrigger,
   Popover,
+  TooltipTrigger,
 } from 'react-aria-components'
 
 const ITEM =
@@ -46,8 +48,8 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   const savePreferences = useUpdateMyPreferences()
   const appearance = useAppearance()
   const reportSave = useReportPreferenceSave()
-  // On a phone the bottom bar holds every module, so the menu shows its icon and still reads the name (D-116).
-  const isDesktop = useIsDesktop()
+  // The account is an avatar at the bar's inline end (V20); its name shows on hover and is read aloud.
+  const name = identity.display_name ?? identity.email
   const approveNow = preferences.status === 'ready' && preferences.value.create_leaves_as_approved
   const { offer, install } = useInstallOffer()
   const [iosHintOpen, setIosHintOpen] = useState(false)
@@ -55,14 +57,15 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   return (
     <>
       <MenuTrigger>
-        <AriaButton
-          className={`inline-flex min-h-touch cursor-pointer items-center gap-xs rounded-pill bg-inner text-control ${isDesktop ? 'px-md' : 'min-w-touch justify-center'} font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2`}
-        >
-          <span className="sr-only">{t('account.menu')}</span>
-          {isDesktop ? null : <CircleUser aria-hidden size={18} />}
-          <span className={isDesktop ? 'max-w-menu truncate' : 'sr-only'}>{identity.display_name ?? identity.email}</span>
-          {isDesktop ? <ChevronDown aria-hidden size={12} /> : null}
-        </AriaButton>
+        <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
+          <AriaButton className="inline-flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center rounded-pill bg-inner text-text outline-focus outline-offset-2 md:min-h-control md:min-w-control data-focus-visible:outline-2 data-hovered:bg-line">
+            <CircleUser aria-hidden size={18} />
+            <span className="sr-only">
+              {t('account.menu')} {name}
+            </span>
+          </AriaButton>
+          <NameTooltip>{name}</NameTooltip>
+        </TooltipTrigger>
         <Popover className="glass-menu min-w-trigger rounded-panel p-xs">
           <Menu className="flex max-w-menu flex-col gap-2xs outline-none">
             {authMode === 'local' ? <IdentitySwitcher identity={identity} /> : null}

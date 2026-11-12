@@ -60,7 +60,7 @@ test('an owner claims the empty organization and reaches the workspace', async (
     // A new organization has no rotation yet, nor a unit to hold one; its owner is sent to found the unit (D-218).
     await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
     await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
-    await expect(navigation(page).getByText(OWNER.name)).toBeVisible()
+    await expect(page.getByRole('button', { name: `${he.account.menu} ${OWNER.name}` })).toBeVisible()
     await expectNoAxeViolations(page)
   })
 

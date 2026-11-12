@@ -124,6 +124,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V17 | Dark Mode | Second token set, the soldier's choice in the user menu (D-181) | ☑ |
 | V18 | Installable app (PWA) | Sagol on the phone's home screen: the manifest and icons, a worker that caches the shell only, the update toast, the install item in the user menu, the offline screen (D-182 … D-185) | ☑ |
 | V19 | Time range, rotations, declutter | A range picker (day, week, month, a whole rotation) that every view honors, "סבב" in place of "פריסה", "only who is missing" as a filter condition, a sort control shared by the board and the table, and a calmer screen (D-211 … D-215); then the rotation-centric workspace: every request belongs to a rotation, the workspace opens on it, no request surface without one, and the wizard opens the first (D-216 … D-220) | ☑ |
+| V20 | Bars rebalance and declutter | On a phone the week and the avatar at the top, scope, view and filters in a row under it, a tab bar of destinations at the bottom; icons with tooltips on desktop (D-189); a phone on its side keeps the phone's bars, edge to edge inside the safe area, an opaque name column (D-190 to D-192) | ☑ |
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units | ☐ |
 | A7 | audit | Whole product | ☐ |
 

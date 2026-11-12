@@ -41,7 +41,8 @@ const SPACING_UTILITIES =
 const NUMERIC_SPACING_CLASS = new RegExp(`^(?:${SPACING_UTILITIES})-(?:\\d+(?:\\.\\d+)?|px)$`)
 
 const PHYSICAL_CSS = [
-  /\b(?:margin|padding|border|scroll-margin|scroll-padding|inset)-(?:left|right)\b/,
+  // `env(safe-area-inset-left)` names what the device reports, not a side the layout picks (D-191): not matched.
+  /(?<!safe-area-)\b(?:margin|padding|border|scroll-margin|scroll-padding|inset)-(?:left|right)\b/,
   /\bborder-(?:top|bottom)-(?:left|right)-radius\b/,
   /(?:^|[;{\s])(?:left|right)\s*:/,
   /\b(?:text-align|float|clear)\s*:\s*(?:left|right)\b/,

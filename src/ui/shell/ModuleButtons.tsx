@@ -1,7 +1,8 @@
+import { TOOLTIP } from '@config'
 import { t } from '@i18n'
 import { useNavigationPreferences } from '@logic'
-import { Button as AriaButton } from 'react-aria-components'
-import { useIsDesktop } from '../patterns/media'
+import { Button as AriaButton, TooltipTrigger } from 'react-aria-components'
+import { NameTooltip } from '../primitives/Button'
 import { useDailyEntries, useNavigationEntries, type ModuleEntry } from './moduleEntries'
 
 /** The number waiting on a module, read with its name. */
@@ -17,23 +18,26 @@ export function EntryCount({ entry, floating }: { readonly entry: ModuleEntry; r
   )
 }
 
-/** Icon and name on desktop, the icon alone on a phone, its name still read aloud, with the number waiting. */
-function ModuleButton({ entry, isDesktop }: { readonly entry: ModuleEntry; readonly isDesktop: boolean }) {
+/** A destination in the desktop bar (V20): its icon, its name on hover and read aloud, and the number waiting. */
+function ModuleButton({ entry }: { readonly entry: ModuleEntry }) {
+  const name = t(entry.labelKey)
   return (
-    <AriaButton
-      onPress={entry.onPress}
-      className="relative inline-flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center gap-xs rounded-pill px-sm text-control font-semibold whitespace-nowrap text-text outline-focus outline-offset-2 md:min-h-control md:bg-inner md:px-md data-focus-visible:outline-2 data-hovered:bg-line"
-    >
-      <entry.Icon aria-hidden size={isDesktop ? 14 : 18} className="text-text-muted md:text-text" />
-      <span className={isDesktop ? '' : 'sr-only'}>{t(entry.labelKey)}</span>
-      <EntryCount entry={entry} floating={!isDesktop} />
-    </AriaButton>
+    <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
+      <AriaButton
+        onPress={entry.onPress}
+        className="relative inline-flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center rounded-pill text-text-muted outline-focus outline-offset-2 md:min-h-control md:min-w-control data-focus-visible:outline-2 data-hovered:bg-inner"
+      >
+        <entry.Icon aria-hidden size={16} />
+        <span className="sr-only">{name}</span>
+        <EntryCount entry={entry} floating />
+      </AriaButton>
+      <NameTooltip>{name}</NameTooltip>
+    </TooltipTrigger>
   )
 }
 
-/** The daily modules, then the soldier's pins in the order they were pinned (D-173). */
+/** The daily modules, then the soldier's pins in the order they were pinned (D-173): the desktop's destinations. */
 export function ModuleButtons() {
-  const isDesktop = useIsDesktop()
   const daily = useDailyEntries()
   const navigation = useNavigationEntries()
   const { pinned, editable } = useNavigationPreferences()
@@ -41,7 +45,7 @@ export function ModuleButtons() {
   return (
     <>
       {[...daily, ...pins].map((entry) => (
-        <ModuleButton key={entry.id} entry={entry} isDesktop={isDesktop} />
+        <ModuleButton key={entry.id} entry={entry} />
       ))}
     </>
   )
