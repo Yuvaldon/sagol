@@ -2612,15 +2612,18 @@ transaction.
 - **Manifest.** `name` and `short_name` are `app.name` from `i18n`; `lang` `he`, `dir` `rtl`, `display` `standalone`,
   `start_url` and `scope` `/`. `theme_color` and `background_color` are the light set's canvas, read from
   `src/ui/theme/tailwind.css` when the build starts, so the theme stays the only place a color is written.
-- **Icons.** One source, `src/ui/theme/app-icon.svg`: a white calendar mark on the marker purple. The build makes the
-  64, 192 and 512 icons, a maskable 512 (padded on the same purple, so a round or squircle mask cuts only ground),
-  the 180 Apple touch icon and the favicon. The build fails if the icon's purple is not the marker token.
+- **Icons.** One source, `src/ui/theme/app-icon.svg`: the owner's bison emblem (handed over through the orchestrator
+  on 2026-11-12) in the brand gradient, on the light set's `surface` in a rounded square. The gradient's stops are
+  the theme tokens `brand-light`, `brand` and `brand-deep`; the asset file keeps its raw values, as an SVG must. The
+  build makes the 64, 192 and 512 icons, a maskable 512 (the emblem inside the safe zone, padded on `surface`, so a
+  round or squircle mask cuts only ground), the 180 Apple touch icon and the favicon. The build fails if the icon
+  uses any color other than `surface` and the three brand tokens.
 - **Head.** `theme-color`, `apple-mobile-web-app-capable`, `mobile-web-app-capable`, `apple-mobile-web-app-title`
   (`app.name`), and `apple-mobile-web-app-status-bar-style` `default`: the status bar keeps its own strip, so no
   content runs under it, and `viewport-fit=cover` with the bottom bar's `bottom-safe` keeps the home indicator
   clear. In the workspace, `theme-color` follows the soldier's appearance (D-181), so a dark board has a dark bar.
 **Why:** reservists open Sagol from the phone's home screen far more than from a bookmark. Reading the name and the
-colors from `i18n` and the theme keeps one source for each, and the build check keeps the icon's purple honest.
+colors from `i18n` and the theme keeps one source for each, and the build check keeps the icon's colors honest.
 
 ## D-183 — The service worker caches the app shell only, and a new version waits for the soldier
 2026-11-12 · accepted · refines D-201, D-210 · V18 · decided under the owner's autonomy instruction of 2026-11-11
@@ -2632,9 +2635,13 @@ colors from `i18n` and the theme keeps one source for each, and the build check 
 - **Where it runs.** Production builds only. `app` registers it through `workbox-window` (7.4.1, pinned, the only
   runtime addition) before it reads the env; the dev server and the slice demos run without a worker.
 - **A new version.** The new worker installs beside the old one and waits. The open app shows a polite toast,
-  "גרסה חדשה זמינה", with "רענון": the worker takes over and the page reloads once it controls. Nothing reloads by
-  itself, so a form being filled is never lost. The app asks for an update when it opens and every hour
-  (`PWA.updateCheckMs`).
+  "גרסה חדשה זמינה", with "רענון": the worker takes over and the page reloads once it is active. Nothing in the
+  workspace reloads by itself, so a form being filled is never lost: when "רענון" in one tab activates the new
+  worker, the other tabs show the toast instead of reloading. Before the workspace opens (loading, offline, a failed
+  start) there is no form to lose, so a waiting version takes over at once, and a broken deploy never traps an
+  installed app on its failure screen. The app asks for an update when it opens and every hour (`PWA.updateCheckMs`).
+- **The install offer** is used once: whether the soldier accepts, refuses, or the browser rejects the prompt, the
+  menu item goes (D-076).
 - **The port.** `logic` reads the worker and the install offer (D-184) through a `shell` port that `app` provides,
   beside `data`, `auth` and `time`, so `ui` never touches the browser's worker API and its tests use a fake.
 **Why:** the shell is the same for everyone and changes only on a deploy, so caching it makes the installed app open
