@@ -350,6 +350,7 @@ export const dictionary = {
     tagLifetime: 'תוקף',
     tagLifetimePersistent: 'קבוע',
     tagLifetimeRotation: 'לסבב הזה',
+    tagPersistentToo: 'קבועים, וממשיכים לחול גם בסבב:',
     tagsCopyPrevious: 'כמו בסבב הקודם',
   },
   commandRanks: {

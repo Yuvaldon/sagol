@@ -37,6 +37,8 @@ import { toneOf } from '../../theme/palette'
 // is kept either for good or for this rotation, and the card marks what holds for the rotation only (D-260, D-222).
 
 const NO_ISSUE_FIELDS: readonly string[] = []
+const WORD = ' '
+const TEXT_LIST = ', '
 
 function choicesOf(group: SoldierTagGroup, categories: readonly TagCategory[]): Choice[] {
   return group.choices.map((choice) => ({
@@ -130,6 +132,13 @@ function TagsDialog({
           const label = { text: group.category.name }
           const selected = selectedOf(group)
           const current = { ...group, selected }
+          // Kept for this rotation, the category's persistent tags still apply: they show, read-only (OI-240).
+          const persistentToo =
+            lifetimeOfGroup(group) === Lifetime.enum.rotation
+              ? selectedInScope(group, scopes, Lifetime.enum.persistent).flatMap(
+                  (tagId) => group.choices.find((choice) => choice.tag.id === tagId)?.tag.name ?? [],
+                )
+              : []
           return (
             <div key={group.category.id} role="group" aria-label={group.category.name} className="flex flex-col gap-xs">
               {group.category.selection_mode === 'single' ? (
@@ -168,6 +177,9 @@ function TagsDialog({
                     setLifetimes((currentLifetimes) => new Map(currentLifetimes).set(group.category.id, lifetime))
                   }}
                 />
+              )}
+              {persistentToo.length === 0 ? null : (
+                <p className="text-label text-text-muted">{[t('soldiers.tagPersistentToo'), persistentToo.join(TEXT_LIST)].join(WORD)}</p>
               )}
             </div>
           )
