@@ -23,7 +23,19 @@ import {
 import { describe, expect, it } from 'vitest'
 import { presenceLists } from '../presence/presence'
 import { LeaveConditions, leaveMatches } from '../view-state/conditions'
-import { NO_CONDITIONS, readFilter, withPropertyChip, withTagChip, writeFilter } from '../view-state/filter'
+import {
+  NO_CONDITIONS,
+  NO_RULES,
+  readFilter,
+  readRules,
+  ruleHasValue,
+  withPropertyChip,
+  withTagChip,
+  writeFilter,
+  writeRules,
+  type SoldierFilter,
+} from '../view-state/filter'
+import { DEFAULT_SORT_RULES, SortRules, isDefaultSort } from '../view-state/sort-rules'
 import { populationOf, type FilterSource } from './source'
 
 // Sample rows, test data only.
@@ -46,6 +58,75 @@ const TYPE_A = PropertyOptionId.parse(uuid(52))
 const TYPE_O = PropertyOptionId.parse(uuid(53))
 
 const categoryOf = (tagId: TagId) => (tagId === SINGLE ? MARITAL : tagId === MEDIC || tagId === DRIVER ? ROLE : undefined)
+
+describe('the rules of the builder in the URL (D-312)', () => {
+  const filter: SoldierFilter = {
+    unitId: UNIT,
+    match: 'all',
+    rules: [
+      { kind: 'tag', negate: false, tagIds: [MEDIC, DRIVER] },
+      { kind: 'tag', negate: true, tagIds: [SINGLE] },
+      { kind: 'rank', negate: true, rankIds: [RANK] },
+      { kind: 'status', negate: false, statuses: ['active'] },
+      { kind: 'options', definitionId: BLOOD, negate: true, optionIds: [TYPE_A] },
+      { kind: 'empty', definitionId: BLOOD, empty: false },
+      { kind: 'boolean', definitionId: LICENSED, value: true },
+    ],
+  }
+
+  it('writes "none of" and "is not" as `not`, and reads back what it wrote', () => {
+    const written = writeRules(filter)
+    expect(written?.where).toMatchObject({
+      kind: 'and',
+      nodes: [
+        { kind: 'unit', unit_ids: [UNIT] },
+        { kind: 'tag', match: 'any', tag_ids: [MEDIC, DRIVER] },
+        { kind: 'not', node: { kind: 'tag', match: 'any', tag_ids: [SINGLE] } },
+        { kind: 'not', node: { kind: 'command_rank' } },
+        { kind: 'soldier_status', statuses: ['active'] },
+        { kind: 'not', node: { kind: 'property', operator: 'any_of', value: [TYPE_A] } },
+        { kind: 'property', operator: 'is_not_empty', value: null },
+        { kind: 'property', operator: 'equals', value: true },
+      ],
+    })
+    expect(readRules(written ?? null)).toEqual({ kind: 'rules', filter })
+  })
+
+  it('keeps או in an `or`, even with one rule, and unwraps a lone node', () => {
+    const any: SoldierFilter = { unitId: null, match: 'any', rules: [{ kind: 'status', negate: true, statuses: ['inactive'] }] }
+    const written = writeRules(any)
+    expect(written).toEqual({ where: { kind: 'or', nodes: [{ kind: 'not', node: { kind: 'soldier_status', statuses: ['inactive'] } }] } })
+    expect(readRules(written ?? null)).toEqual({ kind: 'rules', filter: any })
+    expect(readRules(writeRules({ ...filter, match: 'any' }) ?? null)).toEqual({ kind: 'rules', filter: { ...filter, match: 'any' } })
+    expect(writeRules({ ...NO_RULES, unitId: UNIT })).toEqual({ where: { kind: 'unit', unit_ids: [UNIT], include_descendants: true } })
+    expect(writeRules(NO_RULES)).toBeUndefined()
+    expect(readRules(null)).toEqual({ kind: 'rules', filter: NO_RULES })
+  })
+
+  it('leaves a rule without a value out of the URL, and reads what it cannot edit as another filter', () => {
+    const empty = { kind: 'tag' as const, negate: false, tagIds: [] }
+    expect(ruleHasValue(empty)).toBe(false)
+    expect(writeRules({ ...NO_RULES, rules: [empty] })).toBeUndefined()
+    const others: FilterExpression[] = [
+      { where: { kind: 'tag', match: 'all', tag_ids: [MEDIC] } },
+      { where: { kind: 'and', nodes: [{ kind: 'or', nodes: [{ kind: 'tag', match: 'any', tag_ids: [MEDIC] }] }, { kind: 'soldier_status', statuses: ['active'] }] } },
+      { where: { kind: 'not', node: { kind: 'property', property_definition_id: LICENSED, operator: 'equals', value: true } } },
+      { where: { kind: 'seniority', min: 1, max: null } },
+    ]
+    for (const other of others) expect(readRules(other)).toEqual({ kind: 'other' })
+  })
+})
+
+describe('the sort rules in the URL (D-313)', () => {
+  it('holds each target once, and knows the default', () => {
+    expect(SortRules.safeParse([{ key: 'unit', order: 'asc' }, { property: BLOOD, order: 'desc' }]).success).toBe(true)
+    expect(SortRules.safeParse([{ key: 'unit', order: 'asc' }, { key: 'unit', order: 'desc' }]).success).toBe(false)
+    expect(SortRules.safeParse([{ key: 'unit', order: 'asc', property: BLOOD }]).success).toBe(false)
+    expect(isDefaultSort(DEFAULT_SORT_RULES)).toBe(true)
+    expect(isDefaultSort([{ key: 'seniority', order: 'asc' }])).toBe(false)
+    expect(isDefaultSort([])).toBe(false)
+  })
+})
 
 describe('the filter in the URL (D-131)', () => {
   it('writes one top-level and, a lone node unwrapped, nothing for no condition', () => {

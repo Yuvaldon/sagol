@@ -39,15 +39,23 @@ export {
 export { requestRotations, useRotationScope, type RotationScope } from './view-state/rotation'
 export {
   NO_CONDITIONS,
+  NO_RULES,
   filterUnitOf,
   readFilter,
+  readRules,
+  ruleHasValue,
+  writeRules,
   unitFilterOf,
   useViewFilter,
   withPropertyChip,
   withTagChip,
   writeFilter,
+  type FilterRule,
   type FilterUnit,
   type ReadFilter,
+  type ReadRules,
+  type RuleMatch,
+  type SoldierFilter,
   type PropertyChip,
   type SoldierConditions,
   type ViewFilterState,
@@ -60,13 +68,24 @@ export {
   useOnlyMissing,
   usePresenceDay,
   useRulesDay,
+  useSortRules,
   type BoardFiltersState,
   type BoardSortState,
+  type SortRulesState,
   type LeaveConditionsState,
   type OnlyMissingState,
   type PresenceDayState,
   type RulesDayState,
 } from './view-state/board'
+export {
+  DEFAULT_SORT_RULES,
+  SortRule,
+  SortRules,
+  defaultOrderOf,
+  isDefaultSort,
+  sameTarget,
+  type SortTarget,
+} from './view-state/sort-rules'
 export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
 export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
 export { useDayReport, usePresence } from './presence/hooks'

@@ -12,8 +12,9 @@ import { isReportable, reportDays, steppedReportDay } from '../presence/report'
 import { useCallback, useMemo } from 'react'
 import { useToday } from '../session/today'
 import { NO_LEAVE_CONDITIONS, hasLeaveConditions, type BoardLeaveStatus, type LeaveConditions } from './conditions'
-import { NO_CONDITIONS, readFilter, writeFilter } from './filter'
+import { NO_RULES, readRules, writeRules } from './filter'
 import { useChangeSearch, useWorkspaceSearch } from './search'
+import { DEFAULT_SORT_RULES, defaultOrderOf as defaultRuleOrder, isDefaultSort, sameTarget, type SortRule, type SortTarget } from './sort-rules'
 import { useDateWindow } from './window'
 
 // What the board shows beyond the soldier filter: its leave conditions (D-132), "only who is missing" (D-133)
@@ -57,8 +58,8 @@ export interface OnlyMissingState {
 
 export interface BoardFiltersState {
   /**
-   * A condition of the filter row is on: a soldier condition beside the unit, a leave condition, or "only who is
-   * missing" (D-173, D-213).
+   * A condition of the filter row is on: a soldier rule beside the unit, a leave condition, or "only who is missing"
+   * (D-173, D-213, D-312).
    */
   readonly active: boolean
   /** Removes every condition of the filter row; the unit stays, as it is the scope and not a condition (D-173). */
@@ -69,20 +70,13 @@ export function useBoardFilters(): BoardFiltersState {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
   const filter = search.filter ?? null
-  const read = useMemo(() => readFilter(filter), [filter])
+  const read = useMemo(() => readRules(filter), [filter])
   const leaves = search.leaves ?? NO_LEAVE_CONDITIONS
-  const active =
-    read.kind === 'other' ||
-    read.conditions.tagSets.length > 0 ||
-    read.conditions.rankIds.length > 0 ||
-    read.conditions.statuses.length > 0 ||
-    read.conditions.properties.length > 0 ||
-    hasLeaveConditions(leaves) ||
-    search.missing === true
+  const active = read.kind === 'other' || read.filter.rules.length > 0 || hasLeaveConditions(leaves) || search.missing === true
   const clearAll = useCallback(() => {
-    // A filter the bar does not read has no unit it can keep (D-104).
-    const unitId = read.kind === 'conditions' ? read.conditions.unitId : null
-    change({ filter: writeFilter({ ...NO_CONDITIONS, unitId }), leaves: undefined, missing: undefined })
+    // A filter the builder does not read has no unit it can keep (D-104).
+    const unitId = read.kind === 'rules' ? read.filter.unitId : null
+    change({ filter: writeRules({ ...NO_RULES, unitId }), leaves: undefined, missing: undefined })
   }, [read, change])
   return { active, clearAll }
 }
@@ -141,6 +135,59 @@ export function useBoardSort(): BoardSortState {
     [change],
   )
   return { key, order, board, set }
+}
+
+export interface SortRulesState {
+  readonly rules: readonly SortRule[]
+  /** Whether the rules are other than the default. */
+  readonly changed: boolean
+  /** Adds a rule last, in its target's direction; a target already listed stays where it is. */
+  add(target: SortTarget): void
+  /** Replaces the rule at an index; a target listed elsewhere leaves its old place. */
+  replace(index: number, rule: SortRule): void
+  remove(index: number): void
+  /** Moves the rule at an index one place up (-1) or down (1). */
+  move(index: number, by: -1 | 1): void
+  /** Writes a list as it is; the default leaves the param out. */
+  set(rules: readonly SortRule[]): void
+}
+
+/** The board's sort rules (D-313). */
+export function useSortRules(): SortRulesState {
+  const search = useWorkspaceSearch()
+  const change = useChangeSearch()
+  const rules = search.sorts ?? DEFAULT_SORT_RULES
+  const set = useCallback(
+    (next: readonly SortRule[]) => {
+      change({ sorts: isDefaultSort(next) ? undefined : [...next] })
+    },
+    [change],
+  )
+  return useMemo(
+    () => ({
+      rules,
+      changed: !isDefaultSort(rules),
+      set,
+      add: (target) => {
+        if (rules.some((rule) => sameTarget(rule, target))) return
+        set([...rules, { ...target, order: defaultRuleOrder(target) }])
+      },
+      replace: (index, rule) => {
+        set(rules.flatMap((held, at) => (at === index ? [rule] : sameTarget(held, rule) ? [] : [held])))
+      },
+      remove: (index) => {
+        set(rules.filter((_, at) => at !== index))
+      },
+      move: (index, by) => {
+        const to = index + by
+        const moved = rules[index]
+        const other = rules[to]
+        if (moved === undefined || other === undefined) return
+        set(rules.map((held, at) => (at === index ? other : at === to ? moved : held)))
+      },
+    }),
+    [rules, set],
+  )
 }
 
 export interface PresenceDayState {

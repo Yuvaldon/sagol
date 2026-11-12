@@ -2,6 +2,8 @@ import { PANEL_IDS } from '@config'
 import {
   CommandRankId,
   OrganizationId,
+  PropertyDefinitionId,
+  PropertyOptionId,
   SoldierId,
   SoldierTagId,
   TagId,
@@ -9,6 +11,7 @@ import {
   UnitMembershipId,
   type CommandRank,
   type PermissionCheck,
+  type PropertyDefinition,
   type Result,
   type Soldier,
   type Unit,
@@ -152,9 +155,9 @@ describe('the unit filter (D-104, D-131)', () => {
     expect(filterUnitOf(null)).toEqual({ kind: 'organization' })
     expect(filterUnitOf({})).toEqual({ kind: 'organization' })
     expect(filterUnitOf({ where: { kind: 'unit', unit_ids: [PLATOON], include_descendants: false } })).toEqual({ kind: 'other' })
-    // A chip of the bar beside no unit is the whole organization (D-131); what the bar does not read is other.
+    // A rule of the bar beside no unit is the whole organization (D-131, D-312); what the bar does not read is other.
     expect(filterUnitOf({ where: { kind: 'soldier_status', statuses: ['active'] } })).toEqual({ kind: 'organization' })
-    expect(filterUnitOf({ where: { kind: 'not', node: { kind: 'soldier_status', statuses: ['active'] } } })).toEqual({ kind: 'other' })
+    expect(filterUnitOf({ where: { kind: 'seniority', min: 1, max: null } })).toEqual({ kind: 'other' })
   })
 })
 
@@ -204,7 +207,7 @@ describe('the rows of the board (D-105)', () => {
     readsPlacements: () => true,
     marked: null,
     absent: null,
-    sort: { key: 'seniority', order: 'desc' },
+    sorts: [{ key: 'seniority', order: 'desc' }],
     daysAway: null,
     ...overrides,
   })
@@ -251,7 +254,7 @@ describe('the rows of the board (D-105)', () => {
   it('sorts inside each group by the chosen key and direction, and orders the groups by unit (D-214)', () => {
     const fighter = CommandRankId.parse(uuid(20))
     const commander = CommandRankId.parse(uuid(21))
-    const input = (sort: BoardInput['sort'], daysAway: BoardInput['daysAway'] = null) =>
+    const input = (sort: BoardInput['sorts'][number], daysAway: BoardInput['daysAway'] = null) =>
       describeItems(
         boardItems(
           base({
@@ -267,7 +270,7 @@ describe('the rows of the board (D-105)', () => {
               membership(72, 3, 11, '2026-01-01', null),
               membership(74, 5, 13, '2026-01-01', null),
             ],
-            sort,
+            sorts: [sort],
             daysAway,
           }),
         ),
@@ -280,7 +283,60 @@ describe('the rows of the board (D-105)', () => {
     expect(input({ key: 'rank', order: 'asc' })).toEqual([...first, 'אבי ■■■■■■■', 'בני ■■■■■■■', 'גיל ■■■■■■■', ...second])
     const away = (soldierId: SoldierId) => (soldierId === SoldierId.parse(uuid(3)) ? 4 : soldierId === SoldierId.parse(uuid(1)) ? 1 : 0)
     expect(input({ key: 'absent', order: 'desc' }, away)).toEqual([...first, 'גיל ■■■■■■■', 'אבי ■■■■■■■', 'בני ■■■■■■■', ...second])
-    expect(input({ key: 'unit', order: 'desc' })).toEqual([...second, ...first, 'בני ■■■■■■■', 'אבי ■■■■■■■', 'גיל ■■■■■■■'])
+    // The unit orders the groups; inside one, the name breaks the ties (D-313).
+    expect(input({ key: 'unit', order: 'desc' })).toEqual([...second, ...first, 'בני ■■■■■■■', 'גיל ■■■■■■■', 'אבי ■■■■■■■'])
+  })
+
+  it('breaks the ties of one rule with the next, and sorts by a property, no value last (D-313)', () => {
+    const fighter = CommandRankId.parse(uuid(20))
+    const blood = PropertyDefinitionId.parse(uuid(50))
+    const typeA = PropertyOptionId.parse(uuid(51))
+    const typeO = PropertyOptionId.parse(uuid(52))
+    const definition: PropertyDefinition = {
+      id: blood,
+      organization_id: ORGANIZATION,
+      entity_type: 'soldier',
+      label: 'blood',
+      data_type: 'select',
+      options: [
+        { id: typeO, label: 'O', color_key: null, sort_order: 1 },
+        { id: typeA, label: 'A', color_key: null, sort_order: 0 },
+      ],
+      is_required: false,
+      sort_order: 0,
+      ...audit,
+    }
+    const input = (sorts: BoardInput['sorts']) =>
+      describeItems(
+        boardItems(
+          base({
+            propertyDefinitions: [definition],
+            soldiers: [
+              soldier(1, 'אבי', 'כהן', { command_rank_id: fighter, properties: { [blood]: typeO } }),
+              soldier(2, 'בני', 'אבו', { properties: { [blood]: typeA } }),
+              soldier(3, 'גיל', 'זך', { command_rank_id: fighter, properties: { [blood]: typeA } }),
+              soldier(4, 'דן', 'רז', { command_rank_id: fighter }),
+            ],
+            memberships: [
+              membership(70, 1, 11, '2026-01-01', null),
+              membership(71, 2, 11, '2026-01-01', null),
+              membership(72, 3, 11, '2026-01-01', null),
+              membership(73, 4, 11, '2026-01-01', null),
+            ],
+            sorts,
+          }),
+        ),
+      ).slice(1)
+    expect(input([{ property: blood, order: 'asc' }])).toEqual(['בני ■■■■■■■', 'גיל ■■■■■■■', 'אבי ■■■■■■■', 'דן ■■■■■■■'])
+    expect(input([{ property: blood, order: 'desc' }])).toEqual(['אבי ■■■■■■■', 'בני ■■■■■■■', 'גיל ■■■■■■■', 'דן ■■■■■■■'])
+    expect(input([{ key: 'rank', order: 'desc' }, { property: blood, order: 'desc' }])).toEqual([
+      'אבי ■■■■■■■',
+      'גיל ■■■■■■■',
+      'דן ■■■■■■■',
+      'בני ■■■■■■■',
+    ])
+    // No rules: the name alone.
+    expect(input([])).toEqual(['בני ■■■■■■■', 'גיל ■■■■■■■', 'אבי ■■■■■■■', 'דן ■■■■■■■'])
   })
 
   it('keeps who served one day of the week, mutes the other days, and names paths below the selected unit', () => {
@@ -336,12 +392,14 @@ describe('the rows of the board (D-105)', () => {
         soldiers: [soldier(1, 'אבי', 'כהן', { status: 'inactive' }), soldier(2, 'בני', 'כהן', { archived_at: AT }), soldier(3, 'גיל', 'כהן')],
       }),
     )
-    expect(describeItems(items)).toEqual(['# none (1)', 'גיל ■■■■■■■'])
+    expect(describeItems(items)).toEqual(['# פלוגה (1)', 'גיל ■■■■■■■'])
   })
 
   it('puts soldiers without a visible unit last, by what the actor can know', () => {
+    // A second root: with no single root, a soldier with no unit keeps the "no unit" group (D-315).
     const items = boardItems(
       base({
+        units: [...units, unit(14, 'גדוד', null, 1)],
         soldiers: [soldier(1, 'אבי', 'כהן'), soldier(2, 'בני', 'כהן'), soldier(3, 'גיל', 'כהן'), soldier(4, 'דן', 'כהן')],
         memberships: [membership(70, 2, 99, '2026-01-01', null), membership(71, 4, 10, '2026-01-01', null)],
         readsPlacements: (id) => id !== SoldierId.parse(uuid(3)),

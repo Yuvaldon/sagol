@@ -64,6 +64,11 @@ export function membershipsBySoldier(memberships: readonly UnitMembership[]): Ma
 
 const collator = new Intl.Collator(DATE_LOCALE)
 
+/** Two texts in Hebrew order (D-094). */
+export function compareText(a: string, b: string): number {
+  return collator.compare(a, b)
+}
+
 /** Last name, then first name, in Hebrew order (D-094). */
 export function byName(a: Soldier, b: Soldier): number {
   return collator.compare(a.last_name, b.last_name) || collator.compare(a.first_name, b.first_name) || a.id.localeCompare(b.id)
