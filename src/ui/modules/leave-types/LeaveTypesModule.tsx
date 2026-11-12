@@ -1,4 +1,4 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
+import { LEAVE_TYPE_PALETTE_KEYS, NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, AvailabilityEffect, LeaveType, LeaveTypeGroup, LeaveTypeGroupId } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -21,6 +21,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
+import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -31,7 +32,7 @@ import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { TextField } from '../../primitives/fields'
 import { glyphOf } from '../../theme/icons'
-import { toneOf } from '../../theme/palette'
+import { leaveTypeToneOf } from '../../theme/palette'
 
 // The types section of the leave types drawer (D-113): types under their groups, each with the color and icon
 // the board shows. Up and down in the row menu order a type inside its group.
@@ -57,18 +58,22 @@ function TypeForm({
   groups,
   types,
   onReload,
+  onDone,
 }: {
   readonly type: LeaveType | null
   readonly groups: readonly LeaveTypeGroup[]
   readonly types: readonly LeaveType[]
-  readonly onReload: () => void
+  readonly onReload?: () => void
+  /** Made in place (D-285): gets what was saved, or null when left; the panel stays where it is. */
+  readonly onDone?: (saved: LeaveType | null) => void
 }) {
   const panel = usePanel()
   const { create, update } = useLeaveTypeCommands()
   const [opened] = useState(type)
   const [state, setState] = useState(CLEAN_FORM)
   const backToList = () => {
-    panel.open(PANEL_IDS.leaveTypes)
+    if (onDone === undefined) panel.open(PANEL_IDS.leaveTypes)
+    else onDone(null)
   }
 
   const form = useForm({
@@ -80,8 +85,10 @@ function TypeForm({
         opened === null
           ? await create.run({ values: value, all: types })
           : await update.run({ type: opened, openedVersion: opened.version, values: value })
-      if (result.ok) backToList()
-      else setState(formStateOf(result.error, TYPE_FIELDS))
+      if (result.ok) {
+        if (onDone === undefined) backToList()
+        else onDone(result.value)
+      } else setState(formStateOf(result.error, TYPE_FIELDS))
     },
   })
 
@@ -145,6 +152,7 @@ function TypeForm({
           <ColorField
             labelKey="palette.label"
             name={field.name}
+            keys={LEAVE_TYPE_PALETTE_KEYS}
             value={field.state.value}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
@@ -188,7 +196,7 @@ function TypeEditor(props: {
 function TypeSwatch({ type }: { readonly type: LeaveType }) {
   const glyph = glyphOf(type.icon_key)
   return (
-    <span aria-hidden className={`ms-xs flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${toneOf(type.color_key).fill}`}>
+    <span aria-hidden className={`ms-xs flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${leaveTypeToneOf(type.color_key).fill}`}>
       {glyph === null ? null : <glyph.Icon size={10} strokeWidth={2.6} />}
     </span>
   )
@@ -369,5 +377,42 @@ export function LeaveTypesModule() {
         />
       )}
     </div>
+  )
+}
+
+/** An absence type made from another form's field (D-285): the module's own form and command over the drawer. The field takes
+ * what was saved; who may not create one reads that it is missing. */
+export function LeaveTypeInPlace({
+  isMissing,
+  onCreated,
+}: {
+  readonly isMissing: boolean
+  readonly onCreated: (type: LeaveType) => void
+}) {
+  const permissions = useLeaveTypePermissions()
+  const types = useLeaveTypes()
+  const groups = useLeaveTypeGroups()
+  return (
+    <CreateInPlace labelKey="leaveTypes.new" canCreate={permissions.create} isMissing={isMissing}>
+      {(close) =>
+        types.status === 'ready' && groups.status === 'ready' ? (
+          <TypeForm
+            type={null}
+            groups={groups.value}
+            types={types.value}
+            onDone={(saved) => {
+              close()
+              if (saved !== null) onCreated(saved)
+            }}
+          />
+        ) : types.status === 'failed' ? (
+          <FailureNotice error={types.error} />
+        ) : groups.status === 'failed' ? (
+          <FailureNotice error={groups.error} />
+        ) : (
+          <LoadingNotice />
+        )
+      }
+    </CreateInPlace>
   )
 }

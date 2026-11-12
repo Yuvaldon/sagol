@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AccessGrant,
   AvailabilityRule,
+  Deployment,
   FilterExpression,
   Leave,
   OrganizationSettings,
@@ -108,7 +109,6 @@ describe('settings defaults (D-041)', () => {
   it('fills soldier preferences from the column default', () => {
     expect(SoldierPreferences.parse({})).toEqual({
       create_leaves_as_approved: false,
-      pinned_modules: [],
       rules_row_placement: 'below',
       appearance: 'light',
     })
@@ -117,15 +117,9 @@ describe('settings defaults (D-041)', () => {
   it('reads a row stored before the navigation keys with their defaults (D-173)', () => {
     expect(SoldierPreferences.parse({ create_leaves_as_approved: true })).toEqual({
       create_leaves_as_approved: true,
-      pinned_modules: [],
       rules_row_placement: 'below',
       appearance: 'light',
     })
-  })
-
-  it('refuses a module pinned twice, or one that is not a navigation module (D-173)', () => {
-    expect(SoldierPreferences.safeParse({ pinned_modules: ['units', 'units'] }).success).toBe(false)
-    expect(SoldierPreferences.safeParse({ pinned_modules: ['leaves'] }).success).toBe(false)
   })
 
   it('reads the appearance, and refuses one that is not a choice (D-181)', () => {
@@ -134,9 +128,12 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.safeParse({ rules_row_placement: 'side' }).success).toBe(false)
   })
 
-  it('keeps reading pins stored before a module was added, and takes the new one (V14)', () => {
-    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'] }).pinned_modules).toEqual(['tags', 'roles'])
-    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'properties'] }).pinned_modules).toEqual(['tags', 'properties'])
+  it('reads a row that still holds the dropped pins, without them (D-221)', () => {
+    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'], appearance: 'dark' })).toEqual({
+      create_leaves_as_approved: false,
+      rules_row_placement: 'below',
+      appearance: 'dark',
+    })
   })
 })
 
@@ -229,6 +226,16 @@ describe('row checks', () => {
     expect(Leave.safeParse({ ...leave, start_date: '2026-13-01' }).success).toBe(false)
     expect(Leave.safeParse({ ...leave, created_at: '2026-11-04 08:00' }).success).toBe(false)
     expect(Leave.safeParse({ ...leave, created_at: '2026-11-04T08:00:00+02:00' }).success).toBe(true)
+  })
+
+  it('holds a close with its actor and an end date (D-258)', () => {
+    const open = { ...audit, id: ID.a, organization_id: ID.org, name: 'סבב', unit_id: ID.b, start_date: '2026-11-01' }
+    const closed = { ...open, end_date: '2026-11-10', closed_at: AT, closed_by: ID.c }
+    expect(Deployment.safeParse({ ...open, end_date: null, closed_at: null, closed_by: null }).success).toBe(true)
+    expect(Deployment.safeParse(closed).success).toBe(true)
+    for (const change of [{ closed_by: null }, { closed_at: null }, { end_date: null }]) {
+      expect(issues(Deployment.safeParse({ ...closed, ...change }))).toEqual([SchemaIssue.enum.close_incomplete])
+    }
   })
 
   it('accepts a global per-tag rule with an empty population', () => {

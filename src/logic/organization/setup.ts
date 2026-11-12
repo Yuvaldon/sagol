@@ -30,6 +30,11 @@ export function setupSteps(allowed: readonly SetupStepId[], rows: Partial<Readon
   }))
 }
 
+/** The step to do now: the first one not done, or none once all are (D-285). */
+export function nextSetupStep(steps: readonly SetupStep[]): SetupStep | null {
+  return steps.find((step) => !step.done) ?? null
+}
+
 const ORGANIZATION = { kind: 'organization' } as const
 
 const STEP_CHECKS = SETUP_STEPS.map((step) => {
@@ -48,9 +53,10 @@ export function useSetupAccess(): readonly SetupStepId[] {
 /** The steps this actor may do, each with whether it is done. */
 export function useSetupProgress(): Loaded<readonly SetupStep[]> {
   const allowed = useSetupAccess()
+  const units = useUnits()
   const sources: Readonly<Record<SetupStepId, Loaded<SetupRows>>> = {
     unit_levels: useUnitLevels(),
-    units: useUnits(),
+    units,
     command_ranks: useCommandRanks(),
     rank_bindings: useRankBindings(),
     leave_types: useLeaveTypes(),
@@ -64,5 +70,16 @@ export function useSetupProgress(): Loaded<readonly SetupStep[]> {
     if (source.status !== 'ready') return source
     rows[id] = source.value
   }
+  // The root comes with the claim (D-251), so the units step is done once a unit under it exists (D-223).
+  if (units.status === 'ready' && rows.units !== undefined) rows.units = units.value.filter((unit) => unit.parent_id !== null)
   return { status: 'ready', value: setupSteps(allowed, rows) }
+}
+
+/**
+ * Whether the checklist is offered: this actor has a step to do that is not done yet (D-262). While the steps load
+ * it is not, so the entry does not flicker in and out.
+ */
+export function useSetupUnfinished(): boolean {
+  const progress = useSetupProgress()
+  return progress.status === 'ready' && progress.value.some((step) => !step.done)
 }

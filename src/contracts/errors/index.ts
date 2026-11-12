@@ -68,6 +68,12 @@ const STATE_ISSUE_CODES = [
   'outside_rotation',
   /** A change to a rotation or its members would leave live requests outside it (D-216). */
   'leaves_outside_rotation',
+  /** A rotation's dates overlap another live rotation of the organization: one at a time (D-257). */
+  'rotation_overlap',
+  /** The rotation is closed: its dates, members, rotation tags and requests are read-only (D-258). */
+  'rotation_closed',
+  /** A rotation closes only once its last day is today or earlier (D-258). */
+  'rotation_not_ended',
 ] as const
 
 /** Every validation issue code: field codes, row checks (`SchemaIssue`) and state codes. */

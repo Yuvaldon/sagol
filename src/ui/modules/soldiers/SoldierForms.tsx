@@ -2,6 +2,7 @@ import { PANEL_IDS } from '@config'
 import type { CalendarDate, CommandRank, Soldier, SoldierPrivate, Unit, UnitId } from '@contracts'
 import { SoldierStatus } from '@contracts'
 import {
+  liveRanks,
   newSoldierIssues,
   privateFormIssues,
   soldierFormIssues,
@@ -18,6 +19,7 @@ import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
+import { CommandRankInPlace } from '../command-ranks/CommandRanksModule'
 import { rankOptions } from './rankOptions'
 import { unitOptions } from './unitOptions'
 
@@ -143,14 +145,22 @@ export function SoldierCreateForm({
       </form.Field>
       <form.Field name="command_rank_id">
         {(field) => (
-          <SelectField
-            labelKey="soldiers.rank"
-            name={field.name}
-            value={field.state.value}
-            options={rankOptions(ranks, null)}
-            onChange={field.handleChange}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
+          <>
+            <SelectField
+              labelKey="soldiers.rank"
+              name={field.name}
+              value={field.state.value}
+              options={rankOptions(ranks, null)}
+              onChange={field.handleChange}
+              error={fieldError(field.state.meta.errors, field.name, state.answered)}
+            />
+            <CommandRankInPlace
+              isMissing={liveRanks(ranks).length === 0}
+              onCreated={(rank) => {
+                field.handleChange(rank.id)
+              }}
+            />
+          </>
         )}
       </form.Field>
       <form.Field name="membership.unit_id">
@@ -323,14 +333,22 @@ function ProfileFields({
       </form.Field>
       <form.Field name="command_rank_id">
         {(field) => (
-          <SelectField
-            labelKey="soldiers.rank"
-            name={field.name}
-            value={field.state.value}
-            options={rankOptions(ranks, opened.command_rank_id)}
-            onChange={field.handleChange}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
+          <>
+            <SelectField
+              labelKey="soldiers.rank"
+              name={field.name}
+              value={field.state.value}
+              options={rankOptions(ranks, opened.command_rank_id)}
+              onChange={field.handleChange}
+              error={fieldError(field.state.meta.errors, field.name, state.answered)}
+            />
+            <CommandRankInPlace
+              isMissing={liveRanks(ranks).length === 0}
+              onCreated={(rank) => {
+                field.handleChange(rank.id)
+              }}
+            />
+          </>
         )}
       </form.Field>
       <form.Field name="status">

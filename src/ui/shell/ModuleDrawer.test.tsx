@@ -81,7 +81,8 @@ describe('module drawer: controls follow the hints', () => {
     await renderDrawer(portsWith(() => true))
     const list = await screen.findByRole('list', { name: he.units.listLabel })
     expect(await within(list).findByRole('button', { name: he.common.actions })).toBeTruthy()
-    expect(screen.getByRole('button', { name: he.units.new })).toBeTruthy()
+    // The only unit is the root, so a new unit goes under it, never beside it (D-251).
+    expect(screen.queryByRole('button', { name: he.units.new })).toBeNull()
     expect(screen.getByRole('button', { name: he.units.tabLevels })).toBeTruthy()
   })
 

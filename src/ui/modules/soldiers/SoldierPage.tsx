@@ -15,6 +15,7 @@ import {
 import { ArrowRight, CornerDownLeft } from 'lucide-react'
 import { useState } from 'react'
 import { SmallDialog } from '../../patterns/Dialogs'
+import { SoldierAccessSection } from '../access/SoldierAccessSection'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatDate } from '../../patterns/dates'
 import { fieldError, formStateOf } from '../../patterns/forms'
@@ -26,7 +27,7 @@ import { SenioritySection } from './SenioritySection'
 import { SoldierTagsSection } from './SoldierTags'
 import { unitOptions } from './unitOptions'
 
-// One soldier: the profile, the tags, the private fields, the placement and the seniority. Each section has its own permission
+// One soldier: the profile, the tags, the private fields, the placement, the seniority and the access (D-284). Each section has its own permission
 // (D-094, D-096, D-130), so each appears on its own.
 
 const NO_SELECTION = 'none'
@@ -299,6 +300,7 @@ export function SoldierPage({
         />
       ) : null}
       <SenioritySection soldier={soldier} today={today} />
+      <SoldierAccessSection soldier={soldier} />
     </div>
   )
 }

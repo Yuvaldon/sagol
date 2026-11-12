@@ -1,4 +1,5 @@
 import type {
+  DeploymentId,
   AvailabilityRule,
   CalendarDate,
   Leave,
@@ -9,7 +10,7 @@ import type {
   Unit,
   UnitId,
 } from '@contracts'
-import { EVERY_SOLDIER, compareDates, type AvailabilityLeave, type RuleData } from '@domain'
+import { EVERY_SOLDIER, compareDates, type RuleData } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useDeploymentMembers, useDeployments } from '../deployments/hooks'
@@ -23,6 +24,8 @@ import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { useTags } from '../tags/hooks'
+import { useRotationScope } from '../view-state/rotation'
+import type { LeaveCandidate } from '../leaves/forms'
 import {
   dayViolations,
   heatRow,
@@ -114,8 +117,9 @@ interface Span {
 }
 
 /** What rule evaluation reads on the days of a span, over what the actor reads. Loading while there is no span. */
-export function useRuleData(span: Span | null): Loaded<RuleData> {
-  const source = useFilterSource()
+/** The tags counted are the ones held in `rotationId` (D-260, D-222), as the command counts them. */
+export function useRuleData(span: Span | null, rotationId: DeploymentId | null): Loaded<RuleData> {
+  const source = useFilterSource(rotationId)
   const tags = useTags()
   const leaves = useLeaves(span)
   const types = useLeaveTypes()
@@ -151,7 +155,8 @@ interface WindowRequest {
 /** The rules and their data for a window, or NULL when the actor sees no rule: the heat row then has no place. */
 function useWindowEvaluation(window: WindowRequest | null): Loaded<{ rules: readonly AvailabilityRule[]; data: RuleData } | null> {
   const rules = useAvailabilityRules()
-  const data = useRuleData(window)
+  // The heat row reads the days of the mode, so the tags of its rotation (D-222).
+  const data = useRuleData(window, useRotationScope().rotation?.id ?? null)
   return useMemo(() => {
     if (rules.status !== 'ready') return rules
     if (rules.value.length === 0) return { status: 'ready', value: null }
@@ -198,33 +203,45 @@ export function useRuleConflicts(window: WindowRequest | null): Loaded<readonly 
  * Loading until the first answer, and failed when a read fails (OI-099). Once it has answered, a new span keeps the
  * last answer until its own data arrives, so a drag that crosses days does not flash "nothing broken".
  */
-export function useLeaveRuleCheck(changed: AvailabilityLeave | null, stored: Leave | null = null): Loaded<readonly RuleViolation[]> {
+export function useLeaveRuleCheck(
+  changes: LeaveCandidate | readonly LeaveCandidate[] | null,
+  stored: Leave | null = null,
+): Loaded<readonly RuleViolation[]> {
+  // One leave, or the leaves of a sheet judged together (D-073, D-275); none while the form is not complete.
+  // Made once per value passed, so one stable leave keeps one judgment, not one per render.
+  const changed = useMemo(() => (changes === null ? null : listOf(changes)), [changes])
+  const some = changed !== null && changed.length > 0 ? changed : null
   const { can, known } = useCanAnswers(READS_EVERYTHING)
   const readsEverything = READS_EVERYTHING.every(can)
   // Until the actor is known to read less, the warning has no answer yet: not "nothing broken".
   const decided = READS_EVERYTHING.every(known)
-  const span = useMemo(() => {
-    if (changed === null || !readsEverything) return null
-    const dates = [changed.start_date, changed.end_date, ...(stored === null ? [] : [stored.start_date, stored.end_date])].sort(compareDates)
-    const [from] = dates
-    const to = dates.at(-1)
-    return from === undefined || to === undefined ? null : { from, to }
-  }, [changed, stored, readsEverything])
+  // The days judged: every leave's, and the stored leave's that an edit leaves. Kept by its two ends, so a form that
+  // passes a new list on every render keeps one span while its days stay.
+  const dates =
+    some === null || !readsEverything
+      ? []
+      : [...some.flatMap((leave) => [leave.start_date, leave.end_date]), ...(stored === null ? [] : [stored.start_date, stored.end_date])].sort(compareDates)
+  const from = dates[0] ?? null
+  const to = dates.at(-1) ?? null
+  const span = useMemo(() => (from === null || to === null ? null : { from, to }), [from, to])
   const rules = useAvailabilityRules()
-  const data = useRuleData(span)
+  // The change's own rotation, as the command's gate reads it (D-222): leaves of one rotation read its tags, leaves of
+  // several read none, as `passRuleGate` does.
+  const rotations = new Set(some?.map((leave) => leave.deployment_id))
+  const data = useRuleData(span, rotations.size === 1 ? ([...rotations][0] ?? null) : null)
   const current = useMemo((): Loaded<readonly RuleViolation[]> => {
-    if (changed === null) return NO_CHECK
+    if (some === null) return NO_CHECK
     if (!decided) return LOADING
     if (!readsEverything) return NO_CHECK
     if (rules.status !== 'ready') return rules
     if (rules.value.length === 0) return NO_CHECK
     if (data.status !== 'ready') return data
-    return { status: 'ready', value: leaveViolations(data.value, rules.value, changed) }
-  }, [changed, decided, readsEverything, rules, data])
+    return { status: 'ready', value: leaveViolations(data.value, rules.value, some) }
+  }, [some, decided, readsEverything, rules, data])
   // The last answer, kept from an earlier render (React's "storing information from previous renders"). Compared by
   // value: a form passes a new candidate on every render, and an equal answer must not render again.
   const [last, setLast] = useState<Loaded<readonly RuleViolation[]> | null>(null)
-  if (changed === null) {
+  if (some === null) {
     // A new candidate after none starts loading afresh.
     if (last !== null) setLast(null)
   } else if (current.status === 'ready' && !sameAnswer(current, last)) setLast(current)
@@ -242,6 +259,10 @@ const READS_EVERYTHING: readonly PermissionCheck[] = [
 ]
 
 const NO_VIOLATIONS: readonly RuleViolation[] = []
+
+function listOf(changes: LeaveCandidate | readonly LeaveCandidate[]): readonly LeaveCandidate[] {
+  return 'id' in changes ? [changes] : changes
+}
 
 function sameAnswer(answer: Loaded<readonly RuleViolation[]>, last: Loaded<readonly RuleViolation[]> | null): boolean {
   return answer === last || (last !== null && JSON.stringify(answer) === JSON.stringify(last))

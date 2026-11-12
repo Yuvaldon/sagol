@@ -1,0 +1,119 @@
+name: Production
+
+# Continuous delivery to the production Supabase project (D-280): after Staging passes on main, production
+# gets the same commit's pending migrations and its `commands` function. The owner may also start it by hand.
+# Production holds real data: nothing here deletes, resets or sets secrets, and a pending migration that drops,
+# truncates or deletes without a WHERE stops the run unless the migration carries the explicit marker.
+# No GitHub environment: the values are repository-level, and the main-only rule is the job's own checks below.
+
+on:
+  workflow_run:
+    workflows: [Staging]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      confirm_ref:
+        description: The production project ref, typed again to confirm
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        github.actor == github.repository_owner &&
+        github.triggering_actor == github.repository_owner)
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+      PROJECT_REF: ${{ vars.PRODUCTION_PROJECT_REF }}
+      CONFIRM_REF: ${{ inputs.confirm_ref }}
+      EVENT: ${{ github.event_name }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      GH_TOKEN: ${{ github.token }}
+      DESTRUCTIVE_MARKER: '-- production: destructive change approved'
+    steps:
+      - name: Refuse a commit whose CI did not pass
+        run: |
+          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --commit "$SHA" --event push \
+            --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
+          test "$conclusion" -ge 1 || { echo "::error::CI has not passed on $SHA"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+          fetch-depth: 0
+      - name: Refuse a commit that is not on main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main"; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          LEFTHOOK: '0'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Refuse any project but the exact production ref
+        run: |
+          test -n "$PROJECT_REF" || { echo "::error::PRODUCTION_PROJECT_REF is not set"; exit 1; }
+          if [ "$EVENT" = workflow_dispatch ]; then
+            test "$CONFIRM_REF" = "$PROJECT_REF" || { echo "::error::the typed ref is not PRODUCTION_PROJECT_REF"; exit 1; }
+          fi
+          scripts/supabase-project-guard.sh production /functions /config/database/pooler
+      # No `supabase link`: it needs the revealed API keys, which CD does not (D-289).
+      - name: Migrations (the plan, the destructive-change guard, then the push)
+        run: |
+          db_url=$(scripts/supabase-db-url.sh)
+          echo "::add-mask::$db_url"
+          supabase db push --db-url "$db_url" --workdir . --dry-run 2>&1 | tee "$RUNNER_TEMP/plan.txt"
+          test "${PIPESTATUS[0]}" -eq 0 || exit 1
+          blocked=0
+          for file in $(grep -oE '[0-9]{14}_[A-Za-z0-9_]+\.sql' "$RUNNER_TEMP/plan.txt" | sort -u); do
+            path="supabase/migrations/$file"
+            test -f "$path" || { echo "::error::the plan names $file, which is not in supabase/migrations"; exit 1; }
+            if grep -qF -- "$DESTRUCTIVE_MARKER" "$path"; then
+              echo "::warning::$file carries the destructive-change marker"
+              continue
+            fi
+            found=$(perl -0777 -ne '
+              s/--[^\n]*//g;
+              for my $s (split /;/) {
+                if ($s =~ /\b(DROP\s+TABLE|DROP\s+COLUMN|TRUNCATE)\b/i ||
+                    ($s =~ /\bDELETE\s+FROM\b/i && $s !~ /\bWHERE\b/i)) {
+                  (my $t = $s) =~ s/\s+/ /g; $t =~ s/^ //; print substr($t, 0, 160), "\n";
+                }
+              }' "$path")
+            if [ -n "$found" ]; then
+              echo "::error::$file has a destructive statement and no marker:"
+              echo "$found"
+              blocked=1
+            fi
+          done
+          test "$blocked" -eq 0 || exit 1
+          supabase db push --db-url "$db_url" --workdir .
+      # Runs only when every step above succeeded: a failed db push stops the job before the function changes.
+      - name: The commands function (the bundle of D-209)
+        run: |
+          npm run build:function
+          sha256sum dist/functions/commands/index.ts
+          mkdir -p dist/production/supabase/functions/commands
+          cp dist/functions/commands/index.ts dist/production/supabase/functions/commands/index.ts
+          supabase functions deploy commands --project-ref "$PROJECT_REF" --no-verify-jwt --use-api --workdir dist/production

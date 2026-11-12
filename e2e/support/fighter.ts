@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, openRotation } from './leaves.ts'
-import { enterAsOwner, navigation, openModule, signIn } from './workspace.ts'
+import { addUnit, enterAsOwner, navigation, openModule, signIn } from './workspace.ts'
 
 // What the fighter demos share: the owner's unit, a type, Yael who links on her own, the fighter role as the
 // baseline, and a rotation she serves in (D-167, D-216). Sample data, tests only.
@@ -21,7 +21,7 @@ const SELF_PERMISSIONS: readonly (readonly [string, readonly string[]])[] = [
 export async function signOut(page: Page) {
   await page.getByRole('button', { name: he.account.menu }).click()
   await page.getByRole('menuitem', { name: he.account.signOut }).click()
-  await expect(page).toHaveURL(/\/sign-in$/)
+  await expect(page).toHaveURL(/\/sign-in(\?view=\w+)?$/)
 }
 
 /** The owner's setup: a unit, a type, Yael with the fields auto-link reads, the fighter role as the baseline, a rotation. */
@@ -30,10 +30,7 @@ export async function setUpFighter(page: Page) {
   await enterAsOwner(page)
 
   await openModule(page, he.units.open)
-  await page.getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(UNIT)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(page.getByRole('list', { name: he.units.listLabel }).getByText(UNIT, { exact: true })).toBeVisible()
+  await addUnit(page, UNIT)
   await closeDrawer(page)
 
   await openModule(page, he.leaveTypes.open)
@@ -72,7 +69,7 @@ export async function setUpFighter(page: Page) {
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */
 export async function enterAsYael(page: Page) {
   await signIn(page, YAEL.email)
-  await expect(page).toHaveURL(/\/onboarding$/)
+  await expect(page).toHaveURL(/\/onboarding(\?view=\w+)?$/)
   await page.getByLabel(he.linkRequest.firstName).fill(YAEL.first)
   await page.getByLabel(he.linkRequest.lastName).fill(YAEL.last)
   await page.getByLabel(he.linkRequest.personalId).fill(YAEL.personalId)

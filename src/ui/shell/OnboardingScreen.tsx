@@ -1,6 +1,7 @@
+import { PANEL_IDS } from '@config'
 import type { AppError, AuthIdentity, Issue } from '@contracts'
 import { t } from '@i18n'
-import { claimIssues, timeZoneChoices, useClaimOrganization, useOnboarding, useSignOut } from '@logic'
+import { claimIssues, timeZoneChoices, useClaimOrganization, useOnboarding, usePanel, useSignOut } from '@logic'
 import { useForm } from '@tanstack/react-form'
 import { useMemo, useState } from 'react'
 import { errorKey } from '../errors/messages'
@@ -14,6 +15,7 @@ import { FailureScreen, LoadingScreen } from './states'
 
 function ClaimForm() {
   const { claim, isPending } = useClaimOrganization()
+  const panel = usePanel()
   const choices = useMemo(() => timeZoneChoices(), [])
   const [answered, setAnswered] = useState<readonly Issue[]>([])
   const [failure, setFailure] = useState<AppError | null>(null)
@@ -29,7 +31,11 @@ function ClaimForm() {
       setAnswered([])
       setFailure(null)
       const result = await claim({ ...value, owner_role_name: t('onboarding.ownerRoleName') })
-      if (result.ok) return
+      // The new unit opens on its setup, which offers a template first (D-262).
+      if (result.ok) {
+        panel.open(PANEL_IDS.setup)
+        return
+      }
       if (result.error.code === 'validation_failed') setAnswered(result.error.issues)
       else setFailure(result.error)
     },

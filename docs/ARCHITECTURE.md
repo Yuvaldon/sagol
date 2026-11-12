@@ -86,6 +86,9 @@ The data layer is written as if it were the server:
   development. The production build fails if `VITE_AUTH_MODE=local`. As built (8.4, D-207): Google
   through Supabase Auth (PKCE), always paired with the remote adapter; the composition loads only
   the env's pair (D-210). Deploys: Vercel Preview and Production (D-209).
+- **Deploy marking (D-300):** `VITE_APP_ENV=staging`, set on Vercel for the `staging` branch only, marks the staging
+  deploy: a black band "אתר בדיקות" on every screen, the title "סגול · בדיקות", and an installed app with the bison in
+  black and that name. Production has no such variable and stays unmarked.
 - **Accounts:** `soldier_accounts` links a provider identity to a soldier. Commanders may
   create soldiers with names only (personal ID and email optional). Linking is automatic
   only on personal ID + verified invite email match. Anything else becomes an
@@ -143,7 +146,11 @@ The data layer is written as if it were the server:
 descendants and depth, and rejects cycles. Postgres keeps a trigger-maintained
 `unit_closure` as a derived index. A soldier's unit comes from time-bounded
 `unit_memberships`, so history is kept and attachments or temporary units need no schema
-change.
+change. The claim creates the organization and its root unit from one name (V27, D-251); templates (`config/templates`)
+are applied by `logic/organization/template` as a sequence of the ordinary commands that stops at the first refusal (D-261).
+Quick entry of several soldiers (`logic/roster/quickEntry`, D-282) runs `soldiers.create` once per grid row, saved row by
+row; approving several join requests (`logic/accounts/bulk`, D-283) links each one through its own review, and only a
+single match by personal number.
 
 ## Availability (D-012, D-014, D-070 … D-073)
 
@@ -176,19 +183,26 @@ The current state (D-128):
   rules of a day, the window's conflicts and the live warning of a form (D-141, D-142). Deployments and their members join, archived ones too (D-179).
 - **Deployment commands** (`deployments`, `deployment_members`): a deployment is a unit target, moving it needs
   `update` on both units, and its members are replaced whole under its version (D-179).
-- **Rotations** (D-216 … D-220): every leave names a rotation its soldier serves in on those dates, checked by the
-  commands, the gateway and deferred constraint triggers. `logic/view-state` scopes the workspace to the active or
-  upcoming rotation (`scopeRotation`, `rotationOn`); `useBoardShown` hides the board's controls and request surfaces
-  without one; `defaultDeploymentMembers` fills a new rotation from its unit.
+- **Rotations** (D-216 … D-220, D-257 … D-260, D-221, D-222): every leave names a rotation its soldier serves in on
+  those dates, checked by the commands, the gateway and deferred constraint triggers. One rotation at a time per
+  organization (`deployments_one_at_a_time`); `deployments.close` and `reopen` set and clear `closed_at`, and a closed
+  rotation, its members, rotation tags and requests answer `rotation_closed`. A rotation with no member rows holds its
+  unit's soldiers on their membership days. `logic/view-state` derives the mode (`scopeRotation`: the open rotation
+  holding today, else the next, else the latest ended; NULL is routine, `useRotationScope`); routine keeps the board
+  under its band and hides the requests hub and the day report; `defaultDeploymentMembers` and `startingMembers` fill
+  a new list from the unit or the previous rotation.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
+- **The request sheet** (`leaves.createMany`, `logic/leaves/sheet`, D-275): one soldier's rows, a recurring row expanded
+  in logic, each leave with its own rotation and checked on `leaves.<n>` as `leaves.create` checks one, all or none;
+  the answer's issues land back on their rows.
 - **Day report** (`logic/presence`, D-193 … D-197): `dayReport` partitions a day's population into present and absent,
   marks who leaves and returns by `dayMovements` in `domain`, and breaks it down by unit in the tree's order;
   `reportDays` spans to a last day over the reportable days (D-211); `reportText` writes the message. The reasons
   switch is a device flag (`useDeviceFlag`) in the device store of `data/device`, under `DEVICE_KEYS`, per soldier.
   `ui` draws the image on a canvas (`modules/presence/reportImage.ts`).
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
-  (D-141); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
+  (D-141), and the same breaches beside a calendar day and above the list (`ui/board/breaches.ts`, D-290); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
 ## Filters (shared model)
 
@@ -217,7 +231,9 @@ The current state (D-128):
 Categories and tags are organization data (`tags:*` at `organization`). `soldiers.setTags` replaces a soldier's set with
 `soldiers:update` over the soldier, checks only the tags it adds, keeps one tag of a `single` category, and bumps the
 soldier's version (D-045). A category in use is not archived; switching to `single` is refused while a soldier holds two
-of its tags.
+of its tags. A tag lasts for good (`deployment_id` NULL) or for one rotation, per assignment; the set is replaced one
+scope at a time, and a rotation's effective set is the persistent tags plus its own (D-260, D-221). The board, the
+filters and the heat row read the mode rotation's set; a leave's warning reads its own rotation's (D-222).
 
 ## Leave workflow (D-013, D-063, D-064, D-114 … D-125)
 
@@ -250,8 +266,10 @@ The current state, in short (D-128). The entries hold the reasons.
   side drawer on desktop, bottom sheet on mobile. Navigation is two floating strips that hug their content on every
   screen (V25, D-252): a context strip at the top (scope, range, view, filters) and a destination strip at the bottom
   (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action, "בקשה חדשה", at its inline end. "ניהול יחידה" is
-  a panel from the inline start, grouped by `NAVIGATION_SECTIONS` in `config`, a plain line per module and no pins
-  (D-254). The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
+  a panel from the inline start, a plain line per module and no pins (D-254). From V32 it holds daily work only,
+  grouped by `WORK_SECTIONS` in `config`, with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
+  `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
+  (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
   anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's
   preferences (`useNavigationPreferences`). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
@@ -312,21 +330,24 @@ never reach the client bundle.
   for navigations, and caches no data: the command gateway and auth always go to the network (`config/pwa`).
 - `app/shell` owns the browser APIs (registration through `workbox-window`, the update check, `beforeinstallprompt`)
   behind the `shell` port of `logic`; `useAppUpdate` and `useInstallOffer` read it, and `ui` shows the update
-  toast and the install item. A remote build without a network waits on the offline screen (`mountApp`).
+  toast and the install item. `useInstallInvitation` adds the one-time card after sign-in, answered once per device
+  (D-274). A remote build without a network waits on the offline screen (`mountApp`).
 
 ## Folder structure (target)
 
 ```
 src/
-  contracts/   entities/ inputs/ enums/ filters/ permissions/ repositories/ commands/ auth/ errors/
-  domain/      policy/ hierarchy/ leaves/ accounts/ availability/ filters/ properties/ tags/ issues/ text/
-               json/ time/
-  config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
+  contracts/   auth/ commands/ common/ entities/ enums/ errors/ filters/ inputs/ permissions/ repositories/ settings/
+  domain/      accounts/ availability/ filters/ hierarchy/ issues/ json/ leaves/ policy/ properties/ tags/ text/ time/
+               transfer/ testing/
+  config/      breakpoints/ dates/ env/ icons/ inbox/ leaves/ palette/ panels/ pwa/ remote/ report/ routes/ startup/
+               storage/ templates/ url/ views/
   data/        device/ (web storage for conveniences, D-197)  local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
                remote/ (one POST per call to the gateway, D-204)
                contract-tests/
-  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ board/ timeline/
-               tags/ filters/ presence/ (the day report) device/ rules/ testing/ (test-only helpers, D-135)
+  logic/       access/ accounts/ board/ deployments/ device/ filters/ forms/ home/ leaves/ organization/ permissions/
+               presence/ (the day report) properties/ queries/ roster/ rules/ runtime/ seniority/ session/ shell/ tags/
+               timeline/ transfer/ units/ view-state/ testing/ (test-only helpers, D-135)
   ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)

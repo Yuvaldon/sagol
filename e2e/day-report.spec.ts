@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, OWNER } from './support/workspace.ts'
 
 // V22's demo: the day report opens from a day of the timeline and of the calendar, holds the counts and the names per
 // unit, shows the reasons behind a switch kept on the device, spans days, and leaves as text and as an image, on
@@ -26,6 +26,11 @@ async function selectView(page: Page, name: string) {
   await page.getByRole('button', { name: new RegExp(he.workspace.view) }).click()
   await page.getByRole('menuitemradio', { name }).click()
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('the day report: counts and names, reasons, a span, a text copy and an image', async ({ page, context }, testInfo) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])

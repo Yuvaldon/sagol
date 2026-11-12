@@ -1,11 +1,14 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
-import type { AppError, Deployment, Soldier, Unit } from '@contracts'
+import type { AppError, Deployment, DeploymentMember, Soldier, Unit } from '@contracts'
 import { t } from '@i18n'
 import {
   defaultDeploymentMembers,
   fullName,
   isDeploymentActive,
   liveDeployments,
+  isRotationClosable,
+  previousRotation,
+  startingMembers,
   useDeploymentCommands,
   useDeploymentMembers,
   useDeploymentPermissions,
@@ -16,7 +19,7 @@ import {
   useToday,
   useUnitsWithArchived,
 } from '@logic'
-import { Archive, Plus, Users } from 'lucide-react'
+import { Archive, Lock, LockOpen, Plus, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
@@ -42,7 +45,8 @@ function DeploymentRow({
 }: {
   readonly deployment: Deployment
   readonly unitName: string
-  readonly memberCount: number
+  /** NULL when no list is kept: the whole unit serves (D-259). */
+  readonly memberCount: number | null
   readonly active: boolean
   readonly canUpdate: boolean
   readonly actions: readonly RowAction[]
@@ -58,9 +62,14 @@ function DeploymentRow({
         {active ? (
           <span className="shrink-0 rounded-pill bg-inner px-sm text-micro font-semibold">{t('deployments.active')}</span>
         ) : null}
+        {deployment.closed_at === null ? null : (
+          <span className="shrink-0 rounded-pill bg-inner px-sm text-micro font-semibold">{t('deployments.closed')}</span>
+        )}
       </span>
       <span className="text-micro text-text-muted tabular-nums">
-        {[unitName, span, `${t('deployments.memberCount')} ${String(memberCount)}`].join(PART_SEPARATOR)}
+        {[unitName, span, memberCount === null ? t('deployments.wholeUnit') : `${t('deployments.memberCount')} ${String(memberCount)}`].join(
+          PART_SEPARATOR,
+        )}
       </span>
     </span>
   )
@@ -99,11 +108,14 @@ function DeploymentEditor(props: Omit<DeploymentFormProps, 'onReload'>) {
 
 function MembersEditor({
   deployment,
+  rotations,
   soldiers,
   units,
   onDone,
 }: {
   readonly deployment: Deployment
+  /** The live rotations, to find the one before this. */
+  readonly rotations: readonly Deployment[]
   readonly soldiers: readonly Soldier[]
   readonly units: readonly Unit[]
   readonly onDone: () => void
@@ -125,14 +137,22 @@ function MembersEditor({
       deployment={deployment}
       members={members.value}
       soldiers={choices}
-      // A new rotation starts with the soldiers of its unit who can be chosen (D-219).
-      defaults={defaultDeploymentMembers(deployment, units, memberships.value, choices)}
+      // A new list starts with the previous rotation's soldiers, else those of its unit who can be chosen (D-219, D-222).
+      defaults={startingMembers(
+        previousMembers(deployment, rotations, members.value),
+        defaultDeploymentMembers(deployment, units, memberships.value, choices),
+      ).filter((row) => choices.some((soldier) => soldier.id === row.soldier_id))}
       onDone={onDone}
       onReload={() => {
         setGeneration((current) => current + 1)
       }}
     />
   )
+}
+
+function previousMembers(deployment: Deployment, rotations: readonly Deployment[], members: readonly DeploymentMember[]) {
+  const previous = previousRotation(rotations, deployment)
+  return previous === null ? [] : members.filter((member) => member.deployment_id === previous.id)
 }
 
 function NotFound() {
@@ -179,6 +199,7 @@ export function DeploymentsModule() {
         deployment={null}
         units={units.value}
         today={today}
+        others={live}
         placeable={permissions.createIn}
         onCreated={(created) => {
           setStaffing(created)
@@ -190,7 +211,16 @@ export function DeploymentsModule() {
   if (panel.entity !== null) {
     const deployment = live.find((candidate) => candidate.id === panel.entity)
     if (deployment === undefined) return <NotFound />
-    return <DeploymentEditor key={deployment.id} deployment={deployment} units={units.value} today={today} placeable={permissions.moveTo} />
+    return (
+      <DeploymentEditor
+        key={deployment.id}
+        deployment={deployment}
+        units={units.value}
+        today={today}
+        others={live}
+        placeable={permissions.moveTo}
+      />
+    )
   }
   // The row as stored now, so the editor opens on its current version; a rotation just created is the row the command
   // returned until the list refetches it.
@@ -199,6 +229,7 @@ export function DeploymentsModule() {
     return (
       <MembersEditor
         deployment={staffed}
+        rotations={live}
         soldiers={soldiers.value}
         units={units.value}
         onDone={() => {
@@ -209,7 +240,16 @@ export function DeploymentsModule() {
   }
 
   const unitName = (unit: Unit | undefined) => unit?.name ?? t('deployments.hiddenUnit')
-  const countOf = (deployment: Deployment) => members.value.filter((member) => member.deployment_id === deployment.id).length
+  const countOf = (deployment: Deployment) => {
+    const count = members.value.filter((member) => member.deployment_id === deployment.id).length
+    return count === 0 ? null : count
+  }
+  const lifecycle = (deployment: Deployment, command: typeof commands.close) => {
+    setFailure(null)
+    void command.run(deployment).then((result) => {
+      if (!result.ok) setFailure(result.error)
+    })
+  }
   const newDeployment = () => {
     setFailure(null)
     panel.open(PANEL_IDS.deployments, { entity: NEW_ENTITY })
@@ -224,6 +264,30 @@ export function DeploymentsModule() {
             onAction: () => {
               setFailure(null)
               setStaffing(deployment)
+            },
+          },
+        ]
+      : []),
+    ...(permissions.update(deployment) && isRotationClosable(deployment, today)
+      ? [
+          {
+            id: 'close',
+            labelKey: 'deployments.close' as const,
+            icon: <Lock aria-hidden size={14} />,
+            onAction: () => {
+              lifecycle(deployment, commands.close)
+            },
+          },
+        ]
+      : []),
+    ...(permissions.update(deployment) && deployment.closed_at !== null
+      ? [
+          {
+            id: 'reopen',
+            labelKey: 'deployments.reopen' as const,
+            icon: <LockOpen aria-hidden size={14} />,
+            onAction: () => {
+              lifecycle(deployment, commands.reopen)
             },
           },
         ]

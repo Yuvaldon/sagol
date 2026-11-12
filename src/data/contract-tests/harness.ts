@@ -55,7 +55,7 @@ export interface ContractAdapter {
     readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
-    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'createBatch' | 'duplicate' | 'update' | 'transition'>
+    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'createBatch' | 'createMany' | 'duplicate' | 'update' | 'transition'>
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
     readonly roles: DataCommands['roles']

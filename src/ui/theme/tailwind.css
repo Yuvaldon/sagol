@@ -43,6 +43,9 @@
   --color-brand-light: #9b6bff;
   --color-brand: #5b2bd6;
   --color-brand-deep: #1a0b4a;
+  /* The staging deploy's band and its installed icon (D-300): black, and the band's caption on it. */
+  --color-stage: #000000;
+  --color-on-stage: #ffffff;
   --color-today: #2a2a26;
   /* The column of today on the timeline, a band barely darker than the surface (Stone 3). */
   --color-today-band: rgba(26, 26, 24, 0.035);
@@ -97,6 +100,8 @@
   --spacing-icon: 16px;
   --spacing-control: 30px;
   --spacing-bar: 40px;
+  /* The height of the staging deploy's band at the top of every screen (D-300). */
+  --spacing-stage-band: 24px;
   /* Controls are at least this tall on mobile (OI-033). */
   --spacing-touch: 44px;
   --spacing-list: 240px;
@@ -122,7 +127,7 @@
   --container-menu: 260px;
   --container-drawer: 440px;
   --container-unit-picker: 200px;
-  /* The unit in the top strip gives way down to this, so its name still shows on a narrow phone (D-252). */
+  /* The unit in the top strip gives way down to this, so its name still shows in a narrow window (D-252, D-273). */
   --container-unit-floor: 88px;
 
   --radius-bar: 6px;
@@ -298,10 +303,28 @@
   }
 }
 
+/*
+ * An absence reads as a hole (D-268, D-290): a fine hatch in the shape's own ink (its `text-*` color) over its faint
+ * fill, never a solid block. The angle is the same in both directions; only the color changes with the theme.
+ */
+@utility hatch-absence {
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, currentColor 28%, transparent) 0 1px,
+    transparent 1px 6px
+  );
+}
+
 /* While the filter row shows, content starts under it too (D-131, D-173). */
 [data-filter-row='shown'] {
   --spacing-under-bars: var(--spacing-under-bars-filtered);
   --spacing-under-bars-md: var(--spacing-under-bars-filtered-md);
+}
+
+/* Content already below the bars, such as the board under routine's band (D-222), needs no room for them again. */
+@utility below-bars {
+  --spacing-under-bars: 0px;
+  --spacing-under-bars-md: 0px;
 }
 
 @utility enter-scrim {
@@ -340,6 +363,27 @@
   padding-inline: var(--safe-inline);
 }
 
+/* A full-screen layer below the staging deploy's band (D-300): the whole screen in production. */
+@utility inset-screen {
+  inset-block: var(--stage-band) 0;
+  inset-inline: 0;
+}
+
+/* A centered screen's room around what it holds: a large gap plus the safe area (D-191). */
+@utility frame-safe-lg {
+  padding-block: calc(var(--spacing-lg) + var(--safe-top)) calc(var(--spacing-lg) + var(--safe-bottom));
+  padding-inline: calc(var(--spacing-lg) + var(--safe-inline));
+}
+
+/* The staging deploy's band (D-300): from the screen's top edge, under the notch, to where the safe area now starts. */
+@utility stage-band {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: var(--safe-top);
+  padding-block-start: env(safe-area-inset-top, 0px);
+}
+
 /* Keeps a top notice below the phone's status bar and notch. */
 @utility top-safe {
   top: calc(var(--spacing-lg) + var(--safe-top));
@@ -352,9 +396,15 @@
    * layout stays still and symmetric, at a few pixels' cost.
    */
   :root {
-    --safe-top: env(safe-area-inset-top, 0px);
+    /* The staging deploy's band joins the top inset, so everything placed in the safe area starts below it (D-300). */
+    --stage-band: 0px;
+    --safe-top: calc(env(safe-area-inset-top, 0px) + var(--stage-band));
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-inline: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  }
+
+  :root[data-stage='staging'] {
+    --stage-band: var(--spacing-stage-band);
   }
 
   html {

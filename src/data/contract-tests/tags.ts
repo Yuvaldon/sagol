@@ -1,4 +1,5 @@
 import {
+  DeploymentId,
   SoldierId,
   TagCategoryId,
   TagId,
@@ -14,7 +15,7 @@ import {
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, errorOf, issuesOf, seedActor, valueOf } from './support'
+import { NOW, errorOf, issuesOf, seedActor, seedRotation, valueOf } from './support'
 
 // Tag categories, tags and a soldier's tags against the shared contract (D-130), with denial paths through
 // seeded grants (D-076). Sample data, test files only.
@@ -25,7 +26,7 @@ const newCategoryId = () => TagCategoryId.parse(crypto.randomUUID())
 const newTagId = () => TagId.parse(crypto.randomUUID())
 
 function categoryInput(overrides: Partial<CreateTagCategoryInput> = {}): CreateTagCategoryInput {
-  return { id: newCategoryId(), name: 'Role', selection_mode: 'multiple', color_key: 'teal', sort_order: 0, ...overrides }
+  return { id: newCategoryId(), name: 'Role', selection_mode: 'multiple', default_lifetime: 'persistent', color_key: 'teal', sort_order: 0, ...overrides }
 }
 
 function tagInput(category: TagCategory, overrides: Partial<CreateTagInput> = {}): CreateTagInput {
@@ -40,18 +41,20 @@ const VIEW_UNITS: Permission = { resource: 'units', action: 'view' }
 
 export function describeTagContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
 
   describe('tags', () => {
     let organization: OrganizationId
+    let root: UnitId
     let ownerId: SoldierId
     let owner: AuthIdentity
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
     })
@@ -82,7 +85,7 @@ export function describeTagContract(
       return id
     }
 
-    async function newUnit(name: string, parent_id: UnitId | null = null) {
+    async function newUnit(name: string, parent_id: UnitId | null = root) {
       return valueOf(
         await adapter().commands.units.create({
           id: UnitId.parse(crypto.randomUUID()),
@@ -172,12 +175,12 @@ export function describeTagContract(
         const medic = await createTag(category)
         const driver = await createTag(category, { name: 'Driver' })
         const soldier = await newSoldier()
-        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, tag_ids: [medic.id, driver.id] }))
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, deployment_id: null, tag_ids: [medic.id, driver.id] }))
         const change = { id: category.id, expected_version: 1, changes: { selection_mode: 'single' as const } }
         expect(issuesOf(await adapter().commands.tag_categories.update(change))).toEqual([
           { path: ['changes', 'selection_mode'], code: 'tag_single_selection' },
         ])
-        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, tag_ids: [medic.id] }))
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, deployment_id: null, tag_ids: [medic.id] }))
         expect(valueOf(await adapter().commands.tag_categories.update(change)).selection_mode).toBe('single')
       })
 
@@ -213,7 +216,7 @@ export function describeTagContract(
           })
         })
         const rows = valueOf(
-          await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, tag_ids: [medic.id, driver.id] }),
+          await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, deployment_id: null, tag_ids: [medic.id, driver.id] }),
         )
         expect(rows.map((row) => row.tag_id)).toEqual([medic.id, driver.id])
         expect(rows[0]).toMatchObject({ soldier_id: soldier, organization_id: organization, created_at: NOW, created_by: ownerId })
@@ -222,10 +225,42 @@ export function describeTagContract(
         expect(stored).toMatchObject({ version: 2, updated_by: ownerId })
         expect((await heard).map((change) => change.table).sort()).toEqual(['soldier_tags', 'soldiers'])
 
-        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, tag_ids: [driver.id] }))
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, deployment_id: null, tag_ids: [driver.id] }))
         expect(await tagsOf(soldier)).toEqual([driver.id])
-        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 3, tag_ids: [] }))
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 3, deployment_id: null, tag_ids: [] }))
         expect(await tagsOf(soldier)).toEqual([])
+      })
+
+      it('keeps a rotation set apart from the persistent one, each holding single on its own (D-221)', async () => {
+        const category = await createCategory({ selection_mode: 'single' })
+        const medic = await createTag(category)
+        const driver = await createTag(category, { name: 'Driver' })
+        const soldier = await newSoldier()
+        const rotation = await seedRotation(harnessOf(), organization)
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, deployment_id: null, tag_ids: [medic.id] }))
+        const scoped = valueOf(
+          await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, deployment_id: rotation, tag_ids: [driver.id] }),
+        )
+        expect(scoped.map((row) => [row.tag_id, row.deployment_id])).toEqual([[driver.id, rotation]])
+        const rows = valueOf(await adapter().repositories.soldier_tags.list({ soldier_ids: [soldier] }))
+        expect(new Set(rows.map((row) => `${row.tag_id}|${row.deployment_id ?? ''}`))).toEqual(
+          new Set([`${medic.id}|`, `${driver.id}|${rotation}`]),
+        )
+
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 3, deployment_id: rotation, tag_ids: [] }))
+        expect(await tagsOf(soldier)).toEqual([medic.id])
+      })
+
+      it('refuses a rotation that is unknown or closed (D-221)', async () => {
+        const category = await createCategory()
+        const medic = await createTag(category)
+        const soldier = await newSoldier()
+        const set = (deployment_id: DeploymentId) =>
+          adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, deployment_id, tag_ids: [medic.id] })
+        expect(issuesOf(await set(DeploymentId.parse(crypto.randomUUID())))).toEqual([{ path: ['deployment_id'], code: 'reference_not_found' }])
+        const rotation = await seedRotation(harnessOf(), organization)
+        valueOf(await adapter().commands.deployments.close({ id: rotation, expected_version: 1 }))
+        expect(issuesOf(await set(rotation))).toEqual([{ path: ['deployment_id'], code: 'rotation_closed' }])
       })
 
       it('answers stale_version for an old version and writes nothing', async () => {
@@ -233,7 +268,7 @@ export function describeTagContract(
         const medic = await createTag(category)
         const soldier = await newSoldier()
         expect(
-          errorOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 9, tag_ids: [medic.id] })).code,
+          errorOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 9, deployment_id: null, tag_ids: [medic.id] })).code,
         ).toBe('stale_version')
         expect(await harnessOf().rows('soldier_tags')).toEqual([])
       })
@@ -246,7 +281,7 @@ export function describeTagContract(
         const old = await createTag(skills, { name: 'Old' })
         valueOf(await adapter().commands.tags.archive({ id: old.id, expected_version: 1 }))
         const soldier = await newSoldier()
-        const set = (tag_ids: TagId[], expected_version = 1) => adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version, tag_ids })
+        const set = (tag_ids: TagId[], expected_version = 1) => adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version, deployment_id: null, tag_ids })
 
         expect(issuesOf(await set([newTagId()]))).toEqual([{ path: ['tag_ids', 0], code: 'reference_not_found' }])
         expect(issuesOf(await set([single.id, old.id]))).toEqual([{ path: ['tag_ids', 1], code: 'reference_archived' }])
@@ -259,9 +294,9 @@ export function describeTagContract(
         const medic = await createTag(category)
         const driver = await createTag(category, { name: 'Driver' })
         const soldier = await newSoldier()
-        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, tag_ids: [medic.id] }))
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, deployment_id: null, tag_ids: [medic.id] }))
         valueOf(await adapter().commands.tags.archive({ id: medic.id, expected_version: 1 }))
-        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, tag_ids: [medic.id, driver.id] }))
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, deployment_id: null, tag_ids: [medic.id, driver.id] }))
         expect(new Set(await tagsOf(soldier))).toEqual(new Set([medic.id, driver.id]))
       })
 
@@ -270,7 +305,7 @@ export function describeTagContract(
         const medic = await createTag(category)
         const soldier = await newSoldier()
         valueOf(await adapter().commands.soldiers.archive({ id: soldier, expected_version: 1 }))
-        expect(issuesOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, tag_ids: [medic.id] }))).toEqual([
+        expect(issuesOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 2, deployment_id: null, tag_ids: [medic.id] }))).toEqual([
           { path: [], code: 'archived' },
         ])
       })
@@ -283,24 +318,24 @@ export function describeTagContract(
         const platoonB = await newUnit('Platoon B', company.id)
         const mine = await newSoldier(platoonA.id)
         const theirs = await newSoldier(platoonB.id)
-        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: theirs, expected_version: 1, tag_ids: [medic.id] }))
+        valueOf(await adapter().commands.soldiers.setTags({ soldier_id: theirs, expected_version: 1, deployment_id: null, tag_ids: [medic.id] }))
         const scope = { anchor_type: 'unit', anchor_unit_id: platoonA.id, include_descendants: true } as const
 
         const viewer = await seedActor(harnessOf(), organization, [VIEW_SOLDIERS, VIEW_TAGS, VIEW_UNITS], scope, platoonA.id)
         harnessOf().signIn(viewer.identity)
-        expect(errorOf(await adapter().commands.soldiers.setTags({ soldier_id: mine, expected_version: 1, tag_ids: [medic.id] })).code).toBe(
+        expect(errorOf(await adapter().commands.soldiers.setTags({ soldier_id: mine, expected_version: 1, deployment_id: null, tag_ids: [medic.id] })).code).toBe(
           'forbidden',
         )
         // A soldier the actor cannot see answers not_found, and their tags are not read (D-046).
         expect(
-          errorOf(await adapter().commands.soldiers.setTags({ soldier_id: theirs, expected_version: 2, tag_ids: [] })).code,
+          errorOf(await adapter().commands.soldiers.setTags({ soldier_id: theirs, expected_version: 2, deployment_id: null, tag_ids: [] })).code,
         ).toBe('not_found')
         expect(valueOf(await adapter().repositories.soldier_tags.list({ soldier_ids: null }))).toEqual([])
 
         harnessOf().signIn(owner)
         const editor = await seedActor(harnessOf(), organization, [VIEW_SOLDIERS, UPDATE_SOLDIERS, VIEW_TAGS], scope, platoonA.id)
         harnessOf().signIn(editor.identity)
-        expect(valueOf(await adapter().commands.soldiers.setTags({ soldier_id: mine, expected_version: 1, tag_ids: [medic.id] }))).toHaveLength(1)
+        expect(valueOf(await adapter().commands.soldiers.setTags({ soldier_id: mine, expected_version: 1, deployment_id: null, tag_ids: [medic.id] }))).toHaveLength(1)
         expect(await versionOf(mine)).toBe(2)
       })
 
@@ -310,7 +345,7 @@ export function describeTagContract(
         const soldier = await newSoldier()
         const blind = await seedActor(harnessOf(), organization, [VIEW_SOLDIERS, UPDATE_SOLDIERS], { anchor_type: 'organization' })
         harnessOf().signIn(blind.identity)
-        expect(issuesOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, tag_ids: [medic.id] }))).toEqual([
+        expect(issuesOf(await adapter().commands.soldiers.setTags({ soldier_id: soldier, expected_version: 1, deployment_id: null, tag_ids: [medic.id] }))).toEqual([
           { path: ['tag_ids', 0], code: 'reference_not_found' },
         ])
       })

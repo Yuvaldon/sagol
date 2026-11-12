@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation, OWNER } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, navigation, openBoardOnTimeline, OWNER } from './support/workspace.ts'
 
 // The layout checks: the two strips fit on one line in every shape of screen, center on their edges and leave the
 // board its room (D-252), what can be pressed sits inside the safe area while the canvas paints edge to edge
@@ -36,6 +36,11 @@ async function overrideSafeArea(page: Page, insets: typeof UPRIGHT_INSETS) {
   const session = await page.context().newCDPSession(page)
   await session.send('Emulation.setSafeAreaInsetsOverride', { insets })
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('the bars fit on one line, the page never scrolls sideways, and the board keeps its room', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
@@ -88,6 +93,21 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     for (const strip of strips) {
       expect(Math.abs(strip.left - (viewport.width - strip.right)), `${strip.name} is off center`).toBeLessThanOrEqual(2)
     }
+  })
+
+  await test.step('a phone, upright or on its side, keeps the sort in the view menu; a desktop gives it its own button', async () => {
+    const strip = page.getByRole('navigation', { name: he.workspace.viewBar })
+    const sortButton = strip.getByRole('button', { name: he.workspace.sort, exact: true })
+    const sortKeys = page.getByRole('menu').getByRole('group', { name: he.workspace.sortBy })
+    if (testInfo.project.name !== 'desktop') {
+      await expect(sortButton).toHaveCount(0)
+      await strip.getByRole('button', { name: new RegExp(`^${he.workspace.view} `) }).click()
+    } else {
+      await sortButton.click()
+    }
+    await expect(sortKeys.getByRole('menuitemradio')).toHaveCount(5)
+    await page.keyboard.press('Escape')
+    await expect(sortKeys).toHaveCount(0)
   })
 
   await expectNoAxeViolations(page)

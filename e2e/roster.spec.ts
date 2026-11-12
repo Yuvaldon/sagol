@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V2's demo: ranks and soldiers, from a name to a unit history, on desktop and mobile, RTL, with axe.
 // Sample data, tests only.
@@ -34,7 +34,10 @@ async function openSoldiers(page: Page) {
 }
 
 async function openRanks(page: Page) {
-  await page.getByRole('button', { name: he.soldiers.tabRanks }).click()
+  // The ranks are their own module of the setup (D-285): whatever drawer is open closes first.
+  const close = page.getByRole('button', { name: he.common.close })
+  if (await close.isVisible()) await close.click()
+  await openModule(page, he.commandRanks.open)
   await expect(page.getByLabel(he.commandRanks.name).or(page.getByText(he.commandRanks.emptyTitle)).or(rankList(page)).first()).toBeVisible()
 }
 
@@ -53,10 +56,7 @@ async function createRank(page: Page, title: string, seniority?: string) {
 async function createUnits(page: Page, ...names: string[]) {
   await openModule(page, he.units.open)
   for (const name of names) {
-    await page.getByRole('button', { name: he.units.new }).first().click()
-    await page.getByLabel(he.units.name).fill(name)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(page.getByRole('list', { name: he.units.listLabel }).getByText(name, { exact: true })).toBeVisible()
+    await addUnit(page, name)
   }
   await closeDrawer(page)
 }
@@ -172,7 +172,8 @@ test('ranks: most senior first, editable, and kept while someone holds them', as
   await page.getByRole('button', { name: he.common.save }).click()
   await expect.poll(async () => (await titles())[0]).toBe('מפקד מחלקה')
 
-  await page.getByRole('button', { name: he.soldiers.tabList }).click()
+  await closeDrawer(page)
+  await openSoldiers(page)
   await startNewSoldier(page, 'אורי', 'כהן')
   await choose(page, he.soldiers.rank, 'לוחם')
   await page.getByRole('button', { name: he.common.create }).click()

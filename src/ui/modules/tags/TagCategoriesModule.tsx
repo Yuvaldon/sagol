@@ -1,5 +1,5 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
-import type { AppError, TagCategory, TagSelectionMode } from '@contracts'
+import type { AppError, TagCategory, TagLifetime, TagSelectionMode } from '@contracts'
 import { t } from '@i18n'
 import {
   NEW_TAG_CATEGORY_VALUES,
@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
+import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -29,32 +30,44 @@ import { toneOf } from '../../theme/palette'
 // The categories section of the tags drawer (D-130): an ordered list, each with its color and selection mode. Up
 // and down in the row menu set the order, as for leave type groups (D-113).
 
-const CATEGORY_FIELDS: readonly string[] = ['name', 'selection_mode', 'color_key']
+const CATEGORY_FIELDS: readonly string[] = ['name', 'selection_mode', 'default_lifetime', 'color_key']
 
 const MODE_OPTIONS: readonly SelectOption<TagSelectionMode>[] = [
   { key: 'multiple', label: { key: 'tagCategories.selectionMultiple' }, value: 'multiple' },
   { key: 'single', label: { key: 'tagCategories.selectionSingle' }, value: 'single' },
 ]
 
+/** What assigning a tag of the category pre-selects: kept, or for the open rotation only (D-260, D-222). */
+const LIFETIME_OPTIONS: readonly SelectOption<TagLifetime>[] = [
+  { key: 'persistent', label: { key: 'soldiers.tagLifetimePersistent' }, value: 'persistent' },
+  { key: 'rotation', label: { key: 'tagCategories.lifetimeRotation' }, value: 'rotation' },
+]
+
 function CategoryForm({
   category,
   categories,
   onReload,
+  onDone,
+  initialName,
 }: {
   readonly category: TagCategory | null
   readonly categories: readonly TagCategory[]
-  readonly onReload: () => void
+  readonly onReload?: () => void
+  /** Made in place (D-285): gets what was saved, or null when left; the panel stays where it is. */
+  readonly onDone?: (saved: TagCategory | null) => void
+  readonly initialName?: string | undefined
 }) {
   const panel = usePanel()
   const { create, update } = useTagCategoryCommands()
   const [opened] = useState(category)
   const [state, setState] = useState(CLEAN_FORM)
   const backToList = () => {
-    panel.open(PANEL_IDS.tagCategories)
+    if (onDone === undefined) panel.open(PANEL_IDS.tagCategories)
+    else onDone(null)
   }
 
   const form = useForm({
-    defaultValues: opened === null ? NEW_TAG_CATEGORY_VALUES : tagCategoryFormValues(opened),
+    defaultValues: opened === null ? { ...NEW_TAG_CATEGORY_VALUES, name: initialName ?? NEW_TAG_CATEGORY_VALUES.name } : tagCategoryFormValues(opened),
     validators: { onSubmit: ({ value }) => validatorResult(tagCategoryFormIssues(value)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
@@ -62,8 +75,10 @@ function CategoryForm({
         opened === null
           ? await create.run({ values: value, all: categories })
           : await update.run({ category: opened, openedVersion: opened.version, values: value })
-      if (result.ok) backToList()
-      else setState(formStateOf(result.error, CATEGORY_FIELDS))
+      if (result.ok) {
+        if (onDone === undefined) backToList()
+        else onDone(result.value)
+      } else setState(formStateOf(result.error, CATEGORY_FIELDS))
     },
   })
 
@@ -99,6 +114,18 @@ function CategoryForm({
             name={field.name}
             value={field.state.value}
             options={MODE_OPTIONS}
+            onChange={field.handleChange}
+            error={fieldError(field.state.meta.errors, field.name, state.answered)}
+          />
+        )}
+      </form.Field>
+      <form.Field name="default_lifetime">
+        {(field) => (
+          <SelectField
+            labelKey="tagCategories.defaultLifetime"
+            name={field.name}
+            value={field.state.value}
+            options={LIFETIME_OPTIONS}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
           />
@@ -273,5 +300,42 @@ export function TagCategoriesModule() {
         />
       )}
     </div>
+  )
+}
+
+/** A tag category made from another form's field (D-285): the module's own form and command over the drawer. The field takes
+ * what was saved; who may not create one reads that it is missing. */
+export function TagCategoryInPlace({
+  isMissing,
+  initialName,
+  onCreated,
+}: {
+  readonly isMissing: boolean
+  /** What the name starts as: the first category of a unit is offered with a name already in it (D-285). */
+  readonly initialName?: string | undefined
+  readonly onCreated: (category: TagCategory) => void
+}) {
+  const permissions = useTagPermissions()
+  const categories = useTagCategories()
+  return (
+    <CreateInPlace labelKey="tagCategories.new" canCreate={permissions.create} isMissing={isMissing}>
+      {(close) =>
+        categories.status === 'ready' ? (
+          <CategoryForm
+            category={null}
+            categories={categories.value}
+            initialName={initialName}
+            onDone={(saved) => {
+              close()
+              if (saved !== null) onCreated(saved)
+            }}
+          />
+        ) : categories.status === 'failed' ? (
+          <FailureNotice error={categories.error} />
+        ) : (
+          <LoadingNotice />
+        )
+      }
+    </CreateInPlace>
   )
 }

@@ -27,8 +27,10 @@ export const DEVICE_KEYS = {
   dayReportReasons: `${STORAGE_PREFIX}.day-report-reasons`,
   /** The last home chosen differs from the one the permissions give (D-265). */
   homeAway: `${STORAGE_PREFIX}.home-away`,
-  /** Focus mode, for the browser session (D-272). */
+  /** Focus mode, for the browser session (D-301). */
   focusMode: `${STORAGE_PREFIX}.focus-mode`,
+  /** The install offer after sign-in was answered, by installing or by "not now" (D-274). */
+  installAnswered: `${STORAGE_PREFIX}.install-answered`,
 } as const
 
 export type DeviceKey = (typeof DEVICE_KEYS)[keyof typeof DEVICE_KEYS]

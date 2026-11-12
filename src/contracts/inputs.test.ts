@@ -74,6 +74,8 @@ const COMMAND_FIELDS = new Set([
   'transition',
   'account_id',
   'access_grant_id',
+  'root_unit_id',
+  'membership_id',
   'owner_role',
   'organization',
   'soldier',
@@ -146,6 +148,7 @@ const INPUT_TABLES: Record<string, Target> = {
   ReorderLeaveTypesInput: { table: 'leave_types', nested: { items: 'leave_types' } },
   CreateLeaveInput: { table: 'leaves', nested: { comment: 'leave_comments' } },
   CreateLeaveBatchInput: { table: 'leaves', nested: { batch: 'leave_batches', leaves: 'leaves' } },
+  CreateLeavesInput: { table: 'leaves', nested: { leaves: 'leaves' } },
   DuplicateLeaveInput: { table: 'leaves', nested: { copies: 'leaves' } },
   UpdateLeaveInput: { table: 'leaves' },
   TransitionLeaveInput: { table: 'leaves', nested: { comment: 'leave_comments' } },
@@ -155,6 +158,8 @@ const INPUT_TABLES: Record<string, Target> = {
   CreateDeploymentInput: { table: 'deployments' },
   UpdateDeploymentInput: { table: 'deployments' },
   ArchiveDeploymentInput: { table: 'deployments' },
+  CloseDeploymentInput: { table: 'deployments' },
+  ReopenDeploymentInput: { table: 'deployments' },
   SetDeploymentMembersInput: { table: 'deployment_members', nested: { members: 'deployment_members' } },
   CreateAvailabilityRuleInput: { table: 'availability_rules' },
   UpdateAvailabilityRuleInput: { table: 'availability_rules' },
@@ -363,7 +368,7 @@ describe('row checks on inputs', () => {
       IssueCode.enum.duplicate_item,
     ])
     expect(ReorderTagsInput.safeParse({ items: [] }).success).toBe(false)
-    const tags = { soldier_id: ID.a, expected_version: 1, tag_ids: [ID.b, ID.b] }
+    const tags = { soldier_id: ID.a, expected_version: 1, deployment_id: null, tag_ids: [ID.b, ID.b] }
     expect(messages(SetSoldierTagsInput.safeParse(tags))).toEqual([IssueCode.enum.duplicate_item])
   })
 

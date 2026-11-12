@@ -326,9 +326,11 @@ describe('unit permissions (D-089)', () => {
     })
     const { result } = renderHook(() => useUnitPermissions(ALL), { wrapper: wrapperOf(fake.ports) })
     await waitFor(() => {
-      expect(result.current.createUnder(null)).toBe(true)
+      expect(result.current.update(COMPANY)).toBe(true)
     })
-    expect(result.current.update(COMPANY)).toBe(true)
+    // The company is the root, so nothing is placed beside it, though the organization allows it (D-251).
+    expect(result.current.createUnder(null)).toBe(false)
+    expect(result.current.moveTo(null)).toBe(false)
     expect(result.current.update(PLATOON_A)).toBe(true)
     expect(result.current.update(PLATOON_B)).toBe(false)
     expect(result.current.createUnder(PLATOON_A.id)).toBe(true)

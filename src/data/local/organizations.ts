@@ -1,10 +1,12 @@
 import {
   BootstrapOwnerInput,
+  MembershipType,
   UpdateOrganizationInput,
   PERMISSION_ACTIONS_BY_RESOURCE,
   ScopeAnchorType,
   SoldierStatus,
   SubjectRankConstraint,
+  UnitKind,
   type AsyncResult,
   type AuthIdentity,
   type DataCommands,
@@ -13,7 +15,7 @@ import {
   type Organization,
   type Session,
 } from '@contracts'
-import { can, timeZoneIssues, withPathPrefix } from '@domain'
+import { can, timeZoneIssues, todayIn, withPathPrefix } from '@domain'
 import { tableOf } from './store'
 import { createdBy, type LocalDependencies } from './dependencies'
 import { holds, loadActorScope, requirePermission } from './actor'
@@ -54,6 +56,32 @@ async function writeBootstrap(
     command_rank_id: null,
     status: SoldierStatus.enum.active,
     properties: {},
+    ...createdBy(soldierId, now),
+  })
+  // The root unit carries the organization's name (D-251); the owner is placed in it from today on its clock.
+  const rootUnit = parsedRow('units', {
+    id: input.root_unit_id,
+    organization_id: organizationId,
+    name: input.organization.name,
+    code: null,
+    parent_id: null,
+    unit_level_id: null,
+    kind: UnitKind.enum.standing,
+    valid_from: null,
+    valid_to: null,
+    color_key: null,
+    sort_order: 0,
+    properties: {},
+    ...createdBy(soldierId, now),
+  })
+  const membership = parsedRow('unit_memberships', {
+    id: input.membership_id,
+    organization_id: organizationId,
+    soldier_id: soldierId,
+    unit_id: input.root_unit_id,
+    membership_type: MembershipType.enum.primary,
+    valid_from: todayIn(input.organization.timezone, now),
+    valid_to: null,
     ...createdBy(soldierId, now),
   })
   const account = parsedRow('soldier_accounts', {
@@ -106,6 +134,8 @@ async function writeBootstrap(
 
     await tableOf(database, 'organizations').add(organization)
     await tableOf(database, 'soldiers').add(soldier)
+    await tableOf(database, 'units').add(rootUnit)
+    await tableOf(database, 'unit_memberships').add(membership)
     await tableOf(database, 'soldier_accounts').add(account)
     await tableOf(database, 'roles').add(role)
     await tableOf(database, 'role_permissions').bulkAdd(permissions)
@@ -195,6 +225,8 @@ export function createOrganizationCommands(
         dependencies.changes.publish([
           { table: 'organizations', ids: [input.organization.id] },
           { table: 'soldiers', ids: [input.soldier.id] },
+          { table: 'units', ids: [input.root_unit_id] },
+          { table: 'unit_memberships', ids: [input.membership_id] },
           { table: 'soldier_accounts', ids: [input.account_id] },
           { table: 'roles', ids: [input.owner_role.id] },
           { table: 'role_permissions', ids: [input.owner_role.id] },

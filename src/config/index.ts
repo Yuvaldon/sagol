@@ -6,9 +6,13 @@ export { TOOLTIP } from './tooltip'
 export { FOCUS_MODE } from './focus'
 export {
   ADAPTER_OF_AUTH_MODE,
+  APP_STAGES,
+  AppStage,
   ENV_VARIABLES,
   EnvSchema,
+  isStaging,
   parseEnv,
+  type AppStageName,
   type Env,
   type EnvIssue,
   type EnvIssueCode,
@@ -20,6 +24,7 @@ export {
 export { CHANGE_FEED_CHANNEL, DEVICE_KEYS, INDEXED_DB_NAME, STORAGE_KEYS, type DeviceKey, type StorageKey } from './storage'
 export { INBOX, MINE } from './inbox'
 export { DAY_REPORT, DAY_REPORT_CATEGORIES, type DayReportCategory } from './report'
+export { LEAVE_SHEET } from './leaves'
 export { PWA } from './pwa'
 export { REMOTE } from './remote'
 export { ROUTES, type RoutePath } from './routes'
@@ -34,7 +39,7 @@ export {
   DEFAULT_BOARD_SORT_KEY,
   DEFAULT_RANGE_KIND,
   DEFAULT_SORT_ORDER,
-  DEFAULT_VIEW_ID,
+  DEFAULT_VIEW_BY_DEVICE,
   RANGE_KINDS,
   RangeKind,
   SORT_ORDERS,
@@ -53,12 +58,16 @@ export {
 export {
   DRAG_ACTIVATION_PX,
   DROP_EDGE_FRACTION,
-  NAVIGATION_SECTIONS,
   NEW_ENTITY,
+  QUICK_ENTRY,
   PANEL_IDS,
+  SETUP_SECTIONS,
   SETUP_STEPS,
+  type SetupPanel,
+  type SetupSectionId,
   type SetupStepId,
-  type NavigationSectionId,
+  WORK_SECTIONS,
+  type WorkSectionId,
   PanelId,
   TRANSFER_FILES,
   SHEET_DISMISS,
@@ -73,6 +82,30 @@ export {
   DESKTOP_MEDIA_QUERY,
   type Breakpoint,
 } from './breakpoints'
-export { PALETTE_KEYS, PaletteKey, isPaletteKey } from './palette'
+export {
+  IMPORTED_LEAVE_TYPE_STAND_IN,
+  LEAVE_TYPE_PALETTE_KEYS,
+  PALETTE_KEYS,
+  PaletteKey,
+  isLeaveTypePaletteKey,
+  isPaletteKey,
+} from './palette'
 export { ICON_KEYS, IconKeyName, isIconKey } from './icons'
 export { DATE_FORMATS, DATE_LOCALE, FIRST_DAY_OF_WEEK, MAX_TIMER_DELAY_MS, type DateFormat } from './dates'
+export {
+  COMPANY_TEMPLATE,
+  EMPTY_TEMPLATE,
+  UNIT_TEMPLATE_IDS,
+  UNIT_TEMPLATES,
+  type TemplateBinding,
+  type TemplateCount,
+  type TemplateLeaveGroup,
+  type TemplatePermissions,
+  type TemplateRank,
+  type TemplateRole,
+  type TemplateRule,
+  type TemplateStructure,
+  type TemplateTagCategory,
+  type UnitTemplate,
+  type UnitTemplateId,
+} from './templates'

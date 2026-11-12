@@ -14,7 +14,7 @@ export interface EntityFormProps {
   readonly isPending: boolean
   readonly failure: AppError | null
   /** Someone else changed the row: offers to continue from their version (D-012). */
-  readonly onReload?: () => void
+  readonly onReload?: (() => void) | undefined
   readonly onSubmit: () => void
   readonly onCancel: () => void
   readonly children: ReactNode

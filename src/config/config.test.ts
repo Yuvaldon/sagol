@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AuthMode, ColorKey, DataAdapterMode, IconKey, NavigationModule } from '@contracts'
+import { AuthMode, ColorKey, DataAdapterMode, IconKey } from '@contracts'
 import {
   ADAPTER_OF_AUTH_MODE,
   BAR_COLOR_MODES,
@@ -8,10 +8,13 @@ import {
   DATE_FORMATS,
   DATE_LOCALE,
   DEFAULT_BAR_COLOR_MODE,
-  DEFAULT_VIEW_ID,
+  DEFAULT_VIEW_BY_DEVICE,
+  LEAVE_TYPE_PALETTE_KEYS,
+  isLeaveTypePaletteKey,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
-  NAVIGATION_SECTIONS,
+  SETUP_SECTIONS,
+  WORK_SECTIONS,
   ENV_VARIABLES,
   ICON_KEYS,
   INDEXED_DB_NAME,
@@ -25,12 +28,14 @@ import {
   TIMELINE_DRAG,
   TIMELINE_LANES,
   TIMELINE_LANES_TOUCH,
+  UNIT_TEMPLATES,
   TIMELINE_DENSITY,
   TIMELINE_LAYOUT,
   VIEW_IDS,
   ViewId,
   isIconKey,
   isPaletteKey,
+  isStaging,
   parseEnv,
 } from './index'
 
@@ -115,6 +120,18 @@ describe('env', () => {
     })
   })
 
+  it('marks staging only for its exact stage name (D-300)', () => {
+    expect(isStaging({ ...REMOTE, VITE_APP_ENV: 'staging' })).toBe(true)
+    expect(isStaging(REMOTE)).toBe(false)
+    expect(isStaging({ ...REMOTE, VITE_APP_ENV: 'Staging' })).toBe(false)
+    expect(parseEnv({ ...REMOTE, VITE_APP_ENV: 'staging' }, PROD).ok).toBe(true)
+    expect(parseEnv({ ...REMOTE, VITE_APP_ENV: '' }, PROD).ok).toBe(true)
+    expect(parseEnv({ ...REMOTE, VITE_APP_ENV: 'prod' }, PROD)).toEqual({
+      ok: false,
+      issues: [{ variable: 'VITE_APP_ENV', code: 'invalid' }],
+    })
+  })
+
   it('refuses a development-only auth mode in production only', () => {
     expect(parseEnv(LOCAL, DEV).ok).toBe(true)
     expect(parseEnv(LOCAL, PROD)).toEqual({
@@ -151,6 +168,11 @@ describe('palette', () => {
     expect(isPaletteKey('teal')).toBe(true)
     expect(isPaletteKey('Teal')).toBe(false)
     expect(isPaletteKey('')).toBe(false)
+  })
+
+  it('gives every template leave type a key a leave type may take (D-290)', () => {
+    for (const template of Object.values(UNIT_TEMPLATES))
+      for (const group of template.leaveGroups) for (const type of group.types) expect(isLeaveTypePaletteKey(type.color)).toBe(true)
   })
 })
 
@@ -191,9 +213,19 @@ describe('views, url, storage, breakpoints, dates', () => {
     expect(TIMELINE_DRAG.holdTolerancePx).toBeGreaterThan(0)
   })
 
-  it('has a default view that is a view id', () => {
-    expect(VIEW_IDS).toContain(DEFAULT_VIEW_ID)
+  it('has a default view per device that is a view id (D-290)', () => {
+    expect(VIEW_IDS).toContain(DEFAULT_VIEW_BY_DEVICE.desktop)
+    expect(VIEW_IDS).toContain(DEFAULT_VIEW_BY_DEVICE.phone)
     expect(ViewId.safeParse('gantt').success).toBe(false)
+  })
+
+  it('offers a leave type no green, so green never means away (D-268, D-290)', () => {
+    expect(LEAVE_TYPE_PALETTE_KEYS).not.toContain('green')
+    expect(LEAVE_TYPE_PALETTE_KEYS).not.toContain('lime')
+    expect(LEAVE_TYPE_PALETTE_KEYS).toContain('red')
+    expect(isLeaveTypePaletteKey('green')).toBe(false)
+    expect(isLeaveTypePaletteKey('blue')).toBe(true)
+    expect(isLeaveTypePaletteKey('nope')).toBe(false)
   })
 
   it('has unique URL parameter names', () => {
@@ -228,9 +260,11 @@ describe('panels (D-092)', () => {
     expect(PanelId.safeParse('nothing').success).toBe(false)
   })
 
-  it('places every navigation module in exactly one section (D-173)', () => {
-    const placed = NAVIGATION_SECTIONS.flatMap((section) => section.modules)
-    expect([...placed].sort()).toEqual([...NavigationModule.options].sort())
+  it('places each work module and each setup panel once (D-285)', () => {
+    const work = WORK_SECTIONS.flatMap((section) => section.modules)
+    expect(new Set(work).size).toBe(work.length)
+    const setup = SETUP_SECTIONS.flatMap((section) => section.panels)
+    expect(new Set(setup).size).toBe(setup.length)
   })
 
   it('gives each setup step its own panel (D-180)', () => {

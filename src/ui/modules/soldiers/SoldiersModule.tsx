@@ -1,5 +1,5 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
-import type { AppError, CalendarDate, CommandRank, Soldier, Unit, UnitMembership } from '@contracts'
+import { NEW_ENTITY, PANEL_IDS, QUICK_ENTRY } from '@config'
+import type { AppError, CalendarDate, CommandRank, Soldier, Unit, UnitId, UnitMembership } from '@contracts'
 import { t } from '@i18n'
 import {
   fullName,
@@ -15,7 +15,7 @@ import {
   useUnitsWithArchived,
   type SoldierRow,
 } from '@logic'
-import { Archive, Plus } from 'lucide-react'
+import { Archive, Plus, Rows3 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
@@ -27,6 +27,7 @@ import { Button } from '../../primitives/Button'
 import { TextField } from '../../primitives/fields'
 import { swatchClassOf } from '../../theme/palette'
 import { SoldierCreateForm } from './SoldierForms'
+import { QuickEntry } from './QuickEntry'
 import { SoldierPage } from './SoldierPage'
 
 // The soldiers panel: a searchable list, a new soldier's form, or one soldier's page (D-094).
@@ -86,6 +87,19 @@ function SoldiersContent({
     setFailure(null)
     panel.open(PANEL_IDS.soldiers, { entity: NEW_ENTITY })
   }
+  // The quick entry places every row with its private details (D-282, D-223): only units that allow both are offered.
+  const quickUnit = (unitId: UnitId) => permissions.placeIn(unitId) && permissions.privateOnCreate(unitId)
+  const quickEntry = today !== null && liveUnits.some((unit) => quickUnit(unit.id))
+  const openQuickEntry = () => {
+    setFailure(null)
+    panel.open(PANEL_IDS.soldiers, { entity: QUICK_ENTRY })
+  }
+  const quickButton = quickEntry ? (
+    <Button onPress={openQuickEntry}>
+      <Rows3 aria-hidden size={14} />
+      {t('soldiers.quick.open')}
+    </Button>
+  ) : null
 
   // A deep link opens only what the actor may use; anything else reads as not found (D-076).
   if (panel.entity === NEW_ENTITY && permissions.create) {
@@ -99,6 +113,9 @@ function SoldiersContent({
         allowPrivate={permissions.privateOnCreate}
       />
     )
+  }
+  if (panel.entity === QUICK_ENTRY && quickEntry && today !== null) {
+    return <QuickEntry units={liveUnits} today={today} allowedUnit={quickUnit} />
   }
   if (panel.entity !== null) {
     const soldier = soldiers.find((candidate) => candidate.id === panel.entity)
@@ -128,6 +145,7 @@ function SoldiersContent({
             {t('soldiers.new')}
           </Button>
         ) : null}
+        {quickButton}
       </EmptyNotice>
     )
   }
@@ -159,6 +177,7 @@ function SoldiersContent({
             {t('soldiers.new')}
           </Button>
         ) : null}
+        {quickButton}
       </div>
       {failure === null ? null : <FailureNotice error={failure} />}
       {shown.length === 0 ? (

@@ -92,7 +92,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Workspace (D-023, D-108, D-189, D-252):** a `surface` panel on the `canvas`, filled by the active engine. Two glass
   strips float over it and hug their content, centered, on every screen and orientation (V25): the context strip at the
   top (the scope label, the range, the view, the filter and sort controls, the avatar) and the destination strip at the
-  bottom (לוח, שלי, בקשות, דוח 1, ניהול, then the role's quick action). The organization's name is the page's `h1`, read
+  bottom (לוח, שלי, בקשות, דוח 1, ניהול, then the role's quick action). On a phone the top strip fits without
+  scrolling (D-273): the sort's sections sit in the view menu, the unit picker is its icon, and a single unit is not
+  shown. The organization's name is the page's `h1`, read
   aloud only. Content starts under the top strip (`under-bars`, `under-bars-md`, `under-bars-filtered`), ends above the
   bottom one (`above-bottom-bar`), and scrolls under the glass. A structure that differs by screen uses `useIsDesktop`;
   anything else is CSS.
@@ -112,8 +114,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   row sits on `canvas`. Days a row is out of the selected unit are muted with `inner` and read aloud as ranges.
   Positions are inline offsets from the core, so RTL needs no mirroring.
 - **Leaves on the timeline (D-111, D-112):** sizes come from `TIMELINE_LANES` in `config`: bars 20 high, inset 3 inside
-  their days, a lane step of 24. A bar is its type's color: solid when approved, a 2 px dashed edge over a faint fill when
-  pending, square on a side the window cuts. A marker is a 20 px round badge on `surface` with its icon, on each day,
+  their days, a lane step of 24. Absence is a hole (D-290): an approved bar is hatched from its type's color over a faint
+  fill with its edge, a pending one a 2 px dashed edge over the surface, square on a side the window cuts; the caption is
+  the body text. A round (a leave in a batch) is a band of the row's full height under the request bars, outside the
+  lanes. No leave type is green or lime, so green never means away. A marker is a 20 px round badge on `surface` with its icon, on each day,
   over any bar. Overlaps take lanes, and a row grows by a lane step for each lane beyond the first. In the uniform mode
   every bar is `absence`, with a dot of the type's color and its name inside, and badges are `marker`.
 - **The other views (D-174):** each fills the same frame under the bars, a focusable region named for the view. The
@@ -122,6 +126,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   columns from `md` and one day per line below it; a day's heading holds its weekday, its number (today in the dark
   pill) and how many are out, then a chip per leave with the soldier's name. A chip is a `pill` of `text-label`, a dot of
   the leave's color, solid edge when approved and dashed in the type's edge color when pending.
+  A day that breaks a rule shows a count beside its heading, and the list shows the window's broken days above its
+  rows; each opens the rules of its day in the heat row's tones (D-290). With no view in the link, desktop opens on the
+  timeline and a phone on the list.
 - **Lanes on a phone (D-144, OI-067):** `TIMELINE_LANES_TOUCH` makes bars 28 high with a lane step of 44, so a bar's hit
   area is 44 high and a badge's 44 wide; a row of one lane stays 44.
 - **A mark is a control (D-119):** a bar is a button named by its type, its status and its days, and it opens the leave.
@@ -139,8 +146,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   may create a request while the screen has a rotation; it replaced the floating "+". "פתיחת סבב" in routine comes with
   V26.
 - **ניהול יחידה (D-173, D-254):** "ניהול", the last destination, opens a `glass-drawer` panel from the inline start (the
-  right), at most `sheet` wide, the full height, on every screen. "הקמת היחידה" first while unfinished, then its groups,
-  each a muted heading over its rows: היחידה, נוכחות, פרטי חיילים, הרשאות, נתונים. A row is the module's icon, name, one
+  right), at most `sheet` wide, as tall as its rows up to the screen and scrolling past it (D-278), on every screen. It
+  holds daily work only (from V32, D-285): the setup's progress as a callout while unfinished, then its groups, each a muted
+  heading over its rows: אנשים, נוכחות; and at its foot one quiet row, "הגדרות היחידה", that opens setup. A row is the module's icon, name, one
   plain line and its waiting count; pressing it closes the panel and opens the module, whose deep link is unchanged. No
   pins. A row the viewer may not open is absent; with nothing to show, the panel and its destination are absent. The
   destination carries the sum of the panel's waiting counts.
@@ -169,7 +177,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Outside the workspace:** one `glass-card` centered on the canvas (`CenteredSheet`), at most `sheet`
   420 wide.
 - **Management modules (D-092):** `Drawer`, one surface in two forms. From `md` it is modal, at most `drawer`
-  440 wide, on the inline end (the left), leaving the name column of the timeline in sight. Below `md` it is a
+  440 wide, on the inline end (the left), as tall as its content up to the screen (D-278), leaving the name column of the timeline in sight. Below `md` it is a
   bottom sheet up to 88% of the height, which also closes by dragging its grip down. Both close by Escape, the
   scrim and the close button, and enter with a short slide that `prefers-reduced-motion` turns off.
 - **What is open lives in the URL:** `panel`, `entity` and, for a new unit, `parent` (`usePanel`). A panel shows
@@ -228,6 +236,13 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   (an open end allowed). Without a live unit the empty notice says a unit comes first.
 - **`DeploymentMembersForm`**: a `CheckList` of soldiers, then a row per member with two optional dates inside the
   deployment's days.
+- **The new-leave drawer is the sheet (D-275):** the soldier, then a bordered group per request ("בקשה 1", "בקשה 2", ...)
+  with its type, from and to, reason, and a "חוזרת" switch that opens "כל כמה ימים" and "חוזרת עד תאריך"; an X removes a
+  row while there is more than one, and "בקשה נוספת" adds one. Below the rows: פרטים נוספים, "approve now", and one rules
+  warning over every leave the sheet would create.
+- **The install card (D-274):** once after sign-in, a glass card above the bottom bar, clear of the top bar, "אפשר להתקין את סגול במכשיר
+  הזה" with "התקנה" and "לא עכשיו"; never on the sign-in screen or in the installed app, and gone on that device once
+  answered.
 - **The new-leave drawer** has a "collective leave" switch when there is more than one soldier to choose; the
   `LeaveBatchForm` has a name, a `CheckList` of soldiers, the type and the days. **`LeaveDuplicateForm`** opens from a
   leave's drawer: soldiers, days, and "approve now" only for who approves all of them.
@@ -239,7 +254,12 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **`SetupModule`** (`ui/modules/setup`): a drawer with an intro, "X of Y steps done" (a status line), and an
   ordered list of the steps the actor may do. Each row has a number (a check once done), the step's title and
   explanation, "done" or "not yet" in words, and an "open" button to the step's own module.
-- It opens first in "ניהול יחידה" and from the empty board, as its one action (V25).
+- It opens first in "ניהול יחידה" and from the empty board, as its one action (V25). From V32 it is the first section
+  of "הגדרות היחידה", with its progress as a callout in "ניהול יחידה" (D-285).
+- **Template sheet** (V27, D-262): a fresh unit, the root alone, first sees pick, adjust, done; "סיום" runs the
+  template's commands and closes the drawer on the board in routine. A stop part way says where, above the checklist.
+- **Quick entry and bulk approval** (V27, D-282, D-283): "הוספה מהירה" in the soldiers list is a grid with a paste box,
+  one unit from today, saved row by row; "אישור הנבחרות" in the join requests links only a single match by personal number.
 
 ## Installed app (V18, D-182 … D-185)
 
@@ -307,10 +327,10 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 |-----------------|------------|----------|--------------------------|
 | ארגון | the tenant (`organizations`) | hide: the root unit's name, or "היחידה" | nowhere |
 | כל הארגון (scope, rule target) | the whole tenant | rename: the root unit's name; a rule's target "כל היחידה" | scope picker, rules |
-| הקמת הארגון | the setup | rename: הקמת היחידה | ניהול יחידה, while unfinished |
+| הקמת הארגון | the setup | rename: הקמת היחידה | from V32: הגדרות היחידה, while unfinished; its progress in ניהול יחידה (D-285) |
 | יחידה | `units` | keep | everywhere |
 | דרג / רמת יחידה | `unit_levels` | rename: סוג יחידה (פלוגה, מחלקה, כיתה) | מבנה היחידה |
-| דרגה | `command_ranks` | rename: דרג פיקודי (מ"פ, מ"מ, מ"כ, לוחם) | חיילים, הרשאות, the soldier's card |
+| דרגה | `command_ranks` | rename: דרג פיקודי (מ"פ, מ"מ, מ"כ, לוחם) | from V32: הגדרות היחידה › מבנה, הרשאות, the soldier's card |
 | חייל | `soldiers` | keep | everywhere |
 | תפקיד / תפקידים | `roles` | rename: רמת הרשאה / רמות הרשאה | הרשאות |
 | שיוך דרגה לתפקיד | `rank_role_bindings` | rename: הרשאות לפי דרג פיקודי | הרשאות |
@@ -328,8 +348,8 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 | כללים | `availability_rules` | rename: כללי נוכחות | נוכחות |
 | סבב / סבבים | `deployments` | keep (D-212) | top strip, סבבים |
 | תגית / תגיות | `tags` | keep | soldier's card, filter, תגיות |
-| קטגוריה | `tag_categories` | keep, inside תגיות only | תגיות |
-| מאפיינים | `property_definitions` | rename: פרטים נוספים | פרטי חיילים, the soldier's card |
+| קטגוריה | `tag_categories` | keep, advanced only (D-285) | from V32: הגדרות היחידה › מתקדם; a tag's form |
+| מאפיינים | `property_definitions` | rename: פרטים נוספים | from V32: "שדות נוספים" in הגדרות היחידה (the definitions), "פרטים נוספים" on the soldier's card (the values) (D-285) |
 | בכירות / ותק | effective seniority | merge: ותק | sort, the soldier's card |
 | שיבוץ | `unit_memberships` | keep: שיבוץ ליחידה | the soldier's card |
 | שיוך (tagging) | `soldier_tags` | rename: תיוג | the soldier's card |
@@ -349,9 +369,9 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 - **The rule (D-256):** one entry per destination, plus one primary quick action per role.
 - **Profile (avatar):** name · appearance (light or dark, the rules row's place) · install · identity switch (local) ·
   sign-out.
-- **ניהול יחידה:** הקמת היחידה (while unfinished) · היחידה: מבנה היחידה, חיילים, סבבים · נוכחות: סוגי היעדרות, כללי
-  נוכחות · פרטי חיילים: תגיות, פרטים נוספים · הרשאות: רמות הרשאה, הרשאות אישיות, בקשות הצטרפות · נתונים: ייבוא
-  וייצוא. No pins.
+- **ניהול יחידה (work, from V32, D-285):** the setup's progress (while unfinished) · אנשים: חיילים, בקשות הצטרפות, הרשאות
+  אישיות · נוכחות: סבבים, כללי נוכחות · then "הגדרות היחידה". No pins. Setup is laid out in "Work and unit setup"
+  below.
 - **Home (D-265):** who approves or manages someone lands on the board at their widest scope; everyone else on
   "שלי". One press apart; the last choice is remembered on the device; a link that names a panel or view wins.
 - **שלי:** my next days, in or out · my requests, open and history, with their status. A new request starts from the
@@ -402,10 +422,11 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
    extension.
 
 **(c) A soldier requests an absence.**
-1. "בקשה חדשה", the strip's quick action. The soldier is the requester (a commander may pick another).
+1. The soldier lands on "שלי" (D-265); closed, it leaves the strip, whose quick action is "בקשה חדשה". The soldier is the requester (a commander may pick another).
 2. Type (by group), from and to (inside the rotation by default), the reason when the type needs one, and any פרטים
-   נוספים; the rules' warnings show as the dates change.
-3. Send. The request shows in "שלי" as pending, and on the board as pending (dashed until V29's language, D-268).
+   נוספים; the rules' warnings show as the dates change. "בקשה נוספת" adds a row of its own type and days, and "חוזרת"
+   repeats a row every so many days (D-275).
+3. Send. The request shows in "שלי" as pending, and on the board as pending (a dashed edge, D-290).
 
 **(d) A commander approves.**
 1. The commander lands on the board; the בקשות destination carries the count awaiting approval; open it.
@@ -427,11 +448,12 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 | No overlap per organization | exclusion constraint (V26) | |
 | Upcoming, running, ended | | today against the dates |
 | Closed (explicit, reversible) | `closed_at`, `closed_by` (V26) | |
-| The mode of the screen | | the rotation holding today, else the nearest upcoming, else the latest open, else שגרה |
+| The mode of the screen | | of the rotations not closed: the one holding today, else the nearest upcoming, else the latest ended, else שגרה (D-222) |
 | A feature's context | each card says: rotation, routine or both | |
 | Who is in it | member rows, only for a list | no rows: the unit's soldiers for its days |
 | A tag's lifetime (persistent or this rotation) | `soldier_tags.deployment_id` (V26), per assignment | |
 | The lifetime pre-selected when assigning | `tag_categories.default_lifetime` (V26) | |
+| Rotation tags from the previous rotation | | "כמו בסבב הקודם" on the soldier's card, per soldier (D-222) |
 
 ### Templates (D-261, D-262)
 
@@ -440,6 +462,42 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 categories "הכשרות" (נהג, חובש, קשר, נגביסט, מטול) with colors, and a category "תפקיד בסבב" whose tags default to this rotation; absence types
 in groups (בית: יציאה הביתה, יציאה מיוחדת; בריאות: מחלה, גימלים; אחר: קורס, אירוע משפחתי); rule defaults sized to a
 company. V27 fixes the exact lists and colors in config.
+
+## Work and unit setup (V32, D-284, D-285)
+
+Daily work and one-time configuration live apart. A concept's definition sits in setup; its use sits on the object at
+work. Every section and row shows only what the viewer may open (the module's `isAllowed`); a place with nothing allowed
+is absent. The owner sees everything because the owner role holds every permission (D-079).
+
+| Place | Section | Rows |
+|-------|---------|------|
+| ניהול יחידה (work) | callout | the setup's progress, "X מתוך Y", and the next step, while unfinished |
+| | אנשים | חיילים · בקשות הצטרפות · הרשאות אישיות |
+| | נוכחות | סבבים · כללי נוכחות |
+| | foot | הגדרות היחידה (one quiet row) |
+| הגדרות היחידה (setup) | הקמת היחידה | the checklist (D-180), while unfinished; the next step marked |
+| | מבנה | מבנה היחידה (with סוגי יחידה) · דרגים פיקודיים |
+| | הרשאות | רמות הרשאה (with הרשאות לפי דרג פיקודי) |
+| | קטלוגים | סוגי היעדרות (with their groups) · תגיות · שדות נוספים |
+| | נתונים | ייבוא וייצוא |
+| | מתקדם | קטגוריות תגיות |
+
+- **Setup's surface:** the same `glass-drawer` panel as "ניהול יחידה" on every screen, its rows replaced by setup's,
+  with a back arrow in its header; the deep link of each module is unchanged.
+- **Names:** the definitions of extra details are "שדות נוספים" in setup; their values on a card stay "פרטים נוספים".
+- **Moved out of tabs:** command levels leave the soldiers module for "מבנה"; tag categories leave the tags module for
+  "מתקדם". Unit types stay a tab of the structure, permission bindings a tab of the permission levels, absence groups a
+  tab of the absence types: each is part of the same definition.
+- **On the person (work):** the soldier's card holds their tags, their extra details and their access: the permission
+  levels granted to them, a grant and a revoke for who may manage access (the same commands as "הרשאות אישיות").
+- **In place, not a dead end:** a select whose list is empty, or lacks what is needed, ends with "+ חדש" for who may
+  create it (a unit type, a command level, a tag, an absence type, a tag category): the module's own form in a
+  popover, and the new item is chosen on save. A permission level opens its form and returns. For who may not create it, the empty
+  field says "עוד לא הוגדר" and who sets it up.
+- **A tag without categories:** the tag's form chooses the first live category and lets it change; with none, the
+  category field offers the in-place creation with "כללי" filled in, saved before the tag.
+- **Templates (D-262):** every template, the empty one too, starts the unit with tag categories; the empty one with
+  "צבאי" and "אזרחי" (V27).
 
 ## Patterns of a module
 
@@ -528,7 +586,7 @@ company. V27 fixes the exact lists and colors in config.
 | Engine registry, `TimelineEngine`, `ListEngine`, `TableEngine`, `CalendarEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter, the others as adapters |
 | `BoardEngine`, `EngineScroller`, `LeaveChip` | `ui/board` | What every engine shares: the frame and its states, the scroller region, a leave as a chip |
 | `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
-| `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the new-leave form and its "+" |
+| `LeaveTypesModule`, `LeaveTypeGroupsModule`, `LeavesModule`, `LeaveSheetForm`, `NewLeaveButton` | `ui/modules`, `ui/shell` | Leave types by group, the request sheet (D-275) and its "+" |
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |
 | `PendingRequestsModule`, `ClosedLeavesModule` | `ui/modules/leaves` | The requests inbox |
 | `MyLeavesModule` | `ui/modules/leaves` | The actor's own requests, open and history (D-167) |

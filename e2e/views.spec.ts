@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, requestLeave, openRotationInNewUnit } from './support/leaves.ts'
+import { NOW, board, closeDrawer, createType, requestLeave, openRotationInNewUnit } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
 
 // V13's demo: the list, the table and the calendar show the same soldiers and leaves as the timeline, from the
@@ -19,7 +19,7 @@ function region(page: Page, name: string) {
   return page.getByRole('region', { name })
 }
 
-test('the list, the table and the calendar show the board\'s leaves', async ({ page }) => {
+test('the list, the table and the calendar show the board\'s leaves', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
@@ -35,8 +35,11 @@ test('the list, the table and the calendar show the board\'s leaves', async ({ p
   })
 
   await test.step('the list: a row for the soldier, with their leaves and dates', async () => {
+    // A phone opens on the list and a desktop on the timeline, and the address names only a view chosen over it (D-290).
+    await expect(isMobile ? region(page, he.engines.listLabel) : board(page)).toBeVisible()
     await selectView(page, he.workspace.views.list)
-    await expect(page).toHaveURL(/view=list/)
+    // Choosing the view already shown changes nothing, so a phone's link stays bare (D-290).
+    if (!isMobile) await expect(page).toHaveURL(/view=list/)
     const list = region(page, he.engines.listLabel)
     await expect(list.getByRole('button', { name: OWNER.name })).toBeVisible()
     await expect(list.getByRole('button', { name: REGULAR })).toBeVisible()

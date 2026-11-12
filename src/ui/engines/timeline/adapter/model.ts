@@ -1,10 +1,11 @@
 import type { BarColorMode } from '@config'
-import { RuleEnforcement, type CalendarDate, type SoldierId } from '@contracts'
+import type { CalendarDate, SoldierId } from '@contracts'
 import { t } from '@i18n'
 import { dayRangeOf, fullName, type HeatDay, type BoardItem, type BoardLeave } from '@logic'
 import { formatDate } from '../../../patterns/dates'
 import { ICON_GLYPHS, iconOf } from '../../../theme/icons'
-import { toneOf } from '../../../theme/palette'
+import { leaveTypeToneOf } from '../../../theme/palette'
+import { breachLabel } from '../../../board/breaches'
 import { TEXT_SEPARATOR, groupLabel, leaveText, leaveTone, rangeText, typeName } from '../../../board/labels'
 import { assignLanes } from '../core/lanes'
 import { spansOf } from '../core/layout'
@@ -93,10 +94,10 @@ function markOf(
 ): TimelineMark {
   const badge = leave.effect === 'available'
   const uniform = colors === 'uniform'
-  const typeTone = toneOf(leave.type?.color_key ?? null)
+  const typeTone = leaveTypeToneOf(leave.type?.color_key ?? null)
   return {
     key: leave.id,
-    kind: badge ? 'badge' : 'bar',
+    kind: badge ? 'badge' : leave.layer === 'round' ? 'band' : 'bar',
     start,
     length,
     cut,
@@ -115,19 +116,24 @@ function markOf(
   }
 }
 
-/** Bars and badges take lanes apart: a badge sits over a bar, as in Stone 3 (D-111). */
+/**
+ * Bars and badges take lanes apart: a badge sits over a bar, as in Stone 3 (D-111). A round's absence is a band under
+ * them all and takes no lane (D-268); its markers are badges like any other.
+ */
 function marksOf(leaves: readonly BoardLeave[], days: readonly CalendarDate[], options: TimelineMarkOptions) {
   const placed = leaves.flatMap((leave) => {
     const at = placeInWindow(leave, days)
     return at === null ? [] : [at]
   })
-  const bars = placed.filter((item) => item.leave.effect !== 'available')
+  const bands = placed.filter((item) => item.leave.effect !== 'available' && item.leave.layer === 'round')
+  const bars = placed.filter((item) => item.leave.effect !== 'available' && item.leave.layer === 'request')
   const badges = placed.filter((item) => item.leave.effect === 'available')
   const barLanes = assignLanes(bars)
   const badgeLanes = assignLanes(badges)
   const [first] = days
   if (first === undefined) return { marks: [], lanes: 1 }
   const marks = [
+    ...bands.map((item) => markOf(item, 0, first, options)),
     ...bars.map((item, index) => markOf(item, barLanes.lanes[index] ?? 0, first, options)),
     ...badges.map((item, index) => markOf(item, badgeLanes.lanes[index] ?? 0, first, options)),
   ]
@@ -171,12 +177,11 @@ export function heatCells(
 ): TimelineHeatCell[] {
   return heat.map((day) => {
     const tone = day.worst ?? 'none'
-    const worstKey = day.worst === RuleEnforcement.enum.hard ? 'rules.heatHard' : 'rules.heatSoft'
     return {
       key: day.date,
       tone,
       count: day.broken === 0 ? null : String(day.broken),
-      label: [formatDate(day.date, 'dayMonth'), `${String(day.broken)} ${t('rules.heatBroken')}`, t(worstKey)].join(TEXT_SEPARATOR),
+      label: breachLabel(day),
       onOpen:
         day.broken === 0
           ? null

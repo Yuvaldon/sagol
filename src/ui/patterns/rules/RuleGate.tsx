@@ -10,7 +10,7 @@ import type { RuleGate } from './ruleAnswer'
 // a soft rule it names is acknowledged here and the same command goes again with the ids; a hard rule is shown with
 // no way through.
 
-const OVERLAY = 'enter-scrim fixed inset-none flex items-center justify-center bg-scrim p-lg'
+const OVERLAY = 'enter-scrim fixed inset-screen flex items-center justify-center bg-scrim p-lg'
 const SURFACE = 'glass-menu flex max-h-full w-full max-w-sheet flex-col rounded-panel p-lg'
 const BODY = 'flex min-h-none flex-col gap-md overflow-y-auto outline-none'
 
@@ -66,7 +66,14 @@ export function RuleGateDialog({ gate, isPending }: { readonly gate: RuleGate; r
  * What the change would break, while the form is filled (D-142). Nothing while it breaks nothing; a line while the
  * rules are read, or when they cannot be, since only an answer may say "nothing broken" (OI-099).
  */
-export function RuleWarnings({ candidate, stored = null }: { readonly candidate: LeaveCandidate | null; readonly stored?: Leave | null }) {
+export function RuleWarnings({
+  candidate,
+  stored = null,
+}: {
+  /** The leave the form would write, or every leave a sheet would (D-275). */
+  readonly candidate: LeaveCandidate | readonly LeaveCandidate[] | null
+  readonly stored?: Leave | null
+}) {
   const check = useLeaveRuleCheck(candidate, stored)
   if (check.status !== 'ready') {
     return (

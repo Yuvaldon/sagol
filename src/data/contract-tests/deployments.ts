@@ -14,6 +14,7 @@ import {
   type OrganizationId,
   type Permission,
 } from "@contracts";
+import { LEAVE_SHEET } from "@config";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ContractHarness } from "./harness";
 import {
@@ -30,10 +31,17 @@ import {
 // D-029, D-049, D-179). Sample data, test files only.
 
 const LAST_WEEK = "2026-11-01";
+const YESTERDAY = "2026-11-07";
 const TODAY = "2026-11-08";
 const TOMORROW = "2026-11-09";
 const MID_MONTH = "2026-11-15";
 const MONTH_END = "2026-11-30";
+const EARLIER_START = "2025-06-01";
+const EARLIER_END = "2025-06-10";
+const BEFORE_NARROW = "2025-07-01";
+const NARROW_DAY = "2025-07-02";
+const ELSEWHERE_DAY = "2025-08-01";
+const NEXT_MONTH = "2026-12-01";
 
 const newDeploymentId = () => DeploymentId.parse(crypto.randomUUID());
 const newOverrideId = () => SeniorityOverrideId.parse(crypto.randomUUID());
@@ -46,7 +54,7 @@ const pair = (resource: Permission["resource"], action: Permission["action"]) =>
 export function describeDeploymentContract(
   harnessOf: () => ContractHarness,
   claim: () => Promise<{
-    input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } };
+    input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId };
     owner: AuthIdentity;
   }>,
 ): void {
@@ -54,12 +62,14 @@ export function describeDeploymentContract(
 
   describe("deployments, seniority and leaves together", () => {
     let organization: OrganizationId;
+    let root: UnitId;
     let ownerId: SoldierId;
     let owner: AuthIdentity;
 
     beforeEach(async () => {
       const claimed = await claim();
       organization = claimed.input.organization.id;
+      root = claimed.input.root_unit_id;
       ownerId = claimed.input.soldier.id;
       owner = claimed.owner;
     });
@@ -68,7 +78,7 @@ export function describeDeploymentContract(
       return valueOf(
         await adapter().commands.units.create({
           id: UnitId.parse(crypto.randomUUID()),
-          parent_id: null,
+          parent_id: root,
           sort_order: 0,
           name,
           code: null,
@@ -124,7 +134,7 @@ export function describeDeploymentContract(
         const company = await unit("Company");
         const early = valueOf(
           await adapter().commands.deployments.create(
-            deploymentInput(company.id, { name: "Early" }),
+            deploymentInput(company.id, { name: "Early", end_date: YESTERDAY }),
           ),
         );
         const late = valueOf(
@@ -145,7 +155,7 @@ export function describeDeploymentContract(
         expect(listed.map((row) => row.id)).toEqual([late.id, early.id]);
 
         const unknown = await adapter().commands.deployments.create(
-          deploymentInput(UnitId.parse(crypto.randomUUID())),
+          deploymentInput(UnitId.parse(crypto.randomUUID()), { start_date: NEXT_MONTH, end_date: null }),
         );
         expect(issuesOf(unknown)).toEqual([
           { path: ["unit_id"], code: "reference_not_found" },
@@ -160,7 +170,7 @@ export function describeDeploymentContract(
         expect(
           issuesOf(
             await adapter().commands.deployments.create(
-              deploymentInput(gone.id),
+              deploymentInput(gone.id, { start_date: NEXT_MONTH, end_date: null }),
             ),
           ),
         ).toEqual([{ path: ["unit_id"], code: "reference_archived" }]);
@@ -404,6 +414,86 @@ export function describeDeploymentContract(
       });
     });
 
+    describe("rotation mode (D-221)", () => {
+      it("closes on today, refuses changes while closed, and reopens", async () => {
+        const company = await unit("Company");
+        const rotation = valueOf(
+          await adapter().commands.deployments.create(
+            deploymentInput(company.id, { end_date: null }),
+          ),
+        );
+        const closed = valueOf(
+          await adapter().commands.deployments.close({ id: rotation.id, expected_version: 1 }),
+        );
+        expect(closed).toMatchObject({ end_date: TODAY, closed_at: NOW, closed_by: ownerId, version: 2 });
+        expect(
+          issuesOf(await adapter().commands.deployments.close({ id: rotation.id, expected_version: 2 })),
+        ).toEqual([{ path: ["id"], code: "rotation_closed" }]);
+        expect(
+          issuesOf(
+            await adapter().commands.deployments.update({
+              id: rotation.id,
+              expected_version: 2,
+              changes: { name: "Renamed" },
+            }),
+          ),
+        ).toEqual([{ path: ["changes"], code: "rotation_closed" }]);
+        expect(
+          issuesOf(
+            await adapter().commands.deployments.setMembers({
+              deployment_id: rotation.id,
+              expected_version: 2,
+              members: [],
+            }),
+          ),
+        ).toEqual([{ path: ["deployment_id"], code: "rotation_closed" }]);
+
+        const reopened = valueOf(
+          await adapter().commands.deployments.reopen({ id: rotation.id, expected_version: 2 }),
+        );
+        expect(reopened).toMatchObject({ end_date: TODAY, closed_at: null, closed_by: null, version: 3 });
+        expect(
+          issuesOf(await adapter().commands.deployments.reopen({ id: rotation.id, expected_version: 3 })),
+        ).toEqual([{ path: ["id"], code: "invalid_value" }]);
+      });
+
+      it("refuses to close a rotation whose planned end is still ahead", async () => {
+        const company = await unit("Company");
+        const rotation = valueOf(
+          await adapter().commands.deployments.create(deploymentInput(company.id)),
+        );
+        expect(
+          issuesOf(await adapter().commands.deployments.close({ id: rotation.id, expected_version: 1 })),
+        ).toEqual([{ path: ["id"], code: "rotation_not_ended" }]);
+      });
+
+      it("holds one live rotation at a time, archived ones aside", async () => {
+        const company = await unit("Company");
+        const other = await unit("Other");
+        const first = valueOf(
+          await adapter().commands.deployments.create(deploymentInput(company.id)),
+        );
+        expect(
+          issuesOf(
+            await adapter().commands.deployments.create(
+              deploymentInput(other.id, { start_date: MID_MONTH, end_date: null }),
+            ),
+          ),
+        ).toEqual([{ path: ["start_date"], code: "rotation_overlap" }]);
+        valueOf(
+          await adapter().commands.deployments.create(
+            deploymentInput(other.id, { start_date: NEXT_MONTH, end_date: null }),
+          ),
+        );
+        valueOf(await adapter().commands.deployments.archive({ id: first.id, expected_version: 1 }));
+        valueOf(
+          await adapter().commands.deployments.create(
+            deploymentInput(company.id, { start_date: MID_MONTH, end_date: MONTH_END }),
+          ),
+        );
+      });
+    });
+
     describe("seniority overrides (D-029, D-179)", () => {
       function overrideInput(
         soldier_id: SoldierId,
@@ -532,7 +622,7 @@ export function describeDeploymentContract(
       const serve = (...soldier_ids: SoldierId[]) =>
         seedServing(harnessOf(), organization, rotation, soldier_ids);
 
-      async function leaveType() {
+      async function leaveType(requires_reason = false) {
         return valueOf(
           await adapter().commands.leave_types.create({
             id: LeaveTypeId.parse(crypto.randomUUID()),
@@ -541,7 +631,7 @@ export function describeDeploymentContract(
             color_key: "teal",
             icon_key: null,
             availability_effect: "unavailable",
-            requires_reason: false,
+            requires_reason,
             sort_order: 0,
           }),
         );
@@ -606,6 +696,83 @@ export function describeDeploymentContract(
         expect(await harnessOf().rows("leave_batches")).toHaveLength(1);
       });
 
+      const single = (leave: ReturnType<typeof draft>): CreateLeaveInput => ({
+        ...leave,
+        deployment_id: rotation,
+        as_approved: false,
+        acknowledged_rule_ids: [],
+        comment: null,
+      });
+
+      it("takes a request of the whole unit from its memberships in the unit's subtree (D-221)", async () => {
+        const type = await leaveType();
+        const { unit_id } = valueOf(await adapter().repositories.deployments.get(rotation));
+        const inside = await soldier(unit_id, "Avi");
+        const outside = await soldier(null, "Ben");
+        valueOf(await adapter().commands.leaves.create(single(draft(inside.id, type.id))));
+        expect(
+          issuesOf(await adapter().commands.leaves.create(single(draft(outside.id, type.id)))),
+        ).toEqual([{ path: ["soldier_id"], code: "not_a_member" }]);
+      });
+
+      it("refuses a move that strands a request of the whole unit (D-216, D-221)", async () => {
+        const type = await leaveType();
+        const { unit_id } = valueOf(await adapter().repositories.deployments.get(rotation));
+        const inside = await soldier(unit_id, "Avi");
+        valueOf(await adapter().commands.leaves.create(single(draft(inside.id, type.id))));
+        const [membership] = (await harnessOf().rows("unit_memberships")).filter((row) => row.soldier_id === inside.id);
+        if (membership === undefined) throw new Error("no membership");
+        const leaving = await adapter().commands.soldiers.changeMembership({
+          soldier_id: inside.id,
+          effective_date: TOMORROW,
+          current_membership: { id: membership.id, expected_version: membership.version },
+          new_membership: null,
+        });
+        expect(issuesOf(leaving)).toEqual([{ path: ["effective_date"], code: "leaves_outside_rotation" }]);
+        expect((await harnessOf().rows("unit_memberships")).find((row) => row.id === membership.id)?.valid_to).toBeNull();
+      });
+
+      it("takes no new request, edit or transition in a closed rotation (D-221)", async () => {
+        const type = await leaveType();
+        const member = await soldier(null, "Avi");
+        await serve(member.id);
+        const leave = valueOf(
+          await adapter().commands.leaves.create(
+            single({ ...draft(member.id, type.id), start_date: LAST_WEEK, end_date: LAST_WEEK }),
+          ),
+        );
+        valueOf(await adapter().commands.deployments.close({ id: rotation, expected_version: 1 }));
+        const closed = [{ path: ["deployment_id"], code: "rotation_closed" }];
+        expect(
+          issuesOf(
+            await adapter().commands.leaves.create(
+              single({ ...draft(member.id, type.id), start_date: LAST_WEEK, end_date: LAST_WEEK }),
+            ),
+          ),
+        ).toEqual(closed);
+        expect(
+          issuesOf(
+            await adapter().commands.leaves.update({
+              id: leave.id,
+              expected_version: 1,
+              changes: { reason: "Later" },
+              acknowledged_rule_ids: [],
+            }),
+          ),
+        ).toEqual(closed);
+        expect(
+          issuesOf(
+            await adapter().commands.leaves.transition({
+              id: leave.id,
+              expected_version: 1,
+              transition: "approve",
+              acknowledged_rule_ids: [],
+              comment: null,
+            }),
+          ),
+        ).toEqual(closed);
+      });
+
       it("copies a leave to other soldiers and dates, without its batch", async () => {
         const type = await leaveType();
         const first = await soldier(null, "Avi");
@@ -662,6 +829,142 @@ export function describeDeploymentContract(
         expect(issuesOf(refused)).toEqual([
           { path: ["copies", 0, "id"], code: "already_exists" },
         ]);
+      });
+
+      it("creates several leaves of one soldier, each its own, all or none (D-275)", async () => {
+        const type = await leaveType();
+        const person = await soldier(null, "Avi");
+        await serve(person.id);
+        const { soldier_id: _soldier, ...row } = draft(person.id, type.id);
+        const later = { ...row, id: newLeaveId(), start_date: MID_MONTH, end_date: MONTH_END, reason: "Family" };
+        const created = valueOf(
+          await adapter().commands.leaves.createMany({
+            soldier_id: person.id,
+            leaves: [
+              { ...row, deployment_id: rotation },
+              { ...later, deployment_id: rotation },
+            ],
+            as_approved: false,
+            acknowledged_rule_ids: [],
+          }),
+        );
+        expect(
+          created.map((leave) => [leave.soldier_id, leave.batch_id, leave.status, leave.start_date, leave.reason]),
+        ).toEqual([
+          [person.id, null, "pending", TODAY, null],
+          [person.id, null, "pending", MID_MONTH, "Family"],
+        ]);
+        expect(await harnessOf().rows("leave_batches")).toHaveLength(0);
+
+        // One row outside any rotation the soldier serves in refuses the sheet, and writes nothing.
+        const refused = await adapter().commands.leaves.createMany({
+          soldier_id: person.id,
+          leaves: [
+            { ...row, id: newLeaveId(), deployment_id: rotation },
+            { ...row, id: newLeaveId(), deployment_id: newDeploymentId() },
+          ],
+          as_approved: false,
+          acknowledged_rule_ids: [],
+        });
+        expect(issuesOf(refused).map((issue) => issue.path.slice(0, 2))).toEqual([["leaves", 1]]);
+        expect(await harnessOf().rows("leaves")).toHaveLength(2);
+      });
+
+      it("checks each row of a sheet as a single request: its own rotation, its days, distinct ids (D-275)", async () => {
+        const type = await leaveType();
+        const person = await soldier(null, "Avi");
+        await serve(person.id);
+        // One live rotation at a time (D-221): the others are earlier than the test's rotation, which starts on PAST_DATE.
+        const second = await seedRotation(harnessOf(), organization, [person.id], { start_date: EARLIER_START, end_date: EARLIER_END });
+        const { soldier_id: _soldier, ...row } = draft(person.id, type.id);
+        const created = valueOf(
+          await adapter().commands.leaves.createMany({
+            soldier_id: person.id,
+            leaves: [
+              { ...row, deployment_id: rotation },
+              { ...row, id: newLeaveId(), start_date: EARLIER_START, end_date: EARLIER_END, deployment_id: second },
+            ],
+            as_approved: false,
+            acknowledged_rule_ids: [],
+          }),
+        );
+        expect(created.map((leave) => leave.deployment_id)).toEqual([rotation, second]);
+
+        const narrow = await seedRotation(harnessOf(), organization, [person.id], { start_date: NARROW_DAY, end_date: NARROW_DAY });
+        const elsewhere = await seedRotation(harnessOf(), organization, [], { start_date: ELSEWHERE_DAY, end_date: ELSEWHERE_DAY });
+        const sheet = (leaves: Parameters<ReturnType<typeof adapter>["commands"]["leaves"]["createMany"]>[0]["leaves"]) =>
+          adapter().commands.leaves.createMany({ soldier_id: person.id, leaves, as_approved: false, acknowledged_rule_ids: [] });
+        expect(issuesOf(await sheet([{ ...row, id: newLeaveId(), start_date: BEFORE_NARROW, end_date: NARROW_DAY, deployment_id: narrow }]))).toEqual([
+          { path: ["leaves", 0, "start_date"], code: "outside_rotation" },
+        ]);
+        expect(issuesOf(await sheet([{ ...row, id: newLeaveId(), start_date: ELSEWHERE_DAY, end_date: ELSEWHERE_DAY, deployment_id: elsewhere }]))).toEqual([
+          { path: ["leaves", 0, "soldier_id"], code: "not_a_member" },
+        ]);
+        const twice = newLeaveId();
+        expect(
+          issuesOf(
+            await sheet([
+              { ...row, id: twice, deployment_id: rotation },
+              { ...row, id: twice, deployment_id: rotation },
+            ]),
+          ).map((issue) => issue.path),
+        ).toEqual([["leaves", 1]]);
+        expect(issuesOf(await sheet([{ ...row, deployment_id: rotation }]))).toEqual([
+          { path: ["leaves", 0, "id"], code: "already_exists" },
+        ]);
+        expect(await harnessOf().rows("leaves")).toHaveLength(2);
+      });
+
+      it("checks a sheet's reasons on their rows, and refuses past its limit before reading any (D-275)", async () => {
+        const type = await leaveType(true);
+        const person = await soldier(null, "Avi");
+        await serve(person.id);
+        const { soldier_id: _soldier, ...row } = draft(person.id, type.id);
+        const sheet = (leaves: Parameters<ReturnType<typeof adapter>["commands"]["leaves"]["createMany"]>[0]["leaves"]) =>
+          adapter().commands.leaves.createMany({ soldier_id: person.id, leaves, as_approved: false, acknowledged_rule_ids: [] });
+        expect(
+          issuesOf(
+            await sheet([
+              { ...row, id: newLeaveId(), reason: "Family", deployment_id: rotation },
+              { ...row, id: newLeaveId(), reason: " ", deployment_id: rotation },
+            ]),
+          ),
+        ).toEqual([{ path: ["leaves", 1, "reason"], code: "reason_required" }]);
+        const endless = Array.from({ length: LEAVE_SHEET.maxLeaves + 1 }, () => ({
+          ...row,
+          id: newLeaveId(),
+          reason: "Family",
+          deployment_id: rotation,
+        }));
+        expect(issuesOf(await sheet(endless))).toEqual([{ path: ["leaves"], code: "too_big" }]);
+        expect(await harnessOf().rows("leaves")).toHaveLength(0);
+      });
+
+      it("needs leaves:create over the soldier for a sheet, and leaves:approve to approve it now (D-275)", async () => {
+        const type = await leaveType();
+        const person = await soldier(null, "Avi");
+        await serve(person.id);
+        const { soldier_id: _soldier, ...row } = draft(person.id, type.id);
+        const viewer = [pair("soldiers", "view"), pair("leaves", "view"), pair("leave_types", "view")];
+        const sheet = (as_approved: boolean) =>
+          adapter().commands.leaves.createMany({
+            soldier_id: person.id,
+            leaves: [{ ...row, id: newLeaveId(), deployment_id: rotation }],
+            as_approved,
+            acknowledged_rule_ids: [],
+          });
+        const looker = await seedActor(harnessOf(), organization, viewer, { anchor_type: "organization" });
+        harnessOf().signIn(looker.identity);
+        expect(errorOf(await sheet(false)).code).toBe("forbidden");
+        const requester = await seedActor(harnessOf(), organization, [...viewer, pair("leaves", "create")], {
+          anchor_type: "organization",
+        });
+        harnessOf().signIn(requester.identity);
+        expect(errorOf(await sheet(true)).code).toBe("forbidden");
+        expect(await harnessOf().rows("leaves")).toHaveLength(0);
+        expect(valueOf(await sheet(false)).map((leave) => leave.status)).toEqual(["pending"]);
+        harnessOf().signIn(owner);
+        expect(valueOf(await sheet(true)).map((leave) => [leave.status, leave.reviewed_by])).toEqual([["approved", ownerId]]);
       });
 
       it("shows a batch only with a leave the actor can see", async () => {

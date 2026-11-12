@@ -34,6 +34,7 @@ const ISSUE_MESSAGES = {
   no_changes: 'issues.noChanges',
   duplicate_item: 'issues.duplicateItem',
   range_inverted: 'issues.rangeInverted',
+  close_incomplete: 'issues.closeIncomplete',
   bound_missing: 'issues.boundMissing',
   scope_anchor_arguments: 'issues.scopeAnchorArguments',
   include_descendants_not_allowed: 'issues.includeDescendantsNotAllowed',
@@ -67,6 +68,9 @@ const ISSUE_MESSAGES = {
   not_a_member: 'issues.notAMember',
   outside_rotation: 'issues.outsideRotation',
   leaves_outside_rotation: 'issues.leavesOutsideRotation',
+  rotation_overlap: 'issues.rotationOverlap',
+  rotation_closed: 'issues.rotationClosed',
+  rotation_not_ended: 'issues.rotationNotEnded',
 } as const satisfies Record<string, I18nKey>
 
 const ISSUE_KEYS: Record<IssueCode, I18nKey> = ISSUE_MESSAGES

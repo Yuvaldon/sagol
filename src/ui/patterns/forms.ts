@@ -6,6 +6,15 @@ import { issueKey } from '../errors/messages'
 // Between field issues (D-068) and TanStack Form. The form validates early with the schema, and the
 // adapter stays the authority: its answer lands on the fields, or above them if no field fits.
 
+/**
+ * The name TanStack Form gives the field at an issue's path: a list's index in brackets, so `['rows', 1, 'reason']`
+ * is `rows[1].reason` (D-275). A path without a list reads as its dotted name, such as `organization.name`. Messages
+ * and answered issues match by the dotted name (`fieldNameOf`).
+ */
+function formFieldName(issue: Issue): string {
+  return issue.path.map((part, index) => (typeof part === 'number' ? `[${String(part)}]` : index === 0 ? part : `.${part}`)).join('')
+}
+
 /** What the adapter answered to the last submit. */
 export interface FormState {
   readonly answered: readonly Issue[]
@@ -45,7 +54,7 @@ export function rowIssuesOnFields(error: AppError, list: string, renamed: Readon
 /** The result of a form-level validator: each field gets its issue code. */
 export function validatorResult(issues: readonly Issue[]) {
   if (issues.length === 0) return undefined
-  return { fields: Object.fromEntries(issues.map((issue) => [fieldNameOf(issue), issue.code])) }
+  return { fields: Object.fromEntries(issues.map((issue) => [formFieldName(issue), issue.code])) }
 }
 
 /** The message of a field: its own validation first, then what the adapter answered. */

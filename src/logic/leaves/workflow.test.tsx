@@ -26,7 +26,7 @@ import type { LogicPorts } from '../ports'
 import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
 import { useMyPreferences, useUpdateMyPreferences } from '../session/preferences'
 import type { DateWindow } from '../view-state/window'
-import { newLeaveValues } from './forms'
+import { newLeaveSheetValues } from './sheet'
 import { useLeaves } from './hooks'
 import {
   closedLeaves,
@@ -476,8 +476,8 @@ describe('my preferences (D-121)', () => {
   })
 
   it('starts "approve now" from the default (D-121)', () => {
-    expect(newLeaveValues('2026-11-08', true).as_approved).toBe(true)
-    expect(newLeaveValues('2026-11-08').as_approved).toBe(false)
+    expect(newLeaveSheetValues('2026-11-08', true).as_approved).toBe(true)
+    expect(newLeaveSheetValues('2026-11-08').as_approved).toBe(false)
   })
 })
 

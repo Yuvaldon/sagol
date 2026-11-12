@@ -1,4 +1,4 @@
-// Focus mode's key (D-272): with modifiers, so typing never triggers it (WCAG 2.1.4). `code` names the physical
+// Focus mode's key (D-301): with modifiers, so typing never triggers it (WCAG 2.1.4). `code` names the physical
 // key, so the Hebrew layout presses the same one.
 
 export const FOCUS_MODE = {

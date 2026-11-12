@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, press, typeDate } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 
 // V15's demo: deployments and who serves in them (D-019), a collective leave and a copy of a leave (D-012, D-049),
 // and a soldier's personal seniority (D-029), on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -14,19 +14,18 @@ async function createSoldier(page: Page, firstName: string, lastName: string) {
   await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
 }
 
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
+
 test('deployments, a collective leave, a copy and personal seniority', async ({ page }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
   await test.step('a unit, soldiers and a type to work with', async () => {
-    await openModule(page, he.deployments.open)
-    await expect(drawer(page).getByText(he.deployments.emptyNoUnits)).toBeVisible()
-    await closeDrawer(page)
     await openModule(page, he.units.open)
-    await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-    await page.getByLabel(he.units.name).fill('פלוגה ב')
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(drawer(page).getByText('פלוגה ב', { exact: true })).toBeVisible()
+    await addUnit(page, 'פלוגה ב')
     await closeDrawer(page)
     await openModule(page, he.soldiers.open)
     await createSoldier(page, 'יעל', 'שחר')
@@ -48,6 +47,9 @@ test('deployments, a collective leave, a copy and personal seniority', async ({ 
     await page.getByRole('button', { name: he.common.create }).click()
     // Creating it goes straight on to who serves (D-220).
     await expect(drawer(page).getByRole('heading', { name: he.deployments.membersTitle })).toBeVisible()
+    // It holds the whole unit until a list is chosen (D-259, D-222).
+    await expect(drawer(page).getByRole('radio', { name: he.deployments.wholeUnit })).toBeChecked()
+    await press(page, 'radio', he.deployments.listed)
     await press(page, 'checkbox', 'יעל שחר')
     await press(page, 'checkbox', 'נועם לב')
     await press(page, 'checkbox', OWNER.name)

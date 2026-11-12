@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, type Page } from '@playwright/test'
+import { DEFAULT_VIEW_BY_DEVICE } from '../../src/config/views/index.ts'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 
 // What the slice demos share: signing in, claiming the organization, axe. Sample data, tests only.
@@ -56,17 +57,70 @@ export function organizationHeading(page: Page, name = ORGANIZATION) {
   return page.getByRole('heading', { level: 1, name })
 }
 
-/** A new owner on an empty store, in the workspace. */
+/** The claim opens the setup over the board (V27): the drawer that offers the template. */
+export function setupDrawer(page: Page) {
+  return page.getByRole('dialog', { name: he.setup.title })
+}
+
+/**
+ * A phone opens the board on the list (D-290). A spec about the timeline's bars names the timeline on every load of
+ * the board, as a link to it would, so a phone shows the same board as a desktop. Call it before the first load.
+ */
+export async function openBoardOnTimeline(page: Page, isMobile: boolean) {
+  if (!isMobile) return
+  await page.addInitScript((view) => {
+    const url = new URL(window.location.href)
+    if (url.pathname !== '/' || url.searchParams.has('view')) return
+    url.searchParams.set('view', view)
+    window.history.replaceState(window.history.state, '', url)
+  }, DEFAULT_VIEW_BY_DEVICE.desktop)
+}
+
+/** A new owner on an empty store, in the workspace, with the setup that the claim opens set aside. */
 export async function enterAsOwner(page: Page) {
   await page.goto('/')
   await signIn(page, OWNER.email, OWNER.name)
   await claimOrganization(page)
   await expect(organizationHeading(page)).toBeVisible()
+  await closeSetup(page)
 }
 
-/** The navigation panel (D-173), once open. */
+/** Sets aside the setup that the claim opened, back to the board. */
+export async function closeSetup(page: Page) {
+  await expect(setupDrawer(page)).toBeVisible()
+  await setupDrawer(page).getByRole('button', { name: he.common.close }).click()
+  await expect(setupDrawer(page)).toBeHidden()
+}
+
+/** A row of the units tree, by the unit's name. */
+export function unitRow(page: Page, name: string) {
+  return page
+    .getByRole('list', { name: he.units.listLabel })
+    .getByRole('listitem')
+    .filter({ has: page.getByText(name, { exact: true }) })
+}
+
+/**
+ * A new unit under another, the root by default: the claim made the root unit (OI-212), and it stays the only one at
+ * the top (D-251). The units module is open.
+ */
+export async function addUnit(page: Page, name: string, parent = ORGANIZATION) {
+  await unitRow(page, parent).getByRole('button', { name: he.common.actions }).click()
+  await page.getByRole('menuitem', { name: he.units.addChild }).click()
+  await page.getByLabel(he.units.name).fill(name)
+  await page.getByRole('button', { name: he.common.create }).click()
+  await expect(unitRow(page, name)).toBeVisible()
+}
+
+/** The navigation panel (D-173), once open: at the work, or a step in at the unit's setup (D-285). */
 export function navigationPanel(page: Page) {
-  return page.getByRole('dialog', { name: he.navigation.title })
+  return page.getByRole('dialog', { name: new RegExp(`^(${he.navigation.title}|${he.navigation.setupTitle})$`) })
+}
+
+/** Opens the unit's setup from the open panel's foot row (D-285). */
+export async function openSetup(page: Page) {
+  await navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click()
+  await expect(navigationPanel(page).getByRole('heading', { name: he.navigation.setupTitle, exact: true })).toBeVisible()
 }
 
 /**
@@ -84,9 +138,16 @@ export async function openModule(page: Page, name: string | RegExp) {
     // A press that landed while the page was busy can still time out: when the module's drawer opened since, the
     // step is done, and the caller checks what it opened.
     if ((await othersOpen()) > openedBefore) return
+    const inPanel = panel.getByRole('button', options)
+    // A module of the unit's setup is a step in, behind the panel's foot row (D-285).
+    const toSetup = panel.getByRole('button', { name: he.navigation.setupOpen, exact: true })
     if (await panel.isVisible()) {
-      const inPanel = panel.getByRole('button', options)
       if (await inPanel.isVisible()) {
+        await inPanel.click({ timeout: 1_000 })
+        return
+      }
+      if (await toSetup.isVisible()) {
+        await toSetup.click({ timeout: 1_000 })
         await inPanel.click({ timeout: 1_000 })
         return
       }
@@ -100,6 +161,8 @@ export async function openModule(page: Page, name: string | RegExp) {
       return
     }
     await page.getByRole('button', { name: he.navigation.open }).click({ timeout: 1_000 })
-    await panel.getByRole('button', options).click({ timeout: 1_000 })
+    await inPanel.or(toSetup).first().waitFor({ timeout: 1_000 })
+    if (!(await inPanel.isVisible())) await toSetup.click({ timeout: 1_000 })
+    await inPanel.click({ timeout: 1_000 })
   }).toPass({ timeout: 10_000 })
 }

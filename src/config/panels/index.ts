@@ -72,18 +72,28 @@ export type PanelId = z.infer<typeof PanelId>
 export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
 
 /**
- * The groups of "ניהול יחידה" and their modules, in order (D-254): grouped by what the commander is doing. The daily
- * work stays in the bottom strip; every module here is one press away, and nothing is pinned out of it.
+ * "ניהול יחידה", the daily work (D-285): the groups of what a commander does with people and presence. Setup lives
+ * apart, behind one row at the foot, so a definition is not mistaken for work.
  */
-export const NAVIGATION_SECTIONS = [
-  { id: 'unit', modules: ['units', 'soldiers', 'deployments'] },
-  { id: 'presence', modules: ['leave_types', 'rules'] },
-  { id: 'soldierDetails', modules: ['tags', 'properties'] },
-  { id: 'access', modules: ['roles', 'access_grants', 'account_links'] },
-  { id: 'data', modules: ['data_transfer'] },
+export const WORK_SECTIONS = [
+  { id: 'people', modules: ['soldiers', 'account_links', 'access_grants'] },
+  { id: 'presence', modules: ['deployments', 'rules'] },
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
-export type NavigationSectionId = (typeof NAVIGATION_SECTIONS)[number]['id']
+export type WorkSectionId = (typeof WORK_SECTIONS)[number]['id']
 
+/**
+ * "הגדרות היחידה", the unit's setup (D-285): each row opens a module by its first panel, and the module's other tabs
+ * are part of the same definition. The checklist heads it while unfinished.
+ */
+export const SETUP_SECTIONS = [
+  { id: 'structure', panels: [PANEL_IDS.units, PANEL_IDS.commandRanks] },
+  { id: 'access', panels: [PANEL_IDS.roles] },
+  { id: 'catalogs', panels: [PANEL_IDS.leaveTypes, PANEL_IDS.tags, PANEL_IDS.properties] },
+  { id: 'data', panels: [PANEL_IDS.dataTransfer] },
+  { id: 'advanced', panels: [PANEL_IDS.tagCategories] },
+] as const satisfies readonly { readonly id: string; readonly panels: readonly PanelId[] }[]
+export type SetupSectionId = (typeof SETUP_SECTIONS)[number]['id']
+export type SetupPanel = (typeof SETUP_SECTIONS)[number]['panels'][number]
 
 /**
  * The organization's setup, in order (D-033, D-180): each step opens the module that does it, for who may create what
@@ -95,7 +105,7 @@ export const SETUP_STEPS = [
   { id: 'command_ranks', panel: PANEL_IDS.commandRanks, resource: 'command_ranks' },
   { id: 'rank_bindings', panel: PANEL_IDS.rankBindings, resource: 'roles' },
   { id: 'leave_types', panel: PANEL_IDS.leaveTypes, resource: 'leave_types' },
-  { id: 'tags', panel: PANEL_IDS.tagCategories, resource: 'tags' },
+  { id: 'tags', panel: PANEL_IDS.tags, resource: 'tags' },
   { id: 'soldiers', panel: PANEL_IDS.soldiers, resource: 'soldiers' },
   /** The first rotation (D-212): the range picker's "whole rotation" lists it. */
   { id: 'deployments', panel: PANEL_IDS.deployments, resource: 'deployments' },
@@ -104,6 +114,9 @@ export type SetupStepId = (typeof SETUP_STEPS)[number]['id']
 
 /** The `entity` value of a form for a row that does not exist yet. */
 export const NEW_ENTITY = 'new'
+
+/** The `entity` value of the soldiers' quick entry (D-282): a grid of new soldiers, not one soldier's form. */
+export const QUICK_ENTRY = 'quick'
 
 /** A sheet closes when its grip is dragged this far down, or released this fast. */
 export const SHEET_DISMISS = { offsetPx: 96, velocityPxPerSecond: 500 } as const

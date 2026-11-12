@@ -33,7 +33,7 @@ function definitionInput(overrides: Partial<CreatePropertyDefinitionInput> = {})
 
 export function describePropertyContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
 

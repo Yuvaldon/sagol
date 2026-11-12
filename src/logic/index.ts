@@ -2,7 +2,7 @@
 // Business rules, services and the hooks exposed to the UI. Receives
 // repositories by injection and never imports @data.
 export type { AuthPort, DataPort, DevicePort, DeviceStore, InstallOffer, LogicPorts, ShellPort, ShellState } from './ports'
-export { useAppUpdate, useInstallOffer } from './shell/hooks'
+export { useAppUpdate, useInstallInvitation, useInstallOffer } from './shell/hooks'
 export { useHome, type Home } from './home/hooks'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
@@ -86,7 +86,7 @@ export {
 } from './presence/report'
 export { reportText, type ReportWords } from './presence/reportText'
 export { useDeviceFlag, type DeviceFlag, type DeviceLasting } from './device/hooks'
-export { useActiveView, type ActiveViewState } from './view-state/view'
+export { defaultViewOf, useActiveView, type ActiveViewState, type ViewDevice } from './view-state/view'
 export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useTimezone, useToday } from './session/today'
 export {
@@ -108,7 +108,7 @@ export {
   type BoardSort,
 } from './board/rows'
 export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
-export { boardLeaves, type BoardLeave } from './board/leaves'
+export { boardLeaves, layerOf, type BoardLeave, type LeaveLayer } from './board/leaves'
 export { boardDays, boardEntries, calendarWeeks, type BoardDay, type BoardEntry } from './board/views'
 export {
   datesOfRange,
@@ -135,8 +135,17 @@ export {
   type LeaveTypeFormValues,
   type LeaveTypeSection,
 } from './leaves/leaveTypes'
-export { newLeaveCandidate, newLeaveIssues, newLeaveValues, soldiersOf, type LeaveCandidate, type NewLeaveValues } from './leaves/forms'
+export { type LeaveCandidate } from './leaves/forms'
 export { requestRotation, useRequestRotation, type RequestRotation } from './leaves/rotation'
+export {
+  leaveSheetIssues,
+  newLeaveSheetValues,
+  newSheetRow,
+  sheetCandidates,
+  type LeaveSheetRow,
+  type LeaveSheetValues,
+  type RotationOf,
+} from './leaves/sheet'
 export {
   duplicateLeaveIssues,
   leaveBatchIssues,
@@ -146,7 +155,7 @@ export {
   type LeaveBatchValues,
 } from './leaves/batch'
 export {
-  useCreateLeave,
+  useCreateLeaves,
   useLeaveBatchCommands,
   useLeaveCreation,
   useLeaveTypeCommands,
@@ -249,7 +258,13 @@ export {
   NEW_TAG_CATEGORY_VALUES,
   liveCategories,
   newTagValues,
+  copiedRotationTags,
+  effectiveTagIds,
+  heldInScopes,
+  initialLifetimes,
+  selectedInScope,
   soldierTagGroups,
+  soldierTagScopes,
   tagCategoryFormIssues,
   tagCategoryFormValues,
   tagColorOf,
@@ -263,18 +278,19 @@ export {
   type TagCategoryFormValues,
   type TagChoice,
   type TagFormValues,
+  type TagScopes,
   type TagSection,
 } from './tags/tags'
 export {
   useCanSetTags,
-  useSetSoldierTags,
+  useSetScopedTags,
   useSoldierTags,
   useTagCategories,
   useTagCategoryCommands,
   useTagCommands,
   useTagPermissions,
   useTags,
-  type SetSoldierTagsRequest,
+  type SetScopedTagsRequest,
 } from './tags/hooks'
 export {
   EVERYONE,
@@ -312,6 +328,18 @@ export {
   useUnitsWithArchived,
 } from './roster/hooks'
 export {
+  blankQuickEntryRow,
+  isBlankQuickEntryRow,
+  quickEntryIssues,
+  quickEntryRowsFromPaste,
+  readyQuickEntryRows,
+  useQuickEntrySave,
+  type QuickEntryAnswers,
+  type QuickEntryPlacement,
+  type QuickEntryRow,
+  type QuickEntryValues,
+} from './roster/quickEntry'
+export {
   NEW_LINK_REQUEST_VALUES,
   linkRequestIssues,
   newSoldierFromRequestIssues,
@@ -321,6 +349,7 @@ export {
   type NewSoldierFromRequestValues,
 } from './accounts/forms'
 export { candidateRows, type CandidateRow } from './accounts/review'
+export { certainCandidate, useBulkLinkApproval, type BulkLinkAnswer, type BulkLinkAnswers } from './accounts/bulk'
 export {
   useCancelLinkRequest,
   useLinkCandidates,
@@ -382,10 +411,13 @@ export { readPickedFile, useExport, useImport, useTransferAccess } from './trans
 export {
   defaultDeploymentMembers,
   deploymentFormIssues,
+  previousRotation,
+  startingMembers,
   deploymentFormValues,
   deploymentMemberValues,
   deploymentMembersIssues,
   isDeploymentActive,
+  isRotationClosable,
   liveDeployments,
   newDeploymentValues,
   type DeploymentFormValues,
@@ -400,4 +432,21 @@ export {
   type SeniorityOverrideFormValues,
 } from './seniority/seniority'
 export { useSeniorityOverrideCommands, useSeniorityOverrides, useSeniorityPermissions } from './seniority/hooks'
-export { setupSteps, useSetupAccess, useSetupProgress, type SetupStep } from './organization/setup'
+export { useCanSetTimezone, useSetOrganizationTimezone } from './organization/timezone'
+export { nextSetupStep, setupSteps, useSetupAccess, useSetupProgress, useSetupUnfinished, type SetupStep } from './organization/setup'
+export {
+  applyTemplatePlan,
+  initialChoices,
+  isFreshSetup,
+  templateChoiceIssues,
+  templatePlan,
+  useApplyTemplate,
+  useTemplateOffer,
+  withSectionCount,
+  type TemplateBase,
+  type TemplateChoices,
+  type TemplateNames,
+  type TemplateOutcome,
+  type TemplateStage,
+  type TemplateStep,
+} from './organization/template'

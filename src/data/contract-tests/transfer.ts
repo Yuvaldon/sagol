@@ -1,4 +1,5 @@
 import {
+  LeaveTypeId,
   OrganizationId,
   SoldierId,
   UnitId,
@@ -29,7 +30,7 @@ const levelOperation = (name: string, id = UnitLevelId.parse(crypto.randomUUID()
 
 export function describeTransferContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
   const transfer = () => adapter().transfer
@@ -37,11 +38,13 @@ export function describeTransferContract(
 
   describe('import and export', () => {
     let organization: OrganizationId
+    let root: UnitId
     let owner: AuthIdentity
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       owner = claimed.owner
     })
 
@@ -76,6 +79,23 @@ export function describeTransferContract(
         expect(level).toMatchObject({ organization_id: organization, version: 1, created_by: expect.any(String) })
         // One announcement, after the commit, carrying both writes.
         expect((await heard).map((change) => change.table)).toEqual(['unit_levels', 'unit_levels'])
+      })
+
+      it('a leave type stored green comes in gray, rather than failing the import (D-290)', async () => {
+        const id = LeaveTypeId.parse(crypto.randomUUID())
+        const input = {
+          id,
+          group_id: null,
+          name: 'Home',
+          color_key: 'green',
+          icon_key: null,
+          availability_effect: 'unavailable',
+          requires_reason: false,
+          sort_order: 0,
+        } as const
+        const report = valueOf(await transfer().importBatch({ dry_run: false, operations: [{ command: 'create_leave_type', input }] }))
+        expect(report.committed).toBe(true)
+        expect((await harnessOf().rows('leave_types')).find((type) => type.id === id)).toMatchObject({ name: 'Home', color_key: 'gray' })
       })
 
       it('stops at the first refused operation and writes nothing', async () => {
@@ -184,7 +204,7 @@ export function describeTransferContract(
         valueOf(
           await adapter().commands.units.create({
             id: UnitId.parse(crypto.randomUUID()),
-            parent_id: null,
+            parent_id: root,
             sort_order: 0,
             name: 'Platoon',
             code: null,

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press, typeDate } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V8's demo: drag to create, move and resize leaves on the board, with the card that says what a drop would do and the
 // rule it would break; on a phone, the same by holding a finger first. Desktop and mobile, RTL, with axe. Sample data,
@@ -14,10 +14,7 @@ const HOLD_MS = 650
 
 async function setUp(page: Page) {
   await openModule(page, he.units.open)
-  await drawer(page).getByRole('button', { name: he.units.new }).first().click()
-  await page.getByLabel(he.units.name).fill(PLATOON)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.units.listLabel }).getByText(PLATOON, { exact: true })).toBeVisible()
+  await addUnit(page, PLATOON)
   await closeDrawer(page)
   await openModule(page, he.soldiers.open)
   await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
@@ -89,6 +86,11 @@ async function finishNewLeave(page: Page, from: string, to: string) {
   await expect(drawer(page)).toHaveCount(0)
 }
 
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
+
 test('drag to create, move and resize, with what a drop would break', async ({ page, isMobile }) => {
   test.skip(isMobile, 'The phone has its own demo below')
   await page.clock.setFixedTime(NOW)
@@ -141,6 +143,7 @@ test('drag to create, move and resize, with what a drop would break', async ({ p
     await openModule(page, he.rules.open)
     await drawer(page).getByRole('button', { name: he.rules.new }).first().click()
     await page.getByLabel(he.rules.name).fill('לפחות אחד')
+    await choose(page, he.rules.scope, PLATOON)
     await page.getByLabel(he.rules.min, { exact: true }).fill('1')
     await page.getByRole('button', { name: he.common.create }).click()
     await expect(drawer(page).getByRole('list', { name: he.rules.listLabel }).getByText('לפחות אחד', { exact: true })).toBeVisible()
@@ -169,6 +172,7 @@ test('drag to create, move and resize, with what a drop would break', async ({ p
     await openModule(page, he.rules.open)
     await drawer(page).getByRole('button', { name: he.rules.new }).first().click()
     await page.getByLabel(he.rules.name).fill('חובה אחד')
+    await choose(page, he.rules.scope, PLATOON)
     await choose(page, he.rules.enforcement, he.rules.enforcementHard)
     await page.getByLabel(he.rules.min, { exact: true }).fill('1')
     await page.getByRole('button', { name: he.common.create }).click()

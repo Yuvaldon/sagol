@@ -26,8 +26,8 @@ import {
   acknowledgedRuleIds,
   editedLeaveCandidate,
   leaveEditValues,
-  newLeaveCandidate,
-  newLeaveValues,
+  newSheetRow,
+  sheetCandidates,
   useLeaveRuleCheck,
   type LeaveCandidate,
   type LogicPorts,
@@ -83,6 +83,8 @@ async function ownerPorts(): Promise<LogicPorts> {
       owner_role: { id: RoleId.parse(crypto.randomUUID()), name: 'Owner' },
       account_id: SoldierAccountId.parse(crypto.randomUUID()),
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+      root_unit_id: UnitId.parse(crypto.randomUUID()),
+      membership_id: UnitMembershipId.parse(crypto.randomUUID()),
     }),
   )
   const shell = { subscribe: () => () => undefined, current: () => QUIET_SHELL, applyUpdate: () => undefined, install: () => Promise.resolve() }
@@ -108,7 +110,7 @@ interface World {
 async function buildWorld(): Promise<World> {
   const ports = await ownerPorts()
   const { commands } = ports.data
-  const unit = async (name: string, parent_id: UnitId | null) =>
+  const unit = async (name: string, parent_id: UnitId) =>
     valueOf(
       await commands.units.create({
         id: UnitId.parse(crypto.randomUUID()),
@@ -124,7 +126,12 @@ async function buildWorld(): Promise<World> {
         properties: {},
       }),
     ).id
-  const company = await unit('Company', null)
+  // The company hangs under the root unit the claim created (D-251), which holds the owner: the rules count the company.
+  const root = valueOf(await ports.data.repositories.units.list({ include_archived: false })).find(
+    (row) => row.parent_id === null,
+  )?.id
+  if (root === undefined) throw new Error('no root unit')
+  const company = await unit('Company', root)
   const platoonA = await unit('Platoon A', company)
   const platoonB = await unit('Platoon B', company)
   const soldier = async (first_name: string, unit_id: UnitId) =>
@@ -229,7 +236,7 @@ function createInput(leave: NewLeave, deployment_id: DeploymentId, acknowledged:
  * The live warning, as a form shows it: the real hook under the real ports. Settled when every query the hook asked
  * has answered, the leaves of its span among them: they are asked only once the actor is known to read everything.
  */
-async function warningOf(ports: LogicPorts, candidate: LeaveCandidate | null, stored: Leave | null = null) {
+async function warningOf(ports: LogicPorts, candidate: LeaveCandidate | readonly LeaveCandidate[] | null, stored: Leave | null = null) {
   const wrapper = ({ children }: { readonly children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>
   const { result, unmount } = renderHook(
     () => {
@@ -277,7 +284,7 @@ const ofEnforcement = (violations: readonly RuleViolation[], enforcement: RuleEn
  */
 async function expectAgreement(
   warnings: readonly RuleViolation[],
-  send: (acknowledged: readonly AvailabilityRuleId[]) => Promise<Result<Leave>>,
+  send: (acknowledged: readonly AvailabilityRuleId[]) => Promise<Result<unknown>>,
 ) {
   const answer = await send([])
   const hard = ofEnforcement(warnings, RuleEnforcement.enum.hard)
@@ -303,16 +310,38 @@ describe('a live rule warning is the command’s answer (OI-100, D-142)', () => 
     world = await buildWorld()
   })
 
-  const candidateOf = (leave: Omit<NewLeave, 'leave_type_id'>) =>
-    newLeaveCandidate({ ...newLeaveValues(D1, leave.as_approved), ...leave, leave_type_id: world.type, reason: '' })
+  /** The leaves a sheet of one soldier would create, as the form judges them (D-275). */
+  const candidatesOf = (leave: Omit<NewLeave, 'leave_type_id' | 'start_date' | 'end_date'>, days: readonly (readonly [CalendarDate, CalendarDate])[]) =>
+    sheetCandidates({
+      soldier_id: leave.soldier_id,
+      as_approved: leave.as_approved,
+      rows: days.map(([start, end]) => ({ ...newSheetRow(start, end), leave_type_id: world.type })),
+    }, () => ({ deployment_id: world.rotation, issues: [] }))
 
-  async function checkCreate(leave: Omit<NewLeave, 'leave_type_id'>) {
-    const warnings = await warningOf(world.ports, candidateOf(leave))
+  /** The sheet's leaves, judged live and then sent as the form sends them: one `createMany`. */
+  async function checkSheet(leave: Omit<NewLeave, 'leave_type_id' | 'start_date' | 'end_date'>, days: readonly (readonly [CalendarDate, CalendarDate])[]) {
+    const warnings = await warningOf(world.ports, candidatesOf(leave, days))
     await expectAgreement(warnings, (acknowledged) =>
-      world.ports.data.commands.leaves.create(createInput({ ...leave, leave_type_id: world.type }, world.rotation, acknowledged)),
+      world.ports.data.commands.leaves.createMany({
+        soldier_id: leave.soldier_id,
+        as_approved: leave.as_approved,
+        acknowledged_rule_ids: [...acknowledged],
+        leaves: days.map(([start_date, end_date]) => ({
+          id: LeaveId.parse(crypto.randomUUID()),
+          deployment_id: world.rotation,
+          leave_type_id: world.type,
+          start_date,
+          end_date,
+          availability_effect_override: null,
+          reason: null,
+          properties: {},
+        })),
+      }),
     )
     return warnings
   }
+
+  const checkCreate = ({ start_date, end_date, ...leave }: Omit<NewLeave, 'leave_type_id'>) => checkSheet(leave, [[start_date, end_date]])
 
   async function checkMove(stored: Leave, start_date: CalendarDate, end_date: CalendarDate) {
     const values = { ...leaveEditValues(stored), start_date, end_date }
@@ -345,6 +374,14 @@ describe('a live rule warning is the command’s answer (OI-100, D-142)', () => 
     expect(idsOf(ofEnforcement(warnings, RuleEnforcement.enum.hard))).toEqual([world.hard.id])
   })
 
+  it('a sheet of several leaves: one warning over them all is what the one command answers (D-275)', async () => {
+    const warnings = await checkSheet({ soldier_id: world.soldiers.a2, as_approved: false }, [
+      [D5, D6],
+      [D1, D1],
+    ])
+    expect(idsOf(warnings)).toEqual([world.soft.id])
+  })
+
   it('an edit that moves a leave onto a full day: the warning judges it as the command does', async () => {
     const warnings = await checkMove(world.leaves.a3Later, D1, D2)
     expect(idsOf(warnings)).toEqual([world.soft.id])
@@ -374,15 +411,11 @@ describe('a live rule warning says when it has no answer (OI-099)', () => {
   })
 
   const candidateOn = (start_date: CalendarDate, end_date: CalendarDate) =>
-    newLeaveCandidate({
-      ...newLeaveValues(D1, false),
+    sheetCandidates({
       soldier_id: world.soldiers.a2,
-      start_date,
-      end_date,
       as_approved: false,
-      leave_type_id: world.type,
-      reason: '',
-    })
+      rows: [{ ...newSheetRow(start_date, end_date), leave_type_id: world.type }],
+    }, () => ({ deployment_id: world.rotation, issues: [] }))[0] ?? null
 
   function render(ports: LogicPorts, candidate: LeaveCandidate | null) {
     const wrapper = ({ children }: { readonly children: ReactNode }) => <LogicProvider ports={ports}>{children}</LogicProvider>

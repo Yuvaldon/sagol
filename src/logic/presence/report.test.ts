@@ -209,15 +209,15 @@ describe('the days a report runs on (D-193, D-211)', () => {
     { start_date: '2026-12-10', end_date: '2026-12-12' },
   ]
 
-  it('reports any day with no rotation, and only the days a rotation runs on otherwise', () => {
-    expect(isReportable([], DAY)).toBe(true)
+  it('reports only the days a rotation runs on; routine has no report (D-222)', () => {
+    expect(isReportable([], DAY)).toBe(false)
     expect(isReportable(rotations, '2026-12-05')).toBe(true)
     expect(isReportable(rotations, '2026-12-07')).toBe(false)
     expect(isReportable([{ start_date: '2026-12-01', end_date: null }], '2027-06-01')).toBe(true)
   })
 
   it('steps over the gap between rotations, and stops past the first start and the last end', () => {
-    expect(steppedReportDay([], DAY, 1)).toBe('2026-12-11')
+    expect(steppedReportDay([], DAY, 1)).toBeNull()
     expect(steppedReportDay(rotations, '2026-12-05', 1)).toBe('2026-12-10')
     expect(steppedReportDay(rotations, '2026-12-10', -1)).toBe('2026-12-05')
     expect(steppedReportDay(rotations, '2026-12-12', 1)).toBeNull()
@@ -226,10 +226,10 @@ describe('the days a report runs on (D-193, D-211)', () => {
   })
 
   it('spans from the day to the last one, the reportable days only, at most the cap of calendar days', () => {
-    expect(reportDays([], DAY, null)).toEqual([DAY])
-    expect(reportDays([], DAY, '2026-12-01')).toEqual([DAY])
+    expect(reportDays([], DAY, null)).toEqual([])
+    expect(reportDays([], DAY, '2026-12-01')).toEqual([])
     expect(reportDays(rotations, '2026-12-04', '2026-12-10')).toEqual(['2026-12-04', '2026-12-05', '2026-12-10'])
-    expect(reportDays([], DAY, '2027-03-01')).toHaveLength(DAY_REPORT.maxSpanDays)
+    expect(reportDays([{ start_date: DAY, end_date: null }], DAY, '2027-03-01')).toHaveLength(DAY_REPORT.maxSpanDays)
   })
 })
 

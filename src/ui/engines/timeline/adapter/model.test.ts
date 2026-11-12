@@ -106,6 +106,7 @@ describe('leaves on a row (D-111, D-112)', () => {
     end_date,
     effect: 'unavailable',
     type,
+    layer: 'request',
     ...overrides,
   })
   const item: BoardItem = { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [true, true, true] }

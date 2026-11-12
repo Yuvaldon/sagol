@@ -1,5 +1,7 @@
 import {
   AccessGrantId,
+  UnitId,
+  UnitMembershipId,
   AccountLinkRequestId,
   AuthUserId,
   OrganizationId,
@@ -61,6 +63,8 @@ export function bootstrapInput(overrides: Partial<BootstrapOwnerInput> = {}): Bo
     owner_role: { id: RoleId.parse(crypto.randomUUID()), name: 'Owner' },
     account_id: SoldierAccountId.parse(crypto.randomUUID()),
     access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+    root_unit_id: UnitId.parse(crypto.randomUUID()),
+    membership_id: UnitMembershipId.parse(crypto.randomUUID()),
     ...overrides,
   }
 }
@@ -77,6 +81,8 @@ function valueOf<T>(result: Result<T>): T {
 
 const BOOTSTRAP_WRITES = [
   'organizations',
+  'units',
+  'unit_memberships',
   'soldiers',
   'soldier_accounts',
   'roles',

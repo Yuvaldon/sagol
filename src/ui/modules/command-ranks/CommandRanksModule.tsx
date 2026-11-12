@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
+import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -33,17 +34,21 @@ function RankForm({
   rank,
   firstSeniority,
   onReload,
+  onDone,
 }: {
   readonly rank: CommandRank | null
   readonly firstSeniority: number
-  readonly onReload: () => void
+  readonly onReload?: () => void
+  /** Made in place (D-285): gets what was saved, or null when left; the panel stays where it is. */
+  readonly onDone?: (saved: CommandRank | null) => void
 }) {
   const panel = usePanel()
   const { create, update } = useCommandRankCommands()
   const [opened] = useState(rank)
   const [state, setState] = useState(CLEAN_FORM)
   const backToList = () => {
-    panel.open(PANEL_IDS.commandRanks)
+    if (onDone === undefined) panel.open(PANEL_IDS.commandRanks)
+    else onDone(null)
   }
 
   const form = useForm({
@@ -60,8 +65,10 @@ function RankForm({
         opened === null
           ? await create.run(value)
           : await update.run({ rank: opened, openedVersion: opened.version, values: value })
-      if (result.ok) backToList()
-      else setState(formStateOf(result.error, RANK_FIELDS))
+      if (result.ok) {
+        if (onDone === undefined) backToList()
+        else onDone(result.value)
+      } else setState(formStateOf(result.error, RANK_FIELDS))
     },
   })
 
@@ -280,5 +287,38 @@ export function CommandRanksModule() {
         />
       )}
     </div>
+  )
+}
+
+/** A command level made from another form's field (D-285): the module's own form and command over the drawer. The field takes
+ * what was saved; who may not create one reads that it is missing. */
+export function CommandRankInPlace({
+  isMissing,
+  onCreated,
+}: {
+  readonly isMissing: boolean
+  readonly onCreated: (rank: CommandRank) => void
+}) {
+  const permissions = useCommandRankPermissions()
+  const ranks = useCommandRanks()
+  return (
+    <CreateInPlace labelKey="commandRanks.new" canCreate={permissions.create} isMissing={isMissing}>
+      {(close) =>
+        ranks.status === 'ready' ? (
+          <RankForm
+            rank={null}
+            firstSeniority={nextSeniority(liveRanks(ranks.value))}
+            onDone={(saved) => {
+              close()
+              if (saved !== null) onCreated(saved)
+            }}
+          />
+        ) : ranks.status === 'failed' ? (
+          <FailureNotice error={ranks.error} />
+        ) : (
+          <LoadingNotice />
+        )
+      }
+    </CreateInPlace>
   )
 }

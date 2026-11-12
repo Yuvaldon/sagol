@@ -5,6 +5,8 @@ import { Button as AriaButton, Header, Menu, MenuSection, MenuTrigger, Popover, 
 import { NameTooltip } from '../primitives/Button'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 import { MenuChoice } from './menu'
+import { useIsDesktop, useViewDevice } from '../patterns/media'
+import { SortSections } from './SortControl'
 import { MENU_HEADER, MENU_LIST, MENU_POPOVER, MENU_TRIGGER, onlyKey } from './menuStyles'
 
 // The view menu lists what the engine registry holds, and nothing else (D-076, D-108). The colors of
@@ -19,9 +21,10 @@ const COLOR_LABELS: Record<BarColorMode, I18nKey> = {
 }
 
 export function ViewSwitcher() {
-  const { view, select } = useActiveView(AVAILABLE_VIEWS)
+  const { view, select } = useActiveView(AVAILABLE_VIEWS, useViewDevice())
   const colors = useBarColors()
   const current = engineOf(view)
+  const isDesktop = useIsDesktop()
   return (
     <MenuTrigger>
       <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
@@ -64,6 +67,8 @@ export function ViewSwitcher() {
               <MenuChoice key={mode} id={mode} label={t(COLOR_LABELS[mode])} />
             ))}
           </MenuSection>
+          {/* A phone's strip has no room for the sort's button: its sections follow the view's here (D-273). */}
+          {isDesktop ? null : <SortSections />}
         </Menu>
       </Popover>
     </MenuTrigger>

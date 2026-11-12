@@ -1,8 +1,7 @@
 import { z } from 'zod'
 import { PropertyOptionId } from '../common/ids'
 import { ColorKey, Integer, label } from '../common/scalars'
-import { Appearance, NavigationModule, ReschedulePolicy, RulesRowPlacement } from '../enums'
-import { checkDistinct } from '../inputs/common'
+import { Appearance, ReschedulePolicy, RulesRowPlacement } from '../enums'
 
 // Contracts of JSONB columns. Each parses `{}` (the column default) into a complete
 // value, so defaults live here and nowhere else (D-041).
@@ -15,18 +14,11 @@ export const OrganizationSettings = z
   .prefault({})
 export type OrganizationSettings = z.infer<typeof OrganizationSettings>
 
-/** `soldier_preferences.preferences`. */
+/** `soldier_preferences.preferences`. A stored key no longer named here (`pinned_modules`, D-221) is dropped on read. */
 export const SoldierPreferences = z
   .object({
     /** Pre-selects "create as approved" for actors who hold leaves:approve (D-013). */
     create_leaves_as_approved: z.boolean().default(false),
-    /** The modules the soldier pinned from the navigation panel to the bar, in the order pinned (D-173). */
-    pinned_modules: z
-      .array(NavigationModule)
-      .superRefine((modules, ctx) => {
-        checkDistinct(ctx, modules, (module) => module)
-      })
-      .default([]),
     /** Where the rules heat row sits on the board (D-173). */
     rules_row_placement: RulesRowPlacement.default('below'),
     /** The color scheme (D-181); light until chosen. */

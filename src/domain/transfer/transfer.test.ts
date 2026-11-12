@@ -1,6 +1,6 @@
 import { SoldierId } from '@contracts'
 import { describe, expect, it } from 'vitest'
-import { parseCsv, readSoldierCsv, soldierCsvInput } from '.'
+import { parseCsv, readPastedSoldiers, readSoldierCsv, soldierCsvInput } from '.'
 
 // Sample data, test files only.
 
@@ -84,5 +84,52 @@ describe('soldierCsvInput', () => {
       invite_email: null,
       phone: null,
     })
+  })
+})
+
+describe('readPastedSoldiers', () => {
+  const labels = {
+    first_name: 'First',
+    last_name: 'Last',
+    nickname: 'Nick',
+    personal_id: 'Number',
+    phone: 'Phone',
+    invite_email: 'Email',
+  } as const
+  const row = (first_name: string, last_name: string, more: Partial<Record<string, string>> = {}) => ({
+    first_name,
+    last_name,
+    nickname: null,
+    personal_id: null,
+    phone: null,
+    invite_email: null,
+    ...more,
+  })
+
+  it('splits a spreadsheet copy on tabs, in the grid order, skipping blank lines', () => {
+    expect(readPastedSoldiers('Dana\tLevi\t\t123\n\nNoa\tCohen, Jr\n', labels)).toEqual({
+      ok: true,
+      rows: [row('Dana', 'Levi', { personal_id: '123' }), row('Noa', 'Cohen, Jr')],
+    })
+  })
+
+  it('splits on commas with CSV quotes when no line has a tab', () => {
+    expect(readPastedSoldiers('"Levi, D",Dana', labels)).toEqual({ ok: true, rows: [row('Levi, D', 'Dana')] })
+  })
+
+  it('takes the column order from a header of CSV names or grid labels', () => {
+    expect(readPastedSoldiers('last,first_name\nLevi,Dana', { ...labels, last_name: 'last' })).toEqual({
+      ok: true,
+      rows: [row('Dana', 'Levi')],
+    })
+    expect(readPastedSoldiers('Number\tFirst\n7\tDana', labels)).toEqual({
+      ok: true,
+      rows: [{ ...row('Dana', ''), last_name: null, personal_id: '7' }],
+    })
+  })
+
+  it('refuses a cell past the last column and an open quote', () => {
+    expect(readPastedSoldiers('a,b,c,d,e,f,g', labels)).toEqual({ ok: false, problem: { kind: 'row_length', row: 1 } })
+    expect(readPastedSoldiers('"a,b', labels)).toEqual({ ok: false, problem: { kind: 'unreadable' } })
   })
 })

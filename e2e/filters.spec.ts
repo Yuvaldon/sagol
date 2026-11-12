@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, press, requestLeave } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 
 // V6's demo: tag categories and tags, a soldier's tags, filter chips, leave conditions, "only who is missing" and
 // the present and absent lists, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -28,8 +28,15 @@ function rowNames(page: Page) {
   return board(page).getByRole('list', { name: he.timeline.names }).getByRole('button', { name: /^[^,]+$/ })
 }
 
+/** Tags and their categories are each their own module of the setup (D-285); the step moves to the one it needs. */
+async function switchTo(page: Page, open: string, title: string) {
+  if (await drawer(page).getByRole('heading', { name: title, exact: true }).isVisible()) return
+  await closeDrawer(page)
+  await openModule(page, open)
+}
+
 async function createCategory(page: Page, name: string, color: string, single = false) {
-  await drawer(page).getByRole('button', { name: he.tags.tabCategories }).click()
+  await switchTo(page, he.tagCategories.open, he.tagCategories.title)
   await drawer(page).getByRole('button', { name: he.tagCategories.new }).first().click()
   await page.getByLabel(he.tagCategories.name).fill(name)
   if (single) {
@@ -42,7 +49,7 @@ async function createCategory(page: Page, name: string, color: string, single = 
 }
 
 async function createTag(page: Page, name: string, category: string) {
-  await drawer(page).getByRole('button', { name: he.tags.tabTags }).click()
+  await switchTo(page, he.tags.open, he.tags.title)
   await drawer(page).getByRole('button', { name: he.tags.new }).first().click()
   await page.getByLabel(he.tags.name).fill(name)
   await drawer(page).getByRole('button', { name: new RegExp(`${he.tags.category}$`) }).click()
@@ -67,13 +74,31 @@ async function addCondition(page: Page, condition: string, value: string) {
   await page.keyboard.press('Escape')
 }
 
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
+
 test('tags, filter chips, only who is missing, and who is present today', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
   await test.step('categories and tags in their own drawer', async () => {
     await openModule(page, he.tags.open)
-    await expect(drawer(page).getByRole('heading', { name: he.tags.needsCategoryTitle })).toBeVisible()
+    // With no category yet, a tag's form makes one in place, named "כללי", and chooses it (D-285).
+    await expect(drawer(page).getByRole('heading', { name: he.tags.emptyTitle })).toBeVisible()
+    await drawer(page).getByRole('button', { name: he.tags.new }).first().click()
+    await page.getByLabel(he.tags.name).fill('מילואים')
+    await drawer(page).getByRole('button', { name: he.tagCategories.new }).click()
+    const inPlace = page.getByRole('dialog', { name: he.tagCategories.new })
+    await expect(inPlace.getByLabel(he.tagCategories.name)).toHaveValue(he.tags.firstCategoryName)
+    await expectNoAxeViolations(page)
+    await inPlace.locator('label').filter({ has: page.getByRole('radio', { name: he.palette.orange, exact: true }) }).click()
+    await inPlace.getByRole('button', { name: he.common.create }).click()
+    await expect(inPlace).toBeHidden()
+    await expect(drawer(page).getByRole('button', { name: new RegExp(`${he.tags.category}$`) })).toContainText(he.tags.firstCategoryName)
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(drawer(page).getByRole('list', { name: he.tags.firstCategoryName })).toContainText('מילואים')
     await createCategory(page, 'תפקיד', he.palette.teal)
     await createCategory(page, 'מצב משפחתי', he.palette.pink, true)
     await createTag(page, 'חובש', 'תפקיד')

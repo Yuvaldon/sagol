@@ -7,6 +7,7 @@ export {
   descendantsOf,
   isAncestorOrSelf,
   moveUnitIssues,
+  rootIssues,
   type UnitNode,
   type UnitTree,
 } from './tree'

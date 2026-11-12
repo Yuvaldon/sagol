@@ -59,7 +59,7 @@ const newCommentId = () => LeaveCommentId.parse(crypto.randomUUID())
 
 export function describeLeaveWorkflowContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
   const leaves = () => adapter().commands.leaves
@@ -67,6 +67,7 @@ export function describeLeaveWorkflowContract(
 
   describe('the approval workflow', () => {
     let organization: OrganizationId
+    let root: UnitId
     let ownerId: SoldierId
     let owner: AuthIdentity
     let rotation: DeploymentId
@@ -74,6 +75,7 @@ export function describeLeaveWorkflowContract(
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
       rotation = await seedRotation(harnessOf(), organization, [ownerId])
@@ -376,14 +378,17 @@ export function describeLeaveWorkflowContract(
     })
 
     describe('the rule gate on a step (D-073, D-117, OI-027)', () => {
-      /** "At least one available in the organization", counting approved leaves only. */
-      const seedRule = (enforcement: RuleEnforcement) => seedSharedRule(harnessOf(), organization, { enforcement })
+      /** "At least one available in the platoon", counting approved leaves only. The platoon, not the organization:
+       * the owner is placed in the root unit (D-251) and stays available. */
+      let platoonId: UnitId
+      const seedRule = (enforcement: RuleEnforcement) =>
+        seedSharedRule(harnessOf(), organization, { enforcement, scope_unit_id: platoonId })
 
       async function lastSoldierStanding() {
         const platoon = valueOf(
           await adapter().commands.units.create({
             id: UnitId.parse(crypto.randomUUID()),
-            parent_id: null,
+            parent_id: root,
             sort_order: 0,
             name: 'Platoon',
             code: null,
@@ -395,6 +400,7 @@ export function describeLeaveWorkflowContract(
             properties: {},
           }),
         )
+        platoonId = platoon.id
         return leaveOf({}, platoon.id)
       }
 
@@ -435,7 +441,7 @@ export function describeLeaveWorkflowContract(
       it('gates a reopen that counts again (OI-084)', async () => {
         const leave = await lastSoldierStanding()
         const rejected = valueOf(await step(leave, 'reject'))
-        const ruleId = await seedSharedRule(harnessOf(), organization, { enforcement: 'hard', count_pending_as_unavailable: true })
+        const ruleId = await seedSharedRule(harnessOf(), organization, { enforcement: 'hard', count_pending_as_unavailable: true, scope_unit_id: platoonId })
         expect(errorOf(await step(rejected, 'reopen'))).toMatchObject({ code: 'rule_violation', violations: [{ rule_id: ruleId }] })
         expect(valueOf(await adapter().repositories.leaves.get(leave.id)).status).toBe('rejected')
       })
@@ -446,7 +452,7 @@ export function describeLeaveWorkflowContract(
         const platoon = valueOf(
           await adapter().commands.units.create({
             id: UnitId.parse(crypto.randomUUID()),
-            parent_id: null,
+            parent_id: root,
             sort_order: 0,
             name: 'Platoon',
             code: null,
@@ -458,6 +464,7 @@ export function describeLeaveWorkflowContract(
             properties: {},
           }),
         )
+        platoonId = platoon.id
         const leave = await leaveOf({ as_approved: true, leave_type_id: marker.id, soldier_id: (await soldier(platoon.id)).id })
         const ruleId = await seedRule('soft')
         const retype = (acknowledged_rule_ids: typeof ruleId[]) =>

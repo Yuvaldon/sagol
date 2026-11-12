@@ -1,26 +1,23 @@
 import {
   DeploymentId,
+  LeaveBatchId,
   LeaveId,
   LeaveTypeGroupId,
   LeaveTypeId,
   OrganizationId,
   SoldierId,
   type Leave,
-  type LeaveQuery,
   type LeaveType,
   type LeaveTypeGroup,
   type PermissionCheck,
   type Result,
 } from '@contracts'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { LogicPorts } from '../ports'
 import { fakePorts, organizationIn, wrapperOf } from '../testing/ports'
 import { boardLeaves } from '../board/leaves'
 import { WorkspaceSearch } from '../view-state/search'
-import type { DateWindow } from '../view-state/window'
-import { newLeaveIssues, newLeaveValues, optimisticLeave, toCreateLeaveInput } from './forms'
-import { useCreateLeave, useLeaveCreation, useLeaves } from './hooks'
+import { useLeaveCreation } from './hooks'
 import { NEW_LEAVE_TYPE_VALUES, leaveTypeFormValues, leaveTypeSections, toUpdateLeaveTypeInput } from './leaveTypes'
 
 // Sample rows, test data only.
@@ -30,7 +27,6 @@ const ACTOR = SoldierId.parse(uuid(901))
 const YAEL = SoldierId.parse(uuid(1))
 const AT = '2026-11-08T10:00:00.000Z'
 const ROTATION = DeploymentId.parse(uuid(70))
-const IN_ROTATION = { deployment_id: ROTATION, issues: [] }
 const audit = { created_at: AT, created_by: null, updated_at: AT, updated_by: null, version: 1, archived_at: null }
 
 function group(n: number, sort_order: number, archived = false): LeaveTypeGroup {
@@ -116,50 +112,6 @@ describe('leave type sections (D-113)', () => {
   })
 })
 
-describe('the new-leave form (D-115)', () => {
-  const TODAY = '2026-11-08'
-
-  it('starts on today, unapproved, with nothing chosen', () => {
-    expect(newLeaveValues(TODAY)).toEqual({
-      soldier_id: null,
-      leave_type_id: null,
-      start_date: TODAY,
-      end_date: TODAY,
-      reason: '',
-      as_approved: false,
-    })
-  })
-
-  it('answers the codes the command answers', () => {
-    const blank = newLeaveIssues(newLeaveValues(TODAY), null, IN_ROTATION)
-    expect(blank).toEqual([
-      { path: ['soldier_id'], code: 'required' },
-      { path: ['leave_type_id'], code: 'required' },
-    ])
-    const chosen = { ...newLeaveValues(TODAY), soldier_id: YAEL, leave_type_id: type(30, null, 0).id }
-    expect(newLeaveIssues({ ...chosen, end_date: '2026-11-07' }, null, IN_ROTATION)).toEqual([{ path: ['end_date'], code: 'range_inverted' }])
-    expect(newLeaveIssues({ ...chosen, reason: '  ' }, { requires_reason: true }, IN_ROTATION)).toEqual([
-      { path: ['reason'], code: 'reason_required' },
-    ])
-    expect(newLeaveIssues({ ...chosen, reason: 'Wedding' }, { requires_reason: true }, IN_ROTATION)).toEqual([])
-    const outside = { deployment_id: null, issues: [{ path: ['start_date'], code: 'outside_rotation' as const }] }
-    expect(newLeaveIssues(chosen, null, outside)).toEqual([{ path: ['start_date'], code: 'outside_rotation' }])
-  })
-
-  it('sends a blank reason as NULL (D-101)', () => {
-    const chosen = { ...newLeaveValues(TODAY), soldier_id: YAEL, leave_type_id: type(30, null, 0).id, reason: ' ' }
-    expect(toCreateLeaveInput(chosen, ROTATION)).toMatchObject({ reason: null, deployment_id: ROTATION })
-  })
-
-  it('shows the leave as the command will write it', () => {
-    const chosen = { ...newLeaveValues(TODAY), soldier_id: YAEL, leave_type_id: type(30, null, 0).id }
-    const actor = { soldier_id: ACTOR, organization_id: ORGANIZATION }
-    expect(optimisticLeave(toCreateLeaveInput(chosen, ROTATION), actor, AT)).toMatchObject({ status: 'pending', reviewed_by: null })
-    const approved = optimisticLeave(toCreateLeaveInput({ ...chosen, as_approved: true }, ROTATION), actor, AT)
-    expect(approved).toMatchObject({ status: 'approved', reviewed_by: ACTOR, reviewed_at: AT, created_by: ACTOR })
-  })
-})
-
 describe('the leaves of a timeline row (D-111)', () => {
   it('orders by first day, and takes the effect of the override, the type, or the default', () => {
     const types = [type(30, null, 0), type(31, null, 0, { availability_effect: 'available' })]
@@ -175,99 +127,16 @@ describe('the leaves of a timeline row (D-111)', () => {
       ['2026-11-12', 'unavailable', null],
     ])
   })
-})
 
-// ------------------------------------------------------------ the optimistic create
-
-describe('creating a leave with an optimistic update (D-115)', () => {
-  const WINDOW: DateWindow = {
-    kind: 'week',
-    rotationId: null,
-    from: '2026-11-08',
-    to: '2026-11-14',
-    days: [],
-    followsToday: true,
-    holdsToday: true,
-  }
-  const OTHER_WEEK: DateWindow = { ...WINDOW, from: '2026-12-06', to: '2026-12-12' }
-
-  function portsWith(create: () => Promise<Result<Leave>>) {
-    const list = vi.fn((_query: LeaveQuery) => Promise.resolve<Result<Leave[]>>({ ok: true, value: [] }))
-    const session = { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION }
-    const ports = fakePorts({
-      session: { current: () => Promise.resolve({ ok: true, value: session }) },
-      repositories: { leaves: { list } },
-      commands: { leaves: { create } },
-      now: () => AT,
-    })
-    return { ports, list }
-  }
-
-  const values = {
-    ...newLeaveValues('2026-11-09'),
-    soldier_id: YAEL,
-    leave_type_id: LeaveTypeId.parse(uuid(30)),
-  }
-
-  function render(ports: LogicPorts) {
-    return renderHook(
-      () => ({ week: useLeaves(WINDOW), other: useLeaves(OTHER_WEEK), create: useCreateLeave() }),
-      { wrapper: wrapperOf(ports) },
-    )
-  }
-
-  const idsOf = (state: ReturnType<typeof useLeaves>) => (state.status === 'ready' ? state.value.map((row) => row.status) : null)
-
-  it('shows the leave in the windows it overlaps at once, and takes it back on a refusal', async () => {
-    let answer: (result: Result<Leave>) => void = () => undefined
-    const { ports } = portsWith(() => new Promise((resolve) => (answer = resolve)))
-    const { result } = render(ports)
-    await waitFor(() => {
-      expect(idsOf(result.current.week)).toEqual([])
-      expect(idsOf(result.current.other)).toEqual([])
-    })
-    let settled: Promise<unknown> = Promise.resolve()
-    act(() => {
-      settled = result.current.create.run(values, ROTATION)
-    })
-    await waitFor(() => {
-      expect(idsOf(result.current.week)).toEqual(['pending'])
-    })
-    expect(idsOf(result.current.other)).toEqual([])
-    await act(async () => {
-      answer({ ok: false, error: { code: 'forbidden' } })
-      await settled
-    })
-    await waitFor(() => {
-      expect(idsOf(result.current.week)).toEqual([])
-    })
-  })
-
-  it('asks the adapter again once the command answers', async () => {
-    const { ports, list } = portsWith(() => Promise.resolve({ ok: true, value: leave(1, 30, '2026-11-09', '2026-11-09') }))
-    const { result } = render(ports)
-    await waitFor(() => {
-      expect(idsOf(result.current.week)).toEqual([])
-    })
-    const before = list.mock.calls.length
-    await act(async () => {
-      await result.current.create.run(values, ROTATION)
-    })
-    expect(list.mock.calls.length).toBeGreaterThan(before)
+  it('draws a leave in a batch as a round, and any other as a request (D-268)', () => {
+    const leaves = [leave(1, 30, '2026-11-08', '2026-11-09'), leave(2, 30, '2026-11-10', '2026-11-11', { batch_id: LeaveBatchId.parse(uuid(70)) })]
+    expect((boardLeaves(leaves, [type(30, null, 0)]).get(YAEL) ?? []).map((row) => row.layer)).toEqual(['request', 'round'])
   })
 })
-
 describe('the bar colors in the URL (D-112)', () => {
   it('keeps a known mode and counts anything else as absent', () => {
     expect(WorkspaceSearch.parse({ colors: 'uniform' }).colors).toBe('uniform')
     expect(WorkspaceSearch.parse({ colors: 'rainbow' }).colors).toBeUndefined()
-  })
-})
-
-describe('an empty date on the new-leave form', () => {
-  it('answers required, as the command would', () => {
-    const values = { ...newLeaveValues('2026-11-08'), soldier_id: YAEL, leave_type_id: LeaveTypeId.parse(uuid(30)), end_date: '' as const }
-    expect(newLeaveIssues(values, null, IN_ROTATION)).toEqual([{ path: ['end_date'], code: 'required' }])
   })
 })
 
