@@ -1,9 +1,8 @@
 import { TOOLTIP } from '@config'
 import { t } from '@i18n'
-import { useNavigationPreferences } from '@logic'
 import { Button as AriaButton, TooltipTrigger } from 'react-aria-components'
 import { NameTooltip } from '../primitives/Button'
-import { useDailyEntries, useNavigationEntries, type ModuleEntry } from './moduleEntries'
+import { useDailyEntries, type ModuleEntry } from './moduleEntries'
 
 /** The number waiting on a module, read with its name. */
 export function EntryCount({ entry, floating }: { readonly entry: ModuleEntry; readonly floating: boolean }) {
@@ -36,15 +35,12 @@ function ModuleButton({ entry }: { readonly entry: ModuleEntry }) {
   )
 }
 
-/** The daily modules, then the soldier's pins in the order they were pinned (D-173): the desktop's destinations. */
+/** The daily modules: the desktop's destinations. Nothing is pinned to the bar (D-254). */
 export function ModuleButtons() {
   const daily = useDailyEntries()
-  const navigation = useNavigationEntries()
-  const { pinned, editable } = useNavigationPreferences()
-  const pins = editable ? pinned.flatMap((module) => navigation.get(module) ?? []) : []
   return (
     <>
-      {[...daily, ...pins].map((entry) => (
+      {daily.map((entry) => (
         <ModuleButton key={entry.id} entry={entry} />
       ))}
     </>
