@@ -18,6 +18,8 @@ import {
   ENV_VARIABLES,
   ICON_KEYS,
   INDEXED_DB_NAME,
+  LEAVE_ROUNDS,
+  LEAVE_SHEET,
   PALETTE_KEYS,
   PANEL_IDS,
   SETUP_STEPS,
@@ -238,6 +240,17 @@ describe('views, url, storage, breakpoints, dates', () => {
       const formatter = new Intl.DateTimeFormat(DATE_LOCALE, options)
       expect(formatter.resolvedOptions().locale).toBe(DATE_LOCALE)
     }
+  })
+})
+
+describe('leave rounds (D-286)', () => {
+  it('starts at a rhythm the planner accepts, and plans no more than a sheet allows per soldier', () => {
+    for (const days of [LEAVE_ROUNDS.defaultDaysIn, LEAVE_ROUNDS.defaultDaysHome]) {
+      expect(Number.isInteger(days)).toBe(true)
+      expect(days).toBeGreaterThanOrEqual(1)
+      expect(days).toBeLessThanOrEqual(LEAVE_ROUNDS.maxDays)
+    }
+    expect(LEAVE_ROUNDS.maxLeaves).toBeGreaterThanOrEqual(LEAVE_SHEET.maxLeaves)
   })
 })
 
