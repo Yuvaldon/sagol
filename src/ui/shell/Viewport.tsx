@@ -8,6 +8,7 @@ import {
   usePanel,
   useRotationScope,
   useSoldiers,
+  useUnitPermissions,
   useUnits,
 } from '@logic'
 import { EmptyNotice } from '../patterns/Notices'
@@ -31,23 +32,32 @@ function useNoBoard(): boolean {
 
 const CENTERED = 'flex h-full items-center justify-center px-lg'
 
-/** Who may open a rotation opens it here; anyone else reads who does (D-218). */
+const NO_UNITS: readonly never[] = []
+
+/**
+ * Who may open a rotation opens it here; anyone else reads who does (D-218). A rotation belongs to a unit, so before
+ * any unit exists, who may found the tree is sent to found it first.
+ */
 function NoRotation() {
   const { rotations } = useDateWindow()
   const units = useUnits()
   const panel = usePanel()
-  const { createAny } = useDeploymentPermissions(units.status === 'ready' ? units.value : [], rotations)
+  const live = units.status === 'ready' ? units.value : NO_UNITS
+  const { createAny } = useDeploymentPermissions(live, rotations)
+  const tree = useUnitPermissions(live)
+  const foundFirst = !createAny && units.status === 'ready' && live.length === 0 && tree.createUnder(null)
+  const bodyKey = foundFirst ? 'deployments.emptyNoUnits' : createAny ? undefined : 'workspace.noRotationBody'
   return (
     <div className={CENTERED}>
-      <EmptyNotice titleKey="workspace.noRotationTitle" bodyKey={createAny ? undefined : 'workspace.noRotationBody'} headingLevel={2}>
-        {createAny ? (
+      <EmptyNotice titleKey="workspace.noRotationTitle" bodyKey={bodyKey} headingLevel={2}>
+        {createAny || foundFirst ? (
           <Button
             variant="primary"
             onPress={() => {
-              panel.open(PANEL_IDS.deployments, { entity: NEW_ENTITY })
+              panel.open(foundFirst ? PANEL_IDS.units : PANEL_IDS.deployments, { entity: NEW_ENTITY })
             }}
           >
-            {t('workspace.openRotation')}
+            {t(foundFirst ? 'units.new' : 'workspace.openRotation')}
           </Button>
         ) : null}
       </EmptyNotice>
