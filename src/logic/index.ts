@@ -319,6 +319,18 @@ export {
   useUnitsWithArchived,
 } from './roster/hooks'
 export {
+  blankQuickEntryRow,
+  isBlankQuickEntryRow,
+  quickEntryIssues,
+  quickEntryRowsFromPaste,
+  readyQuickEntryRows,
+  useQuickEntrySave,
+  type QuickEntryAnswers,
+  type QuickEntryPlacement,
+  type QuickEntryRow,
+  type QuickEntryValues,
+} from './roster/quickEntry'
+export {
   NEW_LINK_REQUEST_VALUES,
   linkRequestIssues,
   newSoldierFromRequestIssues,
@@ -328,6 +340,7 @@ export {
   type NewSoldierFromRequestValues,
 } from './accounts/forms'
 export { candidateRows, type CandidateRow } from './accounts/review'
+export { certainCandidate, useBulkLinkApproval, type BulkLinkAnswer, type BulkLinkAnswers } from './accounts/bulk'
 export {
   useCancelLinkRequest,
   useLinkCandidates,
