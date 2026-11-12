@@ -114,8 +114,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   row sits on `canvas`. Days a row is out of the selected unit are muted with `inner` and read aloud as ranges.
   Positions are inline offsets from the core, so RTL needs no mirroring.
 - **Leaves on the timeline (D-111, D-112):** sizes come from `TIMELINE_LANES` in `config`: bars 20 high, inset 3 inside
-  their days, a lane step of 24. A bar is its type's color: solid when approved, a 2 px dashed edge over a faint fill when
-  pending, square on a side the window cuts. A marker is a 20 px round badge on `surface` with its icon, on each day,
+  their days, a lane step of 24. Absence is a hole (D-290): an approved bar is hatched from its type's color over a faint
+  fill with its edge, a pending one a 2 px dashed edge over the surface, square on a side the window cuts; the caption is
+  the body text. A round (a leave in a batch) is a band of the row's full height under the request bars, outside the
+  lanes. No leave type is green or lime, so green never means away. A marker is a 20 px round badge on `surface` with its icon, on each day,
   over any bar. Overlaps take lanes, and a row grows by a lane step for each lane beyond the first. In the uniform mode
   every bar is `absence`, with a dot of the type's color and its name inside, and badges are `marker`.
 - **The other views (D-174):** each fills the same frame under the bars, a focusable region named for the view. The
@@ -124,6 +126,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   columns from `md` and one day per line below it; a day's heading holds its weekday, its number (today in the dark
   pill) and how many are out, then a chip per leave with the soldier's name. A chip is a `pill` of `text-label`, a dot of
   the leave's color, solid edge when approved and dashed in the type's edge color when pending.
+  A day that breaks a rule shows a count beside its heading, and the list shows the window's broken days above its
+  rows; each opens the rules of its day in the heat row's tones (D-290). With no view in the link, desktop opens on the
+  timeline and a phone on the list.
 - **Lanes on a phone (D-144, OI-067):** `TIMELINE_LANES_TOUCH` makes bars 28 high with a lane step of 44, so a bar's hit
   area is 44 high and a badge's 44 wide; a row of one lane stays 44.
 - **A mark is a control (D-119):** a bar is a button named by its type, its status and its days, and it opens the leave.
@@ -417,7 +422,7 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 2. Type (by group), from and to (inside the rotation by default), the reason when the type needs one, and any פרטים
    נוספים; the rules' warnings show as the dates change. "בקשה נוספת" adds a row of its own type and days, and "חוזרת"
    repeats a row every so many days (D-275).
-3. Send. The request shows in "שלי" as pending, and on the board as pending (dashed until V29's language, D-268).
+3. Send. The request shows in "שלי" as pending, and on the board as pending (a dashed edge, D-290).
 
 **(d) A commander approves.**
 1. The commander lands on the board; the בקשות destination carries the count awaiting approval; open it.

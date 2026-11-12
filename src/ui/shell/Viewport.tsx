@@ -13,6 +13,7 @@ import {
 } from '@logic'
 import { EmptyNotice } from '../patterns/Notices'
 import { Button } from '../primitives/Button'
+import { useViewDevice } from '../patterns/media'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 
 // The central viewport (D-023): it shows the active engine from the registry. Every engine needs a date window, which
@@ -73,7 +74,7 @@ function RoutineBand() {
 }
 
 export function Viewport() {
-  const { view } = useActiveView(AVAILABLE_VIEWS)
+  const { view } = useActiveView(AVAILABLE_VIEWS, useViewDevice())
   const { window } = useDateWindow()
   const scope = useRotationScope()
   const noBoard = useNoBoard()

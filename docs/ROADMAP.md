@@ -134,7 +134,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V32 | Work and unit setup | Daily work in "ניהול יחידה", one-time definitions in "הגדרות היחידה"; a definition apart from its use; a missing definition created in place; tag categories advanced; the checklist leads (D-284, D-285) | ☑ |
 | V28 | Several requests at once | One sheet of rows, a recurring row, sent atomically, each row its own leave; the quick action by mode (D-266, D-267) | ☑ |
 | A7 | audit | Whole product, once V27 and V28 are in (D-284) | ☐ |
-| V29 | Board visual language | Presence quiet, absence a hole, green never means away; rounds under requests (D-268) | ☐ |
+| V29 | Board visual language | Presence quiet, absence a hole, green never means away; rounds under requests; the view by device; a breach in every view (D-268, D-290) | ☑ |
 | V30 | דוח 1 as a workflow | Each unit confirms its list, the report owner sends one message up (D-269; schema change) | ☐ |
 | V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation (D-270) | ☐ |
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units | ☐ |

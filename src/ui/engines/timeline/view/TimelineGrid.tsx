@@ -181,10 +181,18 @@ const GHOST_TONES: Record<TimelineDragTone, string> = {
   unknown: 'outline-2 outline-dotted outline-marker',
 }
 
-/** How a mark is filled: solid when approved, a dashed edge over a faint fill when pending (D-111). */
+/**
+ * How an absence is drawn (D-268, D-290): a hole, never a solid block. Approved is a hatch in the type's ink over its
+ * faint fill, edged in its color; pending is a dashed edge over the surface, so the two never read alike.
+ */
 function barForm(mark: TimelineMark): string {
-  return mark.dashed ? `border-2 border-dashed ${mark.tone.edge} ${mark.tone.faint}` : mark.tone.fill
+  return mark.dashed
+    ? `border-2 border-dashed bg-surface ${mark.tone.edge}`
+    : `hatch-absence border ${mark.tone.faint} ${mark.tone.edge} ${mark.tone.ink}`
 }
+
+// A round's band (D-268): the row's whole height, under the requests' bars, which sit over it at `z-1`.
+const BAND_BUTTON = 'absolute top-none cursor-pointer outline-focus -outline-offset-2 data-focus-visible:outline-2'
 
 function barEnds(cut: TimelineMark['cut']): string {
   return `${cut.start ? '' : 'rounded-s-bar'} ${cut.end ? '' : 'rounded-e-bar'}`
@@ -231,10 +239,40 @@ function Bar({ mark, place, dimmed }: { readonly mark: TimelineMark; readonly pl
     >
       {mark.dot === null ? null : <span aria-hidden className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
       {mark.caption === null ? null : (
-        <span aria-hidden className={`truncate text-micro font-medium ${mark.dashed ? 'text-text' : 'text-on-fill'}`}>
+        <span aria-hidden className="truncate text-micro font-medium text-text">
           {mark.caption}
         </span>
       )}
+      <Handles mark={mark} />
+    </AriaButton>
+  )
+}
+
+/** A round's absence: a band under the row's requests (D-268). It opens and moves as a bar does. */
+function Band({
+  mark,
+  place,
+  heightPx,
+  dimmed,
+}: {
+  readonly mark: TimelineMark
+  readonly place: Place
+  readonly heightPx: number
+  readonly dimmed: boolean
+}) {
+  const { startPx, widthPx } = barSpan(place.layout, mark, mark.cut, place.lanes)
+  return (
+    <AriaButton
+      aria-label={mark.label}
+      data-mark={mark.key}
+      data-layer="round"
+      onPress={() => {
+        if (!place.pressIsDrag()) mark.onOpen()
+      }}
+      className={`${BAND_BUTTON} flex select-none items-end gap-xs px-xs ${barForm(mark)} ${dimmed ? 'opacity-50' : ''}`}
+      style={{ insetInlineStart: startPx, width: widthPx, height: heightPx }}
+    >
+      {mark.dot === null ? null : <span aria-hidden className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
       <Handles mark={mark} />
     </AriaButton>
   )
@@ -384,13 +422,17 @@ function ResourceRow({
           </AriaButton>
         )}
       </div>
-      {row.marks.map((mark) =>
-        mark.kind === 'bar' ? (
+      {row.marks.map((mark) => {
+        if (mark.kind === 'band') {
+          const heightPx = rowHeightFor(place.baseRowPx, row.lanes, place.lanes)
+          return <Band key={mark.key} mark={mark} place={place} heightPx={heightPx} dimmed={mark === dragged} />
+        }
+        return mark.kind === 'bar' ? (
           <Bar key={mark.key} mark={mark} place={place} dimmed={mark === dragged} />
         ) : (
           <Badges key={mark.key} mark={mark} place={place} dimmed={mark === dragged} />
-        ),
-      )}
+        )
+      })}
       {drag === null ? null : <Ghost drag={drag} mark={dragged} place={place} tone={tone} />}
       {/* A hairline of its own, so the name keeps the whole height of the row as a touch target. */}
       <div aria-hidden className="absolute inset-x-none bottom-none z-3 h-hairline bg-line" />

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press, typeDate } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V8's demo: drag to create, move and resize leaves on the board, with the card that says what a drop would do and the
 // rule it would break; on a phone, the same by holding a finger first. Desktop and mobile, RTL, with axe. Sample data,
@@ -88,6 +88,11 @@ async function finishNewLeave(page: Page, from: string, to: string) {
   await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
   await expect(drawer(page)).toHaveCount(0)
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('drag to create, move and resize, with what a drop would break', async ({ page, isMobile }) => {
   test.skip(isMobile, 'The phone has its own demo below')

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, press, typeDate } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 
 // V15's demo: deployments and who serves in them (D-019), a collective leave and a copy of a leave (D-012, D-049),
 // and a soldier's personal seniority (D-029), on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -13,6 +13,11 @@ async function createSoldier(page: Page, firstName: string, lastName: string) {
   await page.getByRole('button', { name: he.common.create }).click()
   await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('deployments, a collective leave, a copy and personal seniority', async ({ page }) => {
   await page.clock.setFixedTime(NOW)

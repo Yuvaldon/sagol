@@ -12,6 +12,16 @@ import { effectiveEffect } from '@domain'
 
 // The leaves of each soldier in view, as the engines draw them (D-111, D-174). Pure; the hook feeds it.
 
+/**
+ * The board's two layers (D-268): a round is a leave in a batch (a collective leave, or the planner's), drawn as a
+ * background under the requests; any other leave is a request. Derived from `batch_id`, never stored (D-019).
+ */
+export type LeaveLayer = 'round' | 'request'
+
+export function layerOf(leave: Pick<Leave, 'batch_id'>): LeaveLayer {
+  return leave.batch_id === null ? 'request' : 'round'
+}
+
 /** A leave as a row draws it. */
 export interface BoardLeave {
   readonly id: LeaveId
@@ -22,6 +32,7 @@ export interface BoardLeave {
   readonly effect: AvailabilityEffect
   /** NULL when the actor may not read the type. */
   readonly type: LeaveType | null
+  readonly layer: LeaveLayer
 }
 
 /**
@@ -44,6 +55,7 @@ export function boardLeaves(
       end_date: leave.end_date,
       effect: effectiveEffect(leave, type ?? undefined),
       type,
+      layer: layerOf(leave),
     }
     const own = bySoldier.get(leave.soldier_id)
     if (own === undefined) bySoldier.set(leave.soldier_id, [drawn])

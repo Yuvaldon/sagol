@@ -4,7 +4,7 @@ import { t } from '@i18n'
 import { dayRangeOf, type BoardGroupLabel, type BoardLeave } from '@logic'
 import { formatDate, formatDateRange } from '../patterns/dates'
 import { UNIT_STATE_KEYS } from '../patterns/units'
-import { MARKER_TONE, UNIFORM_TONE, toneOf, type PaletteTone } from '../theme/palette'
+import { MARKER_TONE, UNIFORM_TONE, leaveTypeToneOf, type PaletteTone } from '../theme/palette'
 
 // How every engine names what the board model holds (D-174): a group, a leave, its days and its color, so the timeline,
 // the list, the table and the calendar read the same words. Pure.
@@ -42,8 +42,9 @@ export function leaveDetails(leave: BoardLeave): readonly string[] {
 
 /** What a leave's color means (D-111, D-112): its type, or one color for every absence and one for every marker. */
 export function leaveTone(leave: BoardLeave, mode: BarColorMode): PaletteTone {
-  if (mode === 'uniform') return leave.effect === 'available' ? MARKER_TONE : UNIFORM_TONE
-  return toneOf(leave.type?.color_key ?? null)
+  const fallback = leave.effect === 'available' ? MARKER_TONE : UNIFORM_TONE
+  if (mode === 'uniform') return fallback
+  return leaveTypeToneOf(leave.type?.color_key ?? null, fallback)
 }
 
 /** How many days a leave holds, both ends counted. */
