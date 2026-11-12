@@ -6,7 +6,7 @@ import { Button } from '../primitives/Button'
 // A small dialog over a drawer, always with a way out. A destructive question says what it means in
 // its body and uses a named action (D-088).
 
-const OVERLAY = 'enter-scrim fixed inset-none flex items-center justify-center bg-scrim p-lg'
+const OVERLAY = 'enter-scrim fixed inset-screen flex items-center justify-center bg-scrim p-lg'
 // The surface is as tall as its content, up to the screen; past it the content scrolls, and the title and the actions
 // stay in sight (D-278).
 const SURFACE = 'glass-menu flex max-h-full w-full max-w-sheet flex-col overflow-hidden rounded-panel p-lg'
