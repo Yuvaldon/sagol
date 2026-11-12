@@ -200,7 +200,7 @@ am = amends, ref = refines, ext = extends.
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
 | D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
-| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-277 |
+| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-274 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188 |
@@ -257,9 +257,11 @@ am = amends, ref = refines, ext = extends.
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | |
+| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
+| D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
-| D-277 | The install offer after sign-in, once per device | config, logic, ui | |
+| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
 
 ---
 
@@ -3425,6 +3427,23 @@ ordinary ones.
 **Why:** the matrix adds three requests-and-report slices to the track that holds the requests, and the planner to
 the track that holds rotations.
 
+## D-272 — The spreadsheet review: refinements of existing slices, no new ones
+2026-11-12 · accepted · refines D-174, D-211, D-268 · V29 · reviewed with the owner on 2026-11-12
+- The owner's two company spreadsheets (a hand-drawn leave grid per platoon, and a commander's generated board) show
+  how rotations were planned before Sagol. They are a picture of the pains, not a specification: a single wide
+  timeline drawn by hand, no single source of truth, soldiers asking verbally, coverage checked by fragile formulas,
+  and mid-rotation changes breaking the sheet.
+- Each pain is already answered by a built or planned slice: one board on the unit tree, self-service requests
+  (V28, "שלי"), availability rules with soft acknowledgment (D-014, D-047, D-071 … D-073), several views on one model
+  (D-174) with ranges up to a rotation (D-211), and the planner (D-270, unchanged). Nothing in them adds an entity.
+- Two refinements go to V29: the board opens on the view that fits the device when no link or remembered choice
+  names one (OI-220), and a rule's breach shows in every view, not only the timeline's heat row (OI-221). A sheet's
+  summary row is not copied; the same derived figures show where the commander already looks.
+- A situation picture (days in base per soldier and unit, fairness, rules over the rotation; derived, never stored)
+  is a new module that needs joint design with the owner first (OI-222).
+**Why:** the owner asked that the review deepen the understanding of the problem without duplicating features,
+adding complexity or working around what is built.
+
 ## D-273 — A phone's top strip: the sort in the view menu, the unit as an icon
 2026-11-12 · accepted · refines D-252, D-214 · V25 · decided under the owner's autonomy instruction of 2026-11-11
 - D-252's one top strip holds seven touch-sized controls and the range on a phone, wider than an upright phone's
@@ -3436,6 +3455,24 @@ the track that holds rotations.
 - Every function stays one press away; the range keeps its arrows, the most used control on a phone.
 **Why:** a strip that scrolls hides the avatar at its inline end, and stepping through the days is what a phone does
 most; the sort is set rarely and belongs with how the board is shown.
+
+## D-274 — The install offer also comes once, on its own, after sign-in
+2026-11-12 · accepted · refines D-184 · V28 · OI-223 · decided under D-170
+- **What.** The owner asked that opening Sagol in a browser offer the app. D-184's menu item stays. In addition, the
+  first time a signed-in session runs in a browser tab where the install can act, a small offer appears once at the
+  bottom: "התקנת האפליקציה" and "לא עכשיו". It acts exactly as the menu item:
+  - where the browser fired `beforeinstallprompt`, the browser's own dialog;
+  - on iOS Safari, the Share and "Add to Home Screen" hint.
+- **When not.** Never on the sign-in screen, never inside the installed app, never where the install cannot act (D-076).
+  After an install or "לא עכשיו", it does not come back on that device: the choice is a device preference, like the
+  remembered home (D-265). The menu item still offers the install.
+- **Not "open in the app".** A web page cannot tell reliably that the app is installed, and it cannot open it. The
+  browser owns that path: Chrome on Android shows its own "open in app". So Sagol offers only the install.
+- **As built (V28).** The card sits above the bottom bar, clear of the top bar and its menu, for a signed-in, linked
+  soldier: "אפשר להתקין את סגול במכשיר הזה", with "התקנה" and "לא עכשיו". The answer is the device flag
+  `DEVICE_KEYS.installAnswered`, scoped to the linked soldier as other device preferences are.
+**Why:** a soldier who lands from a link should learn once that the app exists, without a banner that returns on every
+visit, and without a control that cannot act.
 
 ## D-275 — Several requests at once: the sheet, the recurring row, `leaves.createMany`
 2026-11-12 · accepted · refines D-267, D-115, D-143 · V28 · decided under the owner's autonomy instruction of 2026-11-11
@@ -3458,14 +3495,26 @@ most; the sort is set rarely and belongs with how the board is shown.
 **Why:** D-267 asks for one sheet sent at once; a sheet beside the single form would be two paths to one action
 (D-255), and a recurring row is the rhythm soldiers actually ask for.
 
-## D-277 — The install offer after sign-in, once per device
-2026-11-12 · accepted · refines D-184 · V28 · decided under the owner's autonomy instruction of 2026-11-11
-- **Once, after sign-in.** A signed-in, linked soldier sees one card above the bottom bar, clear of the top bar and its menu: "אפשר להתקין את סגול
-  במכשיר הזה", with "התקנה" and "לא עכשיו". It acts as the user menu's item (D-184): the browser's own prompt where
-  there is one, the iOS steps where there is not.
-- **Never where it cannot act.** Not on the sign-in screen, not inside the installed app, and not where the device
-  offers neither (the shell's offer is `none`).
-- **The answer is the device's.** Installing or "not now" sets a device flag (`DEVICE_KEYS.installAnswered`, scoped
-  to the linked soldier as other device preferences are), and the card does not return on that device. The menu item
-  stays, so who said "not now" can still install.
-**Why:** an offer in a menu alone is rarely found (OI-223); one that returns after each sign-in nags.
+## D-276 — Staging: a second free Supabase project, updated from main after every green CI
+
+Refines D-209 and resolves OI-152. Track: docs.
+
+- **A separate environment, never real data.** Staging is its own Supabase project, `sagol-staging`, on the free plan,
+  with its own database, auth users and `commands` function. Nothing is copied from production: every unit, soldier
+  and personal number in it is made up by whoever tries things there. Production's data, its claim (D-262) and its
+  organization are untouched, so the commander still sets up the real organization from an empty production.
+- **Updated by the pipeline, never by hand.** `.github/workflows/staging.yml` runs after CI succeeds on a push to
+  `main` (and on manual dispatch): it pushes `main`'s pending migrations with `supabase db push`, sets the function's
+  secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
+  branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
+- **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
+  wrong project ref can never migrate production. Production migrations stay the manual, reviewed step they are.
+- **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
+  `staging` environment; the access token, the database password and the bootstrap owner's email are its secrets.
+  Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
+- **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
+  a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
+
+**Why:** the owner wants to try units, soldiers and flows freely, without touching real personal numbers, without
+slowing development, and without using up the real organization's first setup. A second project that follows `main`
+automatically is the usual staging practice and stays inside the free plan.

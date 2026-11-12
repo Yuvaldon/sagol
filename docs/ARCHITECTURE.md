@@ -316,7 +316,7 @@ never reach the client bundle.
 - `app/shell` owns the browser APIs (registration through `workbox-window`, the update check, `beforeinstallprompt`)
   behind the `shell` port of `logic`; `useAppUpdate` and `useInstallOffer` read it, and `ui` shows the update
   toast and the install item. `useInstallInvitation` adds the one-time card after sign-in, answered once per device
-  (D-277). A remote build without a network waits on the offline screen (`mountApp`).
+  (D-274). A remote build without a network waits on the offline screen (`mountApp`).
 
 ## Folder structure (target)
 
