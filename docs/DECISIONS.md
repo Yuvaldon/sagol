@@ -262,8 +262,9 @@ am = amends, ref = refines, ext = extends.
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
-| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
+| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281 |
 | D-278 | A floating surface fits its content | ui, scripts | |
+| D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 
@@ -3562,6 +3563,29 @@ automatically is the usual staging practice and stays inside the free plan.
 **Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
 dead space on any surface; a rule in the check keeps the next surface from bringing it back.
 
+## D-281 — Staging is seeded with made-up data by a guarded, re-runnable script
+
+Extends D-276. Track: tooling.
+
+- **One script, outside the app.** `scripts/seed-staging.sql` holds the data; `npm run seed:staging` (`scripts/seed-staging.ts`)
+  sends it to the project named by `STAGING_PROJECT_REF` through the Supabase Management API. Nothing in `src` knows it
+  exists, and no test reads it (rule 3: it is data for a person to try the app with, not mock data for code).
+- **Only staging.** The runner refuses any project whose name does not end in `-staging` (the D-276 guard). The SQL itself
+  refuses unless the database holds exactly one organization, the one the owner's first sign-in created (D-005), so it
+  never runs on an empty project or on one with several organizations.
+- **On top of the owner's bootstrap.** It adds to that organization and changes none of its rows: three unit levels, a
+  company with a headquarters, three platoons and three squads each; six command ranks; skill and shift tags; leave
+  groups and types; a past and a current rotation; 60 soldiers with Hebrew names and made-up personal numbers (`99000NN`,
+  outside any real range); their memberships, rank bindings, a commander and a soldier role; two soft availability rules;
+  and about 320 leaves with their events, reviewers and some comments, consistent with every trigger and constraint.
+- **Re-runnable.** Every id is derived from the organization id and a fixed key (`md5(org || ':seed:' || key)`), every insert
+  is `ON CONFLICT DO NOTHING`, and leave events are added only to a leave that has none. A second run adds nothing and
+  changes nothing; data someone added by hand in staging is left alone. Dates are relative to the week the organization
+  was created, so the current rotation is current when the seed runs.
+
+**Why:** trying the app on staging needs a believable unit, and typing one in by hand after every reset is slow. A
+re-runnable script that cannot reach production gives that without real personal numbers and without the app carrying
+seed code.
 ## D-284 — Launch order: V32 before V28, then the audit
 2026-11-12 · accepted · amends D-271, D-078 · V32 · decided under the owner's autonomy instruction of 2026-11-11
 - Before launch: track B runs V26 → V27; track A runs V32 (its docs first, then the screens) → V28. Then A7 on main,
