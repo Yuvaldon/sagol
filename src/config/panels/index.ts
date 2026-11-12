@@ -21,6 +21,8 @@ export const PANEL_IDS = {
   /** Tags by category, and the categories (D-130). */
   tags: 'tags',
   tagCategories: 'tag_categories',
+  /** Custom property definitions, by entity type (D-016). */
+  properties: 'properties',
   /** Present and absent lists of a day (D-134). */
   presence: 'presence',
   /** Availability rules, their conflicts, and the broken rules of a day (D-140, D-141). */
@@ -49,6 +51,7 @@ export const PanelId = z.enum([
   PANEL_IDS.myLeaves,
   PANEL_IDS.tags,
   PANEL_IDS.tagCategories,
+  PANEL_IDS.properties,
   PANEL_IDS.presence,
   PANEL_IDS.rules,
   PANEL_IDS.accountLinks,
