@@ -1,4 +1,4 @@
-import type { NavigationModule, PermissionResource } from '@contracts'
+import type { PermissionResource } from '@contracts'
 import { z } from 'zod'
 
 // Drawer and sheet modules of the workspace (D-023, D-092). A panel id and the entity open inside it
@@ -72,14 +72,15 @@ export type PanelId = z.infer<typeof PanelId>
 export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
 
 /**
- * "ניהול יחידה", the daily work (D-285): the groups of what a commander does with people and presence. Setup lives
- * apart, behind one row at the foot, so a definition is not mistaken for work.
+ * "ניהול יחידה", the daily work (D-285): the groups of what a commander does with people and presence, each module by
+ * its panel (D-291). Setup lives apart, behind one row at the foot, so a definition is not mistaken for work.
  */
 export const WORK_SECTIONS = [
   { id: 'people', modules: ['soldiers', 'account_links', 'access_grants'] },
   { id: 'presence', modules: ['deployments', 'rules'] },
-] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
+] as const satisfies readonly { readonly id: string; readonly modules: readonly PanelId[] }[]
 export type WorkSectionId = (typeof WORK_SECTIONS)[number]['id']
+export type WorkModule = (typeof WORK_SECTIONS)[number]['modules'][number]
 
 /**
  * "הגדרות היחידה", the unit's setup (D-285): each row opens a module by its first panel, and the module's other tabs
