@@ -41,6 +41,17 @@ export function UnitSelector() {
   const anchor = roots.length === 1 ? (roots[0]?.unit.name ?? null) : null
   // Nothing to choose from: the whole organization is all there is (D-076).
   if (choices.length < 2) return null
+  // A single unit in sight is the only scope there is: its name, not a picker (D-173).
+  const only = rows.length === 1 && choices.length === 2 ? rows[0] : undefined
+  if (only !== undefined) {
+    return (
+      <span className="inline-flex min-h-touch max-w-unit-picker min-w-none items-center gap-xs rounded-pill bg-inner px-sm text-control font-semibold text-text md:min-h-control">
+        <Network aria-hidden size={14} className="shrink-0 text-text-muted" />
+        <span className="sr-only">{t('workspace.unit')}</span>
+        <span className="truncate">{only.unit.name}</span>
+      </span>
+    )
+  }
   const selected = unit.kind === 'organization' ? ORGANIZATION_KEY : unit.kind === 'unit' ? unit.unitId : OTHER_KEY
 
   return (

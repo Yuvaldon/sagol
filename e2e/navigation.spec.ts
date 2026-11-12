@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { closeDrawer, drawer, press } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
 
 // V12a's demo: the bars keep the daily work, the modules that set the organization up sit in the navigation panel by
 // section, a module pinned there joins the bar, the scope label names the single root unit, and the rules row's place
@@ -84,5 +84,51 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
     await openPanel(page)
     await expect(page.getByRole('radio', { name: he.navigation.rulesRowAbove })).toBeChecked()
     await page.keyboard.press('Escape')
+  })
+})
+
+test('a soldier with no management permission sees no panel and no picker', async ({ page }) => {
+  const soldier = { email: 'noa@example.test', first: 'נועה', last: 'בר', personalId: '5566778' }
+  await enterAsOwner(page)
+
+  await test.step('the owner sets up a unit and a soldier with an invite', async () => {
+    await openModule(page, he.units.open)
+    await drawer(page).getByRole('button', { name: he.units.new }).first().click()
+    await page.getByLabel(he.units.name).fill(COMPANY)
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(drawer(page).getByRole('list', { name: he.units.listLabel }).getByText(COMPANY, { exact: true })).toBeVisible()
+    await closeDrawer(page)
+    await openModule(page, he.soldiers.open)
+    await page.getByRole('button', { name: he.soldiers.new }).first().click()
+    await page.getByLabel(he.soldiers.firstName).fill(soldier.first)
+    await page.getByLabel(he.soldiers.lastName).fill(soldier.last)
+    await page.getByLabel(he.soldiers.personalId).fill(soldier.personalId)
+    await page.getByLabel(he.soldiers.inviteEmail).fill(soldier.email)
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(`${soldier.first} ${soldier.last}`, { exact: true })).toBeVisible()
+    await closeDrawer(page)
+  })
+
+  await test.step('the soldier links and reaches the board', async () => {
+    await page.getByRole('button', { name: he.account.menu }).click()
+    await page.getByRole('menuitem', { name: he.account.signOut }).click()
+    await expect(page).toHaveURL(/\/sign-in$/)
+    await signIn(page, soldier.email)
+    await expect(page).toHaveURL(/\/onboarding$/)
+    await page.getByLabel(he.linkRequest.firstName).fill(soldier.first)
+    await page.getByLabel(he.linkRequest.lastName).fill(soldier.last)
+    await page.getByLabel(he.linkRequest.personalId).fill(soldier.personalId)
+    await page.getByRole('button', { name: he.linkRequest.submit }).click()
+    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
+  })
+
+  await test.step('no menu button, no module they cannot open, and the single unit is a label', async () => {
+    await expect(menuButton(page)).toHaveCount(0)
+    for (const name of [he.units.open, he.soldiers.open, he.tags.open, he.roles.open, he.grants.open, he.transfer.open]) {
+      await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
+    }
+    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await expect(page.getByText(COMPANY, { exact: true })).toBeVisible()
+    await expectNoAxeViolations(page)
   })
 })

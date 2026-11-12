@@ -77,7 +77,7 @@ function Item({
         <span className="flex-1 text-start">{name}</span>
         <EntryCount entry={entry} floating={false} />
       </AriaButton>
-      {/* A viewer with no soldier row keeps no preferences, so pins are not offered to them (D-173). */}
+      {/* Pins are offered once the preferences they are saved in have loaded (D-076, D-121). */}
       {preferences.editable ? (
         <ToggleButton
           aria-label={[t('navigation.pin'), name].join(' ')}
@@ -133,7 +133,7 @@ export function NavigationPanel() {
   const sections = useSections()
   const access = useModuleAccess()
   const preferences = useNavigationPreferences()
-  // The placement choice is for who sees the rules, and keeps a soldier row to store it in.
+  // The placement choice is for who sees the rules, once the preferences it is saved in have loaded.
   const display = access.rules && preferences.editable
   if (sections.length === 0 && !display) return null
   const close = () => {
