@@ -1,16 +1,13 @@
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { PANEL_IDS } from '@config'
 import {
   useKnownIdentities,
   useMyPreferences,
-  usePanel,
   useSignIn,
   useSignOut,
-  useTransferAccess,
   useUpdateMyPreferences,
 } from '@logic'
-import { ArrowDownUp, Check, ChevronDown, CircleUser, LogOut } from 'lucide-react'
+import { Check, ChevronDown, CircleUser, LogOut } from 'lucide-react'
 import { useIsDesktop } from '../patterns/media'
 import { useInboxAccess } from './inboxAccess'
 import {
@@ -28,14 +25,12 @@ const ITEM =
 
 const APPROVE_NOW = 'approve-now'
 
-/** Who is signed in, the dev identity switcher (D-006), the actor's own default (D-121), import and export (D-171) and sign-out. */
+/** Who is signed in, the dev identity switcher (D-006), the actor's own default (D-121) and sign-out. Import and export sit in the navigation panel (D-173). */
 export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   const identities = useKnownIdentities()
   const { signIn } = useSignIn()
   const { signOut } = useSignOut()
   const approves = useInboxAccess()
-  const transfer = useTransferAccess()
-  const panel = usePanel()
   const preferences = useMyPreferences()
   const savePreferences = useUpdateMyPreferences()
   // On a phone the bottom bar holds every module, so the menu shows its icon and still reads the name (D-116).
@@ -97,19 +92,6 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
                 {t('account.approveNowDefault')}
               </MenuItem>
             </MenuSection>
-          ) : null}
-          {transfer.any ? (
-            <MenuItem
-              id="data-transfer"
-              textValue={t('transfer.open')}
-              className={ITEM}
-              onAction={() => {
-                panel.open(PANEL_IDS.dataTransfer)
-              }}
-            >
-              <ArrowDownUp aria-hidden size={14} />
-              {t('transfer.open')}
-            </MenuItem>
           ) : null}
           <MenuItem
             id="sign-out"

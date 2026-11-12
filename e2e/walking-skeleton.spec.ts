@@ -70,8 +70,8 @@ test('an owner claims the empty organization and reaches the workspace', async (
     expect(inUpperHalf).toBe(testInfo.project.name === 'desktop')
   })
 
-  await test.step('the bars, with every module, keep the page as wide as the screen, so a phone never zooms out (D-155)', async () => {
-    await expect(navigation(page).getByRole('button', { name: he.accountLinks.open })).toHaveCount(1)
+  await test.step('the bars keep the page as wide as the screen, so a phone never zooms out (D-155)', async () => {
+    await expect(page.getByRole('button', { name: he.navigation.open })).toHaveCount(1)
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('the page has no viewport')
     const width = await page.evaluate(() => ({ layout: window.innerWidth, content: document.documentElement.scrollWidth }))

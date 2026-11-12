@@ -151,7 +151,7 @@ function useWindowEvaluation(window: WindowRequest | null): Loaded<{ rules: read
   }, [rules, data])
 }
 
-/** The heat row of the board (D-141). NULL when the actor sees no rule. */
+/** The heat row of the board (D-141). NULL when the actor sees no rule, or none concerns the unit (D-173). */
 export function useHeatRow(window: WindowRequest | null, unitId: UnitId | null): Loaded<readonly HeatDay[] | null> {
   const evaluation = useWindowEvaluation(window)
   return useMemo(() => {

@@ -34,10 +34,12 @@ export {
 } from './view-state/filter'
 export { BoardLeaveStatus, LeaveConditions, hasLeaveConditions, leaveMatches } from './view-state/conditions'
 export {
+  useBoardFilters,
   useLeaveConditions,
   useOnlyMissing,
   usePresenceDay,
   useRulesDay,
+  type BoardFiltersState,
   type LeaveConditionsState,
   type OnlyMissingState,
   type PresenceDayState,
@@ -49,7 +51,12 @@ export { usePresence } from './presence/hooks'
 export { useActiveView, type ActiveViewState } from './view-state/view'
 export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useTimezone, useToday } from './session/today'
-export { useMyPreferences, useUpdateMyPreferences } from './session/preferences'
+export {
+  useMyPreferences,
+  useNavigationPreferences,
+  useUpdateMyPreferences,
+  type NavigationPreferences,
+} from './session/preferences'
 export {
   timelineItems,
   type TimelineGroupItem,

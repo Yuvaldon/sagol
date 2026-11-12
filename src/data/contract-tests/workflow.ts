@@ -3,6 +3,7 @@ import {
   LeaveId,
   LeaveTypeId,
   SoldierId,
+  SoldierPreferences,
   UnitId,
   UnitMembershipId,
   type AuthIdentity,
@@ -598,7 +599,7 @@ export function describeLeaveWorkflowContract(
     describe('my preferences (D-041, D-121)', () => {
       const mine = () => adapter().repositories.soldier_preferences.mine()
       const save = (expected_version: number | null, create_leaves_as_approved: boolean) =>
-        adapter().commands.accounts.updateMyPreferences({ expected_version, preferences: { create_leaves_as_approved } })
+        adapter().commands.accounts.updateMyPreferences({ expected_version, preferences: SoldierPreferences.parse({ create_leaves_as_approved }) })
 
       it('has no row until first saved, then keeps a version', async () => {
         expect(valueOf(await mine())).toBeNull()

@@ -375,6 +375,8 @@ export const dictionary = {
     other: 'סינון מותאם',
     unavailable: 'לא זמין',
     onlyMissing: 'רק מי שחסר',
+    open: 'סינון',
+    clearAll: 'ניקוי הכול',
   },
   presence: {
     title: 'נוכחות',
@@ -762,8 +764,22 @@ export const dictionary = {
       import: 'ייבוא',
     },
   },
-  more: {
-    open: 'עוד',
+  navigation: {
+    open: 'תפריט ניהול',
+    title: 'ניהול',
+    close: 'סגירה',
+    sections: {
+      structure: 'מבנה',
+      leaveSetup: 'הגדרות היעדרות',
+      access: 'הרשאות',
+      data: 'נתונים',
+    },
+    waiting: 'ממתינים לטיפול',
+    pin: 'הצמדה לסרגל',
+    display: 'תצוגה',
+    rulesRow: 'שורת הכללים',
+    rulesRowAbove: 'מעל רשימת החיילים',
+    rulesRowBelow: 'מתחת לרשימת החיילים',
   },
   issues: {
     required: 'שדה חובה',

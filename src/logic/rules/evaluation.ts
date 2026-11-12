@@ -99,12 +99,19 @@ export interface RuleWindowInput {
 }
 
 function brokenTargets({ data, rules, days, unitId }: RuleWindowInput): RuleTargetResult[] {
-  const { targets } = createRuleContext(data).evaluate(rules, { dates: days })
-  return targets.filter(concernsUnit(data, unitId)).filter(isBroken)
+  return concerningTargets({ data, rules, days, unitId }).filter(isBroken)
 }
 
-export function heatRow(input: RuleWindowInput): HeatDay[] {
-  const broken = brokenTargets(input)
+function concerningTargets({ data, rules, days, unitId }: RuleWindowInput): RuleTargetResult[] {
+  const { targets } = createRuleContext(data).evaluate(rules, { dates: days })
+  return targets.filter(concernsUnit(data, unitId))
+}
+
+/** The heat row of the window, or NULL when no rule concerns the unit on any of its days: the row then has no place (D-173). */
+export function heatRow(input: RuleWindowInput): HeatDay[] | null {
+  const concerning = concerningTargets(input)
+  if (concerning.length === 0) return null
+  const broken = concerning.filter(isBroken)
   return input.days.map((date) => {
     const ofDay = broken.filter((target) => target.date === date)
     const hard = ofDay.some((target) => target.enforcement === RuleEnforcement.enum.hard)
