@@ -6,7 +6,7 @@ import { useBoardShown } from './boardShown'
 import { useAppliedAppearance } from './appearance'
 import { ModuleDrawer } from './ModuleDrawer'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
-import { NewLeaveButton } from './NewLeaveButton'
+import { QuickActionButton } from './QuickActionButton'
 import { FilterBar, FilterControl } from './FilterBar'
 import { SortControl } from './SortControl'
 import { FailureScreen, LoadingScreen } from './states'
@@ -90,7 +90,7 @@ function DestinationStrip() {
     <div className="pointer-events-none absolute inset-x-lg bottom-lg flex justify-center">
       <nav aria-label={t('workspace.navigation')} className={BAR}>
         <TabBar />
-        <NewLeaveButton />
+        <QuickActionButton />
       </nav>
     </div>
   )
