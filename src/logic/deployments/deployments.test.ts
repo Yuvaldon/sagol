@@ -1,4 +1,4 @@
-import { DeploymentId, OrganizationId, SoldierId, UnitId, UnitMembershipId, type Deployment, type DeploymentMember } from '@contracts'
+import { CalendarDate, DeploymentId, OrganizationId, SoldierId, UnitId, UnitMembershipId, type Deployment, type DeploymentMember } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import {
   defaultDeploymentMembers,
@@ -9,6 +9,7 @@ import {
   isDeploymentActive,
   liveDeployments,
   newDeploymentValues,
+  isRotationClosable,
   previousRotation,
   startingMembers,
   toCreateDeploymentInput,
@@ -155,6 +156,14 @@ describe('a new rotation from the previous one (D-222)', () => {
     expect(previousRotation([earlier, latest, next], next)?.id).toBe(latest.id)
     expect(previousRotation([earlier, deployment({ ...latest, archived_at: AT }), next], next)?.id).toBe(earlier.id)
     expect(previousRotation([next], next)).toBeNull()
+  })
+
+  it('closes once the planned end has come, or any day while the end is open (D-258)', () => {
+    const today = CalendarDate.parse('2026-09-15')
+    expect(isRotationClosable(latest, today)).toBe(false)
+    expect(isRotationClosable(earlier, today)).toBe(true)
+    expect(isRotationClosable(next, today)).toBe(true)
+    expect(isRotationClosable(deployment({ ...earlier, closed_at: AT }), today)).toBe(false)
   })
 
   it("starts with the previous list's soldiers for all the new days, else with those placed", () => {

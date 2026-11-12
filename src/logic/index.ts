@@ -393,6 +393,7 @@ export {
   deploymentMemberValues,
   deploymentMembersIssues,
   isDeploymentActive,
+  isRotationClosable,
   liveDeployments,
   newDeploymentValues,
   type DeploymentFormValues,
