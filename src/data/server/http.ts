@@ -10,8 +10,19 @@ import { AuthServerUnavailable } from './supabaseIdentity'
 export interface CommandHandlerDependencies {
   readonly gateway: (identity: AuthIdentity | null, body: unknown) => Promise<GatewayResponse>
   readonly verify: (token: string) => Promise<AuthIdentity | null>
-  /** Origins of the app's deployments (environment), e.g. `https://sagol.vercel.app`. */
+  /**
+   * Origins of the app's deployments (environment), e.g. `https://sagol.vercel.app`. An entry may
+   * hold `*`, which stands for one or more of `a-z`, `0-9` and `-`, for preview deployments (D-209).
+   */
   readonly origins: readonly string[]
+}
+
+/** One origin entry as a matcher: literal text, with each `*` matching inside one DNS label only. */
+function originMatcher(entry: string): (origin: string) => boolean {
+  if (!entry.includes('*')) return (origin) => origin === entry
+  const escaped = entry.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const pattern = new RegExp(`^${escaped.join('[a-z0-9-]+')}$`)
+  return (origin) => pattern.test(origin)
 }
 
 /** A request body above this many characters is refused before parsing (four arguments fit well under it). */
@@ -19,10 +30,11 @@ const MAX_BODY = 1_000_000
 const ALLOWED_HEADERS = 'authorization, content-type, apikey, x-client-info'
 
 export function createCommandHandler({ gateway, verify, origins }: CommandHandlerDependencies) {
+  const matchers = origins.map(originMatcher)
   return async function serve(request: Request): Promise<Response> {
     const origin = request.headers.get('origin')
     const cors: Record<string, string> =
-      origin !== null && origins.includes(origin)
+      origin !== null && matchers.some((matches) => matches(origin))
         ? {
             'access-control-allow-origin': origin,
             'access-control-allow-methods': 'POST, OPTIONS',

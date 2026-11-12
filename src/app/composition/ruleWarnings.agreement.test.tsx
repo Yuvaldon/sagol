@@ -19,7 +19,7 @@ import {
   type RuleViolation,
   type Timestamp,
 } from '@contracts'
-import { createLocalAuthProvider, createLocalDataAdapter, type IdentityStore } from '@data'
+import { loadLocalData, type IdentityStore } from '@data'
 import {
   LogicProvider,
   acknowledgedRuleIds,
@@ -68,6 +68,7 @@ function memoryStore(): IdentityStore {
 /** A fresh database, an owner signed in and an organization claimed. */
 async function ownerPorts(): Promise<LogicPorts> {
   const time = { now: () => NOW }
+  const { createLocalAuthProvider, createLocalDataAdapter } = await loadLocalData()
   const auth = createLocalAuthProvider(memoryStore())
   const id = crypto.randomUUID()
   const data = createLocalDataAdapter({ identity: auth, time }, { database: `agreement-${id}`, channel: `agreement-${id}` })

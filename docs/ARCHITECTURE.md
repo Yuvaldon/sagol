@@ -83,7 +83,9 @@ The data layer is written as if it were the server:
 ## Identity and access (D-001 … D-006)
 
 - **Authentication:** Google only, behind the `AuthProvider` contract. `local` provider in
-  development. The production build fails if `VITE_AUTH_MODE=local`.
+  development. The production build fails if `VITE_AUTH_MODE=local`. As built (8.4, D-207): Google
+  through Supabase Auth (PKCE), always paired with the remote adapter; the composition loads only
+  the env's pair (D-210). Deploys: Vercel Preview and Production (D-209).
 - **Accounts:** `soldier_accounts` links a provider identity to a soldier. Commanders may
   create soldiers with names only (personal ID and email optional). Linking is automatic
   only on personal ID + verified invite email match. Anything else becomes an

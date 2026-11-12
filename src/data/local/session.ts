@@ -10,6 +10,7 @@ import type {
   SoldierId,
 } from '@contracts'
 import { compareInstants } from '@domain'
+import type { BootstrapClaimant } from './dependencies'
 import { tableOf } from './store'
 import { asResult, fail, parsedRow } from './failure'
 
@@ -43,9 +44,13 @@ export function requireLinked(session: Session): {
   return session
 }
 
-/** Local bootstrap rule (D-005, D-006, D-086): a verified identity, no organization, no account. */
-export async function bootstrapAllowed(database: Store, identity: AuthIdentity): Promise<boolean> {
-  if (!identity.email_verified) return false
+/** Bootstrap rule (D-005, D-006, D-086): a verified identity the claimant accepts, no organization, no account. */
+export async function bootstrapAllowed(
+  database: Store,
+  identity: AuthIdentity,
+  claimant: BootstrapClaimant,
+): Promise<boolean> {
+  if (!identity.email_verified || !claimant(identity)) return false
   const [organizations, accounts] = await Promise.all([
     tableOf(database, 'organizations').count(),
     tableOf(database, 'soldier_accounts').count(),
@@ -57,6 +62,7 @@ export function createSessionService(
   database: Store,
   identity: IdentitySource,
   changes: ChangeFeed,
+  claimant: BootstrapClaimant,
 ): SessionService {
   return {
     current: () => asResult(() => resolveSession(database, identity.current())),
@@ -78,7 +84,7 @@ export function createSessionService(
           const latest = own.toSorted((a, b) => compareInstants(b.created_at, a.created_at) || b.id.localeCompare(a.id))[0]
           const rejected = open === null && latest?.status === 'rejected' ? latest : null
           return {
-            bootstrap_available: await bootstrapAllowed(database, current),
+            bootstrap_available: await bootstrapAllowed(database, current, claimant),
             open_request: open,
             last_rejected_at: rejected === null ? null : (rejected.reviewed_at ?? rejected.created_at),
           }

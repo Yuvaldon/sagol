@@ -12,6 +12,8 @@ export const dictionary = {
     email: 'דוא״ל',
     displayName: 'שם לתצוגה (לא חובה)',
     submit: 'כניסה',
+    googleHint: 'הכניסה היא בחשבון Google. מי שעוד לא שויך ליחידה יוכל לבקש גישה אחרי הכניסה.',
+    google: 'כניסה עם Google',
   },
   identities: {
     title: 'זהויות במכשיר הזה',
@@ -737,11 +739,11 @@ export const dictionary = {
   startup: {
     title: 'לא ניתן להפעיל את המערכת',
     hint: 'יש בעיה בהגדרות הסביבה. אלה הערכים שצריך לתקן:',
-    unsupported: 'ההגדרות תקינות, אבל ספק הזהות או מקור הנתונים שנבחרו עדיין לא נבנו.',
     missing: 'חסר ערך',
     invalid: 'ערך לא תקין',
     developmentOnly: 'מותר רק בסביבת פיתוח',
     requiredForRemote: 'נדרש כשמקור הנתונים מרוחק',
+    unpaired: 'לא מתאים לספק הזהות: זהות מקומית עובדת עם נתונים מקומיים, וגוגל עם נתונים מרוחקים',
   },
   failure: {
     title: 'משהו השתבש',
