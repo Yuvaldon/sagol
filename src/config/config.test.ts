@@ -9,6 +9,7 @@ import {
   DATE_LOCALE,
   DEFAULT_BAR_COLOR_MODE,
   DEFAULT_VIEW_ID,
+  DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
   NAVIGATION_SECTIONS,
   ENV_VARIABLES,
@@ -207,6 +208,7 @@ describe('views, url, storage, breakpoints, dates', () => {
     const widths = Object.values(BREAKPOINTS_PX)
     expect([...widths].sort((a, b) => a - b)).toEqual(widths)
     expect(DESKTOP_MEDIA_QUERY).toBe('(min-width: 768px)')
+    expect(DARK_SCHEME_MEDIA_QUERY).toBe('(prefers-color-scheme: dark)')
   })
 
   it('builds a formatter for every date format in the locale', () => {

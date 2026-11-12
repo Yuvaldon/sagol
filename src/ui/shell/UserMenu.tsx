@@ -1,6 +1,7 @@
-import type { AuthIdentity } from '@contracts'
+import { Appearance, type AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import {
+  useAppearance,
   useAuthMode,
   useKnownIdentities,
   useMyPreferences,
@@ -26,13 +27,20 @@ const ITEM =
 
 const APPROVE_NOW = 'approve-now'
 
-/** Who is signed in, the dev identity switcher (D-006), the actor's own default (D-121) and sign-out. Import and export sit in the navigation panel (D-173). */
+const APPEARANCES = [
+  { key: Appearance.enum.light, labelKey: 'account.appearanceLight' },
+  { key: Appearance.enum.dark, labelKey: 'account.appearanceDark' },
+  { key: Appearance.enum.system, labelKey: 'account.appearanceSystem' },
+] as const
+
+/** Who is signed in, the dev identity switcher (D-006), the actor's own default (D-121), the appearance (D-181) and sign-out. Import and export sit in the navigation panel (D-173). */
 export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   const authMode = useAuthMode()
   const { signOut } = useSignOut()
   const approves = useInboxAccess()
   const preferences = useMyPreferences()
   const savePreferences = useUpdateMyPreferences()
+  const appearance = useAppearance()
   // On a phone the bottom bar holds every module, so the menu shows its icon and still reads the name (D-116).
   const isDesktop = useIsDesktop()
   const approveNow = preferences.status === 'ready' && preferences.value.create_leaves_as_approved
@@ -66,6 +74,28 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
                 </span>
                 {t('account.approveNowDefault')}
               </MenuItem>
+            </MenuSection>
+          ) : null}
+          {appearance.editable ? (
+            <MenuSection
+              selectionMode="single"
+              disallowEmptySelection
+              selectedKeys={[appearance.appearance]}
+              onSelectionChange={(keys) => {
+                const chosen = APPEARANCES.find((one) => keys !== 'all' && keys.has(one.key))
+                if (chosen !== undefined) appearance.setAppearance(chosen.key)
+              }}
+              className="flex flex-col gap-2xs border-b border-line pb-xs"
+            >
+              <Header className="px-md py-xs text-label font-semibold text-text-muted">{t('account.appearance')}</Header>
+              {APPEARANCES.map((one) => (
+                <MenuItem key={one.key} id={one.key} textValue={t(one.labelKey)} className={ITEM}>
+                  <span className="flex size-icon shrink-0 items-center justify-center">
+                    {appearance.appearance === one.key ? <Check aria-hidden size={12} strokeWidth={3} /> : null}
+                  </span>
+                  {t(one.labelKey)}
+                </MenuItem>
+              ))}
             </MenuSection>
           ) : null}
           <MenuItem

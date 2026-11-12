@@ -137,7 +137,7 @@ am = amends, ref = refines, ext = extends.
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
 | D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143 |
 | D-120 | The requests inbox: pending and closed; `LeaveQuery.window` may be NULL | contracts, config, data, logic, ui, backend | ref D-205 |
-| D-121 | The "approve now" default lives in the user menu | data, logic, ui, backend | ref D-173 |
+| D-121 | The "approve now" default lives in the user menu | data, logic, ui, backend | ref D-173; ext D-181 |
 | D-122 | The board waits for the permission hints | logic, ui | |
 | D-123 | Editing a leave is one command | contracts, domain, data, logic, ui, backend | |
 | D-124 | A leave of an archived soldier can only be cancelled | domain, data, logic, ui, backend | |
@@ -189,7 +189,7 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178 |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | |
 | D-175 | The bar names the unit in scope, not the organization | ui | |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | |
@@ -197,6 +197,7 @@ am = amends, ref = refines, ext = extends.
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | |
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | |
+| D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
@@ -2580,6 +2581,23 @@ not inbox work; a span uses the read the repository already has instead of a new
 **Why:** a script outside the layers cannot reach the adapter's code, and the server must keep stored history as it is,
 which the commands cannot (they write new events and audit values). One function runs where the data lands, in one
 transaction.
+
+## D-181 — The dark set, and the soldier's choice of appearance
+2026-11-12 · accepted · extends D-121, D-173 · V17 · decided under the owner's autonomy instruction of 2026-11-11
+- **Choices:** light (the default), dark, or the device's (`Appearance` in `contracts`: `light`, `dark`, `system`).
+  "The device's" follows `prefers-color-scheme` live, so a change on the device repaints the open screen.
+- **Where it is kept:** `soldier_preferences.preferences` as `appearance`, beside D-121's default and D-173's pins.
+  A missing key reads as light, so the table does not change. Web storage is only for the identity (D-086), so
+  the choice follows the soldier between devices, and the screens before a soldier is known (sign-in, onboarding)
+  stay light.
+- **Where it is chosen:** the user menu, in its own single-choice section. Anyone who reaches the workspace may set
+  it, whatever their permissions, because it changes nothing but their own screen.
+- **The dark set** is a second value for every theme token, under `[data-appearance='dark']` on the root element,
+  with `color-scheme: dark`. No component names a color of its own: the glass surfaces, the bar captions on a fill
+  (`on-fill`) and the shadows are tokens too. The palette keeps its twelve hues, lifted for a dark surface. Every
+  text color reaches 4.5:1 on its surface in both sets; axe checks the board and a drawer in the dark set.
+- **Why:** reservists open the board at night, in a vehicle or a tent, where a white screen is the brightest thing
+  around. Light stays the default because the board is mostly read in daylight and printed screenshots stay legible.
 
 ## D-207 — Google sign-in through Supabase Auth, loaded only in production modes
 2026-11-12 · accepted · refines D-005, D-204 · supersedes D-086 (unsupported modes) · OI-020 · decided under D-170

@@ -1,4 +1,5 @@
 import {
+  Appearance,
   RulesRowPlacement,
   SoldierPreferences,
   type NavigationModule,
@@ -107,6 +108,28 @@ export function useNavigationPreferences(): NavigationPreferences {
     },
     setRulesRow(placement) {
       void save.run({ rules_row_placement: placement })
+    },
+  }
+}
+
+export interface AppearancePreference {
+  /** Light until the preferences are read: a soldier who chose dark sees light first, never dark and back (D-181). */
+  readonly appearance: Appearance
+  /** FALSE while the preferences cannot be read, so the choice is not offered (D-076). */
+  readonly editable: boolean
+  setAppearance(appearance: Appearance): void
+}
+
+/** The soldier's color scheme (D-181), kept in their own preferences so every device has it. */
+export function useAppearance(): AppearancePreference {
+  const preferences = useMyPreferences()
+  const save = useUpdateMyPreferences()
+  const value = preferences.status === 'ready' ? preferences.value : null
+  return {
+    appearance: value?.appearance ?? Appearance.enum.light,
+    editable: value !== null,
+    setAppearance(appearance) {
+      void save.run({ appearance })
     },
   }
 }

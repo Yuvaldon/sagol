@@ -9,7 +9,7 @@ import {
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
-import { useNavigationPreferences } from './preferences'
+import { useAppearance, useNavigationPreferences } from './preferences'
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const ORGANIZATION = OrganizationId.parse(uuid(900))
@@ -84,5 +84,26 @@ describe('navigation preferences (D-173)', () => {
     await waitFor(() => {
       expect(result.current.pinned).toEqual([])
     })
+  })
+})
+
+describe('appearance (D-181)', () => {
+  it('is light until chosen, and keeps the choice with the other preferences', async () => {
+    const { ports, updateMyPreferences } = storeOf()
+    const { result } = renderHook(() => useAppearance(), { wrapper: wrapperOf(ports) })
+    expect(result.current.appearance).toBe('light')
+    expect(result.current.editable).toBe(false)
+    await waitFor(() => {
+      expect(result.current.editable).toBe(true)
+    })
+    act(() => {
+      result.current.setAppearance('dark')
+    })
+    await waitFor(() => {
+      expect(result.current.appearance).toBe('dark')
+    })
+    expect(updateMyPreferences).toHaveBeenCalledWith(
+      expect.objectContaining({ preferences: expect.objectContaining({ appearance: 'dark', pinned_modules: [] }) }),
+    )
   })
 })

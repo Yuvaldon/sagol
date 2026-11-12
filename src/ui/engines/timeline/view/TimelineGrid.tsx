@@ -218,7 +218,7 @@ function Bar({ mark, place, dimmed }: { readonly mark: TimelineMark; readonly pl
     >
       {mark.dot === null ? null : <span aria-hidden className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
       {mark.caption === null ? null : (
-        <span aria-hidden className="truncate text-micro font-medium text-text">
+        <span aria-hidden className={`truncate text-micro font-medium ${mark.dashed ? 'text-text' : 'text-on-fill'}`}>
           {mark.caption}
         </span>
       )}

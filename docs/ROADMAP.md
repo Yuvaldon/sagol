@@ -121,7 +121,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V14 | Custom properties | Definitions module, values in forms and filters (D-176, D-177) | ☑ |
 | V15 | Deployments, batches, overrides | Collective leave, duplicate, deployments, seniority overrides | ☑ |
 | V16 | Setup wizard | Guided first run over the existing forms (D-033, D-180) | ☑ |
-| V17 | Dark Mode | Second token set | ☐ |
+| V17 | Dark Mode | Second token set, the soldier's choice in the user menu (D-181) | ☑ |
 | A7 | audit | Whole product | ☐ |
 
 ## Later (no schema change required)

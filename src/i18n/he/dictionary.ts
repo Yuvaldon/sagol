@@ -734,6 +734,10 @@ export const dictionary = {
     switchIdentity: 'החלפת זהות',
     preferences: 'העדפות',
     approveNowDefault: 'לאשר מיד בקשות שאני יוצר',
+    appearance: 'מראה',
+    appearanceLight: 'בהיר',
+    appearanceDark: 'כהה',
+    appearanceSystem: 'לפי המכשיר',
     signOut: 'יציאה',
   },
   startup: {

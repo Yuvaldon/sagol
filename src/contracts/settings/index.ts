@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { PropertyOptionId } from '../common/ids'
 import { ColorKey, Integer, label } from '../common/scalars'
-import { NavigationModule, ReschedulePolicy, RulesRowPlacement } from '../enums'
+import { Appearance, NavigationModule, ReschedulePolicy, RulesRowPlacement } from '../enums'
 import { checkDistinct } from '../inputs/common'
 
 // Contracts of JSONB columns. Each parses `{}` (the column default) into a complete
@@ -29,6 +29,8 @@ export const SoldierPreferences = z
       .default([]),
     /** Where the rules heat row sits on the board (D-173). */
     rules_row_placement: RulesRowPlacement.default('below'),
+    /** The color scheme (D-181); light until chosen. */
+    appearance: Appearance.default('light'),
   })
   .prefault({})
 export type SoldierPreferences = z.infer<typeof SoldierPreferences>

@@ -4,7 +4,8 @@
 /*
  * The design tokens of Sagol, from the Stone 3 direction (D-077, docs/Design.md). Tailwind's
  * default palette, spacing, type, radius and shadow scales are reset: only semantic tokens exist.
- * This file holds the Light set; the Dark set is row V17. Raw colors live only in this folder.
+ * The Light set is the default; the Dark set below replaces the colors and shadows under
+ * [data-appearance='dark'] (D-181). Raw colors live only in this folder.
  */
 @theme {
   --color-*: initial;
@@ -36,10 +37,21 @@
   /* The column of today on the timeline, a band barely darker than the surface (Stone 3). */
   --color-today-band: rgba(26, 26, 24, 0.035);
   --color-scrim: rgba(26, 26, 24, 0.28);
+  /* A caption on a solid fill: the bar of a leave on the timeline. */
+  --color-on-fill: #1a1a18;
+  /* The glass surfaces (D-077): their fills, their edge, and the solid color under prefers-reduced-transparency. */
+  --color-glass-bar: rgba(255, 255, 255, 0.55);
+  --color-glass-card: rgba(255, 255, 255, 0.5);
+  --color-glass-menu: rgba(255, 255, 255, 0.85);
+  --color-glass-drawer: rgba(250, 249, 246, 0.94);
+  --color-glass-edge: rgba(255, 255, 255, 0.8);
+  --color-glass-solid: #ffffff;
+  --color-glass-action: rgba(16, 19, 24, 0.7);
+  --color-glass-action-edge: rgba(255, 255, 255, 0.1);
   /* One color for every absence in the uniform mode of the timeline (D-112): a fill text reads on, and its edge. */
   --color-absence: #dcd9d1;
   --color-absence-edge: #7a776f;
-  /* The closed palette users choose from (D-074). Each passes 3:1 on the surface. Dark set: V17. */
+  /* The closed palette users choose from (D-074). Each passes 3:1 on the surface, in both sets. */
   --color-palette-red: #c8372d;
   --color-palette-orange: #c75c10;
   --color-palette-amber: #a87a00;
@@ -113,6 +125,61 @@
 }
 
 /*
+ * The Dark set (D-181): warm stone, as the Light set. Text passes 4.5:1 and every palette key 3:1 on the surface; the
+ * fills that carry text or an icon (the action, the statuses, the palette, today) are light enough for --color-on-action
+ * and --color-on-fill, which turn dark. Only colors and shadows change; sizes and type are the same in both sets.
+ */
+@layer base {
+  :root[data-appearance='dark'] {
+    color-scheme: dark;
+    --color-canvas: #151513;
+    --color-surface: #1f1e1c;
+    --color-line: #34332f;
+    --color-text: #ecebe6;
+    --color-text-muted: #a8a59d;
+    --color-inner: rgba(255, 255, 255, 0.07);
+    --color-action-solid: #e4e2dc;
+    --color-on-action: #1a1a18;
+    --color-focus: #e4e2dc;
+    --color-status-approved: #5fae85;
+    --color-status-pending: #d9a13a;
+    --color-status-pending-text: #e2b25a;
+    --color-status-rejected: #e0695d;
+    --color-marker: #9d8df2;
+    --color-marker-ink: #b4a8f6;
+    --color-today: #e4e2dc;
+    --color-today-band: rgba(255, 255, 255, 0.04);
+    --color-scrim: rgba(0, 0, 0, 0.55);
+    --color-absence: #8d897f;
+    --color-absence-edge: #cfcbc2;
+    --color-on-fill: #1a1a18;
+    --color-glass-bar: rgba(38, 37, 34, 0.62);
+    --color-glass-card: rgba(38, 37, 34, 0.55);
+    --color-glass-menu: rgba(38, 37, 34, 0.9);
+    --color-glass-drawer: rgba(31, 30, 28, 0.95);
+    --color-glass-edge: rgba(255, 255, 255, 0.08);
+    --color-glass-solid: #262522;
+    --color-glass-action: rgba(228, 226, 220, 0.88);
+    --color-glass-action-edge: rgba(255, 255, 255, 0.2);
+    --color-palette-red: #e5645a;
+    --color-palette-orange: #e5823e;
+    --color-palette-amber: #d3a42c;
+    --color-palette-lime: #8dbd3b;
+    --color-palette-green: #4cb378;
+    --color-palette-teal: #2db3a2;
+    --color-palette-cyan: #38acd4;
+    --color-palette-blue: #6c9ef0;
+    --color-palette-indigo: #8b93f0;
+    --color-palette-purple: #b27fe8;
+    --color-palette-pink: #e36cab;
+    --color-palette-gray: #9b9890;
+    --shadow-rim: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-float: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.07);
+    --shadow-action: 0 12px 32px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/*
  * Inline, because React Aria sets --trigger-width on the popover itself: declared on :root, this
  * token would resolve there, where the variable does not exist.
  */
@@ -124,21 +191,21 @@
  * Glass surfaces. Each has a solid fallback for prefers-reduced-transparency (D-077).
  */
 @utility glass-bar {
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--color-glass-bar);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-glass-edge);
   box-shadow: var(--shadow-float);
 
   @media (prefers-reduced-transparency: reduce) {
-    background: #ffffff;
+    background: var(--color-glass-solid);
     backdrop-filter: none;
   }
 }
 
 @utility glass-card {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--color-glass-card);
   backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-glass-edge);
   box-shadow: var(--shadow-rim);
 
   @media (prefers-reduced-transparency: reduce) {
@@ -148,21 +215,21 @@
 }
 
 @utility glass-menu {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--color-glass-menu);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-glass-edge);
   box-shadow: var(--shadow-float);
 
   @media (prefers-reduced-transparency: reduce) {
-    background: #ffffff;
+    background: var(--color-glass-solid);
     backdrop-filter: none;
   }
 }
 
 @utility glass-action {
-  background: rgba(16, 19, 24, 0.7);
+  background: var(--color-glass-action);
   backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-glass-action-edge);
   box-shadow: var(--shadow-action);
   color: var(--color-on-action);
 
@@ -173,9 +240,9 @@
 }
 
 @utility glass-drawer {
-  background: rgba(250, 249, 246, 0.94);
+  background: var(--color-glass-drawer);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-glass-edge);
   box-shadow: var(--shadow-float);
 
   @media (prefers-reduced-transparency: reduce) {

@@ -1,22 +1,33 @@
-import { DESKTOP_MEDIA_QUERY } from '@config'
+import { DARK_SCHEME_MEDIA_QUERY, DESKTOP_MEDIA_QUERY } from '@config'
 import { useSyncExternalStore } from 'react'
 
-// Whether the screen is desktop (D-074). CSS decides most layout by itself; this is for the few places
-// where the arrangement differs in structure (the bars, D-108) or a number must follow it (row heights).
+// Media queries the screen follows live. CSS decides most layout by itself; this is for the few places where the
+// arrangement differs in structure (the bars, D-108), a number must follow it (row heights), or the device's color
+// scheme picks the theme (D-181).
 
-function subscribe(onChange: () => void): () => void {
-  if (typeof window.matchMedia !== 'function') return () => undefined
-  const query = window.matchMedia(DESKTOP_MEDIA_QUERY)
-  query.addEventListener('change', onChange)
-  return () => {
-    query.removeEventListener('change', onChange)
+function subscribeTo(media: string) {
+  return (onChange: () => void): (() => void) => {
+    if (typeof window.matchMedia !== 'function') return () => undefined
+    const query = window.matchMedia(media)
+    query.addEventListener('change', onChange)
+    return () => {
+      query.removeEventListener('change', onChange)
+    }
   }
 }
 
-function snapshot(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+function snapshotOf(media: string) {
+  return (): boolean => typeof window.matchMedia === 'function' && window.matchMedia(media).matches
 }
 
+const desktop = { subscribe: subscribeTo(DESKTOP_MEDIA_QUERY), snapshot: snapshotOf(DESKTOP_MEDIA_QUERY) }
+const darkScheme = { subscribe: subscribeTo(DARK_SCHEME_MEDIA_QUERY), snapshot: snapshotOf(DARK_SCHEME_MEDIA_QUERY) }
+
 export function useIsDesktop(): boolean {
-  return useSyncExternalStore(subscribe, snapshot, () => false)
+  return useSyncExternalStore(desktop.subscribe, desktop.snapshot, () => false)
+}
+
+/** Whether the device asks for a dark screen, following a change while the screen is open. */
+export function useDeviceIsDark(): boolean {
+  return useSyncExternalStore(darkScheme.subscribe, darkScheme.snapshot, () => false)
 }

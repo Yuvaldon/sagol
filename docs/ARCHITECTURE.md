@@ -1,7 +1,7 @@
 # Sagol — Architecture & Iron Rules
 
 Military reserve unit management and leave tracking. React + TypeScript + Tailwind, Vite,
-native RTL (Hebrew), Light Mode default (Dark Mode added later as a second token set).
+native RTL (Hebrew), Light Mode default, and a Dark set the soldier may choose (D-181).
 
 Sources of truth: entity and column names → `docs/schema.sql`. Decisions and their
 reasons → `docs/DECISIONS.md`. Build order and dependencies → `docs/FEATURE_MAP.md`, status →
@@ -272,8 +272,8 @@ independent. Only the timeline has a core and a view; the list, the table and th
 ## Design system
 
 - Tailwind's default palette and spacing scale are reset. Only semantic tokens exist
-  (`--color-surface`, `--color-text-muted`, `--color-status-pending`, ...). Light set now,
-  dark set later.
+  (`--color-surface`, `--color-text-muted`, `--color-status-pending`, ...). A light set, and a
+  dark set under `[data-appearance='dark']` on the root element (D-181).
 - User-chosen colors are **palette keys** (`color_key`). The closed list of palette keys is
   in `config`, and each key maps to a token pair for light/dark in the theme.
 - Only logical (RTL-safe) properties: `ms-`/`me-`/`ps-`/`pe-`/`start-`/`end-`, never

@@ -51,6 +51,7 @@ export { SEARCH_PARAMS, type SearchParamName } from './url'
 export {
   BREAKPOINTS_PX,
   DESKTOP_BREAKPOINT,
+  DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
   type Breakpoint,
 } from './breakpoints'
