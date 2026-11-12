@@ -22,6 +22,7 @@ export const QUERY_KEYS = {
   tagCategories: [TABLE_SCOPE, 'tag_categories'],
   tags: [TABLE_SCOPE, 'tags'],
   soldierTags: [TABLE_SCOPE, 'soldier_tags'],
+  propertyDefinitions: [TABLE_SCOPE, 'property_definitions'],
   leaveTypeGroups: [TABLE_SCOPE, 'leave_type_groups'],
   leaveTypes: [TABLE_SCOPE, 'leave_types'],
   leaves: [TABLE_SCOPE, 'leaves'],

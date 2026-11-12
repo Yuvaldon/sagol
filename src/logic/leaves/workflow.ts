@@ -19,6 +19,7 @@ import {
   type Timestamp,
   type TransitionLeaveInput,
 } from '@contracts'
+import { sameProperties, type WithProperties } from '../properties/properties'
 import {
   EDITABLE_LEAVE_STATUSES,
   LEAVE_PERMISSIONS,
@@ -117,13 +118,14 @@ export function leaveEditValues(leave: Leave): LeaveEditValues {
  * What the form changed, as `leaves.update` takes it (D-123): the dates and the details together. NULL when nothing
  * differs from the leave, or the form does not parse (its issues say why).
  */
-export function leaveEditChanges(leave: Leave, values: LeaveEditValues): UpdateLeaveInput['changes'] | null {
+export function leaveEditChanges(leave: Leave, values: LeaveEditValues & WithProperties): UpdateLeaveInput['changes'] | null {
   const reason = optionalText(values.reason)
   const changes = {
     ...(values.start_date === leave.start_date ? {} : { start_date: values.start_date }),
     ...(values.end_date === leave.end_date ? {} : { end_date: values.end_date }),
     ...(values.leave_type_id === leave.leave_type_id ? {} : { leave_type_id: values.leave_type_id }),
     ...(reason === leave.reason ? {} : { reason }),
+    ...(values.properties === undefined || sameProperties(values.properties, leave.properties) ? {} : { properties: values.properties }),
   }
   if (Object.keys(changes).length === 0) return null
   const parsed = UpdateLeaveInput.shape.changes.safeParse(changes)
@@ -158,7 +160,7 @@ export function leaveEditIssues(leave: Leave, values: LeaveEditValues, type: Pic
 /** `leaves.update` of the form's changes, or NULL when nothing changed (D-123). */
 export function toUpdateLeaveInput(
   leave: Leave,
-  values: LeaveEditValues,
+  values: LeaveEditValues & WithProperties,
   acknowledged: readonly AvailabilityRuleId[] = [],
 ): UpdateLeaveInput | null {
   const changes = leaveEditChanges(leave, values)

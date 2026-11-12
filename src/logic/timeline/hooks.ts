@@ -67,6 +67,7 @@ export function useTimeline(
       units: source.value.units,
       memberships: source.value.memberships,
       soldierTags: source.value.soldierTags,
+      propertyDefinitions: source.value.propertyDefinitions,
       days: window.days,
       today,
       filter,

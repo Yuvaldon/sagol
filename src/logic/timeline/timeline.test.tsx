@@ -193,6 +193,7 @@ describe('the rows of the timeline (D-105)', () => {
     units,
     memberships: [],
     soldierTags: [],
+    propertyDefinitions: [],
     days: WEEK,
     today: TODAY,
     filter: null,

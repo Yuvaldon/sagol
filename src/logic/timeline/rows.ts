@@ -3,6 +3,7 @@ import type {
   CommandRank,
   CommandRankId,
   FilterExpression,
+  PropertyDefinition,
   Soldier,
   SoldierId,
   SoldierTag,
@@ -27,6 +28,8 @@ export interface TimelineInput {
   readonly memberships: readonly UnitMembership[]
   /** Every tag row of the soldiers, which the filter reads (D-131). */
   readonly soldierTags: readonly SoldierTag[]
+  /** Archived ones too, as the filter source holds them (OI-080). */
+  readonly propertyDefinitions: readonly PropertyDefinition[]
   readonly days: readonly CalendarDate[]
   readonly today: CalendarDate
   /** NULL selects everyone. */
@@ -113,6 +116,7 @@ export function timelineItems(input: TimelineInput): TimelineItem[] {
     units: input.units,
     memberships: input.memberships,
     soldierTags: input.soldierTags,
+    propertyDefinitions: input.propertyDefinitions,
   })
   const inPopulation = populationOf(input.filter)
   const rankById = new Map<CommandRankId, CommandRank>(input.ranks.map((rank) => [rank.id, rank]))

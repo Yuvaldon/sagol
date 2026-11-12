@@ -156,6 +156,7 @@ const SOURCE: FilterSource = {
     { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(3)), tag_id: MEDIC, created_at: AT, created_by: null },
     { organization_id: ORGANIZATION, soldier_id: SoldierId.parse(uuid(4)), tag_id: DRIVER, created_at: AT, created_by: null },
   ],
+  propertyDefinitions: [],
 }
 
 const dataWith = (leaves: readonly Leave[]) =>

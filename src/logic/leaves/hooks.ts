@@ -23,6 +23,7 @@ import { steppedItems } from '../forms/order'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
+import type { WithProperties } from '../properties/properties'
 import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
 import type { DateWindow } from '../view-state/window'
@@ -121,7 +122,7 @@ export function useCreateLeave() {
   })
   return {
     /** `acknowledged` are the soft rules the actor agreed to break, sent again after the dialog (D-047, D-142). */
-    run: (values: NewLeaveValues, acknowledged: readonly AvailabilityRuleId[] = []) =>
+    run: (values: NewLeaveValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []) =>
       mutation.mutateAsync(toCreateLeaveInput(values, acknowledged)),
     isPending: mutation.isPending,
   }

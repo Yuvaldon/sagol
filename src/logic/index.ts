@@ -25,10 +25,12 @@ export {
   readFilter,
   unitFilterOf,
   useViewFilter,
+  withPropertyChip,
   withTagChip,
   writeFilter,
   type FilterUnit,
   type ReadFilter,
+  type PropertyChip,
   type SoldierConditions,
   type ViewFilterState,
 } from './view-state/filter'
@@ -173,6 +175,24 @@ export {
   type RankFormValues,
   type SoldierFormValues,
 } from './roster/forms'
+export {
+  definitionsOf,
+  hasOptions,
+  newPropertyDefinitionValues,
+  newPropertyOption,
+  optionsOf,
+  propertyDefinitionFormIssues,
+  propertyDefinitionFormValues,
+  propertyFormValues,
+  sameProperties,
+  toStoredProperties,
+  type PropertyDefinitionFormValues,
+  type PropertyFieldValue,
+  type PropertyFormValues,
+  type WithProperties,
+  type PropertyOptionFormValues,
+} from './properties/properties'
+export { usePropertyDefinitionCommands, usePropertyDefinitions, usePropertyPermissions } from './properties/hooks'
 export {
   NEW_TAG_CATEGORY_VALUES,
   liveCategories,

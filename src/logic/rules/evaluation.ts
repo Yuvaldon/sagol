@@ -43,8 +43,8 @@ export interface RuleInputs {
 }
 
 /**
- * The rows rule evaluation reads. Deployments arrive in V15 and seniority overrides and property values with their
- * slices (OI-080, OI-081); before them none can exist.
+ * The rows rule evaluation reads. Deployments and seniority overrides arrive in V15 (OI-081, OI-096); before it none
+ * can exist.
  */
 export function ruleDataOf({ source, units, tags, leaves, types }: RuleInputs): RuleData {
   return {
@@ -55,7 +55,7 @@ export function ruleDataOf({ source, units, tags, leaves, types }: RuleInputs): 
     soldier_tags: source.soldierTags,
     seniority_overrides: [],
     unit_memberships: source.memberships,
-    property_definitions: [],
+    property_definitions: source.propertyDefinitions,
     deployments: [],
     deployment_members: [],
     leaves,

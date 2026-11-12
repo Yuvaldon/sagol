@@ -19,6 +19,7 @@ import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
+import type { WithProperties } from '../properties/properties'
 import { usePorts } from '../runtime/context'
 import { useSoldiersWithArchived } from '../roster/hooks'
 import { useCurrentOrganization, useSession } from '../session/hooks'
@@ -212,7 +213,7 @@ export function useEditLeave() {
       acknowledged,
     }: {
       leave: Leave
-      values: LeaveEditValues
+      values: LeaveEditValues & WithProperties
       acknowledged: readonly AvailabilityRuleId[]
     }): Promise<Result<Leave>> => {
       const input = toUpdateLeaveInput(leave, values, acknowledged)
@@ -223,7 +224,7 @@ export function useEditLeave() {
   })
   return {
     /** `acknowledged` are the soft rules the actor agreed to break, sent again after the dialog (D-047, D-142). */
-    run: (leave: Leave, values: LeaveEditValues, acknowledged: readonly AvailabilityRuleId[] = []) =>
+    run: (leave: Leave, values: LeaveEditValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []) =>
       mutation.mutateAsync({ leave, values, acknowledged }),
     isPending: mutation.isPending,
   }
