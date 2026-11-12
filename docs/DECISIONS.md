@@ -258,7 +258,7 @@ am = amends, ref = refines, ext = extends.
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
-| D-274 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
+| D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
 
 ---
 
@@ -3431,7 +3431,7 @@ the track that holds rotations.
 **Why:** a strip that scrolls hides the avatar at its inline end, and stepping through the days is what a phone does
 most; the sort is set rarely and belongs with how the board is shown.
 
-## D-274 — Several requests at once: the sheet, the recurring row, `leaves.createMany`
+## D-275 — Several requests at once: the sheet, the recurring row, `leaves.createMany`
 2026-11-12 · accepted · refines D-267, D-115, D-143 · V28 · decided under the owner's autonomy instruction of 2026-11-11
 - **The request form is the sheet.** One soldier, then rows; a new request starts with one row, so one leave is still
   the plain case. A row holds its type, its two dates and its reason; "add a row" adds one, and a row is removed while
