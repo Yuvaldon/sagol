@@ -18,9 +18,9 @@ function groupHeading(page: Page, label: string) {
   return board(page).getByRole('heading', { level: 2, name: new RegExp(`^${label} ${he.timeline.soldiersInGroup}`) })
 }
 
-/** The window as the bar writes it, announced when it changes. */
+/** The window as the bar writes it on the range picker's button, announced when it changes (D-211). */
 function windowLabel(page: Page) {
-  return page.locator('p[aria-live="polite"]')
+  return page.getByRole('button', { name: new RegExp(he.workspace.window) })
 }
 
 function unitRow(page: Page, name: string) {

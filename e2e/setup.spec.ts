@@ -6,7 +6,7 @@ import { enterAsOwner, expectNoAxeViolations, openModule } from './support/works
 // V16's demo: the organization's setup (D-033, D-180). The owner sees every step in order, opens one in its own
 // module, and finds it done on the way back. On desktop and mobile, RTL, with axe. Sample data, tests only.
 
-const STEPS = ['unit_levels', 'units', 'command_ranks', 'rank_bindings', 'leave_types', 'tags', 'soldiers'] as const
+const STEPS = ['unit_levels', 'units', 'command_ranks', 'rank_bindings', 'leave_types', 'tags', 'soldiers', 'deployments'] as const
 
 test('the setup lists the steps, and a step is done once what it sets up exists', async ({ page }) => {
   await enterAsOwner(page)

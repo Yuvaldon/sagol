@@ -1,9 +1,10 @@
 import { NEW_ENTITY, PANEL_IDS, RANGE_KINDS, type RangeKind } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { pickableRotations, useDateWindow, useDeploymentPermissions, usePanel, useUnits, type WindowKind } from '@logic'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { CalendarCheck, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Button as AriaButton, Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover } from 'react-aria-components'
 import { formatDate, formatDateRange } from '../patterns/dates'
+import { useIsDesktop } from '../patterns/media'
 import { Button, IconButton } from '../primitives/Button'
 import { MenuChoice } from './menu'
 import { MENU_HEADER, MENU_ITEM, MENU_LIST, MENU_POPOVER, onlyKey } from './menuStyles'
@@ -106,6 +107,7 @@ function RangeMenu() {
 
 export function WindowNavigator() {
   const { window, rotations, canShift, shift, goToToday } = useDateWindow()
+  const isDesktop = useIsDesktop()
   if (window === null) return null
   const rotation = window.kind === 'rotation' ? rotations.find((candidate) => candidate.id === window.rotationId) : undefined
   return (
@@ -140,7 +142,14 @@ export function WindowNavigator() {
       >
         <ChevronLeft aria-hidden size={14} />
       </IconButton>
-      {window.holdsToday ? null : <Button onPress={goToToday}>{t('workspace.today')}</Button>}
+      {/* On a phone the bar has no room for the word: an icon with the same name and a tooltip (D-215). */}
+      {window.holdsToday ? null : isDesktop ? (
+        <Button onPress={goToToday}>{t('workspace.today')}</Button>
+      ) : (
+        <IconButton labelKey="workspace.today" onPress={goToToday}>
+          <CalendarCheck aria-hidden size={14} />
+        </IconButton>
+      )}
     </div>
   )
 }
