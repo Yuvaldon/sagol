@@ -208,10 +208,13 @@ export function useLeaveRuleCheck(changed: AvailabilityLeave | null, stored: Lea
     if (data.status !== 'ready') return data
     return { status: 'ready', value: leaveViolations(data.value, rules.value, changed) }
   }, [changed, readsEverything, rules, data])
-  // The last answer, kept from an earlier render (React's "storing information from previous renders").
+  // The last answer, kept from an earlier render (React's "storing information from previous renders"). Compared by
+  // value: a form passes a new candidate on every render, and an equal answer must not render again.
   const [last, setLast] = useState<Loaded<readonly RuleViolation[]> | null>(null)
-  // A new candidate after none starts loading afresh.
-  if (changed === null ? last !== null : current.status === 'ready' && current !== last) setLast(changed === null ? null : current)
+  if (changed === null) {
+    // A new candidate after none starts loading afresh.
+    if (last !== null) setLast(null)
+  } else if (current.status === 'ready' && !sameAnswer(current, last)) setLast(current)
   return current.status === 'loading' && last !== null ? last : current
 }
 
@@ -232,4 +235,8 @@ const READS_EVERYTHING: readonly PermissionCheck[] = [
 ]
 
 const NO_VIOLATIONS: readonly RuleViolation[] = []
+
+function sameAnswer(answer: Loaded<readonly RuleViolation[]>, last: Loaded<readonly RuleViolation[]> | null): boolean {
+  return answer === last || (last !== null && JSON.stringify(answer) === JSON.stringify(last))
+}
 const NO_CHECK: Loaded<readonly RuleViolation[]> = { status: 'ready', value: NO_VIOLATIONS }
