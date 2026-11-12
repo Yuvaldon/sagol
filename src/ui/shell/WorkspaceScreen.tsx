@@ -16,6 +16,7 @@ import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { TabBar } from './TabBar'
 import { HomeLanding } from './HomeLanding'
 import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
+import { InstallInvitation } from './InstallInvitation'
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { ViewSwitcher } from './ViewSwitcher'
 import { Viewport } from './Viewport'
@@ -126,6 +127,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
         <ModuleDrawer />
         <DayReportDialog />
         <PreferenceFailureNotice />
+        <InstallInvitation />
       </div>
       </PreferenceFailureContext>
     </FilterFocusContext>
