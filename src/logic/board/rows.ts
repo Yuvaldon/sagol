@@ -75,7 +75,8 @@ export interface BoardSoldierItem {
 export type BoardItem = BoardGroupItem | BoardSoldierItem
 
 const EVERYONE: FilterExpression = {}
-const STATE_GROUPS = ['none', 'other', 'unknown'] as const
+/** The groups of the soldiers with no visible unit, after the units (D-106). */
+export const STATE_GROUPS = ['none', 'other', 'unknown'] as const
 
 /** What a row is sorted by, beside its name. */
 interface SortValues {
@@ -117,7 +118,7 @@ function rowOrder(sort: BoardSort, values: ReadonlyMap<SoldierId, SortValues>): 
 }
 
 /** The names from below the selected unit down to `unitId`; the selected unit names itself. */
-function pathOf(unitId: UnitId, unitById: ReadonlyMap<UnitId, Unit>, scopeUnitId: UnitId | null): string[] {
+export function unitPathOf(unitId: UnitId, unitById: ReadonlyMap<UnitId, Unit>, scopeUnitId: UnitId | null): string[] {
   const names: string[] = []
   const seen = new Set<UnitId>()
   for (let current = unitById.get(unitId); current !== undefined; ) {
@@ -131,7 +132,7 @@ function pathOf(unitId: UnitId, unitById: ReadonlyMap<UnitId, Unit>, scopeUnitId
   return names
 }
 
-function groupKeyOf(state: UnitState): string {
+export function groupKeyOf(state: UnitState): string {
   return state.kind === 'unit' ? state.unit.id : state.kind
 }
 
@@ -165,7 +166,7 @@ export function boardItems(input: BoardInput): BoardItem[] {
     const state = unitStateOn(own, unitById, soldier.id, referenceDay, reads === true)
     const key = groupKeyOf(state)
     const label: BoardGroupLabel =
-      state.kind === 'unit' ? { kind: 'unit', path: pathOf(state.unit.id, unitById, input.scopeUnitId) } : { kind: state.kind }
+      state.kind === 'unit' ? { kind: 'unit', path: unitPathOf(state.unit.id, unitById, input.scopeUnitId) } : { kind: state.kind }
     const rank = soldier.command_rank_id === null ? null : (rankById.get(soldier.command_rank_id) ?? null)
     const seniorityDay = referenceDay ?? days[0]
     values.set(soldier.id, {

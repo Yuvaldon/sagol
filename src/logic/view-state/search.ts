@@ -7,7 +7,7 @@ import { LeaveConditions } from './conditions'
 import { NewLeaveDraft } from './draft'
 
 // All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort (D-214), the
-// filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day (D-134) and a new leave's draft (D-143). A
+// filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193) and a new leave's draft (D-143). A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
 
@@ -31,6 +31,7 @@ export const WorkspaceSearch = z.object({
   [SEARCH_PARAMS.leaves]: LeaveConditions.optional().catch(undefined),
   [SEARCH_PARAMS.missing]: z.literal(true).optional().catch(undefined),
   [SEARCH_PARAMS.day]: CalendarDate.optional().catch(undefined),
+  [SEARCH_PARAMS.until]: CalendarDate.optional().catch(undefined),
   [SEARCH_PARAMS.draft]: NewLeaveDraft.optional().catch(undefined),
 })
 export type WorkspaceSearch = z.infer<typeof WorkspaceSearch>

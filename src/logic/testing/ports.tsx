@@ -30,6 +30,20 @@ export interface FakePortParts {
   readonly now?: () => Timestamp
   /** Merged over a shell with nothing to offer. */
   readonly shell?: object
+  /** The device stores; each defaults to an empty one in memory. */
+  readonly device?: object
+}
+
+/** A device store in memory, empty at first (D-197). */
+export function memoryDeviceStore() {
+  const values = new Map<string, string>()
+  return {
+    read: (key: string, scope: string) => values.get(`${key}.${scope}`) ?? null,
+    write: (key: string, scope: string, value: string | null) => {
+      if (value === null) values.delete(`${key}.${scope}`)
+      else values.set(`${key}.${scope}`, value)
+    },
+  }
 }
 
 const NO_SUBSCRIPTION = { subscribe: () => () => undefined }
@@ -48,6 +62,7 @@ export function fakePorts(parts: FakePortParts = {}): LogicPorts {
     auth: { ...parts.auth },
     time: { now },
     shell: { ...NO_SUBSCRIPTION, current: () => QUIET_SHELL_STATE, ...parts.shell },
+    device: { local: memoryDeviceStore(), session: memoryDeviceStore(), ...parts.device },
   } as unknown as LogicPorts
 }
 

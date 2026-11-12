@@ -1,7 +1,7 @@
 // Public entry point of the LOGIC layer.
 // Business rules, services and the hooks exposed to the UI. Receives
 // repositories by injection and never imports @data.
-export type { AuthPort, DataPort, InstallOffer, LogicPorts, ShellPort, ShellState } from './ports'
+export type { AuthPort, DataPort, DevicePort, DeviceStore, InstallOffer, LogicPorts, ShellPort, ShellState } from './ports'
 export { useAppUpdate, useInstallOffer } from './shell/hooks'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
@@ -65,7 +65,23 @@ export {
 } from './view-state/board'
 export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
 export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
-export { usePresence } from './presence/hooks'
+export { useDayReport, usePresence } from './presence/hooks'
+export {
+  dayReport,
+  isReportable,
+  reportDays,
+  runsOn,
+  steppedReportDay,
+  type DayReport,
+  type DayReportInput,
+  type ReportCounts,
+  type ReportDay,
+  type ReportEntry,
+  type ReportLists,
+  type ReportSection,
+} from './presence/report'
+export { reportText, type ReportWords } from './presence/reportText'
+export { useDeviceFlag, type DeviceFlag, type DeviceLasting } from './device/hooks'
 export { useActiveView, type ActiveViewState } from './view-state/view'
 export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useTimezone, useToday } from './session/today'
