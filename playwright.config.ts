@@ -7,6 +7,8 @@ import { defineConfig, devices } from '@playwright/test'
 const BASE_URL = 'http://localhost:5173'
 const PREVIEW_URL = 'http://localhost:4173'
 const PRODUCTION_ONLY = /pwa\.spec\.ts/
+/** A phone on its side gets the layout checks only: the demos already walk the same bars upright (D-190). */
+const LAYOUT = /layout\.spec\.ts/
 const onCi = process.env.CI !== undefined
 // A slice demo walks the whole slice in one test, with axe after each step. The longest (V4's leaves, V5's
 // approval) take 22 s with two workers here, each of their 7-8 steps 1.5-5 s, and cross Playwright's default
@@ -31,6 +33,7 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] }, testIgnore: PRODUCTION_ONLY },
     { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: PRODUCTION_ONLY },
+    { name: 'landscape', use: { ...devices['Pixel 7 landscape'] }, testMatch: LAYOUT },
     { name: 'installable', use: { ...devices['Pixel 7'], baseURL: PREVIEW_URL }, testMatch: PRODUCTION_ONLY },
   ],
   webServer: [

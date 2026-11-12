@@ -201,7 +201,7 @@ test('the "approve now" default, and a link to a leave that is not there', async
   await expect(leavesOf(page).first()).toHaveAccessibleName(PENDING_BAR)
 
   await test.step('the user menu holds the default, and the new-leave form starts from it', async () => {
-    await navigation(page).getByRole('button', { name: new RegExp(he.account.menu) }).click()
+    await page.getByRole('button', { name: new RegExp(he.account.menu) }).click()
     const item = page.getByRole('menuitemcheckbox', { name: he.account.approveNowDefault })
     await expect(item).toHaveAttribute('aria-checked', 'false')
     await expectNoAxeViolations(page)
@@ -215,7 +215,7 @@ test('the "approve now" default, and a link to a leave that is not there', async
     await expect(leavesOf(page)).toHaveCount(2)
     await expect(leavesOf(page).nth(1)).toHaveAccessibleName(`רגילה, ${he.leaves.statusApproved}, 13 בנוב׳`)
     await page.reload()
-    await navigation(page).getByRole('button', { name: new RegExp(he.account.menu) }).click()
+    await page.getByRole('button', { name: new RegExp(he.account.menu) }).click()
     await expect(page.getByRole('menuitemcheckbox', { name: he.account.approveNowDefault })).toHaveAttribute('aria-checked', 'true')
     await page.keyboard.press('Escape')
   })
