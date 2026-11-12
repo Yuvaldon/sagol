@@ -216,7 +216,7 @@ am = amends, ref = refines, ext = extends.
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
 | D-188 | Postgres extensions live in the `extensions` schema | backend, docs | |
-| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217 |
+| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217, D-220 |
 | D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | ref D-219 |
 | D-213 | "Only who is missing" is a filter condition | logic, ui | |
 | D-214 | The board's sort | config, logic, ui | |
@@ -225,6 +225,7 @@ am = amends, ref = refines, ext = extends.
 | D-217 | The workspace is scoped to the active or upcoming rotation, silently | logic, ui | |
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
+| D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
 
 ---
 
@@ -2911,3 +2912,22 @@ already holds rotations, so it is the one place to switch.
 - Done once a live deployment exists, as before.
 **Why:** after D-216 nothing can be requested before a rotation exists, so the wizard leaves the organization ready to
 work.
+
+## D-220 — Rotation membership in practice: references, reads and the form
+2026-11-12 · accepted · refines D-216, D-217, D-218, D-219 · V19 · decided under D-170
+- **References.** A leave names a rotation of its own organization. An archived rotation keeps its leaves and takes no
+  new ones; a transition back to a live status (pending or approved) checks the rotation, membership and dates again.
+- **Reads.** A soldier reads the rotations they serve in and their own membership rows (server rules), so the form and
+  the request surfaces work without `deployments` view. The server's helper functions are revoked from `public` and
+  granted only where a policy needs them.
+- **The form picks the rotation.** The new-request and collective forms offer the rotations in scope that hold the
+  chosen soldier on the chosen dates, preselect the one in view, and send its id; the logic layer never guesses it.
+- **Request surfaces count a rotation** only when one of its members is visible to the actor (D-218).
+- **URL.** A bare URL opens on the rotation (D-217); an explicit kind (day, week, month) is written to the URL so a
+  shared link keeps it. With no rotation, the dates, the view switcher and the filter controls are hidden with the board.
+- **Range menu.** "Whole rotation" is a single item with one rotation in scope and a list, by start, with more.
+  D-211's "סבב חדש" item goes: with no rotation the picker itself is hidden, and the empty state opens one.
+- **Members.** A new rotation's members default to its unit (D-219) only while it has no stored members; once saved,
+  the editor shows what is stored. Creating a rotation opens its members editor at once.
+**Why:** these are the edges D-216..D-219 left open; each one follows the rule that a request belongs to a rotation its
+soldier serves in, without a second place that decides it.

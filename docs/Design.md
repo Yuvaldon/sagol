@@ -252,7 +252,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 ## Range, sort and a calm screen (V19, D-211 … D-215)
 
 - **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / חודש, then "סבב שלם" with the
-  scope's running and coming rotations and their dates; with none, "סבב חדש" for whoever may create one. The arrows'
+  scope's running and coming rotations and their dates; with none, the item is absent (D-218). The arrows'
   names follow the kind ("שבוע הבא", "חודש הבא", "סבב הבא"). The timeline narrows its days for a long range and drops
   the weekday name below 44 px. On a phone "היום" is an icon with its name in a tooltip.
 - **Sort**: "מיון" in the bar, next to the filter, an icon with its name on desktop. Two lists: by name, rank,
@@ -260,6 +260,17 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **"Only who is missing"** is a condition in the filter dialog and a chip while on (D-213).
 - **Calm**: no explanatory hints (presence and seniority keep theirs); empty states are a title and an action; icon
   buttons have a tooltip with their name (D-215). The interface says סבב for a deployment (D-212).
+
+## The rotation-centric workspace (V19, D-216 … D-220)
+
+- The workspace opens on the rotation running today, else the next; its window is the whole rotation. No control or
+  label names the rotation: the dates say it, and the range menu's "סבב שלם" is a single item or, with more than one
+  rotation, a short list by start.
+- With no rotation in scope the viewport shows "אין סבב פעיל": "פתיחת סבב" for whoever may create one, otherwise one
+  line saying the commander opens it. The dates, view switcher, filters, new-request button, inbox and "my requests"
+  are gone; the permanent modules stay.
+- The request forms pick the rotation that holds the soldier on those dates. Creating a rotation opens its members
+  editor, which starts with the unit's soldiers.
 
 ## Patterns of a module
 
