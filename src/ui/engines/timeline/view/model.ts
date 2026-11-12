@@ -54,12 +54,13 @@ export interface TimelineTone {
 }
 
 /**
- * A bar over a run of days, or a badge on each of them (a marker). Days are indexes in the window; a side
- * the window cuts has no inset.
+ * A bar over a run of days, or a badge on each of them (a marker). A band is a round's absence (D-268): the whole
+ * height of the row, under the requests' bars, taking no lane. Days are indexes in the window; a side the window cuts
+ * has no inset.
  */
 export interface TimelineMark {
   readonly key: string
-  readonly kind: 'bar' | 'badge'
+  readonly kind: 'bar' | 'band' | 'badge'
   readonly start: number
   readonly length: number
   readonly cut: { readonly start: boolean; readonly end: boolean }
@@ -68,7 +69,7 @@ export interface TimelineMark {
   /** What a drag may do with it: NULL when it does not move; a badge never resizes (D-143). */
   readonly drag: { readonly resize: boolean } | null
   readonly lane: number
-  /** Pending: a dashed edge over a faint fill. Otherwise solid (D-111). */
+  /** Pending: a dashed edge over the surface. Approved: a hatch over a faint fill, edged in the color (D-290). */
   readonly dashed: boolean
   readonly tone: TimelineTone
   /** A badge's icon. */

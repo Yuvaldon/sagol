@@ -5,6 +5,8 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { BoardEngine, type BoardFrame } from '../../../board/BoardEngine'
+import { BreachSummary } from '../../../board/BreachMark'
+import { useBreaches } from '../../../board/breaches'
 import { EngineScroller } from '../../../board/EngineScroller'
 import { groupLabel } from '../../../board/labels'
 import { LeaveChip } from '../../../board/LeaveChip'
@@ -61,12 +63,14 @@ function List({ frame, scroller }: { readonly frame: BoardFrame; readonly scroll
   const { items } = frame.model
   const list = useRef<HTMLDivElement>(null)
   const [offset, setOffset] = useState(0)
+  // The window's breaches, above the rows (D-290, OI-221).
+  const breaches = useBreaches(frame)
   // Where the list starts inside what scrolls: below the bars' spacer, which grows when a filter is on, and a filter
-  // gives a new model.
+  // gives a new model, and below the breaches, which arrive after the model.
   useLayoutEffect(() => {
     if (scroller === null || list.current === null) return
     setOffset(list.current.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop)
-  }, [scroller, frame.model])
+  }, [scroller, frame.model, breaches.days.length])
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -78,23 +82,26 @@ function List({ frame, scroller }: { readonly frame: BoardFrame; readonly scroll
     getItemKey: (index) => items[index]?.key ?? index,
   })
   return (
-    <div ref={list} className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
-      {virtualizer.getVirtualItems().map((row) => {
-        const item = items[row.index]
-        if (item === undefined) return null
-        return (
-          <div
-            key={row.key}
-            ref={virtualizer.measureElement}
-            data-index={row.index}
-            className="absolute inset-x-none top-none"
-            style={{ transform: `translateY(${String(row.start - offset)}px)` }}
-          >
-            <ListRow item={item} frame={frame} />
-          </div>
-        )
-      })}
-    </div>
+    <>
+      <BreachSummary breaches={breaches} />
+      <div ref={list} className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+        {virtualizer.getVirtualItems().map((row) => {
+          const item = items[row.index]
+          if (item === undefined) return null
+          return (
+            <div
+              key={row.key}
+              ref={virtualizer.measureElement}
+              data-index={row.index}
+              className="absolute inset-x-none top-none"
+              style={{ transform: `translateY(${String(row.start - offset)}px)` }}
+            >
+              <ListRow item={item} frame={frame} />
+            </div>
+          )
+        })}
+      </div>
+    </>
   )
 }
 

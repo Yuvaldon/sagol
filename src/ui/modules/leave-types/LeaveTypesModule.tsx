@@ -1,4 +1,4 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
+import { LEAVE_TYPE_PALETTE_KEYS, NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, AvailabilityEffect, LeaveType, LeaveTypeGroup, LeaveTypeGroupId } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -145,6 +145,7 @@ function TypeForm({
           <ColorField
             labelKey="palette.label"
             name={field.name}
+            keys={LEAVE_TYPE_PALETTE_KEYS}
             value={field.state.value}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}

@@ -1,4 +1,4 @@
-import { isPaletteKey, type PaletteKey } from '@config'
+import { isLeaveTypePaletteKey, isPaletteKey, type PaletteKey } from '@config'
 import type { I18nKey } from '@i18n'
 
 // What a palette key looks like and how it is read aloud. The map is total, so a new key fails to
@@ -24,7 +24,7 @@ export function swatchClassOf(key: string | null): string | null {
   return key !== null && isPaletteKey(key) ? PALETTE_SWATCHES[key].className : null
 }
 
-/** How a palette key paints a shape (D-111): a solid fill, a faint fill, an edge and an icon. */
+/** How a palette key paints a shape (D-111): a solid dot, a faint fill, an edge, and an ink for icons and hatching. */
 export interface PaletteTone {
   readonly fill: string
   readonly faint: string
@@ -52,7 +52,7 @@ export const UNIFORM_TONE: PaletteTone = {
   fill: 'bg-absence',
   faint: 'bg-inner',
   edge: 'border-absence-edge',
-  ink: 'text-marker-ink',
+  ink: 'text-absence-edge',
 }
 
 export const MARKER_TONE: PaletteTone = {
@@ -65,4 +65,9 @@ export const MARKER_TONE: PaletteTone = {
 /** The tone of a stored key, or the uniform tone for a key the palette no longer holds. */
 export function toneOf(key: string | null): PaletteTone {
   return key !== null && isPaletteKey(key) ? PALETTE_TONES[key] : UNIFORM_TONE
+}
+
+/** A leave type's tone: green never means away (D-290), so a type that still holds a green key takes the uniform one. */
+export function leaveTypeToneOf(key: string | null): PaletteTone {
+  return key !== null && isLeaveTypePaletteKey(key) ? PALETTE_TONES[key] : UNIFORM_TONE
 }
