@@ -25,6 +25,23 @@ export function formStateOf(error: AppError, fields: readonly string[]): FormSta
   }
 }
 
+/**
+ * A command that writes several rows answers each row's issue at `<list>.<n>.<field>`. The form that made the rows
+ * shows it on the field the row came from (OI-114): `renamed` maps a row's field to the form's, e.g. a row's
+ * `soldier_id` to the form's `soldier_ids`.
+ */
+export function rowIssuesOnFields(error: AppError, list: string, renamed: Readonly<Record<string, string>>): AppError {
+  if (error.code !== 'validation_failed') return error
+  return {
+    ...error,
+    issues: error.issues.map((issue) => {
+      const [head, index, field, ...rest] = issue.path
+      if (head !== list || typeof index !== 'number' || typeof field !== 'string') return issue
+      return { ...issue, path: [renamed[field] ?? field, ...rest] }
+    }),
+  }
+}
+
 /** The result of a form-level validator: each field gets its issue code. */
 export function validatorResult(issues: readonly Issue[]) {
   if (issues.length === 0) return undefined
