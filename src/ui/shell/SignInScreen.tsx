@@ -1,6 +1,6 @@
 import { LocalIdentityRequest, type AppError, type Issue } from '@contracts'
 import { t } from '@i18n'
-import { formIssues, useSignIn } from '@logic'
+import { formIssues, useAuthMode, useGoogleSignIn, useSignIn } from '@logic'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { errorKey } from '../errors/messages'
@@ -15,8 +15,42 @@ function toRequest(value: { email: string; display_name: string }) {
   return { email: value.email.trim(), display_name: name === '' ? null : name }
 }
 
-/** Local sign-in (D-006). The router leaves this screen when the session changes. */
+/** Sign-in by the build's provider (D-207). The router leaves this screen when the session changes. */
 export function SignInScreen() {
+  return useAuthMode() === 'local' ? <LocalSignIn /> : <GoogleSignIn />
+}
+
+/** Google through Supabase Auth: the browser leaves for Google and returns signed in (D-207). */
+function GoogleSignIn() {
+  const { signIn, isPending } = useGoogleSignIn()
+  const [failure, setFailure] = useState<AppError | null>(null)
+  return (
+    <CenteredSheet titleKey="signIn.title" hintKey="signIn.googleHint">
+      <div className="flex flex-col gap-md">
+        {failure === null ? null : (
+          <p role="alert" className="text-label text-status-rejected">
+            {t(errorKey(failure))}
+          </p>
+        )}
+        <Button
+          variant="primary"
+          isDisabled={isPending}
+          onPress={() => {
+            setFailure(null)
+            void signIn().then((result) => {
+              if (!result.ok) setFailure(result.error)
+            })
+          }}
+        >
+          {t('signIn.google')}
+        </Button>
+      </div>
+    </CenteredSheet>
+  )
+}
+
+/** Local sign-in as a development identity (D-006). */
+function LocalSignIn() {
   const { signIn, isPending } = useSignIn()
   const [answered, setAnswered] = useState<readonly Issue[]>([])
   const [failure, setFailure] = useState<AppError | null>(null)

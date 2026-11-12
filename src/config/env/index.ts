@@ -30,13 +30,14 @@ export const EnvSchema = z.object({
   [ENV_VARIABLES.remoteAnonKey]: optional(z.string().trim().min(1)),
 })
 
-/** The parsed environment, in the shape the app uses. */
-export interface Env {
-  readonly authMode: AuthMode
-  readonly dataAdapter: DataAdapterMode
-  /** Present exactly when the data adapter is `remote`. */
-  readonly remote: { readonly url: string; readonly anonKey: string } | null
-}
+/** The parsed environment, in the shape the app uses: one of the two pairs (D-207). */
+export type Env =
+  | { readonly authMode: 'local'; readonly dataAdapter: 'local'; readonly remote: null }
+  | {
+      readonly authMode: 'google'
+      readonly dataAdapter: 'remote'
+      readonly remote: { readonly url: string; readonly anonKey: string }
+    }
 
 export type EnvIssueCode =
   /** The variable is not set. */
@@ -47,6 +48,8 @@ export type EnvIssueCode =
   | 'development_only'
   /** The remote adapter needs this variable. */
   | 'required_for_remote'
+  /** The data adapter does not pair with the auth mode (D-207). */
+  | 'unpaired'
 
 export interface EnvIssue {
   readonly variable: EnvVariable
@@ -63,6 +66,15 @@ export interface EnvOptions {
 }
 
 export type RawEnv = Readonly<Record<string, unknown>>
+
+/**
+ * The one data adapter each auth mode runs with (D-207): local identities write the local
+ * database (D-006), and a Google session is what the command gateway verifies (D-204).
+ */
+export const ADAPTER_OF_AUTH_MODE: Readonly<Record<AuthMode, DataAdapterMode>> = {
+  local: 'local',
+  google: 'remote',
+}
 
 function isDevelopmentOnly(mode: AuthMode): boolean {
   return DEVELOPMENT_ONLY_AUTH_MODES.some((candidate) => candidate === mode)
@@ -90,6 +102,9 @@ export function parseEnv(raw: RawEnv, options: EnvOptions): EnvResult {
   if (options.production && isDevelopmentOnly(authMode)) {
     issues.push({ variable: ENV_VARIABLES.authMode, code: 'development_only' })
   }
+  if (ADAPTER_OF_AUTH_MODE[authMode] !== dataAdapter) {
+    issues.push({ variable: ENV_VARIABLES.dataAdapter, code: 'unpaired' })
+  }
   if (dataAdapter === 'remote') {
     if (url === undefined) issues.push({ variable: ENV_VARIABLES.remoteUrl, code: 'required_for_remote' })
     if (anonKey === undefined) {
@@ -97,7 +112,7 @@ export function parseEnv(raw: RawEnv, options: EnvOptions): EnvResult {
     }
   }
   if (issues.length > 0) return { ok: false, issues }
-  const remote =
-    dataAdapter === 'remote' && url !== undefined && anonKey !== undefined ? { url, anonKey } : null
-  return { ok: true, value: { authMode, dataAdapter, remote } }
+  if (authMode === 'local') return { ok: true, value: { authMode, dataAdapter: 'local', remote: null } }
+  if (url === undefined || anonKey === undefined) return { ok: false, issues }
+  return { ok: true, value: { authMode, dataAdapter: 'remote', remote: { url, anonKey } } }
 }

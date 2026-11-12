@@ -124,9 +124,9 @@ export interface LocalDataAdapter {
  * over the request's Postgres transaction.
  */
 export function createAdapterCore(dependencies: LocalDependencies): LocalDataAdapter {
-  const { database, identity, changes } = dependencies
+  const { database, identity, changes, claimant } = dependencies
   return {
-    session: { ...createSessionService(database, identity, changes), ...createPermissionHints(dependencies) },
+    session: { ...createSessionService(database, identity, changes, claimant), ...createPermissionHints(dependencies) },
     repositories: {
       organizations: createOrganizationRepository(dependencies),
       unit_levels: createUnitLevelRepository(dependencies),

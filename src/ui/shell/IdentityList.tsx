@@ -1,9 +1,13 @@
 import { t } from '@i18n'
-import { useKnownIdentities, useSignIn } from '@logic'
+import { useAuthMode, useKnownIdentities, useSignIn } from '@logic'
 import { Button } from '../primitives/Button'
 
-/** Identities that signed in on this device: the dev identity switcher (D-006, D-048). */
+/** Identities that signed in on this device: the dev identity switcher (D-006, D-048), local mode only (D-207). */
 export function IdentityList({ exclude }: { readonly exclude?: string }) {
+  return useAuthMode() === 'local' ? <KnownIdentities exclude={exclude} /> : null
+}
+
+function KnownIdentities({ exclude }: { readonly exclude: string | undefined }) {
   const identities = useKnownIdentities()
   const { signIn, isPending } = useSignIn()
   if (identities.status !== 'ready') return null

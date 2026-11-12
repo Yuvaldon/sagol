@@ -25,12 +25,36 @@ function productionEnvGuard(): Plugin {
   }
 }
 
+/**
+ * Libraries in chunks of their own (D-210): they change only on an upgrade, so a deploy of the app's
+ * code leaves them cached, and no chunk passes Vite's 500 kB warning.
+ */
+const VENDOR_CHUNKS: readonly { readonly name: string; readonly packages: readonly string[] }[] = [
+  { name: 'react', packages: ['react', 'react-dom', 'scheduler'] },
+  { name: 'aria', packages: ['react-aria', 'react-aria-components', 'react-stately', '@react-aria', '@react-stately', '@react-types', '@internationalized'] },
+  { name: 'tanstack', packages: ['@tanstack'] },
+  { name: 'motion', packages: ['motion', 'motion-dom', 'motion-utils', 'framer-motion'] },
+  { name: 'zod', packages: ['zod'] },
+]
+
+function vendorTest(packages: readonly string[]): RegExp {
+  const names = packages.map((name) => name.replace('/', '[\\/]')).join('|')
+  return new RegExp(`[\\/]node_modules[\\/](${names})[\\/]`)
+}
+
 // Path aliases are read from tsconfig.app.json ("paths") so that the
 // layer map is defined in exactly one place.
 export default defineConfig({
   plugins: [productionEnvGuard(), react(), tailwindcss()],
   resolve: {
     tsconfigPaths: true,
+  },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: { groups: VENDOR_CHUNKS.map(({ name, packages }) => ({ name, test: vendorTest(packages) })) },
+      },
+    },
   },
   test: {
     projects: [

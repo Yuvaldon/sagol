@@ -1,5 +1,6 @@
 import type {
   AuthIdentity,
+  AuthMode,
   LocalIdentityRequest,
   OnboardingState,
   Organization,
@@ -51,21 +52,45 @@ export function useCurrentOrganization(): Loaded<Organization | null> {
   )
 }
 
-/** Identities that signed in on this device, for the dev switcher (D-006, D-048). */
+/** Which provider signs people in: the sign-in screen and the menu follow it (D-207). */
+export function useAuthMode(): AuthMode {
+  return usePorts().auth.mode
+}
+
+const NOT_THIS_PROVIDER: Result<never> = { ok: false, error: { code: 'forbidden' } }
+
+/**
+ * Identities that signed in on this device, for the dev switcher (D-006, D-048). Local mode only:
+ * the screens show the switcher in no other mode, and another provider answers `forbidden`.
+ */
 export function useKnownIdentities(): Loaded<readonly AuthIdentity[]> {
   const { auth } = usePorts()
   return loaded(
     useQuery({
       queryKey: QUERY_KEYS.identities,
-      queryFn: () => unwrap(auth.listIdentities()),
+      queryFn: () => unwrap(auth.mode === 'local' ? auth.listIdentities() : Promise.resolve(NOT_THIS_PROVIDER)),
     }),
   )
 }
 
+/** Signing in as a development identity (D-006). Local mode only, like the switcher. */
 export function useSignIn() {
   const { auth } = usePorts()
   const mutation = useMutation({
-    mutationFn: (request: LocalIdentityRequest): Promise<Result<AuthIdentity>> => auth.signInAs(request),
+    mutationFn: (request: LocalIdentityRequest): Promise<Result<AuthIdentity>> =>
+      auth.mode === 'local' ? auth.signInAs(request) : Promise.resolve(NOT_THIS_PROVIDER),
+  })
+  return { signIn: mutation.mutateAsync, isPending: mutation.isPending }
+}
+
+/**
+ * Starts Google's sign-in (D-207). It answers once the redirect has started; the page then leaves,
+ * and the session follows the identity when the browser returns.
+ */
+export function useGoogleSignIn() {
+  const { auth } = usePorts()
+  const mutation = useMutation({
+    mutationFn: (): Promise<Result<null>> => (auth.mode === 'google' ? auth.signIn() : Promise.resolve(NOT_THIS_PROVIDER)),
   })
   return { signIn: mutation.mutateAsync, isPending: mutation.isPending }
 }

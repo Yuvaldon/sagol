@@ -1,6 +1,7 @@
 import { AuthIdentity, type DataChange, type Result, type TimeSource, type Unsubscribe } from '@contracts'
 import { z } from 'zod'
 import { createAdapterCore, type LocalDataAdapter } from '../local/core'
+import { ownerEmailClaimant } from '../local/dependencies'
 import type { LocalChangeFeed } from '../local/changes'
 import { createPostgresStore, type SqlClient, type StoreCatalog } from './postgresStore'
 
@@ -41,6 +42,8 @@ export interface GatewayDependencies {
   readonly transact: Transact
   readonly catalog: StoreCatalog
   readonly time: TimeSource
+  /** The server secret `BOOTSTRAP_OWNER_EMAIL`: the one identity that may claim an empty organization (D-005). */
+  readonly bootstrapOwnerEmail: string
 }
 
 /** Tries of one request that keeps losing serialization races before it answers `unavailable`. */
@@ -76,7 +79,8 @@ function methodOf(adapter: LocalDataAdapter, request: GatewayRequest): Method | 
   return typeof method === 'function' ? (method as Method) : null
 }
 
-export function createCommandGateway({ transact, catalog, time }: GatewayDependencies) {
+export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEmail }: GatewayDependencies) {
+  const claimant = ownerEmailClaimant(bootstrapOwnerEmail)
   /** `identity` comes from the verified token, never from the request body. */
   return async function handle(identity: AuthIdentity | null, body: unknown): Promise<GatewayResponse> {
     const request = GatewayRequest.safeParse(body)
@@ -92,7 +96,7 @@ export function createCommandGateway({ transact, catalog, time }: GatewayDepende
         return await transact(async (client) => {
           const store = createPostgresStore(client, catalog)
           const changes = collectingFeed()
-          const adapter = createAdapterCore({ database: store, identity: source, time, changes })
+          const adapter = createAdapterCore({ database: store, identity: source, time, changes, claimant })
           const method = methodOf(adapter, request.data)
           if (method === null) return { result: { ok: false, error: { code: 'not_found' } }, changes: [] }
           const result = await method(...request.data.args)

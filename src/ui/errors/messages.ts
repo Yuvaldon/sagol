@@ -73,6 +73,7 @@ const ENV_ISSUE_KEYS: Record<EnvIssueCode, I18nKey> = {
   invalid: 'startup.invalid',
   development_only: 'startup.developmentOnly',
   required_for_remote: 'startup.requiredForRemote',
+  unpaired: 'startup.unpaired',
 }
 
 export function errorKey(error: AppError): I18nKey {

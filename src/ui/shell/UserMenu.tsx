@@ -2,6 +2,7 @@ import { Appearance, type AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import {
   useAppearance,
+  useAuthMode,
   useKnownIdentities,
   useMyPreferences,
   useSignIn,
@@ -34,8 +35,7 @@ const APPEARANCES = [
 
 /** Who is signed in, the dev identity switcher (D-006), the actor's own default (D-121), the appearance (D-181) and sign-out. Import and export sit in the navigation panel (D-173). */
 export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
-  const identities = useKnownIdentities()
-  const { signIn } = useSignIn()
+  const authMode = useAuthMode()
   const { signOut } = useSignOut()
   const approves = useInboxAccess()
   const preferences = useMyPreferences()
@@ -44,10 +44,6 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   // On a phone the bottom bar holds every module, so the menu shows its icon and still reads the name (D-116).
   const isDesktop = useIsDesktop()
   const approveNow = preferences.status === 'ready' && preferences.value.create_leaves_as_approved
-  const others =
-    identities.status === 'ready'
-      ? identities.value.filter((known) => known.auth_user_id !== identity.auth_user_id)
-      : []
 
   return (
     <MenuTrigger>
@@ -61,28 +57,7 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
       </AriaButton>
       <Popover className="glass-menu min-w-trigger rounded-panel p-xs">
         <Menu className="flex max-w-menu flex-col gap-2xs outline-none">
-          {others.length === 0 ? null : (
-            <MenuSection className="flex flex-col gap-2xs border-b border-line pb-xs">
-              <Header className="px-md py-xs text-label font-semibold text-text-muted">
-                {t('account.switchIdentity')}
-              </Header>
-              {others.map((known) => (
-                <MenuItem
-                  key={known.auth_user_id}
-                  id={known.auth_user_id}
-                  textValue={known.email}
-                  className={ITEM}
-                  onAction={() => {
-                    void signIn({ email: known.email, display_name: known.display_name })
-                  }}
-                >
-                  <span dir="ltr" className="truncate">
-                    {known.email}
-                  </span>
-                </MenuItem>
-              ))}
-            </MenuSection>
-          )}
+          {authMode === 'local' ? <IdentitySwitcher identity={identity} /> : null}
           {approves && preferences.status === 'ready' ? (
             <MenuSection
               selectionMode="multiple"
@@ -137,5 +112,38 @@ export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
         </Menu>
       </Popover>
     </MenuTrigger>
+  )
+}
+
+/** The dev identity switcher (D-006): local mode only, where identities live on this device (D-207). */
+function IdentitySwitcher({ identity }: { readonly identity: AuthIdentity }) {
+  const identities = useKnownIdentities()
+  const { signIn } = useSignIn()
+  const others =
+    identities.status === 'ready'
+      ? identities.value.filter((known) => known.auth_user_id !== identity.auth_user_id)
+      : []
+  if (others.length === 0) return null
+  return (
+    <MenuSection className="flex flex-col gap-2xs border-b border-line pb-xs">
+      <Header className="px-md py-xs text-label font-semibold text-text-muted">
+        {t('account.switchIdentity')}
+      </Header>
+      {others.map((known) => (
+        <MenuItem
+          key={known.auth_user_id}
+          id={known.auth_user_id}
+          textValue={known.email}
+          className={ITEM}
+          onAction={() => {
+            void signIn({ email: known.email, display_name: known.display_name })
+          }}
+        >
+          <span dir="ltr" className="truncate">
+            {known.email}
+          </span>
+        </MenuItem>
+      ))}
+    </MenuSection>
   )
 }
