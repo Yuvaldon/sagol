@@ -611,6 +611,7 @@ export const dictionary = {
     invalid: 'ערך לא תקין',
     developmentOnly: 'מותר רק בסביבת פיתוח',
     requiredForRemote: 'נדרש כשמקור הנתונים מרוחק',
+    unpaired: 'לא מתאים לספק הזהות: זהות מקומית עובדת עם נתונים מקומיים, וגוגל עם נתונים מרוחקים',
   },
   failure: {
     title: 'משהו השתבש',
