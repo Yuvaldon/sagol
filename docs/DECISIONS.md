@@ -257,8 +257,8 @@ am = amends, ref = refines, ext = extends.
 | D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296 |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290 |
-| D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend |ref D-293 |
-| D-270 | The leave-round planner | domain, logic, ui | |
+| D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
+| D-270 | The leave-round planner | domain, logic, ui | ref D-316 |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | sup D-311 (sort placement) |
@@ -273,7 +273,7 @@ am = amends, ref = refines, ext = extends.
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297 |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
-| D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | |
+| D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | |
@@ -289,6 +289,8 @@ am = amends, ref = refines, ext = extends.
 | D-313 | Several sorts, in order | config, logic, i18n, ui | |
 | D-314 | A filter chip's remove is a plain × | ui | |
 | D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | |
+| D-316 | The leave-round planner as built: groups take turns, one collective leave, bounded by config | config, domain, logic, i18n, ui | |
+| D-317 | Rounds that overlap stack on the timeline; a rotation's creator sees close and reopen; rotation copies stay per soldier | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -3860,7 +3862,8 @@ trace against a nonexistent ref shows `functions deploy --use-api` calling `POST
   list (`DEFAULT_VIEW_BY_DEVICE`, config). Until a view is chosen the link stays bare; a chosen view, the device's
   default included, is written to the link. Nothing is remembered: a chosen view lives in the URL (D-103), so a link
   shared from a phone opens on what it names, on any device.
-- **Overlapping rounds** share the band's place; the one beneath is reached from the list view (OI-246).
+- **Overlapping rounds** share the band's place; the one beneath is reached from the list view (OI-246). Changed by
+  D-317: overlapping rounds stack in the row.
 - **A breach in every view (OI-221).** The same evaluation as the heat row (D-141): a calendar day that breaks a rule
   shows a count beside its heading, and the list shows the window's broken days above its rows. Each one opens the rules
   of its day, in the heat row's tones.
@@ -4119,3 +4122,34 @@ control per case.
   group, not in a "ללא יחידה" group.
 - Organizations claimed since V27 already have their root (D-262); this covers the ones created before.
 **Why:** a group named for an absence reads as an error; every soldier belongs at least to the whole unit.
+
+## D-316 — The leave-round planner as built: groups take turns, one collective leave, bounded by config
+2026-11-12 · accepted · refines D-179, D-268, D-270 · V31 · decided under D-170
+- **Where.** A third way to ask in the leaves module, beside one leave and a collective leave: "סבבי יציאות". It is
+  offered when there is more than one soldier to choose from and an open rotation in scope (closed ones are history,
+  D-258); the rotation in scope is chosen first.
+- **The plan.** A name, the rotation, the plan's days (from today or the rotation's start, whichever is later, to its
+  end), the rhythm (days in, days home; `LEAVE_ROUNDS` in config starts it at 8 and 6) and groups of the rotation's
+  members. Each group has its own first day home, and a new group's is proposed right after the last group's, so the
+  groups take turns and the unit is never empty at once.
+- **The rounds.** For each soldier, the rhythm from the group's first day home, cut to the plan's days and to the days
+  the soldier serves in the rotation (a member's own dates, else the rotation's). Each group shows its rounds before
+  anything is sent.
+- **One command.** The plan is sent as one collective leave (D-179): a leave per soldier and round, all of them or none,
+  through the same validation, permission and rule checks as any leave; only the leaves are stored (D-019). "כמאושר"
+  is offered only to who may approve every soldier planned (D-013).
+- **Bounds in config:** each part of the rhythm is 1 to `maxDays` days, and a plan creates at most `maxLeaves` leaves.
+**Why:** commanders build the same turns by hand every rotation; the planner only writes what they would, as ordinary
+leaves of one batch, so the board, the requests and the rules need nothing new.
+
+## D-317 — Rounds that overlap stack on the timeline; a rotation's creator sees close and reopen; rotation copies stay per soldier
+2026-11-12 · accepted · amends D-290 · refines D-222, D-258, D-260 · V31 · decided under D-170
+- **Stacked rounds (OI-246).** A soldier's rounds that overlap are given lanes; the row's band area is split between
+  the lanes, so each round is seen and pressed. Rounds that do not overlap keep the full height.
+- **Close and reopen (OI-249).** The screen offers "סגירת סבב" and "פתיחה מחדש" to the rotation's creator as well as to
+  who may update rotations, exactly as the command allows (D-258).
+- **"סבב חדש מסבב קודם" (OI-256).** Already met by D-222's choice: a new rotation's list starts from the previous
+  rotation's list, and rotation tags are copied per soldier with "כמו בסבב הקודם" on the card; nothing copies tags in
+  bulk when a rotation is created. Design (b)1 says so.
+**Why:** a hidden band is a hidden leave; an action the command allows must be on screen for who may run it; and the
+per-soldier copy was already decided, so building a bulk copy would contradict it.

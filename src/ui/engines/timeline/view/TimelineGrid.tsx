@@ -191,8 +191,8 @@ function barForm(mark: TimelineMark): string {
     : `hatch-absence border ${mark.tone.faint} ${mark.tone.edge} ${mark.tone.ink}`
 }
 
-// A round's band (D-268): the row's whole height, under the requests' bars, which sit over it at `z-1`.
-const BAND_BUTTON = 'absolute top-none cursor-pointer outline-focus -outline-offset-2 data-focus-visible:outline-2'
+// A round's band (D-268): its share of the row's height (OI-246), under the requests' bars, which sit over it at `z-1`.
+const BAND_BUTTON = 'absolute cursor-pointer outline-focus -outline-offset-2 data-focus-visible:outline-2'
 
 function barEnds(cut: TimelineMark['cut']): string {
   return `${cut.start ? '' : 'rounded-s-bar'} ${cut.end ? '' : 'rounded-e-bar'}`
@@ -252,11 +252,13 @@ function Bar({ mark, place, dimmed }: { readonly mark: TimelineMark; readonly pl
 function Band({
   mark,
   place,
+  topPx,
   heightPx,
   dimmed,
 }: {
   readonly mark: TimelineMark
   readonly place: Place
+  readonly topPx: number
   readonly heightPx: number
   readonly dimmed: boolean
 }) {
@@ -270,7 +272,7 @@ function Band({
         if (!place.pressIsDrag()) mark.onOpen()
       }}
       className={`${BAND_BUTTON} flex select-none items-end gap-xs px-xs ${barForm(mark)} ${dimmed ? 'opacity-50' : ''}`}
-      style={{ insetInlineStart: startPx, width: widthPx, height: heightPx }}
+      style={{ insetInlineStart: startPx, width: widthPx, top: topPx, height: heightPx }}
     >
       {mark.dot === null ? null : <span aria-hidden className={`size-dot shrink-0 rounded-pill ${mark.dot}`} />}
       <Handles mark={mark} />
@@ -424,8 +426,10 @@ function ResourceRow({
       </div>
       {row.marks.map((mark) => {
         if (mark.kind === 'band') {
-          const heightPx = rowHeightFor(place.baseRowPx, row.lanes, place.lanes)
-          return <Band key={mark.key} mark={mark} place={place} heightPx={heightPx} dimmed={mark === dragged} />
+          const share = rowHeightFor(place.baseRowPx, row.lanes, place.lanes) / row.bandLanes
+          return (
+            <Band key={mark.key} mark={mark} place={place} topPx={share * mark.lane} heightPx={share} dimmed={mark === dragged} />
+          )
         }
         return mark.kind === 'bar' ? (
           <Bar key={mark.key} mark={mark} place={place} dimmed={mark === dragged} />

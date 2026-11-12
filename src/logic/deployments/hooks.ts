@@ -8,6 +8,7 @@ import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
+import { useSession } from '../session/hooks'
 import {
   toCreateDeploymentInput,
   toSetDeploymentMembersInput,
@@ -94,6 +95,8 @@ export function useDeploymentPermissions(units: readonly Unit[], deployments: re
     ])
   }, [units, deployments])
   const can = useCan(checks)
+  const session = useSession()
+  const soldierId = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null
   return useMemo(
     () => ({
       createIn: (unitId: UnitId) => can(deploymentCheck('create', unitId)),
@@ -102,7 +105,10 @@ export function useDeploymentPermissions(units: readonly Unit[], deployments: re
       /** Moving a deployment needs `update` where it lands too. */
       moveTo: (unitId: UnitId) => can(deploymentCheck('update', unitId)),
       archive: (deployment: Deployment) => can(deploymentCheck('delete', deployment.unit_id)),
+      /** Its creator may close and reopen a rotation without `update` (D-258, OI-249). */
+      closeOrReopen: (deployment: Deployment) =>
+        (soldierId !== null && deployment.created_by === soldierId) || can(deploymentCheck('update', deployment.unit_id)),
     }),
-    [can, units],
+    [can, units, soldierId],
   )
 }

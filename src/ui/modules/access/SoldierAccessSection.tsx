@@ -13,14 +13,14 @@ import { GrantRows } from './GrantRows'
 
 function Section({ soldier, soldiers, timezone }: { readonly soldier: Soldier; readonly soldiers: readonly Soldier[]; readonly timezone: string }) {
   const hints = useGrantPermissionHints(soldiers)
-  const rows = useGrantRows(false)
+  const rows = useGrantRows(false, [soldier.id])
   const [granting, setGranting] = useState(false)
   const [failure, setFailure] = useState<AppError | null>(null)
   // An archived soldier is read, not given access (D-284).
   const canGrant = hints.grantTo(soldier.id) && soldier.archived_at === null
   if (rows.status === 'failed') return <FailureNotice error={rows.error} />
   if (rows.status === 'loading') return <LoadingNotice />
-  const own = rows.value.filter((row) => row.grant.grantee_soldier_id === soldier.id)
+  const own = rows.value
   if (own.length === 0 && !canGrant) return null
   return (
     <section aria-labelledby={`access-${soldier.id}`} className="flex flex-col gap-md">

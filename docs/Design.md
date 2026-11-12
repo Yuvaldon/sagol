@@ -117,7 +117,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   their days, a lane step of 24. Absence is a hole (D-290): an approved bar is hatched from its type's color over a faint
   fill with its edge, a pending one a 2 px dashed edge over the surface, square on a side the window cuts; the caption is
   the body text. A round (a leave in a batch) is a band of the row's full height under the request bars, outside the
-  lanes. No leave type is green or lime, so green never means away. A marker is a 20 px round badge on `surface` with its icon, on each day,
+  lanes; a soldier's overlapping rounds split that height into stacked bands, so each is seen (D-317). No leave type is green or lime, so green never means away. A marker is a 20 px round badge on `surface` with its icon, on each day,
   over any bar. Overlaps take lanes, and a row grows by a lane step for each lane beyond the first. In the uniform mode
   every bar is `absence`, with a dot of the type's color and its name inside, and badges are `marker`.
 - **The other views (D-174):** each fills the same frame under the bars, a focusable region named for the view. The
@@ -256,6 +256,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **The new-leave drawer** has a "collective leave" switch when there is more than one soldier to choose; the
   `LeaveBatchForm` has a name, a `CheckList` of soldiers, the type and the days. **`LeaveDuplicateForm`** opens from a
   leave's drawer: soldiers, days, and "approve now" only for who approves all of them.
+- **`LeaveRoundPlanner`** ("סבבי יציאות", V31, D-316) is the drawer's third way when there is an open rotation in
+  scope: name, rotation, the plan's days, the rhythm (days in, days home), groups of the rotation's soldiers each with
+  its first day home, the type and reason; each group lists its rounds before "יצירת היציאות" sends one collective leave.
 - **`SenioritySection`** on the soldier's page: the overrides (current, permanent, revoked as history), a new one in a
   dialog, revoke from the row.
 
@@ -426,8 +429,8 @@ board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V
 5. Add soldiers in חיילים, or import them (ייבוא וייצוא), then "פתיחת סבב", the strip's quick action in routine.
 
 **(b) A rotation, from call-up to close.**
-1. In routine, "פתיחת סבב" (the strip's quick action) or ניהול → סבבים → new, empty or "מסבב קודם" (its list and
-   rotation tags copied): name, dates (an open end allowed), unit (the root by default), who: "כל היחידה" (default) or
+1. In routine, "פתיחת סבב" (the strip's quick action) or ניהול → סבבים → new (a list starts from the previous
+   rotation's list; rotation tags are copied per soldier on the card, D-222, D-317): name, dates (an open end allowed), unit (the root by default), who: "כל היחידה" (default) or
    "רשימה" (for example command staff first).
 2. Saving checks there is no overlapping rotation and says so before the command. The mode becomes the rotation's
    (upcoming, then running): the top strip names it and the range opens on it.
