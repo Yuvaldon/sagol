@@ -172,5 +172,7 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   await expectTouchTargets()
   await claimOrganization(page)
   await expect(organizationHeading(page)).toBeVisible()
+  // The settled workspace: its empty state is in place before anything is measured.
+  await expect(page.getByRole('button', { name: he.workspace.foundUnits })).toBeVisible()
   await expectTouchTargets()
 })
