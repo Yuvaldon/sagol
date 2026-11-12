@@ -159,12 +159,16 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     }
     for (const section of [
       he.navigation.sections.presence,
-      he.navigation.sections.soldierDetails,
+      he.navigation.sections.structure,
       he.navigation.sections.access,
+      he.navigation.sections.catalogs,
       he.navigation.sections.data,
+      he.navigation.sections.advanced,
     ]) {
       await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toHaveCount(0)
     }
+    // No setup of the unit is theirs, so its row is not there either (D-285).
+    await expect(navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })).toHaveCount(0)
     await expectNoAxeViolations(page)
   })
 })

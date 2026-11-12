@@ -28,8 +28,15 @@ function rowNames(page: Page) {
   return board(page).getByRole('list', { name: he.timeline.names }).getByRole('button', { name: /^[^,]+$/ })
 }
 
+/** Tags and their categories are each their own module of the setup (D-285); the step moves to the one it needs. */
+async function switchTo(page: Page, open: string, title: string) {
+  if (await drawer(page).getByRole('heading', { name: title, exact: true }).isVisible()) return
+  await closeDrawer(page)
+  await openModule(page, open)
+}
+
 async function createCategory(page: Page, name: string, color: string, single = false) {
-  await drawer(page).getByRole('button', { name: he.tags.tabCategories }).click()
+  await switchTo(page, he.tagCategories.open, he.tagCategories.title)
   await drawer(page).getByRole('button', { name: he.tagCategories.new }).first().click()
   await page.getByLabel(he.tagCategories.name).fill(name)
   if (single) {
@@ -42,7 +49,7 @@ async function createCategory(page: Page, name: string, color: string, single = 
 }
 
 async function createTag(page: Page, name: string, category: string) {
-  await drawer(page).getByRole('button', { name: he.tags.tabTags }).click()
+  await switchTo(page, he.tags.open, he.tags.title)
   await drawer(page).getByRole('button', { name: he.tags.new }).first().click()
   await page.getByLabel(he.tags.name).fill(name)
   await drawer(page).getByRole('button', { name: new RegExp(`${he.tags.category}$`) }).click()
