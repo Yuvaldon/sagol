@@ -50,7 +50,7 @@ const newAccountId = () => SoldierAccountId.parse(crypto.randomUUID())
 
 export function describeAccountContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const harness = () => harnessOf()
   const adapter = () => harnessOf().adapter
@@ -63,6 +63,7 @@ export function describeAccountContract(
 
     describe('in a claimed organization', () => {
       let organization: OrganizationId
+      let root: UnitId
       let ownerId: SoldierId
       let owner: AuthIdentity
       let unitId: UnitId
@@ -70,12 +71,13 @@ export function describeAccountContract(
       beforeEach(async () => {
         const claimed = await claim()
         organization = claimed.input.organization.id
+        root = claimed.input.root_unit_id
         ownerId = claimed.input.soldier.id
         owner = claimed.owner
         unitId = valueOf(
           await adapter().commands.units.create({
             id: UnitId.parse(crypto.randomUUID()),
-            parent_id: null,
+            parent_id: root,
             sort_order: 0,
             name: 'Platoon A',
             code: null,

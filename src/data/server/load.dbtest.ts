@@ -90,6 +90,8 @@ async function localExport(): Promise<OrganizationExport> {
       owner_role: { id: ownerRole, name: 'Owner' },
       account_id: SoldierAccountId.parse(crypto.randomUUID()),
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+      root_unit_id: UnitId.parse(crypto.randomUUID()),
+      membership_id: UnitMembershipId.parse(crypto.randomUUID()),
     }),
   )
   valueOf(await commands.organizations.update({ expected_version: 1, changes: { baseline_role_id: ownerRole } }))

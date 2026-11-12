@@ -53,18 +53,20 @@ function ruleInput(overrides: Partial<CreateAvailabilityRuleInput> = {}): Create
 
 export function describeRuleContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
   const rules = () => adapter().commands.availability_rules
 
   describe('availability rules', () => {
     let organization: OrganizationId
+    let root: UnitId
     let owner: AuthIdentity
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       owner = claimed.owner
     })
 
@@ -72,7 +74,7 @@ export function describeRuleContract(
     const listed = async (include_archived = false) =>
       valueOf(await adapter().repositories.availability_rules.list({ include_archived })).map((rule) => rule.name)
 
-    async function newUnit(name: string, parent_id: UnitId | null = null) {
+    async function newUnit(name: string, parent_id: UnitId | null = root) {
       return valueOf(
         await adapter().commands.units.create({
           id: UnitId.parse(crypto.randomUUID()),

@@ -48,7 +48,7 @@ const pair = (resource: Permission["resource"], action: Permission["action"]) =>
 export function describeDeploymentContract(
   harnessOf: () => ContractHarness,
   claim: () => Promise<{
-    input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } };
+    input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId };
     owner: AuthIdentity;
   }>,
 ): void {
@@ -56,12 +56,14 @@ export function describeDeploymentContract(
 
   describe("deployments, seniority and leaves together", () => {
     let organization: OrganizationId;
+    let root: UnitId;
     let ownerId: SoldierId;
     let owner: AuthIdentity;
 
     beforeEach(async () => {
       const claimed = await claim();
       organization = claimed.input.organization.id;
+      root = claimed.input.root_unit_id;
       ownerId = claimed.input.soldier.id;
       owner = claimed.owner;
     });
@@ -70,7 +72,7 @@ export function describeDeploymentContract(
       return valueOf(
         await adapter().commands.units.create({
           id: UnitId.parse(crypto.randomUUID()),
-          parent_id: null,
+          parent_id: root,
           sort_order: 0,
           name,
           code: null,

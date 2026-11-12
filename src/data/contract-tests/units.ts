@@ -33,7 +33,7 @@ import {
 const newUnitId = () => UnitId.parse(crypto.randomUUID())
 const newLevelId = () => UnitLevelId.parse(crypto.randomUUID())
 
-function unitInput(overrides: Partial<CreateUnitInput> = {}): CreateUnitInput {
+function baseUnitInput(overrides: Partial<CreateUnitInput> = {}): CreateUnitInput {
   return {
     id: newUnitId(),
     parent_id: null,
@@ -52,9 +52,21 @@ function unitInput(overrides: Partial<CreateUnitInput> = {}): CreateUnitInput {
 
 export function describeUnitContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claimOrganization: () => Promise<{
+    input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }
+    owner: AuthIdentity
+  }>,
 ): void {
   const adapter = () => harnessOf().adapter
+
+  // Every unit hangs under the claim's root unit: an organization has one live root (D-251).
+  let root: UnitId
+  const claim = async () => {
+    const claimed = await claimOrganization()
+    root = claimed.input.root_unit_id
+    return claimed
+  }
+  const unitInput = (overrides: Partial<CreateUnitInput> = {}) => baseUnitInput({ parent_id: root, ...overrides })
 
   /** A second linked soldier holding `pairs` from one role, at the given scope. */
   const actorWith = (
@@ -67,9 +79,9 @@ export function describeUnitContract(
   const place = (organization_id: OrganizationId, soldier_id: SoldierId, unit_id: UnitId, valid_to: string | null) =>
     placeSoldier(harnessOf(), organization_id, soldier_id, unit_id, valid_to)
 
-  /** Company > Platoon A, Platoon B, created by the owner. */
+  /** Root > Wing > Platoon A, Platoon B, created by the owner. */
   async function sampleTree() {
-    const company = valueOf(await adapter().commands.units.create(unitInput({ name: 'Company' })))
+    const company = valueOf(await adapter().commands.units.create(unitInput({ name: 'Wing' })))
     const platoonA = valueOf(
       await adapter().commands.units.create(unitInput({ name: 'Platoon A', parent_id: company.id, sort_order: 0 })),
     )
@@ -271,9 +283,9 @@ export function describeUnitContract(
     })
 
     describe('create', () => {
-      it('creates a top-level unit and a child, and lists them in order', async () => {
+      it('creates a unit and a child, and lists them in order', async () => {
         const { company, platoonA, platoonB } = await sampleTree()
-        expect(company).toMatchObject({ name: 'Company', parent_id: null, version: 1, created_at: NOW })
+        expect(company).toMatchObject({ name: 'Wing', parent_id: root, version: 1, created_at: NOW })
         expect(platoonA.parent_id).toBe(company.id)
         expect(await namesUnder(company.id)).toEqual(['Platoon A', 'Platoon B'])
         expect(valueOf(await adapter().repositories.units.get(platoonB.id))).toEqual(platoonB)
@@ -435,10 +447,13 @@ export function describeUnitContract(
         expect(await namesUnder(company.id)).toEqual(['Platoon A', 'Platoon B', 'Squad'])
       })
 
-      it('moves to the top level, and into a parent with no children', async () => {
-        const { company, platoonA, platoonB } = await sampleTree()
-        const top = valueOf(await adapter().commands.units.move({ id: platoonA.id, expected_version: 1, parent_id: null }))
-        expect(top).toMatchObject({ parent_id: null, sort_order: company.sort_order + 1 })
+      it('keeps one root: refuses a second top-level unit, and moves into a parent with no children (D-251)', async () => {
+        const { platoonA, platoonB } = await sampleTree()
+        const top = await adapter().commands.units.move({ id: platoonA.id, expected_version: 1, parent_id: null })
+        expect(issuesOf(top)).toEqual([{ path: ['parent_id'], code: 'required' }])
+        expect(issuesOf(await adapter().commands.units.create(unitInput({ parent_id: null })))).toEqual([
+          { path: ['parent_id'], code: 'required' },
+        ])
         const inside = valueOf(
           await adapter().commands.units.move({ id: platoonB.id, expected_version: 1, parent_id: platoonA.id }),
         )
@@ -629,7 +644,7 @@ export function describeUnitContract(
       })
 
       it('holds a unit commander to their subtree (D-053)', async () => {
-        const { company, platoonA, platoonB } = await sampleTree()
+        const { platoonA, platoonB } = await sampleTree()
         const squad = valueOf(
           await adapter().commands.units.create(unitInput({ name: 'Squad', parent_id: platoonA.id })),
         )
@@ -643,7 +658,7 @@ export function describeUnitContract(
         )
         harnessOf().signIn(identity)
 
-        // A top-level unit shows to any non-empty scope, and siblings of the anchor do not.
+        // The root unit (named as the organization) shows to any non-empty scope; the anchor's parent and siblings do not.
         const visible = (await liveUnits()).map((unit) => unit.name).sort()
         expect(visible).toEqual(['Company', 'Platoon A', 'Squad'])
         expect(errorOf(await adapter().repositories.units.get(other.id)).code).toBe('not_found')
@@ -655,7 +670,7 @@ export function describeUnitContract(
 
         // A top-level unit changes only with organization scope.
         const topLevel = await adapter().commands.units.update({
-          id: company.id,
+          id: root,
           expected_version: 1,
           changes: { name: 'X' },
         })

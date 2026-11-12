@@ -17,6 +17,7 @@ import {
   buildUnitTree,
   moveUnitIssues,
   placementTarget,
+  rootIssues,
   unitTarget,
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
@@ -38,6 +39,7 @@ import {
 } from './reference'
 
 // `units`: `parent_id` is the only source of ancestry (D-009), and changes only through `move`.
+// One live root per organization (D-251): neither create nor move makes a second one.
 
 async function organizationUnits(database: Store, scope: ActorScope): Promise<Unit[]> {
   return tableOf(database, 'units').where('organization_id').equals(scope.organization_id).toArray()
@@ -90,7 +92,12 @@ const SPEC: ReferenceSpec<Unit> = {
     const { database, scope, row, before } = check
     return [
       ...colorKeyIssues(before?.color_key, row.color_key),
-      ...(before === null ? await parentIssues(database, scope, row.parent_id) : []),
+      ...(before === null
+        ? [
+            ...(await parentIssues(database, scope, row.parent_id)),
+            ...rootIssues(await organizationUnits(database, scope), row.id, row.parent_id),
+          ]
+        : []),
       ...(await levelIssues(check)),
       ...(await codeIssues(check)),
       ...(await propertiesIssues(database, scope, 'unit', before?.properties ?? null, row.properties)),
@@ -149,6 +156,7 @@ export function createUnitCommands(dependencies: LocalDependencies): DataCommand
           const issues = [
             ...(await parentIssues(database, scope, input.parent_id)),
             ...moveUnitIssues(buildUnitTree(units), input.id, input.parent_id),
+            ...rootIssues(units, input.id, input.parent_id),
           ]
           if (issues.length > 0) return failValidation(issues)
 

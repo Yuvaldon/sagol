@@ -15,7 +15,7 @@ import {
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, PAST_DATE, errorOf, hintAndCommand, issuesOf, placeSoldier, seedActor, valueOf } from './support'
+import { NOW, PAST_DATE, errorOf, hintAndCommand, issuesOf, seedActor, valueOf } from './support'
 
 // The roster against the shared contract: ranks, soldiers, private fields and memberships, with denial
 // paths through seeded grants, long before the roles screen exists (D-076, D-096). Sample data, test
@@ -49,7 +49,7 @@ function soldierInput(overrides: Partial<CreateSoldierInput> = {}): CreateSoldie
   }
 }
 
-function unitInput(name: string, parent_id: UnitId | null = null): CreateUnitInput {
+function unitInput(name: string, parent_id: UnitId | null): CreateUnitInput {
   return {
     id: newUnitId(),
     parent_id,
@@ -81,18 +81,20 @@ const onSoldier = (soldier_id: SoldierId): PolicyTarget => ({ kind: 'soldier', s
 
 export function describeRosterContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
 
   describe('roster', () => {
     let organization: OrganizationId
+    let root: UnitId
     let ownerId: SoldierId
     let owner: AuthIdentity
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
     })
@@ -102,7 +104,7 @@ export function describeRosterContract(
 
     /** Company > Platoon A, Platoon B, created by the owner. */
     async function sampleUnits() {
-      const company = valueOf(await adapter().commands.units.create(unitInput('Company')))
+      const company = valueOf(await adapter().commands.units.create(unitInput('Company', root)))
       const platoonA = valueOf(await adapter().commands.units.create(unitInput('Platoon A', company.id)))
       const platoonB = valueOf(await adapter().commands.units.create(unitInput('Platoon B', company.id)))
       return { company, platoonA, platoonB }
@@ -275,7 +277,7 @@ export function describeRosterContract(
         const unknownUnit = await adapter().commands.soldiers.create(soldierInput({ membership: placement(newUnitId()) }))
         expect(issuesOf(unknownUnit)).toEqual([{ path: ['membership', 'unit_id'], code: 'reference_not_found' }])
 
-        const unit = valueOf(await adapter().commands.units.create(unitInput('Old')))
+        const unit = valueOf(await adapter().commands.units.create(unitInput('Old', root)))
         valueOf(await adapter().commands.units.archive({ id: unit.id, expected_version: 1 }))
         const archivedUnit = await adapter().commands.soldiers.create(soldierInput({ membership: placement(unit.id) }))
         expect(issuesOf(archivedUnit)).toEqual([{ path: ['membership', 'unit_id'], code: 'reference_archived' }])
@@ -289,12 +291,13 @@ export function describeRosterContract(
           ),
         )
         const before = (await harnessOf().rows('soldiers')).length
+        const placed = await harnessOf().rows('unit_memberships')
         const result = await adapter().commands.soldiers.create(
           soldierInput({ private: { ...emptyPrivate, personal_id: '12-34-56' }, membership: placement(platoonA.id) }),
         )
         expect(issuesOf(result)).toEqual([{ path: ['private', 'personal_id'], code: 'already_exists' }])
         expect((await harnessOf().rows('soldiers')).length).toBe(before)
-        expect(await harnessOf().rows('unit_memberships')).toEqual([])
+        expect(await harnessOf().rows('unit_memberships')).toEqual(placed)
       })
 
       it('needs soldiers:create on the placement, or at organization scope without one (D-096)', async () => {
@@ -651,7 +654,7 @@ export function describeRosterContract(
 
       it('refuses an archived soldier, and a unit that is unknown or archived', async () => {
         expect(issuesOf(await change(TODAY, newUnitId()))).toEqual([{ path: ['new_membership', 'unit_id'], code: 'reference_not_found' }])
-        const old = valueOf(await adapter().commands.units.create(unitInput('Old')))
+        const old = valueOf(await adapter().commands.units.create(unitInput('Old', root)))
         valueOf(await adapter().commands.units.archive({ id: old.id, expected_version: 1 }))
         expect(issuesOf(await change(TODAY, old.id))).toEqual([{ path: ['new_membership', 'unit_id'], code: 'reference_archived' }])
         valueOf(await adapter().commands.soldiers.archive({ id: soldierId, expected_version: 1 }))
@@ -717,7 +720,7 @@ export function describeRosterContract(
       })
 
       it('moves the last access manager, whose organization scope does not depend on a unit (D-059)', async () => {
-        await placeSoldier(harnessOf(), organization, ownerId, units.platoonA.id, null)
+        // The claim placed the owner in the root unit today (D-251), so a change on the same day replaces that row.
         const current = (await membershipsOf(ownerId))[0]
         if (current === undefined) throw new Error('no row')
         valueOf(
@@ -728,7 +731,7 @@ export function describeRosterContract(
             new_membership: { id: newMembershipId(), unit_id: units.platoonB.id },
           }),
         )
-        expect((await membershipsOf(ownerId)).map((row) => row.unit_id)).toEqual([units.platoonA.id, units.platoonB.id])
+        expect((await membershipsOf(ownerId)).map((row) => row.unit_id)).toEqual([units.platoonB.id])
       })
     })
 

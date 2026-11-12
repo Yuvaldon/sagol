@@ -41,18 +41,20 @@ const VIEW_UNITS: Permission = { resource: 'units', action: 'view' }
 
 export function describeTagContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId } }; owner: AuthIdentity }>,
+  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
 ): void {
   const adapter = () => harnessOf().adapter
 
   describe('tags', () => {
     let organization: OrganizationId
+    let root: UnitId
     let ownerId: SoldierId
     let owner: AuthIdentity
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
     })
@@ -83,7 +85,7 @@ export function describeTagContract(
       return id
     }
 
-    async function newUnit(name: string, parent_id: UnitId | null = null) {
+    async function newUnit(name: string, parent_id: UnitId | null = root) {
       return valueOf(
         await adapter().commands.units.create({
           id: UnitId.parse(crypto.randomUUID()),
