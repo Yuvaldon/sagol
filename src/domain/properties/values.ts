@@ -156,3 +156,35 @@ export function propertyDefinitionIssues(
   })
   return issues
 }
+
+/** A row that a new or changed reference value points to, for the data layer to check (D-065, OI-037). */
+export interface PropertyReference {
+  readonly path: readonly string[]
+  readonly table: 'soldiers' | 'units'
+  readonly id: string
+}
+
+const REFERENCE_TABLES: Partial<Record<PropertyDataType, PropertyReference['table']>> = {
+  soldier_ref: 'soldiers',
+  unit_ref: 'units',
+}
+
+/**
+ * The rows that the new or changed reference values of a write point to. Values that `propertyValueIssues` refuses
+ * are left out, and unchanged ones too, so a row archived later never blocks an unrelated edit (D-065).
+ */
+export function propertyReferences(definitions: Iterable<PropertyDefinitionShape>, write: PropertyWrite): PropertyReference[] {
+  const byId = new Map<string, PropertyDefinitionShape>()
+  for (const definition of definitions) byId.set(definition.id, definition)
+  const before = write.before === null ? null : entriesOf(write.before)
+  const references: PropertyReference[] = []
+  for (const [key, value] of entriesOf(write.after)) {
+    if (before !== null && jsonEqual(before.get(key), value)) continue
+    const definition = byId.get(key)
+    if (definition === undefined || definition.entity_type !== write.entity_type || definition.archived_at !== null) continue
+    const table = REFERENCE_TABLES[definition.data_type]
+    if (table === undefined || typeof value !== 'string' || !fitsPropertyType(definition, value)) continue
+    references.push({ path: ['properties', key], table, id: value })
+  }
+  return references
+}

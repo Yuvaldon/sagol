@@ -10,6 +10,7 @@ import {
   fitsPropertyType,
   isEmptyPropertyValue,
   propertyDefinitionIssues,
+  propertyReferences,
   propertyValueIssues,
   type PropertyDefinitionShape,
 } from './index'
@@ -193,5 +194,24 @@ describe('propertyDefinitionIssues', () => {
       { path: ['options', 1, 'id'], code: 'duplicate_item' },
       { path: ['options', 2, 'label'], code: 'duplicate_item' },
     ])
+  })
+})
+
+describe('propertyReferences (OI-037)', () => {
+  const soldier = uuid(71)
+  const unit = uuid(72)
+  it('lists the rows that new reference values point to', () => {
+    const after = values([[DEF.soldier, soldier], [DEF.unit, unit], [DEF.text, 'x']])
+    expect(propertyReferences(DEFINITIONS, { entity_type: 'soldier', before: null, after })).toEqual([
+      { path: ['properties', DEF.soldier.id], table: 'soldiers', id: soldier },
+      { path: ['properties', DEF.unit.id], table: 'units', id: unit },
+    ])
+  })
+  it('leaves out unchanged values and values the value check refuses', () => {
+    const before = values([[DEF.soldier, soldier]])
+    const after = values([[DEF.soldier, soldier], [DEF.unit, 'not an id']])
+    expect(propertyReferences(DEFINITIONS, { entity_type: 'soldier', before, after })).toEqual([])
+    const archived = definition(12, 'unit_ref', { archived_at: '2026-10-01T00:00:00Z' })
+    expect(propertyReferences([archived], { entity_type: 'soldier', before: null, after: values([[archived, unit]]) })).toEqual([])
   })
 })
