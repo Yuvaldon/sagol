@@ -278,8 +278,9 @@ The current state, in short (D-128). The entries hold the reasons.
   grouped by `WORK_SECTIONS` in `config`, each module loaded lazily (OI-118), with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
   `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
   (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
-  anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's
-  preferences (`useNavigationPreferences`). The organization's setup (`setup` panel) is first in that panel and the
+  anyone else on "שלי", and the last choice is kept on the device. The heat row always sits above the soldiers, sticky (D-310).
+  The "לוח" tab opens the view sheet on the board (`ViewSheet`, D-311); "סינון ומיון" opens the rule builder
+  (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
   done from live rows (`useSetupProgress`, D-180).
 - All view state lives in **typed URL search params** (TanStack Router + Zod): active view

@@ -1,6 +1,5 @@
 import {
   Appearance,
-  RulesRowPlacement,
   SoldierPreferences,
   type Result,
   type SoldierPreferencesRecord,
@@ -73,33 +72,8 @@ export function useUpdateMyPreferences() {
   })
 }
 
-export interface NavigationPreferences {
-  readonly rulesRow: RulesRowPlacement
-  /** FALSE while the preferences cannot be read, so nothing offers a change that cannot be saved (D-076, D-121). */
-  readonly editable: boolean
-  /** FALSE until the preferences are read or have failed, so nothing is placed by a default and then moved. */
-  readonly settled: boolean
-  setRulesRow(placement: RulesRowPlacement): Promise<PreferenceSaved>
-}
-
 /** A preference save's answer: a failure is shown, never dropped (D-187). */
 export type PreferenceSaved = Result<SoldierPreferencesRecord>
-
-/** The rules row's place (D-173, D-253), kept in the soldier's own preferences so every device has them. */
-export function useNavigationPreferences(): NavigationPreferences {
-  const preferences = useMyPreferences()
-  const save = useUpdateMyPreferences()
-  const value = preferences.status === 'ready' ? preferences.value : null
-  // The stored pins are no longer read (D-254); V26 removes their key from the model.
-  return {
-    rulesRow: value?.rules_row_placement ?? RulesRowPlacement.enum.below,
-    editable: value !== null,
-    settled: preferences.status !== 'loading',
-    setRulesRow(placement) {
-      return save.run({ rules_row_placement: placement })
-    },
-  }
-}
 
 export interface AppearancePreference {
   /** Light until the preferences are read: a soldier who chose dark sees light first, never dark and back (D-181). */

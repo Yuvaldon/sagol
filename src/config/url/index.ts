@@ -12,9 +12,11 @@ export const SEARCH_PARAMS = {
   range: 'range',
   /** The rotation (a deployment id) of the "whole rotation" range (D-211). */
   rotation: 'rotation',
-  /** The key the board's rows are sorted by (`BoardSortKey`, D-214), or a column of the table. */
+  /** The board's sort rules, in order: a key or a soldier property, each with its direction (D-313). */
+  sorts: 'sorts',
+  /** A column of the table's leaves it is sorted by (`TableSortKey`, D-214, D-313). */
   sort: 'sort',
-  /** The direction of that sort (`SortOrder`, D-214). */
+  /** The direction of that column's sort (`SortOrder`, D-214). */
   order: 'order',
   /** Active filter (a serialized `FilterExpression`). */
   filter: 'filter',

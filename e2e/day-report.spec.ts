@@ -13,6 +13,7 @@ import {
   typeDate,
 } from './support/leaves.ts'
 import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
+import { selectView } from './support/board.ts'
 
 // V22's demo: the day report opens from a day of the timeline and of the calendar, holds the counts and the names per
 // unit, shows the reasons behind a switch kept on the device, spans days, and leaves as text and as an image, on
@@ -31,11 +32,6 @@ async function openUnits(page: Page) {
   const closed = report(page).getByRole('heading').getByRole('button', { expanded: false })
   await expect(closed.first()).toBeVisible()
   while ((await closed.count()) > 0) await closed.first().click()
-}
-
-async function selectView(page: Page, name: string) {
-  await page.getByRole('button', { name: new RegExp(he.workspace.view) }).click()
-  await page.getByRole('menuitemradio', { name }).click()
 }
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
