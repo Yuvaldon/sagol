@@ -108,7 +108,7 @@ am = amends, ref = refines, ext = extends.
 | D-089 | Permissions of the unit commands | domain, data, logic, ui, backend | |
 | D-090 | The order of checks inside a command | data, backend, docs | ref D-114; ref D-117 |
 | D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | ref D-107; ref D-122 |
-| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108; ext D-113 |
+| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108; ext D-113; ref D-278 |
 | D-093 | A new issue code lands after its message | contracts, ui, docs | sup D-127 |
 | D-094 | The soldiers drawer: sections, fields, search | config, logic, ui | ref D-116; ref D-153 |
 | D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
@@ -189,7 +189,7 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256 |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
@@ -239,7 +239,7 @@ am = amends, ref = refines, ext = extends.
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
 | D-253 | The profile is personal only | ui | |
-| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | |
+| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266 |
 | D-256 | One path for each action | ui | |
 | D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266 |
@@ -261,6 +261,7 @@ am = amends, ref = refines, ext = extends.
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
+| D-278 | A floating surface fits its content | ui, scripts | |
 
 ---
 
@@ -3488,3 +3489,18 @@ Refines D-209 and resolves OI-152. Track: docs.
 **Why:** the owner wants to try units, soldiers and flows freely, without touching real personal numbers, without
 slowing development, and without using up the real organization's first setup. A second project that follows `main`
 automatically is the usual staging practice and stays inside the free plan.
+
+## D-278 — A floating surface fits its content
+2026-11-12 · accepted · refines D-092, D-173, D-254 · panels fix · decided under the owner's autonomy instruction of 2026-11-11
+- A floating surface (the side panel, the drawer and its bottom sheet, a dialog, a popover) is as tall as its
+  content, up to the height its frame leaves it, and scrolls inside past that. No surface reserves height its content
+  does not fill: "ניהול יחידה" is no longer the full height, and the drawer on `md` and up is no longer either.
+- Its size comes from the layout and the tokens only: `max-h-full` of the frame, or `max-h-sheet-height` for the
+  bottom sheet. The header stays in place and the body is what scrolls.
+- `check-raw-values` guards it (rule `floating-surface`): a `Modal`, `MotionModal` or `Popover` with a reserved-height
+  utility (`h-*` or `size-*` but `fit`, `auto`, `min`, `max`; a `min-h-*` but `min-h-none`; `inset-y-*`, `flex-1`,
+  `flex-auto`, `grow`, `basis-full`, `self-stretch`) fails the check, and so does a row-flex or grid `ModalOverlay`
+  that does not align its surface at every width, or stretches it at any. The rule reads every string in a
+  `className`, and the string consts it names, the file's own or imported from beside it.
+**Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
+dead space on any surface; a rule in the check keeps the next surface from bringing it back.

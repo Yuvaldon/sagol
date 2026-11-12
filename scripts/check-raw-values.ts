@@ -2,7 +2,9 @@
 // Fails on: raw colors outside theme files, arbitrary Tailwind values, physical-direction
 // classes/properties (RTL), Tailwind default palette or numeric spacing classes (reset in
 // the theme, D-025), the JavaScript `Date` outside the date adapter, and web storage
-// outside allowed modules.
+// outside allowed modules, and a floating surface that reserves height its content does not fill (D-278).
+import { existsSync, statSync } from 'node:fs'
+import { join, posix } from 'node:path'
 import ts from 'typescript'
 import {
   CLASS_NAMES_LIVE_IN,
@@ -20,6 +22,7 @@ import {
   parseTs,
   readSource,
   report,
+  ROOT,
   walk,
 } from './lib/source.ts'
 
@@ -104,6 +107,100 @@ function isPropertyName(node: ts.Identifier): boolean {
   )
 }
 
+/** The floating surfaces (D-278): each sizes to its content, capped by the frame, and scrolls inside. */
+const SURFACE_ELEMENTS = new Set(['Modal', 'MotionModal', 'Popover'])
+/** A content size: what `h-*` or `size-*` may hold and still follow the content. */
+const CONTENT_SIZE = '(?!fit$|auto$|min$|max$)'
+/** A height a surface would hold whatever its content: a full or fixed height, a floor, or a share of its frame. */
+const RESERVED_HEIGHT = new RegExp(
+  `^(?:h-${CONTENT_SIZE}.+|size-${CONTENT_SIZE}.+|min-h-(?!none$).+|inset-y-.+|flex-1|flex-auto|grow|basis-full|self-stretch)$`,
+)
+/** What aligns an overlay's surface on its cross axis, so the overlay does not stretch it. */
+const ALIGNED = /^(?:items|place-items)-(?!stretch$)/
+const STRETCHED = /^(?:items|place-items)-stretch$/
+
+function surfaceProblems(element: string, text: string): string[] {
+  const tokens = text.split(/\s+/).filter(Boolean)
+  const utilities = tokens.map(utilityOf)
+  if (SURFACE_ELEMENTS.has(element)) {
+    return utilities
+      .filter((utility) => RESERVED_HEIGHT.test(utility))
+      .map((utility) => `"${utility}" on a ${element} reserves height: a surface sizes to its content, capped by max-h (D-278)`)
+  }
+  if (element !== 'ModalOverlay') return []
+  // Only an alignment that holds at every width counts; a breakpoint's own alignment leaves the others stretched.
+  const base = tokens.filter((token) => !token.includes(':')).map(utilityOf)
+  const laysOut = base.includes('grid') || (base.includes('flex') && !base.includes('flex-col'))
+  // In a column the height is the main axis: the surface grows only by its own grow, which the surface rule fails.
+  if (!laysOut) return []
+  const aligned = base.some((utility) => ALIGNED.test(utility))
+  const stretched = utilities.some((utility) => STRETCHED.test(utility))
+  return aligned && !stretched ? [] : ['a ModalOverlay stretches its surface: align it with items-start, -center or -end at every width (D-278)']
+}
+
+/** A file's top-level string consts, by name. */
+function stringConstsOf(source: ts.SourceFile): Map<string, string> {
+  const consts = new Map<string, string>()
+  for (const statement of source.statements) {
+    if (!ts.isVariableStatement(statement)) continue
+    for (const declaration of statement.declarationList.declarations) {
+      const initializer = declaration.initializer
+      if (ts.isIdentifier(declaration.name) && initializer !== undefined && isStringLike(initializer)) {
+        consts.set(declaration.name.text, initializer.text)
+      }
+    }
+  }
+  return consts
+}
+
+const constsByFile = new Map<string, Map<string, string>>()
+function constsOfFile(file: string): Map<string, string> {
+  let consts = constsByFile.get(file)
+  if (consts === undefined) {
+    consts = stringConstsOf(parseTs(file, readSource(file)))
+    constsByFile.set(file, consts)
+  }
+  return consts
+}
+
+/** The string const `name` names in `source`: its own, or one imported from a module beside it. */
+function constNamed(file: string, source: ts.SourceFile, name: string): string | null {
+  const own = constsOfFile(file).get(name)
+  if (own !== undefined) return own
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue
+    const bindings = statement.importClause?.namedBindings
+    if (bindings === undefined || !ts.isNamedImports(bindings)) continue
+    const binding = bindings.elements.find((element) => element.name.text === name)
+    const specifier = statement.moduleSpecifier.text
+    if (binding === undefined || !specifier.startsWith('.')) continue
+    const stem = posix.join(posix.dirname(file), specifier)
+    const target = [stem, `${stem}.ts`, `${stem}.tsx`].find((candidate) => {
+      const path = join(ROOT, candidate)
+      return existsSync(path) && !statSync(path).isDirectory()
+    })
+    if (target === undefined) return null
+    return constsOfFile(target).get(binding.propertyName?.text ?? name) ?? null
+  }
+  return null
+}
+
+/**
+ * The class text an attribute may hold: every string in its expression (a literal, a template's parts, both
+ * sides of a condition, a function's answers), and each string const it names, the file's own or one it imports.
+ */
+function classTextOf(file: string, source: ts.SourceFile, initializer: ts.JsxAttributeValue | undefined): string {
+  if (initializer === undefined) return ''
+  const parts: string[] = []
+  const collect = (node: ts.Node) => {
+    if (isStringLike(node)) parts.push(node.text)
+    else if (ts.isIdentifier(node) && !isPropertyName(node)) parts.push(constNamed(file, source, node.text) ?? '')
+    ts.forEachChild(node, collect)
+  }
+  collect(initializer)
+  return parts.join(' ')
+}
+
 function scanTs(file: string): Finding[] {
   const source = parseTs(file, readSource(file))
   const findings: Finding[] = []
@@ -113,6 +210,13 @@ function scanTs(file: string): Finding[] {
   const storageAllowed = isUnder(file, WEB_STORAGE_ALLOWED_IN)
 
   walk(source, (node) => {
+    if (classesLiveHere && ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && node.name.text === 'className') {
+      const element = node.parent.parent
+      const tag = ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element) ? element.tagName.getText(source) : ''
+      for (const message of surfaceProblems(tag, classTextOf(file, source, node.initializer))) {
+        findings.push(findingAt(source, node, 'floating-surface', message))
+      }
+    }
     if (isStringLike(node)) {
       const problems = [
         ...(classesLiveHere ? classProblems(node.text) : []),
