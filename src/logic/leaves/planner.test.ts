@@ -186,6 +186,14 @@ describe('the plan form (D-316)', () => {
     expect(leaveRoundIssues(values, null, WHOLE_UNIT)).toContainEqual({ path: ['end_date'], code: 'too_big' })
   })
 
+  it('refuses an open rotation planned to a far end date without walking every day', () => {
+    const open = rotation({ end_date: null })
+    const values = plan({ deployment_id: open.id, end_date: '9999-12-31', days_in: '1', days_home: '1' })
+    const context: RoundContext = { rotations: [open], members: [] }
+    expect(groupRounds(values, values.groups[0] ?? { key: 'none', soldier_ids: [], first_home: '' })).toHaveLength(LEAVE_ROUNDS.maxLeaves + 1)
+    expect(leaveRoundIssues(values, null, context)).toContainEqual({ path: ['end_date'], code: 'too_big' })
+  })
+
   it("lands the command's answer on the plan's fields", () => {
     const rounds = plannedRounds(plan(), WHOLE_UNIT)
     const last = rounds.length - 1

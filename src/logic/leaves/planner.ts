@@ -141,12 +141,15 @@ export function rotationSoldiers(
   return soldierIds.filter((soldierId) => servedDays(rotation, members, soldierId) !== null)
 }
 
+/** One round past the most a plan may hold: enough to refuse a plan as too big, without counting every day of it. */
+const PAST_MAX_LEAVES = LEAVE_ROUNDS.maxLeaves + 1
+
 /** A group's rounds over the plan's days, as the preview shows them; none until the rhythm, days and first day are. */
 export function groupRounds(values: LeaveRoundValues, group: RoundGroup): LeaveDays[] {
   const rhythm = rhythmOf(values)
   const span = planSpan(values)
   if (rhythm === null || span === null || group.first_home === '') return []
-  return roundDays(rhythm, group.first_home, span)
+  return roundDays(rhythm, group.first_home, span, PAST_MAX_LEAVES)
 }
 
 /**
@@ -167,7 +170,7 @@ export function plannedRounds(values: LeaveRoundValues, context: RoundContext): 
       const start = compareDates(served.start, span.start_date) > 0 ? served.start : span.start_date
       const end = served.end !== null && compareDates(served.end, span.end_date) < 0 ? served.end : span.end_date
       if (compareDates(start, end) > 0) return []
-      return roundDays(rhythm, firstHome, { start_date: start, end_date: end }).map((days) => ({
+      return roundDays(rhythm, firstHome, { start_date: start, end_date: end }, PAST_MAX_LEAVES).map((days) => ({
         ...days,
         group: index,
         soldier_id: soldierId,
