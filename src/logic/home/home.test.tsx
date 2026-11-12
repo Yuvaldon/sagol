@@ -87,6 +87,16 @@ describe('home follows the permissions, then the last choice (D-265)', () => {
     expect(local.read(DEVICE_KEYS.homeAway, ACTOR)).toBeNull()
   })
 
+  it('keeps no choice made before the answers arrive', async () => {
+    const local = memoryDeviceStore()
+    const { result } = render(MANAGER, local)
+    expect(result.current.ready).toBe(false)
+    act(() => result.current.choose(true))
+    await waitFor(() => expect(result.current.ready).toBe(true))
+    expect(local.read(DEVICE_KEYS.homeAway, ACTOR)).toBeNull()
+    expect(result.current.mine).toBe(false)
+  })
+
   it('never offers "mine" to whoever may not read their own leaves', async () => {
     const { result } = render(() => false)
     await waitFor(() => expect(result.current.ready).toBe(true))

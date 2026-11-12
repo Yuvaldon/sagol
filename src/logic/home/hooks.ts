@@ -20,7 +20,7 @@ export interface Home {
   readonly offersMine: boolean
   /** Whether home is "mine"; the board otherwise. */
   readonly mine: boolean
-  /** Remember the home just chosen: "mine" or the board. */
+  /** Remember the home just chosen: "mine" or the board. Nothing is kept until it is ready. */
   readonly choose: (mine: boolean) => void
 }
 
@@ -69,6 +69,12 @@ export function useHome(): Home {
   const derivedMine = !manages
   const mine = offersMine && derivedMine !== away.value
   const setAway = away.set
-  const choose = useCallback((next: boolean) => setAway(next !== derivedMine), [setAway, derivedMine])
+  // Until every answer has arrived the derived home is a guess, and a choice measured against it would be kept wrong.
+  const choose = useCallback(
+    (next: boolean) => {
+      if (ready) setAway(next !== derivedMine)
+    },
+    [ready, setAway, derivedMine],
+  )
   return { ready, offersMine, mine, choose }
 }
