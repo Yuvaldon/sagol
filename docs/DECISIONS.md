@@ -3439,7 +3439,9 @@ most; the sort is set rarely and belongs with how the board is shown.
 - Its size comes from the layout and the tokens only: `max-h-full` of the frame, or `max-h-sheet-height` for the
   bottom sheet. The header stays in place and the body is what scrolls.
 - `check-raw-values` guards it (rule `floating-surface`): a `Modal`, `MotionModal` or `Popover` with a reserved-height
-  utility (`h-*`, a `min-h-*` but `min-h-none`, `flex-1`, `grow`, `self-stretch`), or a flex `ModalOverlay` that
-  stretches its child, fails the check.
+  utility (`h-*` or `size-*` but `fit`, `auto`, `min`, `max`; a `min-h-*` but `min-h-none`; `inset-y-*`, `flex-1`,
+  `flex-auto`, `grow`, `basis-full`, `self-stretch`) fails the check, and so does a row-flex or grid `ModalOverlay`
+  that does not align its surface at every width, or stretches it at any. The rule reads every string in a
+  `className`, and the string consts it names, the file's own or imported from beside it.
 **Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
 dead space on any surface; a rule in the check keeps the next surface from bringing it back.
