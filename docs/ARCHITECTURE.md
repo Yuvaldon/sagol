@@ -256,8 +256,10 @@ The current state, in short (D-128). The entries hold the reasons.
   side drawer on desktop, bottom sheet on mobile. Navigation is two floating strips that hug their content on every
   screen (V25, D-252): a context strip at the top (scope, range, view, filters) and a destination strip at the bottom
   (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action, "בקשה חדשה", at its inline end. "ניהול יחידה" is
-  a panel from the inline start, grouped by `NAVIGATION_SECTIONS` in `config`, a plain line per module and no pins
-  (D-254). The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
+  a panel from the inline start, a plain line per module and no pins (D-254). From V32 it holds daily work only,
+  grouped by `WORK_SECTIONS` in `config`, with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
+  `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
+  (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
   anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's
   preferences (`useNavigationPreferences`). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
