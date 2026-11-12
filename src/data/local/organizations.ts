@@ -14,7 +14,7 @@ import {
   type Session,
 } from '@contracts'
 import { can, timeZoneIssues, withPathPrefix } from '@domain'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { createdBy, type LocalDependencies } from './dependencies'
 import { holds, loadActorScope, requirePermission } from './actor'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'

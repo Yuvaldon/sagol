@@ -9,13 +9,14 @@ import {
   type ImportReport,
   type Permission,
   type PolicyTarget,
+  type TableName,
 } from '@contracts'
 import { issuesFromSchema } from '@domain'
 import { z } from 'zod'
 import { loadActorScope, requirePermission } from './actor'
 import type { LocalChangeFeed } from './changes'
 import { createCommandRankCommands } from './commandRanks'
-import { STORES } from './database'
+import { STORES } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, parseInput } from './failure'
 import { createLeaveCommands } from './leaveCommands'
@@ -34,11 +35,13 @@ const IMPORT = { resource: 'data_transfer', action: 'import' } as const satisfie
 const EXPORT = { resource: 'data_transfer', action: 'export' } as const satisfies Permission
 const ORGANIZATION: PolicyTarget = { kind: 'organization' }
 
-/** Every store: the commands an import runs open their transactions inside this one. */
-const EVERY_TABLE = Object.keys(STORES)
+/** Every store: the commands an import runs open their transactions inside this one. `STORES` names every table. */
+const EVERY_TABLE = Object.keys(STORES) as TableName[]
 
 /** The tables an export reads by organization; the organization itself is the actor's. */
-const ORGANIZATION_TABLES = Object.keys(OrganizationExport.shape.tables.shape).filter((table) => table !== 'organizations')
+const ORGANIZATION_TABLES = EVERY_TABLE.filter(
+  (table) => table !== 'organizations' && Object.hasOwn(OrganizationExport.shape.tables.shape, table),
+)
 
 const OperationList = z.object({ operations: z.array(z.unknown()) })
 

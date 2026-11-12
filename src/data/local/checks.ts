@@ -1,8 +1,8 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import { isIconKey, isPaletteKey } from '@config'
 import { IssueCode, type Issue, type PropertyEntityType, type PropertyValues } from '@contracts'
 import { propertyValueIssues } from '@domain'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import { parsedRow } from './failure'
 import type { ActorScope } from './actor'
 
@@ -22,7 +22,7 @@ export function iconKeyIssues(before: string | null | undefined, after: string |
 
 /** Custom property values against their definitions (D-065, OI-023 b). */
 export async function propertiesIssues(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   entityType: PropertyEntityType,
   before: PropertyValues | null,

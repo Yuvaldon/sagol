@@ -1,4 +1,4 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import {
   ArchiveTagCategoryInput,
   ArchiveTagInput,
@@ -21,7 +21,7 @@ import {
 import { archiveTagCategoryIssues, selectionModeChangeIssues, soldierTarget, tagSelectionIssues } from '@domain'
 import { holds, loadActorScope, type ActorScope } from './actor'
 import { colorKeyIssues } from './checks'
-import { tableOf } from './database'
+import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, parseInput, parsedRow } from './failure'
 import {
@@ -42,7 +42,7 @@ import { POLICY_TABLES } from './snapshot'
 const ORGANIZATION = { kind: 'organization' } as const
 const SOLDIERS_VIEW = { resource: 'soldiers', action: 'view' } as const
 
-function rowsOfOrganization<T extends 'tags' | 'tag_categories' | 'soldier_tags'>(database: Dexie, table: T, scope: ActorScope) {
+function rowsOfOrganization<T extends 'tags' | 'tag_categories' | 'soldier_tags'>(database: Store, table: T, scope: ActorScope) {
   return tableOf(database, table).where('organization_id').equals(scope.organization_id).toArray()
 }
 
@@ -115,7 +115,7 @@ export const SOLDIER_TAG_TABLES: readonly TableName[] = ['tags', 'tag_categories
  * whole set keeps one tag of a `single` category (D-065). Tags already held are left alone, archived or not.
  */
 export async function soldierTagIssues(
-  database: Dexie,
+  database: Store,
   scope: ActorScope,
   held: readonly TagId[],
   next: readonly TagId[],

@@ -554,7 +554,10 @@ export function describeUnitContract(
         const { platoonA, platoonB } = await sampleTree()
         const { organizationId, owner } = await organizationAndOwner()
         await place(organizationId, owner.id, platoonA.id, null)
-        await place(organizationId, owner.id, platoonB.id, LATER_DATE)
+        // One primary placement per soldier at a time (schema.sql), so the second is another soldier's.
+        const other = SoldierId.parse(crypto.randomUUID())
+        await harnessOf().seed('soldiers', [{ ...owner, id: other }])
+        await place(organizationId, other, platoonB.id, LATER_DATE)
         for (const unit of [platoonA, platoonB]) {
           const refused = await adapter().commands.units.archive({ id: unit.id, expected_version: 1 })
           expect(issuesOf(refused)).toEqual([{ path: [], code: 'unit_not_empty' }])

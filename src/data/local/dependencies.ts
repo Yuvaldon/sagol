@@ -1,10 +1,10 @@
-import type Dexie from 'dexie'
+import type { Store } from './store'
 import type { IdentitySource, SoldierId, TimeSource, Timestamp } from '@contracts'
 import type { LocalChangeFeed } from './changes'
 
 /** What every repository and command of the local adapter is built from. */
 export interface LocalDependencies {
-  readonly database: Dexie
+  readonly database: Store
   readonly identity: IdentitySource
   readonly time: TimeSource
   readonly changes: LocalChangeFeed
