@@ -34,6 +34,12 @@ async function setUp(page: Page) {
   await openRotation(page, [SOLDIER])
   // The days below count from the week's first, so the board shows the week rather than the whole rotation (D-217).
   await page.goto('/?range=week')
+  // The points below are measured on the week's board, so a drag waits until it has loaded and come to rest.
+  await expect(page.getByRole('button', { name: `${he.workspace.window} 8–14 בנוב׳` })).toBeVisible()
+  await expect(board(page).getByRole('button', { name: SOLDIER })).toBeVisible()
+  // A day takes a drag once the actor's permissions are in: the same check that shows the "+" (D-115).
+  await expect(page.getByRole('button', { name: he.leaves.new, exact: true })).toBeVisible()
+  await waitForSettledScreen(page)
 }
 
 /** Where a day of the soldier's row is on screen: the grid starts at the row's right edge, after the names (RTL). */
