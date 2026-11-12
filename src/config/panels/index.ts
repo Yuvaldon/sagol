@@ -72,20 +72,6 @@ export type PanelId = z.infer<typeof PanelId>
 export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
 
 /**
- * The groups of "ניהול יחידה" and their modules, in order (D-254): grouped by what the commander is doing. The daily
- * work stays in the bottom strip; every module here is one press away, and nothing is pinned out of it.
- */
-export const NAVIGATION_SECTIONS = [
-  { id: 'unit', modules: ['units', 'soldiers', 'deployments'] },
-  { id: 'presence', modules: ['leave_types', 'rules'] },
-  { id: 'soldierDetails', modules: ['tags', 'properties'] },
-  { id: 'access', modules: ['roles', 'access_grants', 'account_links'] },
-  { id: 'data', modules: ['data_transfer'] },
-] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
-export type NavigationSectionId = (typeof NAVIGATION_SECTIONS)[number]['id']
-
-
-/**
  * "ניהול יחידה", the daily work (D-285): the groups of what a commander does with people and presence. Setup lives
  * apart, behind one row at the foot, so a definition is not mistaken for work.
  */

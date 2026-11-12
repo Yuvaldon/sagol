@@ -52,7 +52,6 @@ export {
 export {
   DRAG_ACTIVATION_PX,
   DROP_EDGE_FRACTION,
-  NAVIGATION_SECTIONS,
   NEW_ENTITY,
   PANEL_IDS,
   SETUP_SECTIONS,
@@ -62,7 +61,6 @@ export {
   type SetupStepId,
   WORK_SECTIONS,
   type WorkSectionId,
-  type NavigationSectionId,
   PanelId,
   TRANSFER_FILES,
   SHEET_DISMISS,
