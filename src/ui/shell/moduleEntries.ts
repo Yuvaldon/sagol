@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Inbox,
   KeyRound,
+  ListPlus,
   Network,
   Scale,
   Shield,
@@ -49,7 +50,8 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
   const opener = (target: Parameters<typeof panel.open>[0]) => () => {
     panel.open(target)
   }
-  const entries: Record<NavigationModule, ModuleEntry | false> = {
+  // Checked by assignment below: every module needs an entry, and an entry may come before its module (D-178).
+  const entries = {
     units: access.units && { id: 'units', Icon: Network, labelKey: 'units.open', onPress: opener(PANEL_IDS.units), count: null },
     soldiers: access.soldiers && { id: 'soldiers', Icon: Users, labelKey: 'soldiers.open', onPress: opener(PANEL_IDS.soldiers), count: null },
     leave_types: access.leaveTypes && {
@@ -61,6 +63,13 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
     },
     rules: access.rules && { id: 'rules', Icon: Scale, labelKey: 'rules.open', onPress: rules.open, count: null },
     tags: access.tags && { id: 'tags', Icon: Tag, labelKey: 'tags.open', onPress: opener(PANEL_IDS.tags), count: null },
+    properties: access.properties && {
+      id: 'properties',
+      Icon: ListPlus,
+      labelKey: 'properties.open',
+      onPress: opener(PANEL_IDS.properties),
+      count: null,
+    },
     roles: access.roles && { id: 'roles', Icon: Shield, labelKey: 'roles.open', onPress: opener(PANEL_IDS.roles), count: null },
     access_grants: grants && { id: 'grants', Icon: KeyRound, labelKey: 'grants.open', onPress: opener(PANEL_IDS.accessGrants), count: null },
     account_links: links.allowed && {
@@ -77,11 +86,12 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
       onPress: opener(PANEL_IDS.dataTransfer),
       count: null,
     },
-  }
+  } satisfies Readonly<Record<string, ModuleEntry | false>>
+  const byModule: Readonly<Record<NavigationModule, ModuleEntry | false>> = entries
   const allowed = new Map<NavigationModule, ModuleEntry>()
   for (const section of NAVIGATION_SECTIONS) {
     for (const module of section.modules) {
-      const entry = entries[module]
+      const entry = byModule[module]
       if (entry !== false) allowed.set(module, entry)
     }
   }

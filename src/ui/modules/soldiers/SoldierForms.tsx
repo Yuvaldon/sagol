@@ -12,7 +12,9 @@ import {
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
-import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
+import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
+import { PropertyFields } from '../../patterns/properties/PropertyFields'
+import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
@@ -76,15 +78,17 @@ export function SoldierCreateForm({
     private: { personal_id: '', invite_email: '', phone: '' },
   }
 
+  const properties = usePropertyFields('soldier')
   const form = useForm({
     defaultValues: initial,
     validators: { onSubmit: ({ value }) => validatorResult(newSoldierIssues(value)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
       // Private fields hidden by the placement are not sent: what the actor cannot see, they did not type (D-096).
-      const result = await create.run(allowPrivate(value.membership.unit_id) ? value : { ...value, private: initial.private })
+      const values = allowPrivate(value.membership.unit_id) ? value : { ...value, private: initial.private }
+      const result = await create.run({ ...values, ...properties.withProperties })
       if (result.ok) backToList()
-      else setState(formStateOf(result.error, NEW_FIELDS))
+      else setState(formStateOf(result.error, [...NEW_FIELDS, ...properties.fieldNames]))
     },
   })
 
@@ -226,6 +230,7 @@ export function SoldierCreateForm({
           </>
         )}
       </form.Subscribe>
+      <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
     </EntityForm>
   )
 }
@@ -248,6 +253,7 @@ function ProfileFields({
     panel.open(PANEL_IDS.soldiers)
   }
 
+  const properties = usePropertyFields('soldier', opened.properties)
   const form = useForm({
     defaultValues: {
       first_name: opened.first_name,
@@ -259,9 +265,9 @@ function ProfileFields({
     validators: { onSubmit: ({ value }) => validatorResult(soldierFormIssues(opened.id, value)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
-      const result = await update.run({ soldier: opened, openedVersion: opened.version, values: value })
+      const result = await update.run({ soldier: opened, openedVersion: opened.version, values: { ...value, ...properties.withProperties } })
       if (result.ok) backToList()
-      else setState(formStateOf(result.error, PROFILE_FIELDS))
+      else setState(formStateOf(result.error, [...PROFILE_FIELDS, ...properties.fieldNames]))
     },
   })
 
@@ -339,6 +345,7 @@ function ProfileFields({
           />
         )}
       </form.Field>
+      <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
     </EntityForm>
   )
 }

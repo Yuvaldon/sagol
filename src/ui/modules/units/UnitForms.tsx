@@ -4,7 +4,9 @@ import { unitFormIssues, unitTreeRows, usePanel, useUnitCommands, type UnitFormV
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
-import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
+import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
+import { PropertyFields } from '../../patterns/properties/PropertyFields'
+import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { ColorField } from '../../primitives/ColorField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
@@ -61,14 +63,15 @@ export function UnitCreateForm({
     panel.open(PANEL_IDS.units)
   }
 
+  const properties = usePropertyFields('unit')
   const form = useForm({
     defaultValues: initialValues,
     validators: { onSubmit: ({ value }) => validatorResult(unitFormIssues(toValues(value))) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
-      const result = await create.run({ values: toValues(value), parentId: value.parent_id, siblings: units })
+      const result = await create.run({ values: { ...toValues(value), ...properties.withProperties }, parentId: value.parent_id, siblings: units })
       if (result.ok) backToList()
-      else setState(formStateOf(result.error, UNIT_FIELDS))
+      else setState(formStateOf(result.error, [...UNIT_FIELDS, ...properties.fieldNames]))
     },
   })
 
@@ -131,6 +134,7 @@ export function UnitCreateForm({
           />
         )}
       </form.Field>
+      <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
     </EntityForm>
   )
 }
@@ -160,14 +164,15 @@ function UnitEditFields({
     panel.open(PANEL_IDS.units)
   }
 
+  const properties = usePropertyFields('unit', opened.properties)
   const form = useForm({
     defaultValues: { name: opened.name, unit_level_id: opened.unit_level_id, color_key: opened.color_key },
     validators: { onSubmit: ({ value }) => validatorResult(unitFormIssues(value)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
-      const result = await update.run({ unit: opened, openedVersion: opened.version, values: value })
+      const result = await update.run({ unit: opened, openedVersion: opened.version, values: { ...value, ...properties.withProperties } })
       if (result.ok) backToList()
-      else setState(formStateOf(result.error, UNIT_FIELDS))
+      else setState(formStateOf(result.error, [...UNIT_FIELDS, ...properties.fieldNames]))
     },
   })
 
@@ -219,6 +224,7 @@ function UnitEditFields({
           />
         )}
       </form.Field>
+      <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
     </EntityForm>
   )
 }

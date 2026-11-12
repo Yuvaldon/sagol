@@ -12,6 +12,7 @@ import {
   TextField as AriaTextField,
   useFilter,
 } from 'react-aria-components'
+import { fieldLabel, type FieldLabel } from './label'
 
 // Form fields. A field shows its label, its value and one error message, and knows nothing about
 // forms or validation: the error arrives as an i18n key.
@@ -23,7 +24,7 @@ const INPUT =
 const ERROR = 'text-label text-status-rejected'
 
 export interface TextFieldProps {
-  readonly labelKey: I18nKey
+  readonly labelKey: FieldLabel
   readonly name: string
   readonly value: string
   readonly onChange: (value: string) => void
@@ -49,7 +50,7 @@ export function TextField({ labelKey, error, name, type = 'text', autoComplete, 
       validationBehavior="aria"
       className={FIELD}
     >
-      <Label className={LABEL}>{t(labelKey)}</Label>
+      <Label className={LABEL}>{fieldLabel(labelKey)}</Label>
       <Input
         {...(inputMode === undefined ? {} : { inputMode })}
         {...(dir === undefined ? {} : { dir })}
@@ -91,7 +92,7 @@ export function SearchSelectField({ labelKey, toggleLabelKey, name, value, optio
       menuTrigger="focus"
       className={FIELD}
     >
-      <Label className={LABEL}>{t(labelKey)}</Label>
+      <Label className={LABEL}>{fieldLabel(labelKey)}</Label>
       <div className="relative">
         <Input dir="ltr" className={`${INPUT} ps-touch text-end`} />
         <AriaButton
@@ -131,7 +132,7 @@ export interface ComboOption {
 }
 
 export interface ComboFieldProps {
-  readonly labelKey: I18nKey
+  readonly labelKey: FieldLabel
   readonly toggleLabelKey: I18nKey
   readonly name: string
   readonly value: string | null
@@ -157,7 +158,7 @@ export function ComboField({ labelKey, toggleLabelKey, name, value, options, onC
       menuTrigger="focus"
       className={FIELD}
     >
-      <Label className={LABEL}>{t(labelKey)}</Label>
+      <Label className={LABEL}>{fieldLabel(labelKey)}</Label>
       <div className="relative">
         <Input className={`${INPUT} pe-touch`} />
         <AriaButton

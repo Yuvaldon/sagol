@@ -10,6 +10,7 @@ import {
   SelectValue,
   Text,
 } from 'react-aria-components'
+import { fieldLabel, type FieldLabel } from './label'
 
 // Pick one of a short list of labelled values. Labels are data (a unit's name), so they arrive as
 // text; everything else arrives as an i18n key.
@@ -24,7 +25,7 @@ export interface SelectOption<T> {
 }
 
 export interface SelectFieldProps<T> {
-  readonly labelKey: I18nKey
+  readonly labelKey: FieldLabel
   readonly name: string
   readonly value: T
   readonly options: readonly SelectOption<T>[]
@@ -50,7 +51,7 @@ export function SelectField<T>({ labelKey, name, value, options, onChange, error
       validationBehavior="aria"
       className="flex flex-col gap-xs"
     >
-      <Label className="text-label font-semibold text-text-muted">{t(labelKey)}</Label>
+      <Label className="text-label font-semibold text-text-muted">{fieldLabel(labelKey)}</Label>
       <AriaButton className="flex min-h-touch w-full cursor-pointer items-center justify-between gap-sm rounded-control border border-line bg-surface px-md text-input text-text outline-focus outline-offset-1 md:min-h-control md:text-control data-focus-visible:outline-2">
         <SelectValue className="truncate" />
         <ChevronDown aria-hidden size={14} className="shrink-0 text-text-muted" />

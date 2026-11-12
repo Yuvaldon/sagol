@@ -23,7 +23,9 @@ import { Tags } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
-import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
+import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
+import { PropertyFields } from '../../patterns/properties/PropertyFields'
+import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { Button } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
@@ -67,6 +69,7 @@ function NewLeaveForm({
   const [state, setState] = useState(CLEAN_FORM)
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
 
+  const properties = usePropertyFields('leave')
   const form = useForm({
     defaultValues: newLeaveValues(today, approveNow, draft, soldiers.length === 1 ? (soldiers[0]?.id ?? null) : null),
     validators: { onSubmit: ({ value }) => validatorResult(newLeaveIssues(value, typeOf(value.leave_type_id))) },
@@ -76,10 +79,10 @@ function NewLeaveForm({
       const asApproved = value.as_approved && value.soldier_id !== null && canApprove(value.soldier_id)
       // A rule the command names opens the dialog, and acknowledging sends it again (D-047, D-142).
       await gate.run(
-        (acknowledged) => create.run({ ...value, as_approved: asApproved }, acknowledged),
+        (acknowledged) => create.run({ ...value, as_approved: asApproved, ...properties.withProperties }, acknowledged),
         (result) => {
           if (result.ok) panel.close()
-          else setState(formStateOf(result.error, LEAVE_FIELDS))
+          else setState(formStateOf(result.error, [...LEAVE_FIELDS, ...properties.fieldNames]))
         },
       )
     },
@@ -170,6 +173,7 @@ function NewLeaveForm({
           />
         )}
       </form.Field>
+      <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
       {soldierId !== null && canApprove(soldierId) ? (
         <form.Field name="as_approved">
           {(field) => <SwitchField labelKey="leaves.approveNow" name={field.name} value={field.state.value} onChange={field.handleChange} />}

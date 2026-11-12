@@ -4,7 +4,9 @@ import { editedLeaveCandidate, leaveEditIssues, leaveEditValues, useEditLeave, u
 import { useForm, useStore } from '@tanstack/react-form'
 import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
-import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
+import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
+import { PropertyFields } from '../../patterns/properties/PropertyFields'
+import { usePropertyFields } from '../../patterns/properties/usePropertyFields'
 import { DateField } from '../../primitives/DateField'
 import { SelectField } from '../../primitives/SelectField'
 import { TextField } from '../../primitives/fields'
@@ -44,6 +46,7 @@ export function LeaveEditForm({
   const [state, setState] = useState(CLEAN_FORM)
   const typeOf = (id: LeaveTypeId) => types.find((type) => type.id === id) ?? null
 
+  const properties = usePropertyFields('leave', opened.properties)
   const form = useForm({
     defaultValues: leaveEditValues(opened),
     validators: {
@@ -53,7 +56,7 @@ export function LeaveEditForm({
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
       await gate.run(
-        (acknowledged) => edit.run(opened, value, acknowledged),
+        (acknowledged) => edit.run(opened, { ...value, ...properties.withProperties }, acknowledged),
         (result) => {
           if (result.ok) {
             onDone()
@@ -63,7 +66,7 @@ export function LeaveEditForm({
             result.error.code === 'validation_failed'
               ? { ...result.error, issues: result.error.issues.map((issue) => ({ ...issue, path: formPath(issue.path) })) }
               : result.error
-          setState(formStateOf(error, EDIT_FIELDS))
+          setState(formStateOf(error, [...EDIT_FIELDS, ...properties.fieldNames]))
         },
       )
     },
@@ -143,6 +146,7 @@ export function LeaveEditForm({
           {t('leaves.returnsToPending')}
         </p>
       ) : null}
+      <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
       <RuleWarnings candidate={candidate} stored={opened} />
       <RuleGateDialog gate={gate} isPending={edit.isPending} />
     </EntityForm>
