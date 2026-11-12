@@ -74,7 +74,7 @@ export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
  */
 export const NAVIGATION_SECTIONS = [
   { id: 'structure', modules: ['units', 'soldiers'] },
-  { id: 'leaveSetup', modules: ['leave_types', 'rules', 'tags', 'properties'] },
+  { id: 'leaveSetup', modules: ['leave_types', 'rules', 'deployments', 'tags', 'properties'] },
   { id: 'access', modules: ['roles', 'access_grants', 'account_links'] },
   { id: 'data', modules: ['data_transfer'] },
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly NavigationModule[] }[]
