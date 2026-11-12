@@ -20,7 +20,9 @@ test('journeys (c), (d) and (e): a soldier requests, a commander approves, the d
   await signOut(page)
   await enterAsYael(page)
 
-  await test.step('(c) 1. "בקשה חדשה" is the strip\'s quick action, and Yael is the requester', async () => {
+  await test.step('(c) 1. Yael lands on "שלי"; "בקשה חדשה" is the strip\'s quick action, and Yael is the requester', async () => {
+    await expect(drawer(page).getByText(he.myLeaves.emptyTitle)).toBeVisible()
+    await closeDrawer(page)
     await navigation(page).getByRole('button', { name: he.leaves.new, exact: true }).click()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
     await expect(drawer(page).getByRole('combobox', { name: he.leaves.soldier })).toHaveValue(YAEL_NAME)

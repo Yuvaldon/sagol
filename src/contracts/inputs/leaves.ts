@@ -136,6 +136,34 @@ export const CreateLeaveBatchInput = z.strictObject({
 })
 export type CreateLeaveBatchInput = z.infer<typeof CreateLeaveBatchInput>
 
+/** One leave of `createLeaves`: the soldier is the command's, the rotation each leave's own (D-216, D-275). */
+const SoldierLeave = z
+  .strictObject({
+    id: LeaveId,
+    deployment_id: LeaveColumns.shape.deployment_id,
+    ...leaveDates,
+    ...leaveDetails,
+  })
+  .superRefine((input, ctx) => {
+    checkDateRange(ctx, input.start_date, input.end_date, 'end_date')
+  })
+
+/**
+ * `createLeaves` (`leaves.createMany`, D-267, D-275): several leaves of one soldier, atomically (D-049), each its own
+ * leave with no batch row. Each leave keeps its own rotation, since a sheet may reach past one.
+ */
+export const CreateLeavesInput = z.strictObject({
+  soldier_id: LeaveColumns.shape.soldier_id,
+  leaves: z
+    .array(SoldierLeave)
+    .min(1)
+    .superRefine((leaves, ctx) => {
+      checkDistinct(ctx, leaves, (leave) => leave.id)
+    }),
+  ...creationFlags,
+})
+export type CreateLeavesInput = z.infer<typeof CreateLeavesInput>
+
 /** One copy of `duplicateLeave`: another soldier and/or other dates. */
 const LeaveCopy = z
   .strictObject({ id: LeaveId, soldier_id: LeaveColumns.shape.soldier_id, ...leaveDates })

@@ -12,7 +12,7 @@ import {
 } from '@contracts'
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { newLeaveValues } from '../leaves/forms'
+import { newLeaveSheetValues } from '../leaves/sheet'
 import { toUpdateLeaveInput } from '../leaves/workflow'
 import { fakePorts, wrapperOf } from '../testing/ports'
 import { NewLeaveDraft } from '../view-state/draft'
@@ -101,15 +101,10 @@ describe('a new leave from a drag (D-143)', () => {
   const draft = newLeaveDraft(YAEL, { start_date: '2026-11-10', end_date: '2026-11-12' })
 
   it('fills the soldier and the days of the form, and leaves the type to choose', () => {
-    expect(newLeaveValues('2026-11-08', true, draft)).toEqual({
-      soldier_id: YAEL,
-      leave_type_id: null,
-      start_date: '2026-11-10',
-      end_date: '2026-11-12',
-      reason: '',
-      as_approved: true,
-    })
-    expect(newLeaveValues('2026-11-08')).toMatchObject({ soldier_id: null, start_date: '2026-11-08', end_date: '2026-11-08' })
+    const values = newLeaveSheetValues('2026-11-08', true, draft)
+    expect(values).toMatchObject({ soldier_id: YAEL, as_approved: true })
+    expect(values.rows).toEqual([expect.objectContaining({ leave_type_id: null, start_date: '2026-11-10', end_date: '2026-11-12', reason: '' })])
+    expect(newLeaveSheetValues('2026-11-08')).toMatchObject({ soldier_id: null, rows: [{ start_date: '2026-11-08', end_date: '2026-11-08' }] })
   })
 
   it('lives in the URL, and days in the wrong order count as absent', () => {

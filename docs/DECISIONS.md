@@ -200,7 +200,7 @@ am = amends, ref = refines, ext = extends.
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
 | D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
-| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253 |
+| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-274 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188 |
@@ -261,7 +261,8 @@ am = amends, ref = refines, ext = extends.
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
-| D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
+| D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
+| D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
@@ -3413,6 +3414,11 @@ and tags. Splitting by layer keeps the two tracks off each other's files.
 - **Home is derived from permissions.** Whoever approves or manages someone else lands on the board, scoped to their
   widest scope. Everyone else lands on "שלי". The two are one press apart in the bottom strip, and the last one chosen
   is remembered on the device; a link that names a panel or a view still wins.
+- **"Manages someone else", in permissions:** may approve or read the leaves of a soldier other than oneself, or may
+  create in a module across the organization. Viewing a module is no sign of it, since a view of one's own record opens
+  one too, and approving only one's own leaves is not either. A choice made before every answer has arrived is not
+  kept, and "שלי" is landed on only while it is a destination (D-218); what the soldier opened meanwhile stays open.
+  Refined in V28 after the review of V25, under the owner's autonomy instruction of 2026-11-11.
 - **"שלי" is a destination for whoever has a soldier record:** my next days, in or out; my requests and their status
   (D-167's open and history); the quick action. The "בקשות" destination is the approval inbox, for whoever may approve
   someone: "ממתינות לאישורי" with its count, then the closed requests, with the approve-now switch in its header (D-255).
@@ -3523,8 +3529,32 @@ most; the sort is set rarely and belongs with how the board is shown.
   remembered home (D-265). The menu item still offers the install.
 - **Not "open in the app".** A web page cannot tell reliably that the app is installed, and it cannot open it. The
   browser owns that path: Chrome on Android shows its own "open in app". So Sagol offers only the install.
+- **As built (V28).** The card sits above the bottom bar, clear of the top bar and its menu, for a signed-in, linked
+  soldier: "אפשר להתקין את סגול במכשיר הזה", with "התקנה" and "לא עכשיו". The answer is the device flag
+  `DEVICE_KEYS.installAnswered`, scoped to the linked soldier as other device preferences are.
 **Why:** a soldier who lands from a link should learn once that the app exists, without a banner that returns on every
 visit, and without a control that cannot act.
+
+## D-275 — Several requests at once: the sheet, the recurring row, `leaves.createMany`
+2026-11-12 · accepted · refines D-267, D-115, D-143 · V28 · decided under the owner's autonomy instruction of 2026-11-11
+- **The request form is the sheet.** One soldier, then rows; a new request starts with one row, so one leave is still
+  the plain case. A row holds its type, its two dates and its reason; "add a row" adds one, and a row is removed while
+  there is more than one. A drag on the board fills the soldier and the first row (D-143). The custom properties,
+  "approve now" and the rules' warning are the sheet's, over every leave it would create.
+- **A recurring row** repeats its days every so many days, until a last date: "every 14 days until ..." turns an
+  8-in, 6-home rhythm into its leaves. It expands in logic when the sheet is sent and when the warning is computed;
+  only the leaves are stored (D-019). A row whose repetition yields no leave beyond the first is still one leave.
+- **`createLeaves` is `leaves.createMany`,** as `createLeaveBatch` is `leaves.createBatch`: one soldier, one to many
+  leaves, each with its own rotation, since a sheet may reach past one (D-216, D-220), atomic, with no batch row.
+  Each leave is checked on its own path (`leaves.<n>`), the rules judge them all at once (D-073), and each gets its own
+  `created` event. No schema change.
+- An issue of an expanded leave lands on the row it came from.
+- **The repetition's bounds.** Every so many days is a whole number, at least the leave's own length, so repetitions
+  of one row never cover each other (leaves of a soldier may still overlap, D-012), and at most a year; the last date
+  is on or after the first day. One sheet creates at most `LEAVE_SHEET.maxLeaves` leaves (`config`); the row that
+  reaches past it says so on its last date, and `leaves.createMany` refuses more on `leaves` before it reads any row.
+**Why:** D-267 asks for one sheet sent at once; a sheet beside the single form would be two paths to one action
+(D-255), and a recurring row is the rhythm soldiers actually ask for.
 
 ## D-276 — Staging: a second free Supabase project, updated from main after every green CI
 
