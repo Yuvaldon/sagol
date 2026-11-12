@@ -233,7 +233,7 @@ describe('row checks', () => {
   })
 
   it('holds a close with its actor and an end date (D-258)', () => {
-    const open = { ...audit, id: ID.a, organization_id: ID.org, name: 'סבב', unit_id: ID.b, start_date: '2026-11-01' }
+    const open = { ...audit, id: ID.a, organization_id: ID.org, name: 'סבב', unit_id: ID.b, start_date: '2026-11-01', report_owner_id: null }
     const closed = { ...open, end_date: '2026-11-10', closed_at: AT, closed_by: ID.c }
     expect(Deployment.safeParse({ ...open, end_date: null, closed_at: null, closed_by: null }).success).toBe(true)
     expect(Deployment.safeParse(closed).success).toBe(true)

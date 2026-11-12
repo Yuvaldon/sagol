@@ -25,6 +25,7 @@ export const PermissionResource = z.enum([
   'access_grants',
   'accounts',
   'data_transfer',
+  'day_reports',
 ])
 export type PermissionResource = z.infer<typeof PermissionResource>
 
@@ -37,6 +38,7 @@ export const PermissionAction = z.enum([
   'approve',
   'export',
   'import',
+  'confirm',
 ])
 export type PermissionAction = z.infer<typeof PermissionAction>
 
@@ -67,6 +69,8 @@ export const PERMISSION_ACTIONS_BY_RESOURCE = {
   access_grants: ['view', 'create', 'delete'],
   accounts: ['view', 'approve'],
   data_transfer: ['export', 'import'],
+  /** A unit's daily report, confirmed per date (D-293). */
+  day_reports: ['confirm'],
 } as const satisfies Record<PermissionResource, readonly PermissionAction[]>
 
 function pairOf<R extends PermissionResource>(resource: R) {
@@ -98,6 +102,7 @@ export const Permission = z.discriminatedUnion('resource', [
   pairOf('access_grants'),
   pairOf('accounts'),
   pairOf('data_transfer'),
+  pairOf('day_reports'),
 ])
 export type Permission = z.infer<typeof Permission>
 

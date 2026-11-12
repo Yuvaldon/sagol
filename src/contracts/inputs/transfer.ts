@@ -14,6 +14,7 @@ import {
 import { Organization } from '../entities/organization'
 import { AccessGrant, RankRoleBinding, Role, RolePermission } from '../entities/permissions'
 import { PropertyDefinition } from '../entities/properties'
+import { ReportConfirmation } from '../entities/reports'
 import { AvailabilityRule } from '../entities/rules'
 import {
   CommandRank,
@@ -93,7 +94,7 @@ export const SOLDIER_CSV_COLUMNS = ['first_name', 'last_name', 'nickname', 'pers
 export type SoldierCsvColumn = (typeof SOLDIER_CSV_COLUMNS)[number]
 
 /** Version of the export file format. Bumped on any incompatible change. */
-export const EXPORT_FORMAT_VERSION = 3
+export const EXPORT_FORMAT_VERSION = 4
 
 /**
  * Full organization export (`data_transfer:export`): every table's rows, as stored.
@@ -131,6 +132,7 @@ export const OrganizationExport = z.object({
     deployment_members: z.array(DeploymentMember),
     availability_rules: z.array(AvailabilityRule),
     property_definitions: z.array(PropertyDefinition),
+    report_confirmations: z.array(ReportConfirmation),
   }),
 })
 export type OrganizationExport = z.infer<typeof OrganizationExport>

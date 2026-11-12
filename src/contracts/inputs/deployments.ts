@@ -9,6 +9,7 @@ const deploymentContent = DeploymentColumns.pick({
   unit_id: true,
   start_date: true,
   end_date: true,
+  report_owner_id: true,
 }).shape
 
 export const CreateDeploymentInput = z

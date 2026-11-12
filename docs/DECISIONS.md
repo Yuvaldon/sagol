@@ -256,7 +256,7 @@ am = amends, ref = refines, ext = extends.
 | D-266 | The quick action follows the role, then the mode | logic, ui | |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | |
-| D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
+| D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend |ref D-293 |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
@@ -270,6 +270,7 @@ am = amends, ref = refines, ext = extends.
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
+| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | |
 
 ---
 
@@ -3755,3 +3756,31 @@ Checked against CLI 2.122.0: its permission tables list `api_gateway_keys_*` for
 `--db-url`; `functions deploy`: `edge_functions_write`; `secrets set`: `edge_functions_secrets_write`). A `--debug`
 trace against a nonexistent ref shows `functions deploy --use-api` calling `POST /functions/deploy` and
 `GET /v1/projects/{ref}` only, and `db push --db-url` making no Management API call.
+
+## D-293 — The daily report workflow: confirmations per unit and date, a rotation's report owner
+2026-11-12 · accepted · refines D-269 · V30 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Stored:** `report_confirmations` (`unit_id`, `report_date`, `confirmed_by`, `confirmed_at`), unique by unit and
+  date. A new confirmation of a confirmed unit and date moves that row to the actor and now; rows are never deleted.
+  `deployments.report_owner_id` (NULL = none named) names who reads the rotation's consolidated report. Nothing else.
+- **Changed since is derived, never stored:** a confirmed unit's report reads "changed since" when a leave of any status
+  of a soldier in its section, touching the day before through the day after (the day's leaving and returning, D-193),
+  was written (`updated_at`) after `confirmed_at`. A leave moved wholly off those days, and a soldier moved between
+  units, are not caught yet (OI-247).
+- **Permission:** the resource `day_reports` with the action `confirm`, checked on the section's unit. The migration
+  grants it to every role that holds `leaves:approve`, as the commanders who approve confirm; the local upgrade does the
+  same.
+- **When a report may be confirmed:** a live rotation over the unit (its own unit or one above it) runs on the date
+  (`not_reportable` otherwise) and is open (`rotation_closed` otherwise). D-269's routine case, with no rotation, keeps
+  the live report and has no confirmations: there is no owner to send it up to. An id another unit and date already hold
+  answers `already_exists`.
+- **Who reads the confirmations:** who views the unit (`units:view`), who may confirm it, or the report owner of a live
+  rotation over it on that date. A unit the actor may not see answers `reference_not_found`.
+- **The report dialog:** each unit section shows its status, and a "confirm" (not yet) or "confirm again" (changed
+  since) button to whoever may confirm it now. A section with no unit (D-106) has no status. The summary line ("N of M
+  confirmed, K changed", over the day's unit sections) shows to the report owner, or, with none named, to whoever may
+  confirm the rotation's unit. The copied text stays one consolidated message.
+- **The rotation form** takes an optional report owner: the active soldiers, plus the current owner.
+- **Export format 4:** the export holds the confirmations and the rotations' owner, so `EXPORT_FORMAT_VERSION` and
+  `load_organization_export` move to 4, as the rotation model did (D-257 .. D-260).
+**Why:** D-269 fixed the chain; this fixes what is stored and who may act. One row per unit and day keeps the history
+small and makes "confirm again" the same act as the first; deriving "changed since" means it can never go stale.

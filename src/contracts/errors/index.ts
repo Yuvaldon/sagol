@@ -74,6 +74,8 @@ const STATE_ISSUE_CODES = [
   'rotation_closed',
   /** A rotation closes only once its last day is today or earlier (D-258). */
   'rotation_not_ended',
+  /** The day has no report for the unit: no live rotation over it runs on that day (D-222, D-293). */
+  'not_reportable',
 ] as const
 
 /** Every validation issue code: field codes, row checks (`SchemaIssue`) and state codes. */

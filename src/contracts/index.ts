@@ -43,6 +43,7 @@ export {
 export { Deployment, DeploymentMember } from './entities/deployments'
 export { AvailabilityRule } from './entities/rules'
 export { PropertyDefinition } from './entities/properties'
+export { ReportConfirmation } from './entities/reports'
 
 export { TABLE_SCHEMAS, type TableName, type TableRow } from './tables'
 

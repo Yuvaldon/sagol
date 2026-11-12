@@ -169,6 +169,7 @@ const INPUT_TABLES: Record<string, Target> = {
     table: 'property_definitions',
     nested: { items: 'property_definitions' },
   },
+  ConfirmDayReportInput: { table: 'report_confirmations' },
 }
 
 /** Inputs that wrap other inputs instead of writing a table themselves. */

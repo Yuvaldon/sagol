@@ -73,6 +73,9 @@ export type LeaveCommentId = z.infer<typeof LeaveCommentId>
 export const DeploymentId = z.uuid().brand<'DeploymentId'>()
 export type DeploymentId = z.infer<typeof DeploymentId>
 
+export const ReportConfirmationId = z.uuid().brand<'ReportConfirmationId'>()
+export type ReportConfirmationId = z.infer<typeof ReportConfirmationId>
+
 export const AvailabilityRuleId = z.uuid().brand<'AvailabilityRuleId'>()
 export type AvailabilityRuleId = z.infer<typeof AvailabilityRuleId>
 

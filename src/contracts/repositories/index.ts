@@ -43,6 +43,7 @@ import type {
 import type { Organization } from '../entities/organization'
 import type { AccessGrant, RankRoleBinding, Role, RolePermission } from '../entities/permissions'
 import type { PropertyDefinition } from '../entities/properties'
+import type { ReportConfirmation } from '../entities/reports'
 import type { AvailabilityRule } from '../entities/rules'
 import type {
   CommandRank,
@@ -128,6 +129,13 @@ export const DeploymentMemberQuery = z.strictObject({
 })
 export type DeploymentMemberQuery = z.infer<typeof DeploymentMemberQuery>
 
+/** The daily report confirmations of the window's dates; NULL units means every unit (D-293). */
+export const ReportConfirmationQuery = z.strictObject({
+  window: DateWindow,
+  unit_ids: z.array(UnitId).nullable(),
+})
+export type ReportConfirmationQuery = z.infer<typeof ReportConfirmationQuery>
+
 /** Why a soldier is proposed for a link request (D-030). Shown to the reviewer only. */
 export const LinkCandidateMatch = z.enum(['personal_id', 'name'])
 export type LinkCandidateMatch = z.infer<typeof LinkCandidateMatch>
@@ -189,6 +197,8 @@ export interface DataRepositories {
   deployment_members: ListRepository<DeploymentMember, DeploymentMemberQuery>
   availability_rules: EntityRepository<AvailabilityRule, AvailabilityRuleId, ReferenceQuery>
   property_definitions: EntityRepository<PropertyDefinition, PropertyDefinitionId, ReferenceQuery>
+  /** Readable by who views the unit, may confirm it, or owns the report of a rotation over it (D-293). */
+  report_confirmations: ListRepository<ReportConfirmation, ReportConfirmationQuery>
 }
 
 // ------------------------------------------------------------------- changes
