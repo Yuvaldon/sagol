@@ -3,7 +3,9 @@ import {
   BoardSortKey,
   DEFAULT_BOARD_SORT_KEY,
   DEFAULT_SORT_ORDER,
+  DEFAULT_TABLE_SORT_ORDER,
   PANEL_IDS,
+  TableSortKey,
   type SortKey,
   type SortOrder,
 } from '@config'
@@ -135,6 +137,39 @@ export function useBoardSort(): BoardSortState {
     [change],
   )
   return { key, order, board, set }
+}
+
+export interface TableSortState {
+  /** The leave column the table's lines are sorted by; NULL keeps the board's order (D-214, D-313). */
+  readonly key: TableSortKey | null
+  readonly order: SortOrder
+  /** Sorts the lines by a leave column; with no direction, ascending. */
+  sortBy(key: TableSortKey, order?: SortOrder): void
+  /** Sorts the rows by one rule, as the soldier and unit headers do, and drops the leave column's sort (D-313). */
+  sortRows(rule: SortRule): void
+}
+
+/** The table's sort (D-214, D-313): a leave column in `sort` and `order`, or the board's own rules in `sorts`. */
+export function useTableSort(): TableSortState {
+  const search = useWorkspaceSearch()
+  const change = useChangeSearch()
+  const parsed = TableSortKey.safeParse(search.sort)
+  const key = parsed.success ? parsed.data : null
+  const order = search.order ?? DEFAULT_TABLE_SORT_ORDER
+  return useMemo(
+    () => ({
+      key,
+      order,
+      sortBy: (next, nextOrder = DEFAULT_TABLE_SORT_ORDER) => {
+        change({ sort: next, order: nextOrder === DEFAULT_TABLE_SORT_ORDER ? undefined : nextOrder })
+      },
+      sortRows: (rule) => {
+        const sorts = [rule]
+        change({ sort: undefined, order: undefined, sorts: isDefaultSort(sorts) ? undefined : sorts })
+      },
+    }),
+    [key, order, change],
+  )
 }
 
 export interface SortRulesState {
