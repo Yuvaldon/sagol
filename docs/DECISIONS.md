@@ -189,7 +189,7 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278 |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278; ref D-291 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
@@ -235,7 +235,7 @@ am = amends, ref = refines, ext = extends.
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
-| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | |
+| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | ref D-291 |
 | D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | |
 | D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
@@ -274,6 +274,7 @@ am = amends, ref = refines, ext = extends.
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | |
+| D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
 
@@ -3895,3 +3896,18 @@ the same tree on top of main is the smallest change Vercel's integration builds.
 
 **Why:** the daily budget goes to the two deployments someone uses, Production and staging. A single line in the
 repository, reviewed like the rest, does that.
+
+## D-291 — `NavigationModule` goes; the work sections are typed by panel id
+
+2026-11-12 · accepted · refines D-173, D-221 · A7 fixes (OI-244) · decided under the owner's autonomy instruction of 2026-11-11
+
+- **What is gone.** `NavigationModule` (contracts) named the modules a soldier could pin to the bar (D-173). The pins
+  are gone (D-254, D-285), and the enum outlived them: only the five work modules of "ניהול יחידה" used it, as a type.
+  It is removed, with no stub (D-076).
+- **Where the placement lives.** Config already holds it: `WORK_SECTIONS` lists each work module by its panel id
+  (`PanelId`), and `WorkModule` is derived from that list. The shell's work entries are keyed by it.
+- **Old preferences still parse.** A stored `pinned_modules` key in `soldier_preferences.preferences` is still dropped
+  on read (D-221): an old preference loads, and nothing writes the key. No migration exists or is needed, since the key
+  lives inside the JSON and never had a column.
+**Why:** an enum in contracts promises a vocabulary the product shares; this one described a feature that no longer
+exists. The placement is configuration, so it is typed where it is configured.
