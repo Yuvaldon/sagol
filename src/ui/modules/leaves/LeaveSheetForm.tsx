@@ -138,6 +138,8 @@ export function LeaveSheetForm({
                       <IconButton
                         labelKey="leaves.removeRow"
                         onPress={() => {
+                          // The answer named rows by their place; once one goes, it names the wrong ones.
+                          setState(CLEAN_FORM)
                           void rowsField.removeValue(index)
                         }}
                       >
