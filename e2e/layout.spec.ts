@@ -90,6 +90,21 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     }
   })
 
+  await test.step('a phone, upright or on its side, keeps the sort in the view menu; a desktop gives it its own button', async () => {
+    const strip = page.getByRole('navigation', { name: he.workspace.viewBar })
+    const sortButton = strip.getByRole('button', { name: he.workspace.sort, exact: true })
+    const sortKeys = page.getByRole('menu').getByRole('group', { name: he.workspace.sortBy })
+    if (testInfo.project.name !== 'desktop') {
+      await expect(sortButton).toHaveCount(0)
+      await strip.getByRole('button', { name: new RegExp(`^${he.workspace.view} `) }).click()
+    } else {
+      await sortButton.click()
+    }
+    await expect(sortKeys.getByRole('menuitemradio')).toHaveCount(5)
+    await page.keyboard.press('Escape')
+    await expect(sortKeys).toHaveCount(0)
+  })
+
   await expectNoAxeViolations(page)
 })
 

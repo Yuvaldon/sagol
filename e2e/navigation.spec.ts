@@ -71,9 +71,12 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
     await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
   })
 
-  await test.step('a single unit in sight names the scope, as a label and not a picker', async () => {
+  await test.step('a single unit in sight names the scope, as a label and not a picker; a phone has no room for it', async () => {
     await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
-    await expect(page.getByText(COMPANY, { exact: true })).toBeVisible()
+    const label = page.getByRole('navigation', { name: he.workspace.viewBar }).getByText(COMPANY, { exact: true })
+    // A phone's strip shows no scope with nothing to choose (D-273).
+    if (testInfo.project.name === 'mobile') await expect(label).toHaveCount(0)
+    else await expect(label).toBeVisible()
   })
 
   await test.step('the rules row placement is kept, in the profile', async () => {
