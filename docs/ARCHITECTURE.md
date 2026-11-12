@@ -193,6 +193,9 @@ The current state (D-128):
   a new list from the unit or the previous rotation.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
+- **The leave-round planner** (`domain/leaves/rounds`, `logic/leaves/planner`, D-316): groups of a rotation's soldiers,
+  each from its own first day home on one rhythm (`LEAVE_ROUNDS`), cut to the days each soldier serves, sent as one
+  `leaves.createBatch`. The timeline gives overlapping rounds lanes (`assignLanes` in the timeline adapter, D-317).
 - **The request sheet** (`leaves.createMany`, `logic/leaves/sheet`, D-275): one soldier's rows, a recurring row expanded
   in logic, each leave with its own rotation and checked on `leaves.<n>` as `leaves.create` checks one, all or none;
   the answer's issues land back on their rows.

@@ -138,7 +138,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | A7 fixes | A7's findings | The quick action by mode in the strip and a quiet routine band (OI-219, D-296); a unit drop by the root (OI-247); no "ארגון" (OI-248); one setup checklist (OI-250, D-297); journey (b) walked (OI-251); lazy modules (OI-118); `NavigationModule` gone (OI-244, D-291); D-298, D-299 | ☑ |
 | V30 | דוח 1 as a workflow | Each unit confirms its list, the report owner sends one message up (D-269; schema change) | ☐ |
 | V33 | Board controls | The heat row fixed above; the view picker as cards from the board's tab; filtering and sorting as a rule builder with AND/OR and several sorts; flat chips; a root unit for every organization (D-310 … D-315; data migration) | ☑ |
-| V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation (D-270) | ☐ |
+| V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation, sent as one collective leave; overlapping rounds stacked on the timeline (D-270, D-316, D-317) | ☑ |
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units | ☐ |
 
 Order (D-271, amended by D-284): before launch, track A runs V32 (its docs first) → V28 and track B runs V26 → V27;
