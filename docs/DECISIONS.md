@@ -211,7 +211,7 @@ am = amends, ref = refines, ext = extends.
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
-| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
+| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | ext D-280 |
 | D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | ref D-183 |
 | D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
 | D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
@@ -264,7 +264,9 @@ am = amends, ref = refines, ext = extends.
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281 |
 | D-278 | A floating surface fits its content | ui, scripts | |
+| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
+| D-289 | CI skips e2e and db on a draft pull request | tooling | |
 
 ---
 
@@ -3524,7 +3526,8 @@ visit, and without a control that cannot act.
 
 ## D-276 — Staging: a second free Supabase project, updated from main after every green CI
 
-Refines D-209 and resolves OI-152. Track: docs.
+Refines D-209 and resolves OI-152. Track: docs. Amended 2026-11-12 (the orchestrator, about 16:04Z): the guard reads
+the one project, not the account's project list, and the access token is repository-level (D-280).
 
 - **A separate environment, never real data.** Staging is its own Supabase project, `sagol-staging`, on the free plan,
   with its own database, auth users and `commands` function. Nothing is copied from production: every unit, soldier
@@ -3535,9 +3538,14 @@ Refines D-209 and resolves OI-152. Track: docs.
   secrets, deploys the D-209 bundle of `commands`, and moves the `staging` branch to the same commit. Vercel builds that
   branch as a Preview, so staging lives at a stable address: `sagol-git-staging-yuval-dons-projects.vercel.app`.
 - **A guard before every write.** The workflow refuses to run unless the target project's name ends in `-staging`, so a
-  wrong project ref can never migrate production. Production migrations stay the manual, reviewed step they are.
+  wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
+  (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
+  account-wide `projects_read`. Before the name check it tries, read-only, the calls the later steps make (functions,
+  secrets; `supabase link`'s keys and configs as warnings), so a single run names every permission the token lacks.
+  Production follows by its own workflow (D-280).
 - **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
-  `staging` environment; the access token, the database password and the bootstrap owner's email are its secrets.
+  `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
+  the repository-level one Production uses too (D-280).
   Vercel's Preview target holds staging's `VITE_REMOTE_URL` and `VITE_REMOTE_ANON_KEY`; Production keeps its own.
 - **Every Preview runs on staging.** Pull request previews use the staging backend too, which holds `main`'s schema:
   a slice whose migration is not merged yet is tried locally (`npm run dev`, the local adapter), not on its preview.
@@ -3560,6 +3568,44 @@ automatically is the usual staging practice and stays inside the free plan.
   `className`, and the string consts it names, the file's own or imported from beside it.
 **Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
 dead space on any surface; a rule in the check keeps the next surface from bringing it back.
+
+## D-280 — Production delivery: automatic after staging, guarded
+2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12; amended the same day: the owner
+approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z;
+at about 15:55Z the owner chose repository-level values over a `production` environment, and the comparison with
+`STAGING_PROJECT_REF` was dropped (the orchestrator, about 15:59Z); at about 16:04Z the guard moved from the account's
+project list to reading the one project, so the scoped token needs no `projects_read` (the orchestrator)
+- **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
+  pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
+  the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
+  the owner set them.
+- **When it runs.** On its own after every successful Staging run on `main` (`workflow_run`), for the commit Staging
+  delivered, so production gets only what staging took first. The owner may also start it by hand
+  (`workflow_dispatch`, on `main`, owner as actor and triggering actor), typing the production ref as the input. Either
+  way it refuses a commit whose CI did not pass or that is not on `main`.
+- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, the token can read that one project
+  (`scripts/supabase-project-guard.sh`, as in D-276, with the same read-only tries of the later steps' calls), and
+  its name does not end in `-staging`; on a manual run the typed ref must equal it too. The ref lives in a variable, not in the file (rule 2).
+- **Destructive migrations.** After the `--dry-run` plan and before the push, every pending migration the plan names is
+  scanned, comments stripped, statement by statement: `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE FROM` with no
+  `WHERE` stops the run. A migration that means it carries the line `-- production: destructive change approved`,
+  which its review then sees.
+- **A failing migration.** `db push` applies each file and its history row in one transaction and stops at the first
+  failure with a non-zero exit (checked with CLI 2.122.0 on a local database: the failing file left no table and no
+  history row, the next file was not applied). The step fails, so the function deploy after it never runs; the
+  project stays on the last migration that succeeded.
+- **No environment.** The job uses no GitHub environment: `SUPABASE_ACCESS_TOKEN` (one scoped token covering the
+  production and staging projects, which Staging reads as well), `PRODUCTION_DB_PASSWORD` and the variable
+  `PRODUCTION_PROJECT_REF` are repository-level (OI-230), so the owner keeps one copy of each.
+  The main-only rule is the job's own checks (`workflow_run` on `main` from this repository, or a dispatch on `main` by
+  the owner, then the commit must be on `main`). `STAGING_PROJECT_REF` stays in the `staging` environment,
+  out of this job's reach, so the guard does not compare against it: an explicit `PRODUCTION_PROJECT_REF` and the
+  `-staging` name check cover a staging ref set by mistake. No
+  required-reviewer gate: GitHub offers it in private repositories only on paid plans, and anything paid is out
+  (D-200); the owner's approval of the automatic run replaces it.
+**Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
+with no laptop or session deploying by hand, and the one class of change that loses real data needs an explicit,
+reviewed marker.
 
 ## D-281 — Staging is seeded with made-up data by a guarded, re-runnable script
 
@@ -3584,3 +3630,22 @@ Extends D-276. Track: tooling.
 **Why:** trying the app on staging needs a believable unit, and typing one in by hand after every reset is slow. A
 re-runnable script that cannot reach production gives that without real personal numbers and without the app carrying
 seed code.
+
+## D-289 — CI skips e2e and db on a draft pull request
+
+2026-11-12 · accepted · asked by the orchestrator at about 16:09Z. Track: tooling.
+
+- **The limit.** The repository is private, so GitHub Actions has 2,000 free minutes a month, and paid use is
+  forbidden. On 2026-11-12 the cycle stood at 1,801 (it resets on 2026-12-01). `e2e` and `db` are most of each run.
+- **What changes.** In `.github/workflows/ci.yml`, `e2e` and `db` run only on a push to `main` or on a pull request that
+  is not a draft (`github.event_name == 'push' || !github.event.pull_request.draft`). `check` (typecheck, lint, layers,
+  raw values, i18n, unit tests, build) still runs on every pull request, draft or not.
+- **Marking ready runs them.** `pull_request` also listens to `ready_for_review`, so the moment a draft is marked ready
+  the full CI runs on its head. Without that type, the default triggers would not run CI again until the next push.
+- **No test is skipped before a merge.** Pull requests merge on a green, full CI of a ready head, and every push to
+  `main` runs the full CI that Staging and Production wait for (D-276, D-280). Locally, `npm run check` and the
+  relevant e2e still run before a push.
+
+**Why:** a draft is pushed to often while work is in progress; running the two slowest jobs on each of those pushes
+spent the month's free minutes. Running them once the work is ready, and on `main`, keeps the same guarantee at a
+fraction of the cost.
