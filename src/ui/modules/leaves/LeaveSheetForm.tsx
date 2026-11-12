@@ -25,6 +25,7 @@ import { DateField } from '../../primitives/DateField'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
+import { LeaveTypeInPlace } from '../leave-types/LeaveTypesModule'
 import { leaveTypeOptions } from './typeOptions'
 
 // The request sheet (D-275): one soldier, then a row per request, each of its own type and days, and a row may repeat
@@ -149,14 +150,22 @@ export function LeaveSheetForm({
                   </div>
                   <form.Field name={`rows[${index}].leave_type_id`}>
                     {(field) => (
-                      <SelectField
-                        labelKey="leaves.type"
-                        name={field.name}
-                        value={field.state.value}
-                        options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
-                        onChange={field.handleChange}
-                        error={error(field.state.meta.errors, index, 'leave_type_id')}
-                      />
+                      <>
+                        <SelectField
+                          labelKey="leaves.type"
+                          name={field.name}
+                          value={field.state.value}
+                          options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
+                          onChange={field.handleChange}
+                          error={error(field.state.meta.errors, index, 'leave_type_id')}
+                        />
+                        <LeaveTypeInPlace
+                          isMissing={leaveTypeOptions(groups, types).length === 0}
+                          onCreated={(type) => {
+                            field.handleChange(type.id)
+                          }}
+                        />
+                      </>
                     )}
                   </form.Field>
                   <div className="grid grid-cols-2 gap-md">

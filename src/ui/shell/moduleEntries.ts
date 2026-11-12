@@ -1,4 +1,4 @@
-import { NAVIGATION_SECTIONS, PANEL_IDS } from '@config'
+import { PANEL_IDS, SETUP_SECTIONS, WORK_SECTIONS, type SetupPanel } from '@config'
 import type { NavigationModule } from '@contracts'
 import type { I18nKey } from '@i18n'
 import {
@@ -15,6 +15,8 @@ import {
 } from '@logic'
 import {
   ArrowDownUp,
+  ChevronsUp,
+  Folders,
   CalendarRange,
   FileText,
   Inbox,
@@ -46,34 +48,79 @@ export interface ModuleEntry {
   readonly count: { readonly value: number; readonly labelKey: I18nKey } | null
 }
 
-/** The panel's modules this actor may open; a module they may not open is absent (D-076). */
+/** The work modules of the panel this actor may open; a module they may not open is absent (D-076, D-285). */
 export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntry> {
   const access = useModuleAccess()
   const panel = usePanel()
   const rules = useRulesDay()
   const links = useLinkReviewAccess()
   const grants = useGrantsAccess()
-  const transfer = useTransferAccess()
   const opener = (target: Parameters<typeof panel.open>[0]) => () => {
     panel.open(target)
   }
-  // Checked by assignment below: every module needs an entry, and an entry may come before its module (D-178).
+  // Checked by assignment below: every work module needs an entry (D-178).
   const entries = {
-    units: access.units && { id: 'units', Icon: Network, labelKey: 'units.open', onPress: opener(PANEL_IDS.units), count: null },
     soldiers: access.soldiers && { id: 'soldiers', Icon: Users, labelKey: 'soldiers.open', onPress: opener(PANEL_IDS.soldiers), count: null },
-    leave_types: access.leaveTypes && {
-      id: 'leaveTypes',
-      Icon: Tags,
-      labelKey: 'leaveTypes.open',
-      onPress: opener(PANEL_IDS.leaveTypes),
-      count: null,
-    },
     rules: access.rules && { id: 'rules', Icon: Scale, labelKey: 'rules.open', onPress: rules.open, count: null },
     deployments: access.deployments && {
       id: 'deployments',
       Icon: CalendarRange,
       labelKey: 'deployments.open',
       onPress: opener(PANEL_IDS.deployments),
+      count: null,
+    },
+    access_grants: grants && { id: 'grants', Icon: KeyRound, labelKey: 'grants.open', onPress: opener(PANEL_IDS.accessGrants), count: null },
+    account_links: links.allowed && {
+      id: 'accountLinks',
+      Icon: UserCheck,
+      labelKey: 'accountLinks.open',
+      onPress: opener(PANEL_IDS.accountLinks),
+      count: { value: links.pending, labelKey: 'accountLinks.pendingCount' },
+    },
+  } satisfies Readonly<Record<(typeof WORK_SECTIONS)[number]['modules'][number], ModuleEntry | false>>
+  const byModule: Readonly<Record<string, ModuleEntry | false>> = entries
+  const allowed = new Map<NavigationModule, ModuleEntry>()
+  for (const section of WORK_SECTIONS) {
+    for (const module of section.modules) {
+      const entry = byModule[module]
+      if (entry !== undefined && entry !== false) allowed.set(module, entry)
+    }
+  }
+  return allowed
+}
+
+/**
+ * The setup's modules this actor may open (D-285), each by the module's first panel. A module of several tabs opens
+ * on the first one they may read: unit types alone still open the structure.
+ */
+export function useSetupEntries(): ReadonlyMap<SetupPanel, ModuleEntry> {
+  const access = useModuleAccess()
+  const panel = usePanel()
+  const transfer = useTransferAccess()
+  const opener = (target: Parameters<typeof panel.open>[0]) => () => {
+    panel.open(target)
+  }
+  const entries: Readonly<Record<SetupPanel, ModuleEntry | false>> = {
+    units: (access.units || access.unitLevels) && {
+      id: 'units',
+      Icon: Network,
+      labelKey: 'units.open',
+      onPress: opener(access.units ? PANEL_IDS.units : PANEL_IDS.unitLevels),
+      count: null,
+    },
+    command_ranks: access.commandRanks && {
+      id: 'commandRanks',
+      Icon: ChevronsUp,
+      labelKey: 'commandRanks.open',
+      onPress: opener(PANEL_IDS.commandRanks),
+      count: null,
+    },
+    roles: access.roles && { id: 'roles', Icon: Shield, labelKey: 'roles.open', onPress: opener(PANEL_IDS.roles), count: null },
+    leave_types: access.leaveTypes && {
+      id: 'leaveTypes',
+      Icon: Tags,
+      labelKey: 'leaveTypes.open',
+      onPress: opener(PANEL_IDS.leaveTypes),
       count: null,
     },
     tags: access.tags && { id: 'tags', Icon: Tag, labelKey: 'tags.open', onPress: opener(PANEL_IDS.tags), count: null },
@@ -84,15 +131,6 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
       onPress: opener(PANEL_IDS.properties),
       count: null,
     },
-    roles: access.roles && { id: 'roles', Icon: Shield, labelKey: 'roles.open', onPress: opener(PANEL_IDS.roles), count: null },
-    access_grants: grants && { id: 'grants', Icon: KeyRound, labelKey: 'grants.open', onPress: opener(PANEL_IDS.accessGrants), count: null },
-    account_links: links.allowed && {
-      id: 'accountLinks',
-      Icon: UserCheck,
-      labelKey: 'accountLinks.open',
-      onPress: opener(PANEL_IDS.accountLinks),
-      count: { value: links.pending, labelKey: 'accountLinks.pendingCount' },
-    },
     data_transfer: transfer.any && {
       id: 'dataTransfer',
       Icon: ArrowDownUp,
@@ -100,13 +138,19 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
       onPress: opener(PANEL_IDS.dataTransfer),
       count: null,
     },
-  } satisfies Readonly<Record<string, ModuleEntry | false>>
-  const byModule: Readonly<Record<NavigationModule, ModuleEntry | false>> = entries
-  const allowed = new Map<NavigationModule, ModuleEntry>()
-  for (const section of NAVIGATION_SECTIONS) {
-    for (const module of section.modules) {
-      const entry = byModule[module]
-      if (entry !== false) allowed.set(module, entry)
+    tag_categories: access.tags && {
+      id: 'tagCategories',
+      Icon: Folders,
+      labelKey: 'tagCategories.open',
+      onPress: opener(PANEL_IDS.tagCategories),
+      count: null,
+    },
+  }
+  const allowed = new Map<SetupPanel, ModuleEntry>()
+  for (const section of SETUP_SECTIONS) {
+    for (const id of section.panels) {
+      const entry = entries[id]
+      if (entry !== false) allowed.set(id, entry)
     }
   }
   return allowed
