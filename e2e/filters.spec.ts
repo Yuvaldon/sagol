@@ -88,6 +88,7 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     const inPlace = page.getByRole('dialog', { name: he.tagCategories.new })
     await expect(inPlace.getByLabel(he.tagCategories.name)).toHaveValue(he.tags.firstCategoryName)
     await expectNoAxeViolations(page)
+    await inPlace.locator('label').filter({ has: page.getByRole('radio', { name: he.palette.orange, exact: true }) }).click()
     await inPlace.getByRole('button', { name: he.common.create }).click()
     await expect(inPlace).toBeHidden()
     await expect(drawer(page).getByRole('button', { name: new RegExp(`${he.tags.category}$`) })).toContainText(he.tags.firstCategoryName)
