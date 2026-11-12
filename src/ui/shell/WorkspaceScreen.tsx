@@ -1,11 +1,12 @@
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useCurrentOrganization, useDateWindow } from '@logic'
+import { useBoardFilters, useCurrentOrganization, useDateWindow } from '@logic'
 import { useIsDesktop } from '../patterns/media'
 import { ModuleButtons } from './ModuleButtons'
 import { ModuleDrawer } from './ModuleDrawer'
 import { NewLeaveButton } from './NewLeaveButton'
-import { FilterBar } from './FilterBar'
+import { FilterBar, FilterControl, OnlyMissingSwitch, PresenceButton } from './FilterBar'
+import { NavigationPanel } from './NavigationPanel'
 import { FailureScreen, LoadingScreen } from './states'
 import { UnitSelector } from './UnitSelector'
 import { UserMenu } from './UserMenu'
@@ -14,18 +15,31 @@ import { Viewport } from './Viewport'
 import { WindowNavigator } from './WindowNavigator'
 
 /**
- * The workspace (D-023, D-108): the viewport fills the screen, and glass bars float over it. On desktop two
- * bars sit at the top, as in Stone 3. On mobile the dates and the unit sit at the top and the rest at the
- * bottom. Controls join the bars as their slices build them (D-076).
+ * The workspace (D-023, D-108, D-173): the viewport fills the screen, and glass bars float over it. The bars hold the
+ * daily work; the modules that set the organization up sit in the navigation panel behind the menu button. On desktop
+ * two bars sit at the top. On mobile the menu, the dates and the scope sit at the top and the rest at the bottom.
  */
 
 const BAR = 'glass-bar pointer-events-auto flex min-w-none items-center gap-xs rounded-pill p-xs'
 
-function OrganizationName({ name }: { readonly name: string }) {
-  return <h1 className="min-w-none truncate px-md text-control font-bold">{name}</h1>
+function OrganizationName({ name, visible }: { readonly name: string; readonly visible: boolean }) {
+  return <h1 className={visible ? 'min-w-none truncate px-md text-control font-bold' : 'sr-only'}>{name}</h1>
 }
 
-/** The filter row under the bars (D-131). It needs a day, as every engine does. */
+/** The board's filter controls in the bar (D-173). They need a day, as every engine does. */
+function FilterControls() {
+  const { window } = useDateWindow()
+  if (window === null) return null
+  return (
+    <>
+      <FilterControl />
+      <OnlyMissingSwitch />
+      <PresenceButton />
+    </>
+  )
+}
+
+/** The row of set conditions under the bars (D-131, D-173): there only while a condition is set. */
 function FilterRow() {
   const { window } = useDateWindow()
   if (window === null) return null
@@ -41,9 +55,11 @@ function DesktopBars({ name, identity }: { readonly name: string; readonly ident
     <>
       <div className="pointer-events-none absolute inset-x-lg top-lg flex justify-between gap-sm">
         <nav aria-label={t('workspace.viewBar')} className={BAR}>
-          <OrganizationName name={name} />
+          <NavigationPanel />
+          <OrganizationName name={name} visible />
           <UnitSelector />
           <ViewSwitcher />
+          <FilterControls />
         </nav>
         <nav aria-label={t('workspace.navigation')} className={BAR}>
           <WindowNavigator />
@@ -60,7 +76,10 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
   return (
     <>
       <nav aria-label={t('workspace.viewBar')} className={`${BAR} absolute inset-x-lg top-lg justify-between`}>
-        <WindowNavigator />
+        <div className="flex min-w-none items-center gap-xs">
+          <NavigationPanel />
+          <WindowNavigator />
+        </div>
         <div className="flex min-w-none items-center gap-xs">
           <UnitSelector />
           <ViewSwitcher />
@@ -68,15 +87,15 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
       </nav>
       <FilterRow />
       <nav aria-label={t('workspace.navigation')} className={`${BAR} bottom-safe absolute inset-x-lg justify-between`}>
-        <OrganizationName name={name} />
-        <div className="flex min-w-none items-center gap-xs">
-          {/* The modules scroll sideways when they outgrow the bar, so the bar never widens the page (D-155). Their room
-              around them, the bar's own padding, keeps a focused module's outline whole. */}
-          <div className="-m-xs flex min-w-none items-center gap-xs overflow-x-auto p-xs">
-            <ModuleButtons />
-          </div>
-          <UserMenu identity={identity} />
+        {/* The name is read aloud; the scope label at the top says which unit is shown (D-173). */}
+        <OrganizationName name={name} visible={false} />
+        {/* The controls scroll sideways when they outgrow the bar, so the bar never widens the page (D-155). Their room
+            around them, the bar's own padding, keeps a focused control's outline whole. */}
+        <div className="-m-xs flex min-w-none items-center gap-xs overflow-x-auto p-xs">
+          <FilterControls />
+          <ModuleButtons />
         </div>
+        <UserMenu identity={identity} />
       </nav>
     </>
   )
@@ -85,12 +104,14 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
 export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity }) {
   const organization = useCurrentOrganization()
   const isDesktop = useIsDesktop()
+  const { active } = useBoardFilters()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
   const name = organization.value?.name ?? t('app.name')
 
   return (
-    <div className="relative h-dvh bg-canvas p-sm">
+    // The row of set conditions pushes the board's first row down only while it shows (D-173).
+    <div data-filter-row={active ? 'shown' : undefined} className="relative h-dvh bg-canvas p-sm">
       <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
         <Viewport />
       </main>

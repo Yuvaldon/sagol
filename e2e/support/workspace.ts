@@ -64,24 +64,26 @@ export async function enterAsOwner(page: Page) {
   await expect(organizationHeading(page)).toBeVisible()
 }
 
+/** The navigation panel (D-173), once open. */
+export function navigationPanel(page: Page) {
+  return page.getByRole('dialog', { name: he.navigation.title })
+}
+
 /**
- * Opens a module from the bar, or from the "more" menu when a phone has no room for it (D-165). The bar fills while
- * access loads, so the place of a module can still change: the whole step retries.
+ * Opens a module from the bar, or from the navigation panel when it is not there (D-173). The bar fills while access
+ * loads, so the place of a module can still change: the whole step retries.
  */
 export async function openModule(page: Page, name: string | RegExp) {
+  // A string names the module exactly, so its pin ("pin <module>") never answers for it.
+  const options = typeof name === 'string' ? { name, exact: true } : { name }
   await expect(async () => {
-    // A try that opened "more" while the bar was still filling leaves the menu over the bar: close it first.
-    const more = page.getByRole('menu', { name: he.more.open })
-    if (await more.isVisible()) {
-      await page.keyboard.press('Escape')
-      await expect(more).toBeHidden({ timeout: 1_000 })
-    }
-    const inBar = navigation(page).getByRole('button', { name })
-    if (await inBar.isVisible()) {
+    const panel = navigationPanel(page)
+    const inBar = navigation(page).getByRole('button', options)
+    if (!(await panel.isVisible()) && (await inBar.isVisible())) {
       await inBar.click({ timeout: 1_000 })
       return
     }
-    await navigation(page).getByRole('button', { name: he.more.open }).click({ timeout: 1_000 })
-    await page.getByRole('menuitem', { name }).click({ timeout: 1_000 })
+    if (!(await panel.isVisible())) await page.getByRole('button', { name: he.navigation.open }).click({ timeout: 1_000 })
+    await panel.getByRole('button', options).click({ timeout: 1_000 })
   }).toPass({ timeout: 10_000 })
 }

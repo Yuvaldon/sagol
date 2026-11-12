@@ -1,12 +1,13 @@
 import type { UnitId } from '@contracts'
 import { t } from '@i18n'
 import { unitTreeRows, useUnits, useViewFilter } from '@logic'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Network } from 'lucide-react'
 import { useMemo } from 'react'
 import { Button as AriaButton, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components'
 
 // Which unit the views show (D-104): the whole organization, or one unit with its sub-units, chosen from
-// the tree the actor can see.
+// the tree the actor can see. The bar shows it as a compact label; a viewer whose tree has a single root reads that
+// root's name rather than "the whole organization" (D-173).
 
 const ORGANIZATION_KEY = 'organization'
 const OTHER_KEY = 'other'
@@ -36,6 +37,8 @@ export function UnitSelector() {
     return list
   }, [rows, unit])
 
+  const roots = rows.filter((row) => row.depth === 0)
+  const anchor = roots.length === 1 ? (roots[0]?.unit.name ?? null) : null
   // Nothing to choose from: the whole organization is all there is (D-076).
   if (choices.length < 2) return null
   const selected = unit.kind === 'organization' ? ORGANIZATION_KEY : unit.kind === 'unit' ? unit.unitId : OTHER_KEY
@@ -51,8 +54,11 @@ export function UnitSelector() {
       }}
       className="min-w-none"
     >
-      <AriaButton className="inline-flex min-h-touch max-w-unit-picker min-w-none cursor-pointer items-center gap-xs rounded-pill bg-inner ps-md pe-sm text-control font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2 data-hovered:bg-line">
-        <SelectValue className="truncate" />
+      <AriaButton className="inline-flex min-h-touch max-w-unit-picker min-w-none cursor-pointer items-center gap-xs rounded-pill bg-inner ps-sm pe-sm text-control font-semibold text-text outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2 data-hovered:bg-line">
+        <Network aria-hidden size={14} className="shrink-0 text-text-muted" />
+        <SelectValue className="truncate">
+          {({ selectedText }) => (selected === ORGANIZATION_KEY && anchor !== null ? anchor : selectedText)}
+        </SelectValue>
         <ChevronDown aria-hidden size={12} className="shrink-0" />
       </AriaButton>
       <Popover className="glass-menu min-w-trigger overflow-auto rounded-panel">

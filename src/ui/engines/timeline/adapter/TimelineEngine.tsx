@@ -1,5 +1,5 @@
 import { PANEL_IDS } from '@config'
-import type { CalendarDate, FilterExpression } from '@contracts'
+import { RulesRowPlacement, type CalendarDate, type FilterExpression } from '@contracts'
 import { t } from '@i18n'
 import {
   filterUnitOf,
@@ -9,6 +9,7 @@ import {
   useHeatRow,
   useLeaveConditions,
   useModuleAccess,
+  useNavigationPreferences,
   useOnlyMissing,
   usePanel,
   useRulesDay,
@@ -67,6 +68,7 @@ function Board({
   const rulesDay = useRulesDay()
   const unit = filterUnitOf(filter)
   const heat = useHeatRow(window, unit.kind === 'unit' ? unit.unitId : null)
+  const { rulesRow } = useNavigationPreferences()
   const soldiers = useMemo(() => model.items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier] : [])), [model.items])
   const drag = useBoardDrag(window, soldiers)
   const open = access.soldiers
@@ -115,6 +117,7 @@ function Board({
           creatable: drag.creatable,
         })}
         heat={heat.status === 'ready' && heat.value !== null ? heatCells(heat.value, rulesDay.openOn) : null}
+        heatOnTop={rulesRow === RulesRowPlacement.enum.above}
         drag={drag.props}
       />
       <DragOverlay drag={drag} />

@@ -28,24 +28,29 @@ import {
   usePresenceDay,
   useTagCategories,
   useTags,
+  useBoardFilters,
   useToday,
   useViewFilter,
   withTagChip,
   type SoldierConditions,
 } from '@logic'
-import { ChevronRight, Plus, UserX, X } from 'lucide-react'
+import { ChevronRight, ListFilter, UserMinus, UserX, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Button as AriaButton, Dialog, DialogTrigger, Popover, Switch } from 'react-aria-components'
+import { useIsDesktop } from '../patterns/media'
 import { toneOf } from '../theme/palette'
 import { CheckList, type Choice, type ChoiceText } from '../primitives/ChoiceList'
 
-// The filter bar of Stone 3 under the workspace bars (D-131 to D-134): a chip per condition, "+" to add one, the
-// "only who is missing" switch and the presence button. A chip opens its values; its "x" removes it. The unit stays
-// in the selector of the top bar (D-104).
+// The board's filters (D-131 to D-134, D-173). The bar holds "filter" to add a condition, the "only who is missing"
+// switch and the presence button. The row under the bars shows only while a condition is set: a chip per condition,
+// and "clear all". A chip opens its values; its "x" removes it. The unit stays in the scope label of the top bar (D-104).
 
 const PILL = 'glass-bar pointer-events-auto inline-flex min-h-touch shrink-0 items-center rounded-pill text-control text-text md:min-h-control'
 const PRESS = 'cursor-pointer outline-focus outline-offset-2 data-focus-visible:outline-2'
 const POPOVER = 'glass-menu max-h-list w-menu overflow-auto rounded-panel p-md'
+/** A control of the bar: its icon alone on a phone, its name still read aloud. */
+const BAR_CONTROL =
+  'relative inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center gap-xs rounded-pill px-sm text-control font-semibold whitespace-nowrap text-text md:min-h-control md:bg-inner md:px-md data-hovered:bg-line'
 
 const SEPARATOR = ', '
 const LABEL_SEPARATOR = ':'
@@ -122,7 +127,7 @@ interface Condition {
 }
 
 /**
- * "+": the conditions not on the bar yet, then the values of the one picked. A picked condition stays open after its
+ * "Filter": the conditions not set yet, then the values of the one picked. A picked condition stays open after its
  * first value makes it a chip, so more values can be checked.
  */
 function AddCondition({
@@ -137,6 +142,7 @@ function AddCondition({
   readonly onOpenChange: (isOpen: boolean) => void
 }) {
   const [picked, setPicked] = useState<string | null>(null)
+  const isDesktop = useIsDesktop()
   const open = all.find((condition) => condition.key === picked)
   return (
     <DialogTrigger
@@ -146,11 +152,11 @@ function AddCondition({
         onOpenChange(next)
       }}
     >
-      <AriaButton
-        aria-label={t('filters.add')}
-        className={`${PILL} size-touch justify-center border-dashed md:size-control ${PRESS}`}
-      >
-        <Plus aria-hidden size={12} strokeWidth={2.6} />
+      <AriaButton aria-label={t('filters.add')} className={`${BAR_CONTROL} ${PRESS}`}>
+        <ListFilter aria-hidden size={isDesktop ? 14 : 18} className="text-text-muted md:text-text" />
+        <span aria-hidden className={isDesktop ? '' : 'sr-only'}>
+          {t('filters.open')}
+        </span>
       </AriaButton>
       <Popover className={POPOVER}>
         <Dialog aria-label={t('filters.add')} className="flex flex-col gap-xs outline-none">
@@ -403,42 +409,57 @@ function useConditions(): ConditionSets {
   return { shown: [...shown, ...leave.shown], addable: [...addable, ...leave.addable] }
 }
 
-function OnlyMissingSwitch() {
+/** "Only who is missing" (D-133): the switch's track, and its name beside it from a desktop. */
+export function OnlyMissingSwitch() {
   const missing = useOnlyMissing()
+  const isDesktop = useIsDesktop()
   return (
-    <Switch isSelected={missing.on} onChange={missing.set} className={`group ${PILL} gap-sm px-md font-semibold ${PRESS}`}>
+    <Switch isSelected={missing.on} onChange={missing.set} className={`group ${BAR_CONTROL} gap-sm ${PRESS}`}>
+      {isDesktop ? null : <UserMinus aria-hidden size={18} className="text-text-muted" />}
       <span aria-hidden className="flex h-icon w-control shrink-0 items-center rounded-pill border border-line bg-inner p-2xs group-data-selected:border-action-solid group-data-selected:bg-action-solid">
         <span className="size-dot rounded-pill bg-text-muted group-data-selected:ms-auto group-data-selected:bg-on-action" />
       </span>
-      {t('filters.onlyMissing')}
+      <span className={isDesktop ? '' : 'sr-only'}>{t('filters.onlyMissing')}</span>
     </Switch>
   )
 }
 
 /** How many are missing today, under the board's filter; it opens the lists of today (D-134). */
-function PresenceButton() {
+export function PresenceButton() {
+  const access = useModuleAccess()
   const today = useToday()
   const { filter } = useViewFilter()
   const presence = usePresence(today, filter)
   const { openToday } = usePresenceDay()
-  if (presence.status !== 'ready') return null
+  const isDesktop = useIsDesktop()
+  if (!access.soldiers || presence.status !== 'ready') return null
   return (
-    <AriaButton
-      onPress={openToday}
-      className={`${PILL} gap-xs px-md ${PRESS}`}
-    >
-      <UserX aria-hidden size={14} />
-      <span className="text-text-muted">{t('presence.missingToday')}</span>
-      <span className="font-bold tabular-nums">{presence.value.absent.length}</span>
+    <AriaButton onPress={openToday} className={`${BAR_CONTROL} ${PRESS}`}>
+      <UserX aria-hidden size={isDesktop ? 14 : 18} className="text-text-muted md:text-text" />
+      <span className={isDesktop ? 'text-text-muted' : 'sr-only'}>{t('presence.missingToday')}</span>
+      <span
+        className={`${isDesktop ? '' : 'absolute end-none top-xs bg-inner'} inline-flex min-w-icon items-center justify-center rounded-pill px-xs font-bold tabular-nums ${isDesktop ? '' : 'text-micro'}`}
+      >
+        {presence.value.absent.length}
+      </span>
     </AriaButton>
   )
 }
 
-export function FilterBar() {
-  const access = useModuleAccess()
+/** "Filter" in the bar: the conditions not set yet. Absent when there is nothing left to add (D-076). */
+export function FilterControl() {
   const { shown, addable } = useConditions()
-  // "+" stays while its popover is open, so the condition picked there keeps its values in sight after it becomes a chip.
+  // It stays while its popover is open, so the condition picked there keeps its values in sight after it is set.
   const [adding, setAdding] = useState(false)
+  if (addable.length === 0 && !adding) return null
+  return <AddCondition conditions={addable} all={[...shown, ...addable]} isOpen={adding} onOpenChange={setAdding} />
+}
+
+/** The row of set conditions, with "clear all"; it exists only while a condition is set (D-173). */
+export function FilterBar() {
+  const { shown } = useConditions()
+  const { active, clearAll } = useBoardFilters()
+  if (!active) return null
   return (
     <search
       aria-label={t('filters.bar')}
@@ -451,12 +472,10 @@ export function FilterBar() {
           {condition.choices === null ? null : <CheckList {...condition.choices} autoFocus />}
         </Chip>
       ))}
-      {addable.length === 0 && !adding ? null : (
-        <AddCondition conditions={addable} all={[...shown, ...addable]} isOpen={adding} onOpenChange={setAdding} />
-      )}
-      <OnlyMissingSwitch />
-      {access.soldiers ? <PresenceButton /> : null}
+      <AriaButton onPress={clearAll} className={`${PILL} gap-xs px-md font-semibold ${PRESS}`}>
+        <X aria-hidden size={12} strokeWidth={2.6} />
+        {t('filters.clearAll')}
+      </AriaButton>
     </search>
   )
 }
-
