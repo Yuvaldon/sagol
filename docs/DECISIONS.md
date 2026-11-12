@@ -49,7 +49,7 @@ am = amends, ref = refines, ext = extends.
 | D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149; ref D-163 |
 | D-031 | Availability rules: grouping, global scope, priority | contracts, domain, ui | ref D-067 (canonical population), D-071, D-072; ref D-139, D-140 |
 | D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070; ref D-111, D-113; ref D-134 |
-| D-033 | Simple first-run setup wizard | ui | |
+| D-033 | Simple first-run setup wizard | ui | ref D-180 |
 | D-034 | Icons: lucide-react, semantic icon keys | ui | ref D-113 |
 | D-035 | domain may import `@internationalized/date` | domain, tooling | am D-061 (tests) |
 | D-036 | Type assertions only in adapters and tests | all, tooling | ext D-135 |
@@ -196,6 +196,7 @@ am = amends, ref = refines, ext = extends.
 | D-177 | Property chips in the filter bar | logic, ui | |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | |
+| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
@@ -2418,6 +2419,25 @@ its section in `config`.
   that cuts them. A rule's deployment reference must be one the actor sees and still live.
 **Why:** these are the V15 card's four pieces. They are built on the existing targets and commands, so they add no
 new permission concept, and every write goes through the same plan and rule gate as a single leave.
+
+## D-180 — The organization's setup: steps, who sees them, where it opens
+2026-11-12 · accepted · refines D-033 · OI-114 · decided under the owner's autonomy instruction of 2026-11-11
+- **The steps**, in order (`SETUP_STEPS` in `config`): unit levels, units, command ranks, rank bindings, leave types,
+  tags, soldiers. The organization step of D-033 is left out: its name is given when it is claimed and there is no
+  form to edit it (D-076). Soldiers close the list, since a setup is not usable without them; import (D-022) stays
+  the other way in.
+- **A step shows** only to who may `create` what it sets up across the organization (the rank bindings step asks for
+  `roles`). With no step allowed there is no setup at all: not in the panel, not on the board (D-076).
+- **A step is done** once a live row of what it sets up exists (rank bindings: a live binding; tags: a live tag).
+  Nothing is stored. Progress reads "X of Y steps done".
+- **A step opens its own module** (the tags step opens tag categories, which come first), so each step uses the forms
+  that module has, and the way back is the navigation panel or the empty board. Any step may be skipped or redone.
+- **Where it opens:** first in the navigation panel, never pinnable, since it is for setting up and not for daily
+  work; and on a board with no soldiers, beside "soldiers".
+- **Row answers (OI-114):** a collective leave or a copy that the server answers on one of its rows
+  (`leaves.N.<field>`, `copies.N.<field>`) shows the answer on the form's field it came from.
+**Why:** D-033 asked for a guided first run with no second code path and no stored flag. Linking each step to its
+module keeps one form per entity, and deriving the marks from the rows keeps them true after an import or an edit.
 
 ## D-200 — Backend: Supabase and Vercel, free plans
 2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170

@@ -120,7 +120,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V13 | More views | List, table and calendar engines on one board model and frame (D-174) | ☑ |
 | V14 | Custom properties | Definitions module, values in forms and filters (D-176, D-177) | ☑ |
 | V15 | Deployments, batches, overrides | Collective leave, duplicate, deployments, seniority overrides | ☑ |
-| V16 | Setup wizard | Guided first run over the existing forms (D-033) | ☐ |
+| V16 | Setup wizard | Guided first run over the existing forms (D-033, D-180) | ☑ |
 | V17 | Dark Mode | Second token set | ☐ |
 | A7 | audit | Whole product | ☐ |
 
