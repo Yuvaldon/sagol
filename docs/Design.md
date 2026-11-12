@@ -75,10 +75,12 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Layout
 
-- **Workspace (D-023, D-108):** a `surface` panel on the `canvas`, filled by the active engine. Glass bars float over
-  it. From `md`, two bars at the top: on the inline start the organization's name (the page's `h1`), the unit selector
-  and the view switcher; on the inline end the week, "today", the modules and the user menu. Below `md`, the week, the
-  unit and the view at the top, and the name, the modules and the user at the bottom. Content starts under the top bar
+- **Workspace (D-023, D-108, D-173):** a `surface` panel on the `canvas`, filled by the active engine. Glass bars float
+  over it and hold the daily work only. From `md`, two bars at the top: on the inline start the menu button, the
+  organization's name (the page's `h1`), the scope label, the view switcher, "סינון", "רק מי שחסר" and the presence
+  pill; on the inline end the week, "today", my requests, the inbox, the pins and the user menu. Below `md`, the menu,
+  the week, the scope and the view at the top; at the bottom the filter controls, my requests, the inbox and the pins,
+  scrolling sideways, and the user menu, with the name read aloud only. Content starts under the top bar
   (`under-bars`, `under-bars-md`), ends above the bottom bar (`above-bottom-bar`), and scrolls under the glass. A
   structure that differs by screen uses `useIsDesktop`; anything else is CSS.
 - **Timeline (D-108):** sizes come from `TIMELINE_LAYOUT` in `config`, because the geometry and the virtualizer need the
@@ -107,18 +109,32 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   and the "+".
 - **The floating "+" (D-115):** a 44 px round `glass-action` at the bottom inline-end corner of the board, above the
   bottom bar on a phone. The grid ends with room for it.
+- **The navigation panel (D-173):** the menu button opens a `glass-drawer` panel from the inline start (the right), at
+  most `sheet` wide, the full height, on every screen. Its sections, each a muted heading over its rows: מבנה (units,
+  soldiers), הגדרות היעדרות (leave types, rules, tags), הרשאות (roles, grants, account links), נתונים (import and
+  export). A row is the module's icon, name and waiting count; pressing it closes the panel and opens the module, whose
+  deep link is unchanged. Beside it a pin toggle ("הצמדה לסרגל" and the name) adds the module to the bar, after the
+  daily buttons, in the order pinned. Under the sections, "תצוגה": where the rules row sits. A row the viewer may not
+  open is absent; with nothing to show, the panel and its button are absent. The button carries the sum of the
+  panel's waiting counts. A viewer with no soldier row sees no pins and no display choice (nothing to keep them in).
+- **The scope label (D-104, D-173):** a compact `inner` pill with a unit icon, the scope's name cut by width, and a
+  chevron, opening the unit picker. With the whole organization chosen and a single root unit in sight, it reads that
+  root's name.
 - **The inbox button (D-120):** first among the module buttons, for who may approve someone. It carries the number of
   requests waiting as a small dark pill, read aloud with the button's name.
 - **Module buttons (D-116):** icon and name from `md`; below it the icon alone in a 44 px `IconButton`, its name still
   read aloud.
-- **The filter bar (D-131 to D-134):** a `search` landmark under the top bars: from `md` under the bar with the unit
-  selector (`top-filter-row-md`), below `md` under the top bar (`top-filter-row`), scrolling sideways. It holds the chips,
-  a dashed round "+", the "רק מי שחסר" switch and the presence pill ("חסרים היום" and today's count). Each is a `glass-bar`
-  pill, `control` high from `md` and `touch` below; only the pills take presses, so the board stays pressable around
-  them. The board starts under it (`under-bars`, `under-bars-md`).
+- **The filter controls (D-131 to D-134, D-173):** in the bar, "סינון" (a filter icon and the name from `md`, the icon
+  alone below), the "רק מי שחסר" switch and the presence pill ("חסרים היום" and today's count), shaped like the module
+  buttons. "סינון" is absent when every condition is set.
+- **The filter row (D-131, D-173):** a `search` landmark under the top bars, there only while a condition is set: from
+  `md` under the bar with the scope (`top-filter-row-md`), below `md` under the top bar (`top-filter-row`), scrolling
+  sideways. It holds the chips and "ניקוי הכול". Each is a `glass-bar` pill, `control` high from `md` and `touch` below;
+  only the pills take presses. The board starts under the bars (`under-bars`), and under the row while it shows
+  (`data-filter-row="shown"` on the workspace swaps in `under-bars-filtered`).
 - **A chip:** the condition muted, then every value bold, cut by width, as one button that opens a popover of its values;
-  beside it a round "x" (`chip-close` 22 from `md`, 44 below) named "הסרת סינון" and the condition. "+" lists the conditions
-  not on the bar, then the values of the one picked, which stay open after the first value makes it a chip. A filter the bar does not read is one chip,
+  beside it a round "x" (`chip-close` 22 from `md`, 44 below) named "הסרת סינון" and the condition. "סינון" lists the
+  conditions not set, then the values of the one picked, which stay open after the first value makes it a chip. A filter the bar does not read is one chip,
   "סינון מותאם", which can only be removed; the leave chips stay beside it.
 - **"Only who is missing" mutes the days a row is present,** like days out of the unit, and reads them aloud as "נוכח".
 - **A control with nothing to choose stays away (D-076):** the unit selector appears once a unit exists; "today" appears
@@ -165,10 +181,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Roles and access (V10, D-165, D-166)
 
-- **Module buttons** (`ui/shell/ModuleButtons.tsx`): one ordered list of the modules the actor may open (my requests, inbox, account
-  links, units, soldiers, tags, rules, leave types, roles, grants). Desktop shows them all. A phone shows the first
-  `PHONE_BAR_MODULES` and a "more" `IconButton` whose `Menu` lists the rest with their icons and counts; when only one
-  would be left over it stays in the bar.
+- **Module buttons** (`ui/shell/ModuleButtons.tsx`): my requests and the inbox, then the soldier's pins. The other modules
+  sit in the navigation panel (D-173), which replaced the phone's "more" menu.
 - **`RolesModule`** (`ui/modules/access`): the roles list (name, color, count of pairs, "baseline" on the baseline role) and a form with
   name, description, color and a permission grid, a `CheckList` per resource of D-040's valid pairs; the baseline role is
   a select above the list. **`RankBindingsModule`**: a role select, then that role's bindings (rank and scope in words)
@@ -238,7 +252,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   who is missing. A name the actor may not read is "לא ידוע".
 - **The heat row (D-141):** under the days header, inside its sticky frame, a row the height of a timeline row with the
   label "כללים" and one cell per day: empty, a dashed `status-pending` cell, or a solid `status-rejected` one, with the
-  count. A cell is a button named by its day, its count and the worst rule.
+  count. A cell is a button named by its day, its count and the worst rule. By default it sits below the list instead,
+  sticky above the bottom bar; the soldier picks the place in the navigation panel (D-173). It is absent when no rule
+  concerns the scope.
 - **On a phone** the user menu shows its icon only, its name still read aloud, so the bottom bar keeps every module (OI-095).
 - **The phone's bottom bar** never widens the page: its module icons scroll sideways in their own row when they outgrow it,
   the organization's name and the user menu staying in place (D-155).
@@ -267,11 +283,12 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `LeaveDetails`, `LeaveEditForm`, `LeaveThread`, `LeaveStepDialog`, `StatusChip`, `TypeMark` | `ui/modules/leaves` | One leave: its steps, its edit form, its thread |
 | `PendingRequestsModule`, `ClosedLeavesModule` | `ui/modules/leaves` | The requests inbox |
 | `MyLeavesModule` | `ui/modules/leaves` | The actor's own requests, open and history (D-167) |
-| `ModuleButtons` | `ui/shell` | The bar's module buttons, with "more" on a phone (D-165) |
+| `ModuleButtons` | `ui/shell` | The bar's daily module buttons and the soldier's pins (D-173) |
+| `NavigationPanel` | `ui/shell` | The menu button and the panel of set-up modules by section, with pins (D-173) |
 | `RolesModule`, `RankBindingsModule`, `GrantsModule`, `ScopeFields` | `ui/modules/access` | Roles, their rank bindings, personal grants, and the scope picker |
 | `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
-| `FilterBar` | `ui/shell` | Chips, "+", "only who is missing" and the presence pill |
+| `FilterBar`, `FilterControl`, `OnlyMissingSwitch`, `PresenceButton` | `ui/shell` | The filter row (chips, clear all), and the bar's filter, "only who is missing" and presence controls |
 | `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
 | `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
 | `RuleViolations`, `RuleBrief`, `RuleGateDialog`, `RuleWarnings` | `ui/patterns/rules` | Broken rules in full and in brief; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`), shared by modules and the timeline (D-143) |

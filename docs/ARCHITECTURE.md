@@ -99,7 +99,7 @@ The data layer is written as if it were the server:
   `accounts.revokeLink` ends a link (D-163). Who cannot view the organization counts days on the device's zone (D-160);
   presence and live warnings leave out what the actor cannot read in full (D-161, D-162). A grant's window is whole days
   in the organization's zone (D-166). Screens: the roles module (roles, rank bindings, the baseline) and the grants
-  module, with a "more" menu on a phone (D-165).
+  module. The phone's "more" menu of D-165 gave way to the navigation panel (D-173).
 - **Self-service, as built (V11, D-167 to D-169):** "my requests" reads the actor's own leaves (open and history) through
   the same `leaves` permissions, and its "new request" opens the new-leave form with the only soldier the actor may pick
   already chosen (D-167). An identity whose last link request was rejected is told so on the onboarding screen, without
@@ -227,7 +227,9 @@ The current state, in short (D-128). The entries hold the reasons.
 
 - One main workspace route. Management modules and details open as floating surfaces:
   side drawer on desktop, bottom sheet on mobile. Navigation is a floating top bar on
-  desktop and a bottom bar on mobile.
+  desktop and a bottom bar on mobile, holding the daily work; the set-up modules sit in a navigation panel from the
+  inline start, by section, and a soldier's pins bring any of them to the bar (D-173). Pins and the rules row's place
+  live in the soldier's preferences (`useNavigationPreferences`); the sections are `NAVIGATION_SECTIONS` in `config`.
 - All view state lives in **typed URL search params** (TanStack Router + Zod): active view
   id, date window, filters, open panel and its entity. Switching views keeps filters. Deep
   links and the back button work. Parameter names come from `config`.
