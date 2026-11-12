@@ -20,8 +20,8 @@ import { groupLabel, leaveDays, leaveTone, statusText, typeName } from '../../..
 
 // The table view (D-174): one line per leave in the window, of the soldiers in view, sorted by any column. The soldier
 // opens the soldier and the type opens the leave, as on every engine (D-119). The order is the board's, in the URL
-// (D-214): the soldier column sorts by `name`, the unit column by `unit` (the tree's order, as the board's groups), and
-// the leave columns by their own keys. A board key with no column keeps the board's order.
+// (D-214): the soldier column sorts by `name` and the unit column by `unit`, both in the board's own order, and the
+// leave columns by their own keys. A board key with no column keeps the board's order.
 
 const features = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel(), sortFns })
 const column = createColumnHelper<typeof features, BoardEntry>()
@@ -124,9 +124,10 @@ function LeavesTable({ frame }: { readonly frame: BoardFrame }) {
   const data = useMemo(() => boardEntries(frame.model), [frame.model])
   const sort = useBoardSort()
   const active = columnOfKey(sort.key ?? sort.board.key)
-  // The unit column follows the board's groups, which already come in the tree's order.
+  // The soldier and unit columns keep the board's own order (D-214): its rows already come sorted by name or by the
+  // tree, in the URL's direction, so a link shows the same order in either engine.
   const sorting = useMemo(
-    () => (active === null || active === 'unit' ? [] : [{ id: active, desc: sort.order === 'desc' }]),
+    () => (active === null || active === 'soldier' || active === 'unit' ? [] : [{ id: active, desc: sort.order === 'desc' }]),
     [active, sort.order],
   )
   const table = useTable({ features, columns: COLUMNS, data, getRowId: (entry) => entry.leave.id, state: { sorting } })

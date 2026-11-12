@@ -26,7 +26,9 @@ const ORDER_LABELS: Record<SortOrder, I18nKey> = {
 export function SortControl() {
   const sort = useBoardSort()
   const isDesktop = useIsDesktop()
+  // A table-only key selects no board key here, and the direction shown is the one the board's rows follow.
   const boardKey = BOARD_SORT_KEYS.find((key) => key === (sort.key ?? sort.board.key))
+  const order = boardKey === undefined ? sort.board.order : sort.order
   return (
     <MenuTrigger>
       <AriaButton aria-label={t('workspace.sort')} className={`${BAR_CONTROL} ${PRESS}`}>
@@ -53,10 +55,10 @@ export function SortControl() {
           <MenuSection
             selectionMode="single"
             disallowEmptySelection
-            selectedKeys={[sort.order]}
+            selectedKeys={[order]}
             onSelectionChange={(selection) => {
               const next = SORT_ORDERS.find((order) => order === onlyKey(selection))
-              if (next !== undefined) sort.set(sort.key ?? sort.board.key, next)
+              if (next !== undefined) sort.set(boardKey ?? sort.board.key, next)
             }}
           >
             <Header className={MENU_HEADER}>{t('workspace.sortOrder')}</Header>
