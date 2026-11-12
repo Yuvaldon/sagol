@@ -86,6 +86,9 @@ The data layer is written as if it were the server:
   development. The production build fails if `VITE_AUTH_MODE=local`. As built (8.4, D-207): Google
   through Supabase Auth (PKCE), always paired with the remote adapter; the composition loads only
   the env's pair (D-210). Deploys: Vercel Preview and Production (D-209).
+- **Deploy marking (D-300):** `VITE_APP_ENV=staging`, set on Vercel for the `staging` branch only, marks the staging
+  deploy: a black band "אתר בדיקות" on every screen, the title "סגול · בדיקות", and an installed app with the bison in
+  black and that name. Production has no such variable and stays unmarked.
 - **Accounts:** `soldier_accounts` links a provider identity to a soldier. Commanders may
   create soldiers with names only (personal ID and email optional). Linking is automatic
   only on personal ID + verified invite email match. Anything else becomes an
