@@ -2281,10 +2281,13 @@ time; fixed ranges and one approver for the shared model keep the two branches f
   and when every section is empty the menu button is not shown either. Panels keep their URL, so deep links work.
 - **Pins.** A soldier may pin any panel module to the bar. Pins are stored in `soldier_preferences.preferences` as
   `pinned_modules` (a list of `NavigationModule`, no duplicates, default empty), beside D-121's default, so the
-  table does not change. A viewer that resolves to no soldier row (an unlinked admin) reads the defaults without an
-  error and is not offered pins or the placement choice (no dead control).
+  table does not change. Every viewer of the board has a soldier row (an unlinked account sees only onboarding,
+  D-005), so there is no branch for one without. Nobody starts with pins, whatever their role: the bar holds the
+  dates, the view and the filters, and a soldier adds what they use. A pin to a module the viewer can no longer open
+  stays stored and is not shown; the bar filters pins by the same access check as the panel, at read time.
 - **Unit scope** reads as a compact label of the current unit, opening the picker. With no unit chosen it shows the
-  anchor: the name of the single root unit the viewer sees, otherwise "the whole organization".
+  anchor: the name of the single root unit the viewer sees, otherwise "the whole organization". The picker offers only
+  the units the viewer can see; a viewer who sees a single unit gets its name as a label, with no picker.
 - **The filter row** is collapsed while no condition is set. A "filter" control in the bar opens the conditions; once
   any condition is set the row shows, with a "clear all" that keeps the unit scope.
 - **The rules heat row** shows only when at least one live rule concerns the unit in scope. It sits under the soldier

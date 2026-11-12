@@ -116,10 +116,11 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   deep link is unchanged. Beside it a pin toggle ("הצמדה לסרגל" and the name) adds the module to the bar, after the
   daily buttons, in the order pinned. Under the sections, "תצוגה": where the rules row sits. A row the viewer may not
   open is absent; with nothing to show, the panel and its button are absent. The button carries the sum of the
-  panel's waiting counts. A viewer with no soldier row sees no pins and no display choice (nothing to keep them in).
+  panel's waiting counts. A soldier with no management permission sees no panel and no menu button; nobody starts
+  with pins, so the bar holds the dates, the view and the filters.
 - **The scope label (D-104, D-173):** a compact `inner` pill with a unit icon, the scope's name cut by width, and a
   chevron, opening the unit picker. With the whole organization chosen and a single root unit in sight, it reads that
-  root's name.
+  root's name. A viewer who sees a single unit reads its name, with no picker and no chevron.
 - **The inbox button (D-120):** first among the module buttons, for who may approve someone. It carries the number of
   requests waiting as a small dark pill, read aloud with the button's name.
 - **Module buttons (D-116):** icon and name from `md`; below it the icon alone in a 44 px `IconButton`, its name still
