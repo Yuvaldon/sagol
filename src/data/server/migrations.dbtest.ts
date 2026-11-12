@@ -31,7 +31,7 @@ async function organization(name: string): Promise<string> {
 async function soldier(organizationId: string, archived = false): Promise<string> {
   const [row] = await sql`
     INSERT INTO soldiers (organization_id, first_name, last_name, archived_at)
-    VALUES (${organizationId}, 'A', 'B', ${archived ? new Date() : null}) RETURNING id`
+    VALUES (${organizationId}, 'A', 'B', CASE WHEN ${archived} THEN now() END) RETURNING id`
   return String(row?.id)
 }
 
