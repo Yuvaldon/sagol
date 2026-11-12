@@ -57,3 +57,4 @@ Status: `open` · `closed`
 | OI-220 | V29 | docs | The board's opening view follows the device when neither a link nor a remembered choice names one: the timeline from `md` for planning, today's list or calendar on a phone for the field (D-272). | open | |
 | OI-221 | V29 | docs | A rule's breach shows in every view from the existing rule evaluation: the calendar's day, the list's unit heading, the timeline's heat row as today (D-272). | open | |
 | OI-222 | owner (later) | docs | A situation picture: days in base per soldier and unit, fairness spread, rules over the rotation; derived, never stored. Needs joint design with the owner (D-272). | open | Needs a product-owner decision when wanted. Its own slice. |
+| OI-223 | V28 | docs | The install offer, once on its own after sign-in, where the install can act; "לא עכשיו" or an install ends it on the device; the menu item stays (D-274). | open | |

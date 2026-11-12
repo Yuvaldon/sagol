@@ -258,6 +258,7 @@ am = amends, ref = refines, ext = extends.
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
+| D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
 
 ---
 
@@ -3434,3 +3435,19 @@ the track that holds rotations.
   is a new module that needs joint design with the owner first (OI-222).
 **Why:** the owner asked that the review deepen the understanding of the problem without duplicating features,
 adding complexity or working around what is built.
+
+## D-274 — The install offer also comes once, on its own, after sign-in
+2026-11-12 · accepted · refines D-184 · V28 · OI-223 · decided under D-170
+- **What.** The owner asked that opening Sagol in a browser offer the app. D-184's menu item stays. In addition, the
+  first time a signed-in session runs in a browser tab where the install can act, a small offer appears once at the
+  bottom: "התקנת האפליקציה" and "לא עכשיו". It acts exactly as the menu item:
+  - where the browser fired `beforeinstallprompt`, the browser's own dialog;
+  - on iOS Safari, the Share and "Add to Home Screen" hint.
+- **When not.** Never on the sign-in screen, never inside the installed app, never where the install cannot act (D-076).
+  After an install or "לא עכשיו", it does not come back on that device: the choice is a device preference, like the
+  remembered home (D-265). The menu item still offers the install.
+- **Not "open in the app".** A web page cannot tell reliably that the app is installed, and it cannot open it. The
+  browser owns that path: Chrome on Android shows its own "open in app". So Sagol offers only the install.
+**Why:** a soldier who lands from a link should learn once that the app exists, without a banner that returns on every
+visit, and without a control that cannot act.
+
