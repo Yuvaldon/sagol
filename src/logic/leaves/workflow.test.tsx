@@ -7,6 +7,7 @@ import {
   LeaveTypeId,
   OrganizationId,
   SoldierId,
+  SoldierPreferences,
   type Leave,
   type LeaveComment,
   type LeaveEvent,
@@ -422,7 +423,7 @@ describe('my preferences (D-121)', () => {
     const record: SoldierPreferencesRecord = {
       soldier_id: ACTOR,
       organization_id: ORGANIZATION,
-      preferences: { create_leaves_as_approved: true },
+      preferences: SoldierPreferences.parse({ create_leaves_as_approved: true }),
       updated_at: AT,
       version: 1,
     }
