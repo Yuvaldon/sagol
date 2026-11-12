@@ -21,7 +21,7 @@ am = amends, ref = refines, ext = extends.
 | D-002 | Command rank is the single user-defined level | contracts, domain, ui | ext D-029; ref D-095 |
 | D-003 | Permissions are data: roles, rank bindings, grants | contracts, domain, data, logic, backend | sup D-028 (scope); ref D-040, D-053, D-056, D-060 |
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
-| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149 |
+| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149; ref D-207, D-208 |
 | D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
 | D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035; ref D-203 |
 | D-008 | Server-authoritative data layer | data, backend | ref D-090; ref D-201 |
@@ -102,7 +102,7 @@ am = amends, ref = refines, ext = extends.
 | D-083 | One source of the current time: `TimeSource` | contracts, data, logic, app, tooling | ref D-107 |
 | D-084 | Domain validates the organization time zone | domain, data, logic, ui | |
 | D-085 | The `can` hint moves to V1, computed by the adapter | contracts, data, logic, ui, backend | ref D-091 |
-| D-086 | V0 setup choices: dev env file, local bootstrap, time-zone picker, unsupported modes | tooling, data, ui, app | |
+| D-086 | V0 setup choices: dev env file, local bootstrap, time-zone picker, unsupported modes | tooling, data, ui, app | sup D-207 (unsupported modes) |
 | D-087 | A moved unit lands last among its new siblings | contracts, data, backend | |
 | D-088 | Archiving units and levels | contracts, domain, data, ui, backend | ref D-095, D-099; ref D-113 |
 | D-089 | Permissions of the unit commands | domain, data, logic, ui, backend | |
@@ -190,13 +190,16 @@ am = amends, ref = refines, ext = extends.
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | |
-| D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
-| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204 |
+| D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
 | D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | |
-| D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | |
+| D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207 |
 | D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
+| D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | |
+| D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
+| D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
 
 ---
 
@@ -2440,3 +2443,59 @@ not inbox work; a span uses the read the repository already has instead of a new
 **Why:** a script outside the layers cannot reach the adapter's code, and the server must keep stored history as it is,
 which the commands cannot (they write new events and audit values). One function runs where the data lands, in one
 transaction.
+
+## D-207 — Google sign-in through Supabase Auth, loaded only in production modes
+2026-11-12 · accepted · refines D-005, D-204 · supersedes D-086 (unsupported modes) · OI-020 · decided under D-170
+- **Client.** `@supabase/auth-js` 2.118.0, pinned (D-037): Supabase's own auth client, with only `tslib` beneath it; the
+  full `supabase-js` would bring the Data API, Realtime and Storage clients, which nothing uses (D-203). The data layer
+  loads it with a dynamic import, so it is a chunk of its own that a local build never fetches.
+- **Contract.** `GoogleAuthProvider.signIn()` answers `AsyncResult<null>`: it only starts the OAuth redirect, and the
+  identity arrives through `current()` and `subscribe()` once the browser comes back (approved by the orchestrator for
+  the shared contracts). `signOut()` ends the session on this device (`scope: 'local'`).
+- **Flow.** PKCE; the redirect returns to the page's own origin. `app` awaits the provider before it mounts, so the
+  client has exchanged the code and cleaned the URL before the router reads it. The client keeps its session in
+  `localStorage` under its own key and refreshes the token; the remote adapter takes each request's access token from
+  the same client (`accessToken`, OI-020). The identity is read from the session's user exactly as the server reads it
+  (`identityOfSupabaseUser`): a user that is not a Google identity, or has no email, is signed out.
+- **Pairs.** The env accepts two pairs only: `local` auth with the `local` adapter (development, D-006) and `google`
+  auth with the `remote` adapter. Any other pair is an env issue (`unpaired`) on the start screen, and the `not_built`
+  start failure of D-086 goes: every valid env is built.
+- **Screens.** In Google mode the sign-in screen holds one "Sign in with Google" button; the email form, the identity
+  list and the menu's identity switcher exist only in local mode, as hooks of the local provider.
+**Why:** OAuth is a full-page redirect, so a promise of an identity could never resolve in the page that asked. One
+reading of the user on both sides means the client never shows an identity the server would refuse.
+
+## D-208 — The bootstrap claimant is a data dependency: the owner email on the server
+2026-11-12 · accepted · refines D-005, D-201
+- The adapter core takes a `claimant`, the rule for who may claim an empty organization, besides the verified email
+  that D-005 always requires. The server's gateway gets `bootstrapOwnerEmail` and lets only that address claim
+  (trimmed, case-insensitive); the function refuses to start without its secret `BOOTSTRAP_OWNER_EMAIL`. The local
+  adapter lets any verified identity claim (D-086).
+- The same rule answers `bootstrap_available`, so nobody else learns that the organization is empty.
+- Tests: the shared contract suite signs in as `CONTRACT_OWNER_EMAIL`, which the server harness names as its owner; the
+  server harness also checks that another verified email is refused and that case does not matter.
+**Why:** before this the server let any verified Google account claim an empty project, which D-005 forbids. The rule is
+the deployment's, so it enters as a dependency and the command code stays one.
+
+## D-209 — Environments, the Vercel deploy and the function bundle
+2026-11-12 · accepted · extends D-200 · refines D-201 · OI-150, OI-045
+- **Environments.** Development: `.env.development` (local, local), `npm run dev`. Staging: Vercel's Preview
+  deployments (every pushed branch). Production: Vercel's Production deployment of `main`. Preview and Production run
+  `google` with `remote`; their four `VITE_` values are Vercel environment variables, scoped per environment, and
+  `.env.example` lists the names only. A production build refuses local auth (D-006), so a preview cannot run the dev
+  mode.
+- **Staging backend.** Preview should use a second Supabase project on the free plan (two active projects are free).
+  Until one exists, Preview points at the production project: sign-in and every rule are the same there, so a preview
+  shows real data only to the people who already see it (OI-152).
+- **Vercel.** `vercel.json` sets the framework (Vite), `npm run build`, the `dist` output and one rewrite of every path to
+  `index.html` (the router owns paths). Node comes from `engines` (24).
+- **The function's origins.** `APP_ORIGINS` (function secret) lists origins, comma-separated; an entry may hold one `*`,
+  which stands for one or more of `a-z`, `0-9` and `-` (one DNS label part). That admits Vercel's preview origins
+  (`https://sagol-*-<team>.vercel.app`) without admitting any other site.
+- **The function bundle (OI-150).** The function imports `src` through `deno.json` aliases, which a deploy that uploads
+  only the function's folder cannot follow. `npm run build:function` bundles it with Rolldown (already Vite's) into
+  `dist/functions/commands/index.ts`: the layers' code inlined, and every npm package left as the `npm:` specifier
+  `deno.json` pins. The bundle is built at deploy time and never committed; CI builds it and runs `deno check` on it.
+**Why:** each environment is a Vercel scope with its own values, so no file holds a deployment's identity (rule 2), and
+the one function source stays the one the tests run.
+
