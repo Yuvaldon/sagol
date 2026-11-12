@@ -24,7 +24,7 @@ async function openPanel(page: Page) {
   await expect(navigationPanel(page)).toBeVisible()
 }
 
-test('"ניהול יחידה", the scope label and the rules row placement', async ({ page }, testInfo) => {
+test('"ניהול יחידה" and the scope label', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
