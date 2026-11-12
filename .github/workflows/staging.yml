@@ -2,7 +2,8 @@ name: Staging
 
 # Continuous delivery to the staging environment (D-276): after CI passes on main, the staging
 # Supabase project gets main's pending migrations, main's `commands` function and its secrets, and
-# the `staging` branch moves to the same commit, so Vercel builds its Preview at a stable address.
+# the `staging` branch moves to the same commit, and the branch's Vercel Deploy Hook builds its Preview at a
+# stable address (D-292): Vercel's GitHub integration does not build a push that brings no new commits.
 # Production is never touched here: its migrations stay a manual, reviewed step.
 
 on:
@@ -34,6 +35,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
       PROJECT_REF: ${{ vars.STAGING_PROJECT_REF }}
       SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      VERCEL_STAGING_DEPLOY_HOOK: ${{ secrets.VERCEL_STAGING_DEPLOY_HOOK }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,6 +55,12 @@ jobs:
       - name: Refuse any project whose name does not end in -staging
         run: >-
           scripts/supabase-project-guard.sh staging /functions /secrets /config/database/pooler
+      # Before any change, so a missing hook never leaves the database ahead of the Preview (D-292).
+      - name: Refuse to start without the staging Deploy Hook
+        run: |
+          test -n "$VERCEL_STAGING_DEPLOY_HOOK" ||
+            { echo "::error::the secret VERCEL_STAGING_DEPLOY_HOOK is not set in the staging environment (OI-231)"; exit 1; }
+          echo "::add-mask::$VERCEL_STAGING_DEPLOY_HOOK"
       # No `supabase link`: it needs the revealed API keys, which CD does not (D-289).
       - name: Migrations
         run: |
@@ -70,5 +78,13 @@ jobs:
           mkdir -p dist/staging/supabase/functions/commands
           cp dist/functions/commands/index.ts dist/staging/supabase/functions/commands/index.ts
           supabase functions deploy commands --project-ref "$PROJECT_REF" --no-verify-jwt --use-api --workdir dist/staging
-      - name: Move the staging branch, which Vercel builds as the staging Preview
+      - name: Move the staging branch
         run: git push --force origin "$SHA:refs/heads/staging"
+      # The hook builds the branch's head, the commit just pushed; the URL is a secret and is never printed (D-292).
+      - name: Build the staging Preview through its Deploy Hook
+        run: |
+          echo "::add-mask::$VERCEL_STAGING_DEPLOY_HOOK"
+          response=$(curl -sS --fail-with-body -X POST "$VERCEL_STAGING_DEPLOY_HOOK") ||
+            { echo "::error::the staging Deploy Hook (VERCEL_STAGING_DEPLOY_HOOK) refused the request" >&2; exit 1; }
+          jq -er '"Vercel job \(.job.id) \(.job.state)"' <<<"$response" ||
+            { echo "::error::the staging Deploy Hook (VERCEL_STAGING_DEPLOY_HOOK) returned no job" >&2; exit 1; }

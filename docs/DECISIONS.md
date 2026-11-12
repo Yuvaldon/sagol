@@ -262,13 +262,14 @@ am = amends, ref = refines, ext = extends.
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
-| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281 |
+| D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
+| D-292 | Staging's Preview is built by its Deploy Hook | tooling | |
 
 ---
 
@@ -3725,3 +3726,22 @@ Checked against CLI 2.122.0: its permission tables list `api_gateway_keys_*` for
 `--db-url`; `functions deploy`: `edge_functions_write`; `secrets set`: `edge_functions_secrets_write`). A `--debug`
 trace against a nonexistent ref shows `functions deploy --use-api` calling `POST /functions/deploy` and
 `GET /v1/projects/{ref}` only, and `db push --db-url` making no Management API call.
+
+## D-292 — Staging's Preview is built by its Deploy Hook
+
+2026-11-12 · accepted · approved by the orchestrator at about 17:21Z. Track: tooling. Extends D-276.
+
+- **The gap.** Vercel's GitHub integration does not build a push that brings no new commits. Staging moves the
+  `staging` branch to main's commit, which Vercel already built for `main`, so the branch got no Preview. Checked on
+  2026-11-12: the project has no ignored-build command and no disabled deployments, and every push with new commits was
+  built within seconds. The Staging push of 1319efc left no deployment and no Vercel event. A branch the owner's account
+  pushed at the same commit got none either, so the pusher (`GITHUB_TOKEN`) is not the cause.
+- **The fix.** A Vercel Deploy Hook for the branch `staging` builds that branch's head on request. Its URL is the secret
+  `VERCEL_STAGING_DEPLOY_HOOK` in the `staging` GitHub environment, which only the owner creates (OI-231). Staging
+  refuses to start without it, before any change, and after moving the branch it POSTs the hook and prints only Vercel's
+  job id and state. The URL is masked and never printed.
+- **Rejected.** A new commit on `staging` (the branch must hold main's exact commit). A Vercel account token in GitHub
+  (wider than one branch's rebuild). A deployment made by hand after each run (not automatic).
+
+**Why:** every Staging run must end with a Preview of the same commit, on its own; the hook is the narrowest credential
+that can ask for it.
