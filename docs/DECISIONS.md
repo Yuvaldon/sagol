@@ -3541,7 +3541,8 @@ the one project, not the account's project list, and the access token is reposit
   wrong project ref can never migrate production. `scripts/supabase-project-guard.sh` reads that one project
   (`GET /v1/projects/{ref}`), which a token scoped to the project may do; listing the account's projects would need the
   account-wide `projects_read`. Before the name check it tries, read-only, the calls the later steps make (functions,
-  secrets; `supabase link`'s keys and configs as warnings), so a single run names every permission the token lacks.
+  secrets, the revealed API keys `supabase link` stops without; `link`'s configs as warnings), so a single run names
+  every permission the token lacks.
   Production follows by its own workflow (D-280).
 - **Identities in the environment (D-209).** The project ref and the allowed origins are GitHub variables of the
   `staging` environment; the database password and the bootstrap owner's email are its secrets. The access token is
@@ -3649,3 +3650,10 @@ seed code.
 **Why:** a draft is pushed to often while work is in progress; running the two slowest jobs on each of those pushes
 spent the month's free minutes. Running them once the work is ready, and on `main`, keeps the same guarantee at a
 fraction of the cost.
+
+**Amended 2026-11-12 (the orchestrator, about 16:18Z): the repository is public.** The owner made `Yuvaldon/sagol`
+public, so GitHub Actions minutes on standard runners are free and unlimited, and the limit above no longer applies.
+Before the change the orchestrator scanned the history and found no secrets; none are kept in files or commits, and the
+workflows read them from GitHub secrets only. The draft skip stays: it costs nothing to a ready pull request and keeps
+draft runs short. With outside pull requests now possible, Staging also runs only for a `main` push of this repository
+(`head_branch == 'main'` and `head_repository.full_name == github.repository`), as Production already did (D-280).

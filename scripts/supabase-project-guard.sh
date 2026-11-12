@@ -2,8 +2,9 @@
 # The guard of the Staging and Production workflows (D-276, D-280). It reads the one project PROJECT_REF names
 # through the Management API, which a project-scoped token may do, and stops unless the name fits the run:
 # `staging` needs a name ending in -staging, `production` refuses one. Before that it tries, read-only, the calls the
-# later steps make, so one run names every permission the token lacks: those of the steps themselves stop the run,
-# those `supabase link` only warns about are listed as warnings.
+# later steps make, so one run names every permission the token lacks: those the steps cannot run without stop the run
+# (`supabase link` stops without the revealed keys, `GET /api-keys?reveal=true`), those it only warns about are listed
+# as warnings.
 # Usage: supabase-project-guard.sh <staging|production> [required path]... [-- optional path...]
 set -euo pipefail
 

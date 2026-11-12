@@ -23,7 +23,10 @@ jobs:
   deploy:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     environment: staging
     env:
@@ -49,8 +52,8 @@ jobs:
       # Reads the one project, not the account's list, and tries the later steps' read calls first (D-276).
       - name: Refuse any project whose name does not end in -staging
         run: >-
-          scripts/supabase-project-guard.sh staging /functions /secrets
-          -- /api-keys /config/database/pooler /postgrest /config/auth
+          scripts/supabase-project-guard.sh staging /functions /secrets '/api-keys?reveal=true'
+          -- /config/database/pooler /postgrest /config/auth
       - name: Migrations
         run: |
           supabase link --project-ref "$PROJECT_REF" --workdir .

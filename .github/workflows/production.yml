@@ -77,8 +77,8 @@ jobs:
           if [ "$EVENT" = workflow_dispatch ]; then
             test "$CONFIRM_REF" = "$PROJECT_REF" || { echo "::error::the typed ref is not PRODUCTION_PROJECT_REF"; exit 1; }
           fi
-          scripts/supabase-project-guard.sh production /functions \
-            -- /api-keys /config/database/pooler /postgrest /config/auth
+          scripts/supabase-project-guard.sh production /functions '/api-keys?reveal=true' \
+            -- /config/database/pooler /postgrest /config/auth
       - name: Migrations (the plan, the destructive-change guard, then the push)
         run: |
           supabase link --project-ref "$PROJECT_REF" --workdir .
