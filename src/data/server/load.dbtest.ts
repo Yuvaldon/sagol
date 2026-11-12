@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 import {
+  DeploymentId,
   AccessGrantId,
   AuthUserId,
   CommandRankId,
@@ -147,11 +148,23 @@ async function localExport(): Promise<OrganizationExport> {
       sort_order: 0,
     }),
   )
+  // The rotation the request is asked in (D-216).
+  const rotation = valueOf(
+    await commands.deployments.create({ id: DeploymentId.parse(crypto.randomUUID()), name: 'Rotation', unit_id: company, start_date: TODAY, end_date: null }),
+  )
+  valueOf(
+    await commands.deployments.setMembers({
+      deployment_id: rotation.id,
+      expected_version: rotation.version,
+      members: [{ soldier_id: soldier.id, start_date: null, end_date: null }],
+    }),
+  )
   const leave = valueOf(
     await commands.leaves.create({
       id: LeaveId.parse(crypto.randomUUID()),
       soldier_id: soldier.id,
       leave_type_id: type.id,
+      deployment_id: rotation.id,
       start_date: TODAY,
       end_date: TOMORROW,
       availability_effect_override: null,

@@ -2,9 +2,11 @@ import {
   AccessGrantId,
   AvailabilityRuleId,
   AuthUserId,
+  DeploymentId,
   RoleId,
   SoldierAccountId,
   SoldierId,
+  UnitId,
   UnitMembershipId,
   type AuthIdentity,
   type OrganizationId,
@@ -12,8 +14,8 @@ import {
   type PermissionCheck,
   type Result,
   type ScopeAnchorType,
+  type CalendarDate,
   type TableRow,
-  type UnitId,
 } from '@contracts'
 import type { ContractHarness } from './harness'
 
@@ -209,4 +211,54 @@ export async function seedRule(
   }
   await harness.seed('availability_rules', [rule])
   return rule.id
+}
+
+/**
+ * A rotation every request of a test can belong to (D-216), seeded past the commands: from PAST_DATE with no end, in a
+ * root unit of its own, so it widens no actor's scope. `soldier_ids` serve in it for all its days.
+ */
+export async function seedRotation(
+  harness: ContractHarness,
+  organization_id: OrganizationId,
+  soldier_ids: readonly SoldierId[] = [],
+  dates: { readonly start_date: CalendarDate; readonly end_date: CalendarDate | null } = { start_date: PAST_DATE, end_date: null },
+): Promise<DeploymentId> {
+  const unitId = UnitId.parse(crypto.randomUUID())
+  const id = DeploymentId.parse(crypto.randomUUID())
+  const audit = { created_at: NOW, created_by: null, updated_at: NOW, updated_by: null, version: 1, archived_at: null }
+  await harness.seed('units', [
+    {
+      id: unitId,
+      organization_id,
+      name: 'Rotation unit',
+      code: null,
+      parent_id: null,
+      unit_level_id: null,
+      kind: 'standing',
+      valid_from: null,
+      valid_to: null,
+      color_key: null,
+      sort_order: 0,
+      properties: {},
+      ...audit,
+    },
+  ])
+  await harness.seed('deployments', [{ id, organization_id, name: 'Rotation', unit_id: unitId, ...dates, ...audit }])
+  await seedServing(harness, organization_id, id, soldier_ids)
+  return id
+}
+
+/** `soldier_ids` serve in the rotation, for all its days unless `dates` narrow them (D-179). */
+export async function seedServing(
+  harness: ContractHarness,
+  organization_id: OrganizationId,
+  deployment_id: DeploymentId,
+  soldier_ids: readonly SoldierId[],
+  dates: { readonly start_date: CalendarDate | null; readonly end_date: CalendarDate | null } = { start_date: null, end_date: null },
+): Promise<void> {
+  if (soldier_ids.length === 0) return
+  await harness.seed(
+    'deployment_members',
+    soldier_ids.map((soldier_id) => ({ deployment_id, soldier_id, organization_id, ...dates, created_at: NOW, created_by: null })),
+  )
 }
