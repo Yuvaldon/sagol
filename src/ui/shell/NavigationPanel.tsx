@@ -18,6 +18,7 @@ import {
 import { IconButton } from '../primitives/Button'
 import { EntryCount } from './ModuleButtons'
 import { useNavigationEntries, type ModuleEntry } from './moduleEntries'
+import { useReportPreferenceSave } from './preferenceFailure'
 
 // The navigation panel (D-173): the modules that set the organization up, by section, sliding in from the inline start.
 // Each item opens its module and may be pinned to the bar; the soldier's display choices close the panel's list.
@@ -66,6 +67,7 @@ function Item({
   readonly onOpen: () => void
 }) {
   const preferences = useNavigationPreferences()
+  const reportSave = useReportPreferenceSave()
   const name = t(entry.labelKey)
   const pinLabel = `${t('navigation.pin')}${NAME_SEPARATOR}${name}`
   return (
@@ -87,7 +89,7 @@ function Item({
           aria-label={pinLabel}
           isSelected={preferences.pinned.includes(module)}
           onChange={() => {
-            preferences.togglePin(module)
+            reportSave(preferences.togglePin(module))
           }}
           className={`inline-flex size-touch shrink-0 items-center justify-center rounded-pill text-text-muted md:size-control data-hovered:bg-inner data-selected:bg-inner data-selected:text-action-solid ${PRESS}`}
         >
@@ -118,13 +120,14 @@ function SetupItem({ onOpen }: { readonly onOpen: () => void }) {
 
 function DisplayChoices() {
   const preferences = useNavigationPreferences()
+  const reportSave = useReportPreferenceSave()
   return (
     <section className="flex flex-col gap-xs border-t border-line pt-md">
       <h3 className="px-sm text-label font-semibold text-text-muted">{t('navigation.display')}</h3>
       <RadioGroup
         value={preferences.rulesRow}
         onChange={(value) => {
-          preferences.setRulesRow(RulesRowPlacement.parse(value))
+          reportSave(preferences.setRulesRow(RulesRowPlacement.parse(value)))
         }}
         className="flex flex-col gap-2xs px-sm"
       >

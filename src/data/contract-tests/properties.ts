@@ -116,6 +116,31 @@ export function describePropertyContract(
       expect(errorOf(await adapter().commands.property_definitions.create(definitionInput())).code).toBe('forbidden')
     })
 
+    it('lets who creates an entity read that entity type\'s definitions only (D-186, OI-120)', async () => {
+      const soldierField = await create({ label: 'Shift' })
+      const leaveField = await create({ entity_type: 'leave', label: 'Destination', is_required: true })
+      const archived = await create({ entity_type: 'leave', label: 'Old' })
+      valueOf(
+        await adapter().commands.property_definitions.archive({ id: archived.id, expected_version: archived.version }),
+      )
+      const { identity } = await seedActor(harnessOf(), organization, [{ resource: 'leaves', action: 'create' }], {
+        anchor_type: 'self',
+      })
+      harnessOf().signIn(identity)
+      const live = valueOf(await adapter().repositories.property_definitions.list({ include_archived: false }))
+      expect(live.map((row) => row.id)).toEqual([leaveField.id])
+      const all = valueOf(await adapter().repositories.property_definitions.list({ include_archived: true }))
+      expect(all.map((row) => row.id).sort()).toEqual([leaveField.id, archived.id].sort())
+      expect(valueOf(await adapter().repositories.property_definitions.get(leaveField.id)).label).toBe('Destination')
+      expect(errorOf(await adapter().repositories.property_definitions.get(soldierField.id)).code).toBe('not_found')
+      const rename = await adapter().commands.property_definitions.update({
+        id: leaveField.id,
+        expected_version: leaveField.version,
+        changes: { label: 'Where' },
+      })
+      expect(errorOf(rename).code).toBe('forbidden')
+    })
+
     describe('reference values (OI-037, D-176)', () => {
       let buddy: PropertyDefinition
 

@@ -63,6 +63,7 @@ export {
   useUpdateMyPreferences,
   type AppearancePreference,
   type NavigationPreferences,
+  type PreferenceSaved,
 } from './session/preferences'
 export {
   boardItems,
