@@ -32,13 +32,12 @@ export function statusText(leave: BoardLeave): string {
 
 /** A leave's name: the type, marker or absence, the status, and the days of the leave itself. */
 export function leaveText(leave: BoardLeave): string {
-  const parts = [
-    typeName(leave),
-    ...(leave.effect === 'available' ? [t('leaves.marker')] : []),
-    statusText(leave),
-    rangeText(leave.start_date, leave.end_date),
-  ]
-  return parts.join(TEXT_SEPARATOR)
+  return [typeName(leave), ...leaveDetails(leave), rangeText(leave.start_date, leave.end_date)].join(TEXT_SEPARATOR)
+}
+
+/** What a leave's name says between its type and its days: marker or absence, and the status. */
+export function leaveDetails(leave: BoardLeave): readonly string[] {
+  return [...(leave.effect === 'available' ? [t('leaves.marker')] : []), statusText(leave)]
 }
 
 /** What a leave's color means (D-111, D-112): its type, or one color for every absence and one for every marker. */
