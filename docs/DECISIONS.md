@@ -257,6 +257,7 @@ am = amends, ref = refines, ext = extends.
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | |
+| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 
 ---
 
@@ -3416,3 +3417,20 @@ ordinary ones.
   its model commit, as every schema change does.
 **Why:** the matrix adds three requests-and-report slices to the track that holds the requests, and the planner to
 the track that holds rotations.
+
+## D-272 — The spreadsheet review: refinements of existing slices, no new ones
+2026-11-12 · accepted · refines D-174, D-211, D-268 · V29 · reviewed with the owner on 2026-11-12
+- The owner's two company spreadsheets (a hand-drawn leave grid per platoon, and a commander's generated board) show
+  how rotations were planned before Sagol. They are a picture of the pains, not a specification: a single wide
+  timeline drawn by hand, no single source of truth, soldiers asking verbally, coverage checked by fragile formulas,
+  and mid-rotation changes breaking the sheet.
+- Each pain is already answered by a built or planned slice: one board on the unit tree, self-service requests
+  (V28, "שלי"), availability rules with soft acknowledgment (D-014, D-047, D-071 … D-073), several views on one model
+  (D-174) with ranges up to a rotation (D-211), and the planner (D-270, unchanged). Nothing in them adds an entity.
+- Two refinements go to V29: the board opens on the view that fits the device when no link or remembered choice
+  names one (OI-220), and a rule's breach shows in every view, not only the timeline's heat row (OI-221). A sheet's
+  summary row is not copied; the same derived figures show where the commander already looks.
+- A situation picture (days in base per soldier and unit, fairness, rules over the rotation; derived, never stored)
+  is a new module that needs joint design with the owner first (OI-222).
+**Why:** the owner asked that the review deepen the understanding of the problem without duplicating features,
+adding complexity or working around what is built.

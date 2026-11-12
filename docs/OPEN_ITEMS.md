@@ -54,3 +54,6 @@ Status: `open` · `closed`
 | OI-214 | V27 | V24 | The setup as pick, adjust, done, landing in routine mode; the D-180 checklist only for an unfinished setup; e2e walks journey (a) (D-262, D-263). | open | |
 | OI-215 | V27 | V24 | The time zone shows and can be changed in the root unit's form, since the claim takes it from the device (D-262). | open | |
 | OI-219 | V28 | V24 | The quick action follows the mode once V26 derives it (OI-211): "בקשה חדשה" while a rotation is current or upcoming, "פתיחת סבב" in routine for who may create a rotation, none otherwise (D-266). | open | |
+| OI-220 | V29 | docs | The board's opening view follows the device when neither a link nor a remembered choice names one: the timeline from `md` for planning, today's list or calendar on a phone for the field (D-272). | open | |
+| OI-221 | V29 | docs | A rule's breach shows in every view from the existing rule evaluation: the calendar's day, the list's unit heading, the timeline's heat row as today (D-272). | open | |
+| OI-222 | owner (later) | docs | A situation picture: days in base per soldier and unit, fairness spread, rules over the rotation; derived, never stored. Needs joint design with the owner (D-272). | open | Needs a product-owner decision when wanted. Its own slice. |
