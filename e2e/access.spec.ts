@@ -50,7 +50,7 @@ async function addYael(page: Page) {
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */
 async function enterAsYael(page: Page) {
   await signIn(page, YAEL.email)
-  await expect(page).toHaveURL(/\/onboarding$/)
+  await expect(page).toHaveURL(/\/onboarding(\?view=\w+)?$/)
   await page.getByLabel(he.linkRequest.firstName).fill(YAEL.first)
   await page.getByLabel(he.linkRequest.lastName).fill(YAEL.last)
   await page.getByLabel(he.linkRequest.personalId).fill(YAEL.personalId)
