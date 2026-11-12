@@ -16,7 +16,15 @@ import {
 } from "@contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ContractHarness } from "./harness";
-import { NOW, errorOf, issuesOf, seedActor, valueOf } from "./support";
+import {
+  NOW,
+  errorOf,
+  issuesOf,
+  seedActor,
+  seedRotation,
+  seedServing,
+  valueOf,
+} from "./support";
 
 // Deployments and their members, personal seniority, leaves created together and copies of a leave (D-012, D-019,
 // D-029, D-049, D-179). Sample data, test files only.
@@ -516,6 +524,14 @@ export function describeDeploymentContract(
     });
 
     describe("leaves created together (D-012, D-049)", () => {
+      // Every request belongs to a rotation its soldiers serve in (D-216).
+      let rotation: DeploymentId;
+      beforeEach(async () => {
+        rotation = await seedRotation(harnessOf(), organization);
+      });
+      const serve = (...soldier_ids: SoldierId[]) =>
+        seedServing(harnessOf(), organization, rotation, soldier_ids);
+
       async function leaveType() {
         return valueOf(
           await adapter().commands.leave_types.create({
@@ -546,10 +562,12 @@ export function describeDeploymentContract(
         const type = await leaveType();
         const first = await soldier(null, "Avi");
         const second = await soldier(null, "Ben");
+        await serve(first.id, second.id);
         const created = valueOf(
           await adapter().commands.leaves.createBatch({
             batch: { id: newBatchId(), name: "Holiday", description: "" },
             leaves: [draft(first.id, type.id), draft(second.id, type.id)],
+            deployment_id: rotation,
             as_approved: true,
             acknowledged_rule_ids: [],
           }),
@@ -576,6 +594,7 @@ export function describeDeploymentContract(
             draft(second.id, type.id),
             { ...taken, id: created.leaves[0]?.id ?? taken.id },
           ],
+          deployment_id: rotation,
           as_approved: false,
           acknowledged_rule_ids: [],
         });
@@ -591,9 +610,11 @@ export function describeDeploymentContract(
         const type = await leaveType();
         const first = await soldier(null, "Avi");
         const second = await soldier(null, "Ben");
+        await serve(first.id, second.id);
         const input: CreateLeaveInput = {
           ...draft(first.id, type.id),
           reason: "Family",
+          deployment_id: rotation,
           as_approved: false,
           acknowledged_rule_ids: [],
           comment: null,
@@ -646,10 +667,12 @@ export function describeDeploymentContract(
       it("shows a batch only with a leave the actor can see", async () => {
         const type = await leaveType();
         const person = await soldier(null);
+        await serve(person.id);
         valueOf(
           await adapter().commands.leaves.createBatch({
             batch: { id: newBatchId(), name: "Holiday", description: null },
             leaves: [draft(person.id, type.id)],
+            deployment_id: rotation,
             as_approved: false,
             acknowledged_rule_ids: [],
           }),

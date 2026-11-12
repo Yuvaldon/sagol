@@ -1,4 +1,5 @@
 import {
+  DeploymentId,
   LeaveCommentId,
   LeaveId,
   LeaveTypeGroupId,
@@ -7,6 +8,7 @@ import {
   UnitId,
   UnitMembershipId,
   type AuthIdentity,
+  type CalendarDate,
   type CreateLeaveInput,
   type CreateLeaveTypeInput,
   type CreateSoldierInput,
@@ -18,7 +20,17 @@ import {
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, errorOf, hintAndCommand, issuesOf, seedActor, seedRule as seedSharedRule, valueOf } from './support'
+import {
+  NOW,
+  errorOf,
+  hintAndCommand,
+  issuesOf,
+  seedActor,
+  seedRotation,
+  seedRule as seedSharedRule,
+  seedServing,
+  valueOf,
+} from './support'
 
 // Leave types, their groups and creating a leave against the shared contract (D-113, D-114), with the rule gate
 // tested on seeded rules long before the rules screen exists (D-076, OI-027). Sample data, test files only.
@@ -68,12 +80,14 @@ export function describeLeaveContract(
     let organization: OrganizationId
     let ownerId: SoldierId
     let owner: AuthIdentity
+    let rotation: DeploymentId
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
+      rotation = await seedRotation(harnessOf(), organization, [ownerId])
     })
 
     const actorWith = (pairs: readonly Permission[], scope: Parameters<typeof seedActor>[3], home?: UnitId) =>
@@ -97,8 +111,9 @@ export function describeLeaveContract(
       )
     }
 
+    /** A soldier who serves in the test's rotation, so a request of theirs has one (D-216). */
     async function soldier(unitId: UnitId | null, overrides: Partial<CreateSoldierInput> = {}) {
-      return valueOf(
+      const created = valueOf(
         await adapter().commands.soldiers.create({
           id: newSoldierId(),
           first_name: 'Yael',
@@ -113,6 +128,8 @@ export function describeLeaveContract(
           ...overrides,
         }),
       )
+      await seedServing(harnessOf(), organization, rotation, [created.id])
+      return created
     }
 
     const createType = async (overrides: Partial<CreateLeaveTypeInput> = {}) =>
@@ -123,6 +140,7 @@ export function describeLeaveContract(
         id: newLeaveId(),
         soldier_id,
         leave_type_id,
+        deployment_id: rotation,
         start_date: TODAY,
         end_date: TOMORROW,
         availability_effect_override: null,
@@ -321,6 +339,88 @@ export function describeLeaveContract(
         const comment = { id: LeaveCommentId.parse(crypto.randomUUID()), body: 'Family event', visibility: 'shared' as const }
         valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { comment })))
         expect(await harnessOf().rows('leave_comments')).toMatchObject([{ id: comment.id, author_id: ownerId, body: 'Family event' }])
+      })
+    })
+
+    describe('the rotation of a leave (D-216)', () => {
+      const newRotationId = () => DeploymentId.parse(crypto.randomUUID())
+      const members = (
+        soldier_id: SoldierId,
+        dates: { start_date: CalendarDate | null; end_date: CalendarDate | null } = { start_date: null, end_date: null },
+      ) => [{ soldier_id, ...dates }]
+
+      it('refuses a rotation that is unknown, one the soldier does not serve in, and dates outside their days', async () => {
+        const type = await createType()
+        const yael = await soldier(null)
+        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { deployment_id: newRotationId() })))).toEqual([
+          { path: ['deployment_id'], code: 'reference_not_found' },
+        ])
+        const elsewhere = await seedRotation(harnessOf(), organization)
+        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { deployment_id: elsewhere })))).toEqual([
+          { path: ['soldier_id'], code: 'not_a_member' },
+        ])
+        const narrow = await seedRotation(harnessOf(), organization, [yael.id], { start_date: TOMORROW, end_date: TOMORROW })
+        const wide = leaveInput(yael.id, type.id, { deployment_id: narrow, start_date: TODAY, end_date: NEXT_WEEK })
+        expect(issuesOf(await adapter().commands.leaves.create(wide))).toEqual([
+          { path: ['start_date'], code: 'outside_rotation' },
+          { path: ['end_date'], code: 'outside_rotation' },
+        ])
+        expect(await harnessOf().rows('leaves')).toEqual([])
+      })
+
+      it('holds a member’s own dates, and checks an edit of the dates', async () => {
+        const type = await createType()
+        const yael = await soldier(null)
+        const narrowed = { start_date: TODAY, end_date: TOMORROW }
+        valueOf(await adapter().commands.deployments.setMembers({ deployment_id: rotation, expected_version: 1, members: members(yael.id, narrowed) }))
+        const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))
+        const longer = { id: leave.id, expected_version: 1, changes: { end_date: NEXT_WEEK }, acknowledged_rule_ids: [] }
+        expect(issuesOf(await adapter().commands.leaves.update(longer))).toEqual([{ path: ['changes', 'end_date'], code: 'outside_rotation' }])
+      })
+
+      it('takes no new request in an archived rotation, and keeps the ones it holds', async () => {
+        const type = await createType()
+        const yael = await soldier(null)
+        const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))
+        valueOf(await adapter().commands.deployments.archive({ id: rotation, expected_version: 1 }))
+        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))).toEqual([
+          { path: ['deployment_id'], code: 'reference_archived' },
+        ])
+        const approve = { id: leave.id, expected_version: 1, transition: 'approve' as const, acknowledged_rule_ids: [], comment: null }
+        expect(valueOf(await adapter().commands.leaves.transition(approve)).status).toBe('approved')
+      })
+
+      it('refuses a member or rotation change that strands a live request, not a closed one', async () => {
+        const type = await createType()
+        const yael = await soldier(null)
+        const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id)))
+        const narrowed = { start_date: null, end_date: TODAY }
+        expect(
+          issuesOf(await adapter().commands.deployments.setMembers({ deployment_id: rotation, expected_version: 1, members: members(yael.id, narrowed) })),
+        ).toEqual([{ path: ['members', 0], code: 'leaves_outside_rotation' }])
+        const kept = members(ownerId)
+        expect(issuesOf(await adapter().commands.deployments.setMembers({ deployment_id: rotation, expected_version: 1, members: kept }))).toEqual([
+          { path: ['members'], code: 'leaves_outside_rotation' },
+        ])
+        const move = { id: rotation, expected_version: 1, changes: { start_date: TOMORROW } }
+        expect(issuesOf(await adapter().commands.deployments.update(move))).toEqual([{ path: ['changes', 'start_date'], code: 'leaves_outside_rotation' }])
+
+        const cancel = { id: leave.id, expected_version: 1, transition: 'cancel' as const, acknowledged_rule_ids: [], comment: null }
+        valueOf(await adapter().commands.leaves.transition(cancel))
+        valueOf(await adapter().commands.deployments.setMembers({ deployment_id: rotation, expected_version: 1, members: kept }))
+        const reopen = { id: leave.id, expected_version: 2, transition: 'reopen' as const, acknowledged_rule_ids: [], comment: null }
+        expect(issuesOf(await adapter().commands.leaves.transition(reopen))).toEqual([{ path: ['soldier_id'], code: 'not_a_member' }])
+      })
+
+      it('lets a soldier read the rotations they serve in and their own membership (D-218)', async () => {
+        const home = await unit('Home')
+        const { identity, soldierId } = await actorWith([VIEW_LEAVES], { anchor_type: 'self' }, home.id)
+        await seedServing(harnessOf(), organization, rotation, [soldierId])
+        await seedRotation(harnessOf(), organization)
+        harnessOf().signIn(identity)
+        expect(valueOf(await adapter().repositories.deployments.list({ include_archived: false })).map((row) => row.id)).toEqual([rotation])
+        const own = valueOf(await adapter().repositories.deployment_members.list({ deployment_ids: null }))
+        expect(own.map((row) => row.soldier_id)).toEqual([soldierId])
       })
     })
 

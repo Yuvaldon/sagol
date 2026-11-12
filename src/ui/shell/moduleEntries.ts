@@ -7,6 +7,7 @@ import {
   useMyLeavesAccess,
   usePanel,
   usePendingRequests,
+  useRotationScope,
   useRulesDay,
   useTransferAccess,
 } from '@logic'
@@ -106,14 +107,19 @@ export function useNavigationEntries(): ReadonlyMap<NavigationModule, ModuleEntr
   return allowed
 }
 
-/** The daily modules: a soldier's own requests first, then the inbox (D-120, D-167). */
+/**
+ * The daily modules: a soldier's own requests first, then the inbox (D-120, D-167). Both are request surfaces, so they
+ * exist only while a rotation they can be about does (D-218).
+ */
 export function useDailyEntries(): ModuleEntry[] {
   const panel = usePanel()
+  const { requests } = useRotationScope()
   const inbox = useInboxAccess()
   const pending = usePendingRequests()
   const mine = useMyLeavesAccess()
   const entries: (ModuleEntry | false)[] = [
-    mine?.view === true && {
+    requests &&
+      mine?.view === true && {
       id: 'myLeaves',
       Icon: ClipboardList,
       labelKey: 'myLeaves.open',
@@ -122,7 +128,8 @@ export function useDailyEntries(): ModuleEntry[] {
       },
       count: null,
     },
-    inbox && {
+    requests &&
+      inbox && {
       id: 'inbox',
       Icon: Inbox,
       labelKey: 'inbox.open',

@@ -19,6 +19,7 @@ export function DeploymentMembersForm({
   deployment,
   members,
   soldiers,
+  defaults,
   onDone,
   onReload,
 }: {
@@ -26,12 +27,17 @@ export function DeploymentMembersForm({
   readonly members: readonly DeploymentMember[]
   /** Who may be chosen: the live soldiers the actor sees, and whoever already serves. */
   readonly soldiers: readonly Soldier[]
+  /** Who the list starts with while no one serves yet: the rotation's unit (D-219). */
+  readonly defaults: readonly DeploymentMemberValues[]
   readonly onDone: () => void
   readonly onReload: () => void
 }) {
   const { setMembers } = useDeploymentCommands()
   const [opened] = useState(deployment)
-  const [rows, setRows] = useState<readonly DeploymentMemberValues[]>(() => deploymentMemberValues(members, deployment))
+  const [rows, setRows] = useState<readonly DeploymentMemberValues[]>(() => {
+    const serving = deploymentMemberValues(members, deployment)
+    return serving.length === 0 ? defaults : serving
+  })
   const [answered, setAnswered] = useState<readonly Issue[]>([])
   const [failure, setFailure] = useState<AppError | null>(null)
   const nameOf = new Map(soldiers.map((soldier) => [soldier.id, fullName(soldier)]))

@@ -1,4 +1,5 @@
 import {
+  DeploymentId,
   LeaveId,
   LeaveTypeGroupId,
   LeaveTypeId,
@@ -28,6 +29,8 @@ const ORGANIZATION = OrganizationId.parse(uuid(900))
 const ACTOR = SoldierId.parse(uuid(901))
 const YAEL = SoldierId.parse(uuid(1))
 const AT = '2026-11-08T10:00:00.000Z'
+const ROTATION = DeploymentId.parse(uuid(70))
+const IN_ROTATION = { deployment_id: ROTATION, issues: [] }
 const audit = { created_at: AT, created_by: null, updated_at: AT, updated_by: null, version: 1, archived_at: null }
 
 function group(n: number, sort_order: number, archived = false): LeaveTypeGroup {
@@ -57,6 +60,7 @@ function leave(n: number, typeN: number, start_date: string, end_date: string, o
     soldier_id: YAEL,
     leave_type_id: LeaveTypeId.parse(uuid(typeN)),
     batch_id: null,
+    deployment_id: ROTATION,
     start_date,
     end_date,
     status: 'pending',
@@ -127,29 +131,31 @@ describe('the new-leave form (D-115)', () => {
   })
 
   it('answers the codes the command answers', () => {
-    const blank = newLeaveIssues(newLeaveValues(TODAY), null)
+    const blank = newLeaveIssues(newLeaveValues(TODAY), null, IN_ROTATION)
     expect(blank).toEqual([
       { path: ['soldier_id'], code: 'required' },
       { path: ['leave_type_id'], code: 'required' },
     ])
     const chosen = { ...newLeaveValues(TODAY), soldier_id: YAEL, leave_type_id: type(30, null, 0).id }
-    expect(newLeaveIssues({ ...chosen, end_date: '2026-11-07' }, null)).toEqual([{ path: ['end_date'], code: 'range_inverted' }])
-    expect(newLeaveIssues({ ...chosen, reason: '  ' }, { requires_reason: true })).toEqual([
+    expect(newLeaveIssues({ ...chosen, end_date: '2026-11-07' }, null, IN_ROTATION)).toEqual([{ path: ['end_date'], code: 'range_inverted' }])
+    expect(newLeaveIssues({ ...chosen, reason: '  ' }, { requires_reason: true }, IN_ROTATION)).toEqual([
       { path: ['reason'], code: 'reason_required' },
     ])
-    expect(newLeaveIssues({ ...chosen, reason: 'Wedding' }, { requires_reason: true })).toEqual([])
+    expect(newLeaveIssues({ ...chosen, reason: 'Wedding' }, { requires_reason: true }, IN_ROTATION)).toEqual([])
+    const outside = { deployment_id: null, issues: [{ path: ['start_date'], code: 'outside_rotation' as const }] }
+    expect(newLeaveIssues(chosen, null, outside)).toEqual([{ path: ['start_date'], code: 'outside_rotation' }])
   })
 
   it('sends a blank reason as NULL (D-101)', () => {
     const chosen = { ...newLeaveValues(TODAY), soldier_id: YAEL, leave_type_id: type(30, null, 0).id, reason: ' ' }
-    expect(toCreateLeaveInput(chosen).reason).toBeNull()
+    expect(toCreateLeaveInput(chosen, ROTATION)).toMatchObject({ reason: null, deployment_id: ROTATION })
   })
 
   it('shows the leave as the command will write it', () => {
     const chosen = { ...newLeaveValues(TODAY), soldier_id: YAEL, leave_type_id: type(30, null, 0).id }
     const actor = { soldier_id: ACTOR, organization_id: ORGANIZATION }
-    expect(optimisticLeave(toCreateLeaveInput(chosen), actor, AT)).toMatchObject({ status: 'pending', reviewed_by: null })
-    const approved = optimisticLeave(toCreateLeaveInput({ ...chosen, as_approved: true }), actor, AT)
+    expect(optimisticLeave(toCreateLeaveInput(chosen, ROTATION), actor, AT)).toMatchObject({ status: 'pending', reviewed_by: null })
+    const approved = optimisticLeave(toCreateLeaveInput({ ...chosen, as_approved: true }, ROTATION), actor, AT)
     expect(approved).toMatchObject({ status: 'approved', reviewed_by: ACTOR, reviewed_at: AT, created_by: ACTOR })
   })
 })
@@ -222,7 +228,7 @@ describe('creating a leave with an optimistic update (D-115)', () => {
     })
     let settled: Promise<unknown> = Promise.resolve()
     act(() => {
-      settled = result.current.create.run(values)
+      settled = result.current.create.run(values, ROTATION)
     })
     await waitFor(() => {
       expect(idsOf(result.current.week)).toEqual(['pending'])
@@ -245,7 +251,7 @@ describe('creating a leave with an optimistic update (D-115)', () => {
     })
     const before = list.mock.calls.length
     await act(async () => {
-      await result.current.create.run(values)
+      await result.current.create.run(values, ROTATION)
     })
     expect(list.mock.calls.length).toBeGreaterThan(before)
   })
@@ -261,7 +267,7 @@ describe('the bar colors in the URL (D-112)', () => {
 describe('an empty date on the new-leave form', () => {
   it('answers required, as the command would', () => {
     const values = { ...newLeaveValues('2026-11-08'), soldier_id: YAEL, leave_type_id: LeaveTypeId.parse(uuid(30)), end_date: '' as const }
-    expect(newLeaveIssues(values, null)).toEqual([{ path: ['end_date'], code: 'required' }])
+    expect(newLeaveIssues(values, null, IN_ROTATION)).toEqual([{ path: ['end_date'], code: 'required' }])
   })
 })
 

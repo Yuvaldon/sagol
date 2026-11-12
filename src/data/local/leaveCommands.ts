@@ -36,6 +36,7 @@ import {
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { propertiesIssues } from './checks'
+import { isLiveLeave, leaveRotationCheck } from './leaveRotation'
 import { tableOf } from './store'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
@@ -211,6 +212,9 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
       if (!sameValue(after.properties, before.properties)) {
         issues.push(...(await propertiesIssues(database, scope, 'leave', before.properties, after.properties)))
       }
+      // New dates stay within the soldier's days in the rotation; the rotation itself never changes (D-216).
+      const moved = after.start_date !== before.start_date || after.end_date !== before.end_date
+      if (moved && isLiveLeave(after)) issues.push(...(await leaveRotationCheck(database, scope, after, false)))
       if (issues.length > 0) return failValidation(withPathPrefix(prefix, issues))
 
       const changed = changedColumns(before, after)
@@ -254,6 +258,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
             ...(type === null ? [] : leaveReasonIssues(type, reason)),
             ...(await propertiesIssues(database, scope, 'leave', null, input.properties)),
             ...(await commentIdIssues(database, comment)),
+            ...(await leaveRotationCheck(database, scope, { ...input, soldier_id: soldier.id }, true)),
           ]
           if (issues.length > 0) return failValidation(issues)
 
@@ -264,6 +269,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
             soldier_id: soldier.id,
             leave_type_id: input.leave_type_id,
             batch_id: null,
+            deployment_id: input.deployment_id,
             start_date: input.start_date,
             end_date: input.end_date,
             ...plan.next,
@@ -327,6 +333,11 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
             ...reviewOf(plan.next),
             ...updatedBy(scope.soldier_id, scope.now, before.version),
           })
+          // A request that comes back to life must fit its rotation as it is now (D-216).
+          if (isLiveLeave(after) && !isLiveLeave(before)) {
+            const outside = await leaveRotationCheck(database, scope, after, false)
+            if (outside.length > 0) return failValidation(outside)
+          }
           const acknowledged = await passRuleGate(database, scope, [after], input.acknowledged_rule_ids)
           const write = { leave: after, before, event: plan.event, changes: {}, acknowledged, comment }
           return { leave: after, written: await writeLeave(database, scope, write) }

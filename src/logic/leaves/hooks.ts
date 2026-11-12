@@ -1,6 +1,7 @@
 import {
   type AvailabilityRuleId,
   type CreateLeaveInput,
+  type DeploymentId,
   type Leave,
   type LeaveQuery,
   type LeaveStatus,
@@ -122,9 +123,12 @@ export function useCreateLeave() {
     },
   })
   return {
-    /** `acknowledged` are the soft rules the actor agreed to break, sent again after the dialog (D-047, D-142). */
-    run: (values: NewLeaveValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []) =>
-      mutation.mutateAsync(toCreateLeaveInput(values, acknowledged)),
+    /**
+     * `deploymentId` is the rotation the form picked for the request (D-220); `acknowledged` are the soft rules the
+     * actor agreed to break, sent again after the dialog (D-047, D-142).
+     */
+    run: (values: NewLeaveValues & WithProperties, deploymentId: DeploymentId | null, acknowledged: readonly AvailabilityRuleId[] = []) =>
+      mutation.mutateAsync(toCreateLeaveInput(values, deploymentId, acknowledged)),
     isPending: mutation.isPending,
   }
 }
@@ -138,8 +142,16 @@ export function useLeaveBatchCommands() {
   const keys = [QUERY_KEYS.leaves, QUERY_KEYS.leaveBatches]
   const createBatch = useCommand(
     keys,
-    ({ values, acknowledged = [] }: { values: LeaveBatchValues & WithProperties; acknowledged?: readonly AvailabilityRuleId[] }) =>
-      data.commands.leaves.createBatch(toCreateLeaveBatchInput(values, acknowledged)),
+    // `deploymentId` is the rotation the form picked for the batch (D-220).
+    ({
+      values,
+      deploymentId,
+      acknowledged = [],
+    }: {
+      values: LeaveBatchValues & WithProperties
+      deploymentId: DeploymentId | null
+      acknowledged?: readonly AvailabilityRuleId[]
+    }) => data.commands.leaves.createBatch(toCreateLeaveBatchInput(values, deploymentId, acknowledged)),
   )
   const duplicate = useCommand(
     keys,

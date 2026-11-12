@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useBoardFilters, useCurrentOrganization, useDateWindow } from '@logic'
+import { useBoardFilters, useCurrentOrganization } from '@logic'
+import { useBoardShown } from './boardShown'
 import { useIsDesktop, useIsWidePhone } from '../patterns/media'
 import { useAppliedAppearance } from './appearance'
 import { ModuleButtons } from './ModuleButtons'
@@ -36,10 +38,9 @@ function OrganizationName({ name }: { readonly name: string }) {
   return <h1 className="sr-only">{name}</h1>
 }
 
-/** The board's filter controls (D-173). They need a day, as every engine does. */
+/** The board's filter controls (D-173). They exist only with the board (D-218). */
 function FilterControls() {
-  const { window } = useDateWindow()
-  if (window === null) return null
+  if (!useBoardShown()) return null
   return (
     <>
       <FilterControl />
@@ -49,10 +50,14 @@ function FilterControls() {
   )
 }
 
+/** The dates and the view: controls of the board, so they exist only with it (D-218). */
+function BoardControl({ children }: { readonly children: ReactNode }) {
+  return useBoardShown() ? children : null
+}
+
 /** The row of set conditions under the desktop bars (D-131, D-173): there only while a condition is set. */
 function FilterRow() {
-  const { window } = useDateWindow()
-  if (window === null) return null
+  if (!useBoardShown()) return null
   return (
     <div className="pointer-events-none absolute inset-x-lg top-filter-row flex md:top-filter-row-md">
       <FilterBar />
@@ -68,11 +73,15 @@ function DesktopBars({ name, identity }: { readonly name: string; readonly ident
           <NavigationPanel />
           <OrganizationName name={name} />
           <UnitSelector />
-          <ViewSwitcher />
+          <BoardControl>
+            <ViewSwitcher />
+          </BoardControl>
           <FilterControls />
         </nav>
         <nav aria-label={t('workspace.navigation')} className={`${BAR} min-w-none`}>
-          <WindowNavigator />
+          <BoardControl>
+            <WindowNavigator />
+          </BoardControl>
           {/* Pins may outgrow the bar: they scroll sideways rather than push the account out (OI-110, D-173). */}
           <div className="-m-xs flex min-w-none items-center gap-xs overflow-x-auto p-xs">
             <ModuleButtons />
@@ -88,15 +97,17 @@ function DesktopBars({ name, identity }: { readonly name: string; readonly ident
 /** The phone's row under the top bar (V20): the scope, the view and the filters, then the set conditions. It scrolls
  * sideways as one; its room above and below keeps the shadows whole and lets presses through to the board. */
 function ContextRow() {
-  const { window } = useDateWindow()
+  const boardShown = useBoardShown()
   return (
     <div className="pointer-events-none absolute inset-x-lg top-filter-row -my-xl flex items-center gap-sm overflow-x-auto py-xl">
       <nav aria-label={t('workspace.viewBar')} className={`${BAR} shrink-0`}>
         <UnitSelector />
-        <ViewSwitcher />
+        <BoardControl>
+          <ViewSwitcher />
+        </BoardControl>
         <FilterControls />
       </nav>
-      {window === null ? null : <FilterBar />}
+      {boardShown ? <FilterBar /> : null}
     </div>
   )
 }
@@ -115,7 +126,9 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
   return (
     <>
       <nav aria-label={t('workspace.topBar')} className={`${BAR} absolute inset-x-lg top-lg justify-between`}>
-        <WindowNavigator />
+        <BoardControl>
+          <WindowNavigator />
+        </BoardControl>
         <UserMenu identity={identity} />
       </nav>
       <ContextRow />
@@ -131,11 +144,15 @@ function WidePhoneBars({ name, identity }: { readonly name: string; readonly ide
       <div className="pointer-events-none absolute inset-x-lg top-lg flex justify-between gap-sm">
         <nav aria-label={t('workspace.viewBar')} className={`${BAR} overflow-x-auto`}>
           <UnitSelector />
-          <ViewSwitcher />
+          <BoardControl>
+            <ViewSwitcher />
+          </BoardControl>
           <FilterControls />
         </nav>
         <nav aria-label={t('workspace.topBar')} className={`${BAR} shrink-0`}>
-          <WindowNavigator />
+          <BoardControl>
+            <WindowNavigator />
+          </BoardControl>
           <UserMenu identity={identity} />
         </nav>
       </div>
@@ -158,7 +175,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const isDesktop = useIsDesktop()
   const isWidePhone = useIsWidePhone()
   const { active } = useBoardFilters()
-  const { window } = useDateWindow()
+  const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
   useAppliedAppearance()
@@ -172,7 +189,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
     <FilterFocusContext value={focus}>
       <PreferenceFailureContext value={preferenceFailure}>
       <div
-        data-filter-row={window !== null && (active || !(isDesktop || isWidePhone)) ? 'shown' : undefined}
+        data-filter-row={boardShown && (active || !(isDesktop || isWidePhone)) ? 'shown' : undefined}
         className="relative h-dvh bg-canvas"
       >
         <div className="absolute inset-safe p-sm">

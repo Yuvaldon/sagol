@@ -21,9 +21,11 @@ export interface DeploymentFormProps {
   /** Where the deployment may be placed. */
   readonly placeable: (unitId: UnitId) => boolean
   readonly onReload: () => void
+  /** A new rotation goes on to who serves in it (D-219); without this the form goes back to the list. */
+  readonly onCreated?: (deployment: Deployment) => void
 }
 
-export function DeploymentForm({ deployment, units, today, placeable, onReload }: DeploymentFormProps) {
+export function DeploymentForm({ deployment, units, today, placeable, onReload, onCreated }: DeploymentFormProps) {
   const panel = usePanel()
   const { create, update } = useDeploymentCommands()
   const [opened] = useState(deployment)
@@ -42,10 +44,14 @@ export function DeploymentForm({ deployment, units, today, placeable, onReload }
     validators: { onSubmit: ({ value }) => validatorResult(deploymentFormIssues(value)) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
-      const result =
-        opened === null
-          ? await create.run(value)
-          : await update.run({ deployment: opened, openedVersion: opened.version, values: value })
+      if (opened === null) {
+        const created = await create.run(value)
+        if (!created.ok) setState(formStateOf(created.error, DEPLOYMENT_FIELDS))
+        else if (onCreated === undefined) backToList()
+        else onCreated(created.value)
+        return
+      }
+      const result = await update.run({ deployment: opened, openedVersion: opened.version, values: value })
       if (result.ok) backToList()
       else setState(formStateOf(result.error, DEPLOYMENT_FIELDS))
     },

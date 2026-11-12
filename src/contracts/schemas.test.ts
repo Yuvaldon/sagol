@@ -55,6 +55,7 @@ const leave = {
   organization_id: ID.org,
   soldier_id: ID.b,
   leave_type_id: ID.c,
+  deployment_id: ID.a,
   batch_id: null,
   start_date: '2026-11-10',
   end_date: '2026-11-12',

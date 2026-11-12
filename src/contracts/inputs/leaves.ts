@@ -104,11 +104,12 @@ const creationFlags = {
   acknowledged_rule_ids: AcknowledgedRuleIds,
 }
 
-/** `createLeave`. New leaves are `pending` unless created as approved (D-013). */
+/** `createLeave`. New leaves are `pending` unless created as approved (D-013); each belongs to a rotation (D-216). */
 export const CreateLeaveInput = z
   .strictObject({
     id: LeaveId,
     soldier_id: LeaveColumns.shape.soldier_id,
+    deployment_id: LeaveColumns.shape.deployment_id,
     ...leaveDates,
     ...leaveDetails,
     ...creationFlags,
@@ -119,9 +120,12 @@ export const CreateLeaveInput = z
   })
 export type CreateLeaveInput = z.infer<typeof CreateLeaveInput>
 
-/** `createLeaveBatch`: leaves created together (collective leave, D-012), atomically (D-049). */
+/**
+ * `createLeaveBatch`: leaves created together (collective leave, D-012), atomically (D-049), all in one rotation (D-216).
+ */
 export const CreateLeaveBatchInput = z.strictObject({
   batch: z.strictObject(LeaveBatch.pick({ id: true, name: true, description: true }).shape),
+  deployment_id: LeaveColumns.shape.deployment_id,
   leaves: z
     .array(NewLeave)
     .min(1)
@@ -141,7 +145,8 @@ const LeaveCopy = z
 
 /**
  * `duplicateLeave` (`leaves:duplicate`, D-049): copies type, effect override, reason and
- * properties of `leave_id` into new leaves. Comments and history are not copied.
+ * properties of `leave_id` into new leaves. Comments and history are not copied. Every copy stays in the source's
+ * rotation, so each copy's soldier and dates must fit it (D-216).
  */
 export const DuplicateLeaveInput = z.strictObject({
   leave_id: LeaveId,

@@ -74,8 +74,10 @@ export interface ReferenceSpec<Row extends ReferenceRow> {
   readonly targetOf: (row: Row) => PolicyTarget
   /** References and uniques. Paths are relative to the row (D-065). */
   readonly rowIssues: (check: RowCheck<Row>) => Promise<Issue[]>
-  /** Who reads the row beyond `view` of its resource on its target. Absent: nobody else. */
-  readonly alsoReadableBy?: (scope: ActorScope, row: Row) => boolean
+  /**
+   * Who reads the row beyond `view` of its resource on its target, loaded once per read. Absent: nobody else.
+   */
+  readonly alsoReadableBy?: (database: Store, scope: ActorScope) => Promise<(row: Row) => boolean>
 }
 
 function tableFor<Row extends ReferenceRow>(database: Store, spec: ReferenceSpec<Row>) {
@@ -99,14 +101,19 @@ export async function visibleRow<Row extends ReferenceRow>(
   id: string,
 ): Promise<Row> {
   const stored = await tableFor(database, spec).get(id)
-  const visible = stored !== undefined && stored.organization_id === scope.organization_id && readable(spec, scope, stored)
-  if (!visible) return fail({ code: 'not_found' })
+  const inOrganization = stored !== undefined && stored.organization_id === scope.organization_id
+  if (!inOrganization || !(await readerOf(database, spec, scope))(stored)) return fail({ code: 'not_found' })
   return spec.schema.parse(stored)
 }
 
-/** `view` of the row's resource on its target, or the spec's own readers (D-186). */
-function readable<Row extends ReferenceRow>(spec: ReferenceSpec<Row>, scope: ActorScope, row: Row): boolean {
-  return holds(scope, permissionOf(spec.resource, 'view'), spec.targetOf(row)) || (spec.alsoReadableBy?.(scope, row) ?? false)
+/** `view` of the row's resource on its target, or the spec's own readers (D-186, D-218). */
+export async function readerOf<Row extends ReferenceRow>(
+  database: Store,
+  spec: ReferenceSpec<Row>,
+  scope: ActorScope,
+): Promise<(row: Row) => boolean> {
+  const also = (await spec.alsoReadableBy?.(database, scope)) ?? (() => false)
+  return (row) => holds(scope, permissionOf(spec.resource, 'view'), spec.targetOf(row)) || also(row)
 }
 
 /** The row's state, before anything is compared with it (D-090). */
@@ -154,9 +161,10 @@ export function createReferenceRepository<Row extends ReferenceRow>(
         return database.transaction('r', tables, async () => {
           const scope = await loadActorScope(dependencies)
           const rows = await rowsOf(database, spec, scope.organization_id)
+          const readable = await readerOf(database, spec, scope)
           return rows
             .filter((row) => query.include_archived || row.archived_at === null)
-            .filter((row) => readable(spec, scope, row))
+            .filter(readable)
             .sort(compare)
             .map((row) => spec.schema.parse(row))
         })

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, choose, closeDrawer, createType, drawer, typeDate } from './support/leaves.ts'
+import { NOW, choose, closeDrawer, createType, drawer, openRotation, typeDate } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule, signIn } from './support/workspace.ts'
 
 // V11's demo: a fighter links on their own, asks for a leave from "my requests", comments on it, the owner approves
@@ -65,6 +65,8 @@ async function setUp(page: Page) {
   await choose(page, he.roles.baseline, ROLE)
   await expect(drawer(page).getByText(he.roles.isBaseline)).toBeVisible()
   await closeDrawer(page)
+
+  await openRotation(page, [`${YAEL.first} ${YAEL.last}`])
 }
 
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */

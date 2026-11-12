@@ -1,16 +1,17 @@
-import { NEW_ENTITY, PANEL_IDS, RANGE_KINDS, type RangeKind } from '@config'
+import { RANGE_KINDS, type RangeKind } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { pickableRotations, useDateWindow, useDeploymentPermissions, usePanel, useUnits, type WindowKind } from '@logic'
-import { CalendarCheck, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { Button as AriaButton, Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover } from 'react-aria-components'
+import { useDateWindow, type WindowKind } from '@logic'
+import type { Deployment } from '@contracts'
+import { CalendarCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button as AriaButton, Header, Menu, MenuSection, MenuTrigger, Popover } from 'react-aria-components'
 import { formatDate, formatDateRange } from '../patterns/dates'
 import { useIsDesktop } from '../patterns/media'
 import { Button, IconButton } from '../primitives/Button'
 import { MenuChoice } from './menu'
-import { MENU_HEADER, MENU_ITEM, MENU_LIST, MENU_POPOVER, onlyKey } from './menuStyles'
+import { MENU_HEADER, MENU_LIST, MENU_POPOVER, onlyKey } from './menuStyles'
 
 // The date window and its range picker (D-103, D-211). The label opens the picker: a day, a week, a month, or a whole
-// rotation of the scope. The arrows step by the chosen unit; the product is RTL only, so "back" points to the right.
+// rotation of the scope, past ones too: the only way to them, with no rotation control or label in the bar (D-217). The arrows step by the chosen unit; the product is RTL only, so "back" points to the right.
 // "Today" appears only while the window does not hold today (D-076).
 
 type StepKind = Exclude<RangeKind, 'rotation'>
@@ -36,16 +37,16 @@ const NEXT_LABELS: Record<WindowKind, I18nKey> = {
   rotation: 'workspace.nextWindow.rotation',
   custom: 'workspace.nextWindow.custom',
 }
-const NEW_ROTATION_KEY = 'new-rotation'
+function rotationDates(rotation: Deployment): string {
+  return rotation.end_date === null ? formatDate(rotation.start_date, 'dayMonth') : formatDateRange(rotation.start_date, rotation.end_date)
+}
 
-/** What the picker offers to pick: the steps, and the running and upcoming rotations, or creating the first one. */
+/**
+ * What the picker offers: the steps, and every rotation of the scope (D-217). One rotation is a single "whole rotation"
+ * choice with its dates; more are a list under that header. Opening a rotation lives in the navigation panel.
+ */
 function RangeMenu() {
-  const { window, today, rotations, setRange, showRotation } = useDateWindow()
-  const units = useUnits()
-  const panel = usePanel()
-  const pickable = today === null ? [] : pickableRotations(rotations, today)
-  const liveUnits = units.status === 'ready' ? units.value : []
-  const { createAny } = useDeploymentPermissions(liveUnits, rotations)
+  const { window, rotations, setRange, showRotation } = useDateWindow()
   if (window === null) return null
   const selected =
     window.kind === 'rotation' && window.rotationId !== null ? `${ROTATION_KEY}${window.rotationId}` : window.kind
@@ -58,10 +59,6 @@ function RangeMenu() {
       onSelectionChange={(selection) => {
         const key = onlyKey(selection)
         if (key === null) return
-        if (key === NEW_ROTATION_KEY) {
-          panel.open(PANEL_IDS.deployments, { entity: NEW_ENTITY })
-          return
-        }
         if (key.startsWith(ROTATION_KEY)) {
           const rotation = rotations.find((candidate) => `${ROTATION_KEY}${candidate.id}` === key)
           if (rotation !== undefined) showRotation(rotation.id)
@@ -77,28 +74,20 @@ function RangeMenu() {
           <MenuChoice key={kind} id={kind} label={t(RANGE_LABELS[kind])} />
         ))}
       </MenuSection>
-      {pickable.length > 0 || createAny ? (
+      {rotations.length === 1 && rotations[0] !== undefined ? (
+        <MenuSection>
+          <MenuChoice
+            id={`${ROTATION_KEY}${rotations[0].id}`}
+            label={t('workspace.rotations')}
+            detail={rotationDates(rotations[0])}
+          />
+        </MenuSection>
+      ) : rotations.length > 1 ? (
         <MenuSection>
           <Header className={MENU_HEADER}>{t('workspace.rotations')}</Header>
-          {pickable.length > 0 ? (
-            pickable.map((rotation) => (
-              <MenuChoice
-                key={rotation.id}
-                id={`${ROTATION_KEY}${rotation.id}`}
-                label={rotation.name}
-                detail={
-                  rotation.end_date === null
-                    ? formatDate(rotation.start_date, 'dayMonth')
-                    : formatDateRange(rotation.start_date, rotation.end_date)
-                }
-              />
-            ))
-          ) : (
-            <MenuItem id={NEW_ROTATION_KEY} textValue={t('workspace.newRotation')} className={MENU_ITEM}>
-              <Plus aria-hidden size={14} />
-              <span className="flex-1">{t('workspace.newRotation')}</span>
-            </MenuItem>
-          )}
+          {rotations.map((rotation) => (
+            <MenuChoice key={rotation.id} id={`${ROTATION_KEY}${rotation.id}`} label={rotation.name} detail={rotationDates(rotation)} />
+          ))}
         </MenuSection>
       ) : null}
     </Menu>
@@ -106,10 +95,9 @@ function RangeMenu() {
 }
 
 export function WindowNavigator() {
-  const { window, rotations, canShift, shift, goToToday } = useDateWindow()
+  const { window, canShift, shift, goToToday } = useDateWindow()
   const isDesktop = useIsDesktop()
   if (window === null) return null
-  const rotation = window.kind === 'rotation' ? rotations.find((candidate) => candidate.id === window.rotationId) : undefined
   return (
     <div className="flex shrink-0 items-center gap-2xs">
       <IconButton
@@ -124,10 +112,7 @@ export function WindowNavigator() {
       <MenuTrigger>
         <AriaButton className="inline-flex min-h-touch cursor-pointer items-center gap-xs rounded-pill px-xs text-control font-semibold whitespace-nowrap tabular-nums outline-focus outline-offset-2 md:min-h-control data-focus-visible:outline-2 data-hovered:bg-inner">
           <span className="sr-only">{t('workspace.window')} </span>
-          <span aria-live="polite" className="inline-flex items-center gap-xs">
-            {rotation === undefined ? null : <span className="hidden md:inline">{rotation.name}</span>}
-            <span>{formatDateRange(window.from, window.to)}</span>
-          </span>
+          <span aria-live="polite">{formatDateRange(window.from, window.to)}</span>
         </AriaButton>
         <Popover className={MENU_POPOVER}>
           <RangeMenu />
