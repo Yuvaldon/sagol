@@ -39,7 +39,18 @@ function storeOf() {
     commands: { accounts: { updateMyPreferences } },
     now: () => AT,
   })
-  return { ports, updateMyPreferences }
+  /** Another device saves `preferences` over the stored row. */
+  const elsewhere = (preferences: Partial<SoldierPreferences>) => {
+    const current = row?.preferences ?? SoldierPreferences.parse({})
+    row = {
+      soldier_id: ACTOR,
+      organization_id: ORGANIZATION,
+      preferences: { ...current, ...preferences },
+      updated_at: AT,
+      version: (row?.version ?? 0) + 1,
+    }
+  }
+  return { ports, updateMyPreferences, elsewhere }
 }
 
 describe('navigation preferences (D-173)', () => {
@@ -83,6 +94,25 @@ describe('navigation preferences (D-173)', () => {
     })
     await waitFor(() => {
       expect(result.current.pinned).toEqual([])
+    })
+  })
+})
+
+describe('a save that fails (D-187)', () => {
+  it('answers the failure, and the hook reads the stored row again', async () => {
+    const { ports, elsewhere } = storeOf()
+    const { result } = renderHook(() => useNavigationPreferences(), { wrapper: wrapperOf(ports) })
+    await waitFor(() => {
+      expect(result.current.editable).toBe(true)
+    })
+    elsewhere({ pinned_modules: ['rules'] })
+    let saved: Awaited<ReturnType<typeof result.current.togglePin>> | undefined
+    await act(async () => {
+      saved = await result.current.togglePin('units')
+    })
+    expect(saved).toEqual({ ok: false, error: { code: 'stale_version' } })
+    await waitFor(() => {
+      expect(result.current.pinned).toEqual(['rules'])
     })
   })
 })
