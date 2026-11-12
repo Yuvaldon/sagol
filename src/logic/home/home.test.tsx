@@ -28,19 +28,26 @@ const ME: Soldier = {
   archived_at: null,
 }
 
+const OTHER: Soldier = { ...ME, id: SoldierId.parse(uuid(902)), first_name: 'C' }
+
 type Allows = (check: PermissionCheck) => boolean
 
-/** A manager approves leaves; a fighter only reads their own. */
-const MANAGER: Allows = (check) => check.permission.resource === 'leaves'
-const FIGHTER: Allows = (check) => check.permission.resource === 'leaves' && check.permission.action === 'view'
+const own = (check: PermissionCheck) => check.target.kind === 'soldier' && check.target.soldier_id === ACTOR
+/** A fighter reads their own leaves, and views modules through their own record. */
+const FIGHTER: Allows = (check) =>
+  check.permission.action === 'view' && (check.permission.resource !== 'leaves' || own(check))
+/** A manager approves the leaves of whoever they see. */
+const MANAGER: Allows = (check) => FIGHTER(check) || (check.permission.resource === 'leaves' && check.permission.action === 'approve')
+/** An owner creates across the organization. */
+const OWNER: Allows = (check) => FIGHTER(check) || check.permission.action === 'create'
 
-function render(allows: Allows, local = memoryDeviceStore()) {
+function render(allows: Allows, local = memoryDeviceStore(), roster: readonly Soldier[] = [ME, OTHER]) {
   const ports = fakePorts({
     session: {
       current: () => Promise.resolve({ ok: true, value: { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION } }),
       can: (checks: readonly PermissionCheck[]) => Promise.resolve<Result<boolean[]>>({ ok: true, value: checks.map(allows) }),
     },
-    repositories: { soldiers: { list: () => Promise.resolve<Result<Soldier[]>>({ ok: true, value: [ME] }) } },
+    repositories: { soldiers: { list: () => Promise.resolve<Result<Soldier[]>>({ ok: true, value: [...roster] }) } },
     device: { local },
   })
   return renderHook(() => useHome(), { wrapper: wrapperOf(ports) })
@@ -56,6 +63,18 @@ describe('home follows the permissions, then the last choice (D-265)', () => {
     expect(fighter.result.current).toMatchObject({ offersMine: true, mine: true })
   })
 
+  it('opens an owner on the board before anyone else is listed', async () => {
+    const { result } = render(OWNER, memoryDeviceStore(), [ME])
+    await waitFor(() => expect(result.current.ready).toBe(true))
+    expect(result.current).toMatchObject({ offersMine: true, mine: false })
+  })
+
+  it('opens on "mine" whoever approves only their own leaves', async () => {
+    const { result } = render(MANAGER, memoryDeviceStore(), [ME])
+    await waitFor(() => expect(result.current.ready).toBe(true))
+    expect(result.current).toMatchObject({ offersMine: true, mine: true })
+  })
+
   it('keeps the home last chosen, and forgets it once it is the derived one again', async () => {
     const local = memoryDeviceStore()
     const { result } = render(FIGHTER, local)
@@ -66,6 +85,16 @@ describe('home follows the permissions, then the last choice (D-265)', () => {
     act(() => result.current.choose(true))
     expect(result.current.mine).toBe(true)
     expect(local.read(DEVICE_KEYS.homeAway, ACTOR)).toBeNull()
+  })
+
+  it('keeps no choice made before the answers arrive', async () => {
+    const local = memoryDeviceStore()
+    const { result } = render(MANAGER, local)
+    expect(result.current.ready).toBe(false)
+    act(() => result.current.choose(true))
+    await waitFor(() => expect(result.current.ready).toBe(true))
+    expect(local.read(DEVICE_KEYS.homeAway, ACTOR)).toBeNull()
+    expect(result.current.mine).toBe(false)
   })
 
   it('never offers "mine" to whoever may not read their own leaves', async () => {
