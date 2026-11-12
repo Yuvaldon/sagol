@@ -39,6 +39,10 @@ export interface ContractAdapter {
     | 'rank_role_bindings'
     | 'access_grants'
     | 'property_definitions'
+    | 'seniority_overrides'
+    | 'leave_batches'
+    | 'deployments'
+    | 'deployment_members'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -51,13 +55,15 @@ export interface ContractAdapter {
     readonly tags: DataCommands['tags']
     readonly leave_type_groups: DataCommands['leave_type_groups']
     readonly leave_types: DataCommands['leave_types']
-    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
+    readonly leaves: Pick<DataCommands['leaves'], 'create' | 'createBatch' | 'duplicate' | 'update' | 'transition'>
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
     readonly roles: DataCommands['roles']
     readonly rank_role_bindings: DataCommands['rank_role_bindings']
     readonly access_grants: DataCommands['access_grants']
     readonly property_definitions: DataCommands['property_definitions']
+    readonly seniority_overrides: DataCommands['seniority_overrides']
+    readonly deployments: DataCommands['deployments']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed
