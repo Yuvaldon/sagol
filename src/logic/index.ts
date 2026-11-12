@@ -423,6 +423,7 @@ export {
   type SeniorityOverrideFormValues,
 } from './seniority/seniority'
 export { useSeniorityOverrideCommands, useSeniorityOverrides, useSeniorityPermissions } from './seniority/hooks'
+export { useCanSetTimezone, useSetOrganizationTimezone } from './organization/timezone'
 export { setupSteps, useSetupAccess, useSetupProgress, useSetupUnfinished, type SetupStep } from './organization/setup'
 export {
   applyTemplatePlan,
