@@ -57,7 +57,7 @@ function NoRotation() {
               panel.open(foundFirst ? PANEL_IDS.units : PANEL_IDS.deployments, { entity: NEW_ENTITY })
             }}
           >
-            {t(foundFirst ? 'units.new' : 'workspace.openRotation')}
+            {t(foundFirst ? 'workspace.foundUnits' : 'workspace.openRotation')}
           </Button>
         ) : null}
       </EmptyNotice>
