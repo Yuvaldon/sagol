@@ -3766,13 +3766,17 @@ trace against a nonexistent ref shows `functions deploy --use-api` calling `POST
   always the body text, so it reads in both themes. The list's and the calendar's chips already were quiet (D-174).
 - **Green never means away.** A leave type is not offered green or lime (`NOT_FOR_LEAVES`, config); the local adapter
   refuses a new one, as the color field does. A type stored green before is painted in the uniform tone, so the data
-  stays and the board still never says "present" for someone away.
+  stays and the board still never says "present" for someone away. An import (D-171) brings a type stored green in
+  as gray (`IMPORTED_LEAVE_TYPE_STAND_IN`, config), so an old export still loads. A marker leave keeps the marker tone
+  when its type has no color it may take.
 - **Rounds under requests.** A leave in a batch is a round (`layerOf`, derived, D-019). On the timeline it is a band of
   the row's full height under the request bars, outside the lanes, and resizes like a bar. In the list and the calendar,
   which have no lanes, it stays a chip.
 - **The opening view by device (OI-220).** With no view in the link, desktop opens on the timeline and a phone on the
-  list (`DEFAULT_VIEW_BY_DEVICE`, config). The default is left out of the link. Nothing is remembered: a chosen view
-  lives in the URL (D-103), so a shared link opens on what it names.
+  list (`DEFAULT_VIEW_BY_DEVICE`, config). Until a view is chosen the link stays bare; a chosen view, the device's
+  default included, is written to the link. Nothing is remembered: a chosen view lives in the URL (D-103), so a link
+  shared from a phone opens on what it names, on any device.
+- **Overlapping rounds** share the band's place; the one beneath is reached from the list view (OI-246).
 - **A breach in every view (OI-221).** The same evaluation as the heat row (D-141): a calendar day that breaks a rule
   shows a count beside its heading, and the list shows the window's broken days above its rows. Each one opens the rules
   of its day, in the heat row's tones.
