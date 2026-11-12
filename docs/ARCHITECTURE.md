@@ -250,6 +250,11 @@ container that mounts whichever engine is active; each engine reads the same vie
 URL through `logic`, so switching engines keeps it.
 Replacing an engine replaces one registry entry. Engines never call each other.
 
+The current state (D-174): `logic/board` is the one model of every engine (rows, leaves, the window's days and weeks);
+`logic/timeline` keeps only drag editing. What the engines share on screen is in `ui/board` (the frame with its loading,
+failed and empty states, the scroller region, the leave chip and the labels), outside `ui/engines`, so engines stay
+independent. Only the timeline has a core and a view; the list, the table and the calendar are adapters alone.
+
 ## Design system
 
 - Tailwind's default palette and spacing scale are reset. Only semantic tokens exist
@@ -281,9 +286,9 @@ src/
   config/      env/ storage/ views/ url/ routes/ startup/ breakpoints/ palette/ icons/ dates/ panels/
   data/        local/ (dexie schema, migrations, repositories, commands)  remote/ (phase 8)
                contract-tests/
-  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ timeline/
+  logic/       runtime/ queries/ forms/ session/ organization/ permissions/ view-state/ units/ roster/ leaves/ board/ timeline/
                tags/ filters/ presence/ rules/ testing/ (test-only helpers, D-135)
-  ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ engines/{registry,timeline,calendar,list,table}/
+  ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/
 supabase/      migrations/ policies/ functions/ tests/   (phase 8)

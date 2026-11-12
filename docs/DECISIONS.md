@@ -124,11 +124,11 @@ am = amends, ref = refines, ext = extends.
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | ref D-160 |
-| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173 |
+| D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173; ref D-174 |
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
-| D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | |
+| D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | ref D-174 |
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143 |
@@ -163,7 +163,7 @@ am = amends, ref = refines, ext = extends.
 | D-144 | The touch path of the timeline, and its lanes on a phone | config, ui | |
 | D-145 | Approving shows the rules' answer, not a live warning | logic, ui | |
 | D-146 | A live warning lists hard and soft rules together | logic, ui | |
-| D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | |
+| D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | ref D-174 |
 | D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | |
 | D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | ref D-163, D-164 |
 | D-150 | The account-links module | config, logic, ui | |
@@ -190,6 +190,7 @@ am = amends, ref = refines, ext = extends.
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | |
+| D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | |
 
 ---
 
@@ -2295,3 +2296,28 @@ time; fixed ranges and one approver for the shared model keep the two branches f
 **Why:** at 1280 px the bar held eleven module buttons and cut the organization's name (OI-110); V13 adds more
 views. Setting up units, rules and roles is occasional work, so it moves out of the daily surface, and pins give back
 one-tap access to whoever needs a module daily. An empty heat row and an empty filter row only take room.
+
+## D-174 — The list, the table and the calendar share the board's model and frame
+2026-11-12 · accepted · refines D-108, D-112, D-147 · OI-088, OI-097, OI-098 · decided under the owner's autonomy instruction of 2026-11-11
+- **One model.** `logic/board` (`useBoard`) gives every engine the same days, rows and leaves for the window, the
+  filter, the leave conditions and "only who is missing" (D-132, D-133). `boardEntries` lists the drawn leaves one per
+  soldier and leave, in the rows' order; `boardDays` and `calendarWeeks` lay the window out in whole weeks.
+  `logic/timeline` keeps only what the timeline alone does (editing by drag).
+- **One frame.** `ui/board` holds what the engines share: `BoardEngine` (loading, failure, "no soldiers yet", "nobody
+  matches" and the callbacks that open a soldier or a leave), `EngineScroller` (the named, focusable region under the
+  bars), `LeaveChip` and the labels of a leave. An engine is only an adapter over it; only the timeline has a core and
+  a view, because only it has geometry.
+- **The list** is the board's rows, virtualized: a group heading, then each soldier with their rank and their leaves in
+  the window as chips with dates, or "no requests in range".
+- **The table** has a row per leave in the window: soldier, unit, type, from, to, days, status. Each header sorts
+  (`aria-sort`) in the page only, not in the URL; the soldier and the type open their panels. With no leaves it says so.
+- **The calendar** is the window in whole weeks, seven columns from `md` and one day per line below it. A day heads with
+  its weekday and number (today marked) and how many are out that day (approved absences only, D-133), then a chip per
+  leave with the soldier's name. Places of a week outside the window stay empty and are hidden from readers.
+- **A chip** is a button that opens its leave (D-119), in its type's color or the uniform one, dashed while pending
+  (D-111, D-112). Its name is its own text, with the status a reader cannot see in between, so the name holds what is
+  seen (WCAG 2.5.3).
+- **Colors** (`colors`, D-112) apply to every view, so the view menu shows the choice for all of them.
+**Why:** OI-088 asked to separate the timeline's pieces before more engines arrived. Every view reading one model keeps
+them from disagreeing on who is in view; a shared frame keeps the empty and failed states the same. The window stays a
+week for now (OI-111).
