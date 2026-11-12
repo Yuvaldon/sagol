@@ -262,7 +262,7 @@ am = amends, ref = refines, ext = extends.
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
 | D-278 | A floating surface fits its content | ui, scripts | |
-| D-280 | Production delivery: a workflow only the owner starts | backend, tooling | |
+| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
 
 ---
 
@@ -3506,23 +3506,28 @@ automatically is the usual staging practice and stays inside the free plan.
 **Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
 dead space on any surface; a rule in the check keeps the next surface from bringing it back.
 
-## D-280 — Production delivery: a workflow only the owner starts
-2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12
+## D-280 — Production delivery: automatic after staging, guarded
+2026-11-12 · accepted · extends D-209 · OI-230 · approved by the owner on 2026-11-12; amended the same day: the owner
+approved the automatic run in the owner's own words ("אוטומטית"), relayed by the orchestrator session at about 15:40Z
 - **What runs.** `.github/workflows/production.yml` brings the production Supabase project to `main`: `db push` of the
   pending migrations (its plan printed first, `--dry-run`) and the D-209 bundle of `commands`, with `--no-verify-jwt`,
   the same steps as staging (D-276). It never deletes, resets or sets secrets: production's function secrets stay as
   the owner set them.
-- **Who starts it.** `workflow_dispatch` only, on `main`, and the job runs only when the actor and the triggering actor
-  are the repository's owner. It refuses a commit whose CI did not pass on `main`.
-- **The guard.** The owner types the production ref as the run's input; the run stops unless it equals the
-  `PRODUCTION_PROJECT_REF` variable, differs from `STAGING_PROJECT_REF`, names a project of the account, and that
-  project's name does not end in `-staging`. The ref lives in a repository variable, not in the file (rule 2).
-- **Why not an approval gate.** The intended form was a run after every green CI on `main`, held by a `production`
-  environment whose required reviewer is the owner. The repository is private, and GitHub offers required reviewers
-  in private repositories only on its paid plans; anything paid is out (D-200). The owner's own start, with the typed
-  ref, is the free gate. Repository secrets and variables hold the values, since they need no environment. Should the
-  free plan ever offer the reviewer gate here, a later decision may add the run after CI behind it.
-- **Secrets.** `SUPABASE_ACCESS_TOKEN` (shared with staging) and `PRODUCTION_DB_PASSWORD` as repository secrets,
-  `PRODUCTION_PROJECT_REF` as a repository variable: the owner sets them once (OI-230).
-**Why:** a production change should be one reviewed press by the person who owns the data, run from `main`'s green
-commit by the same steps staging proves first, so no laptop or session deploys production by hand.
+- **When it runs.** On its own after every successful Staging run on `main` (`workflow_run`), for the commit Staging
+  delivered, so production gets only what staging took first. The owner may also start it by hand
+  (`workflow_dispatch`, on `main`, owner as actor and triggering actor), typing the production ref as the input. Either
+  way it refuses a commit whose CI did not pass or that is not on `main`.
+- **The guard.** The run stops unless `PRODUCTION_PROJECT_REF` is set, differs from `STAGING_PROJECT_REF`, names a
+  project of the account, and that project's name does not end in `-staging`; on a manual run the typed ref must equal
+  it too. The ref lives in a variable, not in the file (rule 2).
+- **Destructive migrations.** After the `--dry-run` plan and before the push, every pending migration the plan names is
+  scanned, comments stripped, statement by statement: `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE FROM` with no
+  `WHERE` stops the run. A migration that means it carries the line `-- production: destructive change approved`,
+  which its review then sees.
+- **The environment.** The job runs in the GitHub environment `production`, which the owner restricts to `main` and
+  which holds `SUPABASE_ACCESS_TOKEN`, `PRODUCTION_DB_PASSWORD` and the variable `PRODUCTION_PROJECT_REF` (OI-230). No
+  required-reviewer gate: GitHub offers it in private repositories only on paid plans, and anything paid is out
+  (D-200); the owner's approval of the automatic run replaces it.
+**Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
+with no laptop or session deploying by hand, and the one class of change that loses real data needs an explicit,
+reviewed marker.
