@@ -5,6 +5,7 @@ import {
   LeaveId,
   type AvailabilityRuleId,
   type CalendarDate,
+  type DeploymentId,
   type Issue,
   type Leave,
   type LeaveType,
@@ -14,6 +15,7 @@ import {
 import { leaveReasonIssues, optionalText } from '@domain'
 import { formIssues } from '../forms/issues'
 import type { WithProperties } from '../properties/properties'
+import type { RequestRotation } from './rotation'
 
 // A collective leave (D-012, D-179): one batch, the same type, dates and details for every soldier chosen, created
 // together or not at all (D-049). And a leave's copies (`leaves.duplicate`): other soldiers, other dates. Pure.
@@ -53,8 +55,13 @@ export function newLeaveBatchValues(today: CalendarDate): LeaveBatchValues {
 
 const dateOf = (date: CalendarDate | '') => (date === '' ? undefined : date)
 
-function batchInput(values: LeaveBatchValues & WithProperties, acknowledged: readonly AvailabilityRuleId[] = []) {
+function batchInput(
+  values: LeaveBatchValues & WithProperties,
+  deploymentId: DeploymentId | null,
+  acknowledged: readonly AvailabilityRuleId[] = [],
+) {
   return {
+    deployment_id: deploymentId ?? undefined,
     batch: { id: LeaveBatchId.parse(crypto.randomUUID()), name: values.name.trim(), description: optionalText(values.description) },
     leaves: values.soldier_ids.map((soldierId) => ({
       id: LeaveId.parse(crypto.randomUUID()),
@@ -72,21 +79,30 @@ function batchInput(values: LeaveBatchValues & WithProperties, acknowledged: rea
 }
 
 /**
- * The codes the command answers (D-068): the schema's, and a reason the chosen type requires (D-064). Every leave
- * carries the same fields, so a leave's issue is reported once, on the batch's field.
+ * The codes the command answers (D-068): the schema's, a reason the chosen type requires (D-064), and the batch's
+ * rotation (D-216), which the form picks itself; a soldier's issue lands on the soldier choice. Every leave carries
+ * the same fields, so a leave's issue is reported once, on the batch's field.
  */
-export function leaveBatchIssues(values: LeaveBatchValues, type: Pick<LeaveType, 'requires_reason'> | null): Issue[] {
-  const fieldIssues = onFormFields(formIssues(CreateLeaveBatchInput, batchInput(values)), 'leaves').map((issue) =>
-    issue.path[0] === 'batch' ? { ...issue, path: issue.path.slice(1) } : issue,
+export function leaveBatchIssues(
+  values: LeaveBatchValues,
+  type: Pick<LeaveType, 'requires_reason'> | null,
+  rotation: RequestRotation,
+): Issue[] {
+  const fieldIssues = onFormFields(formIssues(CreateLeaveBatchInput, batchInput(values, rotation.deployment_id)), 'leaves')
+    .filter((issue) => issue.path[0] !== 'deployment_id')
+    .map((issue) => (issue.path[0] === 'batch' ? { ...issue, path: issue.path.slice(1) } : issue))
+  const rotationIssues = rotation.issues.map((issue) =>
+    issue.path[0] === 'soldier_id' ? { ...issue, path: ['soldier_ids'] } : issue,
   )
-  return [...fieldIssues, ...(type === null ? [] : leaveReasonIssues(type, optionalText(values.reason)))]
+  return [...fieldIssues, ...(type === null ? [] : leaveReasonIssues(type, optionalText(values.reason))), ...rotationIssues]
 }
 
 export function toCreateLeaveBatchInput(
   values: LeaveBatchValues & WithProperties,
+  deploymentId: DeploymentId | null,
   acknowledged: readonly AvailabilityRuleId[] = [],
 ): CreateLeaveBatchInput {
-  return CreateLeaveBatchInput.parse(batchInput(values, acknowledged))
+  return CreateLeaveBatchInput.parse(batchInput(values, deploymentId, acknowledged))
 }
 
 // ------------------------------------------------------------------ duplicate

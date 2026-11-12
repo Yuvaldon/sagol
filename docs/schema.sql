@@ -480,6 +480,39 @@ CREATE TABLE IF NOT EXISTS "leave_types" (
 	CONSTRAINT "leave_types_effect_check" CHECK ("availability_effect" IN ('unavailable', 'available'))
 );
 
+-- -----------------------------------------------------------------------------
+-- Deployments (reserve duty periods)
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS "deployments" (
+	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
+	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
+	"name" VARCHAR(255) NOT NULL,
+	"unit_id" UUID NOT NULL REFERENCES "units"("id"),
+	"start_date" DATE NOT NULL,
+	"end_date" DATE,
+	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"created_by" UUID REFERENCES "soldiers"("id"),
+	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"updated_by" UUID REFERENCES "soldiers"("id"),
+	"version" INTEGER NOT NULL DEFAULT 1,
+	"archived_at" TIMESTAMPTZ,
+	PRIMARY KEY("id"),
+	CONSTRAINT "deployments_dates_check" CHECK ("end_date" IS NULL OR "end_date" >= "start_date")
+);
+
+CREATE TABLE IF NOT EXISTS "deployment_members" (
+	"deployment_id" UUID NOT NULL REFERENCES "deployments"("id"),
+	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id"),
+	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
+	"start_date" DATE,                               -- NULL = deployment start
+	"end_date" DATE,                                 -- NULL = deployment end
+	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"created_by" UUID REFERENCES "soldiers"("id"),
+	PRIMARY KEY("deployment_id", "soldier_id"),
+	CONSTRAINT "deployment_members_dates_check" CHECK ("end_date" IS NULL OR "start_date" IS NULL OR "end_date" >= "start_date")
+);
+
 CREATE TABLE IF NOT EXISTS "leave_batches" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
@@ -497,6 +530,9 @@ CREATE TABLE IF NOT EXISTS "leaves" (
 	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id"),
 	"leave_type_id" UUID NOT NULL REFERENCES "leave_types"("id"),
 	"batch_id" UUID REFERENCES "leave_batches"("id"),
+	-- The rotation the request belongs to (D-216): the soldier is its member, and the dates fall
+	-- within the member's dates (NULL = the rotation's). The server guards it with a trigger.
+	"deployment_id" UUID NOT NULL REFERENCES "deployments"("id"),
 	"start_date" DATE NOT NULL,
 	"end_date" DATE NOT NULL,                        -- inclusive
 	"status" VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -548,39 +584,6 @@ CREATE TABLE IF NOT EXISTS "leave_comments" (
 	"archived_at" TIMESTAMPTZ,
 	PRIMARY KEY("id"),
 	CONSTRAINT "leave_comments_visibility_check" CHECK ("visibility" IN ('shared', 'internal'))
-);
-
--- -----------------------------------------------------------------------------
--- Deployments (reserve duty periods)
--- -----------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS "deployments" (
-	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
-	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
-	"name" VARCHAR(255) NOT NULL,
-	"unit_id" UUID NOT NULL REFERENCES "units"("id"),
-	"start_date" DATE NOT NULL,
-	"end_date" DATE,
-	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"created_by" UUID REFERENCES "soldiers"("id"),
-	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updated_by" UUID REFERENCES "soldiers"("id"),
-	"version" INTEGER NOT NULL DEFAULT 1,
-	"archived_at" TIMESTAMPTZ,
-	PRIMARY KEY("id"),
-	CONSTRAINT "deployments_dates_check" CHECK ("end_date" IS NULL OR "end_date" >= "start_date")
-);
-
-CREATE TABLE IF NOT EXISTS "deployment_members" (
-	"deployment_id" UUID NOT NULL REFERENCES "deployments"("id"),
-	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id"),
-	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
-	"start_date" DATE,                               -- NULL = deployment start
-	"end_date" DATE,                                 -- NULL = deployment end
-	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"created_by" UUID REFERENCES "soldiers"("id"),
-	PRIMARY KEY("deployment_id", "soldier_id"),
-	CONSTRAINT "deployment_members_dates_check" CHECK ("end_date" IS NULL OR "start_date" IS NULL OR "end_date" >= "start_date")
 );
 
 -- -----------------------------------------------------------------------------
@@ -682,6 +685,7 @@ CREATE INDEX IF NOT EXISTS "idx_rank_role_bindings_rank"    ON "rank_role_bindin
 CREATE INDEX IF NOT EXISTS "idx_leaves_soldier_dates"       ON "leaves"("soldier_id", "start_date", "end_date");
 CREATE INDEX IF NOT EXISTS "idx_leaves_org_dates"           ON "leaves"("organization_id", "start_date", "end_date");
 CREATE INDEX IF NOT EXISTS "idx_leaves_status"              ON "leaves"("organization_id", "status");
+CREATE INDEX IF NOT EXISTS "idx_leaves_deployment"          ON "leaves"("deployment_id", "soldier_id");
 CREATE INDEX IF NOT EXISTS "idx_leave_events_leave"         ON "leave_events"("leave_id", "created_at");
 CREATE INDEX IF NOT EXISTS "idx_leave_comments_leave"       ON "leave_comments"("leave_id", "created_at");
 CREATE INDEX IF NOT EXISTS "idx_deployments_unit_id"        ON "deployments"("unit_id");

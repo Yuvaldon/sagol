@@ -1,6 +1,7 @@
-import { DeploymentId, OrganizationId, SoldierId, UnitId, type Deployment, type DeploymentMember } from '@contracts'
+import { DeploymentId, OrganizationId, SoldierId, UnitId, UnitMembershipId, type Deployment, type DeploymentMember } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import {
+  defaultDeploymentMembers,
   deploymentFormIssues,
   deploymentFormValues,
   deploymentMemberValues,
@@ -91,6 +92,44 @@ describe('deployment members (D-179)', () => {
   it('refuses a member date outside the deployment, on that member', () => {
     expect(deploymentMembersIssues(stored, [{ soldier_id: SOLDIER, start_date: '2026-11-30', end_date: '' }])).toEqual([
       { path: ['members', 0, 'start_date'], code: 'invalid_value' },
+    ])
+  })
+})
+
+describe('a new rotation starts with its unit (D-219)', () => {
+  const CHILD = UnitId.parse(uuid(12))
+  const units = [
+    { id: UNIT, parent_id: null, unit_level_id: null },
+    { id: CHILD, parent_id: UNIT, unit_level_id: null },
+    { id: OTHER_UNIT, parent_id: null, unit_level_id: null },
+  ]
+  const soldier = (n: number, overrides: { status?: 'active' | 'inactive'; archived_at?: string | null } = {}) => ({
+    id: SoldierId.parse(uuid(n)),
+    status: overrides.status ?? ('active' as const),
+    archived_at: overrides.archived_at ?? null,
+  })
+  const placed = (n: number, unit_id: UnitId, valid_from: string, valid_to: string | null = null) => ({
+    id: UnitMembershipId.parse(uuid(100 + n)),
+    soldier_id: SoldierId.parse(uuid(n)),
+    unit_id,
+    membership_type: 'primary' as const,
+    valid_from,
+    valid_to,
+  })
+
+  it('takes the active soldiers placed in the unit or below it on the first day', () => {
+    const soldiers = [soldier(1), soldier(2), soldier(3), soldier(4), soldier(5, { status: 'inactive' }), soldier(6, { archived_at: AT })]
+    const memberships = [
+      placed(1, UNIT, '2026-01-01'),
+      placed(2, CHILD, '2026-01-01'),
+      placed(3, OTHER_UNIT, '2026-01-01'),
+      placed(4, UNIT, '2026-12-02'),
+      placed(5, UNIT, '2026-01-01'),
+      placed(6, UNIT, '2026-01-01'),
+    ]
+    expect(defaultDeploymentMembers(deployment(), units, memberships, soldiers)).toEqual([
+      { soldier_id: SoldierId.parse(uuid(1)), start_date: '', end_date: '' },
+      { soldier_id: SoldierId.parse(uuid(2)), start_date: '', end_date: '' },
     ])
   })
 })

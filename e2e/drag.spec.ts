@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, press, typeDate } from './support/leaves.ts'
+import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press, typeDate } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V8's demo: drag to create, move and resize leaves on the board, with the card that says what a drop would do and the
@@ -31,6 +31,15 @@ async function setUp(page: Page) {
   await openModule(page, he.leaveTypes.open)
   await createType(page, { name: 'בית', color: he.palette.teal })
   await closeDrawer(page)
+  await openRotation(page, [SOLDIER])
+  // The days below count from the week's first, so the board shows the week rather than the whole rotation (D-217).
+  await page.goto('/?range=week')
+  // The points below are measured on the week's board, so a drag waits until it has loaded and come to rest.
+  await expect(page.getByRole('button', { name: `${he.workspace.window} 8–14 בנוב׳` })).toBeVisible()
+  await expect(board(page).getByRole('button', { name: SOLDIER })).toBeVisible()
+  // A day takes a drag once the actor's permissions are in: the same check that shows the "+" (D-115).
+  await expect(page.getByRole('button', { name: he.leaves.new, exact: true })).toBeVisible()
+  await waitForSettledScreen(page)
 }
 
 /** Where a day of the soldier's row is on screen: the grid starts at the row's right edge, after the names (RTL). */

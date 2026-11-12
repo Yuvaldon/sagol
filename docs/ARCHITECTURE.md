@@ -176,6 +176,10 @@ The current state (D-128):
   rules of a day, the window's conflicts and the live warning of a form (D-141, D-142). Deployments and their members join, archived ones too (D-179).
 - **Deployment commands** (`deployments`, `deployment_members`): a deployment is a unit target, moving it needs
   `update` on both units, and its members are replaced whole under its version (D-179).
+- **Rotations** (D-216 … D-220): every leave names a rotation its soldier serves in on those dates, checked by the
+  commands, the gateway and deferred constraint triggers. `logic/view-state` scopes the workspace to the active or
+  upcoming rotation (`scopeRotation`, `rotationOn`); `useBoardShown` hides the board's controls and request surfaces
+  without one; `defaultDeploymentMembers` fills a new rotation from its unit.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
 - **Day report** (`logic/presence`, D-193 … D-197): `dayReport` partitions a day's population into present and absent,

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { choose, closeDrawer, drawer, press } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
+import { NOW, choose, closeDrawer, drawer, openRotation, press } from './support/leaves.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
 
 // V12a's demo: the bars keep the daily work, the modules that set the organization up sit in the navigation panel by
 // section, a module pinned there joins the bar, the scope label names the single root unit, and the rules row's place
@@ -25,11 +25,22 @@ async function openPanel(page: Page) {
 }
 
 test('the navigation panel, pins, the scope label and the rules row placement', async ({ page }, testInfo) => {
+  await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
 
+  await test.step('with no rotation, and no unit to hold one, the owner is sent to found a unit first (D-218)', async () => {
+    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(page.getByText(he.deployments.emptyNoUnits)).toBeVisible()
+    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
+    await expectNoAxeViolations(page)
+    await page.getByRole('button', { name: he.workspace.foundUnits }).click()
+    await expect(page).toHaveURL(/panel=units&entity=new/)
+    await closeDrawer(page)
+  })
+
   await test.step('the bars keep the daily work; set-up modules are not in them', async () => {
-    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
     for (const name of [he.units.open, he.soldiers.open, he.roles.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }
@@ -56,6 +67,8 @@ test('the navigation panel, pins, the scope label and the rules row placement', 
     await page.getByRole('button', { name: he.common.create }).click()
     await expect(drawer(page).getByRole('list', { name: he.units.listLabel }).getByText(COMPANY, { exact: true })).toBeVisible()
     await closeDrawer(page)
+    await openRotation(page, [OWNER.name])
+    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
   })
 
   await test.step('a single unit in sight names the scope, as a label and not a picker', async () => {
@@ -134,7 +147,7 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await closeDrawer(page)
   })
 
-  await test.step('the soldier links and reaches the board', async () => {
+  await test.step('the soldier links and reaches the workspace, which has no rotation yet', async () => {
     await page.getByRole('button', { name: he.account.menu }).click()
     await page.getByRole('menuitem', { name: he.account.signOut }).click()
     await expect(page).toHaveURL(/\/sign-in$/)
@@ -144,7 +157,13 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await page.getByLabel(he.linkRequest.lastName).fill(soldier.last)
     await page.getByLabel(he.linkRequest.personalId).fill(soldier.personalId)
     await page.getByRole('button', { name: he.linkRequest.submit }).click()
-    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
+    // No rotation yet, and the fighter may not open one: the workspace says who does, with nothing to request (D-218).
+    await expect(page.getByRole('heading', { name: he.workspace.noRotationTitle })).toBeVisible()
+    await expect(page.getByText(he.workspace.noRotationBody)).toBeVisible()
+    await expect(page.getByRole('button', { name: he.workspace.openRotation })).toHaveCount(0)
+    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
+    await expectNoAxeViolations(page)
   })
 
   await test.step('the panel holds only what the fighter may open: their own record', async () => {

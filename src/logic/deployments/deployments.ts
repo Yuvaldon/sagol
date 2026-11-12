@@ -7,10 +7,20 @@ import {
   type Deployment,
   type DeploymentMember,
   type Issue,
+  type Soldier,
   type SoldierId,
   type UnitId,
 } from '@contracts'
-import { compareDates, deploymentMemberIssues, withPathPrefix } from '@domain'
+import {
+  buildUnitTree,
+  compareDates,
+  deploymentMemberIssues,
+  descendantsOf,
+  primaryUnitOn,
+  withPathPrefix,
+  type MembershipSpan,
+  type UnitNode,
+} from '@domain'
 import { formIssues } from '../forms/issues'
 
 // Deployments and their members (D-019, D-179), between the module's forms and the commands. Pure. "Active" is
@@ -92,6 +102,26 @@ export interface DeploymentMemberValues {
   readonly soldier_id: SoldierId
   readonly start_date: CalendarDate | ''
   readonly end_date: CalendarDate | ''
+}
+
+/**
+ * Who a rotation with no members yet starts with (D-219): the live, active soldiers placed in its unit or a sub-unit
+ * on its first day, for all its days. The editor can narrow the list before it is saved.
+ */
+export function defaultDeploymentMembers(
+  deployment: Pick<Deployment, 'unit_id' | 'start_date'>,
+  units: readonly UnitNode[],
+  memberships: readonly MembershipSpan[],
+  soldiers: readonly Pick<Soldier, 'id' | 'status' | 'archived_at'>[],
+): DeploymentMemberValues[] {
+  const tree = new Set<UnitId>([deployment.unit_id, ...descendantsOf(buildUnitTree(units), deployment.unit_id)])
+  return soldiers
+    .filter((soldier) => soldier.status === 'active' && soldier.archived_at === null)
+    .filter((soldier) => {
+      const placed = primaryUnitOn(memberships, soldier.id, deployment.start_date)
+      return placed !== null && tree.has(placed)
+    })
+    .map((soldier) => ({ soldier_id: soldier.id, start_date: '', end_date: '' }))
 }
 
 export function deploymentMemberValues(members: readonly DeploymentMember[], deployment: Deployment): DeploymentMemberValues[] {

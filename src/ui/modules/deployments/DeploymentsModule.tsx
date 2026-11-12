@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, Deployment, Soldier, Unit } from '@contracts'
 import { t } from '@i18n'
 import {
+  defaultDeploymentMembers,
   fullName,
   isDeploymentActive,
   liveDeployments,
@@ -9,6 +10,7 @@ import {
   useDeploymentMembers,
   useDeploymentPermissions,
   useDeployments,
+  useMemberships,
   usePanel,
   useSoldiersWithArchived,
   useToday,
@@ -98,16 +100,20 @@ function DeploymentEditor(props: Omit<DeploymentFormProps, 'onReload'>) {
 function MembersEditor({
   deployment,
   soldiers,
+  units,
   onDone,
 }: {
   readonly deployment: Deployment
   readonly soldiers: readonly Soldier[]
+  readonly units: readonly Unit[]
   readonly onDone: () => void
 }) {
   const members = useDeploymentMembers()
+  const memberships = useMemberships()
   const [generation, setGeneration] = useState(0)
   if (members.status === 'failed') return <FailureNotice error={members.error} />
-  if (members.status === 'loading') return <LoadingNotice />
+  if (memberships.status === 'failed') return <FailureNotice error={memberships.error} />
+  if (members.status === 'loading' || memberships.status === 'loading') return <LoadingNotice />
   const serving = new Set(members.value.filter((member) => member.deployment_id === deployment.id).map((member) => member.soldier_id))
   // Whoever already serves stays a choice, even when no longer active.
   const choices = soldiers
@@ -119,6 +125,8 @@ function MembersEditor({
       deployment={deployment}
       members={members.value}
       soldiers={choices}
+      // A new rotation starts with the soldiers of its unit who can be chosen (D-219).
+      defaults={defaultDeploymentMembers(deployment, units, memberships.value, choices)}
       onDone={onDone}
       onReload={() => {
         setGeneration((current) => current + 1)
@@ -166,20 +174,33 @@ export function DeploymentsModule() {
   }
 
   if (panel.entity === NEW_ENTITY) {
-    return <DeploymentEditor deployment={null} units={units.value} today={today} placeable={permissions.createIn} />
+    return (
+      <DeploymentEditor
+        deployment={null}
+        units={units.value}
+        today={today}
+        placeable={permissions.createIn}
+        onCreated={(created) => {
+          setStaffing(created)
+          panel.open(PANEL_IDS.deployments)
+        }}
+      />
+    )
   }
   if (panel.entity !== null) {
     const deployment = live.find((candidate) => candidate.id === panel.entity)
     if (deployment === undefined) return <NotFound />
     return <DeploymentEditor key={deployment.id} deployment={deployment} units={units.value} today={today} placeable={permissions.moveTo} />
   }
-  // The row as stored now, so the editor opens on its current version.
-  const staffed = staffing === null ? undefined : live.find((candidate) => candidate.id === staffing.id)
+  // The row as stored now, so the editor opens on its current version; a rotation just created is the row the command
+  // returned until the list refetches it.
+  const staffed = staffing === null ? undefined : (live.find((candidate) => candidate.id === staffing.id) ?? justCreated(staffing, deployments.value))
   if (staffed !== undefined) {
     return (
       <MembersEditor
         deployment={staffed}
         soldiers={soldiers.value}
+        units={units.value}
         onDone={() => {
           setStaffing(null)
         }}
@@ -285,6 +306,11 @@ export function DeploymentsModule() {
 function emptyBody(hasUnits: boolean, canCreate: boolean) {
   if (!hasUnits) return 'deployments.emptyNoUnits' as const
   return canCreate ? undefined : ('deployments.emptyReadOnly' as const)
+}
+
+/** The command's row while the list has not heard of it yet; once listed, the list decides (it may be archived). */
+function justCreated(deployment: Deployment, listed: readonly Deployment[]): Deployment | undefined {
+  return listed.some((candidate) => candidate.id === deployment.id) ? undefined : deployment
 }
 
 const NO_UNITS: readonly Unit[] = []

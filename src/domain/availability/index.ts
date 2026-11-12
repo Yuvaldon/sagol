@@ -34,5 +34,11 @@ export {
   type RuleUnit,
 } from './rules'
 export { leaveChangeViolations, ruleGate, ruleViolations } from './gate'
-export { deploymentMemberIssues, type DeploymentMemberDates } from './deployments'
+export {
+  deploymentMemberIssues,
+  leaveRotationIssues,
+  memberSpan,
+  withinMemberSpan,
+  type DeploymentMemberDates,
+} from './deployments'
 export { dayMovements, soldierMovement, type DayMovements, type SoldierMovement } from './movements'

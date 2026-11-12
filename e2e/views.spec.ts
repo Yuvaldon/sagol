@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, requestLeave } from './support/leaves.ts'
+import { NOW, closeDrawer, createType, requestLeave, openRotationInNewUnit } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
 
 // V13's demo: the list, the table and the calendar show the same soldiers and leaves as the timeline, from the
@@ -22,6 +22,7 @@ function region(page: Page, name: string) {
 test('the list, the table and the calendar show the board\'s leaves', async ({ page }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  await openRotationInNewUnit(page, [OWNER.name])
 
   await test.step('two leaves of two types', async () => {
     await page.goto('/?panel=leave_types')

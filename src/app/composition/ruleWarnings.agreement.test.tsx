@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 import {
+  DeploymentId,
   AccessGrantId,
   AvailabilityRuleId,
   LeaveId,
@@ -93,6 +94,7 @@ async function ownerPorts(): Promise<LogicPorts> {
 interface World {
   readonly ports: LogicPorts
   readonly type: LeaveTypeId
+  readonly rotation: DeploymentId
   readonly soft: AvailabilityRule
   readonly hard: AvailabilityRule
   readonly soldiers: Record<'a1' | 'a2' | 'a3' | 'b1' | 'b2', SoldierId>
@@ -179,16 +181,27 @@ async function buildWorld(): Promise<World> {
         ...input,
       }),
     )
+  // The rotation every request belongs to (D-216): all five soldiers, for the company.
+  const rotation = valueOf(
+    await commands.deployments.create({ id: DeploymentId.parse(crypto.randomUUID()), name: 'Rotation', unit_id: company, start_date: '2026-11-01', end_date: null }),
+  )
+  valueOf(
+    await commands.deployments.setMembers({
+      deployment_id: rotation.id,
+      expected_version: rotation.version,
+      members: Object.values(soldiers).map((soldier_id) => ({ soldier_id, start_date: null, end_date: null })),
+    }),
+  )
   const soft = await rule({ name: 'Company keeps four', enforcement: RuleEnforcement.enum.soft, scope_unit_id: company, min_value: 4 })
   const hard = await rule({ name: 'Platoon B keeps one', enforcement: RuleEnforcement.enum.hard, scope_unit_id: platoonB, min_value: 1 })
   const store = async (soldier_id: SoldierId, start_date: CalendarDate, end_date: CalendarDate, as_approved: boolean) =>
-    valueOf(await commands.leaves.create(createInput({ soldier_id, leave_type_id: type, start_date, end_date, as_approved })))
+    valueOf(await commands.leaves.create(createInput({ soldier_id, leave_type_id: type, start_date, end_date, as_approved }, rotation.id)))
   const leaves = {
     a1Away: await store(soldiers.a1, D1, D2, true),
     a3Later: await store(soldiers.a3, D10, D11, false),
     b1Away: await store(soldiers.b1, D8, D8, true),
   }
-  return { ports, type, soft, hard, soldiers, leaves }
+  return { ports, type, rotation: rotation.id, soft, hard, soldiers, leaves }
 }
 
 interface NewLeave {
@@ -199,10 +212,11 @@ interface NewLeave {
   readonly as_approved: boolean
 }
 
-function createInput(leave: NewLeave, acknowledged: readonly AvailabilityRuleId[] = []) {
+function createInput(leave: NewLeave, deployment_id: DeploymentId, acknowledged: readonly AvailabilityRuleId[] = []) {
   return {
     id: LeaveId.parse(crypto.randomUUID()),
     ...leave,
+    deployment_id,
     availability_effect_override: null,
     reason: null,
     properties: {},
@@ -295,7 +309,7 @@ describe('a live rule warning is the command’s answer (OI-100, D-142)', () => 
   async function checkCreate(leave: Omit<NewLeave, 'leave_type_id'>) {
     const warnings = await warningOf(world.ports, candidateOf(leave))
     await expectAgreement(warnings, (acknowledged) =>
-      world.ports.data.commands.leaves.create(createInput({ ...leave, leave_type_id: world.type }, acknowledged)),
+      world.ports.data.commands.leaves.create(createInput({ ...leave, leave_type_id: world.type }, world.rotation, acknowledged)),
     )
     return warnings
   }
@@ -339,7 +353,7 @@ describe('a live rule warning is the command’s answer (OI-100, D-142)', () => 
   it('an edit that moves a leave onto the day platoon B is down to one: refused as warned', async () => {
     const b2Later = valueOf(
       await world.ports.data.commands.leaves.create(
-        createInput({ soldier_id: world.soldiers.b2, leave_type_id: world.type, start_date: D5, end_date: D5, as_approved: false }),
+        createInput({ soldier_id: world.soldiers.b2, leave_type_id: world.type, start_date: D5, end_date: D5, as_approved: false }, world.rotation),
       ),
     )
     const warnings = await checkMove(b2Later, D8, D8)

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press } from './support/leaves.ts'
+import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V7's demo: a rule builder, the heat row, a soft rule that asks for an acknowledgment, a hard rule that refuses,
@@ -72,6 +72,7 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
     await openModule(page, he.leaveTypes.open)
     await createType(page, { name: 'בית', color: he.palette.teal })
     await closeDrawer(page)
+    await openRotation(page, ['יעל שחר', 'נועם בר'])
   })
 
   await test.step('the rules drawer starts empty, and a soft rule asks for two in the platoon', async () => {

@@ -43,6 +43,20 @@ async function unit(organizationId: string, parentId: string | null): Promise<st
   return String(row?.id)
 }
 
+/** A rotation of its own unit, November 2026, with `soldierIds` serving all its days. */
+async function rotation(organizationId: string, soldierIds: readonly string[]): Promise<string> {
+  const unitId = await unit(organizationId, null)
+  const [row] = await sql`
+    INSERT INTO deployments (organization_id, name, unit_id, start_date, end_date)
+    VALUES (${organizationId}, 'Rotation', ${unitId}, '2026-11-01', '2026-11-30') RETURNING id`
+  for (const soldierId of soldierIds) {
+    await sql`
+      INSERT INTO deployment_members (deployment_id, soldier_id, organization_id)
+      VALUES (${String(row?.id)}, ${soldierId}, ${organizationId})`
+  }
+  return String(row?.id)
+}
+
 async function closure(): Promise<string[]> {
   const rows = await sql`SELECT ancestor_id, descendant_id, depth FROM unit_closure`
   return rows.map((row) => `${String(row.ancestor_id)}>${String(row.descendant_id)}:${String(row.depth)}`).sort()
@@ -152,9 +166,10 @@ describe('leave events (D-202, OI-064)', () => {
       INSERT INTO soldiers (organization_id, first_name, last_name) VALUES (${org}, 'Dana', 'Levi') RETURNING id`
     const [type] = await sql`
       INSERT INTO leave_types (organization_id, name, color_key) VALUES (${org}, 'Home', 'green') RETURNING id`
+    const rotationId = await rotation(org, [String(soldier?.id)])
     const [row] = await sql`
-      INSERT INTO leaves (organization_id, soldier_id, leave_type_id, start_date, end_date)
-      VALUES (${org}, ${String(soldier?.id)}, ${String(type?.id)}, '2026-11-10', '2026-11-12') RETURNING id`
+      INSERT INTO leaves (organization_id, soldier_id, leave_type_id, deployment_id, start_date, end_date)
+      VALUES (${org}, ${String(soldier?.id)}, ${String(type?.id)}, ${rotationId}, '2026-11-10', '2026-11-12') RETURNING id`
     return { org, actor: String(soldier?.id), leaveId: String(row?.id) }
   }
 
@@ -185,5 +200,68 @@ describe('leave events (D-202, OI-064)', () => {
       ['approved', '2026-11-08T10:00:00.001Z'],
       ['cancelled', '2026-11-08T10:00:00.002Z'],
     ])
+  })
+})
+
+describe('leaves within their rotation (D-216)', () => {
+  async function world() {
+    const org = await organization()
+    const [soldier] = await sql`
+      INSERT INTO soldiers (organization_id, first_name, last_name) VALUES (${org}, 'Dana', 'Levi') RETURNING id`
+    const [type] = await sql`
+      INSERT INTO leave_types (organization_id, name, color_key) VALUES (${org}, 'Home', 'green') RETURNING id`
+    const soldierId = String(soldier?.id)
+    const rotationId = await rotation(org, [soldierId])
+    return { org, soldierId, typeId: String(type?.id), rotationId }
+  }
+
+  function insertLeave(w: Awaited<ReturnType<typeof world>>, start: string, end: string, status = 'pending') {
+    return sql`
+      INSERT INTO leaves (organization_id, soldier_id, leave_type_id, deployment_id, start_date, end_date, status)
+      VALUES (${w.org}, ${w.soldierId}, ${w.typeId}, ${w.rotationId}, ${start}, ${end}, ${status}) RETURNING id`
+  }
+
+  it('takes a leave within the member’s days and refuses one outside them', async () => {
+    const w = await world()
+    await insertLeave(w, '2026-11-10', '2026-11-12')
+    expect(await codeOf(insertLeave(w, '2026-11-28', '2026-12-02'))).toBe(CHECK_VIOLATION)
+  })
+
+  it('refuses a leave of a soldier who is not a member', async () => {
+    const w = await world()
+    await sql`DELETE FROM deployment_members WHERE soldier_id = ${w.soldierId}`
+    expect(await codeOf(insertLeave(w, '2026-11-10', '2026-11-12'))).toBe(CHECK_VIOLATION)
+  })
+
+  it('lets a closed leave fall outside, and refuses its reopening', async () => {
+    const w = await world()
+    const [row] = await insertLeave(w, '2026-11-10', '2026-11-12', 'cancelled')
+    await sql`UPDATE deployment_members SET start_date = '2026-11-20' WHERE soldier_id = ${w.soldierId}`
+    expect(await codeOf(sql`UPDATE leaves SET status = 'pending' WHERE id = ${String(row?.id)}`)).toBe(CHECK_VIOLATION)
+  })
+
+  it('refuses a membership or rotation change that strands a live leave', async () => {
+    const w = await world()
+    await insertLeave(w, '2026-11-10', '2026-11-12')
+    expect(
+      await codeOf(sql`UPDATE deployment_members SET end_date = '2026-11-11' WHERE soldier_id = ${w.soldierId}`),
+    ).toBe(CHECK_VIOLATION)
+    expect(await codeOf(sql`DELETE FROM deployment_members WHERE soldier_id = ${w.soldierId}`)).toBe(CHECK_VIOLATION)
+    expect(await codeOf(sql`UPDATE deployments SET start_date = '2026-11-11' WHERE id = ${w.rotationId}`)).toBe(
+      CHECK_VIOLATION,
+    )
+  })
+
+  it('checks at commit, so a leave and its membership may be written together', async () => {
+    const w = await world()
+    await sql`DELETE FROM deployment_members WHERE soldier_id = ${w.soldierId}`
+    await sql.begin(async (tx) => {
+      await tx`
+        INSERT INTO leaves (organization_id, soldier_id, leave_type_id, deployment_id, start_date, end_date)
+        VALUES (${w.org}, ${w.soldierId}, ${w.typeId}, ${w.rotationId}, '2026-11-10', '2026-11-12')`
+      await tx`INSERT INTO deployment_members (deployment_id, soldier_id, organization_id) VALUES (${w.rotationId}, ${w.soldierId}, ${w.org})`
+    })
+    const rows = await sql`SELECT id FROM leaves WHERE soldier_id = ${w.soldierId}`
+    expect(rows).toHaveLength(1)
   })
 })

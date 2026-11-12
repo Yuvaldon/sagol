@@ -1,4 +1,5 @@
 import {
+  DeploymentId,
   LeaveId,
   LeaveTypeId,
   OrganizationId,
@@ -99,6 +100,7 @@ function leave(soldierN: number, start: CalendarDate, end: CalendarDate, extra: 
     soldier_id: SoldierId.parse(uuid(soldierN)),
     leave_type_id: HOME.id,
     batch_id: null,
+    deployment_id: DeploymentId.parse(uuid(90)),
     start_date: start,
     end_date: end,
     status: 'approved',

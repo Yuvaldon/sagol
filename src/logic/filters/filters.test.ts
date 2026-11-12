@@ -1,4 +1,5 @@
 import {
+  DeploymentId,
   CommandRankId,
   LeaveId,
   LeaveTypeId,
@@ -173,6 +174,7 @@ function leave(n: number, soldierN: number, typeId: LeaveTypeId, status: Leave['
     soldier_id: SoldierId.parse(uuid(soldierN)),
     leave_type_id: typeId,
     batch_id: null,
+    deployment_id: DeploymentId.parse(uuid(70)),
     start_date: start,
     end_date: end,
     status,

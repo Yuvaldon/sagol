@@ -122,6 +122,7 @@ function leave(n: number, soldierN: number, start_date: string, end_date: string
     soldier_id: SoldierId.parse(uuid(soldierN)),
     leave_type_id: HOME,
     batch_id: null,
+    deployment_id: DeploymentId.parse(uuid(70)),
     start_date,
     end_date,
     status: 'approved',

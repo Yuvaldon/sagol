@@ -37,6 +37,7 @@ const leave = {
   start_date: '2026-11-10',
   end_date: '2026-11-12',
   leave_type_id: uuid(1),
+  deployment_id: uuid(4),
   availability_effect_override: null,
   reason: null,
   properties: {},
@@ -72,6 +73,7 @@ describe('issuesFromSchema', () => {
     expect(
       issuesOf(CreateLeaveBatchInput, {
         batch: { id: uuid(4), name: 'Round 1', description: null },
+        deployment_id: uuid(5),
         leaves: [],
         as_approved: false,
         acknowledged_rule_ids: [],

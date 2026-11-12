@@ -240,6 +240,7 @@ const leave = {
   id: ID.a,
   soldier_id: ID.b,
   leave_type_id: ID.c,
+  deployment_id: ID.d,
   start_date: '2026-11-10',
   end_date: '2026-11-12',
   availability_effect_override: null,
