@@ -2865,9 +2865,9 @@ the data below the fold.
 - **What it is.** D-134's present and absent lists grow into the day report, and its drawer panel gives way to a
   centered dialog over the board. The URL keeps `panel=presence` and `day`; a span adds `until`, the last day. The
   presence button opens it on today, as before.
-- **Entry.** In every engine a day's header (the timeline's day column, the calendar's day cell, the table's and the
-  list's day heading) is a button that opens that day's report; keyboard and screen readers reach it by its date. In a
-  day range the window label's control opens it. Arrows in the dialog step a day back or forward.
+- **Entry.** In the engines that show days, a day's header (the timeline's day column, the calendar's day cell) is a
+  button that opens that day's report; keyboard and screen readers reach it by its whole date. The table and the list
+  show no days, so they reach it through the presence button. Arrows in the dialog step a day back or forward.
 - **Population.** As D-134: who the board's soldier filter selects on the day, among the soldiers whose leaves the
   viewer may read (D-161). Approved leaves only (D-133). The model has no planned strength, so the report shows none
   (D-076): the total is the population.
@@ -2882,8 +2882,9 @@ the data below the fold.
 - **Rotations (D-211).** The dialog names the scope's rotations that run on the day. When the scope has rotations, a
   day none of them runs on is not reportable: its header is not a button, and the arrows skip past it. A scope with no
   rotation reports every day, so a unit that does not plan by rotations still has the report.
-- **Span.** "Several days" turns the dialog to a span: the day and up to `DAY_REPORT.maxSpanDays` − 1 days after it,
-  inside the window's reportable days. Each day is its own section, in order.
+- **Span.** "כמה ימים" opens a "עד יום" date field: the report runs from the day to that last day, its reportable
+  days only, at most `DAY_REPORT.maxSpanDays` calendar days. A last day on or before the day is ignored; "יום אחד"
+  returns to one day. Each day is its own section, in order, under its own date.
 **Why:** the owner's "דוח 1": the morning question of a command post is who is here, who is out, who leaves and who is
 back today. The presence panel already answered half of it; one place is calmer than two (D-215). Reading the
 absence rather than the leaves means a soldier who swaps one leave for another the next day is not reported as coming
@@ -2910,15 +2911,14 @@ choice belongs to the screen it is made on.
   A span has one such block per day. Present names are left out: the counts carry them, and the message stays short.
 - RTL-safe: every line starts with a right-to-left mark, so a line that starts with a number or a Latin name stays
   aligned. No other markup.
-- The order of the parts lives in `config` (`DAY_REPORT.textSections`), the words in `i18n`, and the text is built in
+- The order of the parts lives in `config` (`DAY_REPORT.text.sections`), the words in `i18n`, and the text is built in
   `logic`. Sending inside Sagol or to an app is not built (D-076).
 **Why:** the report's daily use is a message to a group. `*bold*` is what WhatsApp and Telegram render; anything more
 shows as noise elsewhere.
 
 ## D-196 — The day report as an image: drawn on a canvas in the light tokens
 2026-11-12 · accepted · refines D-193 · V22 · decided under the owner's autonomy instruction of 2026-11-11
-- "תמונה" makes a PNG of the report as the dialog shows it (the counts, the units, the open name lists, the reasons
-  only while on), drawn with the canvas API from the report itself. No library: an HTML-to-image library rasterizes
+- "תמונה" makes a PNG of the report: the same lines as the text copy (D-195), the reasons only while on, drawn with the canvas API from the report itself. No library: an HTML-to-image library rasterizes
   the DOM through SVG `foreignObject`, which loses web fonts and backdrop blur on Safari, and adds a dependency for
   one screen.
 - The image always uses the light tokens, whatever the theme: it is read in a chat, on someone else's screen.
@@ -2931,7 +2931,7 @@ and is tested by its pixels and size.
 ## D-197 — A device store for conveniences
 2026-11-12 · accepted · refines D-021, D-074 · V22 · decided under the owner's autonomy instruction of 2026-11-11
 - A `DeviceStore` port in `logic`, implemented by `data` over `localStorage` (and `sessionStorage` for what lasts the
-  session), under keys in `config` (`STORAGE_KEYS`), scoped to the signed-in soldier. It holds conveniences of one
+  session), under keys in `config` (`DEVICE_KEYS`), scoped to the signed-in soldier. It holds conveniences of one
   screen only: never data, never a permission, never what another device needs. A value that does not read back as
   its type reads as the default.
 - `scripts/guardrails.config.ts` allows web storage in `src/data/device/` beside the local identity.

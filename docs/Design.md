@@ -261,6 +261,18 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Calm**: no explanatory hints (presence and seniority keep theirs); empty states are a title and an action; icon
   buttons have a tooltip with their name (D-215). The interface says סבב for a deployment (D-212).
 
+## Day report (V22, D-193 … D-197)
+
+- **Entry**: a day's header in the timeline and the calendar is a button, and the presence pill opens today. A day
+  outside the scope's rotations is plain text.
+- **Dialog**: centered glass, at most the drawer's width. The date between the arrows, "היום", "כמה ימים" (then "עד
+  יום" and "יום אחד"), one muted line on what is counted, the "סיבות" switch when there is something to show, then
+  "העתקה" and "שיתוף תמונה" or "הורדת תמונה". Five count tiles (total, present, absent, leaving, returning), then one
+  bordered section per unit, collapsed by default, with its counts and the absent, leaving and returning names; a
+  reason line under a name while the switch is on. A span puts each day under its own date.
+- **Toast**: one line in the dialog's status region, "הדוח הועתק" or what failed, gone after a moment.
+- **Image**: always the light tokens, the text copy's lines, one tall PNG for a span.
+
 ## Patterns of a module
 
 - **List:** rows with a bottom hairline. A row has an optional handle, an optional color dot, the name as a
@@ -363,7 +375,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `FilterBar`, `FilterControl`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, "only who is missing", clear all), and the bar's filter and presence controls (D-213) |
 | `SortControl` | `ui/shell` | The board's sort, shared with the table (D-214) |
 | `MenuChoice`, `menuStyles` | `ui/shell` | A menu item with a check while selected, and the bar menus' classes |
-| `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
+| `DayReportDialog` | `ui/modules/presence` | The day report: counts, units, names, reasons, a span, the text copy and the image (D-193 … D-196) |
 | `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
 | `RuleViolations`, `RuleBrief`, `RuleGateDialog`, `RuleWarnings` | `ui/patterns/rules` | Broken rules in full and in brief; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`), shared by modules and the timeline (D-143) |
 | `DragOverlay`, `useBoardDrag`, `useDrag` | `ui/engines/timeline` | A drag on the board: its card, its refusal and its gate (adapter), and the pointer (view) |
