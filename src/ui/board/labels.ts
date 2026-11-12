@@ -42,8 +42,9 @@ export function leaveDetails(leave: BoardLeave): readonly string[] {
 
 /** What a leave's color means (D-111, D-112): its type, or one color for every absence and one for every marker. */
 export function leaveTone(leave: BoardLeave, mode: BarColorMode): PaletteTone {
-  if (mode === 'uniform') return leave.effect === 'available' ? MARKER_TONE : UNIFORM_TONE
-  return leaveTypeToneOf(leave.type?.color_key ?? null)
+  const fallback = leave.effect === 'available' ? MARKER_TONE : UNIFORM_TONE
+  if (mode === 'uniform') return fallback
+  return leaveTypeToneOf(leave.type?.color_key ?? null, fallback)
 }
 
 /** How many days a leave holds, both ends counted. */

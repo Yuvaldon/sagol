@@ -67,7 +67,10 @@ export function toneOf(key: string | null): PaletteTone {
   return key !== null && isPaletteKey(key) ? PALETTE_TONES[key] : UNIFORM_TONE
 }
 
-/** A leave type's tone: green never means away (D-290), so a type that still holds a green key takes the uniform one. */
-export function leaveTypeToneOf(key: string | null): PaletteTone {
-  return key !== null && isLeaveTypePaletteKey(key) ? PALETTE_TONES[key] : UNIFORM_TONE
+/**
+ * A leave type's tone: green never means away (D-290), so a type that still holds a green key takes the fallback, the
+ * uniform one unless the caller names another (a marker keeps the marker color).
+ */
+export function leaveTypeToneOf(key: string | null, fallback: PaletteTone = UNIFORM_TONE): PaletteTone {
+  return key !== null && isLeaveTypePaletteKey(key) ? PALETTE_TONES[key] : fallback
 }

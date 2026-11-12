@@ -66,10 +66,21 @@ function List({ frame, scroller }: { readonly frame: BoardFrame; readonly scroll
   // The window's breaches, above the rows (D-290, OI-221).
   const breaches = useBreaches(frame)
   // Where the list starts inside what scrolls: below the bars' spacer, which grows when a filter is on, and a filter
-  // gives a new model, and below the breaches, which arrive after the model.
+  // gives a new model, and below the breaches, which arrive after the model and wrap as the width changes. Whatever
+  // sits above the list changes the height of what holds it, so a change there measures it again.
   useLayoutEffect(() => {
-    if (scroller === null || list.current === null) return
-    setOffset(list.current.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop)
+    const element = list.current
+    const holder = element?.parentElement ?? null
+    if (scroller === null || element === null || holder === null) return
+    const measure = () => {
+      setOffset(element.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(holder)
+    return () => {
+      observer.disconnect()
+    }
   }, [scroller, frame.model, breaches.days.length])
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({

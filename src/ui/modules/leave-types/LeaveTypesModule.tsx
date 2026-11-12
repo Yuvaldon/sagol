@@ -32,7 +32,7 @@ import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { TextField } from '../../primitives/fields'
 import { glyphOf } from '../../theme/icons'
-import { toneOf } from '../../theme/palette'
+import { leaveTypeToneOf } from '../../theme/palette'
 
 // The types section of the leave types drawer (D-113): types under their groups, each with the color and icon
 // the board shows. Up and down in the row menu order a type inside its group.
@@ -196,7 +196,7 @@ function TypeEditor(props: {
 function TypeSwatch({ type }: { readonly type: LeaveType }) {
   const glyph = glyphOf(type.icon_key)
   return (
-    <span aria-hidden className={`ms-xs flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${toneOf(type.color_key).fill}`}>
+    <span aria-hidden className={`ms-xs flex size-icon shrink-0 items-center justify-center rounded-pill text-on-action ${leaveTypeToneOf(type.color_key).fill}`}>
       {glyph === null ? null : <glyph.Icon size={10} strokeWidth={2.6} />}
     </span>
   )
