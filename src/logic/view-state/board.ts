@@ -64,6 +64,7 @@ export function useBoardFilters(): BoardFiltersState {
     read.conditions.tagSets.length > 0 ||
     read.conditions.rankIds.length > 0 ||
     read.conditions.statuses.length > 0 ||
+    read.conditions.properties.length > 0 ||
     hasLeaveConditions(leaves)
   const clearAll = useCallback(() => {
     // A filter the bar does not read has no unit it can keep (D-104).
