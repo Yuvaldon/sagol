@@ -1,13 +1,5 @@
-import type { CalendarDate, Deployment, Leave, ReportConfirmation, SoldierId, Timestamp, UnitId } from '@contracts'
-import {
-  addDays,
-  compareDates,
-  confirmationStatus,
-  confirmReportIssues,
-  reportRotationOf,
-  type ConfirmationStatus,
-  type UnitTree,
-} from '@domain'
+import type { CalendarDate, Leave, ReportConfirmation, SoldierId, Timestamp, UnitId } from '@contracts'
+import { addDays, compareDates, confirmationStatus, type ConfirmationStatus } from '@domain'
 import type { ReportDay, ReportSection } from './report'
 
 // The daily report workflow (D-269, D-293): where each unit's section of a day stands, who may confirm it, and the
@@ -16,8 +8,13 @@ import type { ReportDay, ReportSection } from './report'
 export interface SectionConfirmation {
   readonly unitId: UnitId
   readonly status: ConfirmationStatus
-  /** Whether the actor may confirm it now: the permission on the unit, and an open rotation over it on the day. */
+  /**
+   * Whether the actor may confirm it now: the data layer's answer (the permission on the unit, and an open rotation over
+   * it on the day), and the whole section in view.
+   */
   readonly canConfirm: boolean
+  /** The actor may confirm it, but the view filter hides some of its soldiers: confirming needs the full list (D-293). */
+  readonly needsFullList: boolean
 }
 
 export interface ConfirmationSummary {
@@ -32,20 +29,25 @@ export interface DayConfirmations {
   readonly sections: ReadonlyMap<string, SectionConfirmation>
   /** NULL where the actor does not read the summary: not the owner, nor, with no owner named, a confirmer. */
   readonly summary: ConfirmationSummary | null
+  /** When the client last read the leaves the statuses come from: a confirmation sent from this view holds from then. */
+  readonly seenAt: Timestamp
 }
 
 export interface DayConfirmationsInput {
+  /** The day's whole report, with no view filter: what a section's status and the summary are read on (D-293). */
   readonly day: ReportDay
+  /** The same day as the view filter shows it. */
+  readonly shown: ReportDay
   /** The confirmations the actor reads of the day. */
   readonly confirmations: readonly ReportConfirmation[]
   /** The leaves of every status the actor reads that touch the day before through the day after. */
   readonly leaves: readonly Leave[]
-  /** The live units, for which rotation runs over a section's unit. */
-  readonly tree: UnitTree
-  /** The scope's rotations, closed ones too: a closed one blocks a confirmation and still names its owner. */
-  readonly rotations: readonly Deployment[]
+  /** Whether the actor may confirm the unit's report of the day, as the data layer answers it on the whole tree. */
+  readonly confirmable: (unitId: UnitId, date: CalendarDate) => boolean
+  /** The permission on a rotation's unit, for who reads the summary where no owner is named. */
   readonly mayConfirm: (unitId: UnitId) => boolean
   readonly actorId: SoldierId | null
+  readonly seenAt: Timestamp
 }
 
 /**
@@ -53,7 +55,7 @@ export interface DayConfirmationsInput {
  * day or its neighbors, as the day's leaving and returning read them (D-193).
  */
 function changedAtOf(section: ReportSection, date: CalendarDate, leaves: readonly Leave[]): Timestamp[] {
-  const soldiers = new Set<SoldierId>([...section.present, ...section.absent].map((entry) => entry.soldier.id))
+  const soldiers = soldiersOf(section)
   const before = addDays(date, -1)
   const after = addDays(date, 1)
   return leaves
@@ -64,8 +66,13 @@ function changedAtOf(section: ReportSection, date: CalendarDate, leaves: readonl
     .map((leave) => leave.updated_at)
 }
 
+function soldiersOf(section: ReportSection): ReadonlySet<SoldierId> {
+  return new Set<SoldierId>([...section.present, ...section.absent].map((entry) => entry.soldier.id))
+}
+
 export function dayConfirmations(input: DayConfirmationsInput): DayConfirmations {
-  const { day, tree, rotations } = input
+  const { day } = input
+  const shown = new Map(input.shown.units.map((section) => [section.key, section] as const))
   const byUnit = new Map(
     input.confirmations.filter((row) => row.report_date === day.date).map((row) => [row.unit_id, row] as const),
   )
@@ -73,11 +80,14 @@ export function dayConfirmations(input: DayConfirmationsInput): DayConfirmations
   for (const section of day.units) {
     const unitId = section.unitId
     if (unitId === null) continue
-    const rotation = reportRotationOf(rotations, tree, unitId, day.date)
+    const confirmable = input.confirmable(unitId, day.date)
+    const inView = shown.get(section.key)
+    const hidden = inView !== undefined && soldiersOf(inView).size < soldiersOf(section).size
     sections.set(section.key, {
       unitId,
       status: confirmationStatus(byUnit.get(unitId) ?? null, changedAtOf(section, day.date, input.leaves)),
-      canConfirm: confirmReportIssues(rotation).length === 0 && input.mayConfirm(unitId),
+      canConfirm: confirmable && !hidden,
+      needsFullList: confirmable && hidden,
     })
   }
   const reads = day.rotations.some((rotation) =>
@@ -93,5 +103,6 @@ export function dayConfirmations(input: DayConfirmationsInput): DayConfirmations
           changed: statuses.filter((status) => status === 'changed_since').length,
         }
       : null,
+    seenAt: input.seenAt,
   }
 }

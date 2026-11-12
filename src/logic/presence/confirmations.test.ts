@@ -13,7 +13,6 @@ import {
   type Soldier,
   type Timestamp,
 } from '@contracts'
-import { buildUnitTree } from '@domain'
 import { describe, expect, it } from 'vitest'
 import { dayConfirmations, type DayConfirmationsInput } from './confirmations'
 import type { ReportDay, ReportEntry, ReportSection } from './report'
@@ -32,11 +31,6 @@ const SQUAD = UnitId.parse(uuid(11))
 const OTHER = UnitId.parse(uuid(12))
 const OWNER = SoldierId.parse(uuid(1))
 const ACTOR = SoldierId.parse(uuid(2))
-const tree = buildUnitTree([
-  { id: COMPANY, parent_id: null, unit_level_id: null },
-  { id: SQUAD, parent_id: COMPANY, unit_level_id: null },
-  { id: OTHER, parent_id: null, unit_level_id: null },
-])
 
 function soldier(n: number): Soldier {
   return {
@@ -123,16 +117,20 @@ function leave(soldierN: number, start: CalendarDate, end: CalendarDate, updated
   }
 }
 
+const SEEN_AT = '2026-11-08T11:00:00.000Z'
+const WHOLE = [section(SQUAD, [5, 6]), section(OTHER, [7]), section(null, [8])]
+
 function input(overrides: Partial<DayConfirmationsInput> = {}): DayConfirmationsInput {
-  const rotations = [rotation()]
+  const whole = day([rotation()], WHOLE)
   return {
-    day: day(rotations, [section(SQUAD, [5, 6]), section(OTHER, [7]), section(null, [8])]),
+    day: whole,
+    shown: whole,
     confirmations: [],
     leaves: [],
-    tree,
-    rotations,
+    confirmable: (unitId, date) => unitId === SQUAD && date === DAY,
     mayConfirm: () => true,
     actorId: ACTOR,
+    seenAt: SEEN_AT,
     ...overrides,
   }
 }
@@ -143,6 +141,7 @@ describe('the daily report confirmations (D-293)', () => {
     expect(result.sections.get(SQUAD)?.status).toBe('confirmed')
     expect(result.sections.get(OTHER)?.status).toBe('not_yet')
     expect(result.sections.has('none')).toBe(false)
+    expect(result.seenAt).toBe(SEEN_AT)
   })
 
   it('reads a section as changed when a leave of its soldiers touching the day or a neighbor was written after', () => {
@@ -155,26 +154,34 @@ describe('the daily report confirmations (D-293)', () => {
     expect(dayConfirmations(input({ confirmations, leaves: [far, before, elsewhere] })).sections.get(SQUAD)?.status).toBe('confirmed')
   })
 
-  it('offers the button only with the permission and an open rotation over the unit', () => {
-    const open = dayConfirmations(input({ mayConfirm: (unitId) => unitId === SQUAD }))
-    expect(open.sections.get(SQUAD)?.canConfirm).toBe(true)
-    // OTHER is outside the rotation's unit.
-    expect(open.sections.get(OTHER)?.canConfirm).toBe(false)
-    const closed = [rotation({ closed_at: AT, closed_by: OWNER })]
-    expect(dayConfirmations(input({ rotations: closed })).sections.get(SQUAD)?.canConfirm).toBe(false)
-    expect(dayConfirmations(input({ mayConfirm: () => false })).sections.get(SQUAD)?.canConfirm).toBe(false)
+  it('offers the button where the data layer answers the report confirmable, whatever units the actor sees', () => {
+    const result = dayConfirmations(input({ mayConfirm: () => false }))
+    expect(result.sections.get(SQUAD)).toMatchObject({ canConfirm: true, needsFullList: false })
+    expect(result.sections.get(OTHER)).toMatchObject({ canConfirm: false, needsFullList: false })
+    expect(dayConfirmations(input({ confirmable: () => false })).sections.get(SQUAD)?.canConfirm).toBe(false)
+  })
+
+  it('reads a filtered section on the whole unit, and asks for the full list instead of offering the button', () => {
+    // The view filter hides soldier 6, whose leave changed the day after the confirmation.
+    const shown = day([rotation()], [section(SQUAD, [5]), section(OTHER, [7])])
+    const changed = leave(6, DAY, DAY, LATER)
+    const result = dayConfirmations(input({ shown, confirmations: [confirmation(SQUAD)], leaves: [changed] }))
+    expect(result.sections.get(SQUAD)).toMatchObject({ status: 'changed_since', canConfirm: false, needsFullList: true })
+    expect(result.summary).toEqual({ total: 2, confirmed: 0, changed: 1 })
+    // A section the filter leaves whole is confirmed as it is.
+    const whole = dayConfirmations(input({ shown: day([rotation()], [section(SQUAD, [5, 6])]) }))
+    expect(whole.sections.get(SQUAD)).toMatchObject({ canConfirm: true, needsFullList: false })
   })
 
   it('shows the summary to the named owner, or with none named to who may confirm', () => {
     const confirmations = [confirmation(SQUAD)]
-    const owned = [rotation({ report_owner_id: OWNER })]
-    const ownedDay = day(owned, input().day.units)
-    expect(dayConfirmations(input({ confirmations, rotations: owned, day: ownedDay, actorId: OWNER })).summary).toEqual({
+    const ownedDay = day([rotation({ report_owner_id: OWNER })], WHOLE)
+    expect(dayConfirmations(input({ confirmations, day: ownedDay, shown: ownedDay, actorId: OWNER })).summary).toEqual({
       total: 2,
       confirmed: 1,
       changed: 0,
     })
-    expect(dayConfirmations(input({ rotations: owned, day: ownedDay })).summary).toBeNull()
+    expect(dayConfirmations(input({ day: ownedDay, shown: ownedDay })).summary).toBeNull()
     expect(dayConfirmations(input()).summary).toEqual({ total: 2, confirmed: 0, changed: 0 })
     expect(dayConfirmations(input({ mayConfirm: () => false })).summary).toBeNull()
   })

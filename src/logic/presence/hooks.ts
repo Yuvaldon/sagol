@@ -5,11 +5,14 @@ import {
   type FilterExpression,
   type PermissionCheck,
   type ReportConfirmation,
+  type ConfirmableReport,
+  type ConfirmableReportQuery,
   type ReportConfirmationQuery,
   type Soldier,
+  type Timestamp,
   type UnitId,
 } from '@contracts'
-import { addDays, buildUnitTree, CONFIRM_DAY_REPORT, dayReportTarget } from '@domain'
+import { addDays, compareCodeUnits, CONFIRM_DAY_REPORT, dayReportTarget } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { useRotationScope } from '../view-state/rotation'
@@ -23,7 +26,6 @@ import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
-import { useUnits } from '../units/hooks'
 import { dateWindowOf } from '../view-state/window'
 import { usePlacementHints } from '../roster/hooks'
 import { filterUnitOf } from '../view-state/filter'
@@ -135,17 +137,40 @@ function confirmCheckOf(unitId: UnitId): PermissionCheck {
   return checkOf(CONFIRM_DAY_REPORT, dayReportTarget(unitId))
 }
 
+/** Which of `units`' reports of `days` the actor may confirm, as the data layer answers it on the whole tree (D-293). */
+function useConfirmable(days: readonly CalendarDate[], units: readonly UnitId[]): Loaded<readonly ConfirmableReport[]> {
+  const { data } = usePorts()
+  const first = days[0]
+  const last = days.at(-1)
+  const query = useMemo(
+    (): ConfirmableReportQuery | null =>
+      first === undefined || last === undefined ? null : { window: { start_date: first, end_date: last }, unit_ids: [...units] },
+    [first, last, units],
+  )
+  return loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.reportConfirmations, CONFIRMABLE, query],
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.report_confirmations.confirmable(query))),
+      enabled: query !== null,
+    }),
+  )
+}
+
+const CONFIRMABLE = 'confirmable'
+const NO_UNITS: readonly UnitId[] = []
+
 /**
- * Where each unit's section of the report's days stands (D-269, D-293), by date. Read from the leaves of every status
- * that bear on the days, so a leave written after a confirmation shows at once as a change. Loading until the report,
- * the confirmations and the permission answers are in.
+ * Where each unit's section of the report's days stands (D-269, D-293), by date. Read on the whole report, with no
+ * view filter, from the leaves of every status that bear on the days, so a leave written after a confirmation shows
+ * at once as a change; `shown` is the report as the view filter shows it. Loading until both reports, the
+ * confirmations, the confirmable answer and the permission answers are in.
  */
 export function useReportConfirmations(
-  report: Loaded<DayReport>,
+  days: readonly CalendarDate[],
+  shown: Loaded<DayReport>,
   rotations: readonly Deployment[],
 ): Loaded<ReadonlyMap<CalendarDate, DayConfirmations>> {
-  const reportDays = report.status === 'ready' ? report.value.days : null
-  const days = useMemo(() => (reportDays ?? []).map((day) => day.date), [reportDays])
+  const report = useDayReport(days, null, rotations)
   const first = days[0]
   const last = days.at(-1)
   const span = useMemo(
@@ -154,42 +179,69 @@ export function useReportConfirmations(
   )
   const confirmations = useDayConfirmations(days)
   const leaves = useLeavesOfAnyStatus(span)
-  const units = useUnits()
+  const reportDays = report.status === 'ready' ? report.value.days : null
+  const units = useMemo((): readonly UnitId[] => {
+    if (reportDays === null) return NO_UNITS
+    const ids = new Set<UnitId>()
+    for (const day of reportDays) for (const section of day.units) if (section.unitId !== null) ids.add(section.unitId)
+    return [...ids].sort(compareCodeUnits)
+  }, [reportDays])
+  const confirmable = useConfirmable(reportDays === null ? [] : days, units)
   const session = useSession()
   const actorId = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null
-  const checks = useMemo((): readonly PermissionCheck[] => {
-    const ids = new Set<UnitId>(rotations.map((rotation) => rotation.unit_id))
-    for (const day of reportDays ?? []) for (const section of day.units) if (section.unitId !== null) ids.add(section.unitId)
-    return [...ids].map(confirmCheckOf)
-  }, [reportDays, rotations])
+  const checks = useMemo(
+    (): readonly PermissionCheck[] => [...new Set<UnitId>(rotations.map((rotation) => rotation.unit_id))].map(confirmCheckOf),
+    [rotations],
+  )
   const answers = useCanAnswers(checks)
   return useMemo((): Loaded<ReadonlyMap<CalendarDate, DayConfirmations>> => {
     if (report.status !== 'ready') return report
+    if (shown.status !== 'ready') return shown
     if (confirmations.status !== 'ready') return confirmations
     if (leaves.status !== 'ready') return leaves
-    if (units.status !== 'ready') return units
+    if (confirmable.status !== 'ready') return confirmable
     // A button never shows a moment late, as the report's soldiers never do (D-122).
     if (!checks.every(answers.known)) return { status: 'loading' }
-    const tree = buildUnitTree(units.value)
+    const pairs = new Set(confirmable.value.map((pair) => pairKeyOf(pair.unit_id, pair.report_date)))
+    const shownDays = new Map(shown.value.days.map((day) => [day.date, day] as const))
     const mayConfirm = (unitId: UnitId) => answers.can(confirmCheckOf(unitId))
     return {
       status: 'ready',
       value: new Map(
         report.value.days.map((day) => [
           day.date,
-          dayConfirmations({ day, confirmations: confirmations.value, leaves: leaves.value, tree, rotations, mayConfirm, actorId }),
+          dayConfirmations({
+            day,
+            shown: shownDays.get(day.date) ?? day,
+            confirmations: confirmations.value,
+            leaves: leaves.value.leaves,
+            confirmable: (unitId, date) => pairs.has(pairKeyOf(unitId, date)),
+            mayConfirm,
+            actorId,
+            seenAt: leaves.value.readAt,
+          }),
         ]),
       ),
     }
-  }, [report, confirmations, leaves, units, checks, answers, rotations, actorId])
+  }, [report, shown, confirmations, leaves, confirmable, checks, answers, actorId])
 }
 
-/** Confirms a unit's report of a date (D-293); confirming again moves the confirmation to the actor and now. */
+const pairKeyOf = (unitId: UnitId, date: CalendarDate) => `${date} ${unitId}`
+
+/**
+ * Confirms a unit's report of a date (D-293), as seen at `seenAt`; confirming again moves the confirmation to the
+ * actor.
+ */
 export function useConfirmDayReport() {
   const { data } = usePorts()
-  const command = useCommand([QUERY_KEYS.reportConfirmations], (input: { unit_id: UnitId; report_date: CalendarDate }) =>
-    data.commands.day_reports.confirm({ id: ReportConfirmationId.parse(crypto.randomUUID()), ...input }),
+  const command = useCommand(
+    [QUERY_KEYS.reportConfirmations],
+    (input: { unit_id: UnitId; report_date: CalendarDate; seen_at: Timestamp }) =>
+      data.commands.day_reports.confirm({ id: ReportConfirmationId.parse(crypto.randomUUID()), ...input }),
   )
-  const run = useCallback((unitId: UnitId, date: CalendarDate) => command.run({ unit_id: unitId, report_date: date }), [command])
+  const run = useCallback(
+    (unitId: UnitId, date: CalendarDate, seenAt: Timestamp) => command.run({ unit_id: unitId, report_date: date, seen_at: seenAt }),
+    [command],
+  )
   return { run, isPending: command.isPending }
 }
