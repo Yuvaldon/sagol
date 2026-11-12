@@ -25,7 +25,7 @@ export function InstallInvitation() {
   }
   if (offer === 'none') return null
   return (
-    <div className="pointer-events-none fixed inset-x-lg top-safe z-10 flex justify-center">
+    <div className="pointer-events-none fixed inset-x-lg bottom-above-bottom-bar z-10 flex justify-center">
       <section
         aria-label={t('account.installOffer')}
         className="glass-card pointer-events-auto flex flex-wrap items-center justify-center gap-sm rounded-panel py-xs ps-lg pe-xs"
