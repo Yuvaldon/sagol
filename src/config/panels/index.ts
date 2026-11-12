@@ -27,6 +27,8 @@ export const PANEL_IDS = {
   presence: 'presence',
   /** Availability rules, their conflicts, and the broken rules of a day (D-140, D-141). */
   rules: 'rules',
+  /** Deployments and their members (D-019, D-179). */
+  deployments: 'deployments',
   /** Requests of an identity to link to a soldier, for review (D-150). */
   accountLinks: 'account_links',
   /** Roles with their permission sets and the baseline role, and the rank bindings (D-165). */
@@ -54,6 +56,7 @@ export const PanelId = z.enum([
   PANEL_IDS.properties,
   PANEL_IDS.presence,
   PANEL_IDS.rules,
+  PANEL_IDS.deployments,
   PANEL_IDS.accountLinks,
   PANEL_IDS.roles,
   PANEL_IDS.rankBindings,
