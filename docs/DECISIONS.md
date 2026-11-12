@@ -81,7 +81,7 @@ am = amends, ref = refines, ext = extends.
 | D-062 | Decision index; read rule unchanged | docs | sup D-081 (read rule); sup D-128 (the rest) |
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | ref D-114; ref D-117, D-118; ref D-124 |
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
-| D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130; ref D-176 |
+| D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130; ref D-176; ref D-186 |
 | D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-149 |
 | D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147 |
 | D-068 | Schema issue mapping | domain, data, logic | |
@@ -192,16 +192,16 @@ am = amends, ref = refines, ext = extends.
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | |
 | D-175 | The bar names the unit in scope, not the organization | ui | |
-| D-176 | The properties module, and the rows behind reference values | data, logic, ui | |
+| D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
 | D-177 | Property chips in the filter bar | logic, ui | |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | |
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | |
-| D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | |
+| D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187 |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
-| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209 |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
-| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | |
+| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188 |
 | D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207 |
 | D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
@@ -209,6 +209,9 @@ am = amends, ref = refines, ext = extends.
 | D-208 | The bootstrap claimant is a data dependency: the owner email on the server | data, backend | |
 | D-209 | Environments, the Vercel deploy and the function bundle | app, config, data, backend, tooling | |
 | D-210 | Code splitting: the env's adapter pair and libraries in chunks of their own | data, app, tooling | |
+| D-186 | Who creates or changes an entity reads its property definitions | data, logic, ui | |
+| D-187 | A preference save that fails says so, and the menu shows the stored row | logic, ui | |
+| D-188 | Postgres extensions live in the `extensions` schema | backend, docs | |
 
 ---
 
@@ -2667,3 +2670,42 @@ the one function source stays the one the tests run.
 - **Not now: route-level splitting.** Every screen is one app the user stays in, and the first load of a Google build is
   about 470 kB gzip. Splitting the modules by route is for when a measured first load is slow, not before.
 **Why:** a build should download only what its env runs, and the libraries' bytes should outlive a deploy.
+
+## D-186 — Who creates or changes an entity reads its property definitions
+2026-11-12 · accepted · refines D-176, D-065 · OI-113 · decided in audit A5+A6 under D-170
+- **Reads.** A property definition of an entity type (`soldier`, `unit`, `leave`) is readable by whoever holds
+  `properties:view` at `organization`, as before, and also by whoever holds `create` or `update` of that entity's
+  resource (`soldiers`, `units`, `leaves`) on any target. Such a reader gets the definitions of that entity type only,
+  live and archived alike, so a form shows every required field and keeps archived values as stored (D-176). The
+  `properties` module stays for `properties:*` holders only.
+- **The check stays.** `propertyValueIssues` still runs on every create and change, for every actor (rule 4): a required
+  property is required of whoever creates the entity. What changes is that the form can show it.
+- **Why not skip the check.** A required property is the organization's rule about the entity, not about the actor;
+  skipping it for whoever cannot read the definitions would let a self-service leave request, or a soldier added by a
+  commander without `properties:view`, store an entity the organization declared incomplete.
+**Why:** OI-113: a soldier role with `leaves:create` and no `properties:view` (the normal shape of one) was refused with
+`property_required` on a field its form could not show. A definition is the organization's form layout, not a person's
+data, so reading it reveals nothing D-046 protects.
+
+## D-187 — A preference save that fails says so, and the menu shows the stored row
+2026-11-12 · accepted · refines D-181, D-173 · OI-115 · decided in audit A5+A6 under D-170
+- The preference setters in `logic` (`togglePin`, `setRulesRow`, `setAppearance`, and the menu's "approve my leaves")
+  return the command's `Result` instead of dropping it. A failure invalidates the stored preferences, so the menu, the
+  panel and the appearance read the row as stored again.
+- The user menu and the navigation panel show a failed save as the app's error message (the `AppError` code's text, as
+  every other command does, D-046). `stale_version` reads as "changed on another device"; the soldier chooses again over
+  the fresh row. No silent retry: a choice made elsewhere is not overwritten without the soldier seeing it.
+**Why:** OI-115: a save refused with `stale_version` left the choice on screen as if it had been saved, and no command
+in the app fails without saying so.
+
+## D-188 — Postgres extensions live in the `extensions` schema
+2026-11-12 · accepted · refines D-201, D-203 · decided in audit A5+A6 under D-170
+- `btree_gist` (the exclusion constraints on date ranges) is created `WITH SCHEMA extensions`, as Supabase recommends,
+  in `schema.sql` and its migration; a new migration moves the live one with `ALTER EXTENSION btree_gist SET SCHEMA
+  extensions`. The gist operator classes are found by the constraints already built, so no constraint changes.
+- Every later extension goes to `extensions` too. The public schema holds the app's own objects only, which D-203's
+  revokes cover; extension functions are not the app's and keep the grants their extension gives.
+**Why:** Supabase's security advisor reports `extension_in_public` (WARN) for `btree_gist`: in `public`, its 188
+functions are executable by `anon` and `authenticated` and sit on the Data API's RPC surface. `supabase_admin` owns
+them and granted that, so D-203's revokes, run as `postgres`, cannot take it back. They are harmless operator helpers,
+but D-203's rule is that the API roles reach nothing in the app's schema; outside it, the rule holds without them.
