@@ -16,7 +16,7 @@ import {
 } from '@contracts'
 import { archiveLeaveTypeGroupIssues } from '@domain'
 import { holds } from './actor'
-import { colorKeyIssues, iconKeyIssues } from './checks'
+import { iconKeyIssues, leaveTypeColorIssues } from './checks'
 import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import {
@@ -65,7 +65,7 @@ const TYPE_SPEC: ReferenceSpec<LeaveType> = {
   optionalText: [],
   targetOf: () => ORGANIZATION,
   rowIssues: async (check) => [
-    ...colorKeyIssues(check.before?.color_key, check.row.color_key),
+    ...leaveTypeColorIssues(check.before?.color_key, check.row.color_key),
     ...iconKeyIssues(check.before?.icon_key, check.row.icon_key),
     ...(await groupIssues(check)),
   ],
