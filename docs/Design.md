@@ -321,9 +321,10 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 
 - **Top strip (context):** unit in scope · time (the rotation's name or "שגרה", the range, its arrows, "היום" while
   away from today) · view · filter · sort · avatar. A floating pill that hugs its content, centered at the top.
-- **Bottom strip (destinations):** לוח · בקשות (count awaiting me) · דוח 1 · ניהול (sum of waiting counts, commanders
-  only), then the role's one primary quick action, a filled round button at the strip's inline end: "בקשה חדשה" in a
-  rotation, "פתיחת סבב" in routine for who may create one. A floating pill that hugs its content, centered at the
+- **Bottom strip (destinations):** לוח · שלי (who has a soldier record) · בקשות (count awaiting me, who approves) ·
+  דוח 1 · ניהול (sum of waiting counts, commanders only), then the role's one primary quick action, a filled round
+  button at the strip's inline end: "בקשה חדשה" for who may request while a rotation is current or upcoming, "פתיחת
+  סבב" in routine for who may create one, otherwise none (D-266). A floating pill that hugs its content, centered at the
   bottom. The same two pills on a phone, a phone on its side, a tablet and a desktop.
 - **The rule (D-256):** one entry per destination, plus one primary quick action per role.
 - **Profile (avatar):** name · appearance (light or dark, the rules row's place) · install · identity switch (local) ·
@@ -331,8 +332,12 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 - **ניהול יחידה:** הקמת היחידה (while unfinished) · היחידה: מבנה היחידה, חיילים, סבבים · נוכחות: סוגי היעדרות, כללי
   נוכחות · פרטי חיילים: תגיות, פרטים נוספים · הרשאות: רמות הרשאה, הרשאות אישיות, בקשות הצטרפות · נתונים: ייבוא
   וייצוא. No pins.
-- **Requests hub:** the approve-now switch (who may) · ממתינות לאישורי (who approves) · הבקשות שלי · closed. A new
-  request starts from the strip's quick action.
+- **Home (D-265):** who approves or manages someone lands on the board at their widest scope; everyone else on
+  "שלי". One press apart; the last choice is remembered on the device; a link that names a panel or view wins.
+- **שלי:** my next days, in or out · my requests, open and history, with their status. A new request starts from the
+  strip's quick action.
+- **בקשות (the inbox, who approves):** the approve-now switch in its header (who may approve their own) · ממתינות
+  לאישורי · closed.
 - **Gone:** the separate floating "+" (its action is now in the strip), the "הבקשות שלי" tab, pins, the presence count in the bar, the empty board's second
   button, "סבב חדש" in the range menu, the full-width phone bars and the folded wide-phone row.
 - **Focus mode (V23):** both strips and the chips row hide; one restore button stays in a corner that does not cover
@@ -340,8 +345,19 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 
 ### Journeys (D-263)
 
-**Pending the owner's per-role matrix** (soldier, mid-level commander, company headquarters and clerk, company
-commander; daily, weekly, per rotation, once). It will replace this draft and set the home screen per role.
+**Roles (the owner's matrix, D-265).** Plain words; the system stays permission-driven.
+
+| Role | Cares about | Home | Quick action |
+|------|-------------|------|--------------|
+| Soldier, squad leader | Their own days and requests; opens the app to add or follow a request, or when asked | שלי | "בקשה חדשה" while a rotation is current or upcoming; none in routine |
+| Platoon commander, sergeant | The unit's requests, their own included; may delegate | לוח (their unit) | "בקשה חדשה" in a rotation; "פתיחת סבב" in routine if they may create one |
+| Company commander | The plan: wide view and control; rarely approves (HQ's requests) | לוח (the company) | "פתיחת סבב" in routine; "בקשה חדשה" in a rotation |
+| מפל"ג (company HQ) | Dedicated roles under the company commander; the report owner (D-269) | by permission: לוח or שלי | as above, by permission |
+
+Requests come from the soldiers; a commander entering one for a soldier uses the form's requester or a drag on the
+board, never the quick action (D-266). Next slices on these journeys: several requests at once (V28, D-267), the
+board's visual language (V29, D-268), דוח 1 as a confirm-and-send workflow (V30, D-269), the leave-round planner
+(V31, D-270).
 
 **(a) First sign-in to a running unit.**
 1. Sign in. With no organization yet, the claim sheet asks for the unit's name and your name; the time zone is the
@@ -369,10 +385,10 @@ commander; daily, weekly, per rotation, once). It will replace this draft and se
 1. "בקשה חדשה", the strip's quick action. The soldier is the requester (a commander may pick another).
 2. Type (by group), from and to (inside the rotation by default), the reason when the type needs one, and any פרטים
    נוספים; the rules' warnings show as the dates change.
-3. Send. The request shows in "הבקשות שלי" as pending, and on the board as a dashed bar.
+3. Send. The request shows in "שלי" as pending, and on the board as pending (dashed until V29's language, D-268).
 
 **(d) A commander approves.**
-1. The בקשות destination carries the count awaiting approval; open it.
+1. The commander lands on the board; the בקשות destination carries the count awaiting approval; open it.
 2. "ממתינות לאישורי": each request with the soldier, the type, the days and the rules it would break.
 3. Approve or reject; a soft rule asks for an acknowledgement, a hard one refuses (D-145). Details open the leave's
    drawer (D-119).

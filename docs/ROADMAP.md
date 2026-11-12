@@ -130,9 +130,13 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V23 | Focus mode | One control hides both strips and the chips; one restore button brings them back (OI-032, after V25) | ☐ |
 | V26 | Rotation as a mode | One rotation at a time, routine between them, the final close, the whole unit by default, tags for one rotation (D-257 … D-260; schema change) | ☐ |
 | V27 | Templates and setup | The claim creates the root unit; the "פלוגה" template; pick, adjust, done (D-251, D-261, D-262) | ☐ |
+| V28 | Several requests at once | One sheet of rows, a recurring row, sent atomically, each row its own leave; the quick action by mode (D-266, D-267) | ☐ |
+| V29 | Board visual language | Presence quiet, absence a hole, green never means away; rounds under requests (D-268) | ☐ |
+| V30 | דוח 1 as a workflow | Each unit confirms its list, the report owner sends one message up (D-269; schema change) | ☐ |
+| V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation (D-270) | ☐ |
 | A7 | audit | Whole product | ☐ |
 
-Order (D-264): track A runs V24 → V22 → V25 → V23; track B runs V26 → V27, and V21 follows V27.
+Order (D-271): track A runs V24 → V22 → V25 → V28 → V29 → V30 → V23; track B runs V26 → V27 → V31 → V21.
 
 ## Later (no schema change required)
 
