@@ -10,7 +10,7 @@ import {
   useDeploymentPermissions,
   useDeployments,
   usePanel,
-  useSoldiers,
+  useSoldiersWithArchived,
   useToday,
   useUnitsWithArchived,
 } from '@logic'
@@ -149,7 +149,7 @@ export function DeploymentsModule() {
   const deployments = useDeployments()
   const members = useDeploymentMembers()
   const units = useUnitsWithArchived()
-  const soldiers = useSoldiers()
+  const soldiers = useSoldiersWithArchived()
   const commands = useDeploymentCommands()
   const liveUnits = useMemo(() => (units.status === 'ready' ? units.value.filter((row) => row.archived_at === null) : NO_UNITS), [units])
   const live = useMemo(() => (deployments.status === 'ready' ? liveDeployments(deployments.value) : NO_DEPLOYMENTS), [deployments])
