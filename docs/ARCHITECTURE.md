@@ -182,6 +182,9 @@ The current state (D-128):
   without one; `defaultDeploymentMembers` fills a new rotation from its unit.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
+- **The request sheet** (`leaves.createMany`, `logic/leaves/sheet`, D-275): one soldier's rows, a recurring row expanded
+  in logic, each leave with its own rotation and checked on `leaves.<n>` as `leaves.create` checks one, all or none;
+  the answer's issues land back on their rows.
 - **Day report** (`logic/presence`, D-193 … D-197): `dayReport` partitions a day's population into present and absent,
   marks who leaves and returns by `dayMovements` in `domain`, and breaks it down by unit in the tree's order;
   `reportDays` spans to a last day over the reportable days (D-211); `reportText` writes the message. The reasons
@@ -312,7 +315,8 @@ never reach the client bundle.
   for navigations, and caches no data: the command gateway and auth always go to the network (`config/pwa`).
 - `app/shell` owns the browser APIs (registration through `workbox-window`, the update check, `beforeinstallprompt`)
   behind the `shell` port of `logic`; `useAppUpdate` and `useInstallOffer` read it, and `ui` shows the update
-  toast and the install item. A remote build without a network waits on the offline screen (`mountApp`).
+  toast and the install item. `useInstallInvitation` adds the one-time card after sign-in, answered once per device
+  (D-277). A remote build without a network waits on the offline screen (`mountApp`).
 
 ## Folder structure (target)
 

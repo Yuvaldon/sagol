@@ -200,7 +200,7 @@ am = amends, ref = refines, ext = extends.
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
 | D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
-| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253 |
+| D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-277 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188 |
@@ -259,6 +259,7 @@ am = amends, ref = refines, ext = extends.
 | D-271 | Order of the slices after the journeys matrix | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
+| D-277 | The install offer after sign-in, once per device | config, logic, ui | |
 
 ---
 
@@ -3445,5 +3446,20 @@ most; the sort is set rarely and belongs with how the board is shown.
   Each leave is checked on its own path (`leaves.<n>`), the rules judge them all at once (D-073), and each gets its own
   `created` event. No schema change.
 - An issue of an expanded leave lands on the row it came from.
+- **The repetition's bounds.** Every so many days is a whole number, at least the leave's own length, so repetitions
+  never overlap (D-020), and at most a year; the last date is on or after the first day. One sheet creates at most
+  `LEAVE_SHEET.maxLeaves` leaves (`config`); the row that reaches past it says so on its last date.
 **Why:** D-267 asks for one sheet sent at once; a sheet beside the single form would be two paths to one action
 (D-255), and a recurring row is the rhythm soldiers actually ask for.
+
+## D-277 — The install offer after sign-in, once per device
+2026-11-12 · accepted · refines D-184 · V28 · decided under the owner's autonomy instruction of 2026-11-11
+- **Once, after sign-in.** A signed-in, linked soldier sees one card at the top of the workspace: "אפשר להתקין את סגול
+  במכשיר הזה", with "התקנה" and "לא עכשיו". It acts as the user menu's item (D-184): the browser's own prompt where
+  there is one, the iOS steps where there is not.
+- **Never where it cannot act.** Not on the sign-in screen, not inside the installed app, and not where the device
+  offers neither (the shell's offer is `none`).
+- **The answer is the device's.** Installing or "not now" sets a device flag (`DEVICE_KEYS.installAnswered`, scoped
+  to the linked soldier as other device preferences are), and the card does not return on that device. The menu item
+  stays, so who said "not now" can still install.
+**Why:** an offer in a menu alone is rarely found (OI-223); one that returns after each sign-in nags.
