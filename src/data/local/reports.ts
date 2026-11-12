@@ -1,7 +1,9 @@
 import {
+  ConfirmableReportQuery,
   ConfirmDayReportInput,
   IssueCode,
   ReportConfirmationQuery,
+  type ConfirmableReport,
   type DataCommands,
   type DataRepositories,
   type Deployment,
@@ -10,10 +12,12 @@ import {
   type Unit,
 } from '@contracts'
 import {
+  addDays,
   buildUnitTree,
   compareCodeUnits,
   compareDates,
   CONFIRM_DAY_REPORT,
+  confirmedAtOf,
   confirmReportIssues,
   dayReportTarget,
   isAncestorOrSelf,
@@ -84,6 +88,33 @@ export function createReportConfirmationRepository(dependencies: LocalDependenci
             .sort((a, b) => a.report_date.localeCompare(b.report_date) || compareCodeUnits(a.unit_id, b.unit_id))
         })
       }),
+    confirmable: (raw) =>
+      asResult(() => {
+        const query = parseInput(ConfirmableReportQuery, raw)
+        return database.transaction('r', TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const units = await unitsOf(database, scope)
+          const rotations = await rotationsOf(database, scope)
+          // Read on the whole tree, which the actor may not see: a level between their unit and the rotation's unit
+          // must not hide the button from who may confirm (D-293). Only units the actor may confirm answer.
+          const tree = buildUnitTree(units)
+          const confirmable = units.filter(
+            (unit) =>
+              query.unit_ids.includes(unit.id) &&
+              unit.archived_at === null &&
+              holds(scope, CONFIRM_DAY_REPORT, dayReportTarget(unit.id)),
+          )
+          const answers: ConfirmableReport[] = []
+          const { start_date: start, end_date: end } = query.window
+          for (let date = start; compareDates(date, end) <= 0; date = addDays(date, 1)) {
+            for (const unit of confirmable) {
+              const rotation = reportRotationOf(rotations, tree, unit.id, date)
+              if (confirmReportIssues(rotation).length === 0) answers.push({ unit_id: unit.id, report_date: date })
+            }
+          }
+          return answers.sort((a, b) => a.report_date.localeCompare(b.report_date) || compareCodeUnits(a.unit_id, b.unit_id))
+        })
+      }),
   }
 }
 
@@ -108,8 +139,9 @@ export function createDayReportCommands(dependencies: LocalDependencies): DataCo
 
           const table = tableOf(database, 'report_confirmations')
           const stored = await table.where('[unit_id+report_date]').equals([unit.id, input.report_date]).first()
-          // A unit and date already confirmed keep their row; a new one may not take another row's id.
-          if (stored === undefined && (await table.get(input.id)) !== undefined) {
+          // A unit and date already confirmed keep their row; the id may name no other row, new or not.
+          const holder = await table.get(input.id)
+          if (holder !== undefined && holder.id !== stored?.id) {
             return failValidation([{ path: ['id'], code: IssueCode.enum.already_exists }])
           }
           const confirmed = parsedRow('report_confirmations', {
@@ -118,7 +150,7 @@ export function createDayReportCommands(dependencies: LocalDependencies): DataCo
             unit_id: unit.id,
             report_date: input.report_date,
             confirmed_by: scope.soldier_id,
-            confirmed_at: scope.now,
+            confirmed_at: confirmedAtOf(scope.now, input.seen_at),
           })
           await table.put(confirmed)
           return confirmed

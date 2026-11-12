@@ -1,13 +1,15 @@
 import {
   DeploymentId,
   ReportConfirmationId,
+  SoldierId,
   UnitId,
   type AuthIdentity,
   type CalendarDate,
   type OrganizationId,
   type Permission,
-  type SoldierId,
+  type Timestamp,
 } from '@contracts'
+import { compareInstants } from '@domain'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
 import { NOW, errorOf, issuesOf, seedActor, valueOf } from './support'
@@ -21,6 +23,9 @@ const OTHER_DAY = '2026-11-06'
 const OUTSIDE = '2026-12-15'
 const END = '2026-11-30'
 const WINDOW = { start_date: START, end_date: END }
+// What the confirmer saw: after now in the usual case, so the confirmation holds from now.
+const SEEN_LATER: Timestamp = '2026-11-08T11:00:00.000Z'
+const SEEN_EARLIER: Timestamp = '2026-11-08T09:00:00.000Z'
 
 const newId = () => ReportConfirmationId.parse(crypto.randomUUID())
 const pair = (resource: Permission['resource'], action: Permission['action']) => ({ resource, action }) as Permission
@@ -78,8 +83,8 @@ export function describeReportContract(
       )
     }
 
-    const confirm = (unit_id: UnitId, report_date: CalendarDate, id = newId()) =>
-      adapter().commands.day_reports.confirm({ id, unit_id, report_date })
+    const confirm = (unit_id: UnitId, report_date: CalendarDate, id = newId(), seen_at = SEEN_LATER) =>
+      adapter().commands.day_reports.confirm({ id, unit_id, report_date, seen_at })
     const list = async () => valueOf(await adapter().repositories.report_confirmations.list({ window: WINDOW, unit_ids: null }))
 
     it('confirms a unit under an open rotation, and a second confirm moves the same row', async () => {
@@ -108,6 +113,73 @@ export function describeReportContract(
       expect(issuesOf(await confirm(company.id, OUTSIDE))).toEqual([{ path: ['report_date'], code: 'not_reportable' }])
       const held = valueOf(await confirm(company.id, DAY))
       expect(issuesOf(await confirm(company.id, OTHER_DAY, held.id))).toEqual([{ path: ['id'], code: 'already_exists' }])
+      // A unit and date that already have a row still refuse another row's id.
+      const other = valueOf(await confirm(company.id, OTHER_DAY))
+      expect(issuesOf(await confirm(company.id, DAY, other.id))).toEqual([{ path: ['id'], code: 'already_exists' }])
+      expect((await list()).map((row) => [row.id, row.report_date])).toEqual([
+        [held.id, DAY],
+        [other.id, OTHER_DAY],
+      ])
+    })
+
+    it('holds a confirmation from what the confirmer saw, never later than now', async () => {
+      const company = await unit('Company')
+      await rotation(company.id)
+      expect(compareInstants(valueOf(await confirm(company.id, DAY)).confirmed_at, NOW)).toBe(0)
+      expect(compareInstants(valueOf(await confirm(company.id, DAY, newId(), SEEN_EARLIER)).confirmed_at, SEEN_EARLIER)).toBe(0)
+    })
+
+    it('answers which reports the actor may confirm, through a level the actor does not see', async () => {
+      const battalion = await unit('Battalion')
+      const company = await unit('Company', battalion.id)
+      const squad = await unit('Squad', company.id)
+      const other = await unit('Other')
+      await rotation(battalion.id)
+      const confirmer = await seedActor(harnessOf(), organization, [pair('day_reports', 'confirm')], UNIT_SCOPE(squad.id))
+      harnessOf().signIn(confirmer.identity)
+      const window = { start_date: DAY, end_date: OTHER_DAY }
+      const answer = valueOf(
+        await adapter().repositories.report_confirmations.confirmable({ window, unit_ids: [squad.id, company.id, other.id] }),
+      )
+      expect(answer).toEqual([
+        { unit_id: squad.id, report_date: DAY },
+        { unit_id: squad.id, report_date: OTHER_DAY },
+      ])
+      expect(
+        valueOf(
+          await adapter().repositories.report_confirmations.confirmable({
+            window: { start_date: OUTSIDE, end_date: OUTSIDE },
+            unit_ids: [squad.id],
+          }),
+        ),
+      ).toEqual([])
+      valueOf(await confirm(squad.id, DAY))
+    })
+
+    it('names only an active soldier as a report owner', async () => {
+      const company = await unit('Company')
+      const inactive = valueOf(
+        await adapter().commands.soldiers.create({
+          id: SoldierId.parse(crypto.randomUUID()),
+          first_name: 'Noa',
+          last_name: 'Bar',
+          nickname: null,
+          command_rank_id: null,
+          status: 'inactive',
+          properties: {},
+          private: null,
+          membership: null,
+        }),
+      )
+      const refused = await adapter().commands.deployments.create({
+        id: DeploymentId.parse(crypto.randomUUID()),
+        name: 'Rotation',
+        unit_id: company.id,
+        start_date: START,
+        end_date: END,
+        report_owner_id: inactive.id,
+      })
+      expect(issuesOf(refused)).toEqual([{ path: ['report_owner_id'], code: 'soldier_inactive' }])
     })
 
     it('refuses a day of a closed rotation', async () => {
