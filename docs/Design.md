@@ -91,10 +91,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 - **Workspace (D-023, D-108, D-189, D-252):** a `surface` panel on the `canvas`, filled by the active engine. Two glass
   strips float over it and hug their content, centered, on every screen and orientation (V25): the context strip at the
-  top (the scope label, the range, the view, the filter and sort controls, the avatar) and the destination strip at the
+  top (the scope label, the range, "סינון ומיון", the avatar) and the destination strip at the
   bottom (לוח, שלי, בקשות, דוח 1, ניהול, then the role's quick action). On a phone the top strip fits without
-  scrolling (D-273): the sort's sections sit in the view menu, the unit picker is its icon, and a single unit is not
-  shown. The organization's name is the page's `h1`, read
+  scrolling (D-273): the unit picker is its icon, and a single unit is not shown. The view is picked from the "לוח" tab
+  (D-311). The organization's name is the page's `h1`, read
   aloud only. Content starts under the top strip (`under-bars`, `under-bars-md`, `under-bars-filtered`), ends above the
   bottom one (`above-bottom-bar`), and scrolls under the glass. A structure that differs by screen uses `useIsDesktop`;
   anything else is CSS.
@@ -104,7 +104,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   the navigation panel sit inside the insets (`--safe-top`, `--safe-bottom`, `--safe-inline`; `inset-safe`,
   `frame-safe`, `px-safe`, `top-safe`). The inline inset is the larger side on both sides.
 - **Icons and tooltips (D-189):** every `IconButton`, and every control shown as an icon alone (the destinations on
-  desktop, the view switcher, "סינון", the avatar), has its name as its accessible name and as a
+  desktop, "סינון ומיון" on a phone, the avatar), has its name as its accessible name and as a
   `NameTooltip`: a dark pill, `label` type, after `TOOLTIP.delayMs`. No hint prose sits beside a control.
 - **Timeline (D-108, D-192):** sizes come from `TIMELINE_LAYOUT` in `config`, because the geometry and the virtualizer need the
   same numbers: rows 36 (44 on mobile, where a name is a touch target), group rows 32, the days header 28, names 124,
@@ -159,18 +159,27 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   waiting as a small dark pill, read aloud with its name.
 - **Destinations (D-116, D-189, D-252):** an icon with a tooltip from `md`; below it the icon over its short name, 44 px
   at least.
-- **The filter controls (D-131 to D-134, D-173):** in the bar from `md` and in the context row below it, "סינון" (a
-  filter icon with a tooltip) and the "רק מי שחסר" switch. "סינון" is absent when every condition is set. Today's report
-  is a destination, "דוח 1", after the requests (D-252); the bar holds no presence count.
-- **The filter row (D-131, D-173):** a `search` landmark under the top strip, there only while a condition is set: from
+- **The view sheet (D-311):** the "לוח" tab shows the current view's icon. From another destination it returns to the
+  board; on the board it opens a `Drawer` titled "תצוגה": a card per view the device offers (two columns, an icon over
+  the name, the current one with an `action-solid` edge), then "צבעים", a segmented "לפי סוג" / "צבע אחיד". Pressing a
+  card, the current one too, closes the sheet; the colors stay open to compare. The top strip holds no view control.
+- **"סינון ומיון" (D-312, D-313):** one control in the top strip, an icon with its name from `md` and the icon alone
+  below. It opens the rule builder, a `Drawer` of two sections. "סינון": a row per rule, the property, its operator and
+  its values (a button that opens a list of them), with "הסרת סינון"; "+ הוספת סינון"; "וגם" / "או" once there are two
+  soldier rules; "רק מי שחסר" as a suggestion while off. The leave status, the leave type and "רק מי שחסר" hold one row
+  each. A rule still without a value lives only in the open builder. "מיון": a row per sort, the key and the direction,
+  with "העברה למעלה", "העברה למטה" and "הסרת מיון"; "+ הוספת מיון" while a key is left. Today's report is a
+  destination, "דוח 1" (D-252); the bar holds no presence count.
+- **The filter row (D-131, D-173):** a `search` landmark under the top strip, there only while a rule is set: from
   `md` under the bar with the scope (`top-filter-row-md`), below `md` under the top strip (`top-filter-row`), scrolling
-  sideways. It holds the chips and "ניקוי הכול". Each is a `glass-bar` pill, `control` high from `md` and `touch` below;
-  only the pills take presses. The board starts under the bars (`under-bars`), and under the row while it shows
+  sideways. It holds the chips and "ניקוי הכול", which clears every rule and keeps the unit. Each is a `glass-bar` pill,
+  `control` high from `md` and `touch` below; only the pills take presses. Soldier rules joined by "או" say so between
+  their chips. The board starts under the bars (`under-bars`), and under the row while it shows
   (`data-filter-row="shown"` on the workspace swaps in `under-bars-filtered`).
-- **A chip:** the condition muted, then every value bold, cut by width, as one button that opens a popover of its values;
-  beside it a round "x" (`chip-close` 22 from `md`, 44 below) named "הסרת סינון" and the condition. "סינון" lists the
-  conditions not set, then the values of the one picked, which stay open after the first value makes it a chip. A filter the bar does not read is one chip,
-  "סינון מותאם", which can only be removed; the leave chips stay beside it.
+- **A chip (D-314):** the property muted, its operator when not plain "any of" or "is", then every value bold, cut by
+  width, as one button that opens its rule in the builder; beside it a bare "x" with no fill (`chip-close` from `md`,
+  `touch` below) named "הסרת סינון" and the property. A filter the bar does not read is one chip, "סינון מותאם", which
+  can only be removed; the leave chips stay beside it.
 - **"Only who is missing" mutes the days a row is present,** like days out of the unit, and reads them aloud as "נוכח".
 - **A control with nothing to choose stays away (D-076):** the unit selector appears once a unit exists; "today" appears
   while the window does not hold today.
@@ -267,7 +276,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   rounded square; the maskable and Apple icons pad it on `surface`. Name "סגול", standalone, right to left; the bar color is `canvas`, and follows the dark set at runtime.
 - **Update toast**: a glass pill at the top, below the safe area: "גרסה חדשה זמינה" and a primary "רענון". It
   waits for the soldier; it never reloads on its own.
-- **Preference failure** (D-187): a pin, the rules row, the appearance or "approve now" that does not save shows a
+- **Preference failure** (D-187): a pin, the appearance or "approve now" that does not save shows a
   glass pill at the top in `status-rejected` with a close icon; another device's change reads "ההעדפות שונו במכשיר אחר",
   and the menu or panel shows the stored choice.
 - **Install**: "התקנת האפליקציה" in the user menu, above sign-out, only when the browser offers it; on an iPhone,
@@ -281,9 +290,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   scope's running and coming rotations and their dates; with none, the item is absent (D-218). The arrows'
   names follow the kind ("שבוע הבא", "חודש הבא", "סבב הבא"). The timeline narrows its days for a long range and drops
   the weekday name below 44 px. On a phone "היום" is an icon with its name in a tooltip.
-- **Sort**: "מיון" in the bar, next to the filter, an icon with its name on desktop. Two lists: by name, rank,
-  seniority, unit or days absent; ascending or descending.
-- **"Only who is missing"** is a condition in the filter dialog and a chip while on (D-213).
+- **Sort (D-313)**: rows in "סינון ומיון": by name, rank, seniority, unit, days absent or a sortable soldier property;
+  ascending or descending; the first row leads and the next break its ties. The table's leave headers keep their own.
+- **"Only who is missing"** is a suggestion in the builder and a chip while on (D-213, D-312).
 - **Calm**: no explanatory hints (presence and seniority keep theirs); empty states are a title and an action; icon
   buttons have a tooltip with their name (D-215). The interface says סבב for a deployment (D-212).
 
@@ -367,7 +376,7 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
   סבב" in routine for who may create one, otherwise none (D-266). A floating pill that hugs its content, centered at the
   bottom. The same two pills on a phone, a phone on its side, a tablet and a desktop.
 - **The rule (D-256):** one entry per destination, plus one primary quick action per role.
-- **Profile (avatar):** name · appearance (light or dark, the rules row's place) · install · identity switch (local) ·
+- **Profile (avatar):** name · appearance (light or dark) · install · identity switch (local) ·
   sign-out.
 - **ניהול יחידה (work, from V32, D-285):** the setup's progress (while unfinished) · אנשים: חיילים, בקשות הצטרפות, הרשאות
   אישיות · נוכחות: סבבים, כללי נוכחות · then "הגדרות היחידה". No pins. Setup is laid out in "Work and unit setup"
@@ -557,8 +566,8 @@ is absent. The owner sees everything because the owner role holds every permissi
   who is missing. A name the actor may not read is "לא ידוע".
 - **The heat row (D-141):** under the days header, inside its sticky frame, a row the height of a timeline row with the
   label "כללים" and one cell per day: empty, a dashed `status-pending` cell, or a solid `status-rejected` one, with the
-  count. A cell is a button named by its day, its count and the worst rule. By default it sits below the list instead,
-  sticky above the bottom strip; the soldier picks the place in the profile (D-253). It is absent when no rule
+  count. A cell is a button named by its day, its count and the worst rule. It always sits there, sticky above the soldiers
+  (D-310). It is absent when no rule
   concerns the scope.
 - **The user menu** is an avatar at the top strip's inline end on every screen; the soldier's name is its tooltip and is
   read aloud with "תפריט משתמש" (D-189).
@@ -582,7 +591,7 @@ is absent. The owner sees everything because the owner role holds every permissi
 | `validatorResult`, `fieldError`, `formStateOf` | `ui/patterns` | Field issues (D-068) in TanStack Form |
 | `UserMenu`, `IdentityList` | `ui/shell` | Who is signed in, sign-out, dev identity switcher, import and export |
 | `ModuleDrawer` | `ui/shell` | The map of what opens in the drawer, with each group's sections |
-| `Viewport`, `UnitSelector`, `ViewSwitcher`, `WindowNavigator` | `ui/shell` | The engine in the middle, and the controls of the bars |
+| `Viewport`, `UnitSelector`, `ViewSheet`, `WindowNavigator` | `ui/shell` | The engine in the middle, the controls of the bars, and the view sheet (D-311) |
 | Engine registry, `TimelineEngine`, `ListEngine`, `TableEngine`, `CalendarEngine` | `ui/engines` | The views that exist; the timeline as core, view and adapter, the others as adapters |
 | `BoardEngine`, `EngineScroller`, `LeaveChip` | `ui/board` | What every engine shares: the frame and its states, the scroller region, a leave as a chip |
 | `UnitsModule`, `UnitLevelsModule`, `SoldiersModule`, `CommandRanksModule` | `ui/modules` | The shape of the next modules |
@@ -599,8 +608,8 @@ is absent. The owner sees everything because the owner role holds every permissi
 | `DeploymentsModule`, `DeploymentForm`, `DeploymentMembersForm` | `ui/modules/deployments` | Deployments and who serves in them (D-179) |
 | `LeaveBatchForm`, `LeaveDuplicateForm`, `SenioritySection` | `ui/modules/leaves`, `ui/modules/soldiers` | A collective leave, copies of a leave, and personal seniority (D-179) |
 | `PropertyFields` | `ui/patterns/properties` | One field per live property of an entity, ending the soldier, unit and leave forms (D-176) |
-| `FilterBar`, `FilterControl` | `ui/shell` | The filter row (chips, property chips, "only who is missing", clear all), and the bar's filter control (D-213) |
-| `SortControl` | `ui/shell` | The board's sort, shared with the table (D-214) |
+| `FilterBar`, `FilterButton` | `ui/shell` | The filter row (a chip per rule, "or" between, clear all), and "סינון ומיון" in the bar (D-312) |
+| `RuleBuilder` | `ui/shell` | Filter rules and sort rows of the board (D-312, D-313) |
 | `MenuChoice`, `menuStyles` | `ui/shell` | A menu item with a check while selected, and the bar menus' classes |
 | `DayReportDialog` | `ui/modules/presence` | The day report: counts, units, names, reasons, a span, the text copy and the image (D-193 … D-196) |
 | `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
