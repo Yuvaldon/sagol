@@ -1,6 +1,7 @@
 import type { Store } from './store'
 import {
   CreateLeaveBatchInput,
+  CreateLeavesInput,
   DuplicateLeaveInput,
   EmptyQuery,
   IssueCode,
@@ -36,7 +37,8 @@ import { passRuleGate, writeLeave } from './leaveCommands'
 import { LEAVE_TABLES, canView, leaveTypeOf, visibleLeave, visibleSoldier } from './leaves'
 import { POLICY_TABLES } from './snapshot'
 
-// Leaves created together (D-012, D-049, D-179): a batch for several soldiers, and copies of a leave. Each new leave is
+// Leaves created together (D-012, D-049, D-179, D-275): a batch for several soldiers, several leaves of one soldier,
+// and copies of a leave. Each new leave is
 // checked as `leaves.create` checks one, on its own path, and the rules judge them all at once (D-073), so the command
 // saves every leave or none. Each leave gets its own `created` event with the acknowledged rules.
 
@@ -139,7 +141,7 @@ const CREATION_TABLES: readonly TableName[] = [...new Set<TableName>([...LEAVE_T
 
 export function createLeaveCreationCommands(
   dependencies: LocalDependencies,
-): Pick<DataCommands['leaves'], 'createBatch' | 'duplicate'> {
+): Pick<DataCommands['leaves'], 'createBatch' | 'createMany' | 'duplicate'> {
   const { database, changes } = dependencies
   return {
     createBatch: (raw) =>
@@ -183,6 +185,36 @@ export function createLeaveCreationCommands(
         })
         changes.publish([...result.written, { table: 'leave_batches', ids: [result.batch.id] }])
         return { batch: result.batch, leaves: result.leaves }
+      }),
+
+    // One soldier's sheet (D-275): each leave in its own rotation, and no batch row, since none is stored (D-267).
+    createMany: (raw) =>
+      asResult(async () => {
+        const input = parseInput(CreateLeavesInput, raw)
+        const result = await database.transaction('rw', CREATION_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          return createLeaves(
+            database,
+            scope,
+            {
+              source: 'create',
+              as_approved: input.as_approved,
+              acknowledged_rule_ids: input.acknowledged_rule_ids,
+              batch_id: null,
+              drafts: input.leaves.map((leave) => ({
+                ...leave,
+                soldier_id: input.soldier_id,
+                reason: optionalText(leave.reason),
+              })),
+              pathOf: (index) => ['leaves', index],
+              ownIssues: () => Promise.resolve([]),
+              writeFirst: () => Promise.resolve(),
+            },
+            (draft) => detailIssues(database, scope, draft),
+          )
+        })
+        changes.publish(result.written)
+        return result.leaves
       }),
 
     duplicate: (raw) =>
