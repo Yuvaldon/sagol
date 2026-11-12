@@ -16,6 +16,8 @@ import {
 // a phone, RTL, with axe. A step that changes in Design.md changes here in the same commit. Sample data, tests only.
 
 const REASON = 'חתונה'
+/** "סיום" runs the company template's commands one after another; with two workers that is past the 5 s default. */
+const TEMPLATE_RUN_MS = 20_000
 const INBOX = new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`)
 
 /** Two new soldiers as a spreadsheet pastes them: tab between the columns, in the CSV's order. */
@@ -44,7 +46,7 @@ test('journey (a): the claim, the setup from a template, soldiers, then a rotati
 
   await test.step('(a) 4. "סיום" runs the template and opens the board in routine', async () => {
     await setupDrawer(page).getByRole('button', { name: he.setup.wizard.finish }).click()
-    await expect(setupDrawer(page)).toBeHidden()
+    await expect(setupDrawer(page)).toBeHidden({ timeout: TEMPLATE_RUN_MS })
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page).toHaveURL(/\/$/)
   })
