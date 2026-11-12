@@ -153,9 +153,11 @@ export function TemplateWizard({
   base,
   onLeave,
   onStop,
+  onRunning,
 }: {
   readonly base: TemplateBase
   readonly onLeave: () => void
+  readonly onRunning: (base: TemplateBase | null) => void
   readonly onStop: (outcome: Extract<TemplateOutcome, { ok: false }>) => void
 }) {
   const panel = usePanel()
@@ -165,10 +167,19 @@ export function TemplateWizard({
 
   const finish = async (chosen: TemplateChoices) => {
     if (templateChoiceIssues(chosen).length > 0) return
+    onRunning(base)
     const result = await apply.run({ base, choices: chosen, names: templateNames(chosen.templateId) })
-    if (!result.ok) return
-    if (result.value.ok) panel.close()
-    else onStop(result.value)
+    if (!result.ok) {
+      onRunning(null)
+      return
+    }
+    const outcome = result.value
+    if (outcome.ok) {
+      panel.close()
+      return
+    }
+    onRunning(null)
+    onStop(outcome)
   }
   // A template with nothing to adjust is done from the pick.
   const adjustable = (id: UnitTemplateId) => {

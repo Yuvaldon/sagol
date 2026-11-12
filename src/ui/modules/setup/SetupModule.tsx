@@ -1,6 +1,6 @@
 import type { SetupStepId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { usePanel, useSetupProgress, useTemplateOffer, type SetupStep, type TemplateOutcome } from '@logic'
+import { usePanel, useSetupProgress, useTemplateOffer, type SetupStep, type TemplateBase, type TemplateOutcome } from '@logic'
 import { Check, ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -61,10 +61,14 @@ export function SetupModule() {
   const offer = useTemplateOffer()
   const [left, setLeft] = useState(false)
   const [stopped, setStopped] = useState<Extract<TemplateOutcome, { ok: false }> | null>(null)
-  if (!left && stopped === null && offer.status === 'ready' && offer.value !== null) {
+  // The run itself makes the unit no longer fresh: the wizard stays until the run answers, so it can close or stop.
+  const [running, setRunning] = useState<TemplateBase | null>(null)
+  const base = running ?? (offer.status === 'ready' ? offer.value : null)
+  if (!left && stopped === null && base !== null) {
     return (
       <TemplateWizard
-        base={offer.value}
+        base={base}
+        onRunning={setRunning}
         onLeave={() => {
           setLeft(true)
         }}
