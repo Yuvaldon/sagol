@@ -255,7 +255,7 @@ am = amends, ref = refines, ext = extends.
 | D-265 | Home follows permissions: the board, or "שלי" | logic, ui | |
 | D-266 | The quick action follows the role, then the mode | logic, ui | |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
-| D-268 | The board's visual language: presence is quiet, absence is a hole | ui | |
+| D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290 |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
 | D-270 | The leave-round planner | domain, logic, ui | |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
@@ -270,6 +270,7 @@ am = amends, ref = refines, ext = extends.
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
+| D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
 
@@ -3758,6 +3759,33 @@ Checked against CLI 2.122.0: its permission tables list `api_gateway_keys_*` for
 `--db-url`; `functions deploy`: `edge_functions_write`; `secrets set`: `edge_functions_secrets_write`). A `--debug`
 trace against a nonexistent ref shows `functions deploy --use-api` calling `POST /functions/deploy` and
 `GET /v1/projects/{ref}` only, and `db push --db-url` making no Management API call.
+
+## D-290 — The board's visual language as built: a hatched hole, rounds as bands, the view by device
+
+2026-11-12 · accepted · refines D-268, D-272, D-174 · V29 · decided under the owner's autonomy instruction of 2026-11-11
+
+- **Absence is a hole.** On the timeline an approved leave is hatched (`hatch-absence`, drawn from `currentColor`),
+  with a faint fill of the type's tone and its edge. A pending one is a dashed edge over the surface. The caption is
+  always the body text, so it reads in both themes. The list's and the calendar's chips already were quiet (D-174).
+- **Green never means away.** A leave type is not offered green or lime (`NOT_FOR_LEAVES`, config); the local adapter
+  refuses a new one, as the color field does. A type stored green before is painted in the uniform tone, so the data
+  stays and the board still never says "present" for someone away. An import (D-171) brings a type stored green in
+  as gray (`IMPORTED_LEAVE_TYPE_STAND_IN`, config), so an old export still loads. A marker leave keeps the marker tone
+  when its type has no color it may take.
+- **Rounds under requests.** A leave in a batch is a round (`layerOf`, derived, D-019). On the timeline it is a band of
+  the row's full height under the request bars, outside the lanes, and resizes like a bar. In the list and the calendar,
+  which have no lanes, it stays a chip.
+- **The opening view by device (OI-220).** With no view in the link, desktop opens on the timeline and a phone on the
+  list (`DEFAULT_VIEW_BY_DEVICE`, config). Until a view is chosen the link stays bare; a chosen view, the device's
+  default included, is written to the link. Nothing is remembered: a chosen view lives in the URL (D-103), so a link
+  shared from a phone opens on what it names, on any device.
+- **Overlapping rounds** share the band's place; the one beneath is reached from the list view (OI-246).
+- **A breach in every view (OI-221).** The same evaluation as the heat row (D-141): a calendar day that breaks a rule
+  shows a count beside its heading, and the list shows the window's broken days above its rows. Each one opens the rules
+  of its day, in the heat row's tones.
+
+**Why:** D-268 set the direction; these are the choices it left open, each one the smallest that keeps one meaning
+across the views.
 
 ## D-292 — Staging's branch gets a new commit with main's tree, so Vercel builds it
 

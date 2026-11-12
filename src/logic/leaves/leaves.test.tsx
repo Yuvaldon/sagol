@@ -1,5 +1,6 @@
 import {
   DeploymentId,
+  LeaveBatchId,
   LeaveId,
   LeaveTypeGroupId,
   LeaveTypeId,
@@ -125,6 +126,11 @@ describe('the leaves of a timeline row (D-111)', () => {
       ['2026-11-10', 'available', 'T31'],
       ['2026-11-12', 'unavailable', null],
     ])
+  })
+
+  it('draws a leave in a batch as a round, and any other as a request (D-268)', () => {
+    const leaves = [leave(1, 30, '2026-11-08', '2026-11-09'), leave(2, 30, '2026-11-10', '2026-11-11', { batch_id: LeaveBatchId.parse(uuid(70)) })]
+    expect((boardLeaves(leaves, [type(30, null, 0)]).get(YAEL) ?? []).map((row) => row.layer)).toEqual(['request', 'round'])
   })
 })
 describe('the bar colors in the URL (D-112)', () => {

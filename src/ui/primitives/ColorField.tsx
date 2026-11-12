@@ -1,4 +1,4 @@
-import { PALETTE_KEYS } from '@config'
+import { PALETTE_KEYS, type PaletteKey } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { Check, Slash } from 'lucide-react'
 import { Label, Radio, RadioGroup, Text } from 'react-aria-components'
@@ -18,9 +18,12 @@ export interface ColorFieldProps {
   readonly value: string | null
   readonly onChange: (value: string | null) => void
   readonly error: I18nKey | null
+  /** The keys offered, the whole palette by default. A key the value already holds stays offered (D-290). */
+  readonly keys?: readonly PaletteKey[]
 }
 
-export function ColorField({ labelKey, name, value, onChange, error }: ColorFieldProps) {
+export function ColorField({ labelKey, name, value, onChange, error, keys = PALETTE_KEYS }: ColorFieldProps) {
+  const offered = PALETTE_KEYS.filter((key) => keys.includes(key) || key === value)
   return (
     <RadioGroup
       name={name}
@@ -38,7 +41,7 @@ export function ColorField({ labelKey, name, value, onChange, error }: ColorFiel
         <Radio value={NO_COLOR} aria-label={t('palette.none')} className={`${SWATCH} border border-line bg-surface text-text-muted`}>
           <Slash aria-hidden size={14} />
         </Radio>
-        {PALETTE_KEYS.map((key) => (
+        {offered.map((key) => (
           <Radio
             key={key}
             value={key}

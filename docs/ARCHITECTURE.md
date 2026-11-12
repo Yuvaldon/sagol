@@ -195,7 +195,7 @@ The current state (D-128):
   switch is a device flag (`useDeviceFlag`) in the device store of `data/device`, under `DEVICE_KEYS`, per soldier.
   `ui` draws the image on a canvas (`modules/presence/reportImage.ts`).
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
-  (D-141); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
+  (D-141), and the same breaches beside a calendar day and above the list (`ui/board/breaches.ts`, D-290); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
 ## Filters (shared model)
 

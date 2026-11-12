@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, requestLeave, openRotationInNewUnit } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 
 // V17's demo: the soldier's appearance (D-181). Light by default, dark on request, the device's on request, kept with
 // the soldier's preferences, and every surface passes axe in the dark set. Desktop and mobile, RTL. Sample data, tests only.
@@ -14,6 +14,11 @@ async function chooseAppearance(page: Page, name: string) {
   await page.getByRole('button', { name: he.account.menu }).click()
   await page.getByRole('menuitemradio', { name }).click()
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('light by default, dark on request, the device’s on request, and readable in the dark', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)

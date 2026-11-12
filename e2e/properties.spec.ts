@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, drawer, openRotationInNewUnit } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 
 // V14's demo: custom properties (D-016), their fields in a soldier's form, and their chips in the filter bar (D-177),
 // on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -46,6 +46,11 @@ async function addCondition(page: Page, condition: string, value: string) {
   await page.getByRole('dialog', { name: he.filters.add }).locator('label').filter({ hasText: value }).click()
   await page.keyboard.press('Escape')
 }
+
+// The steps read the timeline's bars, which a phone opens only when asked (D-290).
+test.beforeEach(async ({ page, isMobile }) => {
+  await openBoardOnTimeline(page, isMobile)
+})
 
 test('custom properties: defined once, filled in a form, and filtered by', async ({ page }) => {
   await page.clock.setFixedTime(NOW)

@@ -8,7 +8,9 @@ import {
   DATE_FORMATS,
   DATE_LOCALE,
   DEFAULT_BAR_COLOR_MODE,
-  DEFAULT_VIEW_ID,
+  DEFAULT_VIEW_BY_DEVICE,
+  LEAVE_TYPE_PALETTE_KEYS,
+  isLeaveTypePaletteKey,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
   SETUP_SECTIONS,
@@ -192,9 +194,19 @@ describe('views, url, storage, breakpoints, dates', () => {
     expect(TIMELINE_DRAG.holdTolerancePx).toBeGreaterThan(0)
   })
 
-  it('has a default view that is a view id', () => {
-    expect(VIEW_IDS).toContain(DEFAULT_VIEW_ID)
+  it('has a default view per device that is a view id (D-290)', () => {
+    expect(VIEW_IDS).toContain(DEFAULT_VIEW_BY_DEVICE.desktop)
+    expect(VIEW_IDS).toContain(DEFAULT_VIEW_BY_DEVICE.phone)
     expect(ViewId.safeParse('gantt').success).toBe(false)
+  })
+
+  it('offers a leave type no green, so green never means away (D-268, D-290)', () => {
+    expect(LEAVE_TYPE_PALETTE_KEYS).not.toContain('green')
+    expect(LEAVE_TYPE_PALETTE_KEYS).not.toContain('lime')
+    expect(LEAVE_TYPE_PALETTE_KEYS).toContain('red')
+    expect(isLeaveTypePaletteKey('green')).toBe(false)
+    expect(isLeaveTypePaletteKey('blue')).toBe(true)
+    expect(isLeaveTypePaletteKey('nope')).toBe(false)
   })
 
   it('has unique URL parameter names', () => {

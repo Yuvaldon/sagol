@@ -5,7 +5,7 @@ import { Button as AriaButton, Header, Menu, MenuSection, MenuTrigger, Popover, 
 import { NameTooltip } from '../primitives/Button'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 import { MenuChoice } from './menu'
-import { useIsDesktop } from '../patterns/media'
+import { useIsDesktop, useViewDevice } from '../patterns/media'
 import { SortSections } from './SortControl'
 import { MENU_HEADER, MENU_LIST, MENU_POPOVER, MENU_TRIGGER, onlyKey } from './menuStyles'
 
@@ -21,7 +21,7 @@ const COLOR_LABELS: Record<BarColorMode, I18nKey> = {
 }
 
 export function ViewSwitcher() {
-  const { view, select } = useActiveView(AVAILABLE_VIEWS)
+  const { view, select } = useActiveView(AVAILABLE_VIEWS, useViewDevice())
   const colors = useBarColors()
   const current = engineOf(view)
   const isDesktop = useIsDesktop()
