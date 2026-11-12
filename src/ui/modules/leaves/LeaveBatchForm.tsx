@@ -1,6 +1,6 @@
 import type { CalendarDate, LeaveType, LeaveTypeGroup, LeaveTypeId, Soldier, SoldierId } from '@contracts'
 import { t } from '@i18n'
-import { fullName, leaveBatchIssues, newLeaveBatchValues, useLeaveBatchCommands, usePanel } from '@logic'
+import { fullName, leaveBatchIssues, newLeaveBatchValues, useLeaveBatchCommands, usePanel, useRequestRotation } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -45,6 +45,7 @@ export function LeaveBatchForm({
   const panel = usePanel()
   const { createBatch } = useLeaveBatchCommands()
   const gate = useRuleGate()
+  const rotationOf = useRequestRotation()
   const [state, setState] = useState(CLEAN_FORM)
   const typeOf = (id: LeaveTypeId | null) => types.find((type) => type.id === id) ?? null
   const approvesAll = (ids: readonly SoldierId[]) => ids.length > 0 && ids.every(canApprove)
@@ -52,13 +53,13 @@ export function LeaveBatchForm({
   const properties = usePropertyFields('leave')
   const form = useForm({
     defaultValues: { ...newLeaveBatchValues(today), as_approved: approveNow },
-    validators: { onSubmit: ({ value }) => validatorResult(leaveBatchIssues(value, typeOf(value.leave_type_id))) },
+    validators: { onSubmit: ({ value }) => validatorResult(leaveBatchIssues(value, typeOf(value.leave_type_id), rotationOf(value.soldier_ids, value))) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
       const values = { ...value, as_approved: value.as_approved && approvesAll(value.soldier_ids), ...properties.withProperties }
       // A rule the command names opens the dialog, and acknowledging sends the batch again (D-047, D-142).
       await gate.run(
-        (acknowledged) => createBatch.run({ values, acknowledged }),
+        (acknowledged) => createBatch.run({ values, deploymentId: rotationOf(values.soldier_ids, values).deployment_id, acknowledged }),
         (result) => {
           if (result.ok) panel.close()
           else setState(formStateOf(rowIssuesOnFields(result.error, 'leaves', ROW_FIELDS), [...BATCH_FIELDS, ...properties.fieldNames]))
