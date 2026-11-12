@@ -131,7 +131,9 @@ export const dictionary = {
       month: 'חודש',
     },
     rotations: 'סבב שלם',
-    newRotation: 'סבב חדש',
+    noRotationTitle: 'אין סבב פעיל',
+    noRotationBody: 'המפקד פותח את הסבב, ואז אפשר להגיש בקשות.',
+    openRotation: 'פתיחת סבב',
     sort: 'מיון',
     sortBy: 'מיון לפי',
     sortKeys: {

@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useBoardFilters, useCurrentOrganization, useDateWindow } from '@logic'
+import { useBoardFilters, useCurrentOrganization } from '@logic'
+import { useBoardShown } from './boardShown'
 import { useIsDesktop } from '../patterns/media'
 import { useAppliedAppearance } from './appearance'
 import { ModuleButtons } from './ModuleButtons'
@@ -32,10 +34,9 @@ function OrganizationName({ name }: { readonly name: string }) {
   return <h1 className="sr-only">{name}</h1>
 }
 
-/** The board's filter controls in the bar (D-173). They need a day, as every engine does. */
+/** The board's filter controls in the bar (D-173). They exist only with the board (D-218). */
 function FilterControls() {
-  const { window } = useDateWindow()
-  if (window === null) return null
+  if (!useBoardShown()) return null
   return (
     <>
       <FilterControl />
@@ -45,10 +46,14 @@ function FilterControls() {
   )
 }
 
+/** The dates and the view: controls of the board, so they exist only with it (D-218). */
+function BoardControl({ children }: { readonly children: ReactNode }) {
+  return useBoardShown() ? children : null
+}
+
 /** The row of set conditions under the bars (D-131, D-173): there only while a condition is set. */
 function FilterRow() {
-  const { window } = useDateWindow()
-  if (window === null) return null
+  if (!useBoardShown()) return null
   return (
     <div className="pointer-events-none absolute inset-x-lg top-filter-row flex md:top-filter-row-md">
       <FilterBar />
@@ -64,11 +69,15 @@ function DesktopBars({ name, identity }: { readonly name: string; readonly ident
           <NavigationPanel />
           <OrganizationName name={name} />
           <UnitSelector />
-          <ViewSwitcher />
+          <BoardControl>
+            <ViewSwitcher />
+          </BoardControl>
           <FilterControls />
         </nav>
         <nav aria-label={t('workspace.navigation')} className={`${BAR} min-w-none`}>
-          <WindowNavigator />
+          <BoardControl>
+            <WindowNavigator />
+          </BoardControl>
           {/* Pins may outgrow the bar: they scroll sideways rather than push the name out (OI-110, D-173). */}
           <div className="-m-xs flex min-w-none items-center gap-xs overflow-x-auto p-xs">
             <ModuleButtons />
@@ -88,11 +97,15 @@ function MobileBars({ name, identity }: { readonly name: string; readonly identi
         {/* The dates keep their width; the unit's name gives way and truncates, so nothing overlaps (D-215). */}
         <div className="flex shrink-0 items-center gap-xs">
           <NavigationPanel />
-          <WindowNavigator />
+          <BoardControl>
+            <WindowNavigator />
+          </BoardControl>
         </div>
         <div className="flex min-w-none items-center gap-xs">
           <UnitSelector />
-          <ViewSwitcher />
+          <BoardControl>
+            <ViewSwitcher />
+          </BoardControl>
         </div>
       </nav>
       <FilterRow />
@@ -115,7 +128,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const organization = useCurrentOrganization()
   const isDesktop = useIsDesktop()
   const { active } = useBoardFilters()
-  const { window } = useDateWindow()
+  const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
   useAppliedAppearance()
@@ -127,7 +140,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
     // The row of set conditions pushes the board's first row down only while it shows (D-173).
     <FilterFocusContext value={focus}>
       <PreferenceFailureContext value={preferenceFailure}>
-      <div data-filter-row={active && window !== null ? 'shown' : undefined} className="relative h-dvh bg-canvas p-sm">
+      <div data-filter-row={active && boardShown ? 'shown' : undefined} className="relative h-dvh bg-canvas p-sm">
         <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
           <Viewport />
         </main>
