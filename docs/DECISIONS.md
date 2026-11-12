@@ -3885,11 +3885,11 @@ the same tree on top of main is the smallest change Vercel's integration builds.
 - **Changed since is derived, never stored:** a confirmed unit's report reads "changed since" when a leave of any status
   of a soldier in its section, touching the day before through the day after (the day's leaving and returning, D-193),
   was written (`updated_at`) after `confirmed_at`. A leave moved wholly off those days, and a soldier moved between
-  units, are not caught yet (OI-247).
+  units, are not caught yet (OI-254).
 - **A confirmation holds from what the confirmer saw:** the command takes `seen_at`, when the client last read the
   leaves the section is drawn from, and stores `confirmed_at` = the earlier of now and `seen_at`. A leave written after
   the confirmer's read, and before the confirm, still shows as a change. A leave whose older `updated_at` commits on the
-  server after the read is not caught yet (OI-248).
+  server after the read is not caught yet (OI-255).
 - **Read on the whole unit section:** the status, "changed since" and the summary read every soldier of the unit's
   section, whatever the view's filter hides. While a filter hides some of a section's soldiers, the section offers no
   confirm button; a line says that confirming needs the full list, so the filter is cleared first.
