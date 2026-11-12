@@ -568,11 +568,12 @@ export function describeUnitContract(
       it('refuses a unit with a soldier placed today or later', async () => {
         const { platoonA, platoonB } = await sampleTree()
         const { organizationId, owner } = await organizationAndOwner()
-        await place(organizationId, owner.id, platoonA.id, null)
-        // One primary placement per soldier at a time (schema.sql), so the second is another soldier's.
-        const other = SoldierId.parse(crypto.randomUUID())
-        await harnessOf().seed('soldiers', [{ ...owner, id: other }])
-        await place(organizationId, other, platoonB.id, LATER_DATE)
+        // One primary placement per soldier at a time (schema.sql), and the owner's is in the root since the claim
+        // (D-251), so each platoon's is another soldier's.
+        const [placed, later] = [SoldierId.parse(crypto.randomUUID()), SoldierId.parse(crypto.randomUUID())]
+        await harnessOf().seed('soldiers', [{ ...owner, id: placed }, { ...owner, id: later }])
+        await place(organizationId, placed, platoonA.id, null)
+        await place(organizationId, later, platoonB.id, LATER_DATE)
         for (const unit of [platoonA, platoonB]) {
           const refused = await adapter().commands.units.archive({ id: unit.id, expected_version: 1 })
           expect(issuesOf(refused)).toEqual([{ path: [], code: 'unit_not_empty' }])

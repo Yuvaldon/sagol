@@ -83,6 +83,8 @@ async function localExport(): Promise<OrganizationExport> {
   const organizationId = OrganizationId.parse(crypto.randomUUID())
   const ownerId = SoldierId.parse(crypto.randomUUID())
   const ownerRole = RoleId.parse(crypto.randomUUID())
+  // The claim writes the root unit (D-251); the tree grows under it.
+  const company = UnitId.parse(crypto.randomUUID())
   valueOf(
     await commands.organizations.bootstrapOwner({
       organization: { id: organizationId, name: 'Company', timezone: 'Asia/Jerusalem' },
@@ -90,7 +92,7 @@ async function localExport(): Promise<OrganizationExport> {
       owner_role: { id: ownerRole, name: 'Owner' },
       account_id: SoldierAccountId.parse(crypto.randomUUID()),
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
-      root_unit_id: UnitId.parse(crypto.randomUUID()),
+      root_unit_id: company,
       membership_id: UnitMembershipId.parse(crypto.randomUUID()),
     }),
   )
@@ -122,7 +124,6 @@ async function localExport(): Promise<OrganizationExport> {
       }),
     ).id
   // Children before parents in id order, so a load that kept the stored order would fail.
-  const company = await unit('Company', null)
   const platoon = await unit('Platoon', company)
   const squad = await unit('Squad', platoon)
   const soldier = valueOf(
