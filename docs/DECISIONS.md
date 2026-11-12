@@ -2803,7 +2803,8 @@ but D-203's rule is that the API roles reach nothing in the app's schema; outsid
   the date stays. Every engine reads the same window, so every engine honors the range.
 - **Navigation.** The arrows step by the kind: a day, a week or a month; a rotation steps to the scope's previous or next
   rotation, and an arrow with nowhere to go is disabled. "Today" keeps the kind on today; from a rotation it opens the
-  rotation running today, else this week. It shows only while the window does not hold today (D-076). An unknown or
+  rotation running today, else this week (also when the rotation shown runs today past its capped days). Changing the
+  kind keeps the window's middle day, so a week across two months becomes the month most of it lies in. It shows only while the window does not hold today (D-076). An unknown or
   unreadable rotation falls back to the week, so a link never breaks.
 - **Picker.** The window label opens a menu: the kinds, then the scope's rotations (the selected unit's, its ancestors'
   and descendants'; all of them for the whole organization) that are running or still to come, with their dates. With
@@ -2838,7 +2839,7 @@ where the other narrowing choices are and is seen only while it acts.
 - **Order.** Rows stay grouped by unit (D-105). The unit key orders the groups by the unit tree, reversed when
   descending, and inside a group keeps the default. Other keys order the rows inside each group. A row with no value
   (no rank) comes last either way; the name breaks ties.
-- **The table** shares the state: its soldier column is `name`, its unit column `unit` (tree order), and its own
+- **The table** shares the state: its soldier column is `name` and its unit column `unit`, both in the board's own row order, and its own
   leave columns (`type`, `from`, `to`, `days`, `status`) write the same params. A board key with no table column keeps
   the board's order. A control in the bar ("מיון"), next to the filter, holds both lists.
 **Why:** commanders look for the most senior, the most absent or a name; grouping stays because the unit is the
