@@ -1,6 +1,7 @@
 import type { CalendarDate, Deployment, FilterExpression, PermissionCheck, Soldier } from '@contracts'
 import { addDays } from '@domain'
 import { useMemo } from 'react'
+import { useRotationScope } from '../view-state/rotation'
 import { useFilterSource } from '../filters/source'
 import { useLeaves, useLeaveTypes } from '../leaves/hooks'
 import { checkOn } from '../permissions/checks'
@@ -17,7 +18,7 @@ import { dayReport, type DayReport } from './report'
 /** The lists of `day`. Loading while the day is unknown. */
 export function usePresence(day: CalendarDate | null, filter: FilterExpression | null): Loaded<PresenceLists> {
   const window = useMemo(() => (day === null ? null : dateWindowOf({ from: day, to: day }, day)), [day])
-  const source = useFilterSource()
+  const source = useFilterSource(useRotationScope().rotation?.id ?? null)
   const leaves = useLeaves(window)
   const types = useLeaveTypes()
   const checks = useMemo(
@@ -61,7 +62,7 @@ export function useDayReport(
     () => (first === undefined || last === undefined ? null : { from: addDays(first, -1), to: addDays(last, 1) }),
     [first, last],
   )
-  const source = useFilterSource()
+  const source = useFilterSource(useRotationScope().rotation?.id ?? null)
   const leaves = useLeaves(span)
   const types = useLeaveTypes()
   const soldiers = source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS

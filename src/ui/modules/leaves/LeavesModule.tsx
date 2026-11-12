@@ -103,8 +103,11 @@ function NewLeaveForm({
   const approving = values.as_approved && values.soldier_id !== null && canApprove(values.soldier_id)
   // While the leave is sent it is already on the board; judging the form too would count it twice.
   const candidate = useMemo(
-    () => (create.isPending ? null : newLeaveCandidate({ ...values, as_approved: approving })),
-    [create.isPending, values, approving],
+    () =>
+      create.isPending
+        ? null
+        : newLeaveCandidate({ ...values, as_approved: approving }, rotationOf(soldiersOf(values), values).deployment_id),
+    [create.isPending, values, approving, rotationOf],
   )
 
   return (

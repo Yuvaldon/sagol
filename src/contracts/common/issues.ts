@@ -16,5 +16,7 @@ export const SchemaIssue = z.enum([
   'rule_threshold_missing',
   'rule_threshold_inverted',
   'rule_percent_out_of_range',
+  /** A rotation's close carries both its time and its actor, and an end date (D-258). */
+  'close_incomplete',
 ])
 export type SchemaIssue = z.infer<typeof SchemaIssue>

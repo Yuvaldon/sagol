@@ -177,7 +177,7 @@ export function toUpdateLeaveInput(
  * The leave as the edit would leave it, as rules see it, for the live warning (D-142): with its new dates and type, and
  * pending when the edit returns it there (`editReturnsToPending`, D-064). NULL while a date is wrong.
  */
-export function editedLeaveCandidate(leave: Leave, values: LeaveEditValues, returnsToPending: boolean): AvailabilityLeave | null {
+export function editedLeaveCandidate(leave: Leave, values: LeaveEditValues, returnsToPending: boolean): (AvailabilityLeave & Pick<Leave, 'deployment_id'>) | null {
   const { start_date, end_date } = values
   if (start_date === '' || end_date === '' || compareDates(start_date, end_date) > 0) return null
   const status = returnsToPending ? LeaveStatus.enum.pending : leave.status

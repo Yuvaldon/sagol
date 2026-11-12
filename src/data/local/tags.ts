@@ -16,9 +16,10 @@ import {
   type DataRepositories,
   type Issue,
   type TableName,
+  type DeploymentId,
   type TagId,
 } from '@contracts'
-import { archiveTagCategoryIssues, selectionModeChangeIssues, soldierTarget, tagSelectionIssues } from '@domain'
+import { archiveTagCategoryIssues, rotationClosedIssues, selectionModeChangeIssues, soldierTarget, tagSelectionIssues } from '@domain'
 import { holds, loadActorScope, type ActorScope } from './actor'
 import { colorKeyIssues } from './checks'
 import { tableOf } from './store'
@@ -108,7 +109,21 @@ const TAG_SPEC: ReferenceSpec<Tag> = {
 }
 
 /** The tables `soldiers.setTags` reads beyond the roster's. */
-export const SOLDIER_TAG_TABLES: readonly TableName[] = ['tags', 'tag_categories', 'soldier_tags']
+export const SOLDIER_TAG_TABLES: readonly TableName[] = ['tags', 'tag_categories', 'soldier_tags', 'deployments']
+
+/**
+ * The scope of a soldier's tag set (D-221): the persistent set, or a live rotation of the organization that is not
+ * closed. A closed rotation keeps its tags as history.
+ */
+export async function tagScopeIssues(database: Store, scope: ActorScope, deploymentId: DeploymentId | null): Promise<Issue[]> {
+  if (deploymentId === null) return []
+  const deployment = await tableOf(database, 'deployments').get(deploymentId)
+  if (deployment === undefined || deployment.organization_id !== scope.organization_id) {
+    return [{ path: ['deployment_id'], code: IssueCode.enum.reference_not_found }]
+  }
+  if (deployment.archived_at !== null) return [{ path: ['deployment_id'], code: IssueCode.enum.reference_archived }]
+  return rotationClosedIssues(deployment)
+}
 
 /**
  * The issues of a soldier's new tag set (D-130): each tag it adds must exist, be visible and be live, and the

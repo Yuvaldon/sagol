@@ -403,6 +403,7 @@ CREATE TABLE IF NOT EXISTS "tag_categories" (
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
 	"name" VARCHAR(100) NOT NULL,
 	"selection_mode" VARCHAR(20) NOT NULL DEFAULT 'multiple',
+	"default_lifetime" VARCHAR(20) NOT NULL DEFAULT 'persistent', -- pre-selects an assignment's lifetime only (D-260)
 	"color_key" VARCHAR(30) NOT NULL,
 	"sort_order" INTEGER NOT NULL DEFAULT 0,
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -412,7 +413,8 @@ CREATE TABLE IF NOT EXISTS "tag_categories" (
 	"version" INTEGER NOT NULL DEFAULT 1,
 	"archived_at" TIMESTAMPTZ,
 	PRIMARY KEY("id"),
-	CONSTRAINT "tag_categories_selection_check" CHECK ("selection_mode" IN ('single', 'multiple'))
+	CONSTRAINT "tag_categories_selection_check" CHECK ("selection_mode" IN ('single', 'multiple')),
+	CONSTRAINT "tag_categories_lifetime_check" CHECK ("default_lifetime" IN ('persistent', 'rotation'))
 );
 
 CREATE TABLE IF NOT EXISTS "tags" (
@@ -431,16 +433,6 @@ CREATE TABLE IF NOT EXISTS "tags" (
 	PRIMARY KEY("id")
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "uq_tags_name" ON "tags"("category_id", "name") WHERE "archived_at" IS NULL;
-
--- 'single' selection_mode is enforced by domain and by a trigger.
-CREATE TABLE IF NOT EXISTS "soldier_tags" (
-	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id") ON DELETE CASCADE,
-	"tag_id" UUID NOT NULL REFERENCES "tags"("id"),
-	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
-	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"created_by" UUID REFERENCES "soldiers"("id"),
-	PRIMARY KEY("soldier_id", "tag_id")
-);
 
 -- -----------------------------------------------------------------------------
 -- Leaves (D-012, D-013)
@@ -497,8 +489,19 @@ CREATE TABLE IF NOT EXISTS "deployments" (
 	"updated_by" UUID REFERENCES "soldiers"("id"),
 	"version" INTEGER NOT NULL DEFAULT 1,
 	"archived_at" TIMESTAMPTZ,
+	"closed_at" TIMESTAMPTZ,                         -- the explicit close (D-258); NULL = open
+	"closed_by" UUID REFERENCES "soldiers"("id"),
 	PRIMARY KEY("id"),
-	CONSTRAINT "deployments_dates_check" CHECK ("end_date" IS NULL OR "end_date" >= "start_date")
+	CONSTRAINT "deployments_dates_check" CHECK ("end_date" IS NULL OR "end_date" >= "start_date"),
+	-- A closed rotation has its closer and an end date (D-258).
+	CONSTRAINT "deployments_close_check" CHECK (
+		("closed_at" IS NULL) = ("closed_by" IS NULL) AND ("closed_at" IS NULL OR "end_date" IS NOT NULL)
+	),
+	-- One rotation at a time per organization, by dates; an open end is unbounded (D-257).
+	CONSTRAINT "deployments_one_at_a_time" EXCLUDE USING gist (
+		"organization_id" WITH =,
+		daterange("start_date", "end_date", '[]') WITH &&
+	) WHERE ("archived_at" IS NULL)
 );
 
 CREATE TABLE IF NOT EXISTS "deployment_members" (
@@ -512,6 +515,22 @@ CREATE TABLE IF NOT EXISTS "deployment_members" (
 	PRIMARY KEY("deployment_id", "soldier_id"),
 	CONSTRAINT "deployment_members_dates_check" CHECK ("end_date" IS NULL OR "start_date" IS NULL OR "end_date" >= "start_date")
 );
+
+-- A tag held by a soldier (D-015): persistent when deployment_id is NULL, else for that rotation only (D-260).
+-- 'single' selection_mode is enforced by domain and by a trigger, in each scope: the persistent tags, and
+-- each rotation's (D-221).
+CREATE TABLE IF NOT EXISTS "soldier_tags" (
+	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
+	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id") ON DELETE CASCADE,
+	"tag_id" UUID NOT NULL REFERENCES "tags"("id"),
+	"deployment_id" UUID REFERENCES "deployments"("id"), -- NULL = persistent
+	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
+	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"created_by" UUID REFERENCES "soldiers"("id"),
+	PRIMARY KEY("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_soldier_tags_persistent" ON "soldier_tags"("soldier_id", "tag_id") WHERE "deployment_id" IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_soldier_tags_rotation" ON "soldier_tags"("soldier_id", "tag_id", "deployment_id") WHERE "deployment_id" IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS "leave_batches" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -680,6 +699,7 @@ CREATE INDEX IF NOT EXISTS "idx_memberships_soldier"        ON "unit_memberships
 CREATE INDEX IF NOT EXISTS "idx_soldiers_rank"              ON "soldiers"("organization_id", "command_rank_id");
 CREATE INDEX IF NOT EXISTS "idx_seniority_overrides_soldier" ON "seniority_overrides"("soldier_id") WHERE "revoked_at" IS NULL;
 CREATE INDEX IF NOT EXISTS "idx_soldier_tags_tag"           ON "soldier_tags"("tag_id");
+CREATE INDEX IF NOT EXISTS "idx_soldier_tags_deployment"    ON "soldier_tags"("deployment_id") WHERE "deployment_id" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_access_grants_grantee"      ON "access_grants"("grantee_soldier_id") WHERE "revoked_at" IS NULL;
 CREATE INDEX IF NOT EXISTS "idx_rank_role_bindings_rank"    ON "rank_role_bindings"("command_rank_id") WHERE "archived_at" IS NULL;
 CREATE INDEX IF NOT EXISTS "idx_leaves_soldier_dates"       ON "leaves"("soldier_id", "start_date", "end_date");
@@ -695,7 +715,8 @@ CREATE INDEX IF NOT EXISTS "idx_availability_rules_scope"   ON "availability_rul
 -- Server-side objects, implemented in supabase/migrations (D-201, D-202)
 -- -----------------------------------------------------------------------------
 -- Triggers:  unit_closure maintenance + cycle and cross-organization rejection;
---            soldier_tags single-select; version guard (+1); leave_events append-only
+--            soldier_tags single-select per scope; a closed rotation's own row unchanged (D-221);
+--            every live leave within its rotation (D-216, D-259); version guard (+1); leave_events append-only
 --            and ordered (D-202).
 -- Commands:  one server function, the command gateway, runs the adapter's command
 --            code in a SERIALIZABLE transaction (D-201): bootstrap, account links,
