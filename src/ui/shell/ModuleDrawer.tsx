@@ -3,6 +3,7 @@ import { t, type I18nKey } from '@i18n'
 import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, useTransferAccess } from '@logic'
 import type { ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { PropertiesModule } from '../modules/properties/PropertiesModule'
 import { AccountLinksModule } from '../modules/account-links/AccountLinksModule'
 import { GrantsModule } from '../modules/access/GrantsModule'
 import { RankBindingsModule } from '../modules/access/RankBindingsModule'
@@ -78,6 +79,12 @@ const GROUPS: readonly ModuleGroup[] = [
     sections: [
       { panel: PANEL_IDS.tags, labelKey: 'tags.tabTags', isAllowed: (access) => access.tags, Module: TagsModule },
       { panel: PANEL_IDS.tagCategories, labelKey: 'tags.tabCategories', isAllowed: (access) => access.tags, Module: TagCategoriesModule },
+    ],
+  },
+  {
+    titleKey: 'properties.title',
+    sections: [
+      { panel: PANEL_IDS.properties, labelKey: 'properties.title', isAllowed: (access) => access.properties, Module: PropertiesModule },
     ],
   },
   {

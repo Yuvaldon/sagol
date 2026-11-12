@@ -34,6 +34,7 @@ export interface DataPort {
     | 'leave_events'
     | 'leave_comments'
     | 'availability_rules'
+    | 'property_definitions'
     | 'soldier_accounts'
     | 'roles'
     | 'role_permissions'
@@ -54,6 +55,7 @@ export interface DataPort {
     readonly leaves: Pick<DataCommands['leaves'], 'create' | 'update' | 'transition'>
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
+    readonly property_definitions: DataCommands['property_definitions']
     readonly roles: DataCommands['roles']
     readonly rank_role_bindings: DataCommands['rank_role_bindings']
     readonly access_grants: DataCommands['access_grants']

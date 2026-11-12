@@ -79,6 +79,7 @@ const REPOSITORY_METHODS = {
   leave_events: LIST,
   leave_comments: REFERENCE,
   availability_rules: REFERENCE,
+  property_definitions: REFERENCE,
 } as const satisfies MethodTable<RemoteDataAdapter['repositories']>
 
 const COMMAND_METHODS = {
@@ -98,6 +99,7 @@ const COMMAND_METHODS = {
   leaves: { create: true, update: true, transition: true },
   leave_comments: { add: true, edit: true, archive: true },
   availability_rules: EDIT,
+  property_definitions: SORTED_EDIT,
 } as const satisfies MethodTable<RemoteDataAdapter['commands']>
 
 type Call = (kind: string, group: string, method: string, args: readonly unknown[]) => Promise<Result<unknown>>

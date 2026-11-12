@@ -186,12 +186,14 @@ structural canonical key (D-067).
 The current state (D-128):
 
 - **One source of filter data** in `logic/filters` (`useFilterSource`, `filterContextOf`): soldiers, ranks, units,
-  memberships and soldier tags; seniority overrides join with V15 and property values with V14 (D-131, OI-080, OI-081).
+  memberships, soldier tags and the property definitions (a soldier's values are on its row); seniority overrides
+  join with V15 (D-131, D-177, OI-081).
   The board, the presence lists and the rules' evaluation (`ruleDataOf`) read it; units with archived ones join with
   OI-098 (D-147).
 - **Who a view starts from:** soldiers not archived, active only unless the filter has a status condition (D-105, D-131).
 - **The filter bar** reads and writes `filter` as one top-level `and` of a unit (the selector), one `tag any` per
-  category, ranks and statuses (D-131); anything else is "a filter the bar does not read". Leave conditions (statuses,
+  category, ranks and statuses (D-131), and one chip per soldier property: `any_of` options of a select or
+  multi-select, `equals` true or false of a yes / no (D-177); anything else is "a filter the bar does not read". Leave conditions (statuses,
   types) are a separate param, `leaves`, never part of `FilterExpression` (D-132). `missing` keeps soldiers absent on a
   day of the window, approved leaves only (D-133).
 - **Presence lists** of a day (`day`) partition who the soldier filter selects that day, approved leaves only (D-134).

@@ -194,6 +194,7 @@ describe('the rows of the board (D-105)', () => {
     unitTree: units,
     memberships: [],
     soldierTags: [],
+    propertyDefinitions: [],
     days: WEEK,
     today: TODAY,
     filter: null,

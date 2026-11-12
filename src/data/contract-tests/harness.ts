@@ -38,6 +38,7 @@ export interface ContractAdapter {
     | 'role_permissions'
     | 'rank_role_bindings'
     | 'access_grants'
+    | 'property_definitions'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -56,6 +57,7 @@ export interface ContractAdapter {
     readonly roles: DataCommands['roles']
     readonly rank_role_bindings: DataCommands['rank_role_bindings']
     readonly access_grants: DataCommands['access_grants']
+    readonly property_definitions: DataCommands['property_definitions']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed

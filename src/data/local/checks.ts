@@ -1,7 +1,7 @@
 import type { Store } from './store'
 import { isIconKey, isPaletteKey } from '@config'
 import { IssueCode, type Issue, type PropertyEntityType, type PropertyValues } from '@contracts'
-import { propertyValueIssues } from '@domain'
+import { propertyReferences, propertyValueIssues } from '@domain'
 import { tableOf } from './store'
 import { parsedRow } from './failure'
 import type { ActorScope } from './actor'
@@ -33,5 +33,16 @@ export async function propertiesIssues(
     .equals(scope.organization_id)
     .toArray()
   const definitions = stored.map((row) => parsedRow('property_definitions', row))
-  return propertyValueIssues(definitions, { entity_type: entityType, before, after })
+  const write = { entity_type: entityType, before, after }
+  const issues = propertyValueIssues(definitions, write)
+  // A new reference points to a live row of the organization; one archived later stays (D-065, D-176).
+  for (const reference of propertyReferences(definitions, write)) {
+    const row = await tableOf(database, reference.table).get(reference.id)
+    if (row === undefined || row.organization_id !== scope.organization_id) {
+      issues.push({ path: [...reference.path], code: IssueCode.enum.reference_not_found })
+    } else if (row.archived_at !== null) {
+      issues.push({ path: [...reference.path], code: IssueCode.enum.reference_archived })
+    }
+  }
+  return issues
 }

@@ -1,11 +1,13 @@
 import {
   CommandRankId,
   LeaveTypeId,
+  PropertyOptionId,
   SoldierStatus,
   TagId,
   type CommandRank,
   type LeaveType,
   type LeaveTypeGroup,
+  type PropertyDefinition,
   type Tag,
   type TagCategory,
   type TagCategoryId,
@@ -13,6 +15,8 @@ import {
 import { t, type I18nKey } from '@i18n'
 import {
   BoardLeaveStatus,
+  definitionsOf,
+  optionsOf,
   liveCategories,
   liveRanks,
   orderedLeaveTypes,
@@ -26,12 +30,15 @@ import {
   useOnlyMissing,
   usePresence,
   usePresenceDay,
+  usePropertyDefinitions,
   useTagCategories,
   useTags,
   useBoardFilters,
   useToday,
   useViewFilter,
+  withPropertyChip,
   withTagChip,
+  type PropertyChip,
   type SoldierConditions,
 } from '@logic'
 import { ChevronRight, ListFilter, UserMinus, UserX, X } from 'lucide-react'
@@ -237,6 +244,79 @@ function tagCondition(
   }
 }
 
+const BOOLEAN_KEYS = { true: 'true', false: 'false' } as const
+const BOOLEAN_CHOICES: readonly Choice[] = [
+  { key: BOOLEAN_KEYS.true, label: named('properties.yes') },
+  { key: BOOLEAN_KEYS.false, label: named('properties.no') },
+]
+
+/** Whether the bar reads a chip of this definition (D-177): a soldier property, of the type the chip is written for. */
+function chipFits(definition: PropertyDefinition, chip: PropertyChip): boolean {
+  if (definition.entity_type !== 'soldier') return false
+  if (chip.kind === 'boolean') return definition.data_type === 'boolean'
+  return definition.data_type === 'select' || definition.data_type === 'multi_select'
+}
+
+/**
+ * The condition of one property the bar reads (D-177): its live options, and any chosen option it no longer holds, for
+ * a select or multi-select property; yes or no for a yes / no property, one answer at a time. NULL for other types.
+ */
+function propertyCondition(
+  definition: PropertyDefinition,
+  chip: PropertyChip | null,
+  write: (chip: PropertyChip | null) => void,
+): Condition | null {
+  const remove = () => {
+    write(null)
+  }
+  if (definition.data_type === 'boolean') {
+    const selected: readonly string[] = chip?.kind === 'boolean' ? [chip.value ? BOOLEAN_KEYS.true : BOOLEAN_KEYS.false] : []
+    return {
+      key: `property:${definition.id}`,
+      name: definition.label,
+      values: selected.map((key) => t(key === BOOLEAN_KEYS.true ? 'properties.yes' : 'properties.no')),
+      onRemove: remove,
+      choices: {
+        label: { text: definition.label },
+        choices: BOOLEAN_CHOICES,
+        selected,
+        onChange: (keys) => {
+          // One answer at a time: the newly checked one replaces the other.
+          const next = keys.find((key) => !selected.includes(key)) ?? keys[0]
+          write(next === undefined ? null : { kind: 'boolean', definitionId: definition.id, value: next === BOOLEAN_KEYS.true })
+        },
+      },
+    }
+  }
+  if (definition.data_type !== 'select' && definition.data_type !== 'multi_select') return null
+  const options = optionsOf(definition)
+  const selected = chip?.kind === 'options' ? chip.optionIds : []
+  const optionName = (id: PropertyOptionId) => options.find((option) => option.id === id)?.label ?? t('filters.unavailable')
+  const choices: Choice[] = [
+    ...options.map((option) => ({
+      key: option.id,
+      label: { text: option.label },
+      ...(option.color_key === null ? {} : { dot: toneOf(option.color_key).fill }),
+    })),
+    ...selected.filter((id) => !options.some((option) => option.id === id)).map(unknownChoice),
+  ]
+  return {
+    key: `property:${definition.id}`,
+    name: definition.label,
+    values: selected.map(optionName),
+    onRemove: remove,
+    choices: {
+      label: { text: definition.label },
+      choices,
+      selected,
+      onChange: (keys) => {
+        const optionIds = choices.filter((choice) => keys.includes(choice.key)).map((choice) => PropertyOptionId.parse(choice.key))
+        write(optionIds.length === 0 ? null : { kind: 'options', definitionId: definition.id, optionIds })
+      },
+    },
+  }
+}
+
 interface ConditionSets {
   readonly shown: readonly Condition[]
   readonly addable: readonly Condition[]
@@ -309,6 +389,7 @@ function useConditions(): ConditionSets {
   const ranks = useCommandRanks()
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
+  const properties = usePropertyDefinitions()
 
   const leave = leaveConditionsOf(
     leaves,
@@ -359,6 +440,34 @@ function useConditions(): ConditionSets {
         write(withTagChip(conditions, categoryOf, category.id, tagIds))
       }),
     )
+  }
+
+  // Properties of soldiers (D-177): a chip per property, a chosen one kept by its name after it is archived.
+  const allDefinitions = properties.status === 'ready' ? properties.value : []
+  for (const chip of conditions.properties) {
+    const definition = allDefinitions.find((candidate) => candidate.id === chip.definitionId)
+    const write = (next: PropertyChip | null) => {
+      filter.setConditions(withPropertyChip(conditions, chip.definitionId, next))
+    }
+    const condition = definition === undefined || !chipFits(definition, chip) ? null : propertyCondition(definition, chip, write)
+    shown.push(
+      condition ?? {
+        key: `property:${chip.definitionId}`,
+        name: t('filters.unavailable'),
+        values: [],
+        onRemove: () => {
+          write(null)
+        },
+        choices: null,
+      },
+    )
+  }
+  for (const definition of definitionsOf(allDefinitions, 'soldier')) {
+    if (conditions.properties.some((chip) => chip.definitionId === definition.id)) continue
+    const condition = propertyCondition(definition, null, (next) => {
+      filter.setConditions(withPropertyChip(conditions, definition.id, next))
+    })
+    if (condition !== null && condition.choices !== null && condition.choices.choices.length > 0) addable.push(condition)
   }
 
   // Rank.

@@ -1,14 +1,24 @@
-import type { CommandRank, FilterExpression, FilterNode, Soldier, SoldierTag, Unit, UnitMembership } from '@contracts'
+import type {
+  CommandRank,
+  FilterExpression,
+  FilterNode,
+  PropertyDefinition,
+  Soldier,
+  SoldierTag,
+  Unit,
+  UnitMembership,
+} from '@contracts'
 import { createFilterContext, type FilterContext } from '@domain'
 import { useMemo } from 'react'
 import type { Loaded } from '../queries/loaded'
+import { usePropertyDefinitions } from '../properties/hooks'
 import { useCommandRanks, useMemberships, useSoldiers, useUnitsWithArchived } from '../roster/hooks'
 import { useSoldierTags } from '../tags/hooks'
 import { useUnits } from '../units/hooks'
 
 // The one source of the data a filter reads (D-131, OI-079): every engine, the filter bar, the presence lists and the
-// rules read it, so a condition means the same everywhere (D-067, D-147). Seniority overrides join with V15 (OI-081) and property values with V14
-// (OI-080); before them none can exist.
+// rules read it, so a condition means the same everywhere (D-067, D-147). Property values are on the soldiers, and
+// their definitions here (OI-080). Seniority overrides join with V15 (OI-081); before it none can exist.
 
 export interface FilterSource {
   /** Live soldiers the actor sees. */
@@ -24,6 +34,8 @@ export interface FilterSource {
   readonly unitTree: readonly Unit[]
   readonly memberships: readonly UnitMembership[]
   readonly soldierTags: readonly SoldierTag[]
+  /** Archived ones too: a filter on one keeps reading the values stored for it (D-016). */
+  readonly propertyDefinitions: readonly PropertyDefinition[]
 }
 
 /**
@@ -38,7 +50,7 @@ export function filterContextOf(source: FilterSource): FilterContext {
     command_ranks: source.ranks,
     seniority_overrides: [],
     unit_memberships: source.memberships,
-    property_definitions: [],
+    property_definitions: source.propertyDefinitions,
   })
   const seenOnly = seenOnlyOf(source)
   const guarded = new WeakMap<FilterExpression, FilterExpression>()
@@ -85,6 +97,7 @@ export function useFilterSource(): Loaded<FilterSource> {
   const unitTree = useUnitsWithArchived()
   const memberships = useMemberships()
   const soldierTags = useSoldierTags()
+  const propertyDefinitions = usePropertyDefinitions()
   return useMemo((): Loaded<FilterSource> => {
     if (soldiers.status !== 'ready') return soldiers
     if (ranks.status !== 'ready') return ranks
@@ -92,6 +105,7 @@ export function useFilterSource(): Loaded<FilterSource> {
     if (unitTree.status !== 'ready') return unitTree
     if (memberships.status !== 'ready') return memberships
     if (soldierTags.status !== 'ready') return soldierTags
+    if (propertyDefinitions.status !== 'ready') return propertyDefinitions
     return {
       status: 'ready',
       value: {
@@ -101,9 +115,10 @@ export function useFilterSource(): Loaded<FilterSource> {
         unitTree: unitTree.value,
         memberships: memberships.value,
         soldierTags: soldierTags.value,
+        propertyDefinitions: propertyDefinitions.value,
       },
     }
-  }, [soldiers, ranks, units, unitTree, memberships, soldierTags])
+  }, [soldiers, ranks, units, unitTree, memberships, soldierTags, propertyDefinitions])
 }
 
 function mentionsStatus(node: FilterNode): boolean {

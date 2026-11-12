@@ -117,7 +117,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   bottom bar on a phone. The grid ends with room for it.
 - **The navigation panel (D-173):** the menu button opens a `glass-drawer` panel from the inline start (the right), at
   most `sheet` wide, the full height, on every screen. Its sections, each a muted heading over its rows: מבנה (units,
-  soldiers), הגדרות היעדרות (leave types, rules, tags), הרשאות (roles, grants, account links), נתונים (import and
+  soldiers), הגדרות היעדרות (leave types, rules, tags, properties), הרשאות (roles, grants, account links), נתונים (import and
   export). A row is the module's icon, name and waiting count; pressing it closes the panel and opens the module, whose
   deep link is unchanged. Beside it a pin toggle ("הצמדה לסרגל" and the name) adds the module to the bar, after the
   daily buttons, in the order pinned. Under the sections, "תצוגה": where the rules row sits. A row the viewer may not
@@ -296,7 +296,9 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `RolesModule`, `RankBindingsModule`, `GrantsModule`, `ScopeFields` | `ui/modules/access` | Roles, their rank bindings, personal grants, and the scope picker |
 | `CheckList`, `RadioList` | `ui/primitives` | Short lists of named choices, many or one |
 | `TagsModule`, `TagCategoriesModule`, `SoldierTagsSection` | `ui/modules/tags`, `ui/modules/soldiers` | Tags by category, the categories, and a soldier's tags |
-| `FilterBar`, `FilterControl`, `OnlyMissingSwitch`, `PresenceButton` | `ui/shell` | The filter row (chips, clear all), and the bar's filter, "only who is missing" and presence controls |
+| `PropertiesModule` | `ui/modules/properties` | Property definitions by entity, their options and order (D-176) |
+| `PropertyFields` | `ui/patterns/properties` | One field per live property of an entity, ending the soldier, unit and leave forms (D-176) |
+| `FilterBar`, `FilterControl`, `OnlyMissingSwitch`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, clear all), and the bar's filter, "only who is missing" and presence controls |
 | `PresenceModule` | `ui/modules/presence` | Present and absent lists of a day |
 | `RulesModule`, `RuleForm` | `ui/modules/rules` | Rules, conflicts and a day's broken rules |
 | `RuleViolations`, `RuleBrief`, `RuleGateDialog`, `RuleWarnings` | `ui/patterns/rules` | Broken rules in full and in brief; the acknowledgment dialog and the live warning (`useRuleGate` in `ruleAnswer.ts`), shared by modules and the timeline (D-143) |

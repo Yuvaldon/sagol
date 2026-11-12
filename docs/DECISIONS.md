@@ -32,7 +32,7 @@ am = amends, ref = refines, ext = extends.
 | D-013 | Approval behavior | domain, data, logic, ui | ref D-041, D-063, D-064; ext D-049; ref D-114, D-115; ref D-117, D-121 |
 | D-014 | Availability rules | contracts, domain, data, logic, ui | ext D-031; ref D-047, D-071, D-073; ref D-139, D-140, D-141; ref D-145 |
 | D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130 |
-| D-016 | Notion-like custom properties | contracts, domain, data, ui | ref D-065 |
+| D-016 | Notion-like custom properties | contracts, domain, data, ui | ref D-065; ref D-176, D-177 |
 | D-017 | Soft delete and audit columns | contracts, data, backend, ui | ref D-088, D-098 |
 | D-018 | Sensitive fields in `soldier_private` | contracts, data, backend | ref D-096, D-102; ref D-153 |
 | D-019 | Derived state is never stored | all | |
@@ -81,7 +81,7 @@ am = amends, ref = refines, ext = extends.
 | D-062 | Decision index; read rule unchanged | docs | sup D-081 (read rule); sup D-128 (the rest) |
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | ref D-114; ref D-117, D-118; ref D-124 |
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
-| D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130 |
+| D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130; ref D-176 |
 | D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-149 |
 | D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147 |
 | D-068 | Schema issue mapping | domain, data, logic | |
@@ -147,7 +147,7 @@ am = amends, ref = refines, ext = extends.
 | D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | ref D-154 |
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | |
-| D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173 |
+| D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161 |
 | D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161 |
@@ -189,9 +189,12 @@ am = amends, ref = refines, ext = extends.
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
-| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175 |
+| D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178 |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | |
 | D-175 | The bar names the unit in scope, not the organization | ui | |
+| D-176 | The properties module, and the rows behind reference values | data, logic, ui | |
+| D-177 | Property chips in the filter bar | logic, ui | |
+| D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
@@ -2338,6 +2341,53 @@ week for now (OI-111).
   the panel, WCAG 1.4.11), and a pinned module's pin is filled as well as colored, with `aria-pressed` saying the state.
 **Why:** the organization's name beside a unit's name read as two competing units; the scope label alone answers
 "what am I looking at".
+
+## D-176 — The properties module, and the rows behind reference values
+2026-11-12 · accepted · refines D-016, D-065 · OI-037, OI-073 · decided under the owner's autonomy instruction of 2026-11-11
+- **The module.** "מאפיינים" sits in the navigation panel's leave-setup section, after tags, for whoever holds
+  `properties:*` at `organization`. It lists the live definitions by entity type (soldiers, units, leaves), each in its
+  order; a row shows the label, the field type and "חובה" when required, and its menu moves it up or down or archives
+  it. The form has the label, the entity type and the field type (chosen at creation only, then shown as text), the
+  "required" switch and, for a select or multi-select, the options: a label and a color each, in order.
+- **Writes.** `property_definitions.create` and `update` pass `propertyDefinitionIssues` (D-065) before they store
+  (OI-073); the entity and the field type are not in the update input.
+- **Values in forms.** The soldier, unit and leave forms end with one field per live definition of their entity, in
+  order: text, a number, a date, yes/no/none, one option or none, a check list, a soldier search, a unit picker. The
+  values stay beside the form library's own values and join the command's input as `properties`; values of
+  definitions the form does not show (archived) are kept as stored. An empty field stores no key (D-065).
+  A multi-select shows as checked only the options that still exist, so a change writes live options only. The
+  definition forms open for who may create or change a definition; for anyone else the form is not there (D-076).
+- **References (OI-037).** A new or changed `soldier_ref` or `unit_ref` value must point to a row of the organization
+  (`reference_not_found`) that is not archived (`reference_archived`), checked by the data layer from
+  `propertyReferences`. One archived later stays, like any unchanged value.
+**Why:** D-016 and D-065 set the model; this records what the module and the forms show, and closes the two checks
+the domain left to the data layer.
+
+## D-177 — Property chips in the filter bar
+2026-11-12 · accepted · refines D-131 · OI-080 · decided under the owner's autonomy instruction of 2026-11-11
+- The filter source holds the property definitions, archived ones too, so a soldier's stored values are filtered on
+  (OI-080).
+- The bar reads two property conditions of soldiers: `property any_of` a list of option ids, of a select or
+  multi-select property, and `property equals` true or false, of a yes / no property. Each is one chip per property,
+  in the order added, named by the property's label; its values are the options' labels, or "כן" / "לא". A yes / no
+  chip holds one answer: checking the other replaces it.
+- "Filter" offers each live soldier property of those types that has a choice and no chip yet. A chip of an archived
+  property keeps its label; an option that is gone reads "לא זמין"; a property the viewer cannot read is a chip named
+  "לא זמין" that can only be removed. Any other condition on a property is "a filter the bar does not read".
+- An option removed since a chip was written matches no value; the chip's other options still match. A chip that no
+  longer fits its property (a property of another entity, or of a type the chip is not written for) reads "לא זמין"
+  and can only be removed.
+**Why:** select and yes / no are where a unit filters by a property (blood type, a license). Text, number, date and
+reference conditions need operators and inputs the bar does not have; they stay in the model (D-067) and wait for a
+need.
+
+## D-178 — A new navigation module: its entry first, then the enum, then its section
+2026-11-12 · accepted · refines D-173
+`NavigationModule` (contracts) and `NAVIGATION_SECTIONS` (config) must agree, and the bar's entries in `ui` cover every
+module. So a new module lands in three commits, each green: the `ui` entry first, checked by assignment to the
+`NavigationModule` record so it may come before its enum value; then the enum value in `contracts`; then the module in
+its section in `config`.
+**Why:** one layer per commit (D-127) with every commit green; the order is the only one in which each step compiles.
 
 ## D-200 — Backend: Supabase and Vercel, free plans
 2026-11-11 · accepted · supersedes D-027 · OI-014 · decided under D-170
