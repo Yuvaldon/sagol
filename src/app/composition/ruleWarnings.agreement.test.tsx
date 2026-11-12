@@ -183,7 +183,7 @@ async function buildWorld(): Promise<World> {
     )
   // The rotation every request belongs to (D-216): all five soldiers, for the company.
   const rotation = valueOf(
-    await commands.deployments.create({ id: DeploymentId.parse(crypto.randomUUID()), name: 'Rotation', unit_id: company, start_date: '2026-11-01', end_date: null }),
+    await commands.deployments.create({ id: DeploymentId.parse(crypto.randomUUID()), name: 'Rotation', unit_id: company, start_date: '2026-11-01', end_date: null, report_owner_id: null }),
   )
   valueOf(
     await commands.deployments.setMembers({
