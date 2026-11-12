@@ -236,6 +236,7 @@ am = amends, ref = refines, ext = extends.
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
 | D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | |
+| D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
@@ -3130,6 +3131,27 @@ soldier serves in, without a second place that decides it.
   the key with the last code that reads it.
 **Why:** these are the edges D-257..D-260 left to the implementation; each one keeps a single place that decides, and
 the database's guards hold what can be held without refusing a faithful restore.
+
+## D-222 — Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count
+2026-11-12 · accepted · refines D-221, D-257, D-258, D-259, D-260 · V26 · decided under D-170
+- **The mode** is derived from the live rotations in scope that are not closed: the one holding today, else the next
+  to start, else the latest ended. A closed rotation is never the mode, even on the last day its close gave it.
+- **Routine** keeps the board, under a band that names it (its action opens a rotation for who may create one); the
+  requests hub and "דוח 1" do not show. A rotation the actor sees no member rows of holds the whole unit (D-259), so
+  the screen offers it to a request and the command answers `not_a_member`; closed rotations are not offered.
+- **The rotation form** chooses "כל היחידה" or "רשימה"; a list starts from the previous rotation's list for all the new
+  days when it had one, else from the soldiers placed in the unit on the first day (D-219). The overlap of D-221 is
+  shown on the start date before saving. "סגירת הסבב" shows once the planned end has come or while the end is open;
+  "פתיחה מחדש" on a closed one. Both are row actions, with no confirmation, since each undoes the other.
+- **Tag lifetimes** are chosen per category in the soldier's tags dialog, pre-selected from the category's
+  `default_lifetime`; the category form sets that default. Rotation tags are copied per soldier with "כמו בסבב הקודם"
+  on the card (D-221), not in bulk when a rotation is created: the copy of OI-217 is this action and the member list's
+  start, both ordinary commands.
+- **Whose tags count.** The board, the filters and the heat row read the effective tags of the mode's rotation. A
+  leave's live warning and the data its rules read use the leave's own rotation, so a request for another rotation is
+  judged by that rotation's tags; a candidate with no rotation is NULL, since its fields already refuse it (D-216).
+**Why:** each surface reads one rotation, named where it is read, so the mode and a request for another rotation never
+mix their tags; a close the screen offers only when the command would take it.
 
 ## D-250 — Two vocabularies: everyday words, and the words of managing a unit
 2026-11-12 · accepted · refines D-212, D-215 · V24 · decided under the owner's autonomy instruction of 2026-11-11

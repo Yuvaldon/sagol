@@ -129,7 +129,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V24 | Simplification: information architecture | Docs only: two vocabularies and a term map, one navigation model (a context strip and a destination strip, the profile, "ניהול יחידה", one requests hub), five journeys, a rotation as a mode of the system, templates (D-250 … D-264) | ☑ |
 | V25 | Navigation and words | The term map in every string, no "ארגון"; two floating strips on every screen; a personal profile; "ניהול יחידה" with groups and a line per module; one requests hub; one path per action (D-250 … D-256) | ☐ |
 | V23 | Focus mode | One control hides both strips and the chips; one restore button brings them back (OI-032, after V25) | ☐ |
-| V26 | Rotation as a mode | One rotation at a time, routine between them, the final close, the whole unit by default, tags for one rotation (D-257 … D-260; schema change) | ☐ |
+| V26 | Rotation as a mode | One rotation at a time, routine between them, the final close, the whole unit by default, tags for one rotation (D-257 … D-260; schema change) | ☑ |
 | V27 | Templates and setup | The claim creates the root unit; the "פלוגה" template; pick, adjust, done (D-251, D-261, D-262) | ☐ |
 | V28 | Several requests at once | One sheet of rows, a recurring row, sent atomically, each row its own leave; the quick action by mode (D-266, D-267) | ☐ |
 | V29 | Board visual language | Presence quiet, absence a hole, green never means away; rounds under requests (D-268) | ☐ |
