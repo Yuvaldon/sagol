@@ -319,15 +319,18 @@ describe('rule evaluation for a window (D-141, OI-091)', () => {
   it('warns a form with what the command would answer, and acknowledges the soft rules only (D-142)', () => {
     const soft = rule(5, { scope_unit_id: PLATOON_A, min_value: 2 })
     const values = { ...newLeaveValues(MONDAY), soldier_id: SoldierId.parse(uuid(1)), leave_type_id: HOME, as_approved: true }
-    const candidate = newLeaveCandidate(values)
+    const rotation = DeploymentId.parse(uuid(70))
+    const candidate = newLeaveCandidate(values, rotation)
     expect(candidate).not.toBeNull()
     if (candidate === null) return
     const violations = leaveViolations(dataWith([]), [soft, twoMedicsPerPlatoon], candidate)
     expect(violations.map((violation) => violation.rule_id).sort()).toEqual([soft.id, twoMedicsPerPlatoon.id].sort())
     expect(acknowledgedRuleIds(violations)).toEqual([soft.id])
     // A pending request counts for no rule that does not count pending leaves.
-    const pending = newLeaveCandidate({ ...values, as_approved: false })
+    const pending = newLeaveCandidate({ ...values, as_approved: false }, rotation)
     expect(pending === null ? null : leaveViolations(dataWith([]), [soft], pending)).toEqual([])
-    expect(newLeaveCandidate({ ...values, end_date: '' })).toBeNull()
+    expect(newLeaveCandidate({ ...values, end_date: '' }, rotation)).toBeNull()
+    // No rotation holds the request: the command refuses it on its fields, so the rules judge nothing (D-216).
+    expect(newLeaveCandidate(values, null)).toBeNull()
   })
 })

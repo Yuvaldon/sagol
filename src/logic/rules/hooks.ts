@@ -1,4 +1,5 @@
 import type {
+  DeploymentId,
   AvailabilityRule,
   CalendarDate,
   Leave,
@@ -9,7 +10,7 @@ import type {
   Unit,
   UnitId,
 } from '@contracts'
-import { EVERY_SOLDIER, compareDates, type AvailabilityLeave, type RuleData } from '@domain'
+import { EVERY_SOLDIER, compareDates, type RuleData } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useDeploymentMembers, useDeployments } from '../deployments/hooks'
@@ -23,6 +24,8 @@ import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { useTags } from '../tags/hooks'
+import { useRotationScope } from '../view-state/rotation'
+import type { LeaveCandidate } from '../leaves/forms'
 import {
   dayViolations,
   heatRow,
@@ -114,8 +117,9 @@ interface Span {
 }
 
 /** What rule evaluation reads on the days of a span, over what the actor reads. Loading while there is no span. */
-export function useRuleData(span: Span | null): Loaded<RuleData> {
-  const source = useFilterSource()
+/** The tags counted are the ones held in `rotationId` (D-260, D-222), as the command counts them. */
+export function useRuleData(span: Span | null, rotationId: DeploymentId | null): Loaded<RuleData> {
+  const source = useFilterSource(rotationId)
   const tags = useTags()
   const leaves = useLeaves(span)
   const types = useLeaveTypes()
@@ -151,7 +155,8 @@ interface WindowRequest {
 /** The rules and their data for a window, or NULL when the actor sees no rule: the heat row then has no place. */
 function useWindowEvaluation(window: WindowRequest | null): Loaded<{ rules: readonly AvailabilityRule[]; data: RuleData } | null> {
   const rules = useAvailabilityRules()
-  const data = useRuleData(window)
+  // The heat row reads the days of the mode, so the tags of its rotation (D-222).
+  const data = useRuleData(window, useRotationScope().rotation?.id ?? null)
   return useMemo(() => {
     if (rules.status !== 'ready') return rules
     if (rules.value.length === 0) return { status: 'ready', value: null }
@@ -198,7 +203,7 @@ export function useRuleConflicts(window: WindowRequest | null): Loaded<readonly 
  * Loading until the first answer, and failed when a read fails (OI-099). Once it has answered, a new span keeps the
  * last answer until its own data arrives, so a drag that crosses days does not flash "nothing broken".
  */
-export function useLeaveRuleCheck(changed: AvailabilityLeave | null, stored: Leave | null = null): Loaded<readonly RuleViolation[]> {
+export function useLeaveRuleCheck(changed: LeaveCandidate | null, stored: Leave | null = null): Loaded<readonly RuleViolation[]> {
   const { can, known } = useCanAnswers(READS_EVERYTHING)
   const readsEverything = READS_EVERYTHING.every(can)
   // Until the actor is known to read less, the warning has no answer yet: not "nothing broken".
@@ -211,7 +216,8 @@ export function useLeaveRuleCheck(changed: AvailabilityLeave | null, stored: Lea
     return from === undefined || to === undefined ? null : { from, to }
   }, [changed, stored, readsEverything])
   const rules = useAvailabilityRules()
-  const data = useRuleData(span)
+  // The change's own rotation, as the command's gate reads it (D-222).
+  const data = useRuleData(span, changed?.deployment_id ?? null)
   const current = useMemo((): Loaded<readonly RuleViolation[]> => {
     if (changed === null) return NO_CHECK
     if (!decided) return LOADING

@@ -58,7 +58,7 @@ export function newLeaveDraft(soldierId: SoldierId, dates: LeaveDates): NewLeave
 export interface LeaveMove {
   readonly values: LeaveEditValues
   /** The leave as the command would leave it, as rules see it (D-142). */
-  readonly candidate: AvailabilityLeave | null
+  readonly candidate: (AvailabilityLeave & Pick<Leave, 'deployment_id'>) | null
   /** An approved leave that the move returns to pending (D-064). */
   readonly returnsToPending: boolean
 }

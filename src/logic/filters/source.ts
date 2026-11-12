@@ -1,4 +1,5 @@
 import type {
+  DeploymentId,
   CommandRank,
   FilterExpression,
   FilterNode,
@@ -17,7 +18,6 @@ import { useCommandRanks, useMemberships, useSoldiers, useUnitsWithArchived } fr
 import { useSeniorityOverrides } from '../seniority/hooks'
 import { useSoldierTags, useTagCategories, useTags } from '../tags/hooks'
 import { useUnits } from '../units/hooks'
-import { useRotationScope } from '../view-state/rotation'
 
 // The one source of the data a filter reads (D-131, OI-079): every engine, the filter bar, the presence lists and the
 // rules read it, so a condition means the same everywhere (D-067, D-147). Property values are on the soldiers, and
@@ -38,7 +38,7 @@ export interface FilterSource {
    */
   readonly unitTree: readonly Unit[]
   readonly memberships: readonly UnitMembership[]
-  /** The tags each soldier holds in the rotation of the mode: the persistent ones, and that rotation's (D-260, D-222). */
+  /** The tags each soldier holds in the source's rotation: the persistent ones, and that rotation's (D-260, D-222). */
   readonly soldierTags: readonly SoldierTag[]
   /** Archived ones too: a filter on one keeps reading the values stored for it (D-016). */
   readonly propertyDefinitions: readonly PropertyDefinition[]
@@ -96,7 +96,8 @@ function seenOnlyOf(source: FilterSource): (node: FilterNode) => FilterNode {
   return seenOnly
 }
 
-export function useFilterSource(): Loaded<FilterSource> {
+/** The tags counted are the ones held in `rotationId`, NULL for the persistent ones alone (D-260, D-222). */
+export function useFilterSource(rotationId: DeploymentId | null): Loaded<FilterSource> {
   const soldiers = useSoldiers()
   const ranks = useCommandRanks()
   const seniorityOverrides = useSeniorityOverrides()
@@ -106,7 +107,6 @@ export function useFilterSource(): Loaded<FilterSource> {
   const soldierTags = useSoldierTags()
   const tags = useTags()
   const categories = useTagCategories()
-  const rotationId = useRotationScope().rotation?.id ?? null
   const propertyDefinitions = usePropertyDefinitions()
   return useMemo((): Loaded<FilterSource> => {
     if (soldiers.status !== 'ready') return soldiers
