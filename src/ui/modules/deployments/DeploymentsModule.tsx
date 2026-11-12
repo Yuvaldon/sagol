@@ -268,7 +268,7 @@ export function DeploymentsModule() {
           },
         ]
       : []),
-    ...(permissions.update(deployment) && isRotationClosable(deployment, today)
+    ...(permissions.closeOrReopen(deployment) && isRotationClosable(deployment, today)
       ? [
           {
             id: 'close',
@@ -280,7 +280,7 @@ export function DeploymentsModule() {
           },
         ]
       : []),
-    ...(permissions.update(deployment) && deployment.closed_at !== null
+    ...(permissions.closeOrReopen(deployment) && deployment.closed_at !== null
       ? [
           {
             id: 'reopen',
