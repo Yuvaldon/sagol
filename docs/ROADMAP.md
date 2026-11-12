@@ -135,7 +135,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V28 | Several requests at once | One sheet of rows, a recurring row, sent atomically, each row its own leave (D-267); the quick action by mode moved to A7 fixes (OI-219) | ☑ |
 | A7 | audit | Whole product, once V27 and V28 are in (D-284) | ☑ |
 | V29 | Board visual language | Presence quiet, absence a hole, green never means away; rounds under requests; the view by device; a breach in every view (D-268, D-290) | ☑ |
-| A7 fixes | A7's findings | The quick action by mode in the strip and a quiet routine band (OI-219, D-296); a unit drop by the root (OI-247); no "ארגון" (OI-248); one setup checklist (OI-250, D-297); journey (b) walked (OI-251); lazy modules (OI-118); `NavigationModule` gone (OI-244, D-291); D-298, D-299 | ☐ |
+| A7 fixes | A7's findings | The quick action by mode in the strip and a quiet routine band (OI-219, D-296); a unit drop by the root (OI-247); no "ארגון" (OI-248); one setup checklist (OI-250, D-297); journey (b) walked (OI-251); lazy modules (OI-118); `NavigationModule` gone (OI-244, D-291); D-298, D-299 | ☑ |
 | V30 | דוח 1 as a workflow | Each unit confirms its list, the report owner sends one message up (D-269; schema change) | ☐ |
 | V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation (D-270) | ☐ |
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units | ☐ |

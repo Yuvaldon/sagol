@@ -3931,6 +3931,8 @@ exists. The placement is configuration, so it is typed where it is configured.
   themselves (`useMyLeavesAccess().create`). Not in an ended rotation that is not closed: requests are collected before
   and during a rotation, not after it. Not for who may only enter leaves for others: that stays the secondary path
   (the form's requester, a drag on the board).
+- **Before the first unit**, in routine, the strip's quick action is "הגדרת מבנה היחידות" for who may found units: a
+  rotation needs units to schedule.
 - Otherwise the strip has no quick action (D-076).
 **Why:** D-222 put the routine action on the band before the strip's quick action followed the mode; two places for
 one action is what D-256 rules out, and the strip is where Design.md journeys (a)5 and (b)1 start.
@@ -3944,6 +3946,9 @@ one action is what D-256 rules out, and the strip is where Design.md journeys (a
 - **The drawer is the template wizard.** It opens on first run, for who may set the organization up, until a template
   is applied or "אחר כך" is chosen; "אחר כך" stops it from opening by itself. Its other openers (the empty board, the
   onboarding screen) go to "הגדרות היחידה" instead, where the checklist is.
+- **As built:** the onboarding screen's first open is the first run, so it still opens the wizard. "אחר כך", a template
+  with nothing to offer, and a stop part way each hand over to "הגדרות היחידה" (the navigation panel's setup view); the
+  empty board's button opens it directly; a template that runs to the end closes the drawer on the board.
 **Why:** two surfaces with the same list drift apart and leave the user unsure which one is the setup (D-256, D-223).
 
 ## D-298 — Quick entry of soldiers as built: the unit is required, paste goes in its own box
@@ -3963,6 +3968,7 @@ one action is what D-256 rules out, and the strip is where Design.md journeys (a
 - **The requests inbox** ("בקשות") shows only to someone who may approve the requests of at least one other soldier.
   Approving only one's own requests is not a queue to work through.
 - **"אשר עכשיו"**, the switch that creates one's own request as approved (D-121), shows to someone who may approve their
-  own requests, whether or not they approve others.
+  own requests, whether or not they approve others: in the inbox's header for who has an inbox, otherwise in the
+  header of "הבקשות שלי".
 **Why:** the inbox and the switch read the same permission today, which includes oneself, so a soldier allowed to
 approve only their own leave saw an empty inbox, and the switch's meaning is about oneself, not about others.

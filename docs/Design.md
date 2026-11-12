@@ -142,9 +142,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   `RuleBrief`. A refused drop shows a `FailureNotice` in the same place with "סגירה". On touch a finger holds
   `TIMELINE_DRAG.holdMs` first, and a finger that moves still scrolls. Every drag has a way without one: the edit form
   and the "+".
-- **The quick action (D-252, D-266):** a filled round button at the destination strip's inline end, "בקשה חדשה" for who
-  may create a request while the screen has a rotation; it replaced the floating "+". "פתיחת סבב" in routine comes with
-  V26.
+- **The quick action (D-252, D-266, D-296):** a filled round button at the destination strip's inline end, by mode:
+  "בקשה חדשה" for who may request leave for themselves while a rotation is current or upcoming; "פתיחת סבב" in routine
+  for who may create a rotation ("הגדרת מבנה היחידות" while the unit has no units); none otherwise. It replaced the
+  floating "+". The routine band above the board only states the mode, in a neutral tone.
 - **ניהול יחידה (D-173, D-254):** "ניהול", the last destination, opens a `glass-drawer` panel from the inline start (the
   right), at most `sheet` wide, as tall as its rows up to the screen and scrolling past it (D-278), on every screen. It
   holds daily work only (from V32, D-285): the setup's progress as a callout while unfinished, then its groups, each a muted
@@ -257,7 +258,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - It opens first in "ניהול יחידה" and from the empty board, as its one action (V25). From V32 it is the first section
   of "הגדרות היחידה", with its progress as a callout in "ניהול יחידה" (D-285).
 - **Template sheet** (V27, D-262): a fresh unit, the root alone, first sees pick, adjust, done; "סיום" runs the
-  template's commands and closes the drawer on the board in routine. A stop part way says where, above the checklist.
+  template's commands and closes the drawer on the board in routine. A stop part way says where, and hands over to
+  "הגדרות היחידה", where the checklist is (D-297).
 - **Quick entry and bulk approval** (V27, D-282, D-283): "הזנה מהירה" in the soldiers list is a grid with a paste box,
   one unit from today, saved row by row; "אישור כמה בקשות" in the join requests links only a single match by personal number.
 
