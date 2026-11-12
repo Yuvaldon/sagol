@@ -4,6 +4,9 @@
 export const dictionary = {
   app: {
     name: 'סגול',
+    /* The staging deploy's band and its name in the browser tab and on the home screen (D-300). */
+    staging: 'אתר בדיקות',
+    stagingName: 'סגול · בדיקות',
     loading: 'טוען…',
     updateReady: 'גרסה חדשה זמינה',
     updateReload: 'רענון',
