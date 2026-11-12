@@ -40,6 +40,9 @@ Status: `open` · `closed`
 | OI-213 | V27 | V24 | The "פלוגה" template: structure in `config`, names in `i18n`, applied as a sequence of the ordinary commands that stops and reports at a failed step (D-261). | open | |
 | OI-214 | V27 | V24 | The setup as pick, adjust, done, landing in routine mode; the D-180 checklist only for an unfinished setup; e2e walks journey (a) (D-262, D-263). | open | |
 | OI-215 | V27 | V24 | The time zone shows and can be changed in the root unit's form, since the claim takes it from the device (D-262). | open | |
+| OI-233 | V27 | V27 | Quick entry of several soldiers: the grid, its paste, the preview per row and the save through `soldiers.create` per row (D-282). | open | Owner feature, through the orchestrator. |
+| OI-234 | V27 | V27 | Approving several join requests: the selection, "אישור הנבחרות" through the single link review per request, and the result per row (D-283). | open | Owner feature, through the orchestrator. |
+| OI-235 | V27 | V27 | V27's entries follow V32's split (D-285): the claim, the template and the pick, adjust, done sheet in "הגדרות היחידה"; quick entry and bulk approval in "ניהול יחידה". | open | Whichever of V27 and V32 merges second follows the other's surface (D-284). |
 | OI-219 | V28 | V24 | The quick action follows the mode once V26 derives it (OI-211): "בקשה חדשה" while a rotation is current or upcoming, "פתיחת סבב" in routine for who may create a rotation, none otherwise (D-266). | open | |
 | OI-220 | V29 | docs | The board's opening view follows the device when neither a link nor a remembered choice names one: the timeline from `md` for planning, today's list or calendar on a phone for the field (D-272). | open | |
 | OI-221 | V29 | docs | A rule's breach shows in every view from the existing rule evaluation: the calendar's day, the list's unit heading, the timeline's heat row as today (D-272). | open | |

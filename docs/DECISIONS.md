@@ -264,6 +264,8 @@ am = amends, ref = refines, ext = extends.
 | D-274 | The install offer also comes once, on its own, after sign-in | V28 | |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | |
 | D-278 | A floating surface fits its content | ui, scripts | |
+| D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | |
+| D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
 
 ---
 
@@ -3560,3 +3562,41 @@ automatically is the usual staging practice and stays inside the free plan.
   `className`, and the string consts it names, the file's own or imported from beside it.
 **Why:** empty glass under the last row reads as something missing or still loading, and the owner asked for no
 dead space on any surface; a rule in the check keeps the next surface from bringing it back.
+
+## D-282 — Quick entry of several soldiers: a grid that runs the soldier's own command per row
+2026-11-12 · accepted · refines D-022, D-050, D-171 · V27 · decided under D-170
+- **Where.** "הוספה מהירה" sits beside "חייל חדש" in the soldiers module, which is daily work (D-285), for who may
+  create a soldier there (D-076). It opens a grid of editable rows with the columns of the soldiers CSV (D-171): first
+  name, last name, nickname, personal number, phone and invite email. One unit above the grid places every row,
+  from today, the way the soldier's form places one; it may stay empty, and the soldiers are then unplaced.
+- **Paste.** Pasting several lines into a cell fills rows from there: a line is a row, its cells split by tabs (what a
+  spreadsheet copies) or else by commas (the CSV form, quotes as D-171 reads them). A first line that names the
+  columns as the CSV does decides their order; without one, the columns are in the grid's order. Empty lines are
+  skipped, and new rows are added as needed.
+- **Preview before saving.** Every row is checked as it is typed, on the form of `create_soldier` (the same check the
+  import runs on each operation before anything runs), and two rows of the grid with the same personal number are
+  both marked. A row with a problem shows it under its cells; "שמירה" names how many rows are ready.
+- **Save.** Each ready row runs `soldiers.create` on its own, in order: the same command the soldier's form and the
+  import's `create_soldier` run, with every validation and permission check (rule 4), and no batch command beside
+  it. A saved row leaves the grid; a refused row stays with the command's reason in its own words (a personal number
+  taken, a unit the actor may not place in), and the commander fixes it or removes it. Nothing is all or nothing:
+  the import's all-or-nothing batch (D-171) is for a file that must arrive whole, and needs `data_transfer`, which a
+  commander adding soldiers does not hold.
+**Why:** the owner's commanders add a platoon at a time from a list they already have; a form per soldier is thirty
+openings, and the import asks for a file and a permission they do not have. Running the soldier's own command per row
+keeps one path for creating a soldier and its guarantees, and keeps a refused row in front of who can fix it.
+
+## D-283 — Approving several join requests: each one linked by its own review
+2026-11-12 · accepted · refines D-149, D-150, D-163 · V27 · decided under D-170
+- **Where.** The join requests list (work, D-285) gains a check box on each request and "אישור הנבחרות" once one is
+  chosen, for who may review the requests (D-163). Opening a request for its full review stays as it is.
+- **What approval means in bulk.** A request is approved by linking it to its soldier, and in bulk only when that
+  soldier is certain: exactly one candidate, matched by personal number (D-066). Each such request runs the same
+  review command a single link runs (`accounts.reviewLink`, kind `link`), one after the other; there is no bulk
+  command. A request without that single match (no candidate, a match by name only, several candidates) is not run:
+  its row says that it needs its own review, which is where a new soldier is created or the right one is chosen.
+- **Per-row result.** Each chosen row shows its outcome: linked (it leaves the list), refused with the command's
+  reason, or left for its own review. Rejecting stays one request at a time, since a rejection is a judgment.
+**Why:** after a quick entry the soldiers sign in and ask to join, each one matching a soldier by personal number;
+approving them one by one is a page per soldier. Linking only the certain matches keeps the bulk action safe, and
+running the single review command keeps one path and its checks.
