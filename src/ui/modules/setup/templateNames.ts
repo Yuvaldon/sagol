@@ -84,7 +84,10 @@ const EMPTY: NameKeys = {
   subsection: null,
   ranks: {},
   roles: {},
-  tagCategories: { general: 'templates.empty.tagCategories.general' } satisfies Names<KeysOf<(typeof EMPTY_TEMPLATE)['tagCategories']>>,
+  tagCategories: {
+    military: 'templates.empty.tagCategories.military',
+    civilian: 'templates.empty.tagCategories.civilian',
+  } satisfies Names<KeysOf<(typeof EMPTY_TEMPLATE)['tagCategories']>>,
   tags: {},
   leaveGroups: {},
   leaveTypes: {},

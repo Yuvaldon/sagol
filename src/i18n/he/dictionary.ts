@@ -1079,7 +1079,7 @@ export const dictionary = {
       stoppedHint: 'מה שכבר נוצר נשמר. אפשר להשלים את השאר בצעדי ההקמה.',
       templates: {
         company: { title: 'פלוגה', body: 'מפל״ג ומחלקות של כיתות, דרגים פיקודיים והרשאות, הסמכות, סוגי היעדרות וכללי נוכחות.' },
-        empty: { title: 'ריקה', body: 'רק היחידה וקטגוריית תגיות כללית. כל השאר מגדירים בהמשך.' },
+        empty: { title: 'ריקה', body: 'רק היחידה ושתי קטגוריות תגיות, צבאי ואזרחי. כל השאר מגדירים בהמשך.' },
       },
       stages: {
         unit_levels: 'סוגי יחידות',
@@ -1130,7 +1130,7 @@ export const dictionary = {
       rules: { company_presence: 'נוכחות בפלוגה', platoon_presence: 'נוכחות בכל מחלקה' },
     },
     empty: {
-      tagCategories: { general: 'כללי' },
+      tagCategories: { military: 'צבאי', civilian: 'אזרחי' },
     },
   },
   issues: {
