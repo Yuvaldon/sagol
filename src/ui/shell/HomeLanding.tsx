@@ -1,5 +1,5 @@
 import { PANEL_IDS } from '@config'
-import { useHome, usePanel, useWorkspaceSearch } from '@logic'
+import { useHome, usePanel, useRotationScope, useWorkspaceSearch } from '@logic'
 import { useEffect, useRef, useState } from 'react'
 
 /**
@@ -10,16 +10,18 @@ export function HomeLanding() {
   const home = useHome()
   const panel = usePanel()
   const search = useWorkspaceSearch()
+  const scope = useRotationScope()
   // Read once, as the workspace first renders: a later change of the address is the soldier's own move.
   const isBare = Object.values(search).every((value) => value === undefined)
   const [bare] = useState(isBare)
   const landed = useRef(false)
   const { open } = panel
   useEffect(() => {
-    if (!bare || landed.current || !home.ready) return
+    if (!bare || landed.current || !home.ready || !scope.ready) return
     landed.current = true
-    // Whatever the soldier opened while the answers were on their way stays open.
-    if (home.mine && isBare) open(PANEL_IDS.myLeaves)
-  }, [bare, isBare, home.ready, home.mine, open])
+    // Whatever the soldier opened while the answers were on their way stays open. "Mine" is a destination only while
+    // a rotation a request can be about is (D-218), as its tab is.
+    if (home.mine && scope.requests && isBare) open(PANEL_IDS.myLeaves)
+  }, [bare, isBare, home.ready, home.mine, scope.ready, scope.requests, open])
   return null
 }

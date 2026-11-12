@@ -38,7 +38,9 @@ function MyLeaveRow({ leave, type }: { readonly leave: Leave; readonly type: Lea
 
 /** My next days, today first: in, or out under the leave that keeps me out. */
 function NextDays({ days, typeOf }: { readonly days: ReturnType<typeof useMyNextDays>; readonly typeOf: (leave: Leave['id']) => LeaveType | null }) {
-  if (days === null || days.status !== 'ready') return null
+  if (days === null || days.status === 'loading') return null
+  // A failed read says so: an empty list would read as no days at all.
+  if (days.status === 'failed') return <FailureNotice error={days.error} />
   return (
     <section className="flex flex-col gap-xs">
       <h3 className="text-label font-semibold text-text-muted">{t('myLeaves.nextDaysTitle')}</h3>
