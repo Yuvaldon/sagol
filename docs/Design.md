@@ -106,7 +106,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   the navigation panel sit inside the insets (`--safe-top`, `--safe-bottom`, `--safe-inline`; `inset-safe`,
   `frame-safe`, `px-safe`, `top-safe`). The inline inset is the larger side on both sides.
 - **Icons and tooltips (D-189):** every `IconButton`, and every control shown as an icon alone (the destinations on
-  desktop, the view switcher, "סינון", the presence count, the avatar), has its name as its accessible name and as a
+  desktop, the view switcher, "סינון", the avatar), has its name as its accessible name and as a
   `NameTooltip`: a dark pill, `label` type, after `TOOLTIP.delayMs`. No hint prose sits beside a control.
 - **Timeline (D-108, D-192):** sizes come from `TIMELINE_LAYOUT` in `config`, because the geometry and the virtualizer need the
   same numbers: rows 36 (44 on mobile, where a name is a touch target), group rows 32, the days header 28, names 124,
@@ -158,8 +158,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Module buttons (D-116, D-189):** an icon with a tooltip from `md`; below it a tab of the bottom bar, the icon over
   its short name, 44 px at least.
 - **The filter controls (D-131 to D-134, D-173):** in the bar from `md` and in the context row below it, "סינון" (a
-  filter icon with a tooltip), the "רק מי שחסר" switch and the presence count (an icon and today's count, "חסרים היום"
-  read aloud and as a tooltip). "סינון" is absent when every condition is set.
+  filter icon with a tooltip) and the "רק מי שחסר" switch. "סינון" is absent when every condition is set. Today's report
+  is a destination, "דוח 1", after the requests (D-252); the bar holds no presence count.
 - **The filter row (D-131, D-173):** a `search` landmark under the top bars, there only while a condition is set: from
   `md` under the bar with the scope (`top-filter-row-md`), below `md` under the top bar (`top-filter-row`), scrolling
   sideways. It holds the chips and "ניקוי הכול". Each is a `glass-bar` pill, `control` high from `md` and `touch` below;
@@ -385,7 +385,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 | `DeploymentsModule`, `DeploymentForm`, `DeploymentMembersForm` | `ui/modules/deployments` | Deployments and who serves in them (D-179) |
 | `LeaveBatchForm`, `LeaveDuplicateForm`, `SenioritySection` | `ui/modules/leaves`, `ui/modules/soldiers` | A collective leave, copies of a leave, and personal seniority (D-179) |
 | `PropertyFields` | `ui/patterns/properties` | One field per live property of an entity, ending the soldier, unit and leave forms (D-176) |
-| `FilterBar`, `FilterControl`, `PresenceButton` | `ui/shell` | The filter row (chips, property chips, "only who is missing", clear all), and the bar's filter and presence controls (D-213) |
+| `FilterBar`, `FilterControl` | `ui/shell` | The filter row (chips, property chips, "only who is missing", clear all), and the bar's filter control (D-213) |
 | `SortControl` | `ui/shell` | The board's sort, shared with the table (D-214) |
 | `MenuChoice`, `menuStyles` | `ui/shell` | A menu item with a check while selected, and the bar menus' classes |
 | `DayReportDialog` | `ui/modules/presence` | The day report: counts, units, names, reasons, a span, the text copy and the image (D-193 … D-196) |
