@@ -109,7 +109,6 @@ describe('settings defaults (D-041)', () => {
   it('fills soldier preferences from the column default', () => {
     expect(SoldierPreferences.parse({})).toEqual({
       create_leaves_as_approved: false,
-      pinned_modules: [],
       rules_row_placement: 'below',
       appearance: 'light',
     })
@@ -118,15 +117,9 @@ describe('settings defaults (D-041)', () => {
   it('reads a row stored before the navigation keys with their defaults (D-173)', () => {
     expect(SoldierPreferences.parse({ create_leaves_as_approved: true })).toEqual({
       create_leaves_as_approved: true,
-      pinned_modules: [],
       rules_row_placement: 'below',
       appearance: 'light',
     })
-  })
-
-  it('refuses a module pinned twice, or one that is not a navigation module (D-173)', () => {
-    expect(SoldierPreferences.safeParse({ pinned_modules: ['units', 'units'] }).success).toBe(false)
-    expect(SoldierPreferences.safeParse({ pinned_modules: ['leaves'] }).success).toBe(false)
   })
 
   it('reads the appearance, and refuses one that is not a choice (D-181)', () => {
@@ -135,9 +128,12 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.safeParse({ rules_row_placement: 'side' }).success).toBe(false)
   })
 
-  it('keeps reading pins stored before a module was added, and takes the new one (V14)', () => {
-    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'] }).pinned_modules).toEqual(['tags', 'roles'])
-    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'properties'] }).pinned_modules).toEqual(['tags', 'properties'])
+  it('reads a row that still holds the dropped pins, without them (D-221)', () => {
+    expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'], appearance: 'dark' })).toEqual({
+      create_leaves_as_approved: false,
+      rules_row_placement: 'below',
+      appearance: 'dark',
+    })
   })
 })
 

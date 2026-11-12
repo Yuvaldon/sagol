@@ -3133,8 +3133,9 @@ soldier serves in, without a second place that decides it.
   `deployments` gains `closed_at` and `closed_by`: the export format moves to 3. The local database moves the tags of a
   soldier through a temporary table, since IndexedDB cannot change a primary key, and fills the new columns of the
   stored rows (persistent, open).
-- **`preferences.pinned_modules` stays** until V25 removes the pins and their control (OI-203): the model drops
-  the key with the last code that reads it.
+- **`preferences.pinned_modules` is dropped** in V27, after V25 removed the pins and their control (OI-203): the
+  contract no longer names it, and a stored row that still holds it parses, the key dropped on read. No migration
+  rewrites the stored rows; the next save of the preferences writes them without it.
 **Why:** these are the edges D-257..D-260 left to the implementation; each one keeps a single place that decides, and
 the database's guards hold what can be held without refusing a faithful restore.
 
