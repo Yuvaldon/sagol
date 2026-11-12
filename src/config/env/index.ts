@@ -30,13 +30,14 @@ export const EnvSchema = z.object({
   [ENV_VARIABLES.remoteAnonKey]: optional(z.string().trim().min(1)),
 })
 
-/** The parsed environment, in the shape the app uses. */
-export interface Env {
-  readonly authMode: AuthMode
-  readonly dataAdapter: DataAdapterMode
-  /** Present exactly when the data adapter is `remote`. */
-  readonly remote: { readonly url: string; readonly anonKey: string } | null
-}
+/** The parsed environment, in the shape the app uses: one of the two pairs (D-207). */
+export type Env =
+  | { readonly authMode: 'local'; readonly dataAdapter: 'local'; readonly remote: null }
+  | {
+      readonly authMode: 'google'
+      readonly dataAdapter: 'remote'
+      readonly remote: { readonly url: string; readonly anonKey: string }
+    }
 
 export type EnvIssueCode =
   /** The variable is not set. */
@@ -111,7 +112,7 @@ export function parseEnv(raw: RawEnv, options: EnvOptions): EnvResult {
     }
   }
   if (issues.length > 0) return { ok: false, issues }
-  const remote =
-    dataAdapter === 'remote' && url !== undefined && anonKey !== undefined ? { url, anonKey } : null
-  return { ok: true, value: { authMode, dataAdapter, remote } }
+  if (authMode === 'local') return { ok: true, value: { authMode, dataAdapter: 'local', remote: null } }
+  if (url === undefined || anonKey === undefined) return { ok: false, issues }
+  return { ok: true, value: { authMode, dataAdapter: 'remote', remote: { url, anonKey } } }
 }
