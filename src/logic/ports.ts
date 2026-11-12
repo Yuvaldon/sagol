@@ -74,9 +74,32 @@ export interface DataPort {
 /** The env's provider: local identities in development, Google otherwise (D-006, D-207). */
 export type AuthPort = AuthProvider
 
+/** What the installed app can offer (D-184): the browser's own prompt, the words for iOS, or nothing. */
+export type InstallOffer = 'prompt' | 'ios_hint' | 'none'
+
+export interface ShellState {
+  /** A new version is installed and waits for the soldier (D-183). */
+  readonly updateReady: boolean
+  readonly install: InstallOffer
+}
+
+/**
+ * The app's own shell in the browser: its service worker and the install offer (D-183, D-184). `current()` answers the
+ * same object until something changes, so a hook can read it as an external store.
+ */
+export interface ShellPort {
+  readonly subscribe: (listener: () => void) => () => void
+  readonly current: () => ShellState
+  /** The waiting version takes over, and the page reloads once it controls. */
+  readonly applyUpdate: () => void
+  /** Shows the browser's install dialog; answers when the soldier chose. */
+  readonly install: () => Promise<void>
+}
+
 export interface LogicPorts {
   readonly data: DataPort
   readonly auth: AuthPort
   /** The same source the adapter gets (D-083). */
   readonly time: TimeSource
+  readonly shell: ShellPort
 }

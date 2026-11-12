@@ -235,6 +235,17 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   explanation, "done" or "not yet" in words, and an "open" button to the step's own module.
 - It opens first in the navigation panel (not pinnable) and from the empty board, beside "soldiers".
 
+## Installed app (V18, D-182 … D-185)
+
+- **Icon**: the owner's bison emblem in the brand gradient (`brand-light` → `brand` → `brand-deep`) on a `surface`
+  rounded square; the maskable and Apple icons pad it on `surface`. Name "סגול", standalone, right to left; the bar color is `canvas`, and follows the dark set at runtime.
+- **Update toast**: a glass pill at the top, below the safe area: "גרסה חדשה זמינה" and a primary "רענון". It
+  waits for the soldier; it never reloads on its own.
+- **Install**: "התקנת האפליקציה" in the user menu, above sign-out, only when the browser offers it; on an iPhone,
+  a dialog explains Share → "הוספה למסך הבית". Nothing shows once installed.
+- **Offline**: a centered sheet "אין חיבור לרשת" with "ניסיון חוזר"; the app opens by itself when the network
+  returns.
+
 ## Patterns of a module
 
 - **List:** rows with a bottom hairline. A row has an optional handle, an optional color dot, the name as a

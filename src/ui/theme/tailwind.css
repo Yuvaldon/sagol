@@ -33,6 +33,10 @@
   --color-status-rejected: #a8382d;
   --color-marker: #5b45c4;
   --color-marker-ink: #4a36b8;
+  /* The company emblem's gradient (D-182): the app icon is drawn in it, and the build checks the icon against it. */
+  --color-brand-light: #9b6bff;
+  --color-brand: #5b2bd6;
+  --color-brand-deep: #1a0b4a;
   --color-today: #2a2a26;
   /* The column of today on the timeline, a band barely darker than the surface (Stone 3). */
   --color-today-band: rgba(26, 26, 24, 0.035);
@@ -306,6 +310,11 @@
       animation-name: drawer-in;
     }
   }
+}
+
+/* Keeps a top notice below the phone's status bar and notch. */
+@utility top-safe {
+  top: calc(var(--spacing-lg) + env(safe-area-inset-top));
 }
 
 /* Keeps the bottom bar above the phone's home indicator. */

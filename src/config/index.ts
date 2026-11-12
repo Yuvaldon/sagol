@@ -17,6 +17,7 @@ export {
 } from './env'
 export { CHANGE_FEED_CHANNEL, INDEXED_DB_NAME, STORAGE_KEYS, type StorageKey } from './storage'
 export { INBOX } from './inbox'
+export { PWA } from './pwa'
 export { REMOTE } from './remote'
 export { ROUTES, type RoutePath } from './routes'
 export { STARTUP_ERROR_CODES } from './startup'
