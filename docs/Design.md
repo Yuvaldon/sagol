@@ -267,7 +267,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   label names the rotation: the dates say it, and the range menu's "סבב שלם" is a single item or, with more than one
   rotation, a short list by start.
 - With no rotation in scope the viewport shows "אין סבב פעיל": "פתיחת סבב" for whoever may create one, otherwise one
-  line saying the commander opens it. The dates, view switcher, filters, new-request button, inbox and "my requests"
+  line saying the commander opens it; before any unit exists, "יחידה חדשה" for whoever may found the tree. The dates, view switcher, filters, new-request button, inbox and "my requests"
   are gone; the permanent modules stay.
 - The request forms pick the rotation that holds the soldier on those dates. Creating a rotation opens its members
   editor, which starts with the unit's soldiers.

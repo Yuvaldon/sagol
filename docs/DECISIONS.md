@@ -2902,7 +2902,8 @@ already holds rotations, so it is the one place to switch.
 - A soldier sees the request surfaces only for rotations they are a member of; a manager sees them for the rotations in
   their scope.
 - The viewport shows one empty state, "אין סבב פעיל". Whoever may create a deployment gets "פתיחת סבב", which opens the
-  deployment form; anyone else gets one line saying their commander opens it.
+  deployment form; anyone else gets one line saying their commander opens it. Before any unit exists, whoever may
+  found the tree gets "יחידה חדשה" instead, since a rotation belongs to a unit.
 **Why:** a request needs a rotation (D-216); a button that cannot lead anywhere is a dead control.
 
 ## D-219 — The setup wizard ends by opening the first rotation
