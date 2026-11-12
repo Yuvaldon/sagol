@@ -5,7 +5,7 @@ import { InfoDialog } from '../patterns/Dialogs'
 import { Button } from '../primitives/Button'
 
 /**
- * The one-time install offer after sign-in (D-277), as the user menu offers it (D-184): the browser's own prompt, or
+ * The one-time install offer after sign-in (D-274), as the user menu offers it (D-184): the browser's own prompt, or
  * on an iPhone the Share hint. Either answer, or "not now", keeps it away on this device; the menu item stays.
  */
 export function InstallInvitation() {
