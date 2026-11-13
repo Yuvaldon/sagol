@@ -1,7 +1,8 @@
 import { REMOTE } from '@config'
-import { AuthUserId, type AuthIdentity, type DataChange, type Unsubscribe } from '@contracts'
+import { AuthUserId, TABLE_SCHEMAS, type AuthIdentity, type DataChange, type Unsubscribe } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import { createRemoteDataAdapter } from './adapter'
+import type { LiveListener } from './live'
 
 // The transport of the remote adapter (D-204). The contract suite runs it end to end against the
 // gateway (`remote.contract.dbtest.ts`); this file covers what the gateway never answers.
@@ -21,7 +22,10 @@ const nextChannel = () => {
   return `remote-test-${String(channels)}`
 }
 
-function adapterWith(answer: (sent: Sent) => Promise<Response>, token: string | null = 'token-1') {
+/** A listener that hears nothing: these tests never open a socket. */
+const silent: LiveListener = () => () => undefined
+
+function adapterWith(answer: (sent: Sent) => Promise<Response>, token: string | null = 'token-1', listen: LiveListener = silent) {
   const sent: Sent[] = []
   const adapter = createRemoteDataAdapter(
     {
@@ -37,6 +41,7 @@ function adapterWith(answer: (sent: Sent) => Promise<Response>, token: string | 
       },
     },
     nextChannel(),
+    listen,
   )
   return { adapter, sent }
 }
@@ -136,9 +141,98 @@ describe('remote adapter transport (D-204)', () => {
         fetch: () => json(unlinked),
       },
       nextChannel(),
+      silent,
     )
     const session = new Promise((resolve) => adapter.session.subscribe(resolve))
     for (const listener of [...listeners]) listener(identity)
     expect(await session).toEqual({ status: 'unlinked', identity })
+  })
+})
+
+describe('live changes (D-348)', () => {
+  const identity: AuthIdentity = {
+    auth_user_id: AuthUserId.parse(crypto.randomUUID()),
+    provider: 'google',
+    email: 'dana@example.com',
+    email_verified: true,
+    display_name: null,
+  }
+  const organization = crypto.randomUUID()
+  const linked = { status: 'linked', identity, soldier_id: crypto.randomUUID(), organization_id: organization }
+
+  /** A fake Realtime: records each topic listened to, and lets the test announce on it. */
+  function fakeRealtime() {
+    const topics: { topic: string; stopped: boolean; message: (payload: unknown) => void; resume: () => void }[] = []
+    const listen: LiveListener = (topic, message, resume) => {
+      const entry = { topic, stopped: false, message, resume }
+      topics.push(entry)
+      return () => {
+        entry.stopped = true
+      }
+    }
+    return { topics, listen }
+  }
+
+  function sessionAdapter(sessions: unknown[]) {
+    const realtime = fakeRealtime()
+    const { adapter, sent } = adapterWith(
+      () => json({ result: { ok: true, value: sessions.shift() }, changes: [] }),
+      'token-1',
+      realtime.listen,
+    )
+    return { adapter, sent, realtime }
+  }
+
+  const heardBy = (adapter: ReturnType<typeof adapterWith>['adapter']) => {
+    const heard: (readonly DataChange[])[] = []
+    adapter.changes.subscribe((changes) => heard.push(changes))
+    return heard
+  }
+
+  it('names the adapter in every call with one origin id', async () => {
+    const { adapter, sent } = adapterWith(() => json({ result: { ok: true, value: [] }, changes: [] }))
+    await adapter.repositories.units.list({ include_archived: false })
+    await adapter.repositories.units.list({ include_archived: false })
+    const origins = sent.map((call) => call.headers.get(REMOTE.originHeader))
+    expect(origins[0]).toMatch(/^[0-9a-f-]{36}$/)
+    expect(origins[1]).toBe(origins[0])
+  })
+
+  it('listens on the linked organization, and stops when the session is no longer linked', async () => {
+    const { adapter, realtime } = sessionAdapter([linked, linked, { status: 'unlinked', identity }])
+    await adapter.session.current()
+    await adapter.session.current()
+    expect(realtime.topics.map((entry) => entry.topic)).toEqual([organization])
+    expect(realtime.topics[0]?.stopped).toBe(false)
+    await adapter.session.current()
+    expect(realtime.topics[0]?.stopped).toBe(true)
+  })
+
+  it('publishes the tables another device changed, and skips its own writes and malformed messages', async () => {
+    const { adapter, sent, realtime } = sessionAdapter([linked])
+    await adapter.session.current()
+    const own = sent[0]?.headers.get(REMOTE.originHeader)
+    const heard = heardBy(adapter)
+    const entry = realtime.topics[0]
+    entry?.message({ origin: own, tables: ['units'] })
+    entry?.message({ origin: null, tables: ['not_a_table'] })
+    entry?.message('units')
+    entry?.message({ origin: crypto.randomUUID(), tables: ['units', 'soldiers'] })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(heard).toEqual([
+      [
+        { table: 'units', ids: [] },
+        { table: 'soldiers', ids: [] },
+      ],
+    ])
+  })
+
+  it('reads every table again after the channel joins again, since announcements may have been missed', async () => {
+    const { adapter, realtime } = sessionAdapter([linked])
+    await adapter.session.current()
+    const heard = heardBy(adapter)
+    realtime.topics[0]?.resume()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(heard[0]?.map((change) => change.table).sort()).toEqual(Object.keys(TABLE_SCHEMAS).sort())
   })
 })

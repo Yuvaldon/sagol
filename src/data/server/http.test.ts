@@ -1,3 +1,4 @@
+import { REMOTE } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { describe, expect, it, vi } from 'vitest'
 import type { GatewayResponse } from './gateway'
@@ -29,14 +30,25 @@ describe('createCommandHandler', () => {
     const response = await serve(post('{"kind":"session"}', { authorization: 'Bearer abc' }))
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual(answer)
-    expect(gateway).toHaveBeenCalledWith(identity, { kind: 'session' })
+    expect(gateway).toHaveBeenCalledWith(identity, { kind: 'session' }, null)
     expect(response.headers.get('access-control-allow-origin')).toBe(APP)
   })
 
   it('runs a call without a token signed out, and hands an unreadable body on as such', async () => {
     const { gateway, serve } = setup()
     await serve(post('not json'))
-    expect(gateway).toHaveBeenCalledWith(null, undefined)
+    expect(gateway).toHaveBeenCalledWith(null, undefined, null)
+  })
+
+  it("hands on the adapter's origin id for the live announcement, and drops a malformed one (D-348)", async () => {
+    const { gateway, serve } = setup()
+    const origin = crypto.randomUUID()
+    await serve(post('{}', { [REMOTE.originHeader]: origin }))
+    expect(gateway).toHaveBeenLastCalledWith(null, {}, origin)
+    await serve(post('{}', { [REMOTE.originHeader]: 'not-a-uuid' }))
+    expect(gateway).toHaveBeenLastCalledWith(null, {}, null)
+    const preflight = await serve(new Request('https://functions.example/commands', { method: 'OPTIONS', headers: { origin: APP } }))
+    expect(preflight.headers.get('access-control-allow-headers')).toContain(REMOTE.originHeader)
   })
 
   it('refuses a token that names no one, a malformed header, and an unreachable auth server', async () => {

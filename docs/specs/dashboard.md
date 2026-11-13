@@ -1,11 +1,11 @@
 # Spec: Dashboard ("דשבורד")
 
-Status: spec-complete (D-348, D-349), not scheduled. The slice gets its V-number, and its P-n get D-numbers, when it
+Status: spec-complete (D-349, D-350), not scheduled. The slice gets its V-number, and its P-n get D-numbers, when it
 starts. It is excluded from the current autonomous build: the owner decides when it is built (OI-222).
 Context: both (rotation and routine). On 2026-11-13 the owner renamed it from "situation picture" ("תמונת מצב") and
 asked for charts and key figures, not a single number (D-338). The same day the owner set its shape: command boards
 built from a fixed catalogue of modules, two or three templates or a board of one's own, and a small fixed personal
-board for every soldier (D-348, D-349). D-343 names the readers: the platoon commanders run the leaves, the company
+board for every soldier (D-349, D-350). D-343 names the readers: the platoon commanders run the leaves, the company
 commander plans and controls, and a rotation's report owner reads the daily report.
 
 #### Vnn: Dashboard
@@ -40,7 +40,7 @@ Nothing derived is stored.
 - **Open items:** OI-222.
 - **Decisions:** D-003, D-008, D-013, D-019, D-023, D-032, D-041, D-076, D-102, D-105, D-112, D-141, D-170, D-174,
   D-187, D-211, D-214, D-221, D-253, D-257, D-259, D-265, D-269, D-270, D-272, D-285, D-290, D-293, D-333, D-336,
-  D-338, D-342, D-343, D-345, D-348, D-349.
+  D-338, D-342, D-343, D-345, D-349, D-350.
 
 ## User stories
 
@@ -279,7 +279,7 @@ Fixed, not composable, the same for everyone; a soldier never configures it and 
  "preferences" JSONB NOT NULL DEFAULT '{}',  -- validated by contracts SoldierPreferences:
                                              -- create_leaves_as_approved (D-121),
                                              -- appearance (D-181);
-+                                            -- dashboard (D-348): the board's template or custom modules;
++                                            -- dashboard (D-349): the board's template or custom modules;
 ```
 
 - The slice's first commit updates `schema.sql`'s comment, `DECISIONS.md` and `contracts` together (rule 5). A stored
