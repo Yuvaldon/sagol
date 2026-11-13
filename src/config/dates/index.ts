@@ -3,6 +3,12 @@
 
 export const DATE_LOCALE = 'he-IL'
 
+/**
+ * The zone a calendar date (a day with no time, D-042) is formatted in: a fixed one, so the day shown is the day
+ * stored wherever the device is.
+ */
+export const CALENDAR_DATE_ZONE = 'UTC'
+
 /** First day of the week in calendars and timelines: 0 = Sunday ... 6 = Saturday. */
 export const FIRST_DAY_OF_WEEK = 0
 

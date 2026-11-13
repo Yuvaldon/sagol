@@ -1,6 +1,6 @@
-import type { Leave, LeaveType, Soldier, SoldierId } from '@contracts'
-import { t } from '@i18n'
-import { fullName, leaveDayCount } from '@logic'
+import type { Leave, LeaveEventType, LeaveType, Soldier, SoldierId } from '@contracts'
+import { t, type I18nKey } from '@i18n'
+import { fullName, leaveDayCount, type MyUpdateLine } from '@logic'
 import { formatDate, formatDateRange } from '../../patterns/dates'
 
 // How a leave is written wherever it is listed: its days, its type and the people around it (D-119, D-120). The
@@ -25,4 +25,21 @@ export function personNames(soldiers: readonly Soldier[]): (id: SoldierId | null
 
 export function typeNameOf(type: LeaveType | null): string {
   return type?.name ?? t('leaves.unknownType')
+}
+
+const VERB_KEYS: Readonly<Record<LeaveEventType, I18nKey>> = {
+  created: 'myLeaves.updateVerbs.created',
+  updated: 'myLeaves.updateVerbs.updated',
+  rescheduled: 'myLeaves.updateVerbs.rescheduled',
+  approved: 'myLeaves.updateVerbs.approved',
+  rejected: 'myLeaves.updateVerbs.rejected',
+  cancelled: 'myLeaves.updateVerbs.cancelled',
+  reopened: 'myLeaves.updateVerbs.reopened',
+}
+
+/** "דן כהן אישר את הבקשה", or "דן כהן הוסיף הערה על הבקשה". */
+export function updateText(line: MyUpdateLine, nameOf: (id: SoldierId | null) => string): string {
+  const { kind, actor_id } = line.update
+  const what = kind === 'comment' ? [t('myLeaves.updateComment')] : [t(VERB_KEYS[kind]), t('myLeaves.updateObject')]
+  return [nameOf(actor_id), ...what].join(DAYS_SEPARATOR)
 }

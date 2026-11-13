@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { AccountLinkRequestId, CommandRankId, SoldierAccountId, SoldierId } from '../common/ids'
-import { AccountLinkRequest } from '../entities/accounts'
+import { AccountLinkRequest, PushEndpoint, PushSubscriptionRecord } from '../entities/accounts'
 import { SoldierPreferences } from '../settings'
 import { ExpectedVersion } from './common'
 import { MembershipPlacement } from './soldiers'
@@ -61,3 +61,17 @@ export const UpdateMyPreferencesInput = z.strictObject({
   preferences: SoldierPreferences,
 })
 export type UpdateMyPreferencesInput = z.infer<typeof UpdateMyPreferencesInput>
+
+/**
+ * `notifications.subscribe` (D-351): this browser install of the signed-in soldier agrees to phone notifications. An
+ * endpoint stored before moves to the caller (a shared device changed hands). The row's id is the server's: the
+ * endpoint is the browser's own key, and the caller never reads the row back.
+ */
+export const SubscribePushInput = z.strictObject(
+  PushSubscriptionRecord.pick({ endpoint: true, p256dh: true, auth: true }).shape,
+)
+export type SubscribePushInput = z.infer<typeof SubscribePushInput>
+
+/** `notifications.unsubscribe`: forgets this browser install, if it is the caller's; a missing row is success. */
+export const UnsubscribePushInput = z.strictObject({ endpoint: PushEndpoint })
+export type UnsubscribePushInput = z.infer<typeof UnsubscribePushInput>

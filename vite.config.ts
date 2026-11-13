@@ -101,20 +101,15 @@ function installedAppHead({ name, iconDir }: AppIdentity): Plugin {
   }
 }
 
-/** Escapes a path for a route pattern of the service worker. */
-function pathPattern(path: string): RegExp {
-  return new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
-}
-
 /**
- * The service worker (D-183): the app shell only, and only in a production build. Navigations fall back to the
- * cached page, except the command gateway and auth, which always go to the network. No data is cached.
+ * The service worker (D-183, D-356): the app shell only, and only in a production build. It is built from
+ * `src/app/worker/sw.ts`, which routes navigations and shows the phone's notifications. No data is cached.
  */
 const installedApp = ({ name, iconDir }: AppIdentity): ReturnType<typeof VitePWA> =>
   VitePWA({
     registerType: 'prompt',
     injectRegister: false,
-    filename: PWA.serviceWorkerPath.slice(1),
+    filename: PWA.serviceWorkerPath.slice(1).replace(/\.js$/, '.ts'),
     devOptions: { enabled: false },
     pwaAssets: {
       image: resolve(iconDir, APP_ICON),
@@ -132,19 +127,19 @@ const installedApp = ({ name, iconDir }: AppIdentity): ReturnType<typeof VitePWA
     manifest: {
       name,
       short_name: name,
-      lang: 'he',
-      dir: 'rtl',
+      lang: PWA.language,
+      dir: PWA.direction,
       display: 'standalone',
       start_url: '/',
       scope: '/',
       theme_color: CANVAS,
       background_color: CANVAS,
     },
-    workbox: {
+    // The worker is the app's own (D-356): it caches and routes as before (D-183) and shows the notifications.
+    strategies: 'injectManifest',
+    srcDir: 'src/app/worker',
+    injectManifest: {
       globPatterns: ['**/*.{js,css,html,woff2,png,svg,ico}'],
-      navigateFallback: 'index.html',
-      navigateFallbackDenylist: PWA.networkOnlyPaths.map(pathPattern),
-      cleanupOutdatedCaches: true,
     },
   })
 
