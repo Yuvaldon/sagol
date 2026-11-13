@@ -190,7 +190,7 @@ am = amends, ref = refines, ext = extends.
 | D-171 | Import runs the built commands and stops at the first refusal | contracts, data, logic, ui | ref D-173 |
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278; ref D-291; sup D-310 (rules row) |
-| D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268 |
+| D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268; ref D-339 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
 | D-177 | Property chips in the filter bar | logic, ui | ref D-312 |
@@ -220,13 +220,13 @@ am = amends, ref = refines, ext = extends.
 | D-190 | A phone on its side keeps the phone's bars, and a wide phone folds the context row into the top | config, ui, tooling | sup D-252 (folded top row) |
 | D-191 | Edge to edge: the canvas under the cutouts, what can be pressed inside the safe area | ui, tooling | ref D-252 |
 | D-192 | The board's corner and name column are one opaque surface | ui | |
-| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217, D-220, D-256, D-257 |
+| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217, D-220, D-256, D-257; ref D-339 |
 | D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | ref D-219, D-250, D-257 |
 | D-213 | "Only who is missing" is a filter condition | logic, ui | ref D-312 |
 | D-214 | The board's sort | config, logic, ui | sup D-313 (one key) |
 | D-215 | Data and controls, not prose | i18n, ui | ref D-250 |
-| D-193 | The day report (דוח 1): who is present, absent, leaving and returning | domain, config, logic, ui | |
-| D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | |
+| D-193 | The day report (דוח 1): who is present, absent, leaving and returning | domain, config, logic, ui | ref D-339 |
+| D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | ref D-339 |
 | D-195 | The day report as text for a messaging app | config, i18n, logic | |
 | D-196 | The day report as an image: drawn on a canvas in the light tokens | ui | |
 | D-197 | A device store for conveniences | config, data, logic, tooling | ref D-301 |
@@ -256,7 +256,7 @@ am = amends, ref = refines, ext = extends.
 | D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299 |
 | D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296 |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
-| D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290 |
+| D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290; ref D-339 |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
 | D-270 | The leave-round planner | domain, logic, ui | ref D-316 |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
@@ -278,7 +278,7 @@ am = amends, ref = refines, ext = extends.
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303 |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
-| D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | |
+| D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | ref D-339 |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
 | D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
@@ -310,6 +310,7 @@ am = amends, ref = refines, ext = extends.
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
+| D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4396,3 +4397,24 @@ also say what each call answered, which is what OI-290 lacked.
 outside its unit, or outside their membership days, was offered and passed the form, and only the submit refused the
 whole plan (OI-292). One function makes the screen and the command agree, and the situation picture (P-3) reads the
 same one.
+
+## D-339 — The phone calendar is a month grid; another range from and to; the day report shows its breaches
+2026-11-13 · accepted · refines D-174, D-211, D-193, D-194, D-268, D-296 · OI-293 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Calendar.** Seven columns at every width; the one-day-per-line phone list goes. From `md` a day is as before:
+  heading, count and a chip per leave. Below `md` a day is one cell: its weekday letter, its number, today's pill, how
+  many are out and the heat row's tone of its worst breach (D-290). No "near breach" tone: the rules have none. At
+  360 px the page does not scroll sideways.
+- **A plain tap on a day opens its day report** (the owner asked for a long press; a tap is what a phone's day already
+  means, and a press-and-hold has no keyboard or screen reader equivalent). The cell's name is "דוח 1 של" and the full
+  date; who is out and its breaches are its description. A day outside the scope's rotations is plain text (D-222).
+- **Range picker.** The rotations list the latest first; the arrows still step in time. "טווח אחר" opens a dialog with
+  a from and a to date, at most `DATE_WINDOW.maxDays` = 186 days, written as the `custom` window D-211 kept for older
+  links (`range` absent, `from` and `to`). An empty, inverted or too long pair is refused in the dialog, not clamped.
+- **Day report.** Each day shows the rules it breaks, from the same evaluation as the heat row and the calendar
+  (`useDayViolations`), under its counts. The copy stays one tap away above the days and the confirmation is D-293's.
+  Reasons stay behind the switch and the viewer's reads (D-194, D-102): the model has no "regular" leave type that
+  would let a reason show only for the others (OI-293).
+- **The table** has a one-line caption: a row is one leave in the window. **Routine** keeps no report (D-222); its band
+  says that leave requests and דוח 1 open with a rotation.
+**Why:** the owner's review on a phone: the calendar was a list, no whole rotation or free range could be picked, the
+table did not say what it held, and the report was never seen because routine has none and nothing said so.
