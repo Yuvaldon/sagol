@@ -1,7 +1,9 @@
 # Spec — Attached memberships ("סיפוח")
 
 Status: proposed, not scheduled. The slice gets its V-number, and P-n get D-numbers, when it starts.
-Context: both. Rank 2 of the Later items (see `README.md`).
+Context: both. Not urgent per the owner (2026-11-13): last in the build order (D-170, recorded as decided).
+Its core (P-1 … P-6) ships first inside `missions.md` (P-4 there), limited to temporary hosts; this slice opens it
+to standing hosts and adds the soldier-details block, so most of what follows is already built when it starts.
 
 #### Vnn — Attached soldiers
 **Owner sees:** in a soldier's details, "סיפוח ליחידה": a unit and dates. During those dates the soldier
@@ -277,7 +279,7 @@ the group header count (presence numbers change). Nothing else.
 - Filters V33: the unit condition matches either; `UNIT_STATE_KEYS` (`src/ui/patterns/units.ts`) gains the
   attached state.
 - Rotations V26/V31: membership at the start by duty unit; `servedDays` (`src/logic/leaves/planner.ts:126`)
-  ignores attachments and the subtree today; unified per `situation-picture.md`.
+  ignores attachments and the subtree today; unified by D-336 (`createRotationMembership`).
 - Permissions V10: P-4 coverage in `src/domain/policy/scope.ts`; test that an attachment grants the host no
   identity or grant rights.
 - Import/export V12: export already dumps the rows as stored (attached included); import has no membership
@@ -290,7 +292,7 @@ the server validates dates, overlap and coverage.
 
 ## Dependencies
 
-None. `temporary-task-units.md` depends on this.
+`missions.md`, which builds this spec's core first (P-4 there).
 
 ## Assumptions
 
