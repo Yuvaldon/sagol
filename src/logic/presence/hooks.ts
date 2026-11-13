@@ -7,6 +7,8 @@ import {
   type ReportConfirmation,
   type ConfirmableReport,
   type ConfirmableReportQuery,
+  type ReportSectionCount,
+  type ReportSectionQuery,
   type ReportConfirmationQuery,
   type Soldier,
   type Timestamp,
@@ -158,6 +160,31 @@ function useConfirmable(days: readonly CalendarDate[], units: readonly UnitId[])
 }
 
 const CONFIRMABLE = 'confirmable'
+
+/**
+ * How many unit sections the rotations' reports of `days` hold on the whole tree, for the rotations whose summary the
+ * actor reads (D-303): a count only, so the owner learns that units lie outside the view without learning which.
+ */
+function useReportSections(days: readonly CalendarDate[], rotations: readonly Deployment[]): Loaded<readonly ReportSectionCount[]> {
+  const { data } = usePorts()
+  const first = days[0]
+  const last = days.at(-1)
+  const ids = useMemo(() => rotations.map((rotation) => rotation.id).sort(compareCodeUnits), [rotations])
+  const query = useMemo(
+    (): ReportSectionQuery | null =>
+      first === undefined || last === undefined ? null : { window: { start_date: first, end_date: last }, deployment_ids: ids },
+    [first, last, ids],
+  )
+  return loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.reportConfirmations, SECTIONS, query],
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.report_confirmations.sections(query))),
+      enabled: query !== null,
+    }),
+  )
+}
+
+const SECTIONS = 'sections'
 const NO_UNITS: readonly UnitId[] = []
 
 /**
@@ -188,6 +215,7 @@ export function useReportConfirmations(
     return [...ids].sort(compareCodeUnits)
   }, [reportDays])
   const confirmable = useConfirmable(reportDays === null ? [] : days, units)
+  const sectionCounts = useReportSections(days, rotations)
   const session = useSession()
   const live = useUnits()
   const tree = useMemo(() => (live.status === 'ready' ? buildUnitTree(live.value) : null), [live])
@@ -202,10 +230,12 @@ export function useReportConfirmations(
     if (confirmations.status !== 'ready') return confirmations
     if (leaves.status !== 'ready') return leaves
     if (confirmable.status !== 'ready') return confirmable
+    if (sectionCounts.status !== 'ready') return sectionCounts
     if (session.status !== 'ready') return session
     if (tree === null) return { status: 'loading' }
     // A button never shows a moment late, as the report's soldiers never do (D-122).
     if (!checks.every(answers.known)) return { status: 'loading' }
+    const counts = new Map(sectionCounts.value.map((row) => [row.report_date, row.sections] as const))
     const pairs = new Set(confirmable.value.map((pair) => pairKeyOf(pair.unit_id, pair.report_date)))
     const shownDays = new Map(shown.value.days.map((day) => [day.date, day] as const))
     const mayConfirm = (unitId: UnitId) => answers.can(confirmCheckOf(unitId))
@@ -226,11 +256,12 @@ export function useReportConfirmations(
             tree,
             actorId,
             seenAt,
+            treeSections: counts.get(day.date) ?? 0,
           }),
         ]),
       ),
     }
-  }, [report, shown, confirmations, leaves, confirmable, session, tree, checks, answers])
+  }, [report, shown, confirmations, leaves, confirmable, sectionCounts, session, tree, checks, answers])
 }
 
 const pairKeyOf = (unitId: UnitId, date: CalendarDate) => `${date} ${unitId}`

@@ -142,6 +142,7 @@ function input(overrides: Partial<DayConfirmationsInput> = {}): DayConfirmations
     tree: TREE,
     actorId: ACTOR,
     seenAt: SEEN_AT,
+    treeSections: 2,
     ...overrides,
   }
 }
@@ -178,7 +179,7 @@ describe('the daily report confirmations (D-293)', () => {
     const changed = leave(6, DAY, DAY, LATER)
     const result = dayConfirmations(input({ shown, confirmations: [confirmation(SQUAD)], leaves: [changed] }))
     expect(result.sections.get(SQUAD)).toMatchObject({ status: 'changed_since', canConfirm: false, needsFullList: true })
-    expect(result.summary).toEqual({ total: 2, confirmed: 0, changed: 1 })
+    expect(result.summary).toEqual({ total: 2, confirmed: 0, changed: 1, unseen: 0 })
     // A section the filter leaves whole is confirmed as it is.
     const whole = dayConfirmations(input({ shown: day([rotation()], [section(SQUAD, [5, 6])]) }))
     expect(whole.sections.get(SQUAD)).toMatchObject({ canConfirm: true, needsFullList: false })
@@ -191,9 +192,10 @@ describe('the daily report confirmations (D-293)', () => {
       total: 2,
       confirmed: 1,
       changed: 0,
+      unseen: 0,
     })
     expect(dayConfirmations(input({ day: ownedDay, shown: ownedDay })).summary).toBeNull()
-    expect(dayConfirmations(input()).summary).toEqual({ total: 2, confirmed: 0, changed: 0 })
+    expect(dayConfirmations(input()).summary).toEqual({ total: 2, confirmed: 0, changed: 0, unseen: 0 })
     expect(dayConfirmations(input({ mayConfirm: () => false })).summary).toBeNull()
   })
 
@@ -201,10 +203,18 @@ describe('the daily report confirmations (D-293)', () => {
     const outside = day([rotation()], [...WHOLE, section(ELSEWHERE, [9])])
     const bare = dayConfirmations(input({ day: outside, shown: outside }))
     expect(bare.sections.has(ELSEWHERE)).toBe(false)
-    expect(bare.summary).toEqual({ total: 2, confirmed: 0, changed: 0 })
+    expect(bare.summary).toEqual({ total: 2, confirmed: 0, changed: 0, unseen: 0 })
     const kept = dayConfirmations(input({ day: outside, shown: outside, confirmations: [confirmation(ELSEWHERE)] }))
     expect(kept.sections.get(ELSEWHERE)?.status).toBe('confirmed')
     const offered = dayConfirmations(input({ day: outside, shown: outside, confirmable: (unitId) => unitId === ELSEWHERE }))
     expect(offered.sections.get(ELSEWHERE)?.canConfirm).toBe(true)
+  })
+
+  it('counts the sections on the whole tree that the actor does not see, never below none (D-303)', () => {
+    expect(dayConfirmations(input({ treeSections: 5 })).summary).toMatchObject({ total: 2, unseen: 3 })
+    // The actor reads one of the two sections the rotation covers on the tree.
+    const one = day([rotation()], [section(SQUAD, [5, 6])])
+    expect(dayConfirmations(input({ day: one, shown: one })).summary).toMatchObject({ total: 1, unseen: 1 })
+    expect(dayConfirmations(input({ treeSections: 0 })).summary?.unseen).toBe(0)
   })
 })
