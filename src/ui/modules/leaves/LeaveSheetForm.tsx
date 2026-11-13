@@ -155,7 +155,7 @@ export function LeaveSheetForm({
                   <form.Field
                     name={`rows[${index}].leave_type_id`}
                     listeners={{
-                      // A rotation leave asks no reason (D-346): one typed before the type changed is not sent with it.
+                      // A rotation leave asks no reason (D-347): one typed before the type changed is not sent with it.
                       onChange: ({ value }) => {
                         if (isRotationLeave(typeOf(value), groups)) form.setFieldValue(`rows[${index}].reason`, '')
                       },

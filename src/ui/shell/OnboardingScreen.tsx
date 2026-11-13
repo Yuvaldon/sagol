@@ -13,7 +13,7 @@ import { IdentityList } from './IdentityList'
 import { LinkRequestForm, LinkRequestWaiting } from './LinkRequest'
 import { FailureScreen, LoadingScreen } from './states'
 
-/** The names the claim stores for the owner role and the built-in leave group (D-005, D-346): user data, proposed here. */
+/** The names the claim stores for the owner role and the built-in leave group (D-005, D-347): user data, proposed here. */
 const PROPOSED_NAMES = () => ({
   owner_role_name: t('onboarding.ownerRoleName'),
   rotation_group_name: t('onboarding.rotationGroupName'),

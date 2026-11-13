@@ -165,7 +165,7 @@ export function LeaveTypeGroupsModule() {
     ...(permissions.update && index < live.length - 1
       ? [{ id: 'down', labelKey: 'common.stepDown' as const, icon: <ArrowDown aria-hidden size={14} />, onAction: () => { step(group, 1) } }]
       : []),
-    // The built-in group is never archived (D-346).
+    // The built-in group is never archived (D-347).
     ...(permissions.archive && !group.is_rotation_leave
       ? [
           {

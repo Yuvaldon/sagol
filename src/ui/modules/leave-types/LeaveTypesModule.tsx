@@ -73,7 +73,7 @@ function TypeForm({
   const { create, update } = useLeaveTypeCommands()
   const [opened] = useState(type)
   const [state, setState] = useState(CLEAN_FORM)
-  // A type of the built-in group keeps its group, effect and reason fixed, in a calm color (D-346).
+  // A type of the built-in group keeps its group, effect and reason fixed, in a calm color (D-347).
   const rotation = opened !== null && isRotationLeave(opened, groups)
   const backToList = () => {
     if (onDone === undefined) panel.open(PANEL_IDS.leaveTypes)
@@ -259,7 +259,7 @@ function TypeSection({ title, children }: { readonly title: string; readonly chi
   )
 }
 
-/** The built-in group's "add" (D-346): a new type with no form, named and colored for it. */
+/** The built-in group's "add" (D-347): a new type with no form, named and colored for it. */
 function AddRotationButton({
   group,
   isPending,
@@ -340,7 +340,7 @@ export function LeaveTypesModule() {
       ...(permissions.update && index >= 0 && index < siblings.length - 1
         ? [{ id: 'down', labelKey: 'common.stepDown' as const, icon: <ArrowDown aria-hidden size={14} />, onAction: () => { step(type, 1) } }]
         : []),
-      // The built-in group keeps its last live type (D-346).
+      // The built-in group keeps its last live type (D-347).
       ...(permissions.archive && !isLastRotationLeaveType(type, groups.value, all)
         ? [
             {
