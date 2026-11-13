@@ -4411,8 +4411,10 @@ owner's own words ("ותבצע את ההתאמות ושחרר ידנית באי�
 - **What it releases.** The optional input `sha` names the commit of `main` to release; empty means main's head at
   dispatch. It must be a full 40-character SHA. The run refuses it unless CI passed on it (a push run), Staging
   succeeded for it (a Staging run on `main` with that head SHA), it is on `main`, and it contains the commit production
-  already holds: migrations only go forward, so a release never takes the frontend back behind the database. The
-  project guard and the destructive-migration scan of D-280 are unchanged.
+  already holds (the branch's commit itself when it is on `main`, else its only parent): migrations only go forward,
+  so a release never takes the frontend back behind the database. Its tree's `vercel.json` must enable `production`,
+  since the branch's commit carries that tree. The project guard and the destructive-migration scan of D-280 are
+  unchanged.
 - **The frontend follows the backend.** After the db push and the function deploy succeed, the run moves the
   `production` branch the way Staging moves `staging` (D-292): `git commit-tree` with the release's tree and the release
   as its only parent, message `production: release <sha>`, pushed with `--force-with-lease` on the branch's head, then
