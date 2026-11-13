@@ -96,7 +96,7 @@ export function useGoogleSignIn() {
   return { signIn: mutation.mutateAsync, isPending: mutation.isPending }
 }
 
-/** Unsubscribes this device first, best effort, then signs out (D-356). */
+/** Unsubscribes this device first, best effort, then signs out (D-358). */
 export function useSignOut() {
   const { auth, push, data } = usePorts()
   const mutation = useMutation({

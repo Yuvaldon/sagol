@@ -11,7 +11,7 @@ import { useMyPreferences, useUpdateMyPreferences } from '../session/preferences
 import { useTimezone, useToday } from '../session/today'
 import { useActor, useMyLeaveRows } from './workflowHooks'
 
-// "עדכונים" on שלי (D-350, D-354): what others did on the soldier's own leaves in the window, and what is unread.
+// "עדכונים" on שלי (D-352, D-356): what others did on the soldier's own leaves in the window, and what is unread.
 
 export interface MyUpdateLine {
   readonly update: LeaveUpdate
@@ -88,7 +88,7 @@ export function useMyUpdates(): Loaded<MyUpdates> | null {
 }
 
 /**
- * Marks the updates up to `newest` seen (D-350). A save that met another device's save is tried once more over the
+ * Marks the updates up to `newest` seen (D-352). A save that met another device's save is tried once more over the
  * row as stored; a time that is not newer than the stored one saves nothing.
  */
 export function useMarkUpdatesSeen(): (newest: Timestamp) => Promise<Result<SoldierPreferencesRecord> | null> {

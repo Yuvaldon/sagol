@@ -58,7 +58,7 @@ function render(push: PushPort, commands: { subscribe?: unknown; unsubscribe?: u
   })
 }
 
-describe('the device switch (D-354)', () => {
+describe('the device switch (D-356)', () => {
   it('asks the browser, then records the install', async () => {
     const push = browserOf('off')
     const subscribe = vi.fn(() => Promise.resolve(SUBSCRIBED))
@@ -121,7 +121,7 @@ describe('the device switch (D-354)', () => {
   })
 })
 
-describe('sign-out (D-356)', () => {
+describe('sign-out (D-358)', () => {
   const session = { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION }
 
   it('forgets this device before it signs out', async () => {

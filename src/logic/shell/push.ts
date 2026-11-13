@@ -5,7 +5,7 @@ import type { PushAvailability, PushPort, DataPort } from '../ports'
 import { usePorts } from '../runtime/context'
 import { useMyPreferences, useUpdateMyPreferences, type PreferenceSaved } from '../session/preferences'
 
-// Phone notifications on this device (D-354, D-356): the browser's answer, and the server's record of the install.
+// Phone notifications on this device (D-356, D-358): the browser's answer, and the server's record of the install.
 
 const DONE: Result<null> = { ok: true, value: null }
 const UNAVAILABLE: Result<null> = { ok: false, error: { code: 'unavailable' } }
@@ -33,12 +33,12 @@ export interface DeviceNotifications {
   readonly availability: PushAvailability
   /** Asks the browser, then records the install; a refused permission is not a failure. */
   readonly enable: () => Promise<Result<null>>
-  /** Unsubscribes the browser, then the server (D-354). */
+  /** Unsubscribes the browser, then the server (D-356). */
   readonly disable: () => Promise<Result<null>>
   readonly isPending: boolean
 }
 
-/** The "התראות במכשיר הזה" switch (D-354). */
+/** The "התראות במכשיר הזה" switch (D-356). */
 export function useDeviceNotifications(): DeviceNotifications {
   const { push, data } = usePorts()
   const availability = useSyncExternalStore(push.subscribe, push.current)
@@ -54,7 +54,7 @@ export function useDeviceNotifications(): DeviceNotifications {
   }
 }
 
-/** Sign-out's first step (D-356): best effort, so a failure here never keeps the soldier signed in. */
+/** Sign-out's first step (D-358): best effort, so a failure here never keeps the soldier signed in. */
 export function forgetThisDevice(push: PushPort, data: DataPort): Promise<void> {
   return forgetDevice(push, data).then(
     () => undefined,
@@ -68,7 +68,7 @@ export interface NotificationKinds {
   readonly setKind: (kind: NotificationKind, on: boolean) => Promise<PreferenceSaved>
 }
 
-/** Which kinds the soldier wants, on every device they subscribed (D-356). */
+/** Which kinds the soldier wants, on every device they subscribed (D-358). */
 export function useNotificationKinds(): NotificationKinds {
   const preferences = useMyPreferences()
   const save = useUpdateMyPreferences()

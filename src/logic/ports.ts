@@ -102,7 +102,7 @@ export interface ShellPort {
 }
 
 /**
- * Phone notifications on this browser install (D-354), as the browser answers them. `unsupported`: no `PushManager` or
+ * Phone notifications on this browser install (D-356), as the browser answers them. `unsupported`: no `PushManager` or
  * no public key in the build, so nothing is offered (D-076). `ios_install`: iOS outside the installed app, where push
  * exists only once installed (D-184). `checking` until the browser answered. Never stored: asked of
  * `PushManager.getSubscription()` each time.

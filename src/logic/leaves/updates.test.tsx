@@ -108,7 +108,7 @@ function portsWith(fakes: Fakes) {
   return { ports, feed }
 }
 
-describe('the updates on שלי (D-350)', () => {
+describe('the updates on שלי (D-352)', () => {
   it('lists what others did on my leaves, newest first, with the unread ones counted', async () => {
     const events = [event(1, DAN, '2026-11-07T08:00:00.000Z'), event(2, ACTOR, '2026-11-08T08:00:00.000Z')]
     const { ports, feed } = portsWith({ events, seenAt: '2026-11-07T12:00:00.000Z' })
@@ -129,7 +129,7 @@ describe('the updates on שלי (D-350)', () => {
   })
 })
 
-describe('marking the updates seen (D-350)', () => {
+describe('marking the updates seen (D-352)', () => {
   const saved = (input: UpdateMyPreferencesInput): Result<SoldierPreferencesRecord> => ({
     ok: true,
     value: {
