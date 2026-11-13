@@ -318,7 +318,7 @@ am = amends, ref = refines, ext = extends.
 | D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
 | D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | |
-| D-345 | "יציאת סבב": a rotation's routine home leave, and its marker on the leave type | docs | |
+| D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4582,15 +4582,25 @@ the company commander's need is a picture for planning, not approving.
   concept (D-342).
 **Why:** the owner's sort of everything left, so that stage 3 closes only what 1.0 needs.
 
-## D-345 — "יציאת סבב": a rotation's routine home leave, and its marker on the leave type
+## D-345 — "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group
 2026-11-13 · accepted · refines D-339 · ref D-102, D-112, D-194 · OI-295 · the owner's review in the planning
-- **The term.** "יציאת סבב" is the fixed home leave of a rotation's cycle (for example 8 days on base and 6 at home),
-  taken with no request and no reason. It goes in the glossary of terms.
-- **The requirement (1.0, Must).** A leave type carries a "routine" marker. The day report shows reasons only for
-  leaves of a type that is not routine, still within the viewer's reads and the reasons switch (D-102, D-194). The board
-  draws a routine leave calmly, and the soldier still counts as absent.
-- **What exists today and is not enough:** `requires_reason = false` on a type, a quiet `color_key`, and the uniform
-  color mode (D-112) say nothing about whether a leave is routine.
-- The column, its name and its contracts are decided in OI-295's slice, with `schema.sql` first (rule 5).
-**Why:** the day report must show why someone is out only when it is not the rotation's ordinary leave; the owner
-named the concept.
+- **The term.** "יציאת סבב" is the soldiers' ordinary home leave in the rotation's cycle (for example 8 days on base
+  and 6 at home). Nobody requests it and it needs no reason or form; a soldier may still ask to change it. It goes in
+  the glossary of terms.
+- **The model (the owner's).** It sits on the existing leave types and groups. Every organization has one built-in
+  group, "סבב יציאות", created with the organization (with or without a setup template) and added to existing ones.
+  It cannot be archived, and it always holds at least one type: its last type cannot be archived either.
+- **Its types.** By default it holds one type, shown as "סבב יציאה" with no number. A platoon commander, or anyone with
+  the same permission, who wants to split the routine leaves into groups of soldiers adds another type there with no
+  form: it gets the next number ("סבב יציאה 1", "סבב יציאה 2", ...) and its own color. There is no upper limit.
+- **Every other type** is a leave that comes from a request or a specific reason, and stays as it is today: free to
+  define, group, mark and color.
+- **What it changes (1.0, Must).** A leave whose type is in the built-in group never asks for a reason, and the day
+  report shows reasons only for the other leaves, still within the viewer's reads and the reasons switch (D-102,
+  D-194). The board draws it calmly, not as an alert, and the soldier still counts as absent.
+- **No architecture change.** One marker on the group, its creation with the organization (and a data migration for
+  existing ones, through the manual production workflow), two archive guards, and the "add" shortcut. The column,
+  its name, whether the numbered name is stored or derived, and the contracts are decided in OI-295's slice, with
+  `schema.sql` first (rule 5).
+**Why:** the routine leave is the rotation itself, not an absence someone asked for; the day report and the board must
+tell it apart from requested leaves without anyone defining anything. The owner named the concept and the model.
