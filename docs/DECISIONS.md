@@ -147,7 +147,7 @@ am = amends, ref = refines, ext = extends.
 | D-128 | Closed items move to an archive; current state in ARCHITECTURE and Design.md | docs | ref D-154 |
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260; ref D-285 |
-| D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177 |
+| D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177; sup D-326 |
 | D-132 | Leave conditions on the board | config, logic, ui | |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
 | D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161; sup D-193 (panel) |
@@ -288,15 +288,21 @@ am = amends, ref = refines, ext = extends.
 | D-303 | A rotation report's summary counts the sections outside the owner's view, without naming them | contracts, data, logic, i18n, ui | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301 |
-| D-312 | Filtering is a rule builder | logic, i18n, ui | |
-| D-313 | Several sorts, in order | config, logic, i18n, ui | |
+| D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326 |
+| D-313 | Several sorts, in order | config, logic, i18n, ui | ext D-324 |
 | D-314 | A filter chip's remove is a plain × | ui | |
-| D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | |
+| D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | ref D-321; ref D-323 |
 | D-316 | The leave-round planner as built: groups take turns, one collective leave, bounded by config | config, domain, logic, i18n, ui | D-302 |
 | D-317 | Rounds that overlap stack on the timeline; a rotation's creator sees close and reopen; rotation copies stay per soldier | logic, ui | |
 | D-318 | The unit tree reads as a list or as a chart, remembered per device; the chart takes the drawer's whole width | config, i18n, ui | |
-| D-319 | The chart's layout and its pan and zoom | config, logic, ui | |
+| D-319 | The chart's layout and its pan and zoom | config, logic, ui | ref D-325 |
 | D-320 | Editing on the chart: the list's actions and permissions, no drag | ui | |
+| D-321 | One root per organization on the server and on the device, with each soldier's days before their first unit in it | data (migration) | |
+| D-322 | A yes / no property filters by is, is empty and is not empty | logic, ui | |
+| D-323 | A soldier with no unit joins the root the actor sees; no wider tree is read | logic | |
+| D-324 | A link from before D-313 is read as the sort rules | logic | |
+| D-325 | The chart holds the view on a card when its width changes | ui | |
+| D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4246,3 +4252,54 @@ their own, to keep the page's zoom out of it.
 - A soldier who may only read sees the chart with names and no actions (D-076).
 **Why:** one set of actions in two shapes keeps the rules in one place; a drag on a pannable canvas would fight the pan,
 and the list already offers it.
+
+## D-321 — One root per organization on the server and on the device, with each soldier's days before their first unit in it
+2026-11-13 · accepted · refines D-315 · A8 fixes · decided under D-170
+- **The migration** (`20261113000000_single_root.sql`). An organization whose live top-level units are not exactly one
+  gets a root: its own name, standing, first in order; every other live top-level unit moves under it. An archived
+  top-level unit stays where it is. Each soldier gets a primary membership in the root from the day they were created
+  (in the organization's time zone) to the day before their first primary membership; a live soldier with none gets one
+  from that day, open. Ranges end before the first one starts, so one primary per day holds. A second run finds
+  nothing to do.
+- **The guard (D-280).** The move is an `UPDATE` of `parent_id`; the guard flags dropped tables and columns and
+  destructive statements, not an update, so no marker and no change to the guard. The closure trigger keeps
+  `unit_closure`.
+- **On the device.** The local store's version 8 runs the same steps on upgrade, rather than a step added to version 7:
+  a new version reaches stores already at version 7 too (D-021 parity).
+**Why:** D-315's backfill added a root only where there was none and started the memberships on its own day, so an
+organization with several top-level units kept them, against D-251, and earlier days showed soldiers without a unit.
+
+## D-322 — A yes / no property filters by is, is empty and is not empty
+2026-11-13 · accepted · refines D-312 · A8 fixes · decided under D-170
+- A yes / no property takes "is" (yes or no), "is empty" and "is not empty", as select properties do. "Is no" stays
+  `equals false`: a soldier never asked is in neither "is yes" nor "is no", and "is empty" finds them.
+**Why:** "no" and "not answered" are different facts; folding one into the other would hide who still has to answer.
+
+## D-323 — A soldier with no unit joins the root the actor sees; no wider tree is read
+2026-11-13 · accepted · refines D-315 · A8 fixes · decided under D-170
+- With D-321 the organization holds at most one live top-level unit, so a top-level unit among the units the actor
+  sees is that root. A soldier with no unit in the window is grouped under it; the rule needs no tree beyond the
+  actor's reads.
+**Why:** the case OI-262 raised (other roots the actor does not see) no longer exists after D-321.
+
+## D-324 — A link from before D-313 is read as the sort rules
+2026-11-13 · accepted · extends D-313 · A8 fixes · decided under D-170
+- A board key in `sort` (name, command rank, seniority, unit, days absent) from an older link is read as the board's
+  one sort rule when the link names no `sorts`. Writing the sort rules drops a leftover leave column's `sort`, so the
+  table's header arrow follows the newest choice.
+- A "none of" or "is not" whose every value matches nobody keeps everyone, and its chip says so.
+**Why:** saved and shared links keep their order; the newest choice decides, as it does in the headers.
+
+## D-325 — The chart holds the view on a card when its width changes
+2026-11-13 · accepted · refines D-319 · A8 fixes · decided under D-170
+- When the chart changes width (a unit added, moved or archived), the view is held on the card in focus or under the
+  last press, where it stood in the viewport; on its parent's card when that card itself moved or left.
+**Why:** right to left the browser holds the scroll against the start edge and a narrow chart recenters, so the cards
+in view jumped.
+
+## D-326 — One filter model: the builder's rules; the D-131 conditions are retired
+2026-11-13 · accepted · supersedes D-131's model · A8 fixes · decided under D-170
+- The rules (`FilterRule`, `readRules`, `writeRules`, D-312) are the one model over the `filter` expression; the D-131
+  `SoldierConditions`, `readFilter` and `writeFilter` are gone. The availability rule's population reads the rules:
+  a tag category's "any of" per category and the rank's "any of"; anything else is a filter the form does not read.
+**Why:** two models over one expression drift apart; the builder already covers everything the bar did.

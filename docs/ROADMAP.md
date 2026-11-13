@@ -141,7 +141,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation, sent as one collective leave; overlapping rounds stacked on the timeline (D-270, D-316, D-317) | ☑ |
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units (D-318 … D-320) | ☑ |
 | A8 | audit | Pre-launch, on main with V31, V30 and V33 in; V21 and V23 audited when they land | ☑ |
-| A8 fixes | A8's findings | Leave batches and plans bounded on the server (OI-265); the root backfill for older organizations (OI-266); the dead "found units" action (OI-267); one filter model (OI-268); a bounded report window (OI-269); local root parity (OI-270); the chart's anchoring (OI-271); the rule builder's focus and URL (OI-260, OI-261); OI-257, OI-258, OI-262 … OI-264 | ☐ |
+| A8 fixes | A8's findings | Leave batches and plans bounded on the server (OI-265); the root backfill for older organizations (OI-266); the dead "found units" action (OI-267); one filter model (OI-268); a bounded report window (OI-269); local root parity (OI-270); the chart's anchoring (OI-271); the rule builder's focus and URL (OI-260, OI-261); OI-257, OI-258, OI-262 … OI-264 | ☑ |
 
 Order (D-271, amended by D-284): before launch, track A runs V32 (its docs first) → V28 and track B runs V26 → V27;
 then A7 on main once V27 and V28 are in. V29 is done. Before launch: "A7 fixes" (track A) and V33 "Board controls"

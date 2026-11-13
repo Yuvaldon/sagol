@@ -64,6 +64,8 @@ export interface FilterField {
   /** The rule a row writes; NULL while it has no value, so it lives only in the builder (D-312). */
   ruleOf(operator: Operator, values: readonly string[]): FilterRule | null
   labelOf(value: string): string
+  /** Whether a chosen value matches no soldier: one not known, or an option no longer current (D-016). */
+  inert(value: string): boolean
 }
 
 const named = (key: I18nKey) => ({ key })
@@ -121,6 +123,11 @@ function tagField(category: TagCategory, categories: readonly TagCategory[], tag
       const id = safe(TagId)(value)
       return (id === null ? undefined : byId.get(id)?.name) ?? t('filters.unavailable')
     },
+    // A held archived tag still counts (D-130); only a tag not known matches nobody.
+    inert: (value) => {
+      const id = safe(TagId)(value)
+      return id === null || !byId.has(id)
+    },
   }
 }
 
@@ -139,6 +146,7 @@ function rankField(ranks: readonly CommandRank[]): FilterField {
       }),
     ruleOf: (operator, values) => ({ kind: 'rank', negate: negated(operator), rankIds: parsed(values, safe(CommandRankId)) }),
     labelOf: (value) => titleOf(value) ?? t('filters.unavailable'),
+    inert: (value) => titleOf(value) === null,
   }
 }
 
@@ -159,10 +167,14 @@ function statusField(): FilterField {
     const status = safe(SoldierStatus)(value)
     return status === null ? t('filters.unavailable') : t(STATUS_KEYS[status])
   },
+  inert: (value) => safe(SoldierStatus)(value) === null,
   }
 }
 
-/** A soldier property the builder filters by (D-312): select and multi-select by their options, yes / no by its answer. */
+/**
+ * A soldier property the builder filters by (D-312): select and multi-select by their options, yes / no by its answer
+ * or by having none (D-322).
+ */
 function propertyField(definition: PropertyDefinition): FilterField | null {
   const key = `property:${definition.id}`
   const definitionId = definition.id
@@ -170,14 +182,16 @@ function propertyField(definition: PropertyDefinition): FilterField | null {
     return {
       key,
       name: definition.label,
-      operators: ['is'],
+      operators: ['is', 'isEmpty', 'isNotEmpty'],
       single: true,
       choicesOf: () => [...BOOLEAN_CHOICES],
-      ruleOf: (_operator, values) => {
+      ruleOf: (operator, values) => {
+        if (!takesValues(operator)) return { kind: 'empty', definitionId, empty: operator === 'isEmpty' }
         const [value] = values
         return value === undefined ? null : { kind: 'boolean', definitionId, value: value === BOOLEAN_KEYS.true }
       },
       labelOf: (value) => t(value === BOOLEAN_KEYS.true ? 'properties.yes' : 'properties.no'),
+      inert: () => false,
     }
   }
   if (definition.data_type !== 'select' && definition.data_type !== 'multi_select') return null
@@ -198,10 +212,13 @@ function propertyField(definition: PropertyDefinition): FilterField | null {
         ? { kind: 'options', definitionId, negate: negated(operator), optionIds: parsed(values, safe(PropertyOptionId)) }
         : { kind: 'empty', definitionId, empty: operator === 'isEmpty' },
     labelOf: (value) => options.find((option) => option.id === value)?.label ?? t('filters.unavailable'),
+    inert: (value) => !options.some((option) => option.id === value),
   }
 }
 
 export interface FilterFields {
+  /** Whether the tags, ranks and properties have loaded: before, a rule's field is not known yet (OI-261). */
+  readonly ready: boolean
   readonly byKey: ReadonlyMap<string, FilterField>
   /** The fields a new row may pick: the live ones that hold a value to choose. */
   readonly offered: readonly FilterField[]
@@ -218,6 +235,7 @@ export function useFilterFields(): FilterFields {
   const allTags = tags.status === 'ready' ? tags.value : null
   const allRanks = ranks.status === 'ready' ? ranks.value : null
   const allDefinitions = properties.status === 'ready' ? properties.value : null
+  const ready = [categories, tags, ranks, properties].every((query) => query.status !== 'loading')
   return useMemo(() => {
     const categoryList = allCategories ?? []
     const tagList = allTags ?? []
@@ -272,6 +290,6 @@ export function useFilterFields(): FilterFields {
           })
       }
     }
-    return { byKey, offered, draftOf }
-  }, [allCategories, allTags, allRanks, allDefinitions])
+    return { ready, byKey, offered, draftOf }
+  }, [ready, allCategories, allTags, allRanks, allDefinitions])
 }

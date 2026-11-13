@@ -50,7 +50,7 @@ async function createHarness(): Promise<ContractHarness> {
   const identity = memoryIdentity()
   const names = uniqueNames()
   const adapter = createLocalDataAdapter({ identity, time: { now: () => CONTRACT_NOW } }, names)
-  const store = openDatabase(names.database)
+  const store = openDatabase(names.database, { now: () => CONTRACT_NOW })
   return {
     adapter,
     signIn: identity.set,

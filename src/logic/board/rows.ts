@@ -193,7 +193,8 @@ export function boardItems(input: BoardInput): BoardItem[] {
   const bySoldier = membershipsBySoldier(input.memberships)
   const todayIndex = days.indexOf(today)
   const values = new Map<SoldierId, SortValues>()
-  // With one live root, a soldier with no unit in the window belongs to it (D-315).
+  // With one live root, a soldier with no unit in the window belongs to it (D-315). The organization holds at most one
+  // live top-level unit (D-321), so a top-level unit the actor sees is that root; no wider tree is needed (D-323).
   const roots = input.units.filter((unit) => unit.parent_id === null)
   const root = roots.length === 1 ? (roots[0] ?? null) : null
 

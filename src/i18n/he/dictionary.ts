@@ -547,6 +547,7 @@ export const dictionary = {
     leaveType: 'סוג היעדרות',
     other: 'סינון מותאם',
     unavailable: 'לא זמין',
+    keepsEveryone: 'אינו מסנן אף אחד',
     onlyMissing: 'רק מי שחסר',
     clearAll: 'ניקוי הכול',
   },

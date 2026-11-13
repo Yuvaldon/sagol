@@ -12,13 +12,18 @@ import {
   usePropertyDefinitions,
   useSortRules,
   useViewFilter,
+  NO_RULES,
+  readRules,
+  writeRules,
   type FilterRule,
+  type SoldierFilter,
+  type ReadRules,
   type RuleMatch,
   type SortRule,
   type SortTarget,
 } from '@logic'
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Button as AriaButton,
   Dialog,
@@ -167,14 +172,25 @@ interface Rows {
   readonly match: RuleMatch
   readonly rows: readonly Row[]
   readonly nextId: number
+  /** The URL's rules the rows hold, as a key; NULL before the fields load (OI-261). */
+  readonly read: string | null
+  /** The key of the rules the rows last wrote, until the URL reads it back: the URL changes after the write. */
+  readonly wrote: string | null
 }
 
-function rowsOf(rules: readonly FilterRule[], match: RuleMatch, fields: FilterFields): Rows {
-  const rows = rules.map((rule, id): Row => {
+const NO_ROWS: Rows = { match: 'all', rows: [], nextId: 0, read: null, wrote: null }
+
+const keyOf = (read: ReadRules) => JSON.stringify(read)
+
+/** The rows of the URL's rules; a filter the builder does not read starts empty (D-312). Ids go on from `nextId`. */
+function rowsOf(read: ReadRules, fields: FilterFields, nextId: number): Rows {
+  const { rules, match } = read.kind === 'rules' ? read.filter : NO_RULES
+  const rows = rules.map((rule, at): Row => {
+    const id = nextId + at
     const draft = fields.draftOf(rule)
     return draft === null ? { id, kept: rule } : { id, draft }
   })
-  return { match, rows, nextId: rows.length }
+  return { match, rows, nextId: nextId + rows.length, read: keyOf(read), wrote: null }
 }
 
 function Connector({ index, match, onMatch }: { readonly index: number; readonly match: RuleMatch; readonly onMatch: ((match: RuleMatch) => void) | null }) {
@@ -200,22 +216,33 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
   const unitId = filter.rules.kind === 'rules' ? filter.rules.filter.unitId : null
-  // The rows start from the URL each time the builder opens; a filter it does not read starts empty (D-312).
-  const [state, setState] = useState<Rows>(() =>
-    filter.rules.kind === 'rules' ? rowsOf(filter.rules.filter.rules, filter.rules.filter.match, fields) : rowsOf([], 'all', fields),
-  )
+  // The rows follow the URL: built once the fields load, so no rule is read as "other" for want of its field, and
+  // built again when the URL changes from outside (back, forward, a chip). A row still without a value lives only here,
+  // and is lost only then (OI-261).
+  const [held, setHeld] = useState<Rows>(NO_ROWS)
+  const urlKey = keyOf(filter.rules)
+  let state = held
+  if (fields.ready && held.read !== urlKey) {
+    // The URL reading back the rows' own write keeps the rows; any other change builds them again.
+    state = held.wrote === urlKey ? { ...held, read: urlKey, wrote: null } : rowsOf(filter.rules, fields, held.nextId)
+    setHeld(state)
+  }
   const [leaveDrafts, setLeaveDrafts] = useState<Readonly<Record<LeaveField, boolean>>>({ leaveStatus: false, leaveType: false })
 
   const write = (next: Rows) => {
-    setState(next)
-    filter.setRules({
+    const written: SoldierFilter = {
       unitId,
       match: next.match,
       rules: next.rows.flatMap((row) => {
         if ('kept' in row) return [row.kept]
         return fields.byKey.get(row.draft.field)?.ruleOf(row.draft.operator, row.draft.values) ?? []
       }),
-    })
+    }
+    // The key is the URL's as it will read back, so the rows are not built again from their own write. Until the
+    // URL changes, its old key still matches the rows.
+    const wrote = keyOf(readRules(writeRules(written) ?? null))
+    setHeld({ ...next, wrote: wrote === next.read ? null : wrote })
+    filter.setRules(written)
   }
   const replace = (id: number, draft: Draft) => {
     write({ ...state, rows: state.rows.map((row) => (row.id === id ? { id, draft } : row)) })
@@ -478,8 +505,24 @@ function SortSection() {
   const sort = useSortRules()
   const targets = useSortTargets()
   const next = targets.find((candidate) => !sort.rules.some((rule) => targetIdOf(rule) === candidate.id))
+  // Focus follows a moved rule to its new slot: the button pressed, or the other one when the move reached an end (OI-260).
+  const section = useRef<HTMLElement>(null)
+  const moved = useRef<{ readonly index: number; readonly by: -1 | 1 } | null>(null)
+  useEffect(() => {
+    const at = moved.current
+    moved.current = null
+    if (at === null) return
+    const row = section.current?.querySelector(`[data-sort-slot="${String(at.index)}"]`)
+    const pressed = row?.querySelector<HTMLElement>(`[data-move="${String(at.by)}"]:not([disabled])`)
+    const other = row?.querySelector<HTMLElement>(`[data-move="${String(-at.by)}"]`)
+    ;(pressed ?? other)?.focus()
+  }, [sort.rules])
+  const move = (index: number, by: -1 | 1) => {
+    sort.move(index, by)
+    moved.current = { index: index + by, by }
+  }
   return (
-    <section aria-labelledby="builder-sort" className="flex flex-col gap-sm">
+    <section ref={section} aria-labelledby="builder-sort" className="flex flex-col gap-sm">
       <h3 id="builder-sort" className="text-label font-semibold text-text-muted">
         {t('workspace.sort')}
       </h3>
@@ -493,7 +536,8 @@ function SortSection() {
             .map((candidate) => ({ key: candidate.id, label: candidate.label })),
         ]
         return (
-          <div key={id} className={`${ROW} flex-row flex-wrap items-center`}>
+          // A row is keyed by its slot, so picking another target keeps it, and its focus, in place (OI-260).
+          <div key={index} data-sort-slot={index} className={`${ROW} flex-row flex-wrap items-center`}>
             <span className={CONNECTOR}>{t(index === 0 ? 'workspace.sortFirst' : 'workspace.sortThen')}</span>
             <Pick
               grow
@@ -513,7 +557,7 @@ function SortSection() {
                 sort.replace(index, ruleWith(rule, order))
               }}
             />
-            <SortMoves index={index} count={sort.rules.length} move={sort.move} remove={sort.remove} />
+            <SortMoves index={index} count={sort.rules.length} move={move} remove={sort.remove} />
           </div>
         )
       })}
@@ -547,6 +591,7 @@ function SortMoves({
     <div className="flex items-center">
       <IconButton
         labelKey="workspace.moveUp"
+        data-move="-1"
         isDisabled={index === 0}
         onPress={() => {
           move(index, -1)
@@ -556,6 +601,7 @@ function SortMoves({
       </IconButton>
       <IconButton
         labelKey="workspace.moveDown"
+        data-move="1"
         isDisabled={index === count - 1}
         onPress={() => {
           move(index, 1)

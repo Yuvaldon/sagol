@@ -25,7 +25,7 @@ export function createLocalDataAdapter(
   names: LocalAdapterNames = DEFAULT_NAMES,
 ): LocalDataAdapter {
   return createAdapterCore({
-    database: openDatabase(names.database),
+    database: openDatabase(names.database, time),
     identity,
     time,
     changes: createChangeFeed(names.channel),

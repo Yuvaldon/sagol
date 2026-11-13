@@ -14,3 +14,22 @@ describe('the entity in the URL', () => {
     expect(entityOf('anything')).toBeUndefined()
   })
 })
+
+describe('the sort in the URL (OI-264)', () => {
+  const parse = (search: Record<string, unknown>) => WorkspaceSearch.parse(search)
+  it('keeps a leave column of the table', () => {
+    expect(parse({ [SEARCH_PARAMS.sort]: 'days', [SEARCH_PARAMS.order]: 'desc' })).toMatchObject({ sort: 'days', order: 'desc' })
+  })
+  it('reads a board key from before D-313 as the sort rules', () => {
+    const read = parse({ [SEARCH_PARAMS.sort]: 'name' })
+    expect(read.sorts).toEqual([{ key: 'name', order: 'asc' }])
+    expect(read.sort).toBeUndefined()
+    expect(parse({ [SEARCH_PARAMS.sort]: 'rank', [SEARCH_PARAMS.order]: 'asc' }).sorts).toEqual([{ key: 'rank', order: 'asc' }])
+  })
+  it('leaves the default order out, and lets the sort rules win', () => {
+    expect(parse({ [SEARCH_PARAMS.sort]: 'seniority' }).sorts).toBeUndefined()
+    const both = parse({ [SEARCH_PARAMS.sort]: 'name', [SEARCH_PARAMS.sorts]: [{ key: 'unit', order: 'asc' }] })
+    expect(both.sorts).toEqual([{ key: 'unit', order: 'asc' }])
+    expect(both.sort).toBeUndefined()
+  })
+})

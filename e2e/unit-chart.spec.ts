@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { choose } from './support/leaves.ts'
 import { ORGANIZATION, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V21's demo: the unit tree as a chart, its zoom, editing on it, and the choice remembered, with axe.
@@ -65,6 +66,28 @@ test('the chart: switch, layout, zoom, edit on it, and the choice remembered', a
     await page.getByRole('button', { name: he.units.zoomFit }).click()
     await expect.poll(() => widthOf(node(page, ORGANIZATION))).toBeCloseTo(before, 0)
   })
+
+  // A narrow screen, where the chart is wider than its viewport: right to left the browser would hold the scroll against
+  // the start edge as the chart widens, and the cards in view would jump.
+  if (testInfo.project.name.includes('mobile')) {
+    await test.step('a unit moved away holds the view on the unit it left (OI-271)', async () => {
+      for (const name of ['כיתה 1', 'כיתה 2']) await addChild(page, 'מחלקה א', name)
+      await addChild(page, 'מחלקה ב', 'כיתה 3')
+      for (let step = 0; step < 6; step += 1) await page.getByRole('button', { name: he.units.zoomIn }).click()
+      await node(page, 'כיתה 3').scrollIntoViewIfNeeded()
+      const before = await node(page, 'מחלקה ב').boundingBox()
+      await nodeAction(page, 'כיתה 3', he.units.moveTo)
+      await choose(page, he.units.parent, 'מחלקה א')
+      await page.getByRole('button', { name: he.units.moveSubmit, exact: true }).click()
+      await expect(page.getByRole('dialog', { name: he.units.moveTitle })).toBeHidden()
+      await expect(node(page, 'כיתה 3').locator('.sr-only').first()).toHaveText(`${he.units.depth} 3`)
+      const after = await node(page, 'מחלקה ב').boundingBox()
+      if (before === null || after === null) throw new Error('not on screen')
+      expect(Math.abs(after.x - before.x)).toBeLessThan(2)
+      expect(Math.abs(after.y - before.y)).toBeLessThan(2)
+      await page.getByRole('button', { name: he.units.zoomFit }).click()
+    })
+  }
 
   if (!testInfo.project.name.includes('mobile')) {
     await test.step('on a wide screen the chart takes the whole width', async () => {
