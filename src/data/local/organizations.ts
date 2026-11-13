@@ -105,7 +105,7 @@ async function writeBootstrap(
     color_key: null,
     ...createdBy(soldierId, now),
   })
-  // The built-in "סבב יציאות" group and its first type (D-345, D-346): absences that ask no reason, in the first calm color.
+  // The built-in "סבב יציאות" group and its first type (D-345, D-347): absences that ask no reason, in the first calm color.
   const rotationGroup = parsedRow('leave_type_groups', {
     ...input.rotation_group,
     organization_id: organizationId,

@@ -100,7 +100,7 @@ async function oneRoot(transaction: Transaction, time: TimeSource): Promise<void
   }
 }
 
-/** The built-in leave group's names for the organizations a store holds from before (D-346): user data, proposed by the UI. */
+/** The built-in leave group's names for the organizations a store holds from before (D-347): user data, proposed by the UI. */
 export interface RotationLeaveNames {
   readonly group: string
   readonly type: string
@@ -110,7 +110,7 @@ type LeaveTypeGroup = Pick<TableRow<'leave_type_groups'>, 'organization_id' | 'i
 
 /**
  * Every organization gets the built-in "סבב יציאות" group and its first type, as the server's migration gives them
- * (D-345, D-346); the groups from before are ordinary ones.
+ * (D-345, D-347); the groups from before are ordinary ones.
  */
 async function rotationLeave(transaction: Transaction, time: TimeSource, names: RotationLeaveNames): Promise<void> {
   const now = time.now()

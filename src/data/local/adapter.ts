@@ -10,7 +10,7 @@ export type { LocalDataAdapter } from './core'
 export interface LocalAdapterDependencies {
   readonly identity: IdentitySource
   readonly time: TimeSource
-  /** The built-in leave group's names for the organizations the device holds from before (D-346). */
+  /** The built-in leave group's names for the organizations the device holds from before (D-347). */
   readonly rotationLeave: RotationLeaveNames
 }
 

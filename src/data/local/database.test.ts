@@ -111,7 +111,7 @@ describe('local database versions', () => {
     store.close()
   })
 
-  it('gives each organization of a version 8 store the built-in leave group and its first type (D-346)', async () => {
+  it('gives each organization of a version 8 store the built-in leave group and its first type (D-347)', async () => {
     const name = `sagol-${crypto.randomUUID()}`
     const old = new Dexie(name)
     old.version(8).stores(STORES)

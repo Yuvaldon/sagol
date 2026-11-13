@@ -272,7 +272,7 @@ export function describeLeaveContract(
       })
     })
 
-    describe('the built-in group (D-345, D-346)', () => {
+    describe('the built-in group (D-345, D-347)', () => {
       it('comes with the organization, holding one calm type that asks no reason', async () => {
         const groups = valueOf(await adapter().repositories.leave_type_groups.list({ include_archived: false }))
         expect(groups.filter((group) => group.is_rotation_leave)).toEqual([

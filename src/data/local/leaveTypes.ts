@@ -44,7 +44,7 @@ const GROUP_SPEC: ReferenceSpec<LeaveTypeGroup> = {
   optionalText: [],
   targetOf: () => ORGANIZATION,
   rowIssues: () => Promise.resolve([]),
-  // Only the bootstrap and the migration make the built-in group (D-346); a group made by a command is an ordinary one.
+  // Only the bootstrap and the migration make the built-in group (D-347); a group made by a command is an ordinary one.
   createdColumns: { is_rotation_leave: false },
 }
 
@@ -56,7 +56,7 @@ async function groupOf(database: Store, scope: ActorScope, id: LeaveTypeGroupId 
 }
 
 /**
- * What the built-in group fixes on its types (D-346), in the command core so no mode skips it: an absence that asks no
+ * What the built-in group fixes on its types (D-347), in the command core so no mode skips it: an absence that asks no
  * reason, in a calm color, and no type moves into the group or out of it. A color it held before stays.
  */
 async function rotationIssues({ database, scope, row, before }: RowCheck<LeaveType>): Promise<Issue[]> {
@@ -128,7 +128,7 @@ export function createLeaveTypeCommands(dependencies: LocalDependencies): DataCo
       update: UpdateLeaveTypeInput,
       archive: ArchiveLeaveTypeInput,
       placementOf: () => ORGANIZATION,
-      // The built-in group always keeps a live type (D-346).
+      // The built-in group always keeps a live type (D-347).
       archiveIssues: async (database, scope, type) => {
         const group = await groupOf(database, scope, type.group_id)
         if (group?.is_rotation_leave !== true) return []
