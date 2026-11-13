@@ -1,4 +1,4 @@
-import { MembershipType, UnitKind, type TableRow, type Timestamp } from '@contracts'
+import { MembershipType, UnitKind, type TableRow, type TimeSource } from '@contracts'
 import { dayBefore, todayIn } from '@domain'
 import Dexie, { type Transaction } from 'dexie'
 import { parsedRow } from './failure'
@@ -30,8 +30,8 @@ type Membership = Pick<TableRow<'unit_memberships'>, 'soldier_id' | 'membership_
  * is placed in the root from the day they were created to the day before their first primary membership (or on, open,
  * when a soldier not archived has none).
  */
-async function oneRoot(transaction: Transaction): Promise<void> {
-  const now: Timestamp = new Date().toISOString()
+async function oneRoot(transaction: Transaction, time: TimeSource): Promise<void> {
+  const now = time.now()
   const units = transaction.table<Unit>('units')
   const memberships = transaction.table<Membership>('unit_memberships')
   const allUnits = await units.toArray()
@@ -104,7 +104,7 @@ export interface LocalStore extends Store {
   close(): void
 }
 
-export function openDatabase(name: string): LocalStore {
+export function openDatabase(name: string, time: TimeSource): LocalStore {
   const database = new Dexie(name)
   // Tables added after version 6 are declared at their own version, so an older store creates them on upgrade.
   const { report_confirmations: confirmations, ...earlier } = STORES
@@ -142,7 +142,7 @@ export function openDatabase(name: string): LocalStore {
       const approving = (await permissions.toArray()).filter((row) => row.resource === 'leaves' && row.action === 'approve')
       await permissions.bulkPut(approving.map((row) => ({ ...row, resource: 'day_reports', action: 'confirm' })))
     })
-  database.version(DATABASE_VERSION).upgrade(oneRoot)
+  database.version(DATABASE_VERSION).upgrade((transaction) => oneRoot(transaction, time))
   return {
     transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),
     table: (name) => database.table(name),

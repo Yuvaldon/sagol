@@ -18,6 +18,7 @@ const SECOND = '0a1b2c3d-1111-4aaa-8aaa-000000000009'
 const PLACED = '0a1b2c3d-1111-4aaa-8aaa-00000000000a'
 const UNPLACED = '0a1b2c3d-1111-4aaa-8aaa-00000000000b'
 const GONE = '0a1b2c3d-1111-4aaa-8aaa-00000000000c'
+const TIME = { now: () => '2026-11-13T08:00:00.000Z' }
 
 describe('local database versions', () => {
   it('moves a version 2 store to format 3, keeping every soldier tag', async () => {
@@ -29,7 +30,7 @@ describe('local database versions', () => {
     await old.table('deployments').add({ id: DEPLOYMENT, organization_id: ORG, end_date: null })
     old.close()
 
-    const store = openDatabase(name)
+    const store = openDatabase(name, TIME)
     const [tag] = await store.table('soldier_tags').toArray()
     expect(tag).toMatchObject({ soldier_id: SOLDIER, tag_id: TAG, deployment_id: null })
     expect(typeof (tag as { id: unknown }).id).toBe('string')
@@ -50,7 +51,7 @@ describe('local database versions', () => {
     ])
     old.close()
 
-    const store = openDatabase(name)
+    const store = openDatabase(name, TIME)
     expect(await store.table('deployments').get(DEPLOYMENT)).toMatchObject({ report_owner_id: null })
     expect(await store.table('report_confirmations').toArray()).toEqual([])
     const confirming = (await store.table('role_permissions').toArray()).filter((row) => (row as { action: string }).action === 'confirm')
@@ -85,7 +86,7 @@ describe('local database versions', () => {
     })
     old.close()
 
-    const store = openDatabase(name)
+    const store = openDatabase(name, TIME)
     const units = (await store.table('units').toArray()).map((row) => row as { id: string; name?: string; parent_id: string | null })
     const roots = units.filter((unit) => unit.parent_id === null)
     expect(roots).toHaveLength(1)

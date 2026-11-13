@@ -29,10 +29,10 @@ async function organization(name: string): Promise<string> {
   return String(row?.id)
 }
 
-async function soldier(organizationId: string, archived = false, createdAt = new Date()): Promise<string> {
+async function soldier(organizationId: string, archived = false, createdAt: string | null = null): Promise<string> {
   const [row] = await sql`
     INSERT INTO soldiers (organization_id, first_name, last_name, archived_at, created_at)
-    VALUES (${organizationId}, 'A', 'B', CASE WHEN ${archived} THEN now() END, ${createdAt}) RETURNING id`
+    VALUES (${organizationId}, 'A', 'B', CASE WHEN ${archived} THEN now() END, COALESCE(${createdAt}::timestamptz, now())) RETURNING id`
   return String(row?.id)
 }
 
@@ -43,7 +43,7 @@ async function rootsOf(organizationId: string) {
 }
 
 async function primaryOf(soldierId: string) {
-  return sql`SELECT unit_id, valid_from, valid_to FROM unit_memberships WHERE soldier_id = ${soldierId} ORDER BY valid_from`
+  return sql`SELECT unit_id, valid_from::text, valid_to::text FROM unit_memberships WHERE soldier_id = ${soldierId} ORDER BY valid_from`
 }
 
 async function unit(organizationId: string, name: string, parentId: string | null, archived = false): Promise<string> {
@@ -52,8 +52,6 @@ async function unit(organizationId: string, name: string, parentId: string | nul
     VALUES (${organizationId}, ${name}, ${parentId}, CASE WHEN ${archived} THEN now() END) RETURNING id`
   return String(row?.id)
 }
-
-const day = (value: unknown) => (value instanceof Date ? value.toISOString().slice(0, 10) : value)
 
 describe('root units backfill (D-315)', () => {
   it('gives an organization without a root one, and its unplaced soldiers a membership in it', async () => {
@@ -103,7 +101,7 @@ describe('root units backfill (D-315)', () => {
 
 describe('one root and the soldiers\' history in it (D-321)', () => {
   // 22:30 UTC on 1 January is already 2 January in Jerusalem: the day a soldier was created is the organization's.
-  const created = new Date('2026-01-01T22:30:00Z')
+  const created = '2026-01-01T22:30:00Z'
 
   it('puts every top-level unit under one new root, and fills the days before each first membership', async () => {
     const org = await organization('Battalion')
@@ -132,11 +130,11 @@ describe('one root and the soldiers\' history in it (D-321)', () => {
     ])
     const depth = await sql`SELECT depth FROM unit_closure WHERE ancestor_id = ${root} AND descendant_id = ${platoon}`
     expect(depth[0]?.depth).toBe(2)
-    expect((await primaryOf(placed)).map((row) => [row.unit_id, day(row.valid_from), day(row.valid_to)])).toEqual([
+    expect((await primaryOf(placed)).map((row) => [row.unit_id, row.valid_from, row.valid_to])).toEqual([
       [root, '2026-01-02', '2026-02-28'],
       [platoon, '2026-03-01', null],
     ])
-    expect((await primaryOf(unplaced)).map((row) => [row.unit_id, day(row.valid_from), row.valid_to])).toEqual([
+    expect((await primaryOf(unplaced)).map((row) => [row.unit_id, row.valid_from, row.valid_to])).toEqual([
       [root, '2026-01-02', null],
     ])
     expect(await primaryOf(gone)).toHaveLength(0)
