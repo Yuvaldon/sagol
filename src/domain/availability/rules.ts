@@ -24,8 +24,9 @@ import {
 import { createFilterContext, filterKey, positiveSelections, type FilterData } from '../filters'
 import { buildUnitTree, descendantsOf, primaryUnitOn, type MembershipSpan } from '../hierarchy'
 import { compareCodeUnits } from '../json'
-import { compareDates, spanCovers } from '../time'
+import { compareDates } from '../time'
 import { createAvailabilityContext, type AvailabilityContext, type AvailabilityData } from './days'
+import { createRotationMembership } from './deployments'
 
 // Availability-rule evaluation (D-014, D-031, D-071, D-072). A rule is evaluated per
 // target: scope unit × canonical population × group value × day. Everything except the
@@ -212,12 +213,11 @@ function createStructure(data: RuleData): Structure {
   const ranks = new Map<CommandRankId, RuleCommandRank>(commandRanks.map((rank) => [rank.id, rank]))
   const tags = new Map<TagId, RuleTag>([...data.tags].map((tag) => [tag.id, tag]))
   const deployments = new Map<DeploymentId, RuleDeployment>([...data.deployments].map((row) => [row.id, row]))
-  const deploymentMembers = new Map<string, RuleDeploymentMember>()
-  const listed = new Set<DeploymentId>()
-  for (const member of data.deployment_members) {
-    deploymentMembers.set(`${member.deployment_id}|${member.soldier_id}`, member)
-    listed.add(member.deployment_id)
-  }
+  const rotationMembership = createRotationMembership({
+    units,
+    unit_memberships: memberships,
+    deployment_members: data.deployment_members,
+  })
 
   // Only active, non-archived soldiers can be counted (D-071).
   const countable = soldiers.filter((soldier) => soldier.status === SoldierStatus.enum.active && soldier.archived_at === null)
@@ -307,15 +307,8 @@ function createStructure(data: RuleData): Structure {
 
   function inDeployment(deployment: RuleDeployment | null, soldierId: SoldierId, date: CalendarDate): boolean {
     if (deployment === null) return true
-    // The whole unit (no member rows, D-221): a membership of any type in the rotation's unit or below it.
-    if (!listed.has(deployment.id)) {
-      const subtree = subtreeOf(deployment.unit_id)
-      return (membershipsBySoldier.get(soldierId) ?? []).some((row) => subtree.has(row.unit_id) && spanCovers(row, date))
-    }
-    const member = deploymentMembers.get(`${deployment.id}|${soldierId}`)
-    if (member === undefined) return false
-    // NULL member dates fall back to the deployment dates.
-    return covers(member.start_date ?? deployment.start_date, member.end_date ?? deployment.end_date, date)
+    // Listed members on their days, else the whole unit (D-259, D-221): one test for every caller (D-336).
+    return rotationMembership.servesOn(deployment, soldierId, date)
   }
 
   function membersOf(rule: RuleShape, unitId: UnitId | null, date: CalendarDate): SoldierId[] {
