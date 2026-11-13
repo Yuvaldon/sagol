@@ -2,12 +2,14 @@ import type { Env } from '@config'
 import { browserDeviceStores, loadLocalData, loadRemoteData } from '@data'
 import { t } from '@i18n'
 import type { LogicPorts, ShellPort } from '@logic'
+import { createBrowserPush } from '../shell/push'
 import { systemTime } from '../time'
 
 /**
  * Builds the pair the env names (D-207), loading only that pair's chunk (D-210). Google's client
  * finishes a returning redirect before this answers, so the router never sees the OAuth code. It
- * rejects only when a chunk cannot load. The shell (D-183) is built before the env is read, so it is passed in.
+ * rejects only when a chunk cannot load. The shell (D-183) is built before the env is read, so it is passed in;
+ * the push port (D-354) needs the env's key, so it is built here.
  */
 export async function composePorts(env: Env, origin: string, shell: ShellPort): Promise<LogicPorts> {
   if (env.authMode === 'local') {
@@ -19,7 +21,8 @@ export async function composePorts(env: Env, origin: string, shell: ShellPort): 
       // The names a store from before gives the built-in leave group (D-347): user data, proposed as the claim proposes them.
       rotationLeave: { group: t('onboarding.rotationGroupName'), type: t('onboarding.rotationTypeName') },
     })
-    return { auth, data, time: systemTime, shell, device: browserDeviceStores() }
+    // The local adapter sends no push (spec parity), so the profile offers none there (D-076).
+    return { auth, data, time: systemTime, shell, push: createBrowserPush(null), device: browserDeviceStores() }
   }
   const { url, anonKey } = env.remote
   const { createRemoteDataAdapter, loadGoogleAuth } = await loadRemoteData()
@@ -31,5 +34,5 @@ export async function composePorts(env: Env, origin: string, shell: ShellPort): 
     accessToken: google.accessToken,
     fetch: (input, init) => fetch(input, init),
   })
-  return { auth: google.provider, data, time: systemTime, shell, device: browserDeviceStores() }
+  return { auth: google.provider, data, time: systemTime, shell, push: createBrowserPush(env.pushPublicKey), device: browserDeviceStores() }
 }
