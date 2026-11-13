@@ -15,8 +15,9 @@ const identity = {
 const answer: GatewayResponse = { result: { ok: true, value: 1 }, changes: [] }
 
 function setup(verify: (token: string) => Promise<AuthIdentity | null> = async () => identity) {
-  const gateway = vi.fn(async () => answer)
-  return { gateway, serve: createCommandHandler({ gateway, verify, origins: [APP] }) }
+  const gateway = vi.fn(async (): Promise<GatewayResponse> => answer)
+  const log = vi.fn()
+  return { gateway, log, serve: createCommandHandler({ gateway, verify, origins: [APP], log }) }
 }
 
 const post = (body: string, headers: Record<string, string> = {}) =>
@@ -60,7 +61,12 @@ describe('createCommandHandler', () => {
   })
 
   it('admits a preview origin by pattern, inside one DNS label only (D-209)', async () => {
-    const serve = createCommandHandler({ gateway: vi.fn(), verify: () => Promise.resolve(null), origins: ['https://sagol-*-team.vercel.app'] })
+    const serve = createCommandHandler({
+      gateway: vi.fn(),
+      verify: () => Promise.resolve(null),
+      origins: ['https://sagol-*-team.vercel.app'],
+      log: vi.fn(),
+    })
     const corsOf = async (origin: string) =>
       (await serve(new Request('https://functions.example/commands', { method: 'OPTIONS', headers: { origin } }))).headers.get('access-control-allow-origin')
     expect(await corsOf('https://sagol-git-8-4-team.vercel.app')).toBe('https://sagol-git-8-4-team.vercel.app')
@@ -68,6 +74,18 @@ describe('createCommandHandler', () => {
     expect(await corsOf('https://sagol-x.evil.example-team.vercel.app')).toBeNull()
     expect(await corsOf('https://sagol-a-team.vercel.app.evil.example')).toBeNull()
     expect(await corsOf('https://sagolX-a-teamXvercel.app')).toBeNull()
+  })
+
+  it('logs each call by name and answer code, with no argument or caller (D-335)', async () => {
+    const { gateway, log, serve } = setup()
+    gateway.mockResolvedValueOnce({ result: { ok: false, error: { code: 'forbidden' } }, changes: [] })
+    const call = { kind: 'repositories', group: 'units', method: 'list', args: [{ include_archived: false }] }
+    await serve(post(JSON.stringify(call), { authorization: 'Bearer abc' }))
+    await serve(post('not json'))
+    expect(log.mock.calls).toEqual([
+      [JSON.stringify({ call: 'repositories.units.list', code: 'forbidden' })],
+      [JSON.stringify({ call: null, code: 'ok' })],
+    ])
   })
 
   it('refuses an oversized body before parsing it', async () => {

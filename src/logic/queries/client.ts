@@ -91,6 +91,9 @@ export function createQueryClient(): QueryClient {
         // IndexedDB answers offline, and the adapter's answer is final: a refusal is not retried.
         networkMode: 'always',
         retry: false,
+        // Nor when another view of the same read mounts: a view that hides a pending read and shows a refused one
+        // would otherwise ask again at network speed (OI-290). A change still refreshes it (invalidateChanged).
+        retryOnMount: false,
         refetchOnWindowFocus: false,
         staleTime: Infinity,
       },
@@ -99,19 +102,28 @@ export function createQueryClient(): QueryClient {
   })
 }
 
+/**
+ * Asks a read again after a change. A refused read no view shows is dropped instead: it is not asked again when a view
+ * of it mounts (D-334), so the next view reads it afresh, under the change.
+ */
+function refresh(client: QueryClient, queryKey: QueryKey): void {
+  client.removeQueries({ queryKey, type: 'inactive', predicate: (query) => query.state.status === 'error' })
+  void client.invalidateQueries({ queryKey })
+}
+
 export function invalidateChanged(client: QueryClient, changes: readonly DataChange[]): void {
   const policyChanged = changes.some((change) => POLICY_TABLES.has(change.table))
-  if (policyChanged) void client.invalidateQueries({ queryKey: [TABLE_SCOPE] })
+  if (policyChanged) refresh(client, [TABLE_SCOPE])
   for (const change of changes) {
-    if (ONBOARDING_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.onboarding })
+    if (ONBOARDING_TABLES.has(change.table)) refresh(client, QUERY_KEYS.onboarding)
     // Under a policy change, the whole table scope above covers these already.
     if (policyChanged) continue
-    void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
-    if (LINK_REQUEST_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.accountLinkRequests })
-    if (CONFIRMABLE_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.reportConfirmations })
+    refresh(client, [TABLE_SCOPE, change.table])
+    if (LINK_REQUEST_TABLES.has(change.table)) refresh(client, QUERY_KEYS.accountLinkRequests)
+    if (CONFIRMABLE_TABLES.has(change.table)) refresh(client, QUERY_KEYS.reportConfirmations)
   }
   // Many tables feed the policy, and a hint is cheap to ask again (D-091).
-  if (changes.length > 0) void client.invalidateQueries({ queryKey: QUERY_KEYS.can })
+  if (changes.length > 0) refresh(client, QUERY_KEYS.can)
 }
 
 /** Nothing one identity read may stay visible to the next one. */

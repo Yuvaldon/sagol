@@ -304,8 +304,11 @@ am = amends, ref = refines, ext = extends.
 | D-325 | The chart holds the view on a card when its width changes | ui | |
 | D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
-| D-331 | Each remote call names itself in its URL, for the request logs | config, data | |
+| D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
 | D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | |
+| D-333 | UI freeze: no visual or UI change unless a fix strictly needs it | ui, docs | |
+| D-334 | A refused read is not asked again because another view of it mounts | logic | |
+| D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4344,3 +4347,30 @@ not say which calls it made. With the name in the URL, the logs answer that with
 and closed came back. A probe walked the cause: every search change pushed an entry (four week moves and a panel
 opened and closed made six), and Back walked them one by one. The probe also made no remote call on any of 8 back
 presses, so this is not the source of the staging bursts (OI-290).
+
+## D-333 — UI freeze: no visual or UI change unless a fix strictly needs it
+2026-11-13 · accepted · owner instruction of 2026-11-13
+- Until the owner lifts it, no change to what a screen shows or how it looks: no new screens, controls, layout, copy or
+  styling. A fix may touch `ui` only when the defect cannot be fixed in the layer that owns it otherwise, and then
+  changes only what the fix needs.
+**Why:** the owner's instruction: the product's look is settled for now, and fixes go first.
+
+## D-334 — A refused read is not asked again because another view of it mounts
+2026-11-13 · accepted · ref D-201, D-204 · OI-290 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- The query cache sets `retryOnMount: false` beside `retry: false`. A read that failed and holds no data stays failed
+  when another component that reads it mounts; a change (`invalidateChanged`) or a command still refreshes it.
+- A change drops the refused reads it touches that no view shows (TanStack loads none of them on mount, stale or
+  not), so the next view reads them afresh under the change; shown ones are asked again as before.
+**Why:** OI-290. TanStack Query refetches, on mount, a query that failed with no data, and that refetch puts it back to
+`pending`. A view that hides a pending read's part and shows a part that reads it again once it failed therefore
+mounts, refetches, hides and fails again at network speed: staging logged thousands of 82-byte answers (a refusal) at
+about five a second from one owner session. The adapter's answer is final (D-204); a mount is not new information.
+
+## D-335 — The server logs each call's name and answer code; the URL tag goes
+2026-11-13 · accepted · supersedes D-331 · ref D-201 · OI-290 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- The command handler logs one line per call: `<kind>.<group>.<method>` and the answer's code (`ok` or the error
+  code), as JSON. No argument, identity or token is logged. The remote adapter no longer adds `?call=` to the URL, and
+  `REMOTE.callParam` is removed.
+**Why:** D-331 assumed the request logs keep the query string; they do not (`function_edge_logs` records
+`request.url` without it), so the tag named nothing anywhere. The function's own log does reach the logs, and it can
+also say what each call answered, which is what OI-290 lacked.
