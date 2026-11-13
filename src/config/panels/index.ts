@@ -125,6 +125,12 @@ export const SHEET_DISMISS = { offsetPx: 96, velocityPxPerSecond: 500 } as const
 /** Share of a row's height that counts as its top or bottom edge when dropping on it (D-092). */
 export const DROP_EDGE_FRACTION = 0.25
 
+/**
+ * The units chart's zoom (D-319): its bounds, the step of the buttons, and how much one notch of a pinch on a
+ * trackpad (a wheel with Ctrl) or a mouse wheel with Ctrl moves it. "Fit" never enlarges past `fitMax`.
+ */
+export const UNIT_CHART_ZOOM = { min: 0.3, max: 2, step: 0.2, wheelPerPixel: 0.002, fitMax: 1 } as const
+
 /** How far a pointer travels before a press on a handle becomes a drag. */
 export const DRAG_ACTIVATION_PX = 4
 

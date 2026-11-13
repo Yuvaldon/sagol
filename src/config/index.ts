@@ -72,6 +72,7 @@ export {
   PanelId,
   TRANSFER_FILES,
   SHEET_DISMISS,
+  UNIT_CHART_ZOOM,
   VIRTUAL_LIST,
 } from './panels'
 export { SEARCH_PARAMS, type SearchParamName } from './url'

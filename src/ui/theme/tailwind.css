@@ -122,6 +122,12 @@
   --spacing-chip-close: 22px;
   /* Room for the bottom bar on mobile, so the last row can scroll above it. */
   --spacing-above-bottom-bar: 80px;
+  /* The units chart (D-319): a node, the gaps between nodes and between rows, and the canvas's height. */
+  --spacing-chart-node: 176px;
+  --spacing-chart-node-height: 64px;
+  --spacing-chart-gap: 16px;
+  --spacing-chart-row-gap: 40px;
+  --spacing-chart: 60dvh;
 
   --container-sheet: 420px;
   --container-menu: 260px;

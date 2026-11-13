@@ -527,6 +527,10 @@ is absent. The owner sees everything because the owner role holds every permissi
   `lg` per depth, and the depth is read aloud.
 - **Moving rows (D-092):** every drag has a way without a pointer in the row's menu ("up", "down", "move to").
   The handle is the only part that starts a drag and takes `touch-none`, so the list still scrolls by finger.
+- **A tree as a chart (D-318 … D-320):** a `Segmented` "רשימה" / "תרשים" above the units tree. The chart is a
+  scrolling canvas (`h-chart`, `bg-canvas`) with zoom buttons above it; nodes are `chart-node` wide cards joined by
+  hairline connectors, each with the list row's dot, name button and `ActionMenu`. The drawer is full width while it
+  shows (`useWideDrawer`).
   While dragging, a `marker` line shows "before" or "after", and an `inner` fill shows "into".
 - **Form:** `EntityForm` holds a title, the fields, the refusal and the actions, with the primary action last.
   Fields validate on submit with the schema, through `validatorResult`. What the adapter answers lands on its
@@ -596,6 +600,9 @@ is absent. The owner sees everything because the owner role holds every permissi
 | `TextField`, `TextAreaField`, `SearchSelectField`, `ComboField`, `SelectField`, `ColorField`, `IconField`, `SwitchField`, `DateField` | `ui/primitives` | Label, value, one error. They know nothing about forms. `ComboField` picks a named row by typing |
 | `CenteredSheet` | `ui/patterns` | Full-screen state with a title and an optional hint |
 | `Drawer`, `SmallDialog`, `ActionMenu` | `ui/patterns` | Floating surfaces, in the order they stack |
+| `useWideDrawer` | `ui/patterns` | Widens the drawer around its caller to the whole screen from `md` (D-318) |
+| `Segmented` | `ui/primitives` | A few ways to show one thing, one always pressed (D-318) |
+| `UnitActionsScope`, `UnitChart` | `ui/modules/units` | The units' actions and dialogs, shared by the list and the chart; the chart (D-319, D-320) |
 | `EntityForm`, `FailureNotice`, `EmptyNotice`, `LoadingNotice` | `ui/patterns` | The frame and the states of a module |
 | `VirtualList` | `ui/patterns` | A long list inside a drawer |
 | `formatDate`, `formatDateRange`, `formatInstant` | `ui/patterns` | A stored day, two as one range (`8–14 בנוב׳`), or a moment in a time zone, from the presets in `config` |

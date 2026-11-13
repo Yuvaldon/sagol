@@ -236,6 +236,8 @@ The current state (D-128):
   types) are a separate param, `leaves`, never part of `FilterExpression` (D-132). `missing` keeps soldiers absent on a
   day of the window, approved leaves only (D-133).
 - **Presence lists** of a day (`day`) partition who the soldier filter selects that day, approved leaves only (D-134).
+- **The unit chart** is laid out in logic (`unitChart`: a column per leaf, a parent centered over its children, a row
+  per depth) and drawn by the UI in theme lengths; the list and the chart share the units' actions (D-318 … D-320).
 
 ## Tags (D-015, D-065, D-130)
 
