@@ -12,7 +12,7 @@ import {
 } from '@contracts'
 import { compareInstants } from '../time'
 
-// What is news to a soldier (D-350): what others did on their own leaves, derived from the events and the shared
+// What is news to a soldier (D-352): what others did on their own leaves, derived from the events and the shared
 // comments, never stored. Only the time the soldier last looked is stored, in their preferences.
 
 /** What happened in one update: an event of the leave's history, or a shared comment. */
@@ -34,7 +34,7 @@ export interface UpdateSources {
   readonly comments: Iterable<LeaveComment>
 }
 
-/** The soldier's updates since `since`, newest first (D-350). Internal comments never are news. */
+/** The soldier's updates since `since`, newest first (D-352). Internal comments never are news. */
 export function updatesFor(soldierId: SoldierId, sources: UpdateSources, since: Timestamp): LeaveUpdate[] {
   const mine = new Set<LeaveId>()
   for (const leave of sources.leaves) if (leave.soldier_id === soldierId) mine.add(leave.id)
@@ -64,7 +64,7 @@ export function updatesFor(soldierId: SoldierId, sources: UpdateSources, since: 
   return updates.sort((a, b) => compareInstants(b.created_at, a.created_at) || (a.id < b.id ? -1 : 1))
 }
 
-/** Unread: newer than the time the soldier last looked; NULL, they never looked, so everything is (D-350). */
+/** Unread: newer than the time the soldier last looked; NULL, they never looked, so everything is (D-352). */
 export function isUnread(update: Pick<LeaveUpdate, 'created_at'>, seenAt: Timestamp | null): boolean {
   return seenAt === null || compareInstants(update.created_at, seenAt) > 0
 }

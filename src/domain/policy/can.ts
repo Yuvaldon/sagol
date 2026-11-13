@@ -134,7 +134,7 @@ export function withinReach(
     )
 }
 
-/** Every soldier of the snapshot who may perform `permission` on `target` now: who approves a soldier, say (D-353). */
+/** Every soldier of the snapshot who may perform `permission` on `target` now: who approves a soldier, say (D-355). */
 export function holdersOf(context: PolicyContext, permission: Permission, target: PolicyTarget): SoldierId[] {
   return context.soldierIds.filter((soldierId) => can(context, soldierId, permission, target))
 }

@@ -13,7 +13,7 @@ import {
 } from '@contracts'
 import { holdersOf, soldierTarget, type PolicyContext } from '../policy'
 
-// Who gets a push for one committed command (D-353): pure, over what the command wrote and the committed snapshot's
+// Who gets a push for one committed command (D-355): pure, over what the command wrote and the committed snapshot's
 // policy. One push per recipient and kind, however many leaves the command touched.
 
 /** What one command wrote that may be news: its new events and comments, and the leaves they are on. */
@@ -26,7 +26,7 @@ export interface PushCommandEffect {
 
 export interface PushAudience {
   readonly policy: PolicyContext
-  /** The soldier's own choice for the kind (D-356). */
+  /** The soldier's own choice for the kind (D-358). */
   readonly wants: (soldierId: SoldierId, kind: NotificationKind) => boolean
   /** Soldiers with at least one subscription. */
   readonly subscribed: ReadonlySet<SoldierId>
@@ -47,7 +47,7 @@ export type PushRecipient =
       readonly leave_ids: readonly LeaveId[]
     }
 
-/** The events that tell the leave's soldier something; a details-only `updated` does not (D-353). */
+/** The events that tell the leave's soldier something; a details-only `updated` does not (D-355). */
 const OUTCOME_OF_EVENT: Readonly<Partial<Record<LeaveEventType, PushOutcome>>> = {
   approved: PushOutcome.enum.approved,
   rejected: PushOutcome.enum.rejected,
@@ -94,7 +94,7 @@ export function pushRecipients(effect: PushCommandEffect, audience: PushAudience
     const outcome = OUTCOME_OF_EVENT[event.event_type]
     if (outcome !== undefined) tell(leave.soldier_id, leave.id, outcome)
   }
-  // A new comment only: an edit or an archive of one is not news (D-353).
+  // A new comment only: an edit or an archive of one is not news (D-355).
   for (const comment of effect.comments) {
     const leave = effect.leaves.get(comment.leave_id)
     if (leave === undefined || comment.author_id !== effect.actorId) continue
@@ -116,7 +116,7 @@ export function pushRecipients(effect: PushCommandEffect, audience: PushAudience
   return recipients
 }
 
-/** The push for one recipient, about the first of its leaves (D-355). `soldierName` is that leave's soldier's. */
+/** The push for one recipient, about the first of its leaves (D-357). `soldierName` is that leave's soldier's. */
 export function pushPayloadOf(
   recipient: PushRecipient,
   leave: Pick<Leave, 'id' | 'start_date' | 'end_date'>,
