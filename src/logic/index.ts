@@ -9,6 +9,7 @@ export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
 export { claimIssues, timeZoneChoices, type ClaimOrganizationValues } from './organization/claim'
 export type { Loaded } from './queries/loaded'
+export { archivedRows } from './queries/archived'
 export {
   useAuthMode,
   useClaimOrganization,
@@ -344,6 +345,7 @@ export {
 export { acknowledgedRuleIds, type HeatDay, type WindowConflict } from './rules/evaluation'
 export {
   useAvailabilityRules,
+  useAvailabilityRulesWithArchived,
   useDayViolations,
   useHeatRow,
   useLeaveRuleCheck,
