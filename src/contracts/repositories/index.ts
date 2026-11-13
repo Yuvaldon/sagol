@@ -160,9 +160,14 @@ export type ReportSectionQuery = z.infer<typeof ReportSectionQuery>
 /**
  * How many unit sections the rotations' report holds on a date, read on the whole unit tree, which the actor may not
  * see: the units under a rotation that runs on the date and whose summary the actor reads, each holding an active
- * soldier on the date (D-303). A count, so no unit outside the actor's view is named.
+ * soldier on the date (D-303). `unseen` counts those of them the actor's own report does not head: no soldier of it is
+ * one the actor views with their unit. Counts, so no unit outside the actor's view is named.
  */
-export const ReportSectionCount = z.object({ report_date: CalendarDate, sections: z.number().int().nonnegative() })
+export const ReportSectionCount = z.object({
+  report_date: CalendarDate,
+  sections: z.number().int().nonnegative(),
+  unseen: z.number().int().nonnegative(),
+})
 export type ReportSectionCount = z.infer<typeof ReportSectionCount>
 
 /** Why a soldier is proposed for a link request (D-030). Shown to the reviewer only. */
