@@ -260,7 +260,7 @@ am = amends, ref = refines, ext = extends.
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
 | D-270 | The leave-round planner | domain, logic, ui | ref D-316 |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
-| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | ref D-337 |
+| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | ref D-338 |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | sup D-311 (sort placement) |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302 |
@@ -310,7 +310,7 @@ am = amends, ref = refines, ext = extends.
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
-| D-337 | The Later features: the owner's order and conditions | docs | |
+| D-338 | The Later features: the owner's order and conditions | docs | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4398,7 +4398,7 @@ outside its unit, or outside their membership days, was offered and passed the f
 whole plan (OI-292). One function makes the screen and the command agree, and the situation picture (P-3) reads the
 same one.
 
-## D-337 — The Later features: the owner's order and conditions
+## D-338 — The Later features: the owner's order and conditions
 2026-11-13 · accepted · ref D-272, D-333 · OI-222 · specs `docs/specs/` · owner feedback, recorded as decided (D-170)
 - Order: the board calendar fix first, above every new feature (a fix, no spec); then saved views, notifications,
   rotation templates, the dashboard, missions / operations, attached memberships. Hour-level leaves stay frozen.
