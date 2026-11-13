@@ -56,7 +56,7 @@ export function useOverlayEntry(onBack: () => void): OverlayEntry {
     back.current = onBack
   }, [onBack])
   // The entry the overlay sits on: its own, or the open panel's it opened over. A back press that stays on it or above
-  // it closes a menu or a dialog open over the overlay (D-336), not the overlay.
+  // it closes a menu or a dialog open over the overlay (D-337), not the overlay.
   const floor = useRef<number | undefined>(undefined)
   useEffect(
     () =>

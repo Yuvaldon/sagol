@@ -45,7 +45,7 @@ export function usePanel(): PanelState {
   const router = useRouter()
   // A panel that added its entry takes it back as it closes, so the back button never reopens it (D-332); the
   // workspace's history keeps what changed while it was open. A panel opened by a link has no entry of its own. A menu
-  // or a dialog open over the panel as it closes takes its entries with it (D-336).
+  // or a dialog open over the panel as it closes takes its entries with it (D-337).
   const close = useCallback(() => {
     const { history } = router
     const { count, overOverlay } = layersAbove(history)

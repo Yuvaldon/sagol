@@ -5,7 +5,7 @@ import { entryIndex, isLeavingEntry, isOverlayEntry, leaveOverlayEntry, overlayS
 import { WorkspaceSearch } from './search'
 
 // A menu, a picker, a sheet or a dialog that lives inside a component holds one history entry while it is open, as
-// the navigation panel does, so the back button closes it (D-336). Each open layer pushes its own entry on top of the
+// the navigation panel does, so the back button closes it (D-337). Each open layer pushes its own entry on top of the
 // one it opened over, so nested layers close innermost first, one back press each. A layer closed by its own controls
 // takes its entry back; that is put off to the end of the turn, so a layer that opens as another closes (a menu item
 // that opens a dialog) takes over the closing one's entry instead of going back and forth. A panel opened from a layer
@@ -135,7 +135,7 @@ function closeLayer(router: AnyRouter, layer: Layer): void {
 
 /**
  * The entries of the layers open over the current one, counted down from the top, and whether the entry under them
- * is an overlay's. A panel that closes leaves them with its own entry (D-336).
+ * is an overlay's. A panel that closes leaves them with its own entry (D-337).
  */
 export function layersAbove(history: RouterHistory): { readonly count: number; readonly overOverlay: boolean } {
   const layers = registry.get(history)
@@ -157,7 +157,7 @@ export function takeLayerEntry(history: RouterHistory, index: number): void {
 }
 
 /**
- * Holds a history entry while a local overlay is open, so the back button closes it (D-336). `onBack` closes the
+ * Holds a history entry while a local overlay is open, so the back button closes it (D-337). `onBack` closes the
  * overlay; closing it any other way takes the entry back.
  */
 export function useOverlayLayer(isOpen: boolean, onBack: () => void): void {
