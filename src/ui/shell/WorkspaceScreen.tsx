@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useBoardFilters, useCurrentOrganization } from '@logic'
+import { useBoardFilters, useCurrentOrganization, useOverlayHistory } from '@logic'
 import { useBoardShown, useNoBoard } from './boardShown'
 import { useAppliedAppearance } from './appearance'
 import { ModuleDrawer } from './ModuleDrawer'
@@ -105,6 +105,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const [building, setBuilding] = useState<BuilderTarget | null>(null)
   const builder = useMemo<BuilderOpen>(() => ({ open: setBuilding }), [])
   const navigation = useNavigationPanelScope()
+  useOverlayHistory()
   useAppliedAppearance()
   if (organization.status === 'loading') return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />

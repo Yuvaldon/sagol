@@ -594,8 +594,9 @@ describe('view state in the URL (D-103, D-104)', () => {
     })
   }
 
-  it('moves the week, returns to today, and the back button undoes each step', async () => {
+  it('moves the week and returns to today in place of the current history entry (D-332)', async () => {
     const { history } = await renderAt('/')
+    const start = history.location.state.__TSR_index
     await waitFor(() => {
       expect(read('window')).toEqual(['2026-11-08', '2026-11-14', 'timeline', 'organization'])
     })
@@ -608,12 +609,8 @@ describe('view state in the URL (D-103, D-104)', () => {
     await waitFor(() => {
       expect(read('search')).toEqual({ range: 'week' })
     })
-    act(() => {
-      history.back()
-    })
-    await waitFor(() => {
-      expect(read('window')).toEqual(['2026-11-15', '2026-11-21', 'timeline', 'organization'])
-    })
+    // Nothing is left behind for the back button to replay.
+    expect(history.location.state.__TSR_index).toBe(start)
   })
 
   it('keeps the window and the filter when a panel opens and closes', async () => {

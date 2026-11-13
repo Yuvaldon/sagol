@@ -39,7 +39,7 @@ am = amends, ref = refines, ext = extends.
 | D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
 | D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050, D-171; ref D-261 |
-| D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108; ref D-112, D-115; ref D-119, D-120; ref D-132 |
+| D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108; ref D-112, D-115; ref D-119, D-120; ref D-132; am D-332 |
 | D-024 | First designed component | ui | ref D-077 |
 | D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075 |
 | D-026 | Libraries | all | ext D-034, D-077, D-080 |
@@ -108,7 +108,7 @@ am = amends, ref = refines, ext = extends.
 | D-089 | Permissions of the unit commands | domain, data, logic, ui, backend | |
 | D-090 | The order of checks inside a command | data, backend, docs | ref D-114; ref D-117 |
 | D-091 | The `can` hint: `session.can(checks)` | contracts, domain, data, logic, ui, backend | ref D-107; ref D-122 |
-| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108; ext D-113; ref D-278 |
+| D-092 | The units drawer: fields, moving, URL, surface | config, logic, ui | ext D-094; ref D-108; ext D-113; ref D-278; am D-332 |
 | D-093 | A new issue code lands after its message | contracts, ui, docs | sup D-127 |
 | D-094 | The soldiers drawer: sections, fields, search | config, logic, ui | ref D-116; ref D-153 |
 | D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
@@ -305,6 +305,7 @@ am = amends, ref = refines, ext = extends.
 | D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | |
+| D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4321,3 +4322,25 @@ organization read "no access yet" on a board that was only loading. A wait is ne
   server reads only the body, as before.
 **Why:** the server's request logs keep the path and query but no body, so a burst of calls on staging (OI-290) could
 not say which calls it made. With the name in the URL, the logs answer that without logging any data.
+
+## D-332 — The back button leaves the current state; only an open overlay adds a history entry
+2026-11-13 · accepted · amends D-023, D-092 · A8 fixes · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Overlays.** Opening a panel where none is open adds one history entry, marked in its state (`OVERLAY_HISTORY_KEY`).
+  The back button consumes it by closing the panel. Closing it by its own button takes the entry back
+  (`history.back()`), so nothing is left to replay. A panel opened by a link has no entry of its own and closes in place.
+  The navigation panel, which lives outside the URL, holds an entry the same way (`useOverlayEntry`). A module chosen in
+  it opens on that entry, so one back press closes the module; a choice that opens no panel takes the entry back. A
+  panel that hands over to the navigation panel (`handOver`) leaves it its entry. An entry is told apart by its position
+  (`__TSR_index`), which a replace keeps, and a second close before the history answers does not go back again.
+- **Everything else replaces.** A change of view, window, range, filter, sort or colors replaces the entry it happens on
+  (`useChangeSearch`). So does a change on an open panel's entry: switching the panel or its row, or moving the window
+  under it. When the back button leaves an overlay's entry, the workspace keeps what changed there and drops only the
+  panel's params (`useOverlayHistory`).
+- **Leaving.** On the main screen with nothing open, the back button leaves the app.
+- This changes D-023's "the back button works" for view state, and D-092's back button for panels, to the above.
+  Deep links are unchanged. Menus and dialogs that live inside a component (popovers, confirmations) do not take part
+  yet (OI-291).
+**Why:** the owner's report from the installed app on an Android phone: Back replayed every action, so a menu opened
+and closed came back. A probe walked the cause: every search change pushed an entry (four week moves and a panel
+opened and closed made six), and Back walked them one by one. The probe also made no remote call on any of 8 back
+presses, so this is not the source of the staging bursts (OI-290).

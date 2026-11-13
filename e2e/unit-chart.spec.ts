@@ -103,7 +103,7 @@ test('the chart: switch, layout, zoom, edit on it, and the choice remembered', a
   await test.step('the name opens the form, and the drawer is a form again', async () => {
     await node(page, 'מחלקה ב').getByRole('button', { name: 'מחלקה ב' }).click()
     await expect(page.getByLabel(he.units.name)).toHaveValue('מחלקה ב')
-    await page.goBack()
+    await page.getByRole('button', { name: he.common.cancel, exact: true }).click()
     await expect(chart(page)).toBeVisible()
   })
 

@@ -106,7 +106,8 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await expectNoAxeViolations(page)
   })
 
-  await test.step('the week moves, the back button returns, and "today" comes back to this week', async () => {
+  // The week moves in place of the current history entry, so the back button never replays it (D-332).
+  await test.step('the week moves, and "today" comes back to this week', async () => {
     await page.getByRole('button', { name: he.workspace.nextWindow.week }).click()
     await expect(windowLabel(page)).toContainText(NEXT_WEEK)
     await expect(page).toHaveURL(/from=2026-11-15/)
@@ -114,13 +115,9 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await expect(page.getByRole('heading', { name: he.timeline.emptyScopeTitle })).toBeVisible()
     await expectNoAxeViolations(page)
 
-    await page.goBack()
-    await expect(windowLabel(page)).toContainText(THIS_WEEK)
-    await expect(boardRows(page)).toHaveCount(2)
-
-    await page.getByRole('button', { name: he.workspace.nextWindow.week }).click()
     await page.getByRole('button', { name: he.workspace.today, exact: true }).click()
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
+    await expect(boardRows(page)).toHaveCount(2)
     await expect(page).not.toHaveURL(/from=/)
     await expect(page).toHaveURL(/filter=/)
   })

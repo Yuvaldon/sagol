@@ -1,7 +1,9 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { useOverlayEntry } from '@logic'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 
 // The navigation panel opens from its own button, and on its setup, "הגדרות היחידה", from wherever the setup is
-// offered: the empty board and the template wizard once it is done or put off (D-297).
+// offered: the empty board and the template wizard once it is done or put off (D-297). Open, it holds one history
+// entry, so the back button closes it; a module chosen in it opens in its place, on that entry (D-332).
 
 export type NavigationView = 'work' | 'setup'
 
@@ -11,13 +13,17 @@ export interface NavigationPanelState {
   /** Opens the panel on a view, or moves an open panel to it. */
   readonly open: (view: NavigationView) => void
   readonly close: () => void
+  /** Closes the panel to run the module chosen in it: a panel it opens takes over its history entry. */
+  readonly handOff: (run: () => void) => void
 }
 
 function noop(_view?: NavigationView) {
   // Outside the workspace there is no navigation panel.
 }
 
-const NONE: NavigationPanelState = { isOpen: false, view: 'work', open: noop, close: noop }
+const NONE: NavigationPanelState = { isOpen: false, view: 'work', open: noop, close: noop, handOff: (run) => {
+  run()
+} }
 
 export const NavigationPanelContext = createContext<NavigationPanelState>(NONE)
 
@@ -36,16 +42,26 @@ export function useOpenUnitSetup(): () => void {
 /** The workspace's navigation panel, shared by its button and the setup's openers. */
 export function useNavigationPanelScope(): NavigationPanelState {
   const [state, setState] = useState<{ readonly isOpen: boolean; readonly view: NavigationView }>({ isOpen: false, view: 'work' })
+  const shut = useCallback(() => {
+    setState((current) => ({ ...current, isOpen: false }))
+  }, [])
+  const entry = useOverlayEntry(shut)
   return useMemo(
     () => ({
       ...state,
       open: (view: NavigationView) => {
+        entry.enter()
         setState({ isOpen: true, view })
       },
       close: () => {
-        setState((current) => ({ ...current, isOpen: false }))
+        entry.leave()
+        shut()
+      },
+      handOff: (run: () => void) => {
+        entry.handOff(run)
+        shut()
       },
     }),
-    [state],
+    [state, entry, shut],
   )
 }

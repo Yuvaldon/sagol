@@ -462,8 +462,9 @@ describe('panel state in the URL (D-023, D-092)', () => {
     expect(state()).toEqual([null, null, null])
   })
 
-  it('opens and closes through the URL, and the back button returns', async () => {
+  it('opens and closes through the URL; the back button closes it and never reopens it (D-332)', async () => {
     const { history } = await renderAt('/')
+    const start = history.location.state.__TSR_index
     expect(state()).toEqual([null, null, null])
     act(() => {
       screen.getByTestId('open').click()
@@ -477,11 +478,20 @@ describe('panel state in the URL (D-023, D-092)', () => {
     await waitFor(() => {
       expect(state()).toEqual([null, null, null])
     })
+    expect(history.location.state.__TSR_index).toBe(start)
     act(() => {
-      history.back()
+      screen.getByTestId('open').click()
     })
     await waitFor(() => {
       expect(state()).toEqual(['units', 'new', COMPANY.id])
     })
+    act(() => {
+      history.back()
+    })
+    await waitFor(() => {
+      expect(state()).toEqual([null, null, null])
+    })
+    expect(history.location.state.__TSR_index).toBe(start)
   })
+
 })
