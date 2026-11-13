@@ -288,10 +288,13 @@ export function UnitChart({
     }
   }, [zoomByHand])
 
-  // A mouse pans by dragging the background; a node keeps its own presses, and a scrollbar its drag.
+  // A mouse pans by dragging the background; a node keeps its own presses, and a scrollbar its drag. React bubbles a
+  // press inside a portal (a node's menu or dialog) through the tree, so a press outside the canvas's DOM is not a pan.
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const element = viewport.current
-    const onNode = event.target instanceof Node && nodes.current?.contains(event.target) === true
+    const target = event.target
+    if (!(target instanceof Node) || !event.currentTarget.contains(target)) return
+    const onNode = nodes.current?.contains(target) === true
     if (element === null || event.pointerType !== 'mouse' || event.button !== 0 || onNode) return
     if (!inClientArea(element, event.clientX, event.clientY)) return
     element.setPointerCapture(event.pointerId)
