@@ -584,6 +584,7 @@ export const dictionary = {
     summaryConfirmed: 'אומתו',
     summaryOf: 'מתוך',
     summaryChanged: 'השתנו מאז:',
+    summaryUnseen: 'יחידות מחוץ לתצוגה שלך:',
     confirmNeedsFullList: 'הסינון מסתיר חלק מהחיילים כאן. כדי לאמת, צריך לנקות את הסינון ולראות את הרשימה המלאה.',
   },
   leaves: {
