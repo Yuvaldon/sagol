@@ -8,13 +8,21 @@ import {
   type CalendarDate,
   type Deployment,
   type DeploymentId,
-  type DeploymentMember,
   type Issue,
   type LeaveType,
   type LeaveTypeId,
   type SoldierId,
 } from '@contracts'
-import { addDays, compareDates, leaveReasonIssues, optionalText, roundDays, type LeaveDays, type RoundRhythm } from '@domain'
+import {
+  addDays,
+  compareDates,
+  leaveReasonIssues,
+  optionalText,
+  roundDays,
+  type LeaveDays,
+  type RotationMembership,
+  type RoundRhythm,
+} from '@domain'
 import { formIssues } from '../forms/issues'
 import type { WithProperties } from '../properties/properties'
 
@@ -49,10 +57,10 @@ export interface LeaveRoundValues {
   readonly as_approved: boolean
 }
 
-/** The rotations a plan may be in, and their members, as the actor reads them. */
+/** The rotations a plan may be in, and who serves in them on which days, as the actor reads them (D-336). */
 export interface RoundContext {
   readonly rotations: readonly Deployment[]
-  readonly members: readonly DeploymentMember[]
+  readonly members: RotationMembership
 }
 
 /** One leave of the plan: a soldier of a group, home on one round's days. */
@@ -119,26 +127,14 @@ function planSpan(values: Pick<LeaveRoundValues, 'start_date' | 'end_date'>): Le
   return { start_date, end_date }
 }
 
-/**
- * The days a soldier serves in the rotation: a member's own, else the rotation's. A rotation with no member row holds
- * the whole unit (D-259). NULL when the soldier is not a member.
- */
-function servedDays(rotation: Deployment, members: readonly DeploymentMember[], soldierId: SoldierId): { start: CalendarDate; end: CalendarDate | null } | null {
-  const rows = members.filter((member) => member.deployment_id === rotation.id)
-  if (rows.length === 0) return { start: rotation.start_date, end: rotation.end_date }
-  const member = rows.find((row) => row.soldier_id === soldierId)
-  if (member === undefined) return null
-  return { start: member.start_date ?? rotation.start_date, end: member.end_date ?? rotation.end_date }
-}
-
-/** Who among `soldierIds` serves in the rotation, so the plan offers them. */
+/** Who among `soldierIds` serves in the rotation on some day of it, so the plan offers them (D-336). */
 export function rotationSoldiers(
   rotation: Deployment | null,
-  members: readonly DeploymentMember[],
+  members: RotationMembership,
   soldierIds: readonly SoldierId[],
 ): SoldierId[] {
   if (rotation === null) return []
-  return soldierIds.filter((soldierId) => servedDays(rotation, members, soldierId) !== null)
+  return soldierIds.filter((soldierId) => members.daysOf(rotation, soldierId).length > 0)
 }
 
 /** One round past the most a plan may hold: enough to refuse a plan as too big, without counting every day of it. */
@@ -153,8 +149,8 @@ export function groupRounds(values: LeaveRoundValues, group: RoundGroup): LeaveD
 }
 
 /**
- * Every leave of the plan, group by group and soldier by soldier: each group's rounds, cut to the days the soldier
- * serves in the rotation, so no leave falls outside them (D-216).
+ * Every leave of the plan, group by group and soldier by soldier: each group's rounds, cut to each stretch of days the
+ * soldier serves in the rotation, so no leave falls outside them (D-216, D-336).
  */
 export function plannedRounds(values: LeaveRoundValues, context: RoundContext): PlannedRound[] {
   const rhythm = rhythmOf(values)
@@ -164,18 +160,18 @@ export function plannedRounds(values: LeaveRoundValues, context: RoundContext): 
   return values.groups.flatMap((group, index) => {
     const firstHome = group.first_home
     if (firstHome === '') return []
-    return group.soldier_ids.flatMap((soldierId) => {
-      const served = servedDays(rotation, context.members, soldierId)
-      if (served === null) return []
-      const start = compareDates(served.start, span.start_date) > 0 ? served.start : span.start_date
-      const end = served.end !== null && compareDates(served.end, span.end_date) < 0 ? served.end : span.end_date
-      if (compareDates(start, end) > 0) return []
-      return roundDays(rhythm, firstHome, { start_date: start, end_date: end }, PAST_MAX_LEAVES).map((days) => ({
-        ...days,
-        group: index,
-        soldier_id: soldierId,
-      }))
-    })
+    return group.soldier_ids.flatMap((soldierId) =>
+      context.members.daysOf(rotation, soldierId).flatMap((served) => {
+        const start = compareDates(served.valid_from, span.start_date) > 0 ? served.valid_from : span.start_date
+        const end = served.valid_to !== null && compareDates(served.valid_to, span.end_date) < 0 ? served.valid_to : span.end_date
+        if (compareDates(start, end) > 0) return []
+        return roundDays(rhythm, firstHome, { start_date: start, end_date: end }, PAST_MAX_LEAVES).map((days) => ({
+          ...days,
+          group: index,
+          soldier_id: soldierId,
+        }))
+      }),
+    )
   })
 }
 

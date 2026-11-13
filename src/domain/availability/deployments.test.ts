@@ -1,6 +1,7 @@
-import { CalendarDate, DeploymentId } from '@contracts'
+import { CalendarDate, DeploymentId, SoldierId, UnitId, UnitLevelId } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import {
+  createRotationMembership,
   deploymentMemberIssues,
   rotationCloseEnd,
   rotationOverlapIssues,
@@ -92,5 +93,65 @@ describe('the whole unit (D-221)', () => {
       { path: ['soldier_id'], code: 'not_a_member' },
     ])
     expect(wholeUnitRotationIssues(CLOSED, spans, { start_date: day('2026-12-02'), end_date: day('2026-12-09') })).toEqual([])
+  })
+})
+
+describe('who serves in a rotation, and on which days (D-336, D-259, D-221)', () => {
+  const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
+  const LEVEL = UnitLevelId.parse(id(90))
+  const BATTALION = UnitId.parse(id(1))
+  const COMPANY = UnitId.parse(id(2))
+  const PLATOON = UnitId.parse(id(3))
+  const OTHER = UnitId.parse(id(4))
+  const units = [
+    { id: BATTALION, parent_id: null, unit_level_id: LEVEL },
+    { id: COMPANY, parent_id: BATTALION, unit_level_id: LEVEL },
+    { id: PLATOON, parent_id: COMPANY, unit_level_id: LEVEL },
+    { id: OTHER, parent_id: BATTALION, unit_level_id: LEVEL },
+  ]
+  const DANA = SoldierId.parse(id(11))
+  const ELI = SoldierId.parse(id(12))
+  const GAL = SoldierId.parse(id(13))
+  const HILA = SoldierId.parse(id(14))
+  const span = (from: string, to: string | null) => ({ valid_from: day(from), valid_to: to === null ? null : day(to) })
+  const placed = (soldier_id: SoldierId, unit_id: UnitId, from: string, to: string | null) => ({ soldier_id, unit_id, ...span(from, to) })
+  const whole = { id: DeploymentId.parse(id(21)), unit_id: COMPANY, start_date: day('2026-12-01'), end_date: day('2026-12-20') }
+  const listedRotation = { ...whole, id: DeploymentId.parse(id(22)) }
+  const membership = createRotationMembership({
+    units,
+    unit_memberships: [
+      placed(DANA, PLATOON, '2026-01-01', null),
+      placed(ELI, OTHER, '2026-01-01', null),
+      placed(GAL, COMPANY, '2026-01-01', '2026-12-05'),
+      placed(GAL, PLATOON, '2026-12-06', '2026-12-10'),
+      placed(GAL, COMPANY, '2026-12-15', null),
+      placed(HILA, PLATOON, '2026-12-08', null),
+    ],
+    deployment_members: [{ deployment_id: listedRotation.id, soldier_id: ELI, start_date: day('2026-12-05'), end_date: null }],
+  })
+
+  it('holds a whole-unit rotation\'s unit and below it, within the rotation\'s dates', () => {
+    expect(membership.isListed(whole)).toBe(false)
+    expect(membership.daysOf(whole, DANA)).toEqual([span('2026-12-01', '2026-12-20')])
+    expect(membership.daysOf(whole, HILA)).toEqual([span('2026-12-08', '2026-12-20')])
+  })
+  it('does not hold a soldier placed outside the unit', () => {
+    expect(membership.daysOf(whole, ELI)).toEqual([])
+    expect(membership.servesOn(whole, ELI, day('2026-12-10'))).toBe(false)
+  })
+  it('merges adjacent memberships and leaves a gap where the soldier was outside the unit', () => {
+    expect(membership.daysOf(whole, GAL)).toEqual([span('2026-12-01', '2026-12-10'), span('2026-12-15', '2026-12-20')])
+    expect(membership.servesOn(whole, GAL, day('2026-12-12'))).toBe(false)
+    expect(membership.servesOn(whole, GAL, day('2026-12-15'))).toBe(true)
+  })
+  it('reads a listed rotation\'s member rows only, on the member\'s own days', () => {
+    expect(membership.isListed(listedRotation)).toBe(true)
+    expect(membership.daysOf(listedRotation, ELI)).toEqual([span('2026-12-05', '2026-12-20')])
+    expect(membership.daysOf(listedRotation, DANA)).toEqual([])
+  })
+  it('agrees with the command\'s whole-unit check', () => {
+    const dates = { start_date: day('2026-12-09'), end_date: day('2026-12-16') }
+    expect(wholeUnitRotationIssues(whole, membership.daysOf(whole, GAL), dates)).toEqual([{ path: ['soldier_id'], code: 'not_a_member' }])
+    expect(wholeUnitRotationIssues(whole, membership.daysOf(whole, HILA), dates)).toEqual([])
   })
 })

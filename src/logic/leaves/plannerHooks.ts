@@ -1,6 +1,6 @@
 import type { AvailabilityRuleId, Deployment, Leave, LeaveBatch, Result } from '@contracts'
 import { useMemo } from 'react'
-import { useDeploymentMembers } from '../deployments/hooks'
+import { useRotationMembership } from '../deployments/hooks'
 import type { WithProperties } from '../properties/properties'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
@@ -11,20 +11,19 @@ import { roundAnswerIssues, toLeaveRoundInput, type LeaveRoundValues, type Round
 // The leave-round planner's reads and its command (D-270, D-316).
 
 export interface LeaveRoundSetup {
-  /** NULL while the rotations or their members load. */
+  /** NULL while the rotations, their members, the units or the memberships load. */
   readonly context: RoundContext | null
   /** The rotation a new plan starts in: the one in view, else the one that runs today, else the first open one. */
   readonly preferred: Deployment | null
 }
 
-/** The open rotations in scope (D-211) and their members: a plan is made in one of them. */
+/** The open rotations in scope (D-211) and who serves in them (D-336): a plan is made in one of them. */
 export function useLeaveRoundSetup(): LeaveRoundSetup {
   const { window, rotations, rotationsReady, today } = useDateWindow()
-  const members = useDeploymentMembers()
-  const memberRows = members.status === 'ready' ? members.value : null
+  const membership = useRotationMembership()
   const context = useMemo(
-    () => (!rotationsReady || memberRows === null ? null : { rotations: rotations.filter((rotation) => rotation.closed_at === null), members: memberRows }),
-    [rotations, rotationsReady, memberRows],
+    () => (!rotationsReady || membership === null ? null : { rotations: rotations.filter((rotation) => rotation.closed_at === null), members: membership }),
+    [rotations, rotationsReady, membership],
   )
   const open = context?.rotations ?? NONE
   const preferred =

@@ -35,6 +35,7 @@ export {
 } from './rules'
 export { leaveChangeViolations, ruleGate, ruleViolations } from './gate'
 export {
+  createRotationMembership,
   deploymentMemberIssues,
   isClosedRotation,
   leaveRotationIssues,
@@ -46,6 +47,9 @@ export {
   wholeUnitRotationIssues,
   withinMemberSpan,
   type DeploymentMemberDates,
+  type MembershipRotation,
   type RotationDates,
+  type RotationMembership,
+  type RotationMembershipData,
 } from './deployments'
 export { dayMovements, soldierMovement, type DayMovements, type SoldierMovement } from './movements'
