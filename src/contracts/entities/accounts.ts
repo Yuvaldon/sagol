@@ -60,13 +60,13 @@ export function pushKey(max: number) {
   return varchar(max).regex(/^[A-Za-z0-9_-]+=*$/)
 }
 
-/** The push service URL of one browser install: https only (D-349). */
+/** The push service URL of one browser install: https only (D-351). */
 export const PushEndpoint = z.url({ protocol: /^https$/ }).max(2048)
 export type PushEndpoint = z.infer<typeof PushEndpoint>
 
 /**
- * `push_subscriptions`: one browser install of a soldier that agreed to phone notifications (D-349). Device data:
- * never exported, deleted with the soldier's link or archive (D-356), and by a push service that no longer knows it.
+ * `push_subscriptions`: one browser install of a soldier that agreed to phone notifications (D-351). Device data:
+ * never exported, deleted with the soldier's link or archive (D-358), and by a push service that no longer knows it.
  */
 export const PushSubscriptionRecord = z.object({
   id: PushSubscriptionId,

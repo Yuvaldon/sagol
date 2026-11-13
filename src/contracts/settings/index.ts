@@ -21,9 +21,9 @@ export const SoldierPreferences = z
     create_leaves_as_approved: z.boolean().default(false),
     /** The color scheme (D-181); light until chosen. */
     appearance: Appearance.default('light'),
-    /** The newest update the soldier has seen on "שלי"; NULL until the first look: everything in the window is unread (D-350). */
+    /** The newest update the soldier has seen on "שלי"; NULL until the first look: everything in the window is unread (D-352). */
     updates_seen_at: Timestamp.nullable().default(null),
-    /** Which phone notifications the soldier wants, on every device they turned them on (D-356). */
+    /** Which phone notifications the soldier wants, on every device they turned them on (D-358). */
     notifications: z
       .object({ my_request: z.boolean().default(true), awaiting_me: z.boolean().default(true) })
       .prefault({}),

@@ -441,7 +441,7 @@ describe('import and export (D-050)', () => {
     expect(ImportCommand.options).toHaveLength(ImportOperation.options.length)
   })
 
-  it('exports every table but the devices, which belong to the browsers (D-349)', () => {
+  it('exports every table but the devices, which belong to the browsers (D-351)', () => {
     expect(Object.keys(OrganizationExport.shape.tables.shape).sort()).toEqual(
       Object.keys(TABLE_SCHEMAS)
         .filter((table) => table !== 'push_subscriptions')
@@ -509,7 +509,7 @@ describe('auth and session (D-048)', () => {
     expect(Session.safeParse({ status: 'linked', identity }).success).toBe(false)
   })
 
-  it('has one repository per table but the push subscriptions, which nothing reads back (D-349)', () => {
+  it('has one repository per table but the push subscriptions, which nothing reads back (D-351)', () => {
     expectTypeOf<keyof DataRepositories>().toEqualTypeOf<Exclude<TableName, 'push_subscriptions'>>()
   })
 })

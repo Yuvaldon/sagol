@@ -253,7 +253,7 @@ export interface DataCommands {
     /** `day_reports:confirm` on the unit, on a day a live rotation over it runs (D-293). Confirming again moves the row. */
     confirm: Command<ConfirmDayReportInput, ReportConfirmation>
   }
-  /** Phone notifications of the signed-in soldier's browser installs; a linked, active account only (D-349). */
+  /** Phone notifications of the signed-in soldier's browser installs; a linked, active account only (D-351). */
   notifications: {
     /** Upsert by endpoint: a row stored for another soldier moves to the caller (a shared device changed hands). */
     subscribe: Command<SubscribePushInput, { subscribed: true }>

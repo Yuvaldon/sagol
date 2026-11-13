@@ -63,7 +63,7 @@ export const UpdateMyPreferencesInput = z.strictObject({
 export type UpdateMyPreferencesInput = z.infer<typeof UpdateMyPreferencesInput>
 
 /**
- * `notifications.subscribe` (D-349): this browser install of the signed-in soldier agrees to phone notifications. An
+ * `notifications.subscribe` (D-351): this browser install of the signed-in soldier agrees to phone notifications. An
  * endpoint stored before moves to the caller (a shared device changed hands). The row's id is the server's: the
  * endpoint is the browser's own key, and the caller never reads the row back.
  */

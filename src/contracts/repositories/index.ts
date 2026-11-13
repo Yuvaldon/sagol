@@ -125,7 +125,7 @@ export const LeaveThreadQuery = z.strictObject({ leave_id: LeaveId })
 export type LeaveThreadQuery = z.infer<typeof LeaveThreadQuery>
 
 /**
- * The updates on one soldier's own leaves since a time (D-350): the events and the comments, newest first. The policy
+ * The updates on one soldier's own leaves since a time (D-352): the events and the comments, newest first. The policy
  * filters them as any read; a soldier asks for their own.
  */
 export const LeaveFeedQuery = z.strictObject({ soldier_id: SoldierId, since: Timestamp })

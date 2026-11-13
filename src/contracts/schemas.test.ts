@@ -138,7 +138,7 @@ describe('settings defaults (D-041)', () => {
     })
   })
 
-  it('reads the notification choices, each kind defaulting to on (D-350, D-356)', () => {
+  it('reads the notification choices, each kind defaulting to on (D-352, D-358)', () => {
     const seen = '2026-11-13T08:00:00.000Z'
     const read = SoldierPreferences.parse({ updates_seen_at: seen, notifications: { awaiting_me: false } })
     expect(read.updates_seen_at).toBe(seen)
