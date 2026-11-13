@@ -27,7 +27,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
 
-  await test.step('the built-in rotation group is there from the start, and a rotation needs no form (D-346)', async () => {
+  await test.step('the built-in rotation group is there from the start, and a rotation needs no form (D-347)', async () => {
     await openModule(page, he.leaveTypes.open)
     await expect(drawer(page).getByRole('heading', { name: he.onboarding.rotationGroupName })).toBeVisible()
     await expect(drawer(page).getByText(he.leaveTypes.rotationTypeName, { exact: true })).toBeVisible()
