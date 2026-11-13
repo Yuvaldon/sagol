@@ -193,6 +193,9 @@ The current state (D-128):
   a new list from the unit or the previous rotation.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
+- **The leave-round planner** (`domain/leaves/rounds`, `logic/leaves/planner`, D-316): groups of a rotation's soldiers,
+  each from its own first day home on one rhythm (`LEAVE_ROUNDS`), cut to the days each soldier serves, sent as one
+  `leaves.createBatch`. The timeline gives overlapping rounds lanes (`assignLanes` in the timeline adapter, D-317).
 - **The request sheet** (`leaves.createMany`, `logic/leaves/sheet`, D-275): one soldier's rows, a recurring row expanded
   in logic, each leave with its own rotation and checked on `leaves.<n>` as `leaves.create` checks one, all or none;
   the answer's issues land back on their rows.
@@ -201,6 +204,14 @@ The current state (D-128):
   `reportDays` spans to a last day over the reportable days (D-211); `reportText` writes the message. The reasons
   switch is a device flag (`useDeviceFlag`) in the device store of `data/device`, under `DEVICE_KEYS`, per soldier.
   `ui` draws the image on a canvas (`modules/presence/reportImage.ts`).
+- **Report confirmations** (D-293): `report_confirmations` holds one row per unit and date, moved by
+  `day_reports.confirm` and never deleted; `deployments.report_owner_id` names who reads the summary. `domain/reports`
+  holds the confirm rule (an open, live rotation over the unit on the date) and `confirmationStatus`; "changed since" is
+  derived in `logic/presence/confirmations.ts` from the section's soldiers' leaves of any status touching the day ±1,
+  written after the confirmation, on the report with no view filter. Which unit and date the actor may confirm is
+  `report_confirmations.confirmable`, answered on the whole tree, so a hidden middle level does not hide the button. A
+  confirmation holds from the client's read of the leaves (`seen_at`, `confirmedAtOf`). `useReportConfirmations` reads
+  them with those leaves; leave writes refresh it, and rotation writes refresh the confirmable answer.
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
   (D-141), and the same breaches beside a calendar day and above the list (`ui/board/breaches.ts`, D-290); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
@@ -270,8 +281,9 @@ The current state, in short (D-128). The entries hold the reasons.
   grouped by `WORK_SECTIONS` in `config`, each module loaded lazily (OI-118), with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
   `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
   (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
-  anyone else on "שלי", and the last choice is kept on the device. The rules row's place lives in the soldier's
-  preferences (`useNavigationPreferences`). The organization's setup (`setup` panel) is first in that panel and the
+  anyone else on "שלי", and the last choice is kept on the device. The heat row always sits above the soldiers, sticky (D-310).
+  The "לוח" tab opens the view sheet on the board (`ViewSheet`, D-311); "סינון ומיון" opens the rule builder
+  (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
   done from live rows (`useSetupProgress`, D-180).
 - Focus mode (D-301) is `useFocusModeScope` in `ui/shell`, a session device flag (`DEVICE_KEYS.focusMode`) live only

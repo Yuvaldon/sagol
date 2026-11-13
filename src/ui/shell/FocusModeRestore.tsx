@@ -6,7 +6,7 @@ import { Button as AriaButton, TooltipTrigger } from 'react-aria-components'
 import { NameTooltip } from '../primitives/Button'
 import { useFocusMode } from './focusMode'
 
-// The one control focus mode leaves (D-301); "מצב מיקוד" itself is in the view menu.
+// The one control focus mode leaves (D-301); "מצב מיקוד" itself is in the view sheet.
 
 /** Between a control's name and its key, in its tooltip. */
 const SHORTCUT_SEPARATOR = ' · '

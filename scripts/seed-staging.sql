@@ -3,6 +3,9 @@
 -- (the one the owner's first sign-in bootstraps, D-005). Every row is invented: Hebrew names from a fixed list,
 -- personal numbers in a 7-digit range that starts at 9900001, no emails, no phones.
 --
+-- The company nests under the organization's root unit (D-315), which the root-units migration or the claim
+-- creates. The seed never inserts a root: with no live root, or more than one, it stops.
+--
 -- Re-runnable: every id is derived from the organization's id and a fixed key, every insert is
 -- ON CONFLICT DO NOTHING, and every date is anchored to the week the organization was created, so a second run
 -- adds nothing and changes nothing. Rows the owner edited in the app keep the owner's edits.
@@ -11,6 +14,8 @@ DO $seed$
 DECLARE
   org uuid;
   owner_id uuid;
+  root_id uuid;
+  n_roots integer;
   anchor date;
   n_orgs integer;
   -- 60 soldiers: the HQ (6), then three platoons of 18 (a platoon commander, a sergeant, two squads of 8).
@@ -74,15 +79,21 @@ BEGIN
   IF owner_id IS NULL THEN
     RAISE EXCEPTION 'seed-staging: the organization has no linked account; sign in once first';
   END IF;
+  -- The root unit (D-315): one live unit with no parent. The seed nests under it and never makes one.
+  SELECT count(*), min(id::text)::uuid INTO n_roots, root_id FROM units
+   WHERE organization_id = org AND parent_id IS NULL AND archived_at IS NULL;
+  IF n_roots <> 1 THEN
+    RAISE EXCEPTION 'seed-staging: expected exactly one live root unit, found %; apply the root-units migration first', n_roots;
+  END IF;
 
-  -- Unit levels and units: the company, its HQ, three platoons of two squads each.
+  -- Unit levels and units: the company under the root, its HQ, three platoons of two squads each.
   FOR i IN 1..3 LOOP
     INSERT INTO unit_levels (id, organization_id, name, sort_order, created_by, updated_by)
     VALUES (md5(org || ':seed:level:' || i)::uuid, org, unit_level_names[i], i, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
   END LOOP;
   INSERT INTO units (id, organization_id, name, code, parent_id, unit_level_id, color_key, sort_order, created_by, updated_by)
-  VALUES (md5(org || ':seed:unit:company')::uuid, org, 'פלוגה ב׳', 'SEED-B', NULL,
+  VALUES (md5(org || ':seed:unit:company')::uuid, org, 'פלוגה ב׳', 'SEED-B', root_id,
           md5(org || ':seed:level:1')::uuid, 'blue', 1, owner_id, owner_id)
   ON CONFLICT DO NOTHING;
   INSERT INTO units (id, organization_id, name, code, parent_id, unit_level_id, color_key, sort_order, created_by, updated_by)

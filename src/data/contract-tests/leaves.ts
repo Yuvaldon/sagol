@@ -20,6 +20,7 @@ import {
   type Permission,
   type PermissionCheck,
   type RuleEnforcement,
+  type AvailabilityRuleId,
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
@@ -586,6 +587,36 @@ export function describeLeaveContract(
         const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { acknowledged_rule_ids: [ruleId] })))
         const [event] = valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))
         expect(event?.acknowledged_rule_ids).toEqual([ruleId])
+      })
+
+      it('judges a sheet of leaves together, then writes a created event for each (D-275, OI-252)', async () => {
+        const { type, yael } = await lastSoldierStanding()
+        const ruleId = await seedRule('soft')
+        const row = (start_date: string, end_date: string) => {
+          const { soldier_id: _soldier, as_approved: _approved, acknowledged_rule_ids: _rules, comment: _comment, ...leave } =
+            leaveInput(yael.id, type.id, { start_date, end_date })
+          return leave
+        }
+        const sheet = (acknowledged_rule_ids: AvailabilityRuleId[]) =>
+          adapter().commands.leaves.createMany({
+            soldier_id: yael.id,
+            leaves: [row(TODAY, TODAY), row(NEXT_WEEK, NEXT_WEEK)],
+            as_approved: false,
+            acknowledged_rule_ids,
+          })
+        // One violation names the days of both rows: the rule reads the sheet as a whole.
+        expect(errorOf(await sheet([]))).toMatchObject({
+          code: 'rule_acknowledgment_required',
+          violations: [{ rule_id: ruleId, days: [{ date: TODAY }, { date: NEXT_WEEK }] }],
+        })
+        expect(await harnessOf().rows('leaves')).toEqual([])
+        const created = valueOf(await sheet([ruleId]))
+        for (const leave of created) {
+          expect(valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))).toMatchObject([
+            { event_type: 'created', from_status: null, to_status: 'pending', acknowledged_rule_ids: [ruleId] },
+          ])
+        }
+        expect(await harnessOf().rows('leave_events')).toHaveLength(2)
       })
 
       it('names who is unavailable each day, a soldier the actor cannot see included (D-138, OI-075)', async () => {

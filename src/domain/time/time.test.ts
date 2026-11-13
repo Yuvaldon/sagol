@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { clockAt, compareDates, compareInstants, spanCovers, spansOverlap, todayIn, windowContains } from './index'
+import { clockAt, compareDates, compareInstants, instantAt, spanCovers, spansOverlap, todayIn, windowContains } from './index'
 
 describe('time', () => {
+  it('reads an epoch read time as an instant', () => {
+    const at = '2026-11-08T10:00:00.000Z'
+    expect(compareInstants(instantAt(1_794_132_000_000), at)).toBe(0)
+  })
+
   it('derives today in the organization time zone', () => {
     expect(todayIn('Asia/Jerusalem', '2026-11-04T21:30:00Z')).toBe('2026-11-04')
     expect(todayIn('Asia/Jerusalem', '2026-11-04T22:30:00Z')).toBe('2026-11-05')

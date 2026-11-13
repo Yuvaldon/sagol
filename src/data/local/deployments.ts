@@ -8,6 +8,7 @@ import {
   IssueCode,
   ReopenDeploymentInput,
   SetDeploymentMembersInput,
+  SoldierStatus,
   UpdateDeploymentInput,
   type DataCommands,
   type DataRepositories,
@@ -75,6 +76,21 @@ async function unitIssues({ database, scope, row, before }: RowCheck<Deployment>
     holds(scope, permissionOf('units', 'view'), unitTarget(unit))
   if (!visible) return [{ path: ['unit_id'], code: IssueCode.enum.reference_not_found }]
   if (unit.archived_at !== null) return [{ path: ['unit_id'], code: IssueCode.enum.reference_archived }]
+  return []
+}
+
+/** A report owner that changed must be a soldier the actor sees, live and active (D-293); an unchanged one is left alone. */
+async function reportOwnerIssues({ database, scope, row, before }: RowCheck<Deployment>): Promise<Issue[]> {
+  const owner = row.report_owner_id
+  if (owner === null || owner === before?.report_owner_id) return []
+  const soldier = await tableOf(database, 'soldiers').get(owner)
+  const visible =
+    soldier !== undefined &&
+    soldier.organization_id === scope.organization_id &&
+    holds(scope, permissionOf('soldiers', 'view'), soldierTarget(owner))
+  if (!visible) return [{ path: ['report_owner_id'], code: IssueCode.enum.reference_not_found }]
+  if (soldier.archived_at !== null) return [{ path: ['report_owner_id'], code: IssueCode.enum.reference_archived }]
+  if (soldier.status !== SoldierStatus.enum.active) return [{ path: ['report_owner_id'], code: IssueCode.enum.soldier_inactive }]
   return []
 }
 
@@ -153,7 +169,7 @@ const SPEC: ReferenceSpec<Deployment> = {
   table: 'deployments',
   resource: 'deployments',
   schema: Deployment,
-  checkTables: ['deployment_members', 'leaves'],
+  checkTables: ['deployment_members', 'leaves', 'soldiers'],
   optionalText: [],
   createdColumns: { closed_at: null, closed_by: null },
   targetOf: (deployment) => deploymentTarget(deployment.unit_id),
@@ -162,6 +178,7 @@ const SPEC: ReferenceSpec<Deployment> = {
     if (closed.length > 0) return closed
     return [
       ...(await unitIssues(check)),
+      ...(await reportOwnerIssues(check)),
       ...(await overlapIssues(check)),
       ...(await memberDateIssues(check)),
       ...(await wholeUnitMoveIssues(check)),

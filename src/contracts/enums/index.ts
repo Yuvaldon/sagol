@@ -102,10 +102,6 @@ export type PropertyDataType = z.infer<typeof PropertyDataType>
 export const ReschedulePolicy = z.enum(['keep_if_can_approve', 'always_pending'])
 export type ReschedulePolicy = z.infer<typeof ReschedulePolicy>
 
-/** Where the rules heat row sits on the board: over the soldier list, or under it (D-173). */
-export const RulesRowPlacement = z.enum(['above', 'below'])
-export type RulesRowPlacement = z.infer<typeof RulesRowPlacement>
-
 /** The color scheme the soldier chose: light (the default), dark, or the device's (D-181). */
 export const Appearance = z.enum(['light', 'dark', 'system'])
 export type Appearance = z.infer<typeof Appearance>

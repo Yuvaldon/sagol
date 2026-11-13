@@ -146,6 +146,21 @@ describe('leaves on a row (D-111, D-112)', () => {
     expect(opened).toEqual([leave(2, '', '').id])
   })
 
+  it('stacks overlapping rounds, each in its share of the row, under the bars (OI-246)', () => {
+    const row = rowWith([
+      leave(1, '2026-11-08', '2026-11-09', { layer: 'round' }),
+      leave(2, '2026-11-09', '2026-11-10', { layer: 'round' }),
+      leave(3, '2026-11-10', '2026-11-10', { layer: 'round' }),
+    ])
+    expect(row.marks.map((mark) => [mark.kind, mark.lane])).toEqual([
+      ['band', 0],
+      ['band', 1],
+      ['band', 0],
+    ])
+    expect(row.bandLanes).toBe(2)
+    expect(row.lanes).toBe(1)
+  })
+
   it('draws a marker as badges over the bars, with its icon, in their own lanes', () => {
     const row = rowWith([leave(1, '2026-11-08', '2026-11-10'), leave(2, '2026-11-09', '2026-11-09', { effect: 'available' })])
     expect(row.marks.map((mark) => [mark.kind, mark.lane])).toEqual([

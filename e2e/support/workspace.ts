@@ -88,8 +88,11 @@ export async function enterAsOwner(page: Page) {
 /** Sets aside the setup that the claim opened, back to the board. */
 export async function closeSetup(page: Page) {
   await expect(setupDrawer(page)).toBeVisible()
+  // The drawer enters over the board as the claim lands: a press while it still prepares or slides in can be lost on a
+  // slow runner (OI-258), so the close waits for the drawer to rest. A failure names the address the close left.
+  await waitForSettledScreen(page)
   await setupDrawer(page).getByRole('button', { name: he.common.close }).click()
-  await expect(setupDrawer(page)).toBeHidden()
+  await expect(setupDrawer(page), `the setup drawer stays open at ${page.url()}`).toBeHidden()
 }
 
 /** A row of the units tree, by the unit's name. */

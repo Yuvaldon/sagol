@@ -24,7 +24,7 @@ export {
 export { CHANGE_FEED_CHANNEL, DEVICE_KEYS, INDEXED_DB_NAME, STORAGE_KEYS, type DeviceKey, type StorageKey } from './storage'
 export { INBOX, MINE } from './inbox'
 export { DAY_REPORT, DAY_REPORT_CATEGORIES, type DayReportCategory } from './report'
-export { LEAVE_SHEET } from './leaves'
+export { LEAVE_ROUNDS, LEAVE_SHEET } from './leaves'
 export { PWA } from './pwa'
 export { REMOTE } from './remote'
 export { ROUTES, type RoutePath } from './routes'
@@ -39,14 +39,15 @@ export {
   DEFAULT_BOARD_SORT_KEY,
   DEFAULT_RANGE_KIND,
   DEFAULT_SORT_ORDER,
+  DEFAULT_TABLE_SORT_ORDER,
   DEFAULT_VIEW_BY_DEVICE,
   RANGE_KINDS,
   RangeKind,
   SORT_ORDERS,
-  SortKey,
+  SORTABLE_PROPERTY_TYPES,
   SortOrder,
   TABLE_SORT_KEYS,
-  type TableSortKey,
+  TableSortKey,
   TIMELINE_DENSITY,
   TIMELINE_DRAG,
   TIMELINE_LANES,

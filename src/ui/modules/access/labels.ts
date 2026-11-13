@@ -25,6 +25,7 @@ export const RESOURCE_KEYS: Record<PermissionResource, I18nKey> = {
   access_grants: 'permissionLabels.resources.access_grants',
   accounts: 'permissionLabels.resources.accounts',
   data_transfer: 'permissionLabels.resources.data_transfer',
+  day_reports: 'permissionLabels.resources.day_reports',
 }
 
 export const ACTION_KEYS: Record<PermissionAction, I18nKey> = {
@@ -36,6 +37,7 @@ export const ACTION_KEYS: Record<PermissionAction, I18nKey> = {
   approve: 'permissionLabels.actions.approve',
   export: 'permissionLabels.actions.export',
   import: 'permissionLabels.actions.import',
+  confirm: 'permissionLabels.actions.confirm',
 }
 
 export const ANCHOR_KEYS: Record<ScopeAnchorType, I18nKey> = {

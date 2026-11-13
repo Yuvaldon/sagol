@@ -14,7 +14,7 @@ export interface FocusMode {
   readonly on: boolean
   readonly enter: () => void
   readonly leave: () => void
-  /** Takes the view menu's trigger or the restore button as its ref; the change focuses the one it shows. */
+  /** Takes the board's tab or the restore button as its ref; the change focuses the one it shows. */
   readonly bind: (target: Target) => (element: HTMLButtonElement | null) => void
 }
 

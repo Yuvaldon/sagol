@@ -38,6 +38,7 @@ import {
   createSoldierPreferencesRepository,
   type LocalAccountCommands,
 } from './accounts'
+import { createDayReportCommands, createReportConfirmationRepository } from './reports'
 import { createPropertyDefinitionCommands, createPropertyDefinitionRepository } from './propertyDefinitions'
 import { createAvailabilityRuleCommands, createAvailabilityRuleRepository } from './rules'
 import { createSessionService } from './session'
@@ -93,6 +94,7 @@ export interface LocalDataAdapter {
     | 'leave_batches'
     | 'deployments'
     | 'deployment_members'
+    | 'report_confirmations'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -114,6 +116,7 @@ export interface LocalDataAdapter {
     readonly property_definitions: DataCommands['property_definitions']
     readonly seniority_overrides: DataCommands['seniority_overrides']
     readonly deployments: DataCommands['deployments']
+    readonly day_reports: DataCommands['day_reports']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed
@@ -156,6 +159,7 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       leave_batches: createLeaveBatchRepository(dependencies),
       deployments: createDeploymentRepository(dependencies),
       deployment_members: createDeploymentMemberRepository(dependencies),
+      report_confirmations: createReportConfirmationRepository(dependencies),
     },
     commands: {
       organizations: createOrganizationCommands(dependencies),
@@ -177,6 +181,7 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       property_definitions: createPropertyDefinitionCommands(dependencies),
       seniority_overrides: createSeniorityOverrideCommands(dependencies),
       deployments: createDeploymentCommands(dependencies),
+      day_reports: createDayReportCommands(dependencies),
     },
     transfer: createTransfer(dependencies),
     changes,

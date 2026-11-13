@@ -34,6 +34,7 @@ const deployment = (overrides: Partial<Deployment> = {}): Deployment => ({
   end_date: '2026-12-20',
   closed_at: null,
   closed_by: null,
+  report_owner_id: null,
   created_at: AT,
   created_by: null,
   updated_at: AT,
@@ -47,7 +48,7 @@ describe('the deployment form (D-179)', () => {
   it('asks for a name, a unit and a start, and takes an open end', () => {
     expect(deploymentFormIssues(newDeploymentValues('2026-11-12', null)).map((issue) => issue.path)).toEqual([['name'], ['unit_id']])
     const input = toCreateDeploymentInput({ ...newDeploymentValues('2026-11-12', UNIT), name: ' סבב ' })
-    expect(input).toMatchObject({ name: 'סבב', unit_id: UNIT, start_date: '2026-11-12', end_date: null })
+    expect(input).toMatchObject({ name: 'סבב', unit_id: UNIT, start_date: '2026-11-12', end_date: null, report_owner_id: null })
   })
 
   it('refuses an end before the start', () => {

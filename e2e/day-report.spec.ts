@@ -1,7 +1,19 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, OWNER } from './support/workspace.ts'
+import {
+  NOW,
+  ROTATION_UNIT,
+  choose,
+  closeDrawer,
+  createType,
+  drawer,
+  openRotation,
+  openRotationInNewUnit,
+  requestLeave,
+  typeDate,
+} from './support/leaves.ts'
+import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
+import { selectView } from './support/board.ts'
 
 // V22's demo: the day report opens from a day of the timeline and of the calendar, holds the counts and the names per
 // unit, shows the reasons behind a switch kept on the device, spans days, and leaves as text and as an image, on
@@ -20,11 +32,6 @@ async function openUnits(page: Page) {
   const closed = report(page).getByRole('heading').getByRole('button', { expanded: false })
   await expect(closed.first()).toBeVisible()
   while ((await closed.count()) > 0) await closed.first().click()
-}
-
-async function selectView(page: Page, name: string) {
-  await page.getByRole('button', { name: new RegExp(he.workspace.view) }).click()
-  await page.getByRole('menuitemradio', { name }).click()
 }
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
@@ -102,5 +109,65 @@ test('the day report: counts and names, reasons, a span, a text copy and an imag
     await expectNoAxeViolations(page)
     await page.keyboard.press('Escape')
     await expect(report(page)).toBeHidden()
+  })
+})
+
+const SOLDIER = 'יעל שחר'
+
+/** The rotation unit's section of the open report; the root unit, with the owner in it, has its own (D-293). */
+function section(page: Page) {
+  return report(page).getByRole('heading', { name: new RegExp(ROTATION_UNIT) }).locator('xpath=..')
+}
+
+/** A unit with one soldier placed in it, and the rotation over it: a unit section the report can confirm. */
+async function soldierInRotation(page: Page) {
+  await openModule(page, he.units.open)
+  await addUnit(page, ROTATION_UNIT)
+  await closeDrawer(page)
+  await openModule(page, he.soldiers.open)
+  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
+  await page.getByLabel(he.soldiers.firstName).fill('יעל')
+  await page.getByLabel(he.soldiers.lastName).fill('שחר')
+  await choose(page, he.soldiers.unit, ROTATION_UNIT)
+  await typeDate(page, he.soldiers.placedFrom, '01', '01', '2026')
+  await page.getByRole('button', { name: he.common.create }).click()
+  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(SOLDIER)).toBeVisible()
+  await closeDrawer(page)
+  await openRotation(page, [SOLDIER])
+}
+
+test('each unit confirms its report, a change shows, and it confirms again (D-293)', async ({ page }) => {
+  await page.clock.setFixedTime(NOW)
+  await enterAsOwner(page)
+  await soldierInRotation(page)
+  await openModule(page, he.leaveTypes.open)
+  await createType(page, { name: 'רגילה', color: he.palette.teal })
+  await closeDrawer(page)
+  const leave = { type: 'רגילה', soldier: ['יעל', SOLDIER] } as const
+  await requestLeave(page, { ...leave, from: ['12', '11', '2026'], to: ['12', '11', '2026'], approveNow: true })
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  await test.step('the unit is not yet confirmed, and confirms', async () => {
+    await dayControl(page, '12 בנוב').click()
+    await expect(section(page).getByText(he.presence.statusNotYet, { exact: true })).toBeVisible()
+    await expect(report(page).getByText(he.presence.summaryConfirmed)).toBeVisible()
+    await expectNoAxeViolations(page)
+    await section(page).getByRole('button', { name: he.presence.confirm }).click()
+    await expect(section(page).getByText(he.presence.statusConfirmed, { exact: true })).toBeVisible()
+    await expect(section(page).getByRole('button', { name: he.presence.confirm })).toHaveCount(0)
+    await report(page).getByRole('button', { name: he.common.close }).click()
+    await expect(report(page)).toBeHidden()
+  })
+
+  await test.step('a request for the next day changes it, and it confirms again', async () => {
+    await page.clock.setFixedTime(NOW.getTime() + 60_000)
+    await requestLeave(page, { ...leave, from: ['13', '11', '2026'], to: ['13', '11', '2026'] })
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await dayControl(page, '12 בנוב').click()
+    await expect(section(page).getByText(he.presence.statusChanged, { exact: true })).toBeVisible()
+    await expect(report(page).getByText(he.presence.summaryChanged)).toBeVisible()
+    await expectNoAxeViolations(page)
+    await section(page).getByRole('button', { name: he.presence.confirmAgain }).click()
+    await expect(section(page).getByText(he.presence.statusConfirmed, { exact: true })).toBeVisible()
   })
 })

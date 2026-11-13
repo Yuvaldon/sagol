@@ -125,6 +125,7 @@ export function describeDeploymentContract(
         unit_id,
         start_date: LAST_WEEK,
         end_date: MONTH_END,
+        report_owner_id: null,
         ...overrides,
       };
     }
@@ -455,6 +456,42 @@ export function describeDeploymentContract(
         expect(
           issuesOf(await adapter().commands.deployments.reopen({ id: rotation.id, expected_version: 3 })),
         ).toEqual([{ path: ["id"], code: "invalid_value" }]);
+      });
+
+      it("lets its creator close and reopen it without the permission to update, and no one else (D-258)", async () => {
+        const company = await unit("Company");
+        const within = { anchor_type: "unit", anchor_unit_id: company.id, include_descendants: true } as const;
+        const creator = await seedActor(
+          harnessOf(),
+          organization,
+          [pair("deployments", "view"), pair("deployments", "create"), pair("units", "view")],
+          within,
+        );
+        const other = await seedActor(harnessOf(), organization, [pair("deployments", "view")], within);
+        harnessOf().signIn(creator.identity);
+        const rotation = valueOf(
+          await adapter().commands.deployments.create(deploymentInput(company.id, { end_date: null })),
+        );
+
+        harnessOf().signIn(other.identity);
+        expect(
+          errorOf(await adapter().commands.deployments.close({ id: rotation.id, expected_version: 1 })).code,
+        ).toBe("forbidden");
+
+        harnessOf().signIn(creator.identity);
+        expect(
+          valueOf(await adapter().commands.deployments.close({ id: rotation.id, expected_version: 1 })),
+        ).toMatchObject({ closed_by: creator.soldierId, version: 2 });
+
+        harnessOf().signIn(other.identity);
+        expect(
+          errorOf(await adapter().commands.deployments.reopen({ id: rotation.id, expected_version: 2 })).code,
+        ).toBe("forbidden");
+
+        harnessOf().signIn(creator.identity);
+        expect(
+          valueOf(await adapter().commands.deployments.reopen({ id: rotation.id, expected_version: 2 })),
+        ).toMatchObject({ closed_at: null, version: 3 });
       });
 
       it("refuses to close a rotation whose planned end is still ahead", async () => {

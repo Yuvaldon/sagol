@@ -1,10 +1,8 @@
 import type { CalendarDate, Deployment, LeaveTypeId } from '@contracts'
 import {
-  BoardSortKey,
-  DEFAULT_BOARD_SORT_KEY,
-  DEFAULT_SORT_ORDER,
+  DEFAULT_TABLE_SORT_ORDER,
   PANEL_IDS,
-  type SortKey,
+  TableSortKey,
   type SortOrder,
 } from '@config'
 import { addDays, compareDates, daysBetween } from '@domain'
@@ -12,8 +10,9 @@ import { isReportable, reportDays, steppedReportDay } from '../presence/report'
 import { useCallback, useMemo } from 'react'
 import { useToday } from '../session/today'
 import { NO_LEAVE_CONDITIONS, hasLeaveConditions, type BoardLeaveStatus, type LeaveConditions } from './conditions'
-import { NO_CONDITIONS, readFilter, writeFilter } from './filter'
+import { NO_RULES, readRules, writeRules } from './filter'
 import { useChangeSearch, useWorkspaceSearch } from './search'
+import { DEFAULT_SORT_RULES, defaultOrderOf as defaultRuleOrder, isDefaultSort, sameTarget, type SortRule, type SortTarget } from './sort-rules'
 import { useDateWindow } from './window'
 
 // What the board shows beyond the soldier filter: its leave conditions (D-132), "only who is missing" (D-133)
@@ -57,8 +56,8 @@ export interface OnlyMissingState {
 
 export interface BoardFiltersState {
   /**
-   * A condition of the filter row is on: a soldier condition beside the unit, a leave condition, or "only who is
-   * missing" (D-173, D-213).
+   * A condition of the filter row is on: a soldier rule beside the unit, a leave condition, or "only who is missing"
+   * (D-173, D-213, D-312).
    */
   readonly active: boolean
   /** Removes every condition of the filter row; the unit stays, as it is the scope and not a condition (D-173). */
@@ -69,20 +68,13 @@ export function useBoardFilters(): BoardFiltersState {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
   const filter = search.filter ?? null
-  const read = useMemo(() => readFilter(filter), [filter])
+  const read = useMemo(() => readRules(filter), [filter])
   const leaves = search.leaves ?? NO_LEAVE_CONDITIONS
-  const active =
-    read.kind === 'other' ||
-    read.conditions.tagSets.length > 0 ||
-    read.conditions.rankIds.length > 0 ||
-    read.conditions.statuses.length > 0 ||
-    read.conditions.properties.length > 0 ||
-    hasLeaveConditions(leaves) ||
-    search.missing === true
+  const active = read.kind === 'other' || read.filter.rules.length > 0 || hasLeaveConditions(leaves) || search.missing === true
   const clearAll = useCallback(() => {
-    // A filter the bar does not read has no unit it can keep (D-104).
-    const unitId = read.kind === 'conditions' ? read.conditions.unitId : null
-    change({ filter: writeFilter({ ...NO_CONDITIONS, unitId }), leaves: undefined, missing: undefined })
+    // A filter the builder does not read has no unit it can keep (D-104).
+    const unitId = read.kind === 'rules' ? read.filter.unitId : null
+    change({ filter: writeRules({ ...NO_RULES, unitId }), leaves: undefined, missing: undefined })
   }, [read, change])
   return { active, clearAll }
 }
@@ -100,47 +92,94 @@ export function useOnlyMissing(): OnlyMissingState {
   return { on: search.missing === true, set }
 }
 
-export interface BoardSortState {
-  /** The key and direction the URL holds; NULL when it names none (D-214). */
-  readonly key: SortKey | null
+export interface TableSortState {
+  /** The leave column the table's lines are sorted by; NULL keeps the board's order (D-214, D-313). */
+  readonly key: TableSortKey | null
   readonly order: SortOrder
-  /** What the board's rows are ordered by: the URL's key when the board knows it, else the default. */
-  readonly board: { readonly key: BoardSortKey; readonly order: SortOrder }
-  /** Sorts by a key; with no direction, the key's own (D-214). The default order leaves both params out. */
-  set(key: SortKey, order?: SortOrder): void
+  /** Sorts the lines by a leave column; with no direction, ascending. */
+  sortBy(key: TableSortKey, order?: SortOrder): void
+  /**
+   * Puts one rule first, as the soldier and unit headers do, keeping the others after it as ties, and drops the leave
+   * column's sort (D-313).
+   */
+  sortRows(rule: SortRule): void
 }
 
-function defaultOrderOf(key: SortKey): SortOrder {
-  const parsed = BoardSortKey.safeParse(key)
-  return parsed.success ? DEFAULT_SORT_ORDER[parsed.data] : 'asc'
-}
-
-/** The order of the board's rows and the table's lines (D-214), in the URL. */
-export function useBoardSort(): BoardSortState {
+/** The table's sort (D-214, D-313): a leave column in `sort` and `order`, or the board's own rules in `sorts`. */
+export function useTableSort(): TableSortState {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
-  const key = search.sort ?? null
-  const order = search.order ?? (key === null ? DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] : defaultOrderOf(key))
-  const boardKey = BoardSortKey.safeParse(key)
-  const board = useMemo(
-    () =>
-      boardKey.success
-        ? { key: boardKey.data, order }
-        : // A bare direction applies to the default key; a table-only key leaves the board in its default order.
-          { key: DEFAULT_BOARD_SORT_KEY, order: key === null ? order : DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY] },
-    [boardKey.success, boardKey.data, key, order],
+  const parsed = TableSortKey.safeParse(search.sort)
+  const key = parsed.success ? parsed.data : null
+  const order = search.order ?? DEFAULT_TABLE_SORT_ORDER
+  return useMemo(
+    () => ({
+      key,
+      order,
+      sortBy: (next, nextOrder = DEFAULT_TABLE_SORT_ORDER) => {
+        change({ sort: next, order: nextOrder === DEFAULT_TABLE_SORT_ORDER ? undefined : nextOrder })
+      },
+      sortRows: (rule) => {
+        const held = search.sorts ?? DEFAULT_SORT_RULES
+        const sorts = [rule, ...held.filter((other) => !sameTarget(other, rule))]
+        change({ sort: undefined, order: undefined, sorts: isDefaultSort(sorts) ? undefined : sorts })
+      },
+    }),
+    [key, order, change, search.sorts],
   )
+}
+
+export interface SortRulesState {
+  readonly rules: readonly SortRule[]
+  /** Whether the rules are other than the default. */
+  readonly changed: boolean
+  /** Adds a rule last, in its target's direction; a target already listed stays where it is. */
+  add(target: SortTarget): void
+  /** Replaces the rule at an index; a target listed elsewhere leaves its old place. */
+  replace(index: number, rule: SortRule): void
+  remove(index: number): void
+  /** Moves the rule at an index one place up (-1) or down (1). */
+  move(index: number, by: -1 | 1): void
+  /** Writes a list as it is; the default leaves the param out. */
+  set(rules: readonly SortRule[]): void
+}
+
+/** The board's sort rules (D-313). */
+export function useSortRules(): SortRulesState {
+  const search = useWorkspaceSearch()
+  const change = useChangeSearch()
+  const rules = search.sorts ?? DEFAULT_SORT_RULES
   const set = useCallback(
-    (next: SortKey, nextOrder: SortOrder = defaultOrderOf(next)) => {
-      const isDefault = next === DEFAULT_BOARD_SORT_KEY && nextOrder === DEFAULT_SORT_ORDER[DEFAULT_BOARD_SORT_KEY]
-      change({
-        sort: isDefault ? undefined : next,
-        order: isDefault || nextOrder === defaultOrderOf(next) ? undefined : nextOrder,
-      })
+    (next: readonly SortRule[]) => {
+      change({ sorts: isDefaultSort(next) ? undefined : [...next] })
     },
     [change],
   )
-  return { key, order, board, set }
+  return useMemo(
+    () => ({
+      rules,
+      changed: !isDefaultSort(rules),
+      set,
+      add: (target) => {
+        if (rules.some((rule) => sameTarget(rule, target))) return
+        set([...rules, { ...target, order: defaultRuleOrder(target) }])
+      },
+      replace: (index, rule) => {
+        set(rules.flatMap((held, at) => (at === index ? [rule] : sameTarget(held, rule) ? [] : [held])))
+      },
+      remove: (index) => {
+        set(rules.filter((_, at) => at !== index))
+      },
+      move: (index, by) => {
+        const to = index + by
+        const moved = rules[index]
+        const other = rules[to]
+        if (moved === undefined || other === undefined) return
+        set(rules.map((held, at) => (at === index ? other : at === to ? moved : held)))
+      },
+    }),
+    [rules, set],
+  )
 }
 
 export interface PresenceDayState {

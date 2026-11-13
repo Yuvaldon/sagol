@@ -24,7 +24,7 @@ async function openPanel(page: Page) {
   await expect(navigationPanel(page)).toBeVisible()
 }
 
-test('"ניהול יחידה", the scope label and the rules row placement', async ({ page }, testInfo) => {
+test('"ניהול יחידה" and the scope label', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
@@ -87,19 +87,6 @@ test('"ניהול יחידה", the scope label and the rules row placement', asy
     // A phone's strip shows no scope with nothing to choose (D-273).
     if (testInfo.project.name === 'mobile') await expect(label).toHaveCount(0)
     else await expect(label).toBeVisible()
-  })
-
-  await test.step('the rules row placement is kept, in the profile', async () => {
-    const above = page.getByRole('menuitemradio', { name: he.account.rulesRowAbove })
-    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
-    await above.click()
-    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
-    await expect(above).toHaveAttribute('aria-checked', 'true')
-    await page.keyboard.press('Escape')
-    await page.reload()
-    await page.getByRole('button', { name: new RegExp(`^${he.account.menu}`) }).click()
-    await expect(above).toHaveAttribute('aria-checked', 'true')
-    await page.keyboard.press('Escape')
   })
 })
 

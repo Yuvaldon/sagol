@@ -40,15 +40,21 @@ export {
 export { requestRotations, useRotationScope, type RotationScope } from './view-state/rotation'
 export {
   NO_CONDITIONS,
+  NO_RULES,
   filterUnitOf,
   readFilter,
+  readRules,
+  ruleHasValue,
+  writeRules,
   unitFilterOf,
   useViewFilter,
-  withPropertyChip,
-  withTagChip,
   writeFilter,
+  type FilterRule,
   type FilterUnit,
   type ReadFilter,
+  type ReadRules,
+  type RuleMatch,
+  type SoldierFilter,
   type PropertyChip,
   type SoldierConditions,
   type ViewFilterState,
@@ -56,21 +62,39 @@ export {
 export { BoardLeaveStatus, LeaveConditions, hasLeaveConditions, leaveMatches } from './view-state/conditions'
 export {
   useBoardFilters,
-  useBoardSort,
   useLeaveConditions,
   useOnlyMissing,
   usePresenceDay,
   useRulesDay,
+  useSortRules,
+  useTableSort,
   type BoardFiltersState,
-  type BoardSortState,
+  type SortRulesState,
+  type TableSortState,
   type LeaveConditionsState,
   type OnlyMissingState,
   type PresenceDayState,
   type RulesDayState,
 } from './view-state/board'
+export {
+  DEFAULT_SORT_RULES,
+  SortRule,
+  SortRules,
+  defaultOrderOf,
+  isDefaultSort,
+  sameTarget,
+  type SortTarget,
+} from './view-state/sort-rules'
 export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
 export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
-export { useDayReport, usePresence } from './presence/hooks'
+export { useConfirmDayReport, useDayReport, usePresence, useReportConfirmations } from './presence/hooks'
+export {
+  dayConfirmations,
+  type ConfirmationSummary,
+  type DayConfirmations,
+  type DayConfirmationsInput,
+  type SectionConfirmation,
+} from './presence/confirmations'
 export {
   dayReport,
   isReportable,
@@ -93,10 +117,8 @@ export { useTimezone, useToday } from './session/today'
 export {
   useAppearance,
   useMyPreferences,
-  useNavigationPreferences,
   useUpdateMyPreferences,
   type AppearancePreference,
-  type NavigationPreferences,
   type PreferenceSaved,
 } from './session/preferences'
 export {
@@ -106,7 +128,6 @@ export {
   type BoardInput,
   type BoardItem,
   type BoardSoldierItem,
-  type BoardSort,
 } from './board/rows'
 export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
 export { boardLeaves, layerOf, type BoardLeave, type LeaveLayer } from './board/leaves'
@@ -138,6 +159,20 @@ export {
 } from './leaves/leaveTypes'
 export { type LeaveCandidate } from './leaves/forms'
 export { requestRotation, useRequestRotation, type RequestRotation } from './leaves/rotation'
+export {
+  groupRounds,
+  leaveRoundIssues,
+  newLeaveRoundValues,
+  newRoundGroup,
+  nextFirstHome,
+  plannedRounds,
+  rotationSoldiers,
+  type LeaveRoundValues,
+  type PlannedRound,
+  type RoundContext,
+  type RoundGroup,
+} from './leaves/planner'
+export { useCreateLeaveRounds, useLeaveRoundSetup, type LeaveRoundSetup } from './leaves/plannerHooks'
 export {
   leaveSheetIssues,
   newLeaveSheetValues,

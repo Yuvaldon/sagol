@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { PropertyDataType } from '@contracts'
 
 // Ids of the view engines that can fill the central viewport (D-023). The registry in `ui`
 // maps each id to an engine; the active id lives in the URL.
@@ -40,15 +41,12 @@ export type BoardSortKey = z.infer<typeof BoardSortKey>
 export const DEFAULT_BOARD_SORT_KEY: BoardSortKey = 'seniority'
 
 /**
- * The table's own columns (D-214): its rows are leaves, so it can also sort by them. The board ignores these keys and
- * keeps its default order; the table's soldier and unit columns sort by the board's `name` and `unit` keys.
+ * The table's own columns (D-214): its rows are leaves, so it can also sort by them, in the URL's `sort` and `order`.
+ * The board ignores them; the table's soldier and unit columns write the board's sort rules (D-313).
  */
 export const TABLE_SORT_KEYS = ['type', 'from', 'to', 'days', 'status'] as const
-export type TableSortKey = (typeof TABLE_SORT_KEYS)[number]
-
-/** Every key the URL's sort can hold. */
-export const SortKey = z.enum([...BOARD_SORT_KEYS, ...TABLE_SORT_KEYS])
-export type SortKey = z.infer<typeof SortKey>
+export const TableSortKey = z.enum(TABLE_SORT_KEYS)
+export type TableSortKey = z.infer<typeof TableSortKey>
 
 export const SORT_ORDERS = ['asc', 'desc'] as const
 export const SortOrder = z.enum(SORT_ORDERS)
@@ -62,6 +60,15 @@ export const DEFAULT_SORT_ORDER: Readonly<Record<BoardSortKey, SortOrder>> = {
   unit: 'asc',
   absent: 'desc',
 }
+
+/** The direction a table column sorts in when the URL names none (D-214). */
+export const DEFAULT_TABLE_SORT_ORDER: SortOrder = 'asc'
+
+/**
+ * The soldier properties the board can sort by (D-313): the types with an order. A select sorts by its options' order;
+ * a multi-select and a reference have none.
+ */
+export const SORTABLE_PROPERTY_TYPES = ['text', 'number', 'date', 'boolean', 'select'] as const satisfies readonly PropertyDataType[]
 
 /**
  * The timeline's density, in CSS pixels (Stone 3, D-077, D-108). Layout math and the row virtualizer read the

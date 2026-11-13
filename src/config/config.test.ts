@@ -18,6 +18,8 @@ import {
   ENV_VARIABLES,
   ICON_KEYS,
   INDEXED_DB_NAME,
+  LEAVE_ROUNDS,
+  LEAVE_SHEET,
   PALETTE_KEYS,
   PANEL_IDS,
   SETUP_STEPS,
@@ -254,17 +256,28 @@ describe('views, url, storage, breakpoints, dates', () => {
   })
 })
 
+describe('leave rounds (D-316)', () => {
+  it('starts at a rhythm the planner accepts, and plans no more than a sheet allows per soldier', () => {
+    for (const days of [LEAVE_ROUNDS.defaultDaysIn, LEAVE_ROUNDS.defaultDaysHome]) {
+      expect(Number.isInteger(days)).toBe(true)
+      expect(days).toBeGreaterThanOrEqual(1)
+      expect(days).toBeLessThanOrEqual(LEAVE_ROUNDS.maxDays)
+    }
+    expect(LEAVE_ROUNDS.maxLeaves).toBeGreaterThanOrEqual(LEAVE_SHEET.maxLeaves)
+  })
+})
+
 describe('panels (D-092)', () => {
   it('lists every panel id in the schema', () => {
     expect([...PanelId.options].sort()).toEqual(Object.values(PANEL_IDS).sort())
     expect(PanelId.safeParse('nothing').success).toBe(false)
   })
 
-  it('places each work module and each setup panel once (D-285)', () => {
-    const work = WORK_SECTIONS.flatMap((section) => section.modules)
-    expect(new Set(work).size).toBe(work.length)
-    const setup = SETUP_SECTIONS.flatMap((section) => section.panels)
-    expect(new Set(setup).size).toBe(setup.length)
+  it('places each panel once, across work and setup (D-285, OI-252)', () => {
+    const work: readonly PanelId[] = WORK_SECTIONS.flatMap((section) => section.modules)
+    const setup: readonly PanelId[] = SETUP_SECTIONS.flatMap((section) => section.panels)
+    const placed = [...work, ...setup]
+    expect(new Set(placed).size).toBe(placed.length)
   })
 
   it('gives each setup step its own panel (D-180)', () => {

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
+import { boardTab, openViewSheet, viewSheet } from './support/board.ts'
 import {
   enterAsOwner,
   expectNoAxeViolations,
@@ -10,7 +11,7 @@ import {
   OWNER,
 } from './support/workspace.ts'
 
-// Focus mode (D-301): "מצב מיקוד" in the view menu and Alt+Shift+F hide both strips and the chips row; one restore button, the same key
+// Focus mode (D-301): "מצב מיקוד" in the view sheet and Alt+Shift+F hide both strips and the chips row; one restore button, the same key
 // and Escape bring them back, and focus follows. The board takes the top's room, a day still opens its report, and a
 // reload keeps the mode for the session. Desktop and mobile, RTL, with axe. Sample data, tests only.
 
@@ -18,14 +19,10 @@ function contextStrip(page: Page) {
   return page.getByRole('navigation', { name: he.workspace.viewBar })
 }
 
-/** The view menu's trigger, which holds "מצב מיקוד" and takes focus back when the mode ends. */
-function viewMenu(page: Page) {
-  return contextStrip(page).getByRole('button', { name: new RegExp(`^${he.workspace.view} `) })
-}
-
-async function enterByMenu(page: Page) {
-  await viewMenu(page).click()
-  await page.getByRole('menuitem', { name: he.workspace.focusEnter }).click()
+/** The board's tab opens the view sheet, which holds "מצב מיקוד", and takes focus back when the mode ends. */
+async function enterBySheet(page: Page) {
+  await openViewSheet(page)
+  await viewSheet(page).getByRole('button', { name: he.workspace.focusEnter }).click()
 }
 
 function restoreButton(page: Page) {
@@ -51,7 +48,7 @@ async function boardTop(page: Page) {
   return box?.y ?? 0
 }
 
-test('focus mode: in and out by the view menu, the key and Escape', async ({ page, isMobile }) => {
+test('focus mode: in and out by the view sheet, the key and Escape', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await openBoardOnTimeline(page, isMobile)
   await enterAsOwner(page)
@@ -60,8 +57,8 @@ test('focus mode: in and out by the view menu, the key and Escape', async ({ pag
   const firstDay = page.getByRole('button', { name: new RegExp(`^${he.presence.openDay}`) }).first()
   const dayTopWithStrips = (await firstDay.boundingBox())?.y ?? 0
 
-  await test.step('the view menu item hides both strips, and focus moves to the restore button', async () => {
-    await enterByMenu(page)
+  await test.step("the view sheet's button hides both strips, and focus moves to the restore button", async () => {
+    await enterBySheet(page)
     await expectFocusMode(page)
     await expect(restoreButton(page)).toBeFocused()
     await expect(organizationHeading(page)).toBeAttached()
@@ -99,10 +96,10 @@ test('focus mode: in and out by the view menu, the key and Escape', async ({ pag
     await expectFocusMode(page)
   })
 
-  await test.step('the restore button brings the strips back, and focus returns to the view menu', async () => {
+  await test.step("the restore button brings the strips back, and focus returns to the board's tab", async () => {
     await restoreButton(page).click()
     await expectStrips(page)
-    await expect(viewMenu(page)).toBeFocused()
+    await expect(boardTab(page)).toBeFocused()
   })
 
   await test.step('the key enters, and Escape restores', async () => {

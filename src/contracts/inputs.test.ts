@@ -80,6 +80,7 @@ const COMMAND_FIELDS = new Set([
   'organization',
   'soldier',
   'leave_id',
+  'seen_at',
 ])
 
 type Target = { table: TableName; nested?: Record<string, TableName> }
@@ -171,6 +172,7 @@ const INPUT_TABLES: Record<string, Target> = {
     table: 'property_definitions',
     nested: { items: 'property_definitions' },
   },
+  ConfirmDayReportInput: { table: 'report_confirmations' },
 }
 
 /** Inputs that wrap other inputs instead of writing a table themselves. */

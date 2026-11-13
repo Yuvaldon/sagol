@@ -265,10 +265,10 @@ CREATE TABLE IF NOT EXISTS "soldier_preferences" (
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
 	"preferences" JSONB NOT NULL DEFAULT '{}',       -- validated by contracts SoldierPreferences:
 	                                                 -- create_leaves_as_approved (D-121),
-	                                                 -- rules_row_placement (D-173), appearance (D-181);
+	                                                 -- appearance (D-181);
 	                                                 -- missing keys read as defaults, unknown keys
-	                                                 -- are dropped on read; pinned_modules (D-221)
-	                                                 -- is gone and never written (D-291)
+	                                                 -- are dropped on read (rules_row_placement, D-310);
+	                                                 -- pinned_modules (D-221) is gone and never written (D-291)
 	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"version" INTEGER NOT NULL DEFAULT 1,
 	PRIMARY KEY("soldier_id")
@@ -304,10 +304,10 @@ CREATE TABLE IF NOT EXISTS "role_permissions" (
 		'organization', 'unit_levels', 'units', 'command_ranks', 'seniority_overrides', 'soldiers', 'soldier_private',
 		'memberships', 'tags', 'leave_types', 'leaves', 'leave_comments', 'internal_comments',
 		'deployments', 'availability_rules', 'properties', 'roles', 'access_grants',
-		'accounts', 'data_transfer'
+		'accounts', 'data_transfer', 'day_reports'
 	)),
 	CONSTRAINT "role_permissions_action_check" CHECK ("action" IN (
-		'view', 'create', 'update', 'delete', 'duplicate', 'approve', 'export', 'import'
+		'view', 'create', 'update', 'delete', 'duplicate', 'approve', 'export', 'import', 'confirm'
 	))
 );
 
@@ -493,6 +493,7 @@ CREATE TABLE IF NOT EXISTS "deployments" (
 	"archived_at" TIMESTAMPTZ,
 	"closed_at" TIMESTAMPTZ,                         -- the explicit close (D-258); NULL = open
 	"closed_by" UUID REFERENCES "soldiers"("id"),
+	"report_owner_id" UUID REFERENCES "soldiers"("id"),  -- who reads the consolidated daily report (D-269, D-293)
 	PRIMARY KEY("id"),
 	CONSTRAINT "deployments_dates_check" CHECK ("end_date" IS NULL OR "end_date" >= "start_date"),
 	-- A closed rotation has its closer and an end date (D-258).
@@ -680,6 +681,23 @@ CREATE TABLE IF NOT EXISTS "property_definitions" (
 );
 
 -- -----------------------------------------------------------------------------
+-- The daily report workflow (D-269, D-293)
+-- -----------------------------------------------------------------------------
+
+-- A unit's daily report confirmed for one date. Confirming again moves the row to the new confirmer
+-- and time; rows are never deleted. "Changed since" is derived from the leaves, never stored.
+CREATE TABLE IF NOT EXISTS "report_confirmations" (
+	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
+	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
+	"unit_id" UUID NOT NULL REFERENCES "units"("id"),
+	"report_date" DATE NOT NULL,
+	"confirmed_by" UUID NOT NULL REFERENCES "soldiers"("id"),
+	"confirmed_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY("id"),
+	CONSTRAINT "report_confirmations_unit_date_key" UNIQUE ("unit_id", "report_date")
+);
+
+-- -----------------------------------------------------------------------------
 -- Audit FKs for tables declared before "soldiers"
 -- -----------------------------------------------------------------------------
 
@@ -711,6 +729,7 @@ CREATE INDEX IF NOT EXISTS "idx_leaves_deployment"          ON "leaves"("deploym
 CREATE INDEX IF NOT EXISTS "idx_leave_events_leave"         ON "leave_events"("leave_id", "created_at");
 CREATE INDEX IF NOT EXISTS "idx_leave_comments_leave"       ON "leave_comments"("leave_id", "created_at");
 CREATE INDEX IF NOT EXISTS "idx_deployments_unit_id"        ON "deployments"("unit_id");
+CREATE INDEX IF NOT EXISTS "idx_report_confirmations_date" ON "report_confirmations"("organization_id", "report_date");
 CREATE INDEX IF NOT EXISTS "idx_availability_rules_scope"   ON "availability_rules"("scope_unit_id") WHERE "archived_at" IS NULL;
 
 -- -----------------------------------------------------------------------------
