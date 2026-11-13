@@ -65,7 +65,7 @@ test('the list, the table and the calendar show the board\'s leaves', async ({ p
     await expect(page).toHaveURL(/view=calendar/)
     const calendar = region(page, he.engines.calendarLabel)
     if (isMobile) {
-      // A phone's day shows its number and who is out, and opens its report; the chips are from md up (D-338).
+      // A phone's day shows its number and who is out, and opens its report; the chips are from md up (D-339).
       await expect(calendar.getByText(new RegExp(`^${he.engines.away} 1$`))).toHaveCount(1)
     } else {
       await expect(calendar.getByRole('button', { name: `${OWNER.name} רגילה, ${he.leaves.statusPending}` })).toHaveCount(2)
@@ -77,7 +77,7 @@ test('the list, the table and the calendar show the board\'s leaves', async ({ p
   })
 
   await test.step('a leave opens from any view', async () => {
-    // On a phone the calendar has no chips (D-338): the table opens the leave there.
+    // On a phone the calendar has no chips (D-339): the table opens the leave there.
     if (isMobile) await selectView(page, he.workspace.views.table)
     const opener = isMobile
       ? region(page, he.engines.tableLabel).getByRole('button', { name: 'מחלה' })

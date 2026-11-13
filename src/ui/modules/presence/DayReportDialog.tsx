@@ -213,7 +213,7 @@ interface Confirm {
 }
 
 /**
- * The rules the day breaks for the board's unit, from the evaluation of the heat row (D-141, D-338). Nothing while it
+ * The rules the day breaks for the board's unit, from the evaluation of the heat row (D-141, D-339). Nothing while it
  * loads, or when nothing breaks.
  */
 function Breaches({ date, unitId }: { readonly date: CalendarDate; readonly unitId: UnitId | null }) {

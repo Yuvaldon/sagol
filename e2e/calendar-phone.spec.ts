@@ -5,7 +5,7 @@ import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.
 import { selectView } from './support/board.ts'
 
 // The phone's calendar is a month grid, as on a desktop: seven columns, no sideways scroll at 360 pixels, a day's tap
-// opens its day report, and the range picker holds another range from and to (D-338). RTL, with axe. Tests only.
+// opens its day report, and the range picker holds another range from and to (D-339). RTL, with axe. Tests only.
 
 const NARROW = { width: 360, height: 760 }
 

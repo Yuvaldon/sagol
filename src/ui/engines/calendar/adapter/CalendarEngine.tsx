@@ -12,10 +12,10 @@ import { EngineScroller } from '../../../board/EngineScroller'
 import { LeaveChip } from '../../../board/LeaveChip'
 import { useIsDesktop } from '../../../patterns/media'
 
-// The calendar view (D-174): the window's days in weeks of seven, a month grid at every width (D-338). From md a day
+// The calendar view (D-174): the window's days in weeks of seven, a month grid at every width (D-339). From md a day
 // shows how many are away and who is on leave, absences first; it grows with its leaves, and nothing hides behind a
 // "+N". On a phone a day is a compact cell: its number, today's mark, how many are away and the heat row's tone when it
-// breaks a rule, and a tap opens its report. The places before the window's first day and after its last stay empty:
+// breaks a rule, and a tap opens its report, or its rules when it has no report to open. The places before the window's first day and after its last stay empty:
 // the board reads no day outside the window.
 
 const HEADING = 'flex items-center gap-sm'
@@ -74,7 +74,7 @@ function Day({ day, frame, breaches }: { readonly day: BoardDay; readonly frame:
   )
 }
 
-/** A phone's day (D-338): the whole cell opens the report; its name is the full date, the rest is its description. */
+/** A phone's day (D-339): the whole cell opens the report; its name is the full date, the rest is its description. */
 function CompactDay({ day, frame, breaches }: { readonly day: BoardDay; readonly frame: BoardFrame; readonly breaches: Breaches }) {
   const describedBy = useId()
   const isToday = day.day === frame.model.today
@@ -104,23 +104,33 @@ function CompactDay({ day, frame, breaches }: { readonly day: BoardDay; readonly
     </>
   )
   const cell = `flex min-h-touch w-full flex-col items-center justify-center gap-2xs py-xs ${tone}`
+  const press = `${cell} cursor-pointer outline-focus -outline-offset-2 data-focus-visible:outline-2`
+  const described = description === '' ? {} : { 'aria-describedby': describedBy }
   return (
     <li className="min-w-none border-b border-s border-line" aria-current={isToday ? 'date' : undefined}>
       <h2 className="text-name">
-        {open === null ? (
+        {open !== null ? (
+          <AriaButton onPress={open} {...described} className={press}>
+            <span className="sr-only">
+              {t('presence.openDay')} {date}
+            </span>
+            {face}
+          </AriaButton>
+        ) : breach === null ? (
           <div className={cell}>
             <span className="sr-only">{date}</span>
             {face}
           </div>
         ) : (
+          // Without a report to open, a day that breaks a rule opens its rules, as its mark does from md (D-290).
           <AriaButton
-            onPress={open}
-            {...(description === '' ? {} : { 'aria-describedby': describedBy })}
-            className={`${cell} cursor-pointer outline-focus -outline-offset-2 data-focus-visible:outline-2`}
+            onPress={() => {
+              breaches.open(day.day)
+            }}
+            {...described}
+            className={press}
           >
-            <span className="sr-only">
-              {t('presence.openDay')} {date}
-            </span>
+            <span className="sr-only">{date}</span>
             {face}
           </AriaButton>
         )}

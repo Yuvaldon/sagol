@@ -15,7 +15,7 @@ import { MENU_HEADER, MENU_LIST, MENU_POPOVER, onlyKey } from './menuStyles'
 
 // The date window and its range picker (D-103, D-211). The label opens the picker: a day, a week, a month, a whole
 // rotation of the scope, past ones too, newest first: the only way to them, with no rotation control or label in the bar
-// (D-217, D-338); or another range, any two dates up to the window's cap (D-338). The arrows step by the chosen unit;
+// (D-217, D-339); or another range, any two dates up to the window's cap (D-339). The arrows step by the chosen unit;
 // the product is RTL only, so "back" points to the right.
 // "Today" appears only while the window does not hold today (D-076).
 
@@ -110,7 +110,7 @@ function RangeMenu({ onCustom }: { readonly onCustom: () => void }) {
   )
 }
 
-/** Another range (D-338): two dates, both included, at most `DATE_WINDOW.maxDays` days, on the custom window of D-211. */
+/** Another range (D-339): two dates, both included, at most `DATE_WINDOW.maxDays` days, on the custom window of D-211. */
 function CustomRangeDialog({ from, to, onClose }: { readonly from: CalendarDate; readonly to: CalendarDate; readonly onClose: () => void }) {
   const { showCustom } = useDateWindow()
   const [draft, setDraft] = useState<{ readonly from: CalendarDate | ''; readonly to: CalendarDate | '' }>({ from, to })
