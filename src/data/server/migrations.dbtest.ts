@@ -2,6 +2,7 @@ import { TABLE_SCHEMAS } from '@contracts'
 import postgres from 'postgres'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import ROOT_UNITS from '../../../supabase/migrations/20261112000400_root_units.sql?raw'
+import SINGLE_ROOT from '../../../supabase/migrations/20261113000000_single_root.sql?raw'
 
 // Data migrations replayed on sample rows (D-315): each must be additive and idempotent, since a hosted
 // database already holds rows when it runs. Sample rows live here only (test file).
@@ -28,10 +29,10 @@ async function organization(name: string): Promise<string> {
   return String(row?.id)
 }
 
-async function soldier(organizationId: string, archived = false): Promise<string> {
+async function soldier(organizationId: string, archived = false, createdAt = new Date()): Promise<string> {
   const [row] = await sql`
-    INSERT INTO soldiers (organization_id, first_name, last_name, archived_at)
-    VALUES (${organizationId}, 'A', 'B', CASE WHEN ${archived} THEN now() END) RETURNING id`
+    INSERT INTO soldiers (organization_id, first_name, last_name, archived_at, created_at)
+    VALUES (${organizationId}, 'A', 'B', CASE WHEN ${archived} THEN now() END, ${createdAt}) RETURNING id`
   return String(row?.id)
 }
 
@@ -42,8 +43,17 @@ async function rootsOf(organizationId: string) {
 }
 
 async function primaryOf(soldierId: string) {
-  return sql`SELECT unit_id, valid_from, valid_to FROM unit_memberships WHERE soldier_id = ${soldierId}`
+  return sql`SELECT unit_id, valid_from, valid_to FROM unit_memberships WHERE soldier_id = ${soldierId} ORDER BY valid_from`
 }
+
+async function unit(organizationId: string, name: string, parentId: string | null, archived = false): Promise<string> {
+  const [row] = await sql`
+    INSERT INTO units (organization_id, name, parent_id, archived_at)
+    VALUES (${organizationId}, ${name}, ${parentId}, CASE WHEN ${archived} THEN now() END) RETURNING id`
+  return String(row?.id)
+}
+
+const day = (value: unknown) => (value instanceof Date ? value.toISOString().slice(0, 10) : value)
 
 describe('root units backfill (D-315)', () => {
   it('gives an organization without a root one, and its unplaced soldiers a membership in it', async () => {
@@ -88,5 +98,70 @@ describe('root units backfill (D-315)', () => {
     expect(await sql`SELECT id FROM units ORDER BY id`).toEqual(units)
     expect(await sql`SELECT id FROM unit_memberships ORDER BY id`).toEqual(memberships)
     expect(memberships).toHaveLength(1)
+  })
+})
+
+describe('one root and the soldiers\' history in it (D-321)', () => {
+  // 22:30 UTC on 1 January is already 2 January in Jerusalem: the day a soldier was created is the organization's.
+  const created = new Date('2026-01-01T22:30:00Z')
+
+  it('puts every top-level unit under one new root, and fills the days before each first membership', async () => {
+    const org = await organization('Battalion')
+    const first = await unit(org, 'First', null)
+    const second = await unit(org, 'Second', null)
+    const old = await unit(org, 'Old', null, true)
+    const platoon = await unit(org, 'Platoon', first)
+    const placed = await soldier(org, false, created)
+    const unplaced = await soldier(org, false, created)
+    const gone = await soldier(org, true, created)
+    await sql`
+      INSERT INTO unit_memberships (organization_id, soldier_id, unit_id, valid_from)
+      VALUES (${org}, ${placed}, ${platoon}, '2026-03-01')`
+
+    await sql.unsafe(SINGLE_ROOT)
+
+    const roots = await rootsOf(org)
+    expect(roots).toHaveLength(1)
+    expect(roots[0]).toMatchObject({ name: 'Battalion', kind: 'standing', sort_order: 0 })
+    const root = String(roots[0]?.id)
+    const parents = await sql`SELECT id, parent_id FROM units WHERE id IN (${first}, ${second}, ${old}) ORDER BY name`
+    expect(parents.map((row) => [row.id, row.parent_id])).toEqual([
+      [first, root],
+      [old, null],
+      [second, root],
+    ])
+    const depth = await sql`SELECT depth FROM unit_closure WHERE ancestor_id = ${root} AND descendant_id = ${platoon}`
+    expect(depth[0]?.depth).toBe(2)
+    expect((await primaryOf(placed)).map((row) => [row.unit_id, day(row.valid_from), day(row.valid_to)])).toEqual([
+      [root, '2026-01-02', '2026-02-28'],
+      [platoon, '2026-03-01', null],
+    ])
+    expect((await primaryOf(unplaced)).map((row) => [row.unit_id, day(row.valid_from), row.valid_to])).toEqual([
+      [root, '2026-01-02', null],
+    ])
+    expect(await primaryOf(gone)).toHaveLength(0)
+  })
+
+  it('leaves an organization with one root and full history alone, and a second run changes nothing', async () => {
+    const org = await organization('Company')
+    const root = await unit(org, 'Company', null)
+    const placed = await soldier(org, false, created)
+    await sql`
+      INSERT INTO unit_memberships (organization_id, soldier_id, unit_id, valid_from)
+      VALUES (${org}, ${placed}, ${root}, '2026-01-02')`
+    const bare = await organization('Bare')
+    await soldier(bare, false, created)
+
+    await sql.unsafe(SINGLE_ROOT)
+    const units = await sql`SELECT id, parent_id, version FROM units ORDER BY id`
+    const memberships = await sql`SELECT id FROM unit_memberships ORDER BY id`
+    await sql.unsafe(SINGLE_ROOT)
+
+    expect(await rootsOf(org)).toEqual([expect.objectContaining({ id: root })])
+    expect(await primaryOf(placed)).toHaveLength(1)
+    expect(await rootsOf(bare)).toHaveLength(1)
+    expect(await sql`SELECT id, parent_id, version FROM units ORDER BY id`).toEqual(units)
+    expect(await sql`SELECT id FROM unit_memberships ORDER BY id`).toEqual(memberships)
+    expect(memberships).toHaveLength(2)
   })
 })
