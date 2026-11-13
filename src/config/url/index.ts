@@ -41,3 +41,6 @@ export const SEARCH_PARAMS = {
 } as const
 
 export type SearchParamName = (typeof SEARCH_PARAMS)[keyof typeof SEARCH_PARAMS]
+
+/** The history entry an open overlay pushed carries this key in its state, so the back button closes the overlay (D-332). */
+export const OVERLAY_HISTORY_KEY = 'overlay'

@@ -76,7 +76,7 @@ export {
   UNIT_CHART_ZOOM,
   VIRTUAL_LIST,
 } from './panels'
-export { SEARCH_PARAMS, type SearchParamName } from './url'
+export { OVERLAY_HISTORY_KEY, SEARCH_PARAMS, type SearchParamName } from './url'
 export {
   BREAKPOINTS_PX,
   DESKTOP_BREAKPOINT,
