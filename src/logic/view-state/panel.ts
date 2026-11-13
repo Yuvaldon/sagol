@@ -3,7 +3,8 @@ import type { UnitId } from '@contracts'
 import { useRouter } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import type { NewLeaveDraft } from './draft'
-import { isOverlayEntry, leaveOverlayEntry } from './overlay'
+import { layersAbove } from './layers'
+import { leaveOverlayEntry } from './overlay'
 import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // The open panel lives in the URL, so a deep link reopens it and the back button closes it (D-023, D-092, D-332).
@@ -43,10 +44,17 @@ export function usePanel(): PanelState {
   )
   const router = useRouter()
   // A panel that added its entry takes it back as it closes, so the back button never reopens it (D-332); the
-  // workspace's history keeps what changed while it was open. A panel opened by a link has no entry of its own.
+  // workspace's history keeps what changed while it was open. A panel opened by a link has no entry of its own. A menu
+  // or a dialog open over the panel as it closes takes its entries with it (D-335).
   const close = useCallback(() => {
-    if (isOverlayEntry(router.history.location)) leaveOverlayEntry(router.history)
-    else change({ panel: undefined, entity: undefined, parent: undefined, draft: undefined })
+    const { history } = router
+    const { count, overOverlay } = layersAbove(history)
+    if (overOverlay) {
+      leaveOverlayEntry(history, count + 1)
+      return
+    }
+    change({ panel: undefined, entity: undefined, parent: undefined, draft: undefined })
+    if (count > 0) leaveOverlayEntry(history, count)
   }, [change, router])
   const handOver = useCallback(() => {
     change({ panel: undefined, entity: undefined, parent: undefined, draft: undefined })

@@ -28,8 +28,11 @@ export function entryIndex(location: HistoryLocation): number | undefined {
 // that time (a double tap, a button and its dialog's change) must not leave the entry below it too.
 const leaving = new WeakMap<RouterHistory, number>()
 
-/** Leaves the current overlay entry, once however often it is asked before the history answers. */
-export function leaveOverlayEntry(history: RouterHistory): void {
+/**
+ * Leaves the current overlay entry, and `steps - 1` entries under it that belong to overlays above the screen
+ * (D-335), once however often it is asked before the history answers.
+ */
+export function leaveOverlayEntry(history: RouterHistory, steps = 1): void {
   const index = entryIndex(history.location)
   if (index === undefined || leaving.get(history) === index) return
   leaving.set(history, index)
@@ -38,11 +41,6 @@ export function leaveOverlayEntry(history: RouterHistory): void {
     stop()
     if (leaving.get(history) === index) leaving.delete(history)
   })
-  history.back()
-}
-
-/** Whether the app has asked the history to leave the current entry and is waiting for it. */
-export function isLeavingEntry(history: RouterHistory): boolean {
-  const index = entryIndex(history.location)
-  return index !== undefined && leaving.get(history) === index
+  if (steps === 1) history.back()
+  else history.go(-steps)
 }

@@ -24,6 +24,7 @@ export { useCan, useModuleAccess, type CanAnswer } from './permissions/hooks'
 export { WorkspaceSearch, useWorkspaceSearch } from './view-state/search'
 export { usePanel, type PanelState, type PanelTarget } from './view-state/panel'
 export { useOverlayEntry, useOverlayHistory, type OverlayEntry } from './view-state/history'
+export { useOverlayLayer } from './view-state/layers'
 export {
   dateWindowOf,
   pickableRotations,
