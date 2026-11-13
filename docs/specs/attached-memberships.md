@@ -234,3 +234,66 @@ e2e:
 - **P-5** An attachment that has not started can be cancelled (row deleted); a started one only ends early.
 - **P-6** Attaching needs `memberships:update` over the host unit and `soldiers:view` over the soldier;
   ending needs `memberships:update` over either side.
+
+## Integration map
+
+**Where it lives.** The soldier's membership commands in `src/data/local/soldiers.ts` (next to
+`changeMembership`, :466); the hierarchy readers in `src/domain/hierarchy/memberships.ts` (next to
+`primaryUnitOn`); the UI in `src/ui/modules/soldiers/SoldierPage.tsx` (`PlacementSection`, beside `MoveDialog`).
+No new module.
+
+**Reuse.** The schema already has `membership_type` primary/attached with `valid_from`/`valid_to` (D-010); only the two
+constraints for attached rows are new (P-1, P-2). Already attached-aware and kept as is: `wholeUnitSpans`
+(`src/data/local/leaveRotation.ts:75`), `inDeployment` (`src/domain/availability/rules.ts:308`) and the soldier
+history. The permission resource `memberships` (view/update) and the issue codes `membership_overlap` and
+`not_a_member` are reused; only `attachment_overlap`, `outside_unit_dates`, `attachment_redundant` are new.
+
+**Genuinely new.** `attachedUnitOn`/`dutyUnitOn` beside `primaryUnitOn`, and the switch of each primary-only
+reader, one by one (the table in Meaning is the contract):
+
+| Caller today (`primaryUnitOn`) | Becomes |
+|---|---|
+| `src/domain/policy/context.ts:138` (`unitOf`, feeds `CoverageFacts`) | primary for anchors; `unitsOf` adds attached for P-4 pairs |
+| `src/domain/filters/evaluate.ts:91` (unit condition) | primary or attached |
+| `src/domain/availability/rules.ts:245` (`placedOn`) | duty unit |
+| `src/logic/rules/evaluation.ts:73` (`concernsUnit`) | duty unit |
+| `src/logic/roster/roster.ts:52` (`unitStateOn`: soldiers list, board grouping, דוח 1 rows) | duty unit, primary as second line |
+| `src/logic/deployments/deployments.ts:137` (`defaultDeploymentMembers`) | duty unit at the rotation's start |
+| `src/data/local/reports.ts:197` (day report) | duty unit |
+
+Fixes the attached work exposes, in the layer that owns them: `placedRow` (soldiers.ts:169) hardcodes
+`primary`; `placementIssues` (:135) checks neither the unit's kind nor its validity, so `outside_unit_dates`
+lands there; archiving a soldier does not end their memberships (it must end an open attachment too).
+
+**Entry points.** Commander and unit manager of either side: the soldier page "סיפוח" block (attach needs the
+host's `memberships:update`, P-6). Soldier: a read-only line in שלי. No board control: attaching is an
+identity-level act, not a board edit.
+
+**Indicators.** The row badge "מסופח מ/ל" (otherwise a soldier appears in two boards without explanation) and
+the group header count (presence numbers change). Nothing else.
+
+**Effects.**
+- Rules/heat row and דוח 1 V30: counts by duty unit; test a minimum rule with one attached soldier on both sides.
+- Filters V33: the unit condition matches either; `UNIT_STATE_KEYS` (`src/ui/patterns/units.ts`) gains the
+  attached state.
+- Rotations V26/V31: membership at the start by duty unit; `servedDays` (`src/logic/leaves/planner.ts:126`)
+  ignores attachments and the subtree today; unified per `situation-picture.md`.
+- Permissions V10: P-4 coverage in `src/domain/policy/scope.ts`; test that an attachment grants the host no
+  identity or grant rights.
+- Import/export V12: export already dumps the rows as stored (attached included); import has no membership
+  operation and stays without one.
+- Parity: one core (D-008); the new constraint lands in both the local store and the migration.
+- PWA: none.
+
+**Rules.** Hierarchy logic stays in domain; the UI asks logic for the duty unit and never calls `primaryUnitOn`;
+the server validates dates, overlap and coverage.
+
+## Dependencies
+
+None. `temporary-task-units.md` depends on this.
+
+## Assumptions
+
+- An attachment always ends (P-1); open-ended moves are a primary change.
+- The host counts the soldier; the home unit sees them but does not count them.
+- Both chains may handle the soldier's leaves during the attachment; identity stays with home.

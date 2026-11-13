@@ -269,3 +269,91 @@ Generate the VAPID key pair once and set the function secrets `PUSH_VAPID_PRIVAT
 `PUSH_VAPID_SUBJECT`, and the Vercel variable `VITE_PUSH_PUBLIC_KEY` (production and preview). A worker can
 generate the pair; only the owner's accounts can store the secrets. Until then the feature ships with the
 in-app updates only, and the profile shows no push controls (D-076).
+
+## Integration map
+
+**Where it lives.**
+- contracts: `PushSubscriptionRecord`, inputs, `NotificationKind`, `PushPayload` next to the accounts
+  contracts (`src/contracts/entities/accounts.ts`, `src/contracts/inputs/accounts.ts`); the two keys join
+  `SoldierPreferences` (`src/contracts/settings/index.ts:18`, defaulted, so stored rows stay valid).
+- domain: a new `src/domain/notifications/` (`updatesFor`, `pushRecipients`, `pushPayloadOf`), pure.
+- data: `src/data/local/notifications.ts` wired in `src/data/local/core.ts`; the remote allow-list
+  (`src/data/remote/adapter.ts:92`); dispatch in `src/data/server/` only.
+- logic: `useUpdates` and `markUpdatesSeen` in `src/logic/leaves/` beside `useMyLeaves`
+  (`workflowHooks.ts`); `usePushState` in `src/logic/shell/hooks.ts` beside `useInstallOffer`, through
+  `ShellPort` (`src/logic/ports.ts`).
+- ui: `src/ui/modules/leaves/MyLeavesModule.tsx` (section), `src/ui/shell/UserMenu.tsx` (group),
+  `src/ui/shell/moduleEntries.ts` (count). app: the worker source and `createBrowserShell`
+  (`src/app/shell/index.ts`).
+
+**Reuse.**
+- `LeaveEvent` and `LeaveComment` (`src/contracts/entities/leaves.ts`) are the news; `leaveThread` and
+  `ThreadEntry` (`src/logic/leaves/workflow.ts`) render a line; `myLeavesQuery` scopes it to the soldier.
+- Preferences: `accounts.updateMyPreferences` and `useUpdateMyPreferences`
+  (`src/logic/session/preferences.ts`), with its serialized saves and D-187 failure notice.
+- The count: `ModuleEntry.count` and `EntryCount` (`src/ui/shell/EntryCount.tsx`), the same path as the בקשות
+  count in `useDailyEntries` (`moduleEntries.ts:165`). Badge copy keys follow `inbox.pendingCount`.
+- Recipients: `can` over `context.soldierIds`, the pattern of `accessManagers` (`src/domain/policy`); add one
+  general `holdersOf(context, permission, target)` there and make `accessManagers` use it. No second
+  approver model.
+- Env: `ENV_VARIABLES` and `EnvSchema` (`src/config/env/`) gain `VITE_PUSH_PUBLIC_KEY` (optional);
+  `PWA` (`src/config/pwa/index.ts`) keeps the worker path and network-only paths.
+
+**Genuinely new, and why.**
+- A query of events by soldier: `LeaveThreadQuery` is per leave only (`src/contracts/repositories/index.ts:124`).
+  Add `LeaveFeedQuery { soldier_id, since }` to the `leave_events` and `leave_comments` repositories, resolved
+  in the adapter (one query, not one per leave).
+- An after-commit seam: the gateway has none (`src/data/server/gateway.ts`). Add
+  `GatewayDependencies.afterCommit(changes)`. It runs only when `result.ok`, after `transact` resolves and
+  outside the retry loop. `changes` carry tables and ids only, so dispatch re-reads the new `leave_events`
+  rows in one read.
+- The worker moves from `generateSW` (today, `vite.config.ts` `installedApp()`) to `injectManifest`. Its
+  precache globs and `navigateFallback` are copied as they are.
+
+**Entry points.**
+- Soldier: the שלי destination's count and the "עדכונים" section; the avatar menu's "התראות" group (D-253,
+  personal).
+- Commander: the push opens the request; in the app the existing בקשות count stays the only signal.
+- Unit manager: nothing beyond the commander's. No ניהול entry, because notifications are personal (D-256).
+
+**Indicators.**
+- One count on שלי: unread `my_request` updates. It is warranted because nothing else tells a soldier an
+  answer came.
+- No in-app count for `awaiting_me`, which the בקשות count already shows (D-255). Two counts for one fact is
+  noise.
+- No OS app badge (`setAppBadge`) in this slice.
+- Unread lines are bold; there is no "new" label.
+
+**Effects on other features.**
+- Rules row, filters and views, rotations, V33: none.
+- דוח 1: no push for a report in this slice.
+- Permissions: recipients follow `leaves:approve` today (V10); revoke and archive delete subscriptions.
+- Import/export: `push_subscriptions` is device data and is never exported; preference keys follow the
+  existing preferences treatment.
+- PWA: D-183's update flow (`useAppUpdate`, `UpdateToast`) must keep working after the switch. An e2e test
+  covers it, plus a worker unit test for `push` and `notificationclick`.
+- Live data: there is no realtime. `QueryClient` uses `staleTime: Infinity` (`src/logic/queries/client.ts`).
+  The worker posts a message to open windows on `push`, and `LogicProvider` invalidates `leaveEvents` through
+  the existing `invalidateChanged`. The rest waits for OI-151.
+- Parity: the local adapter stores subscriptions (shared contract tests) but never dispatches. With no public
+  key the profile shows no group (D-076), so local mode has no dead control. Dispatch is tested in the gateway
+  tests with a fake sender.
+
+**Rules.**
+- Through `@contracts`, `@domain`, `@config` and `@i18n` only. The worker's texts come from `@i18n` in the
+  app layer.
+- The cap per command and the window go in `config`.
+- The server validates the endpoint (https, length) and the owner of the row. A client never sends a
+  recipient.
+
+## Dependencies
+
+None. It is independent of the other specs; the attached-memberships recipients follow automatically through
+policy.
+
+## Assumptions
+
+- A push is only about requests: one's own answer and requests awaiting one. דוח 1, rotations and comments
+  that are not on one's own request send nothing.
+- A commander's in-app signal stays the בקשות count. There is no second count.
+- Phone notifications are opt-in per device, never on by default.

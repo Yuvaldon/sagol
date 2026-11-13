@@ -19,7 +19,8 @@ which a bare app open uses instead of the default.
   "is the board showing a saved view" (`matchingView`, derived).
 - **ui + i18n:** cards row in the view sheet; save dialog; manage list (rename, reorder, delete, start view);
   the matching view's name in the board's tab tooltip and in the filter chips row.
-- **app:** the start view applies on a bare `/` open of the board (D-265 home still decides board or שלי first).
+- **logic + ui (home):** the start view applies on a bare `/` open of the board, inside `useHome` /
+  `HomeLanding` (D-265 home still decides board or שלי first). `app` is unchanged.
 - **Open items:** none.
 - **Decisions:** D-008, D-017, D-019, D-025, D-036, D-038, D-044, D-045, D-046, D-068, D-074, D-075, D-076;
   D-023, D-041, D-103, D-132, D-133, D-197, D-211, D-213, D-265, D-311, D-312, D-313, D-326, D-332.
@@ -103,8 +104,10 @@ the first rule, e.g. "מחלקה 2 · רק מי שחסר"), checkbox "לפתוח
 the action shows the hint "אפשר לשמור עד 12 תצוגות" and opens the manage list instead.
 
 **Open** — the view sheet (D-311) gets a first row "התצוגות שלי": one card per saved view (name, the view
-icon, a line like "שבוע · 3 תנאים"); the start view has a small "פתיחה" mark. Press: `applyView` → one
-history entry (push, D-332, so back returns to the previous board state) → sheet closes. If parts were dropped:
+icon, a line like "שבוע · 3 תנאים"); the start view has a small "פתיחה" mark. Press: `applyView` → the board state is
+replaced in the current history entry (D-332: filter, sort and view changes replace; only overlays push) → the
+sheet closes, which pops its own overlay entry (`useOverlayEntry`), so back then leaves the board as it would
+after any filter change. If parts were dropped:
 toast "חלק מהתנאים בתצוגה כבר לא קיימים" with "עדכון התצוגה" (re-saves the cleaned query).
 
 **Current** — when the board's state equals a saved view (`matchingView`), its name shows at the start of the
@@ -168,8 +171,8 @@ Unit:
 
 e2e:
 - Commander builds unit + rule + two sorts + "only who is missing", saves "בוקר" with the start checkbox,
-  changes everything, opens "בוקר" from the view sheet: the board, chips and URL match; back restores the
-  previous state.
+  changes everything, opens "בוקר" from the view sheet: the board, chips and URL match; the history length
+  did not grow (D-332).
 - Reload at `/`: the board opens on "בוקר". A link with `?view=calendar` opens the calendar instead.
 - Rename, reorder and delete in the manage list; deleting the start view, then `/` opens the default.
 - A soldier landing on שלי sees no saved-view control anywhere.
@@ -182,8 +185,58 @@ e2e:
   feature with its own table and permission.
 - **P-2** A view stores raw search-param strings for view, filter, sorts, table sort, board conditions, colors
   and the range kind; never a date, a rotation id, a panel or a draft. It is relative to the day it opens.
-- **P-3** Applying a view is one pushed history entry; the start view replaces a bare `/` of the board only, and
-  any link with params wins.
+- **P-3** Applying a view replaces the board's history entry, like any filter or sort change (D-332); the start
+  view replaces a bare `/` of the board only, and any link with params wins.
 - **P-4** A part of a view that no longer parses is dropped and reported, never a failure; the soldier may
   re-save the cleaned view.
 - **P-5** At most 12 views, names unique per soldier, at most 40 characters (config).
+
+## Integration map
+
+**Where it lives.** Personal preferences, not a module. Contracts in `src/contracts/settings/index.ts`
+(`SoldierPreferences`); the param list in `src/config/url/index.ts` next to `SEARCH_PARAMS`; capture, apply and
+match in `src/logic/view-state/` (a new `savedViews.ts` beside `search.ts`, `filter.ts`, `sort-rules.ts`); the
+cards row in `src/ui/shell/ViewSheet.tsx`; the save action in the footer of `src/ui/shell/RuleBuilder.tsx`.
+
+**Reuse.**
+- URL state: `WorkspaceSearch` and `useChangeSearch` (`src/logic/view-state/search.ts`) apply a view exactly like
+  a link; `readRules`/`writeRules` (`filter.ts`) and `isDefaultSort` (`sort-rules.ts`) are the only parsers, so
+  P-4's "dropped" is what they already reject.
+- Persistence: `useMyPreferences`/`useUpdateMyPreferences` (`src/logic/session/preferences.ts`) and the
+  `updateMyPreferences` command (`src/data/local/accounts.ts:251`); version check and `stale_version` exist.
+- Devices: `AVAILABLE_VIEWS`/`DEFAULT_VIEW_BY_DEVICE` (`src/config/views/index.ts`) decide the fallback view.
+- Chips: `FilterBar` (`src/ui/shell/FilterBar.tsx`) shows the "תצוגה: {name}" chip.
+
+**Genuinely new.** `captureView`/`applyView`/`matchingView` (pure, logic) and the cards and manage UI. A shared
+`footer?` prop on `Drawer` (`src/ui/patterns/Drawer.tsx`, today only `header?`), so the save action is not a
+one-off inside RuleBuilder. No table, no data command.
+
+**Entry points.** Commander and unit manager: the view sheet (BoardTab in `src/ui/shell/TabBar.tsx`) and "סינון
+ומיון". Soldier with only שלי: none (D-076, D-265). Start view: `useHome` (`src/logic/home/hooks.ts`) and
+`HomeLanding` (`src/ui/shell/HomeLanding.tsx`), not `app`.
+
+**Indicators.** Only the "פתיחה" mark and the current-view chip; both answer "what am I looking at". No counts.
+
+**Effects.**
+- History: P-3 follows D-332 (replace); the sheet's back is `useOverlayEntry` (`history.ts`).
+- Rules/heat row, דוח 1, rotations V26/V31: untouched; a view with range "rotation" resolves through the same
+  default range code as a bare link.
+- Focus mode (`src/ui/shell/focusMode.ts`) stays a device session key, outside views.
+- Permissions V10: no new resource; reads stay policy-scoped.
+- Import/export V12: preferences are not exported today; unchanged.
+- PWA/offline: the write needs the server (OI-116 state).
+- Local/remote parity: the same `accounts.ts` core on both (D-008); test both adapters' `stale_version` retry.
+- Test: the round trip per view, D-332 history length, the device fallback, the dropped-rule toast.
+
+**Rules.** Logic owns parsing (no UI-to-UI talk; ViewSheet and RuleBuilder both call logic hooks); limits in
+config; strings in i18n; the server's contract parse is the validation.
+
+## Dependencies
+
+None.
+
+## Assumptions
+
+- Views are personal; shared unit views are not wanted yet.
+- A view is relative to the day it opens (never a fixed date range).
+- Twelve is enough; the start view applies only to a bare `/` open.
