@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useBoardFilters, useCurrentOrganization } from '@logic'
-import { useBoardShown } from './boardShown'
+import { useBoardShown, useNoBoard } from './boardShown'
 import { useAppliedAppearance } from './appearance'
 import { ModuleDrawer } from './ModuleDrawer'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
@@ -22,6 +22,8 @@ import { InstallInvitation } from './InstallInvitation'
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { Viewport } from './Viewport'
 import { WindowNavigator } from './WindowNavigator'
+import { FocusModeContext, useFocusModeScope } from './focusMode'
+import { FocusModeRestore } from './FocusModeRestore'
 
 /**
  * The workspace (D-023, D-108, D-252): the viewport fills the screen, and two glass pills float over it, the same on
@@ -97,6 +99,8 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
+  const noBoard = useNoBoard()
+  const focusMode = useFocusModeScope(boardShown && !noBoard)
   // What of "filter and sort" is open (D-312); the builder exists only with the board.
   const [building, setBuilding] = useState<BuilderTarget | null>(null)
   const builder = useMemo<BuilderOpen>(() => ({ open: setBuilding }), [])
@@ -112,17 +116,28 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
       <BuilderOpenContext value={builder}>
       <PreferenceFailureContext value={preferenceFailure}>
       <NavigationPanelContext value={navigation}>
+      <FocusModeContext value={focusMode}>
       <div
-        data-filter-row={boardShown && active ? 'shown' : undefined}
+        data-filter-row={boardShown && active && !focusMode.on ? 'shown' : undefined}
+        data-focus-mode={focusMode.on ? 'on' : undefined}
         className="relative h-dvh bg-canvas"
       >
         <div className="absolute inset-safe p-sm">
           <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
             <Viewport />
           </main>
-          <ContextStrip name={name} identity={identity} />
-          <FilterRow />
-          <DestinationStrip />
+          {focusMode.on ? (
+            // Focus mode leaves one button; the page's heading stays for readers, in its landmark (D-301).
+            <FocusModeRestore>
+              <OrganizationName name={name} />
+            </FocusModeRestore>
+          ) : (
+            <>
+              <ContextStrip name={name} identity={identity} />
+              <FilterRow />
+              <DestinationStrip />
+            </>
+          )}
         </div>
         <HomeLanding />
         <ModuleDrawer />
@@ -138,6 +153,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           />
         ) : null}
       </div>
+      </FocusModeContext>
       </NavigationPanelContext>
       </PreferenceFailureContext>
       </BuilderOpenContext>

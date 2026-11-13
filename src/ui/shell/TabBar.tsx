@@ -5,6 +5,7 @@ import { Button as AriaButton } from 'react-aria-components'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 import { useViewDevice } from '../patterns/media'
 import { useBoardShown } from './boardShown'
+import { useFocusMode } from './focusMode'
 import { EntryCount } from './EntryCount'
 import { useDailyEntries, type ModuleEntry } from './moduleEntries'
 import { NavigationPanel } from './NavigationPanel'
@@ -39,11 +40,14 @@ function BoardTab() {
   const { view } = useActiveView(AVAILABLE_VIEWS, useViewDevice())
   const boardShown = useBoardShown()
   const [picking, setPicking] = useState(false)
+  const focusMode = useFocusMode()
   const current = panel.panel === null
   const { Icon } = engineOf(view)
   return (
     <>
+      {/* Focus returns here when focus mode ends (D-301): the view sheet it was entered from opens from this tab. */}
       <AriaButton
+        ref={focusMode.bind('control')}
         aria-current={current ? 'page' : false}
         onPress={() => {
           if (current && boardShown) {

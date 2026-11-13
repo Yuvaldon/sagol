@@ -333,6 +333,13 @@
   --spacing-under-bars-md: 0px;
 }
 
+/* In focus mode the strips are gone, so content starts at the top; the room above the bottom stays for the restore
+   button (D-301). */
+[data-focus-mode='on'] {
+  --spacing-under-bars: 0px;
+  --spacing-under-bars-md: 0px;
+}
+
 @utility enter-scrim {
   @media (prefers-reduced-motion: no-preference) {
     animation: scrim-in 160ms ease-out;

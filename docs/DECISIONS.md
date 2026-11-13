@@ -229,7 +229,7 @@ am = amends, ref = refines, ext = extends.
 | D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | |
 | D-195 | The day report as text for a messaging app | config, i18n, logic | |
 | D-196 | The day report as an image: drawn on a canvas in the light tokens | ui | |
-| D-197 | A device store for conveniences | config, data, logic, tooling | |
+| D-197 | A device store for conveniences | config, data, logic, tooling | ref D-301 |
 | D-216 | Every request belongs to a rotation | contracts, data, logic, backend | |
 | D-217 | The workspace is scoped to the active or upcoming rotation, silently | logic, ui | |
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
@@ -240,7 +240,7 @@ am = amends, ref = refines, ext = extends.
 | D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
-| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266 |
+| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266, D-301 |
 | D-253 | The profile is personal only | ui | sup D-310 (rules row); ref D-311 |
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
 | D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266; ref D-299 |
@@ -283,8 +283,9 @@ am = amends, ref = refines, ext = extends.
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
 | D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
 | D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
+| D-301 | Focus mode | config, i18n, ui, e2e | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
-| D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | |
+| D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301 |
 | D-312 | Filtering is a rule builder | logic, i18n, ui | |
 | D-313 | Several sorts, in order | config, logic, i18n, ui | |
 | D-314 | A filter chip's remove is a plain × | ui | |
@@ -4058,6 +4059,26 @@ D-191 and D-276.
 
 **Why:** the mark comes from the same place that makes a deploy staging. It shows on every screen, and in the icon,
 before anything is touched. Production gains nothing and loses nothing.
+
+## D-301 — Focus mode
+2026-11-12 · accepted · refines D-197, D-252, D-311 · V23 · decided under the owner's autonomy instruction of 2026-11-11
+- **"מצב מיקוד"** is the last control of the view sheet (D-311), under the board's other view controls, so it exists
+  only while a board is drawn (D-218); the strips gain no extra control. It and the key Alt+Shift+F hide both
+  strips and the chips row. A key with modifiers, not one letter, so typing never triggers it (WCAG 2.1.4); the same
+  key and Escape restore them. Inside a text field, or over an open dialog or menu, the key is theirs; an Escape that
+  another control claims, as a drag's cancel does, stays with it.
+- **One restore button** stays, a round glass button at the bottom corner on the inline end, clear of the name
+  column; it is touch-sized and named "יציאה ממצב מיקוד".
+- **Focus follows the change:** entering moves focus to the restore button, and leaving returns it to the board's
+  tab, which opens the view sheet, so the control pressed never vanishes under the keyboard. Escape inside an open dialog, menu or popover closes that
+  first.
+- **The board takes the top's room;** the room above the bottom stays, so the restore button never covers the last
+  row. A day still opens its report, and every module and dialog opens as before.
+- **It lasts the browser session on the device** (D-197, `sessionStorage`): a reload keeps it, a new session starts
+  with both strips.
+
+**Why:** a commander reading the board on a phone wants every row the screen can hold; one way in and one way out,
+both by touch and by keyboard, keep the hidden strips one step away.
 
 ## D-310 — The heat row always sits above the soldiers; the preference is gone
 2026-11-12 · accepted · supersedes D-173's `rules_row_placement` and D-253's "where the rules row sits" · V33 · decided under D-170
