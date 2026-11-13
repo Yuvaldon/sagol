@@ -4102,8 +4102,9 @@ and the same rule now holds for every way leaves are created and every report wi
   runs that day. Only rotations whose summary the actor reads count: the named report owner, or with none named, who
   may confirm the rotation's unit's report (D-293). Its window is bounded (D-302).
 - **Unseen, counted on the server.** Each date also says how many of those sections the actor's own report does not
-  head: no soldier of the section is one the actor views with their unit (`soldiers:view` and `memberships:view`, as
-  the report places soldiers). The client cannot count this: its tree holds live units only, a hidden middle level
+  head: the actor does not view the unit, or no soldier of it is one the report lists (`soldiers:view`,
+  `memberships:view` and `leaves:view` on the soldier, D-161), as the report builds its sections. The view filter
+  does not change it: it counts what the permissions hide, not what the actor chose to filter out. The client cannot count this: its tree holds live units only, a hidden middle level
   breaks its ancestry, and it does not know which rotations the actor reads.
 - **A count only.** The answer names no unit and no soldier, so nothing outside the actor's view is revealed beyond
   how many sections there are.
