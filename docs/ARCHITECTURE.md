@@ -55,6 +55,9 @@ The data layer is written as if it were the server:
 - **Writes** are validated (Zod schema → visibility → policy → state → integrity → domain invariants, D-090) inside one
   transaction, bump `version`, reject stale versions, and write audit events.
 - **What can take permissions away** is checked on the state after the write, inside its transaction (D-059, D-096).
+- **Restore (D-371)** brings an archived reference row back through the checks of a write: `delete` on its target,
+  `not_archived`, the version, then its references and uniques as a live row. Roles, bindings and deployments are not
+  restorable yet (OI-320).
 - **Workflow changes are commands**, not field updates: `createLeave`, `transitionLeave`,
   `rescheduleLeave`, `grantAccess`, `revokeAccess`, `requestAccountLink`,
   `reviewAccountLink`, `bootstrapOwner`, `moveUnit`, `changeMembership`, `importBatch`.

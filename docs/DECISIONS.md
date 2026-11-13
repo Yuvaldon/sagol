@@ -4573,7 +4573,7 @@ the company commander's need is a picture for planning, not approving.
 | OI-296 the failing table in the log | Should | |
 | OI-151 live changes from other devices | Should | The owner's pick |
 | Notifications (Later) | Should | The owner's pick |
-| OI-104 restore an archived row | Could | Archiving is protected in the design (OI-297). Built under D-370: D-371 |
+| OI-104 restore an archived row | Could | Archiving is protected in the design (OI-297). Built under D-370: D-371; roles, bindings and deployments: OI-320 |
 | OI-111 spans other than a week | Could | The range picker is reviewed in the design rounds |
 | OI-112 more filter conditions | Could | |
 | OI-254, OI-255 "changed since" misses | Could | OI-254: only the mark is missed; the copy is right. Built under D-370 |
@@ -4754,15 +4754,20 @@ settings and leaks nothing.
 - **Same checks as a write.** The permission is the entity's `delete` on the row's target, as for archive. A live row
   is refused with `not_archived`; a version mismatch is `stale_version`; the version and `updated_*` are bumped (D-012).
   Every reference the row holds must be live and visible again: a unit's parent and level, and only one live root
-  (D-251); a soldier's rank, with the pairs it gives held by the actor (D-156), and the unit of the current placement;
+  (D-251); a soldier's rank, the units of current and future placements, and the pairs of the soldier's active grants
+  of live roles, which the actor must hold (D-156), and after the write the actor still passes D-157 on the soldier;
   a tag's category, and its name free among live tags (`uq_tags_name`); a leave type's group; a rule's scope, level,
   category and rotation. A reference that is archived refuses with `reference_archived` on its field; the actor
   restores it first.
-- **The personal id.** An archived soldier keeps their number (D-098, D-152), so restoring gives it back with no new
-  check needed beyond the unique guard, which still runs.
+- **The personal id.** An archived soldier keeps their number (D-098, D-152), so restoring gives it back. The unique
+  check still runs, defensively: a clash refuses with `already_exists` on `personal_id`.
+- **Position.** `sort_order` is kept: a restored row comes back where it was among its siblings. A gap or a tie with a
+  row added meanwhile is ordered by id (`bySortOrder`) and settled by the next reorder.
 - **The UI is quiet.** At the end of each list, a collapsed "בארכיון (N)" disclosure, drawn only when N > 0 and the
   actor may restore (D-076). Archived rows are dimmed, each with a small "החזרה" action and a confirmation that names
-  the row. The archive entry points themselves are unchanged (OI-297).
+  the row. The archive entry points themselves are unchanged (OI-297). A refused restore says why in the dialog:
+  an archived reference ("restore it first"), a missing one, a taken name or number, or a second root; anything else
+  shows the common failure text.
 - **The archive confirmations** no longer say there is no way back. A soldier's still says the personal id stays
   taken until the soldier is restored. D-098 stands otherwise.
 - No schema change: `archived_at` back to NULL is the whole state change.
