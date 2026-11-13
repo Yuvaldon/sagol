@@ -5,11 +5,11 @@ import {
   Label,
   ListBox,
   ListBoxItem,
-  Popover,
   Select,
   SelectValue,
   Text,
 } from 'react-aria-components'
+import { Popover } from './overlays'
 import { fieldLabel, type FieldLabel } from './label'
 
 // Pick one of a short list of labelled values. Labels are data (a unit's name), so they arrive as

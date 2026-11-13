@@ -305,6 +305,8 @@ The current state, in short (D-128). The entries hold the reasons.
   links and the back button work. Parameter names come from `config`. The window's kind (`range`: day, week, month,
   a rotation) and the board's sort (`sort`, `order`, shared with the table) live there too; `useDateWindow` and
   `useBoardSort` in `logic/view-state` read and write them (D-211, D-214).
+- The back button closes the top overlay only (D-332, D-337): a panel or the navigation panel holds one history entry,
+  and every `Popover` and `ModalOverlay` in `ui/primitives` holds one through `useOverlayLayer` while open, innermost first.
 - Other routes exist only for sign-in and onboarding.
 
 ## View engines (inside `ui/engines`)
