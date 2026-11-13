@@ -1,7 +1,8 @@
 import { t, type I18nKey } from '@i18n'
 import { MoreHorizontal } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components'
+import { Menu, MenuItem, MenuTrigger } from 'react-aria-components'
+import { Popover } from '../primitives/overlays'
 import { IconButton } from '../primitives/Button'
 
 // The actions of one row. Only what the actor may do arrives here, and a row with nothing to do shows

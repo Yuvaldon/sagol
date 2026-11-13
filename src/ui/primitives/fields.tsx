@@ -7,11 +7,11 @@ import {
   Label,
   ListBox,
   ListBoxItem,
-  Popover,
   Text,
   TextField as AriaTextField,
   useFilter,
 } from 'react-aria-components'
+import { Popover } from './overlays'
 import { fieldLabel, type FieldLabel } from './label'
 
 // Form fields. A field shows its label, its value and one error message, and knows nothing about

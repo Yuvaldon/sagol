@@ -1,6 +1,7 @@
 import { ROUTES } from '@config'
 import { useRouter } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { takeLayerEntry } from './layers'
 import { entryIndex, isOverlayEntry, leaveOverlayEntry, overlayState } from './overlay'
 import { WorkspaceSearch } from './search'
 
@@ -54,12 +55,18 @@ export function useOverlayEntry(onBack: () => void): OverlayEntry {
   useEffect(() => {
     back.current = onBack
   }, [onBack])
+  // The entry the overlay sits on: its own, or the open panel's it opened over. A back press that stays on it or above
+  // it closes a menu or a dialog open over the overlay (D-337), not the overlay.
+  const floor = useRef<number | undefined>(undefined)
   useEffect(
     () =>
-      router.history.subscribe(({ action }) => {
+      router.history.subscribe(({ location, action }) => {
         if (!open.current || (action.type !== 'BACK' && action.type !== 'GO')) return
+        const index = entryIndex(location)
+        if (index !== undefined && floor.current !== undefined && index >= floor.current) return
         open.current = false
         own.current = undefined
+        floor.current = undefined
         back.current()
       }),
     [router],
@@ -72,15 +79,19 @@ export function useOverlayEntry(onBack: () => void): OverlayEntry {
     if (open.current) return
     open.current = true
     const { history } = router
+    const shares = isOverlayEntry(history.location) && hasPanel()
     if (!isOverlayEntry(history.location)) history.push(history.location.href, overlayState())
-    else if (hasPanel()) return
-    own.current = entryIndex(history.location)
+    floor.current = entryIndex(history.location)
+    if (shares) return
+    own.current = floor.current
+    if (own.current !== undefined) takeLayerEntry(history, own.current)
   }, [router, hasPanel])
   const leave = useCallback(() => {
     const { history } = router
     const ownIndex = own.current
     open.current = false
     own.current = undefined
+    floor.current = undefined
     if (ownIndex !== undefined && entryIndex(history.location) === ownIndex) leaveOverlayEntry(history)
   }, [router])
   const handOff = useCallback(
@@ -88,6 +99,7 @@ export function useOverlayEntry(onBack: () => void): OverlayEntry {
       const ownIndex = own.current
       open.current = false
       own.current = undefined
+      floor.current = undefined
       run()
       const { history } = router
       if (ownIndex !== undefined && entryIndex(history.location) === ownIndex && !hasPanel()) leaveOverlayEntry(history)

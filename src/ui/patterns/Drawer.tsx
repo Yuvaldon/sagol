@@ -3,7 +3,8 @@ import { t, type I18nKey } from '@i18n'
 import { X } from 'lucide-react'
 import { motion, useDragControls } from 'motion/react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
+import { Dialog, Heading, Modal } from 'react-aria-components'
+import { ModalOverlay } from '../primitives/overlays'
 import { IconButton } from '../primitives/Button'
 import { DrawerScrollContext } from './drawerScroll'
 import { DrawerWidthContext } from './drawerWidth'
@@ -20,9 +21,11 @@ export interface DrawerProps {
   /** Under the title, outside the scrolling body. */
   readonly header?: ReactNode
   readonly children: ReactNode
+  /** What is open lives in the URL, as a module panel's does, so the panel's entry is the drawer's (D-332, D-337). */
+  readonly inUrl?: boolean
 }
 
-export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
+export function Drawer({ titleKey, onClose, header, children, inUrl = false }: DrawerProps) {
   const dragControls = useDragControls()
   const dialog = useRef<HTMLElement>(null)
   const [body, setBody] = useState<HTMLElement | null>(null)
@@ -45,6 +48,7 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
 
   return (
     <ModalOverlay
+      inUrl={inUrl}
       isOpen
       isDismissable
       onOpenChange={(open) => {

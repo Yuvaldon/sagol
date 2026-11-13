@@ -1,6 +1,7 @@
 import { t, type I18nKey } from '@i18n'
 import type { ReactNode } from 'react'
-import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
+import { Dialog, Heading, Modal } from 'react-aria-components'
+import { ModalOverlay } from '../primitives/overlays'
 import { Button } from '../primitives/Button'
 
 // A small dialog over a drawer, always with a way out. A destructive question says what it means in

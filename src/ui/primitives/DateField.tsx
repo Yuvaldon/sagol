@@ -14,9 +14,9 @@ import {
   Group,
   Heading,
   Label,
-  Popover,
   Text,
 } from 'react-aria-components'
+import { Popover } from './overlays'
 import { fieldLabel, type FieldLabel } from './label'
 
 // One calendar day, typed or picked. The value is the ISO string the contracts hold (D-042), and '' while

@@ -85,7 +85,10 @@ The data layer is written as if it were the server:
 - **Authentication:** Google only, behind the `AuthProvider` contract. `local` provider in
   development. The production build fails if `VITE_AUTH_MODE=local`. As built (8.4, D-207): Google
   through Supabase Auth (PKCE), always paired with the remote adapter; the composition loads only
-  the env's pair (D-210). Deploys: Vercel Preview and Production (D-209).
+  the env's pair (D-210). Deploys: Vercel Preview and Production (D-209). CD: Staging runs after every
+  green CI on `main` (D-276, D-292); production runs only when the owner starts it after approving a release
+  (`production.yml`, D-280 as amended by D-340): migrations, then the function, then the `production` branch that
+  Vercel builds as Production.
 - **Deploy marking (D-300):** `VITE_APP_ENV=staging`, set on Vercel for the `staging` branch only, marks the staging
   deploy: a black band "אתר בדיקות" on every screen, the title "סגול · בדיקות", and an installed app with the bison in
   black and that name. Production has no such variable and stays unmarked.
@@ -302,6 +305,8 @@ The current state, in short (D-128). The entries hold the reasons.
   links and the back button work. Parameter names come from `config`. The window's kind (`range`: day, week, month,
   a rotation) and the board's sort (`sort`, `order`, shared with the table) live there too; `useDateWindow` and
   `useBoardSort` in `logic/view-state` read and write them (D-211, D-214).
+- The back button closes the top overlay only (D-332, D-337): a panel or the navigation panel holds one history entry,
+  and every `Popover` and `ModalOverlay` in `ui/primitives` holds one through `useOverlayLayer` while open, innermost first.
 - Other routes exist only for sign-in and onboarding.
 
 ## View engines (inside `ui/engines`)
