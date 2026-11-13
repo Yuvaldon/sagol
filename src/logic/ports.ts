@@ -68,6 +68,7 @@ export interface DataPort {
     readonly access_grants: DataCommands['access_grants']
     readonly deployments: DataCommands['deployments']
     readonly seniority_overrides: DataCommands['seniority_overrides']
+    readonly notifications: DataCommands['notifications']
   }
   /** Import and export (D-171). */
   readonly transfer: DataTransfer
