@@ -253,7 +253,7 @@ am = amends, ref = refines, ext = extends.
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
-| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299 |
+| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343 |
 | D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296 |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290; ref D-339 |
@@ -306,15 +306,19 @@ am = amends, ref = refines, ext = extends.
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
 | D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337 |
-| D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | |
+| D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | ref D-342 |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 | D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
-| D-338 | The Later features: the owner's order and conditions | docs | |
-| D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | |
+| D-338 | The Later features: the owner's order and conditions | docs | ref D-344 |
+| D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | ref D-345 |
 | D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
+| D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | |
+| D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
+| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | |
+| D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4517,3 +4521,86 @@ same commit that staging already ran.
 **Why:** a bare `md5(...)::uuid` carries arbitrary version and variant bits, so about seven in eight seeded ids failed
 `z.uuid()`. Every read of a seeded table threw while parsing, and the call answered `internal`, so every staging
 screen showed the generic error. D-281 said no test reads the seed; this one does, because only a parse catches it.
+
+## D-342 — Version 1.0: what it is, how it is reached, and who decides to deploy it
+2026-11-13 · accepted · ref D-170, D-333, D-338, D-340 · ROADMAP M7 · the owner's choices in the planning review, recorded as decided
+- **Definition.** Version 1.0 is the first version that is technically ready for real use in place of the company's
+  spreadsheet. Whether it is deployed as it is and improved while in use, or held for one more update, is the owner's
+  decision once it is ready; reaching 1.0 does not deploy it.
+- **Target user.** A company commander who is not technical understands the system at once and leaves the
+  spreadsheet; the platoon commanders run it day to day (D-343).
+- **Seven stages** (ROADMAP M7): defining 1.0; sorting what is left; closing the gaps; design rounds; building the
+  design; acceptance testing; the release decision. The UI update is part of 1.0, and it is designed before it is
+  built: D-333's freeze holds until the design rounds approve a concept.
+- **The dashboard** (OI-222, `docs/specs/dashboard.md`) is a Should: the aim is to have it before real deployment, but
+  1.0 does not wait for it. The design rounds already decide where it sits in the new interface concept.
+- **Who maintains the system after handover** is decided at handover; acceptance testing holds that decision point.
+  It needs no model change: administration is a grant (D-004) and every permission is data (D-003).
+- **Release.** After acceptance testing, a go / no-go point; production is released only by the owner (D-340).
+**Why:** the owner's planning review: 1.0 is a technical readiness bar, not a deployment date; the owner keeps the
+choice of when the company moves to it.
+
+## D-343 — Who operates 1.0: the platoon commanders run it, the company commander plans and controls
+2026-11-13 · accepted · refines D-265, D-263 · ref D-003, D-013, D-299 · the owner's persona answers in the planning review
+- **Company commander (מ"פ):** sees everything, plans and controls, and steps in only to coordinate between platoons.
+  Needs the information available for planning and control (the dashboard, D-342).
+- **Platoon commanders (מ"מים):** the default operators. They approve the requests of their soldiers and their own,
+  coordinate, and control their platoon; they will need the dashboard too.
+- **Fallback when a platoon commander is away:** the sergeant, then another acting deputy.
+- **Checked against the model, no gap:** a platoon commander approving their own request is D-013 (a creator holding
+  `leaves:approve` over the subject approves in one step, re-checked on the server), D-265 and D-299. An acting
+  commander without standing permissions is a time-bounded access grant with `valid_from` / `valid_to` (D-003),
+  managed in the grants module (V10). The design rounds make that path easy to find; no model change.
+**Why:** D-265 described the roles in general; the owner placed daily operation with the platoon commanders, and
+the company commander's need is a picture for planning, not approving.
+
+## D-344 — The 1.0 sort: what 1.0 must, should and could have, and what waits
+2026-11-13 · accepted · ref D-338, D-342 · the owner's picks in the planning review; where the owner made no pick, the orchestrator's recommendation stands
+| Item | Priority | Note |
+|------|----------|------|
+| OI-117 sign-in on a real phone | Must | Android verified by the owner; the iPhone is checked in acceptance testing (the owner has none) |
+| OI-230 production settings | Must | Done: the owner replaced the token; closed |
+| OI-293 merges that go undeployed | Must | |
+| OI-295 routine leave types | Must | D-345 |
+| OI-222 dashboard | Should | D-342 |
+| OI-296 the failing table in the log | Should | |
+| OI-151 live changes from other devices | Should | The owner's pick |
+| Notifications (Later) | Should | The owner's pick |
+| OI-104 restore an archived row | Could | Archiving is protected in the design (OI-297) |
+| OI-111 spans other than a week | Could | The range picker is reviewed in the design rounds |
+| OI-112 more filter conditions | Could | |
+| OI-254, OI-255 "changed since" misses | Could | OI-254: only the mark is missed; the copy is right |
+| Saved views (Later) | Could | |
+| OI-102 invite links | Won't (1.0) | |
+| OI-116 offline queue | Won't (1.0) | |
+| Rotation templates for leave batches (Later) | Won't (1.0) | The owner's pick |
+| Attached memberships, missions, simulations (Later) | Won't (1.0) | |
+| Hour-level leaves (Later) | Won't (1.0) | Frozen |
+- "Won't (1.0)" keeps an item open after 1.0; nothing is dropped. D-338's order still holds among the Later features.
+- **Inputs to the design rounds:** whether the board stays the main screen is an open question for the concept;
+  archiving must not happen by accident (OI-297); the range picker is reviewed (OI-111); the dashboard's place in the
+  concept (D-342).
+**Why:** the owner's sort of everything left, so that stage 3 closes only what 1.0 needs.
+
+## D-345 — "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group
+2026-11-13 · accepted · refines D-339 · ref D-102, D-112, D-194 · OI-295 · the owner's review in the planning
+- **The term.** "יציאת סבב" is the soldiers' ordinary home leave in the rotation's cycle (for example 8 days on base
+  and 6 at home). Nobody requests it and it needs no reason or form; a soldier may still ask to change it. It goes in
+  the glossary of terms.
+- **The model (the owner's).** It sits on the existing leave types and groups. Every organization has one built-in
+  group, "סבב יציאות", created with the organization (with or without a setup template) and added to existing ones.
+  It cannot be archived, and it always holds at least one type: its last type cannot be archived either.
+- **Its types.** By default it holds one type, shown as "סבב יציאה" with no number. A platoon commander, or anyone with
+  the same permission, who wants to split the routine leaves into groups of soldiers adds another type there with no
+  form: it gets the next number ("סבב יציאה 1", "סבב יציאה 2", ...) and its own color. There is no upper limit.
+- **Every other type** is a leave that comes from a request or a specific reason, and stays as it is today: free to
+  define, group, mark and color.
+- **What it changes (1.0, Must).** A leave whose type is in the built-in group never asks for a reason, and the day
+  report shows reasons only for the other leaves, still within the viewer's reads and the reasons switch (D-102,
+  D-194). The board draws it calmly, not as an alert, and the soldier still counts as absent.
+- **No architecture change.** One marker on the group, its creation with the organization (and a data migration for
+  existing ones, through the manual production workflow), two archive guards, and the "add" shortcut. The column,
+  its name, whether the numbered name is stored or derived, and the contracts are decided in OI-295's slice, with
+  `schema.sql` first (rule 5).
+**Why:** the routine leave is the rotation itself, not an absence someone asked for; the day report and the board must
+tell it apart from requested leaves without anyone defining anything. The owner named the concept and the model.
