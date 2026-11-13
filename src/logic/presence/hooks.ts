@@ -235,7 +235,7 @@ export function useReportConfirmations(
     if (tree === null) return { status: 'loading' }
     // A button never shows a moment late, as the report's soldiers never do (D-122).
     if (!checks.every(answers.known)) return { status: 'loading' }
-    const counts = new Map(sectionCounts.value.map((row) => [row.report_date, row.sections] as const))
+    const counts = new Map(sectionCounts.value.map((row) => [row.report_date, row.unseen] as const))
     const pairs = new Set(confirmable.value.map((pair) => pairKeyOf(pair.unit_id, pair.report_date)))
     const shownDays = new Map(shown.value.days.map((day) => [day.date, day] as const))
     const mayConfirm = (unitId: UnitId) => answers.can(confirmCheckOf(unitId))
@@ -256,7 +256,7 @@ export function useReportConfirmations(
             tree,
             actorId,
             seenAt,
-            treeSections: counts.get(day.date) ?? 0,
+            unseen: counts.get(day.date) ?? 0,
           }),
         ]),
       ),

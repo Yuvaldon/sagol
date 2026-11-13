@@ -142,7 +142,7 @@ function input(overrides: Partial<DayConfirmationsInput> = {}): DayConfirmations
     tree: TREE,
     actorId: ACTOR,
     seenAt: SEEN_AT,
-    treeSections: 2,
+    unseen: 0,
     ...overrides,
   }
 }
@@ -210,11 +210,8 @@ describe('the daily report confirmations (D-293)', () => {
     expect(offered.sections.get(ELSEWHERE)?.canConfirm).toBe(true)
   })
 
-  it('counts the sections on the whole tree that the actor does not see, never below none (D-303)', () => {
-    expect(dayConfirmations(input({ treeSections: 5 })).summary).toMatchObject({ total: 2, unseen: 3 })
-    // The actor reads one of the two sections the rotation covers on the tree.
-    const one = day([rotation()], [section(SQUAD, [5, 6])])
-    expect(dayConfirmations(input({ day: one, shown: one })).summary).toMatchObject({ total: 1, unseen: 1 })
-    expect(dayConfirmations(input({ treeSections: 0 })).summary?.unseen).toBe(0)
+  it("shows the data layer's count of the sections outside the actor's view to who reads the summary (D-303)", () => {
+    expect(dayConfirmations(input({ unseen: 3 })).summary).toMatchObject({ total: 2, unseen: 3 })
+    expect(dayConfirmations(input({ unseen: 3, mayConfirm: () => false })).summary).toBeNull()
   })
 })
