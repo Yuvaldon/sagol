@@ -10,7 +10,7 @@ description replaces the handoff note, merged with CI green (D-110, D-126, D-128
 Status: ☐ pending · ◐ in progress · ☑ done. A row's ☑ reaches `main` only through a merge with CI
 green, so on `main` it means merged and green (D-126).
 
-Rows `A1` … `A7` are **audits** (D-051, D-078): read-only, run with the `/audit` skill's steps. Since D-170 the
+Rows `A1` … `A8` are **audits** (D-051, D-078): read-only, run with the `/audit` skill's steps. Since D-170 the
 session that reaches an audit row runs it through a fresh subagent and records the findings itself, without waiting
 for the owner. Audit reports A1 … A4 and the old session
 handoffs are archived in `.claude/archive/docs/` (D-154).
@@ -140,10 +140,12 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V33 | Board controls | The heat row fixed above; the view picker as cards from the board's tab; filtering and sorting as a rule builder with AND/OR and several sorts; flat chips; a root unit for every organization (D-310 … D-315; data migration) | ☑ |
 | V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation, sent as one collective leave; overlapping rounds stacked on the timeline (D-270, D-316, D-317) | ☑ |
 | V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units (D-318 … D-320) | ☑ |
+| A8 | audit | Pre-launch, on main with V31, V30 and V33 in; V21 and V23 audited when they land | ☑ |
+| A8 fixes | A8's findings | Leave batches and plans bounded on the server (OI-265); the root backfill for older organizations (OI-266); the dead "found units" action (OI-267); one filter model (OI-268); a bounded report window (OI-269); local root parity (OI-270); the chart's anchoring (OI-271); the rule builder's focus and URL (OI-260, OI-261); OI-257, OI-258, OI-262 … OI-264 | ☐ |
 
 Order (D-271, amended by D-284): before launch, track A runs V32 (its docs first) → V28 and track B runs V26 → V27;
 then A7 on main once V27 and V28 are in. V29 is done. Before launch: "A7 fixes" (track A) and V33 "Board controls"
-(track B); then V30, V31, V21, V23.
+(track B); then V30, V31, V21, V23; then A8 and "A8 fixes". OI-230 (the owner's production settings) gates launch.
 
 ## Later (no schema change required)
 
