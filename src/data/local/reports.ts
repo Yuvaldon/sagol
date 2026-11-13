@@ -1,15 +1,23 @@
+import { DAY_REPORT } from '@config'
 import {
   ConfirmableReportQuery,
   ConfirmDayReportInput,
   IssueCode,
   ReportConfirmationQuery,
+  ReportSectionQuery,
+  SoldierStatus,
   type ConfirmableReport,
+  type DateWindow,
   type DataCommands,
   type DataRepositories,
   type Deployment,
   type ReportConfirmation,
+  type ReportSectionCount,
+  type SoldierId,
   type TableName,
   type Unit,
+  type UnitId,
+  type UnitMembership,
 } from '@contracts'
 import {
   addDays,
@@ -19,9 +27,12 @@ import {
   CONFIRM_DAY_REPORT,
   confirmedAtOf,
   confirmReportIssues,
+  daysBetween,
   dayReportTarget,
   isAncestorOrSelf,
+  primaryUnitOn,
   reportRotationOf,
+  soldierTarget,
   unitTarget,
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
@@ -44,6 +55,38 @@ async function rotationsOf(database: Store, scope: ActorScope): Promise<Deployme
 async function unitsOf(database: Store, scope: ActorScope): Promise<Unit[]> {
   const rows = await tableOf(database, 'units').where('organization_id').equals(scope.organization_id).toArray()
   return rows.map((row) => parsedRow('units', row))
+}
+
+/** The report's span bounds a window, as its input's shape: checked before any row is read (D-302). */
+function checkSpan(window: DateWindow): void {
+  if (daysBetween(window.start_date, window.end_date) + 1 > DAY_REPORT.maxSpanDays) {
+    failValidation([{ path: ['window', 'end_date'], code: IssueCode.enum.too_big }])
+  }
+}
+
+/** Who reads a rotation's summary: its report owner, or, with none named, who may confirm its unit (D-293). */
+const SOLDIERS_VIEW = { resource: 'soldiers', action: 'view' } as const
+const MEMBERSHIPS_VIEW = { resource: 'memberships', action: 'view' } as const
+const LEAVES_VIEW = { resource: 'leaves', action: 'view' } as const
+
+/**
+ * Whether the actor's report lists the soldier under the unit: it reads the soldier, their memberships and leaves
+ * (D-161), and the unit itself, as the report builds its sections.
+ */
+function seesInReport(scope: ActorScope, soldierId: SoldierId, unit: Unit | undefined): boolean {
+  const target = soldierTarget(soldierId)
+  return (
+    viewsUnit(scope, unit) &&
+    holds(scope, SOLDIERS_VIEW, target) &&
+    holds(scope, MEMBERSHIPS_VIEW, target) &&
+    holds(scope, LEAVES_VIEW, target)
+  )
+}
+
+function readsSummaryOf(scope: ActorScope, rotation: Deployment): boolean {
+  return rotation.report_owner_id === null
+    ? holds(scope, CONFIRM_DAY_REPORT, dayReportTarget(rotation.unit_id))
+    : rotation.report_owner_id === scope.soldier_id
 }
 
 function viewsUnit(scope: ActorScope, unit: Unit | undefined): boolean {
@@ -91,6 +134,7 @@ export function createReportConfirmationRepository(dependencies: LocalDependenci
     confirmable: (raw) =>
       asResult(() => {
         const query = parseInput(ConfirmableReportQuery, raw)
+        checkSpan(query.window)
         return database.transaction('r', TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const units = await unitsOf(database, scope)
@@ -113,6 +157,52 @@ export function createReportConfirmationRepository(dependencies: LocalDependenci
             }
           }
           return answers.sort((a, b) => a.report_date.localeCompare(b.report_date) || compareCodeUnits(a.unit_id, b.unit_id))
+        })
+      }),
+    sections: (raw) =>
+      asResult(() => {
+        const query = parseInput(ReportSectionQuery, raw)
+        checkSpan(query.window)
+        return database.transaction('r', TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const units = await unitsOf(database, scope)
+          // Read on the whole tree, which the actor may not see: the summary counts every section, and a count names
+          // no unit (D-303). A section is a unit whose active soldiers it holds on the day, archived units too, as the
+          // report heads them (D-147).
+          const tree = buildUnitTree(units)
+          const unitById = new Map(units.map((unit) => [unit.id, unit]))
+          const read = (await rotationsOf(database, scope)).filter(
+            (rotation) =>
+              query.deployment_ids.includes(rotation.id) && rotation.archived_at === null && readsSummaryOf(scope, rotation),
+          )
+          const soldiers = (await tableOf(database, 'soldiers').where('organization_id').equals(scope.organization_id).toArray())
+            .map((row) => parsedRow('soldiers', row))
+            .filter((soldier) => soldier.archived_at === null && soldier.status === SoldierStatus.enum.active)
+          const bySoldier = new Map<SoldierId, UnitMembership[]>()
+          for (const row of await tableOf(database, 'unit_memberships').where('organization_id').equals(scope.organization_id).toArray()) {
+            const membership = parsedRow('unit_memberships', row)
+            bySoldier.set(membership.soldier_id, [...(bySoldier.get(membership.soldier_id) ?? []), membership])
+          }
+          const answers: ReportSectionCount[] = []
+          const { start_date: start, end_date: end } = query.window
+          for (let date = start; compareDates(date, end) <= 0; date = addDays(date, 1)) {
+            const running = read.filter(
+              (rotation) =>
+                compareDates(rotation.start_date, date) <= 0 && (rotation.end_date === null || compareDates(date, rotation.end_date) <= 0),
+            )
+            if (running.length === 0) continue
+            const sections = new Set<UnitId>()
+            const seen = new Set<UnitId>()
+            for (const soldier of soldiers) {
+              const unitId = primaryUnitOn(bySoldier.get(soldier.id) ?? [], soldier.id, date)
+              if (unitId === null || !running.some((rotation) => isAncestorOrSelf(tree, rotation.unit_id, unitId))) continue
+              sections.add(unitId)
+              // The actor's report heads the unit when it holds a soldier the report lists under it.
+              if (seesInReport(scope, soldier.id, unitById.get(unitId))) seen.add(unitId)
+            }
+            answers.push({ report_date: date, sections: sections.size, unseen: sections.size - seen.size })
+          }
+          return answers
         })
       }),
   }

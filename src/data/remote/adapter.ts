@@ -84,7 +84,7 @@ const REPOSITORY_METHODS = {
   leave_batches: REFERENCE,
   deployments: REFERENCE,
   deployment_members: LIST,
-  report_confirmations: { ...LIST, confirmable: true },
+  report_confirmations: { ...LIST, confirmable: true, sections: true },
 } as const satisfies MethodTable<RemoteDataAdapter['repositories']>
 
 const COMMAND_METHODS = {

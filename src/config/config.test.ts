@@ -18,6 +18,7 @@ import {
   ENV_VARIABLES,
   ICON_KEYS,
   INDEXED_DB_NAME,
+  LEAVE_BATCH,
   LEAVE_ROUNDS,
   LEAVE_SHEET,
   PALETTE_KEYS,
@@ -264,6 +265,10 @@ describe('leave rounds (D-316)', () => {
       expect(days).toBeLessThanOrEqual(LEAVE_ROUNDS.maxDays)
     }
     expect(LEAVE_ROUNDS.maxLeaves).toBeGreaterThanOrEqual(LEAVE_SHEET.maxLeaves)
+  })
+
+  it('plans no more than one batch creates (D-302)', () => {
+    expect(LEAVE_ROUNDS.maxLeaves).toBeLessThanOrEqual(LEAVE_BATCH.maxLeaves)
   })
 })
 

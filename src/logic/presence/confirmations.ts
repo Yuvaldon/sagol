@@ -22,6 +22,11 @@ export interface ConfirmationSummary {
   readonly total: number
   readonly confirmed: number
   readonly changed: number
+  /**
+   * The sections the rotations' reports hold on the whole tree beyond those the actor sees: units outside the view,
+   * counted and never named (D-303).
+   */
+  readonly unseen: number
 }
 
 export interface DayConfirmations {
@@ -56,6 +61,8 @@ export interface DayConfirmationsInput {
   readonly tree: UnitTree
   readonly actorId: SoldierId | null
   readonly seenAt: Timestamp
+  /** The day's sections on the whole tree that the actor's own report does not head, as the data layer counts them (D-303). */
+  readonly unseen: number
 }
 
 /**
@@ -112,6 +119,7 @@ export function dayConfirmations(input: DayConfirmationsInput): DayConfirmations
           total: statuses.length,
           confirmed: statuses.filter((status) => status === 'confirmed').length,
           changed: statuses.filter((status) => status === 'changed_since').length,
+          unseen: input.unseen,
         }
       : null,
     seenAt: input.seenAt,
