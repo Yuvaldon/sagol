@@ -1,23 +1,13 @@
 import { t } from '@i18n'
-import { useActiveView, useCurrentOrganization, useDateWindow, useQuickAction, useRotationScope, useSoldiers } from '@logic'
+import { useActiveView, useDateWindow, useQuickAction, useRotationScope } from '@logic'
 import { EmptyNotice } from '../patterns/Notices'
 import { useViewDevice } from '../patterns/media'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
+import { useNoBoard } from './boardShown'
 
 // The central viewport (D-023): it shows the active engine from the registry. Every engine needs a date window, which
 // needs today. A soldier who may not view the organization and reads no soldier at all sees a notice (D-151, D-160).
 // In routine (שגרה), with no rotation in scope, the board still shows, under a band that says so (D-257, D-296).
-
-function useNoBoard(): boolean {
-  const organization = useCurrentOrganization()
-  const soldiers = useSoldiers()
-  return (
-    organization.status === 'ready' &&
-    organization.value === null &&
-    soldiers.status === 'ready' &&
-    soldiers.value.length === 0
-  )
-}
 
 const CENTERED = 'flex h-full items-center justify-center px-lg'
 

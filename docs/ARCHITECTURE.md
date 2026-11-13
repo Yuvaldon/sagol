@@ -289,6 +289,9 @@ The current state, in short (D-128). The entries hold the reasons.
   (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
   done from live rows (`useSetupProgress`, D-180).
+- Focus mode (D-301) is `useFocusModeScope` in `ui/shell`, a session device flag (`DEVICE_KEYS.focusMode`) live only
+  while the board shows: the workspace swaps both strips and the chips row for `FocusModeRestore`, which keeps the
+  page's heading. Its key and the overlays an Escape closes first are `FOCUS_MODE` in `config`.
 - All view state lives in **typed URL search params** (TanStack Router + Zod): active view
   id, date window, filters, open panel and its entity. Switching views keeps filters. Deep
   links and the back button work. Parameter names come from `config`. The window's kind (`range`: day, week, month,
