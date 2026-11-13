@@ -81,6 +81,13 @@ describe('a tap on the notification (D-356)', () => {
     expect(openWindow).not.toHaveBeenCalled()
   })
 
+  it('opens a new window when the open one is not the worker\'s to navigate', async () => {
+    const open: WorkerWindow = { url: `${ORIGIN}/`, focus: vi.fn(() => Promise.resolve()), navigate: vi.fn(() => Promise.reject(new TypeError('not controlled'))) }
+    const openWindow = vi.fn(() => Promise.resolve(null))
+    await onNotificationClick(tapped('/?panel=leaves'), { matchAll: () => Promise.resolve([open]), openWindow }, ORIGIN)
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/?panel=leaves`)
+  })
+
   it('opens a window when the app is closed', async () => {
     const openWindow = vi.fn(() => Promise.resolve(null))
     await onNotificationClick(tapped('/?panel=leave_inbox'), { matchAll: () => Promise.resolve([]), openWindow }, ORIGIN)

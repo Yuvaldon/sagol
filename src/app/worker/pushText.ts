@@ -1,4 +1,4 @@
-import { DATE_FORMATS, DATE_LOCALE, PANEL_IDS, ROUTES, SEARCH_PARAMS } from '@config'
+import { CALENDAR_DATE_ZONE, DATE_FORMATS, DATE_LOCALE, PANEL_IDS, ROUTES, SEARCH_PARAMS } from '@config'
 import { NotificationKind, type CalendarDate, type PushOutcome, type PushPayload } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { DateFormatter, parseDate } from '@internationalized/date'
@@ -7,7 +7,6 @@ import { DateFormatter, parseDate } from '@internationalized/date'
 // `i18n`. Days are written absolutely (the leave's own days), never "tomorrow": a notification may be read days later.
 // The worker cannot load `ui`, so it formats the days itself, with the same formats as `ui/patterns/dates.ts`.
 
-const NEUTRAL_ZONE = 'UTC'
 const LINE_SEPARATOR = ' · '
 const WORD_SEPARATOR = ' '
 /** The tag of the one "requests await you" notification, so a second one replaces the first. */
@@ -41,11 +40,11 @@ export interface PushNotice {
   readonly url: string
 }
 
-const dayOf = (date: CalendarDate) => parseDate(date).toDate(NEUTRAL_ZONE)
+const dayOf = (date: CalendarDate) => parseDate(date).toDate(CALENDAR_DATE_ZONE)
 
 /** The leave's days the way `ui` writes them: one day, or a range (`8–14 בנוב׳`). */
 export function daysText(start: CalendarDate, end: CalendarDate): string {
-  const formatter = new DateFormatter(DATE_LOCALE, { ...DATE_FORMATS.dayMonth, timeZone: NEUTRAL_ZONE })
+  const formatter = new DateFormatter(DATE_LOCALE, { ...DATE_FORMATS.dayMonth, timeZone: CALENDAR_DATE_ZONE })
   return start === end ? formatter.format(dayOf(start)) : formatter.formatRange(dayOf(start), dayOf(end))
 }
 

@@ -10,7 +10,7 @@ export interface NotificationShown {
   readonly tag: string
   readonly icon: string
   readonly lang: string
-  readonly dir: 'rtl'
+  readonly dir: typeof PWA.direction
   readonly data: { readonly url: string }
 }
 
@@ -34,7 +34,6 @@ export interface TappedNotification {
   close(): void
 }
 
-const LANG = 'he'
 
 /** The message `workbox-window` sends when the open app takes the waiting version (D-183). */
 const SKIP_WAITING = 'SKIP_WAITING'
@@ -56,8 +55,8 @@ export async function onPush(data: unknown, registration: WorkerRegistration, st
     body: notice.body,
     tag: notice.tag,
     icon: PWA.notificationIcon,
-    lang: LANG,
-    dir: 'rtl',
+    lang: PWA.language,
+    dir: PWA.direction,
     data: { url: notice.url },
   })
 }
@@ -79,5 +78,6 @@ export async function onNotificationClick(notification: TappedNotification, clie
     return
   }
   await open.focus()
-  await open.navigate(target)
+  // A window the worker does not control (opened before it took over) refuses to be navigated: open a new one.
+  await open.navigate(target).catch(() => clients.openWindow(target))
 }
