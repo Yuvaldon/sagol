@@ -30,10 +30,10 @@ import {
   DialogTrigger,
   ListBox,
   ListBoxItem,
-  Popover,
   Select,
   SelectValue,
 } from 'react-aria-components'
+import { Popover } from '../primitives/overlays'
 import { Drawer } from '../patterns/Drawer'
 import { IconButton } from '../primitives/Button'
 import { CheckList, RadioList, type Choice } from '../primitives/ChoiceList'
