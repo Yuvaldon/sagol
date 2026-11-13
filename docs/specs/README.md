@@ -17,7 +17,7 @@ impact and the free-plan limits (Supabase and Vercel free, no paid service).
 | 3 | Saved views | Medium-high: the commander's morning look in one press | Low: preferences JSON only, no permission impact | [saved-views.md](saved-views.md) |
 | 4 | Rotation templates | Medium, once per rotation | Low: a pure inference over the previous rotation's leaves that prefills the planner; no table | [rotation-templates.md](rotation-templates.md) |
 | 5 | Situation picture | Medium-high mid-rotation: who was home least | Low-medium: derived only; builds on OI-292's single whole-unit membership | [situation-picture.md](situation-picture.md) |
-| 6 | Hour-level leaves | Medium: departure and return hours | Medium: two nullable columns (D-012) and every leave form; availability stays per day by design | [hour-level-leaves.md](hour-level-leaves.md) |
+| 6 | Hour-level leaves (**frozen by the owner, 2026-11-13**) | Medium: departure and return hours | Medium: two nullable columns (D-012) and every leave form; availability stays per day by design | [hour-level-leaves.md](hour-level-leaves.md) |
 | 7 | Temporary task units | Medium, occasional | Medium: `units.kind='temporary'` exists; mostly UI over item 2, which must ship first | [temporary-task-units.md](temporary-task-units.md) |
 | 8 | Simulations | Low daily, high for planning | Highest | deferred, below |
 
@@ -29,7 +29,15 @@ impact and the free-plan limits (Supabase and Vercel free, no paid service).
 4. **Situation picture**: after OI-292; on its assumed defaults.
 5. **Attached memberships**: the largest change of readers; benefits from the unified membership function.
 6. **Temporary task units**: needs item 5.
-7. **Hour-level leaves**: independent; last because its value is lower than its form-wide reach.
+
+Hour-level leaves is frozen by the owner (2026-11-13), a marginal feature for now: not in the order.
+
+## UI freeze (D-333)
+
+D-333 as amended on 2026-11-13 holds for every slice here: existing screens are not moved, restyled or
+reworked; a feature adds the new UI components it needs (a module, a sheet, an action, a primitive), and may make
+only the small adjustments to an existing screen that fitting it in requires (an entry in the drawer, an action in
+a header, a field in a form). Fixes follow D-333's fix rule unchanged.
 
 ## Findings from the code (for the build)
 
@@ -52,7 +60,7 @@ impact and the free-plan limits (Supabase and Vercel free, no paid service).
 - Rotation templates: "repeat last rotation" rather than a named template library; prefill only.
 - Situation picture: fairness = days home against the unit median; `unavailable` absences count as home; the
   unit as a whole with a sub-unit column; approved leaves only, future ones on request.
-- Hour-level leaves: hours are information, availability stays per day; a short absence that keeps presence uses
+- Hour-level leaves (frozen): hours are information, availability stays per day; a short absence that keeps presence uses
   an `available` leave type.
 - Temporary task units: always time-bound, ended by date; members are attachments, never primary moves.
 

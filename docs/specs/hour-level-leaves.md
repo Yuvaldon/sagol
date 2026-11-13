@@ -1,5 +1,7 @@
 # Spec — Hour-level leaves (departure and return times)
 
+**Frozen by the owner (2026-11-13):** a marginal feature for now; not in the build order. Kept for reference.
+
 Status: proposed, not scheduled. The slice gets its V-number, and P-n get D-numbers, when it starts.
 Context: both. A Later item (see `README.md`).
 
