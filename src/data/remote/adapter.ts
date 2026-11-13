@@ -84,6 +84,7 @@ const REPOSITORY_METHODS = {
   leave_batches: REFERENCE,
   deployments: REFERENCE,
   deployment_members: LIST,
+  report_confirmations: { ...LIST, confirmable: true },
 } as const satisfies MethodTable<RemoteDataAdapter['repositories']>
 
 const COMMAND_METHODS = {
@@ -106,6 +107,7 @@ const COMMAND_METHODS = {
   property_definitions: SORTED_EDIT,
   seniority_overrides: { create: true, revoke: true },
   deployments: { ...EDIT, setMembers: true, close: true, reopen: true },
+  day_reports: { confirm: true },
 } as const satisfies MethodTable<RemoteDataAdapter['commands']>
 
 type Call = (kind: string, group: string, method: string, args: readonly unknown[]) => Promise<Result<unknown>>

@@ -74,14 +74,17 @@ export interface LeaveSpec {
   readonly to: readonly [string, string, string]
   readonly reason?: string
   readonly approveNow?: boolean
+  /** What to type in the soldier field, then the option to pick; the owner by default. */
+  readonly soldier?: readonly [string, string]
 }
 
-/** From the floating "+", for the owner, who is the only soldier of these demos. */
+/** From the floating "+", for the owner, who is the only soldier of these demos, unless `soldier` names another. */
 export async function requestLeave(page: Page, spec: LeaveSpec) {
   await page.getByRole('button', { name: he.leaves.new }).click()
   await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
-  await drawer(page).getByRole('combobox', { name: he.leaves.soldier }).fill('דנה')
-  await page.getByRole('option', { name: OWNER.name, exact: true }).click()
+  const [search, name] = spec.soldier ?? ['דנה', OWNER.name]
+  await drawer(page).getByRole('combobox', { name: he.leaves.soldier }).fill(search)
+  await page.getByRole('option', { name, exact: true }).click()
   await choose(page, he.leaves.type, spec.type)
   await typeDate(page, he.leaves.from, ...spec.from)
   await typeDate(page, he.leaves.to, ...spec.to)

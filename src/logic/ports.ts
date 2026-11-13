@@ -37,6 +37,7 @@ export interface DataPort {
     | 'leave_comments'
     | 'availability_rules'
     | 'property_definitions'
+    | 'report_confirmations'
     | 'soldier_accounts'
     | 'roles'
     | 'role_permissions'
@@ -61,6 +62,7 @@ export interface DataPort {
     readonly leave_comments: DataCommands['leave_comments']
     readonly availability_rules: DataCommands['availability_rules']
     readonly property_definitions: DataCommands['property_definitions']
+    readonly day_reports: DataCommands['day_reports']
     readonly roles: DataCommands['roles']
     readonly rank_role_bindings: DataCommands['rank_role_bindings']
     readonly access_grants: DataCommands['access_grants']

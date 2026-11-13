@@ -38,6 +38,7 @@ const rotation = (overrides: Partial<Deployment> = {}): Deployment => ({
   updated_by: null,
   version: 1,
   archived_at: null,
+  report_owner_id: null,
   ...overrides,
 })
 const ROTATION = rotation()

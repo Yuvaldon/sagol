@@ -16,6 +16,8 @@ export const DeploymentColumns = z.object({
   /** The explicit close (D-258). NULL = open. */
   closed_at: Timestamp.nullable(),
   closed_by: SoldierId.nullable(),
+  /** Who reads the consolidated daily report of this rotation (D-269, D-293). NULL = none named. */
+  report_owner_id: SoldierId.nullable(),
   ...auditColumns,
 })
 

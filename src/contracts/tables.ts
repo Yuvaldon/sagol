@@ -6,6 +6,7 @@ import { Leave, LeaveBatch, LeaveComment, LeaveEvent, LeaveType, LeaveTypeGroup 
 import { Organization } from './entities/organization'
 import { AccessGrant, RankRoleBinding, Role, RolePermission } from './entities/permissions'
 import { PropertyDefinition } from './entities/properties'
+import { ReportConfirmation } from './entities/reports'
 import { AvailabilityRule } from './entities/rules'
 import {
   CommandRank,
@@ -50,6 +51,7 @@ export const TABLE_SCHEMAS = {
   deployment_members: DeploymentMember,
   availability_rules: AvailabilityRule,
   property_definitions: PropertyDefinition,
+  report_confirmations: ReportConfirmation,
 } as const satisfies Record<string, z.ZodObject>
 
 export type TableName = keyof typeof TABLE_SCHEMAS

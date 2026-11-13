@@ -1,5 +1,5 @@
 import { DAY_REPORT, DAY_REPORT_CATEGORIES, DEVICE_KEYS, PANEL_IDS } from '@config'
-import type { CalendarDate } from '@contracts'
+import type { AppError, CalendarDate, Timestamp, UnitId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
   reportText,
@@ -10,14 +10,19 @@ import {
   usePanel,
   usePresenceDay,
   useUnits,
+  useConfirmDayReport,
+  useReportConfirmations,
   useViewFilter,
+  type ConfirmationSummary,
+  type DayConfirmations,
   type DayReport,
   type ReportCounts,
   type ReportDay,
   type ReportEntry,
   type ReportSection,
+  type SectionConfirmation,
 } from '@logic'
-import { ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Share2, X } from 'lucide-react'
+import { CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Share2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button as AriaButton, Dialog, Disclosure, DisclosurePanel, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import { groupLabel } from '../../board/labels'
@@ -31,6 +36,7 @@ import { CATEGORY_KEYS, entryDetails, entryName, reportWords } from './reportWor
 
 // The day report (D-193 … D-196): a centered dialog over the board, on the URL's day or span. The counts, then one
 // section per unit with its names; the reasons behind a switch kept on the device; a text copy and an image to send.
+// Each unit's section is confirmed by who may, and shows when it changed since; the owner reads the tally (D-293).
 
 const NOTICES = { copied: 'presence.copied', copyFailed: 'presence.copyFailed', imageFailed: 'presence.imageFailed' } as const satisfies Record<string, I18nKey>
 
@@ -80,7 +86,67 @@ function Names({ entries, withReasons }: { readonly entries: readonly ReportEntr
   )
 }
 
-function UnitSection({ section, withReasons, level }: { readonly section: ReportSection; readonly withReasons: boolean; readonly level: 3 | 4 }) {
+const STATUS = {
+  confirmed: { key: 'presence.statusConfirmed', tone: 'text-status-approved' },
+  not_yet: { key: 'presence.statusNotYet', tone: 'text-text-muted' },
+  changed_since: { key: 'presence.statusChanged', tone: 'text-status-pending-text' },
+} as const satisfies Record<SectionConfirmation['status'], { readonly key: I18nKey; readonly tone: string }>
+
+/**
+ * Where a unit's section stands, and the button for who may confirm it now; while the view filter hides some of its
+ * soldiers, a line says confirming needs the full list instead (D-293).
+ */
+function Confirmation({
+  confirmation,
+  date,
+  seenAt,
+  confirm,
+}: {
+  readonly confirmation: SectionConfirmation
+  readonly date: CalendarDate
+  readonly seenAt: Timestamp
+  readonly confirm: Confirm
+}) {
+  const status = STATUS[confirmation.status]
+  const open = confirmation.status !== 'confirmed'
+  return (
+    <div className="flex min-h-control flex-wrap items-center gap-sm border-t border-line px-sm py-2xs">
+      <span className={`min-w-none flex-1 text-label font-semibold ${status.tone}`}>{t(status.key)}</span>
+      {open && confirmation.needsFullList ? (
+        <p className="w-full text-micro text-text-muted">{t('presence.confirmNeedsFullList')}</p>
+      ) : null}
+      {open && confirmation.canConfirm ? (
+        <Button
+          isDisabled={confirm.isPending}
+          onPress={() => {
+            void confirm.run(confirmation.unitId, date, seenAt)
+          }}
+        >
+          <CheckCheck aria-hidden size={14} />
+          {t(confirmation.status === 'not_yet' ? 'presence.confirm' : 'presence.confirmAgain')}
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function UnitSection({
+  section,
+  withReasons,
+  level,
+  date,
+  confirmation,
+  seenAt,
+  confirm,
+}: {
+  readonly section: ReportSection
+  readonly withReasons: boolean
+  readonly level: 3 | 4
+  readonly date: CalendarDate
+  readonly confirmation: SectionConfirmation | undefined
+  readonly seenAt: Timestamp | undefined
+  readonly confirm: Confirm
+}) {
   const ListHeading = level === 3 ? 'h4' : 'h5'
   const lists = [...DAY_REPORT.text.listed, 'present' as const].filter((category) => section[category].length > 0)
   return (
@@ -107,22 +173,71 @@ function UnitSection({ section, withReasons, level }: { readonly section: Report
           </section>
         ))}
       </DisclosurePanel>
+      {confirmation === undefined || seenAt === undefined ? null : (
+        <Confirmation confirmation={confirmation} date={date} seenAt={seenAt} confirm={confirm} />
+      )}
     </Disclosure>
   )
 }
 
-function Day({ day, span, withReasons }: { readonly day: ReportDay; readonly span: boolean; readonly withReasons: boolean }) {
+/** "N of M confirmed", and how many changed since, for the report's owner. */
+function Summary({ summary }: { readonly summary: ConfirmationSummary }) {
+  return (
+    <p className="flex flex-wrap gap-x-md text-name font-semibold">
+      <span className="flex gap-2xs">
+        <span>{t('presence.summaryConfirmed')}</span>
+        <span className="tabular-nums">{summary.confirmed}</span>
+        <span>{t('presence.summaryOf')}</span>
+        <span className="tabular-nums">{summary.total}</span>
+      </span>
+      {summary.changed === 0 ? null : (
+        <span className="text-status-pending-text">
+          {t('presence.summaryChanged')} <span className="tabular-nums">{summary.changed}</span>
+        </span>
+      )}
+    </p>
+  )
+}
+
+interface Confirm {
+  readonly run: (unitId: UnitId, date: CalendarDate, seenAt: Timestamp) => Promise<unknown>
+  readonly isPending: boolean
+}
+
+function Day({
+  day,
+  span,
+  withReasons,
+  confirmations,
+  confirm,
+}: {
+  readonly day: ReportDay
+  readonly span: boolean
+  readonly withReasons: boolean
+  readonly confirmations: DayConfirmations | undefined
+  readonly confirm: Confirm
+}) {
   const words = reportWords('')
   const rotations = words.rotations(day.rotations)
   return (
     <section className="flex flex-col gap-sm">
       {span ? <h3 className="text-body font-bold">{formatDate(day.date, 'full')}</h3> : null}
       {rotations === null ? null : <p className="text-name text-text-muted">{rotations}</p>}
+      {confirmations?.summary == null ? null : <Summary summary={confirmations.summary} />}
       <Counts counts={day.counts} size="large" />
       {day.counts.absent === 0 ? <p className="text-name text-text-muted">{t('presence.noneAbsent')}</p> : null}
       <div className="flex flex-col gap-xs">
         {day.units.map((section) => (
-          <UnitSection key={section.key} section={section} withReasons={withReasons} level={span ? 4 : 3} />
+          <UnitSection
+            key={section.key}
+            section={section}
+            withReasons={withReasons}
+            level={span ? 4 : 3}
+            date={day.date}
+            confirmation={confirmations?.sections.get(section.key)}
+            seenAt={confirmations?.seenAt}
+            confirm={confirm}
+          />
         ))}
       </div>
     </section>
@@ -262,6 +377,22 @@ function DayReportBody() {
   const { day, until, today, days, rotations, canShift, shift, goToToday, setUntil } = usePresenceDay()
   const { filter } = useViewFilter()
   const report = useDayReport(days, filter, rotations)
+  const confirmations = useReportConfirmations(days, report, rotations)
+  const confirmCommand = useConfirmDayReport()
+  // A refusal belongs to the date it was sent for: moving to days without it drops it.
+  const [refusal, setRefusal] = useState<{ readonly date: CalendarDate; readonly error: AppError } | null>(null)
+  const refused = refusal !== null && days.includes(refusal.date) ? refusal.error : null
+  const confirm = useMemo(
+    (): Confirm => ({
+      isPending: confirmCommand.isPending,
+      run: async (unitId, date, seenAt) => {
+        setRefusal(null)
+        const result = await confirmCommand.run(unitId, date, seenAt)
+        if (!result.ok) setRefusal({ date, error: result.error })
+      },
+    }),
+    [confirmCommand],
+  )
   const reasons = useDeviceFlag(DEVICE_KEYS.dayReportReasons)
   const scope = useScopeName()
   const last = days.at(-1)
@@ -299,6 +430,8 @@ function DayReportBody() {
       <p className="text-name text-text-muted">{t('presence.hint')}</p>
       {day !== null && days.length === 0 ? <p className="text-name">{t('presence.notReportable')}</p> : null}
       {report.status === 'failed' ? <FailureNotice error={report.error} /> : null}
+      {confirmations.status === 'failed' ? <FailureNotice error={confirmations.error} /> : null}
+      {refused === null ? null : <FailureNotice error={refused} />}
       {report.status === 'loading' && days.length > 0 ? <LoadingNotice /> : null}
       {report.status === 'ready' ? (
         <>
@@ -307,7 +440,14 @@ function DayReportBody() {
           ) : null}
           <Actions report={report.value} scope={scope} withReasons={reasons.value} />
           {report.value.days.map((row) => (
-            <Day key={row.date} day={row} span={report.value.days.length > 1} withReasons={reasons.value && report.value.hasReasons} />
+            <Day
+              key={row.date}
+              day={row}
+              span={report.value.days.length > 1}
+              withReasons={reasons.value && report.value.hasReasons}
+              confirmations={confirmations.status === 'ready' ? confirmations.value.get(row.date) : undefined}
+              confirm={confirm}
+            />
           ))}
         </>
       ) : null}

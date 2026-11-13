@@ -7,6 +7,7 @@ import type { Leave, LeaveBatch, LeaveComment, LeaveType, LeaveTypeGroup } from 
 import type { Organization } from '../entities/organization'
 import type { AccessGrant, RankRoleBinding, Role } from '../entities/permissions'
 import type { PropertyDefinition } from '../entities/properties'
+import type { ReportConfirmation } from '../entities/reports'
 import type { AvailabilityRule } from '../entities/rules'
 import type {
   CommandRank,
@@ -32,6 +33,7 @@ import type {
   SetDeploymentMembersInput,
   UpdateDeploymentInput,
 } from '../inputs/deployments'
+import type { ConfirmDayReportInput } from '../inputs/reports'
 import type {
   ArchiveUnitInput,
   ArchiveUnitLevelInput,
@@ -245,6 +247,10 @@ export interface DataCommands {
     PropertyDefinition
   > &
     SortableCommands<ReorderPropertyDefinitionsInput, PropertyDefinition>
+  day_reports: {
+    /** `day_reports:confirm` on the unit, on a day a live rotation over it runs (D-293). Confirming again moves the row. */
+    confirm: Command<ConfirmDayReportInput, ReportConfirmation>
+  }
 }
 
 /** Import and export (resource `data_transfer`, D-022, D-050). */

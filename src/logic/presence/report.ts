@@ -56,6 +56,8 @@ export interface ReportLists {
 /** One unit of a day, or one of the states of D-106 for those with no visible unit. */
 export interface ReportSection extends ReportLists {
   readonly key: string
+  /** The section's unit; NULL for the states with no visible unit. */
+  readonly unitId: UnitId | null
   readonly label: BoardGroupLabel
 }
 
@@ -209,7 +211,7 @@ export function dayReport(input: DayReportInput): DayReport {
     })
     const isAbsent = (entry: ReportEntry) => absentIds.has(entry.soldier.id)
 
-    const groups = new Map<string, { label: BoardGroupLabel; entries: ReportEntry[] }>()
+    const groups = new Map<string, { unitId: UnitId | null; label: BoardGroupLabel; entries: ReportEntry[] }>()
     for (const entry of entries) {
       const own = bySoldier.get(entry.soldier.id) ?? []
       const reads = input.readsPlacements(entry.soldier.id)
@@ -217,13 +219,13 @@ export function dayReport(input: DayReportInput): DayReport {
       const key = groupKeyOf(state)
       const label: BoardGroupLabel =
         state.kind === 'unit' ? { kind: 'unit', path: unitPathOf(state.unit.id, unitById, input.scopeUnitId) } : { kind: state.kind }
-      const group = groups.get(key) ?? { label, entries: [] }
+      const group = groups.get(key) ?? { unitId: state.kind === 'unit' ? state.unit.id : null, label, entries: [] }
       group.entries.push(entry)
       groups.set(key, group)
     }
     const units = order.flatMap((key): ReportSection[] => {
       const group = groups.get(key)
-      return group === undefined ? [] : [{ key, label: group.label, ...listsOf(group.entries, isAbsent) }]
+      return group === undefined ? [] : [{ key, unitId: group.unitId, label: group.label, ...listsOf(group.entries, isAbsent) }]
     })
     return {
       date,

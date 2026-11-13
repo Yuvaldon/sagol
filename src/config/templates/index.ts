@@ -105,6 +105,8 @@ const READ = ['view'] as const
 const MANAGE = ['view', 'create', 'update', 'delete'] as const
 const LEAVES_ALL = ['view', 'create', 'update', 'delete', 'duplicate', 'approve', 'export'] as const
 const TALK = ['view', 'create'] as const
+/** Who approves requests confirms the day's report (D-293). */
+const DAY_REPORTS = ['confirm'] as const
 
 /** What every holder reads of the unit's setup. */
 const SETUP_READ = {
@@ -136,6 +138,7 @@ const COMPANY_COMMAND = {
   properties: MANAGE,
   roles: READ,
   leaves: LEAVES_ALL,
+  day_reports: DAY_REPORTS,
   leave_comments: TALK,
   internal_comments: TALK,
   accounts: ['view', 'approve'],
@@ -147,6 +150,7 @@ const PLATOON_COMMAND = {
   soldiers: ['view', 'update'],
   memberships: READ,
   leaves: LEAVES_ALL,
+  day_reports: DAY_REPORTS,
   leave_comments: TALK,
   internal_comments: TALK,
 } as const satisfies TemplatePermissions

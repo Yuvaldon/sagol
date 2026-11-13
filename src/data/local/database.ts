@@ -6,7 +6,7 @@ import { STORES, type Store } from './store'
 // names are schema.sql names (D-038). Primary keys and uniques mirror it where IndexedDB can: a
 // compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL".
 
-const DATABASE_VERSION = 6
+const DATABASE_VERSION = 7
 
 /** Versions 1 and 2 keyed a soldier's tags by the pair; format 3 gives each row an id and a scope (D-221). */
 const VERSION_2_SOLDIER_TAGS = '[soldier_id+tag_id], organization_id, tag_id'
@@ -23,7 +23,9 @@ export interface LocalStore extends Store {
 
 export function openDatabase(name: string): LocalStore {
   const database = new Dexie(name)
-  const before = { ...STORES, soldier_tags: VERSION_2_SOLDIER_TAGS }
+  // Tables added after version 6 are declared at their own version, so an older store creates them on upgrade.
+  const { report_confirmations: confirmations, ...earlier } = STORES
+  const before = { ...earlier, soldier_tags: VERSION_2_SOLDIER_TAGS }
   database.version(1).stores({ ...before, soldier_accounts: VERSION_1_ACCOUNTS })
   database.version(2).stores(before)
   // Format 3 (D-221): the stored rows take the new columns' values, persistent and open.
@@ -45,7 +47,18 @@ export function openDatabase(name: string): LocalStore {
     .upgrade(async (transaction) => {
       await transaction.table('soldier_tags').bulkAdd(await transaction.table(MOVING_SOLDIER_TAGS).toArray())
     })
-  database.version(DATABASE_VERSION).stores({ [MOVING_SOLDIER_TAGS]: null })
+  database.version(6).stores({ [MOVING_SOLDIER_TAGS]: null })
+  // The daily report's confirmations, a rotation's report owner, none named before, and who approves leaves may
+  // confirm the report, as the server's migration grants (D-293).
+  database
+    .version(DATABASE_VERSION)
+    .stores({ report_confirmations: confirmations })
+    .upgrade(async (transaction) => {
+      await transaction.table('deployments').toCollection().modify({ report_owner_id: null })
+      const permissions = transaction.table<{ role_id: string; organization_id: string; resource: string; action: string }>('role_permissions')
+      const approving = (await permissions.toArray()).filter((row) => row.resource === 'leaves' && row.action === 'approve')
+      await permissions.bulkPut(approving.map((row) => ({ ...row, resource: 'day_reports', action: 'confirm' })))
+    })
   return {
     transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),
     table: (name) => database.table(name),

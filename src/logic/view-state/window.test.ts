@@ -27,6 +27,7 @@ const rotation = (n: number, overrides: Partial<Deployment> = {}): Deployment =>
   end_date: '2026-12-20',
   closed_at: null,
   closed_by: null,
+  report_owner_id: null,
   created_at: AT,
   created_by: null,
   updated_at: AT,

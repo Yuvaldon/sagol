@@ -1,16 +1,37 @@
-import type { CalendarDate, Deployment, FilterExpression, PermissionCheck, Soldier } from '@contracts'
-import { addDays } from '@domain'
-import { useMemo } from 'react'
+import {
+  ReportConfirmationId,
+  type CalendarDate,
+  type Deployment,
+  type FilterExpression,
+  type PermissionCheck,
+  type ReportConfirmation,
+  type ConfirmableReport,
+  type ConfirmableReportQuery,
+  type ReportConfirmationQuery,
+  type Soldier,
+  type Timestamp,
+  type UnitId,
+} from '@contracts'
+import { addDays, buildUnitTree, compareCodeUnits, compareInstants, CONFIRM_DAY_REPORT, dayReportTarget, instantAt } from '@domain'
+import { useQuery } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 import { useRotationScope } from '../view-state/rotation'
 import { useFilterSource } from '../filters/source'
-import { useLeaves, useLeaveTypes } from '../leaves/hooks'
-import { checkOn } from '../permissions/checks'
+import { useLeaves, useLeavesOfAnyStatus, useLeaveTypes } from '../leaves/hooks'
+import { checkOf, checkOn } from '../permissions/checks'
 import { useCanAnswers } from '../permissions/hooks'
-import type { Loaded } from '../queries/loaded'
+import { QUERY_KEYS } from '../queries/client'
+import { useCommand } from '../queries/command'
+import { loaded, type Loaded } from '../queries/loaded'
+import { unwrap } from '../queries/results'
+import { usePorts } from '../runtime/context'
+import { useSession } from '../session/hooks'
 import { dateWindowOf } from '../view-state/window'
 import { usePlacementHints } from '../roster/hooks'
+import { useUnits } from '../units/hooks'
 import { filterUnitOf } from '../view-state/filter'
 import { presenceLists, type PresenceLists } from './presence'
+import { dayConfirmations, type DayConfirmations } from './confirmations'
 import { dayReport, type DayReport } from './report'
 
 // The present and absent lists of a day, read like the board (D-134), and the day report (D-193).
@@ -92,4 +113,142 @@ export function useDayReport(
       }),
     }
   }, [span, source, leaves, types, checks, answers, placements, filter, days, rotations])
+}
+
+/** The confirmations the actor reads of `days` (D-293). Loading while the days are unknown. */
+function useDayConfirmations(days: readonly CalendarDate[]): Loaded<readonly ReportConfirmation[]> {
+  const { data } = usePorts()
+  const first = days[0]
+  const last = days.at(-1)
+  const query = useMemo(
+    (): ReportConfirmationQuery | null =>
+      first === undefined || last === undefined ? null : { window: { start_date: first, end_date: last }, unit_ids: null },
+    [first, last],
+  )
+  return loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.reportConfirmations, query],
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.report_confirmations.list(query))),
+      enabled: query !== null,
+    }),
+  )
+}
+
+function confirmCheckOf(unitId: UnitId): PermissionCheck {
+  return checkOf(CONFIRM_DAY_REPORT, dayReportTarget(unitId))
+}
+
+/** Which of `units`' reports of `days` the actor may confirm, as the data layer answers it on the whole tree (D-293). */
+function useConfirmable(days: readonly CalendarDate[], units: readonly UnitId[]): Loaded<readonly ConfirmableReport[]> {
+  const { data } = usePorts()
+  const first = days[0]
+  const last = days.at(-1)
+  const query = useMemo(
+    (): ConfirmableReportQuery | null =>
+      first === undefined || last === undefined ? null : { window: { start_date: first, end_date: last }, unit_ids: [...units] },
+    [first, last, units],
+  )
+  return loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.reportConfirmations, CONFIRMABLE, query],
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.report_confirmations.confirmable(query))),
+      enabled: query !== null,
+    }),
+  )
+}
+
+const CONFIRMABLE = 'confirmable'
+const NO_UNITS: readonly UnitId[] = []
+
+/**
+ * Where each unit's section of the report's days stands (D-269, D-293), by date. Read on the whole report, with no
+ * view filter, from the leaves of every status that bear on the days, so a leave written after a confirmation shows
+ * at once as a change; `shown` is the report as the view filter shows it. Loading until both reports, the
+ * confirmations, the confirmable answer and the permission answers are in.
+ */
+export function useReportConfirmations(
+  days: readonly CalendarDate[],
+  shown: Loaded<DayReport>,
+  rotations: readonly Deployment[],
+): Loaded<ReadonlyMap<CalendarDate, DayConfirmations>> {
+  const report = useDayReport(days, null, rotations)
+  const first = days[0]
+  const last = days.at(-1)
+  const span = useMemo(
+    () => (first === undefined || last === undefined ? null : { from: addDays(first, -1), to: addDays(last, 1) }),
+    [first, last],
+  )
+  const confirmations = useDayConfirmations(days)
+  const leaves = useLeavesOfAnyStatus(span)
+  const reportDays = report.status === 'ready' ? report.value.days : null
+  const units = useMemo((): readonly UnitId[] => {
+    if (reportDays === null) return NO_UNITS
+    const ids = new Set<UnitId>()
+    for (const day of reportDays) for (const section of day.units) if (section.unitId !== null) ids.add(section.unitId)
+    return [...ids].sort(compareCodeUnits)
+  }, [reportDays])
+  const confirmable = useConfirmable(reportDays === null ? [] : days, units)
+  const session = useSession()
+  const live = useUnits()
+  const tree = useMemo(() => (live.status === 'ready' ? buildUnitTree(live.value) : null), [live])
+  const checks = useMemo(
+    (): readonly PermissionCheck[] => [...new Set<UnitId>(rotations.map((rotation) => rotation.unit_id))].map(confirmCheckOf),
+    [rotations],
+  )
+  const answers = useCanAnswers(checks)
+  return useMemo((): Loaded<ReadonlyMap<CalendarDate, DayConfirmations>> => {
+    if (report.status !== 'ready') return report
+    if (shown.status !== 'ready') return shown
+    if (confirmations.status !== 'ready') return confirmations
+    if (leaves.status !== 'ready') return leaves
+    if (confirmable.status !== 'ready') return confirmable
+    if (session.status !== 'ready') return session
+    if (tree === null) return { status: 'loading' }
+    // A button never shows a moment late, as the report's soldiers never do (D-122).
+    if (!checks.every(answers.known)) return { status: 'loading' }
+    const pairs = new Set(confirmable.value.map((pair) => pairKeyOf(pair.unit_id, pair.report_date)))
+    const shownDays = new Map(shown.value.days.map((day) => [day.date, day] as const))
+    const mayConfirm = (unitId: UnitId) => answers.can(confirmCheckOf(unitId))
+    const actorId = session.value.status === 'linked' ? session.value.soldier_id : null
+    const seenAt = leaves.value.reduce((latest, leave) => (compareInstants(leave.updated_at, latest) > 0 ? leave.updated_at : latest), instantAt(0))
+    return {
+      status: 'ready',
+      value: new Map(
+        report.value.days.map((day) => [
+          day.date,
+          dayConfirmations({
+            day,
+            shown: shownDays.get(day.date) ?? day,
+            confirmations: confirmations.value,
+            leaves: leaves.value,
+            confirmable: (unitId, date) => pairs.has(pairKeyOf(unitId, date)),
+            mayConfirm,
+            tree,
+            actorId,
+            seenAt,
+          }),
+        ]),
+      ),
+    }
+  }, [report, shown, confirmations, leaves, confirmable, session, tree, checks, answers])
+}
+
+const pairKeyOf = (unitId: UnitId, date: CalendarDate) => `${date} ${unitId}`
+
+/**
+ * Confirms a unit's report of a date (D-293), as seen at `seenAt`; confirming again moves the confirmation to the
+ * actor.
+ */
+export function useConfirmDayReport() {
+  const { data } = usePorts()
+  const command = useCommand(
+    [QUERY_KEYS.reportConfirmations],
+    (input: { unit_id: UnitId; report_date: CalendarDate; seen_at: Timestamp }) =>
+      data.commands.day_reports.confirm({ id: ReportConfirmationId.parse(crypto.randomUUID()), ...input }),
+  )
+  const run = useCallback(
+    (unitId: UnitId, date: CalendarDate, seenAt: Timestamp) => command.run({ unit_id: unitId, report_date: date, seen_at: seenAt }),
+    [command],
+  )
+  return { run, isPending: command.isPending }
 }

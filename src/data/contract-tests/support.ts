@@ -243,7 +243,7 @@ export async function seedRotation(
       ...audit,
     },
   ])
-  await harness.seed('deployments', [{ id, organization_id, name: 'Rotation', unit_id: unitId, ...dates, closed_at: null, closed_by: null, ...audit }])
+  await harness.seed('deployments', [{ id, organization_id, name: 'Rotation', unit_id: unitId, ...dates, closed_at: null, closed_by: null, report_owner_id: null, ...audit }])
   await seedServing(harness, organization_id, id, soldier_ids)
   return id
 }
