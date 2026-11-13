@@ -624,6 +624,23 @@ export function describeLeaveContract(
         expect(errorOf(await adapter().repositories.leave_events.list({ leave_id: hidden.id })).code).toBe('not_found')
         expect(valueOf(await adapter().repositories.leave_events.list({ leave_id: seen.id }))).toHaveLength(1)
       })
+
+      it("reads a rotation's span of events, only of leaves the actor reads (D-358)", async () => {
+        const type = await createType()
+        const platoonA = await unit('Platoon A')
+        const platoonB = await unit('Platoon B')
+        const inA = await soldier(platoonA.id)
+        const alsoA = await soldier(platoonA.id)
+        const inB = await soldier(platoonB.id)
+        const seen = valueOf(await adapter().commands.leaves.create(leaveInput(inA.id, type.id)))
+        valueOf(await adapter().commands.leaves.create(leaveInput(alsoA.id, type.id)))
+        valueOf(await adapter().commands.leaves.create(leaveInput(inB.id, type.id)))
+        const { identity } = await actorWith([VIEW_LEAVES], { anchor_type: 'unit', anchor_unit_id: platoonA.id })
+        harnessOf().signIn(identity)
+        const span = await adapter().repositories.leave_events.list({ deployment_id: rotation, soldier_ids: [inA.id, inB.id] })
+        expect(valueOf(span).map((event) => event.leave_id)).toEqual([seen.id])
+        expect(valueOf(await adapter().repositories.leave_events.list({ deployment_id: DeploymentId.parse(crypto.randomUUID()), soldier_ids: [inA.id] }))).toEqual([])
+      })
     })
 
     describe('the rule gate (D-047, D-073, OI-027)', () => {

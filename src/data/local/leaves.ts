@@ -1,8 +1,8 @@
 import type { Store } from './store'
 import {
   IssueCode,
+  LeaveEventQuery,
   LeaveQuery,
-  LeaveThreadQuery,
   type DataRepositories,
   type DeploymentId,
   type Issue,
@@ -162,17 +162,35 @@ export function createLeaveRepository(dependencies: LocalDependencies): DataRepo
   }
 }
 
-/** A leave's events, oldest first. An invisible leave answers `not_found` (D-046). */
+/**
+ * A leave's events, or a rotation's span of them (D-358), oldest first. An invisible leave answers `not_found`
+ * (D-046); a span holds only the events of leaves the actor reads.
+ */
 export function createLeaveEventRepository(dependencies: LocalDependencies): DataRepositories['leave_events'] {
   const { database } = dependencies
   return {
     list: (raw) =>
       asResult(() => {
-        const query = parseInput(LeaveThreadQuery, raw)
+        const query = parseInput(LeaveEventQuery, raw)
         return database.transaction('r', READ_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
-          await visibleLeave(database, scope, query.leave_id)
-          const rows = await tableOf(database, 'leave_events').where('leave_id').equals(query.leave_id).toArray()
+          let rows
+          if ('leave_id' in query) {
+            await visibleLeave(database, scope, query.leave_id)
+            rows = await tableOf(database, 'leave_events').where('leave_id').equals(query.leave_id).toArray()
+          } else {
+            // Two reads of the organization, not one per leave: a span holds many leaves.
+            const soldiers = new Set<string>(query.soldier_ids)
+            const leaves = await tableOf(database, 'leaves').where('organization_id').equals(scope.organization_id).toArray()
+            const ids = new Set(
+              leaves
+                .filter((leave) => leave.deployment_id === query.deployment_id && soldiers.has(leave.soldier_id))
+                .filter((leave) => canView(scope, leave))
+                .map((leave) => leave.id),
+            )
+            const events = ids.size === 0 ? [] : await tableOf(database, 'leave_events').where('organization_id').equals(scope.organization_id).toArray()
+            rows = events.filter((event) => ids.has(event.leave_id))
+          }
           return rows
             .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
             .map((row) => parsedRow('leave_events', row))
@@ -180,4 +198,3 @@ export function createLeaveEventRepository(dependencies: LocalDependencies): Dat
       }),
   }
 }
-
