@@ -28,13 +28,13 @@ const barTop = (depth: number) =>
   `calc(${ROW} * ${String(depth)} + var(--spacing-chart-node-height) + ${HALF_ROW_GAP})`
 
 function clampZoom(zoom: number): number {
-  return Math.round(Math.min(UNIT_CHART_ZOOM.max, Math.max(UNIT_CHART_ZOOM.min, zoom)) * 100) / 100
+  return Math.min(UNIT_CHART_ZOOM.max, Math.max(UNIT_CHART_ZOOM.min, zoom))
 }
 
-/** Where a zoom keeps its point: a spot on the viewport, and the content under it before the zoom. */
+/** Where a zoom keeps its point: a spot on the screen, and where it fell on the content at the zoom shown. */
 interface ZoomAnchor {
-  readonly offsetX: number
-  readonly offsetY: number
+  readonly clientX: number
+  readonly clientY: number
   readonly contentX: number
   readonly contentY: number
   readonly from: number
@@ -43,6 +43,14 @@ interface ZoomAnchor {
 /** The lowest `scrollLeft`: negative when the content overflows toward the inline end, right to left. */
 function scrollStart(element: HTMLElement): number {
   return getComputedStyle(element).direction === 'rtl' ? element.clientWidth - element.scrollWidth : 0
+}
+
+/** Whether a point falls inside the scrolling area, and not on a scrollbar or the border. */
+function inClientArea(element: HTMLElement, clientX: number, clientY: number): boolean {
+  const rect = element.getBoundingClientRect()
+  const x = clientX - rect.left - element.clientLeft
+  const y = clientY - rect.top - element.clientTop
+  return x >= 0 && y >= 0 && x <= element.clientWidth && y <= element.clientHeight
 }
 
 function Connectors({ family }: { readonly family: UnitChartFamily }) {
@@ -88,7 +96,6 @@ function ChartNode({
   const depthLabel = `${t('units.depth')} ${String(depth + 1)}`
   return (
     <li
-      data-chart-node
       data-unit-id={unit.id}
       style={{ insetInlineStart: across(slot), top: rowTop(depth) }}
       className="absolute flex h-chart-node-height w-chart-node items-center gap-2xs rounded-control border border-line bg-surface ps-xs"
@@ -126,67 +133,103 @@ export function UnitChart({
   const chart = useMemo(() => unitChart(units), [units])
   const levelNames = useMemo(() => new Map(levels.map((level) => [level.id, level.name])), [levels])
   const viewport = useRef<HTMLDivElement>(null)
+  const content = useRef<HTMLDivElement>(null)
+  const nodes = useRef<HTMLUListElement>(null)
   const [zoom, setZoom] = useState(1)
+  /** The zoom asked for last, ahead of the render. */
   const zoomRef = useRef(zoom)
+  /** The zoom on screen: what the DOM's sizes and scroll are measured in. */
+  const shown = useRef(zoom)
   const anchor = useRef<ZoomAnchor | null>(null)
+  /** Whether the person zoomed or panned. Until then the chart stays fitted, as the drawer settles or resizes. */
+  const moved = useRef(false)
   const pan = useRef<{ readonly x: number; readonly y: number; readonly left: number; readonly top: number } | null>(
     null,
   )
 
-  /** Zooms to `next`, keeping still what is under the viewport's point (its center when none is given). */
-  const zoomTo = useCallback((next: number, clientX?: number, clientY?: number) => {
+  /** Zooms to `next`, keeping still what is under the screen's point (the viewport's center when none is given). */
+  const zoomTo = useCallback((next: number, pointX?: number, pointY?: number) => {
     const element = viewport.current
+    const box = content.current
     const to = clampZoom(next)
-    if (element === null || to === zoomRef.current) return
+    if (element === null || box === null || to === zoomRef.current) return
     const rect = element.getBoundingClientRect()
-    const offsetX = clientX === undefined ? element.clientWidth / 2 : clientX - rect.left
-    const offsetY = clientY === undefined ? element.clientHeight / 2 : clientY - rect.top
-    anchor.current = {
-      offsetX,
-      offsetY,
-      contentX: element.scrollLeft - scrollStart(element) + offsetX,
-      contentY: element.scrollTop + offsetY,
-      from: zoomRef.current,
+    const clientX = pointX ?? rect.left + element.clientLeft + element.clientWidth / 2
+    const clientY = pointY ?? rect.top + element.clientTop + element.clientHeight / 2
+    // A zoom that comes before the last one rendered keeps the first point, measured at the zoom on screen.
+    if (anchor.current === null) {
+      const at = box.getBoundingClientRect()
+      anchor.current = { clientX, clientY, contentX: clientX - at.left, contentY: clientY - at.top, from: shown.current }
     }
     zoomRef.current = to
     setZoom(to)
   }, [])
 
-  /** The zoom that shows the whole chart, never past `fitMax`. */
-  const fit = () => {
+  const center = useCallback(() => {
     const element = viewport.current
     if (element === null) return
-    const width = element.scrollWidth / zoomRef.current
-    const height = element.scrollHeight / zoomRef.current
-    zoomTo(Math.min(UNIT_CHART_ZOOM.fitMax, element.clientWidth / width, element.clientHeight / height))
-  }
-
-  // The chart opens fitted, its top in sight and its middle centered.
-  useLayoutEffect(() => {
-    const element = viewport.current
-    if (element === null) return
-    const width = element.scrollWidth
-    const height = element.scrollHeight
-    const fitted = clampZoom(Math.min(UNIT_CHART_ZOOM.fitMax, element.clientWidth / width, element.clientHeight / height))
-    zoomRef.current = fitted
-    setZoom(fitted)
-    anchor.current = null
+    element.scrollLeft = scrollStart(element) + (element.scrollWidth - element.clientWidth) / 2
+    element.scrollTop = 0
   }, [])
 
+  /** Shows the whole chart, never past `fitMax`, its top in sight and its middle centered. */
+  const fit = useCallback(() => {
+    const element = viewport.current
+    const box = content.current
+    if (element === null || box === null) return
+    const at = box.getBoundingClientRect()
+    const width = at.width / shown.current
+    const height = at.height / shown.current
+    const fitted = clampZoom(Math.min(UNIT_CHART_ZOOM.fitMax, element.clientWidth / width, element.clientHeight / height))
+    anchor.current = null
+    if (fitted === zoomRef.current) {
+      center()
+      return
+    }
+    zoomRef.current = fitted
+    setZoom(fitted)
+  }, [center])
+
+  // The chart opens fitted, and stays fitted while its viewport changes size until the person moves it: the drawer
+  // widens for the chart only after the chart has mounted.
   useLayoutEffect(() => {
     const element = viewport.current
+    if (element === null) return undefined
+    fit()
+    const observer = new ResizeObserver(() => {
+      if (!moved.current) fit()
+    })
+    observer.observe(element)
+    return () => {
+      observer.disconnect()
+    }
+  }, [fit])
+
+  useLayoutEffect(() => {
+    const element = viewport.current
+    const box = content.current
     const held = anchor.current
-    if (element === null) return
+    shown.current = zoom
     anchor.current = null
+    if (element === null || box === null) return
     if (held === null) {
-      element.scrollLeft = scrollStart(element) + (element.scrollWidth - element.clientWidth) / 2
-      element.scrollTop = 0
+      center()
       return
     }
     const ratio = zoom / held.from
-    element.scrollLeft = scrollStart(element) + held.contentX * ratio - held.offsetX
-    element.scrollTop = held.contentY * ratio - held.offsetY
-  }, [zoom])
+    const at = box.getBoundingClientRect()
+    element.scrollLeft += at.left + held.contentX * ratio - held.clientX
+    element.scrollTop += at.top + held.contentY * ratio - held.clientY
+  }, [zoom, center])
+
+  /** A zoom the person asked for: the chart stops following the viewport's size. */
+  const zoomByHand = useCallback(
+    (next: number, pointX?: number, pointY?: number) => {
+      moved.current = true
+      zoomTo(next, pointX, pointY)
+    },
+    [zoomTo],
+  )
 
   // A pinch on a trackpad arrives as a wheel with Ctrl, and a pinch on a screen as two touches. Both need listeners
   // that may cancel the page's own zoom, which React's are not.
@@ -199,12 +242,18 @@ export function UnitChart({
       const b = touches[1]
       return a === undefined || b === undefined ? null : Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
     }
+    // Any scroll or zoom by the person ends the fitting: the wheel, a finger, the keyboard.
+    const onMove = () => {
+      moved.current = true
+    }
     const onWheel = (event: WheelEvent) => {
+      onMove()
       if (!event.ctrlKey) return
       event.preventDefault()
-      zoomTo(zoomRef.current * (1 - event.deltaY * UNIT_CHART_ZOOM.wheelPerPixel), event.clientX, event.clientY)
+      zoomByHand(zoomRef.current * (1 - event.deltaY * UNIT_CHART_ZOOM.wheelPerPixel), event.clientX, event.clientY)
     }
     const onTouchStart = (event: TouchEvent) => {
+      onMove()
       const distance = distanceOf(event.touches)
       held.pinch = distance === null || distance === 0 ? null : { distance, zoom: zoomRef.current }
     }
@@ -214,7 +263,11 @@ export function UnitChart({
       const b = event.touches[1]
       if (held.pinch === null || distance === null || a === undefined || b === undefined) return
       event.preventDefault()
-      zoomTo(held.pinch.zoom * (distance / held.pinch.distance), (a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2)
+      zoomByHand(
+        held.pinch.zoom * (distance / held.pinch.distance),
+        (a.clientX + b.clientX) / 2,
+        (a.clientY + b.clientY) / 2,
+      )
     }
     const onTouchEnd = (event: TouchEvent) => {
       if (event.touches.length < 2) held.pinch = null
@@ -224,21 +277,25 @@ export function UnitChart({
     element.addEventListener('touchmove', onTouchMove, { passive: false })
     element.addEventListener('touchend', onTouchEnd)
     element.addEventListener('touchcancel', onTouchEnd)
+    element.addEventListener('keydown', onMove)
     return () => {
       element.removeEventListener('wheel', onWheel)
       element.removeEventListener('touchstart', onTouchStart)
       element.removeEventListener('touchmove', onTouchMove)
       element.removeEventListener('touchend', onTouchEnd)
       element.removeEventListener('touchcancel', onTouchEnd)
+      element.removeEventListener('keydown', onMove)
     }
-  }, [zoomTo])
+  }, [zoomByHand])
 
-  // A mouse pans by dragging the background; a node keeps its own presses.
+  // A mouse pans by dragging the background; a node keeps its own presses, and a scrollbar its drag.
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const element = viewport.current
-    const onNode = event.target instanceof Element && event.target.closest('[data-chart-node]') !== null
+    const onNode = event.target instanceof Node && nodes.current?.contains(event.target) === true
     if (element === null || event.pointerType !== 'mouse' || event.button !== 0 || onNode) return
+    if (!inClientArea(element, event.clientX, event.clientY)) return
     element.setPointerCapture(event.pointerId)
+    moved.current = true
     pan.current = { x: event.clientX, y: event.clientY, left: element.scrollLeft, top: element.scrollTop }
   }
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -261,7 +318,7 @@ export function UnitChart({
               labelKey="units.zoomIn"
               isDisabled={zoom >= UNIT_CHART_ZOOM.max}
               onPress={() => {
-                zoomTo(zoom + UNIT_CHART_ZOOM.step)
+                zoomByHand(zoomRef.current + UNIT_CHART_ZOOM.step)
               }}
             >
               <ZoomIn aria-hidden size={18} />
@@ -270,12 +327,18 @@ export function UnitChart({
               labelKey="units.zoomOut"
               isDisabled={zoom <= UNIT_CHART_ZOOM.min}
               onPress={() => {
-                zoomTo(zoom - UNIT_CHART_ZOOM.step)
+                zoomByHand(zoomRef.current - UNIT_CHART_ZOOM.step)
               }}
             >
               <ZoomOut aria-hidden size={18} />
             </IconButton>
-            <IconButton labelKey="units.zoomFit" onPress={fit}>
+            <IconButton
+              labelKey="units.zoomFit"
+              onPress={() => {
+                moved.current = false
+                fit()
+              }}
+            >
               <Scan aria-hidden size={18} />
             </IconButton>
           </div>
@@ -291,7 +354,7 @@ export function UnitChart({
             onPointerCancel={endPan}
             className="h-chart cursor-grab touch-pan-x touch-pan-y overflow-auto overscroll-contain rounded-panel border border-line bg-canvas outline-focus data-focus-visible:outline-2 focus-visible:outline-2"
           >
-            <div style={{ zoom }} className="mx-auto w-max p-lg">
+            <div ref={content} style={{ zoom }} className="mx-auto w-max p-lg">
               <div
                 className="relative"
                 style={{
@@ -304,7 +367,7 @@ export function UnitChart({
                     <Connectors key={`${String(family.depth)}-${String(family.parentSlot)}`} family={family} />
                   ))}
                 </div>
-                <ul aria-label={t('units.listLabel')}>
+                <ul ref={nodes} aria-label={t('units.listLabel')}>
                   {chart.nodes.map((node) => (
                     <ChartNode
                       key={node.unit.id}
