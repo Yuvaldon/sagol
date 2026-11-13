@@ -1,9 +1,9 @@
 import {
+  PushPayload,
   SoldierPreferences,
   type AuthIdentity,
   type DataChange,
   type LeaveId,
-  type PushPayload,
   type PushSubscriptionRecord,
   type SoldierId,
   type TableName,
@@ -129,7 +129,10 @@ async function deliveriesOf(store: Store, call: CommittedCall, now: string): Pro
     const first: LeaveId | undefined = recipient.leave_ids[0]
     const leave = first === undefined ? undefined : leaves.get(first)
     if (leave === undefined) continue
-    const payload = pushPayloadOf(recipient, leave, await nameOf(leave.soldier_id))
+    // The worker shows only what the contract accepts (D-357): a payload it would drop is not sent at all.
+    const built = PushPayload.safeParse(pushPayloadOf(recipient, leave, await nameOf(leave.soldier_id)))
+    if (!built.success) continue
+    const payload = built.data
     for (const device of devicesOf.get(recipient.soldier_id) ?? []) {
       deliveries.push({
         subscriptionId: device.id,

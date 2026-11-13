@@ -195,7 +195,7 @@ describe('push dispatch (D-354, D-355)', () => {
       },
     ])
     expect(logs).toEqual([JSON.stringify({ push: { sent: 1, gone: 0, failed: 0 } })])
-    expect(logs.join()).not.toContain('push.example.test')
+    expect(logs.join()).not.toContain(devices.ari.endpoint)
   })
 
   it("tells the leave's soldier of a step on it, and of a shared comment", async () => {
