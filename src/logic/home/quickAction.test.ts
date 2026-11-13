@@ -6,9 +6,9 @@ import { quickActionOf, rotationEnded, type QuickActionFacts } from './quickActi
 // a rotation, and who only enters leaves for others has no quick action.
 
 const ROLES = {
-  soldier: { requestsForSelf: true, opensRotation: false, foundsUnits: false },
-  commander: { requestsForSelf: true, opensRotation: true, foundsUnits: false },
-  entersForOthers: { requestsForSelf: false, opensRotation: false, foundsUnits: false },
+  soldier: { requestsForSelf: true, opensRotation: false },
+  commander: { requestsForSelf: true, opensRotation: true },
+  entersForOthers: { requestsForSelf: false, opensRotation: false },
 } as const
 
 const MODES = {
@@ -33,10 +33,6 @@ describe('quickActionOf', () => {
       })
     }
   }
-
-  it('sends who may found the tree to the unit structure in routine when no unit exists', () => {
-    expect(quickActionOf({ ...MODES.routine, ...ROLES.entersForOthers, foundsUnits: true })).toBe('found_units')
-  })
 
   it('offers no request while no rotation a request can be about exists', () => {
     expect(quickActionOf({ mode: 'running', requests: false, ...ROLES.soldier })).toBeNull()
