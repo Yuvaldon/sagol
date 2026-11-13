@@ -1,7 +1,8 @@
 import { DATE_WINDOW } from '@config'
 import { DeploymentId, OrganizationId, UnitId, UnitLevelId, type Deployment } from '@contracts'
+import { addDays } from '@domain'
 import { describe, expect, it } from 'vitest'
-import { dateWindowOf, pickableRotations, rotationDays, scopeRotation, scopeRotations, shiftedAnchor } from './window'
+import { customSpan, dateWindowOf, pickableRotations, rotationDays, scopeRotation, scopeRotations, shiftedAnchor } from './window'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -123,5 +124,21 @@ describe('the rotation of the mode (D-257, D-222)', () => {
   it('skips a closed rotation even on the last day its close gave it (D-258)', () => {
     expect(scopeRotation([{ ...running, end_date: TODAY, closed_at: AT }], TODAY)).toBeNull()
     expect(scopeRotation([ended, { ...running, end_date: TODAY, closed_at: AT }], TODAY)?.id).toBe(ended.id)
+  })
+})
+
+describe('a free range from the picker (D-338)', () => {
+  it('takes a pair in order, up to the cap, both days included', () => {
+    expect(customSpan({ from: '2026-11-01', to: '2026-11-01' })).toEqual({ from: '2026-11-01', to: '2026-11-01' })
+    const last = addDays('2026-11-01', DATE_WINDOW.maxDays - 1)
+    expect(customSpan({ from: '2026-11-01', to: last })).toEqual({ from: '2026-11-01', to: last })
+  })
+  it('refuses a missing side, an inverted pair and one past the cap', () => {
+    expect(customSpan({ from: '2026-11-01' })).toBeNull()
+    expect(customSpan({ from: '2026-11-02', to: '2026-11-01' })).toBeNull()
+    expect(customSpan({ from: '2026-11-01', to: addDays('2026-11-01', DATE_WINDOW.maxDays) })).toBeNull()
+  })
+  it('is the custom window the URL opens on', () => {
+    expect(dateWindowOf({ from: '2026-11-03', to: '2026-12-20' }, TODAY)).toMatchObject({ kind: 'custom', from: '2026-11-03', to: '2026-12-20' })
   })
 })
