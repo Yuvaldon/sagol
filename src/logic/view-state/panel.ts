@@ -1,11 +1,13 @@
 import type { PanelId } from '@config'
 import type { UnitId } from '@contracts'
+import { useRouter } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import type { NewLeaveDraft } from './draft'
+import { isOverlayEntry, leaveOverlayEntry } from './overlay'
 import { useChangeSearch, useWorkspaceSearch } from './search'
 
-// The open panel lives in the URL, so a deep link reopens it and the back button works (D-023,
-// D-092). Opening or closing it keeps the view, the window and the filter (D-103). A new leave's draft goes with the
+// The open panel lives in the URL, so a deep link reopens it and the back button closes it (D-023, D-092, D-332).
+// Opening or closing it keeps the view, the window and the filter (D-103). A new leave's draft goes with the
 // panel that opens with it, and leaves with any other (D-143).
 
 export interface PanelTarget {
@@ -25,6 +27,8 @@ export interface PanelState {
   readonly draft: NewLeaveDraft | null
   open(panel: PanelId, target?: PanelTarget): void
   close(): void
+  /** Closes the panel for an overlay that opens in its place, such as the navigation panel, and leaves it the entry. */
+  handOver(): void
 }
 
 export function usePanel(): PanelState {
@@ -37,7 +41,14 @@ export function usePanel(): PanelState {
     },
     [change],
   )
+  const router = useRouter()
+  // A panel that added its entry takes it back as it closes, so the back button never reopens it (D-332); the
+  // workspace's history keeps what changed while it was open. A panel opened by a link has no entry of its own.
   const close = useCallback(() => {
+    if (isOverlayEntry(router.history.location)) leaveOverlayEntry(router.history)
+    else change({ panel: undefined, entity: undefined, parent: undefined, draft: undefined })
+  }, [change, router])
+  const handOver = useCallback(() => {
     change({ panel: undefined, entity: undefined, parent: undefined, draft: undefined })
   }, [change])
 
@@ -48,5 +59,6 @@ export function usePanel(): PanelState {
     draft: search.draft ?? null,
     open,
     close,
+    handOver,
   }
 }

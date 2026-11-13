@@ -1,10 +1,11 @@
 import { BarColorMode, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PanelId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TableSortKey, ViewId } from '@config'
 import { CalendarDate, DeploymentId, FilterExpression, UnitId } from '@contracts'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
 import { z } from 'zod'
 import { LeaveConditions } from './conditions'
 import { NewLeaveDraft } from './draft'
+import { isOverlayEntry, overlayState } from './overlay'
 import { SortRules, isDefaultSort } from './sort-rules'
 
 // All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the
@@ -64,17 +65,21 @@ export function useWorkspaceSearch(): WorkspaceSearch {
 }
 
 /**
- * Changes some params and keeps the others, as a new history entry, so the back button undoes it. A key
- * set to `undefined` is removed.
+ * Changes some params and keeps the others, in place of the current history entry: the back button leaves the
+ * screen, it does not replay its view changes (D-332). Opening a panel where none is open is the one change that adds
+ * an entry, the overlay's, which the back button consumes by closing it; an overlay's entry keeps its mark through the
+ * changes made on it. A key set to `undefined` is removed.
  */
 export function useChangeSearch(): (changes: Partial<WorkspaceSearch>) => void {
   const current = useWorkspaceSearch()
   const navigate = useNavigate()
+  const router = useRouter()
   return useCallback(
     (changes) => {
       const next: WorkspaceSearch = { ...current, ...changes }
-      void navigate({ to: ROUTES.workspace, search: next })
+      const opens = current.panel === undefined && next.panel !== undefined && !isOverlayEntry(router.history.location)
+      void navigate({ to: ROUTES.workspace, search: next, replace: !opens, state: opens ? overlayState() : true })
     },
-    [current, navigate],
+    [current, navigate, router],
   )
 }
