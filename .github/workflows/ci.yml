@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Only pull-request runs are cancelled: every push to main finishes CI, so Staging deploys it
+  # and Production can release it (OI-293).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
