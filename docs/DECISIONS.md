@@ -253,14 +253,14 @@ am = amends, ref = refines, ext = extends.
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
-| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343 |
+| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343; ref D-348 |
 | D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296 |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290; ref D-339 |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
 | D-270 | The leave-round planner | domain, logic, ui | ref D-316 |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
-| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | ref D-338 |
+| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | ref D-338; ref D-347 |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | sup D-311 (sort placement) |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302 |
@@ -311,7 +311,7 @@ am = amends, ref = refines, ext = extends.
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | ext D-346 |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 | D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
-| D-338 | The Later features: the owner's order and conditions | docs | ref D-344 |
+| D-338 | The Later features: the owner's order and conditions | docs | ref D-344; ref D-347 |
 | D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | ref D-345 |
 | D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
@@ -320,6 +320,8 @@ am = amends, ref = refines, ext = extends.
 | D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
+| D-347 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | |
+| D-348 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4620,3 +4622,44 @@ tell it apart from requested leaves without anyone defining anything. The owner 
 **Why:** D-341's failure showed only `internal` on every screen and a log line with the call's name, so the table and
 field were found only by reproducing the call. A field on `AppError` would have sent server internals to every client
 and changed the contracts for a log; a weak map beside the answer keeps the contract and loses nothing.
+
+## D-347 — The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person
+2026-11-13 · accepted · refines D-338, D-272 · ref D-019, D-023, D-041, D-076, D-141, D-293, D-336, D-343 · OI-222 · the owner's direction of 2026-11-13; details decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Shape (the owner's).** The commanders' "דשבורד" is a board of modules from a fixed catalogue: big numbers, the
+  fairness heat map, a presence trend against the rules' minimum, plan against actual, fairness across sub-units,
+  presence per sub-unit, a distribution, home days by type, who leaves and returns soon, what waits for me, and the
+  daily report's status. A commander picks one of the templates or composes a board of their own; nobody configures
+  a board per commander. The heat map leads for platoon commanders; plan against actual, fairness across platoons and
+  presence against required lead for the company commander.
+- **Catalogue and metrics** are contracts vocabularies (`DASHBOARD_MODULE_IDS`, `DASHBOARD_METRIC_IDS`); each module's
+  derivation, inputs and empty states are in `docs/specs/dashboard.md`. A module the actor cannot read, or with
+  nothing to show for the scope, is not drawn and not offered (D-076).
+- **Templates** are config (`DASHBOARD_TEMPLATES`: "ניהול יציאות", "תכנון ובקרה", "דוח יומי"), not data. The default
+  is derived from the scope: "תכנון ובקרה" when the unit has two or more direct sub-units with readable rows, else
+  "ניהול יציאות".
+- **Stored:** only the choice, per person, in `soldier_preferences.preferences.dashboard`: `null` (the default), a
+  template, or a custom list of at most 20 unique modules. Unknown or repeated items are dropped on read and refused
+  on write. The scope (unit, span, "כולל מתוכנן") lives in the URL (D-023). Every figure is derived (D-019).
+- **Editing** in place: move up, move down, remove, add, drag on desktop; each change saves at once; "חזרה לתבנית"
+  resets.
+- **Plan against actual:** the plan is the leaves as they stood at the start of the span's first day, rebuilt from
+  `leave_events` (`leaveAsOf`); `leave_events.list` gains a span query under the thread's read policy, loaded only
+  for the plan modules.
+- **Permissions:** every aggregate is over the rows the actor may read; no module reveals a hidden soldier. Charts are
+  CSS and inline SVG on theme tokens, no chart library; free tier, all on the client.
+**Why:** the owner asked for charts for the platoon commanders, the company commander and the report owner, without
+configuration per person. A fixed catalogue keeps every module defined and tested; templates give a ready board; a
+stored choice, not stored figures, keeps D-019.
+
+## D-348 — "הסבב שלי": a fixed personal board on top of "שלי" for every soldier
+2026-11-13 · accepted · refines D-265 · ref D-253, D-336, D-345 · OI-222 · the owner's direction of 2026-11-13; details decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- Every soldier, commanders included, sees at the top of "שלי" (not the profile, D-253) their current rotation: base
+  days and home days so far, each against the planned total with a completion rate and the rotation's total days;
+  open requests and the share of decided requests approved; the next leave; the served days left.
+- **Definitions:** served days are `daysOf` (D-336); planned home days are served days under an approved
+  `unavailable` leave, future included; a request is a leave the soldier created, outside the built-in "סבב יציאות"
+  group (D-345); cancelled requests are left out of the rate. A rotation with an open end shows "so far" only.
+- Fixed and derived: nothing configured, nothing stored. No comparison with other soldiers. Without a rotation, or
+  without reading one's own memberships, the section is not drawn.
+**Why:** the owner asked for a small personal picture for every soldier. Keeping it fixed and self-only needs no
+settings and leaks nothing.
