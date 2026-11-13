@@ -13,7 +13,7 @@ import { ListFilter, X } from 'lucide-react'
 import { Fragment, useEffect } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { useBuilderOpen, type BuilderTarget } from './builderOpen'
-import { OPERATOR_LABELS, useFilterFields, type FilterFields } from './filterFields'
+import { OPERATOR_LABELS, useFilterFields, type FieldEntity, type FilterFields } from './filterFields'
 import { useFilterFocus } from './filterFocus'
 import { useIsDesktop } from '../patterns/media'
 
@@ -110,8 +110,8 @@ interface ChipOf {
 const QUALIFIER_SEPARATOR = ' · '
 
 /** The text of a rule of the URL: its field, its operator when not plain, its values. */
-function chipText(rule: FilterRule, fields: FilterFields): Pick<ChipOf, 'name' | 'qualifier' | 'values'> {
-  const draft = fields.draftOf(rule)
+function chipText(rule: FilterRule, fields: FilterFields, entity: FieldEntity): Pick<ChipOf, 'name' | 'qualifier' | 'values'> {
+  const draft = fields.draftOf(rule, entity)
   const field = draft === null ? undefined : fields.byKey.get(draft.field)
   if (draft === null || field === undefined) return { name: t('filters.unavailable'), qualifier: null, values: [] }
   const plain = draft.operator === 'anyOf' || draft.operator === 'is'
@@ -140,7 +140,7 @@ function useChips(): { readonly chips: readonly ChipOf[]; readonly any: boolean 
       ? [{ key: 'other', name: t('filters.other'), qualifier: null, values: [], target: null, remove: filter.clear }]
       : read.filter.rules.map((rule, index, rules) => ({
           key: `rule:${String(index)}`,
-          ...chipText(rule, fields),
+          ...chipText(rule, fields, 'soldier'),
           target: { kind: 'rule', index },
           remove: () => {
             filter.setRules({ ...read.filter, rules: rules.filter((_, at) => at !== index) })
@@ -179,7 +179,7 @@ function useChips(): { readonly chips: readonly ChipOf[]; readonly any: boolean 
     const rule = ruleOfNode(node)
     leave.push({
       key: `leaveProperty:${String(index)}`,
-      ...(rule === null ? { name: t('filters.other'), qualifier: null, values: [] } : chipText(rule, fields)),
+      ...(rule === null ? { name: t('filters.other'), qualifier: null, values: [] } : chipText(rule, fields, 'leave')),
       target: { kind: 'leaveProperty', index },
       remove: () => {
         leaves.setProperties(properties.filter((_, at) => at !== index))

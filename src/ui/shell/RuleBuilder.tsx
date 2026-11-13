@@ -45,7 +45,7 @@ import { CheckList, RadioList, type Choice } from '../primitives/ChoiceList'
 import { DateField } from '../primitives/DateField'
 import { leaveTypeToneOf } from '../theme/palette'
 import type { BuilderTarget } from './builderOpen'
-import { OPERATOR_LABELS, takesValues, useFilterFields, type Draft, type FilterField, type FilterFields, type Operator } from './filterFields'
+import { OPERATOR_LABELS, decimalOf, takesValues, useFilterFields, type Draft, type FilterField, type FilterFields, type Operator } from './filterFields'
 
 // "Filter and sort" (D-312, D-313): the soldier rules as rows of field · operator · values joined by וגם or או, the
 // leave conditions and "only who is missing" after them, one of each, and the sort rules as rows of property ·
@@ -193,7 +193,18 @@ function TypedText({
   const commit = () => {
     if (text !== value) onChange(text)
   }
-  const invalid = input === 'number' && text.trim() !== '' && !Number.isFinite(Number(text))
+  // Closing the builder (Escape, a press outside) leaves the field without a blur: the typed text is written then too.
+  const pending = useRef(commit)
+  useEffect(() => {
+    pending.current = commit
+  })
+  useEffect(
+    () => () => {
+      pending.current()
+    },
+    [],
+  )
+  const invalid = input === 'number' && text.trim() !== '' && decimalOf(text) === null
   return (
     <AriaTextField
       aria-label={[t('filters.values'), name].join(' ')}
@@ -372,7 +383,7 @@ function rowsOf(read: ReadRules, fields: FilterFields, nextId: number): Rows {
   const { rules, match } = read.kind === 'rules' ? read.filter : NO_RULES
   const rows = rules.map((rule, at): Row => {
     const id = nextId + at
-    const draft = fields.draftOf(rule)
+    const draft = fields.draftOf(rule, 'soldier')
     return draft === null ? { id, kept: rule } : { id, draft }
   })
   return { match, rows, nextId: nextId + rows.length, read: keyOf(read), wrote: null }
@@ -394,8 +405,8 @@ function leaveRowsOf(nodes: readonly LeavePropertyNode[], fields: FilterFields, 
   const rows = nodes.map((node, at): LeaveRow => {
     const id = nextId + at
     const rule = ruleOfNode(node)
-    const draft = rule === null ? null : fields.draftOf(rule)
-    return draft === null || fields.byKey.get(draft.field)?.entity !== 'leave' ? { id, kept: node } : { id, draft }
+    const draft = rule === null ? null : fields.draftOf(rule, 'leave')
+    return draft === null ? { id, kept: node } : { id, draft }
   })
   return { rows, nextId: nextId + rows.length, read: leaveKeyOf(nodes), wrote: null }
 }
@@ -457,11 +468,10 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
     write({ ...state, rows: state.rows.filter((row) => row.id !== id) })
   }
 
+  const leaveNodesOfRow = (row: LeaveRow): LeavePropertyNode[] =>
+    'kept' in row ? [row.kept] : leaveNodesOf(fields.byKey.get(row.draft.field)?.ruleOf(row.draft.operator, row.draft.values) ?? null)
   const writeLeaves = (next: LeaveRows) => {
-    const nodes = next.rows.flatMap((row) => {
-      if ('kept' in row) return [row.kept]
-      return leaveNodesOf(fields.byKey.get(row.draft.field)?.ruleOf(row.draft.operator, row.draft.values) ?? null)
-    })
+    const nodes = next.rows.flatMap(leaveNodesOfRow)
     const key = leaveKeyOf(nodes)
     holdLeaveRows(next, key)
     if (key !== next.read) leaves.setProperties(nodes)
@@ -496,6 +506,11 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
   ]
   const leaveRows = LEAVE_FIELDS.filter((field) => leaveShown[field])
   const leavePropertyStart = state.rows.length + leaveRows.length
+  // The place of each row's condition in the URL; a row without a value holds none.
+  const leaveUrlIndex = leaveState.rows.reduce<{ readonly at: number[]; readonly next: number }>(
+    (acc, row) => (leaveNodesOfRow(row).length === 0 ? { at: [...acc.at, -1], next: acc.next } : { at: [...acc.at, acc.next], next: acc.next + 1 }),
+    { at: [], next: 0 },
+  ).at
   const rowCount = leavePropertyStart + leaveState.rows.length
   const leaveFieldOptions = fields.leaveOffered.map((offered) => ({ key: offered.key, label: offered.name }))
 
@@ -624,8 +639,8 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
       })}
       {leaveState.rows.map((row, at) => {
         const connector = <Connector index={leavePropertyStart + at} match="all" onMatch={null} />
-        // A chip names the condition by its place among those the URL holds; rows still without a value come after them.
-        const focused = target.kind === 'leaveProperty' && target.index === at
+        // A chip names the condition by its place among those the URL holds, which skips the rows without a value.
+        const focused = target.kind === 'leaveProperty' && target.index === leaveUrlIndex[at]
         const drop = () => {
           writeLeaves({ ...leaveState, rows: leaveState.rows.filter((held) => held.id !== row.id) })
         }

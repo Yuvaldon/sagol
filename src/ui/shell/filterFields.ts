@@ -105,7 +105,7 @@ export interface FilterField {
   readonly key: string
   readonly name: string
   /** Where its row lives: a soldier rule, or a leave condition (D-382). */
-  readonly entity: 'soldier' | 'leave'
+  readonly entity: FieldEntity
   readonly input: FieldInput
   readonly operators: readonly Operator[]
   /** The live values, and any chosen one no longer live after them. */
@@ -234,15 +234,31 @@ export interface RefChoices {
   readonly units: readonly Choice[]
 }
 
+/** What a filter row filters: the soldiers, or their leaves (D-382). */
+export type FieldEntity = 'soldier' | 'leave'
+
+const DECIMAL = /^-?\d+(\.\d+)?$/u
+
+/** A plain decimal, so `1e3` or `0x1A` is not read as a number the field does not show (D-380). */
+export function decimalOf(raw: string): number | null {
+  return DECIMAL.test(raw.trim()) ? Number(raw) : null
+}
+
 /** The typed value a compared rule writes: NULL while it is not one, so the row lives only in the builder (D-380). */
 function typedValue(input: FieldInput, raw: string | undefined): string | number | null {
   if (raw === undefined || raw.trim() === '') return null
-  if (input === 'number') {
-    const value = Number(raw)
-    return Number.isFinite(value) ? value : null
-  }
+  if (input === 'number') return decimalOf(raw)
   if (input === 'date') return safe(CalendarDate)(raw)
   return raw
+}
+
+/** A value written with its keys in order, so two rules compare by what they hold. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, held: unknown) =>
+    held !== null && typeof held === 'object' && !Array.isArray(held)
+      ? Object.fromEntries(Object.entries(held).sort(([a], [b]) => a.localeCompare(b)))
+      : held,
+  )
 }
 
 const INPUT_OF: Partial<Record<PropertyDefinition['data_type'], FieldInput>> = { text: 'text', number: 'number', date: 'date' }
@@ -301,6 +317,7 @@ function propertyField(definition: PropertyDefinition, refs: RefChoices): Filter
       inert: () => false,
     }
   }
+  const isReference = definition.data_type === 'soldier_ref' || definition.data_type === 'unit_ref'
   const live: Choice[] =
     definition.data_type === 'soldier_ref'
       ? [...refs.soldiers]
@@ -324,7 +341,8 @@ function propertyField(definition: PropertyDefinition, refs: RefChoices): Filter
     ruleOf: (operator, values) =>
       takesValues(operator) ? { kind: 'options', definitionId, negate: negated(operator), ids: [...values] } : emptyRule(operator),
     labelOf: (value) => textOf(value) ?? t('filters.unavailable'),
-    inert: (value) => textOf(value) === null,
+    // A soldier or unit outside the live lists is still a value a property holds, so it is never inert (D-380).
+    inert: (value) => !isReference && textOf(value) === null,
   }
 }
 
@@ -336,8 +354,11 @@ export interface FilterFields {
   readonly offered: readonly FilterField[]
   /** The leave properties a leave condition may pick (D-382). */
   readonly leaveOffered: readonly FilterField[]
-  /** The row of a rule; NULL when its field is not one the builder knows, so the row can only be removed. */
-  draftOf(rule: FilterRule): Draft | null
+  /**
+   * The row of a rule; NULL when its field is not one the builder knows, belongs to the other entity, or would not
+   * write the same rule back, so the row is kept as it is and can only be removed.
+   */
+  draftOf(rule: FilterRule, entity: FieldEntity): Draft | null
 }
 
 export function useFilterFields(): FilterFields {
@@ -387,11 +408,14 @@ export function useFilterFields(): FilterFields {
       ;(field.entity === 'leave' ? leaveOffered : offered).push(field)
     }
     const categoryOf = (tagId: TagId) => tagList.find((tag) => tag.id === tagId)?.category_id
-    const known = (draft: Draft): Draft | null => {
-      const field = byKey.get(draft.field)
-      return field !== undefined && field.operators.includes(draft.operator) ? draft : null
+    const draftOf = (rule: FilterRule, entity: FieldEntity): Draft | null => {
+      const draft = readDraft(rule)
+      const field = draft === null ? undefined : byKey.get(draft.field)
+      if (draft === null || field === undefined || field.entity !== entity || !field.operators.includes(draft.operator)) return null
+      return canonical(field.ruleOf(draft.operator, draft.values)) === canonical(rule) ? draft : null
     }
-    const draftOf = (rule: FilterRule): Draft | null => {
+    const known = (draft: Draft): Draft => draft
+    const readDraft = (rule: FilterRule): Draft | null => {
       switch (rule.kind) {
         case 'tag': {
           const [first] = rule.tagIds
