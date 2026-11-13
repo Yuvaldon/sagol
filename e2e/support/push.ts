@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-// A browser that can push, for the dev server (D-354): the server has no service worker, so the page gets a fake
+// A browser that can push, for the dev server (D-356): the server has no service worker, so the page gets a fake
 // registration whose push manager keeps one subscription, and a permission that is granted on asking. The
 // Playwright config gives the dev server a sample public key. Sample data, tests only.
 

@@ -5,7 +5,7 @@ import { choose, closeDrawer, drawer, typeDate } from './support/leaves.ts'
 import { stubPush, subscribeCalls } from './support/push.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule, signIn } from './support/workspace.ts'
 
-// The notifications slice's demo (D-350, D-354): the profile's "התראות" group with a stubbed push manager, and the
+// The notifications slice's demo (D-352, D-356): the profile's "התראות" group with a stubbed push manager, and the
 // updates on "שלי" after the owner approves Yael's request. On desktop and mobile, RTL, with axe. Sample data, tests
 // only.
 
@@ -47,7 +47,7 @@ test('the profile turns this device on, and offers only the kinds the soldier ca
   })
 
   await test.step('Yael approves nothing, so she gets her own requests only', async () => {
-    // Signing out forgets this device first (D-356).
+    // Signing out forgets this device first (D-358).
     await signOut(page)
     await enterAsYael(page)
     await closeDrawer(page)

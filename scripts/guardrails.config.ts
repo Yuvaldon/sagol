@@ -7,7 +7,7 @@ export const SOURCE_ROOT = 'src'
 /** The layer of files directly under `src/` (`src/main.tsx`, D-075). */
 export const ENTRY_POINT_LAYER = 'app'
 
-/** Layers that may share one commit (D-025, D-075, D-357). Sorted alphabetically. */
+/** Layers that may share one commit (D-025, D-075, D-359). Sorted alphabetically. */
 export const ALLOWED_LAYER_PAIRS: readonly (readonly string[])[] = [
   ['app', 'i18n'],
   ['i18n', 'ui'],

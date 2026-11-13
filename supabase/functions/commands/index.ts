@@ -46,7 +46,7 @@ const log = (line: string) => {
 }
 const time = { now: () => new Date().toISOString() }
 
-// Pushes (D-352) need both VAPID secrets. Without them no push is sent, and the app, built without
+// Pushes (D-354) need both VAPID secrets. Without them no push is sent, and the app, built without
 // VITE_PUSH_PUBLIC_KEY, offers none (D-076).
 const vapidPrivateKey = Deno.env.get('PUSH_VAPID_PRIVATE_KEY') ?? ''
 const vapidSubject = Deno.env.get('PUSH_VAPID_SUBJECT') ?? ''

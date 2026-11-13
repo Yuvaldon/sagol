@@ -41,8 +41,8 @@
 --   + CHECK lists on leave_events.from_status and to_status (OI-013)
 --
 -- Revision 3.3 changes vs revision 3.2
---   + push_subscriptions: device rows, deleted rather than archived (D-349)
---   * soldier_preferences.preferences: updates_seen_at (D-350), notifications (D-356)
+--   + push_subscriptions: device rows, deleted rather than archived (D-351)
+--   * soldier_preferences.preferences: updates_seen_at (D-352), notifications (D-358)
 -- =============================================================================
 
 -- Extensions live outside the app's schema (D-188).
@@ -270,7 +270,7 @@ CREATE TABLE IF NOT EXISTS "soldier_preferences" (
 	"preferences" JSONB NOT NULL DEFAULT '{}',       -- validated by contracts SoldierPreferences:
 	                                                 -- create_leaves_as_approved (D-121),
 	                                                 -- appearance (D-181);
-	                                                 -- updates_seen_at (D-350), notifications (D-356);
+	                                                 -- updates_seen_at (D-352), notifications (D-358);
 	                                                 -- missing keys read as defaults, unknown keys
 	                                                 -- are dropped on read (rules_row_placement, D-310);
 	                                                 -- pinned_modules (D-221) is gone and never written (D-291)
@@ -279,9 +279,9 @@ CREATE TABLE IF NOT EXISTS "soldier_preferences" (
 	PRIMARY KEY("soldier_id")
 );
 
--- One browser install of a soldier that agreed to phone notifications (D-349). Device data, not
+-- One browser install of a soldier that agreed to phone notifications (D-351). Device data, not
 -- organization data: never exported, and deleted (not archived) when the soldier unsubscribes, loses
--- the link or is archived, or when the push service answers that it no longer knows the endpoint (D-356).
+-- the link or is archived, or when the push service answers that it no longer knows the endpoint (D-358).
 -- The endpoint is the natural key: subscribing again from the same browser moves the row to the caller.
 CREATE TABLE IF NOT EXISTS "push_subscriptions" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),

@@ -102,7 +102,7 @@ function installedAppHead({ name, iconDir }: AppIdentity): Plugin {
 }
 
 /**
- * The service worker (D-183, D-354): the app shell only, and only in a production build. It is built from
+ * The service worker (D-183, D-356): the app shell only, and only in a production build. It is built from
  * `src/app/worker/sw.ts`, which routes navigations and shows the phone's notifications. No data is cached.
  */
 const installedApp = ({ name, iconDir }: AppIdentity): ReturnType<typeof VitePWA> =>
@@ -135,7 +135,7 @@ const installedApp = ({ name, iconDir }: AppIdentity): ReturnType<typeof VitePWA
       theme_color: CANVAS,
       background_color: CANVAS,
     },
-    // The worker is the app's own (D-354): it caches and routes as before (D-183) and shows the notifications.
+    // The worker is the app's own (D-356): it caches and routes as before (D-183) and shows the notifications.
     strategies: 'injectManifest',
     srcDir: 'src/app/worker',
     injectManifest: {

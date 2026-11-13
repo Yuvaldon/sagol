@@ -74,7 +74,7 @@ test('the production build is an installable app', async ({ page, request, brows
     for (const path of PWA.networkOnlyPaths) expect(cached.filter((url) => url.includes(path))).toEqual([])
     await page.context().setOffline(false)
     // The navigation fallback skips the gateway and Auth, the worker takes the update the app asks for (D-183), and it
-    // shows the notifications (D-354).
+    // shows the notifications (D-356).
     const worker = await (await page.request.get(PWA.serviceWorkerPath)).text()
     for (const path of PWA.networkOnlyPaths) expect(worker).toContain(path)
     const QUOTE = '[`"\']'

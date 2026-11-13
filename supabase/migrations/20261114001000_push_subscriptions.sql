@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phone notifications (D-349, D-356).
+-- Phone notifications (D-351, D-358).
 --
 -- push_subscriptions: one browser install of a soldier that agreed to phone notifications. Device data:
 -- never exported, deleted (not archived) on unsubscribe, on the loss of the soldier's link or archive,

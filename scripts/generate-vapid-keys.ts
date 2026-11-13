@@ -1,4 +1,4 @@
-// Prints a fresh VAPID key pair for push (D-352). Nothing is written to disk: the private key goes to the function
+// Prints a fresh VAPID key pair for push (D-354). Nothing is written to disk: the private key goes to the function
 // secret PUSH_VAPID_PRIVATE_KEY, the public key to the app variable VITE_PUSH_PUBLIC_KEY. Never commit either line.
 //
 //   node scripts/generate-vapid-keys.ts

@@ -1,4 +1,4 @@
-// The `PushSender` port over the Web Push protocol (D-352): VAPID-signed, payload encrypted for the install's keys.
+// The `PushSender` port over the Web Push protocol (D-354): VAPID-signed, payload encrypted for the install's keys.
 // Only wiring: who gets what is decided in the data layer.
 import type { PushDevice, PushSender } from '@data/server'
 import { ApplicationServer, importVapidKeys, PushMessageError } from '@negrel/webpush'
