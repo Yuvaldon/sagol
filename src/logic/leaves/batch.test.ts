@@ -1,3 +1,4 @@
+import { LEAVE_BATCH } from '@config'
 import { DeploymentId, LeaveId, LeaveTypeId, OrganizationId, SoldierId, type Leave } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import {
@@ -26,6 +27,12 @@ describe('a collective leave (D-012, D-179)', () => {
     const noType = { ...filled, leave_type_id: null }
     expect(leaveBatchIssues(noType, null, IN_ROTATION)).toEqual([{ path: ['leave_type_id'], code: 'required' }])
     expect(leaveBatchIssues({ ...filled, end_date: '2026-11-01' }, null, IN_ROTATION)).toEqual([{ path: ['end_date'], code: 'range_inverted' }])
+  })
+
+  it('refuses more soldiers than one batch creates, on the soldier choice (D-302)', () => {
+    const many = Array.from({ length: LEAVE_BATCH.maxLeaves + 1 }, (_, n) => SoldierId.parse(uuid(1000 + n)))
+    expect(leaveBatchIssues({ ...filled, soldier_ids: many }, null, IN_ROTATION)).toEqual([{ path: ['soldier_ids'], code: 'too_big' }])
+    expect(leaveBatchIssues({ ...filled, soldier_ids: many.slice(1) }, null, IN_ROTATION)).toEqual([])
   })
 
   it('asks for a reason the type requires', () => {
@@ -76,6 +83,11 @@ describe('duplicating a leave (D-049, D-179)', () => {
     const values = newDuplicateValues(source)
     expect(values).toMatchObject({ start_date: '2026-11-20', end_date: '2026-11-22', soldier_ids: [] })
     expect(duplicateLeaveIssues(source, values)).toEqual([{ path: ['soldier_ids'], code: 'too_short' }])
+  })
+
+  it('refuses more copies than one batch creates (D-302)', () => {
+    const many = Array.from({ length: LEAVE_BATCH.maxLeaves + 1 }, (_, n) => SoldierId.parse(uuid(1000 + n)))
+    expect(duplicateLeaveIssues(source, { ...newDuplicateValues(source), soldier_ids: many })).toEqual([{ path: ['soldier_ids'], code: 'too_big' }])
   })
 
   it('makes one copy for each soldier', () => {
