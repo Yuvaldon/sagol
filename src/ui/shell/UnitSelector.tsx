@@ -3,7 +3,8 @@ import { t } from '@i18n'
 import { unitTreeRows, useUnits, useViewFilter } from '@logic'
 import { ChevronDown, Network } from 'lucide-react'
 import { useMemo } from 'react'
-import { Button as AriaButton, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components'
+import { Button as AriaButton, ListBox, ListBoxItem, Select, SelectValue } from 'react-aria-components'
+import { Popover } from '../primitives/overlays'
 import { useIsDesktop } from '../patterns/media'
 
 // Which unit the views show (D-104): the whole organization, or one unit with its sub-units, chosen from

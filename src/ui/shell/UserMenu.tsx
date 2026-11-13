@@ -21,9 +21,9 @@ import {
   MenuItem,
   MenuSection,
   MenuTrigger,
-  Popover,
   TooltipTrigger,
 } from 'react-aria-components'
+import { Popover } from '../primitives/overlays'
 
 const ITEM =
   'flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-md text-control outline-none data-focused:bg-inner md:min-h-control'

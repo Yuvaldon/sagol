@@ -266,8 +266,8 @@ am = amends, ref = refines, ext = extends.
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302 |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
-| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
-| D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
+| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | am D-340 |
+| D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | ref D-341 |
 | D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
@@ -277,7 +277,7 @@ am = amends, ref = refines, ext = extends.
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303 |
-| D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
+| D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | am D-340 |
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
@@ -305,11 +305,14 @@ am = amends, ref = refines, ext = extends.
 | D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
-| D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | |
+| D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337 |
 | D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
+| D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
+| D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
+| D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -3707,6 +3710,9 @@ project list to reading the one project, so the scoped token needs no `projects_
 **Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
 with no laptop or session deploying by hand, and the one class of change that loses real data needs an explicit,
 reviewed marker.
+**Amended 2026-11-13 by D-340: the release is manual.** The `workflow_run` trigger is gone; production runs only when
+the owner starts it after approving a release, and it also moves the `production` branch that Vercel builds. "When it
+runs" above no longer holds; the guard, the destructive-migration scan and the failing-migration behaviour do.
 
 ## D-281 — Staging is seeded with made-up data by a guarded, re-runnable script
 
@@ -4342,8 +4348,8 @@ not say which calls it made. With the name in the URL, the logs answer that with
   panel's params (`useOverlayHistory`).
 - **Leaving.** On the main screen with nothing open, the back button leaves the app.
 - This changes D-023's "the back button works" for view state, and D-092's back button for panels, to the above.
-  Deep links are unchanged. Menus and dialogs that live inside a component (popovers, confirmations) do not take part
-  yet (OI-291).
+  Deep links are unchanged. Menus and dialogs that live inside a component (popovers, confirmations) take part as
+  D-337 sets out.
 **Why:** the owner's report from the installed app on an Android phone: Back replayed every action, so a menu opened
 and closed came back. A probe walked the cause: every search change pushed an entry (four week moves and a panel
 opened and closed made six), and Back walked them one by one. The probe also made no remote call on any of 8 back
@@ -4396,3 +4402,76 @@ also say what each call answered, which is what OI-290 lacked.
 outside its unit, or outside their membership days, was offered and passed the form, and only the submit refused the
 whole plan (OI-292). One function makes the screen and the command agree, and the situation picture (P-3) reads the
 same one.
+
+## D-337 — Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one
+2026-11-13 · accepted · amends D-332 · OI-291 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Where.** The `ui` primitives `Popover` and `ModalOverlay` wrap the react-aria overlays, unchanged on screen, and
+  call `useOverlayLayer` (`logic/view-state/layers.ts`) with their open state and a close. Every menu, picker, sheet
+  and confirmation dialog built on them takes part; none adds its own code. A drawer whose state lives in the URL
+  (`inUrl`) adds no entry: its panel entry (D-332) is already the one Back consumes.
+- **Nesting.** Each open layer pushes an overlay entry over the one it opened on, so Back closes the innermost layer
+  first, one press each; after the last layer Back goes to the previous screen and then leaves the app (D-332).
+- **Closing any other way** (an item, a click outside, Escape, a button) takes the layer's entry back, so nothing is
+  left to replay. The take-back waits for the end of the turn: a layer that opens as another closes (a menu item that
+  opens a dialog) takes over the closing layer's entry instead of going back and forth. A layer that opens while an
+  entry is being left waits for the history to answer, then pushes its own.
+- **Panels.** A panel opened from a layer over the main screen takes the layer's entry. A panel that closes leaves the
+  entries of the layers open over it with its own (`layersAbove`, `takeLayerEntry`), and the navigation panel's entry
+  stays its floor.
+- **A close while the history is still answering** asks for no less: a panel closed (Escape) while the dialog over it
+  is still leaving its entry leaves its own entry once the history answers. A repeat of the same close is dropped.
+- **What is kept.** Leaving a layer's entry never changes what the screen shows: a change made on it (a window chosen
+  in a menu, a panel's row switched) is kept on the entry below.
+- **Only a popover on screen holds an entry.** A react-aria collection renders a hidden copy of its children to learn
+  its items; that copy can sit under another overlay's open state (a select inside an open drawer) and shows no
+  popover. `Popover` registers only once its element is attached.
+**Why:** OI-291. On Android the back button went past menus and dialogs that live inside a component, out of the
+screen under them. One place for every overlay keeps the rule in the layer that owns history and leaves the screens
+as they are (D-333).
+
+## D-340 — The production release is manual: the owner starts it after approving; Vercel builds `production`
+2026-11-13 · accepted · amends D-280 and D-295 · OI-294 · the owner's decision of 2026-11-13 at about 08:05Z, in the
+owner's own words ("ותבצע את ההתאמות ושחרר ידנית באישור שלי"), relayed by the orchestrator. Track: tooling.
+- **Staging stays automatic.** Staging (D-276, D-292) still runs after every green CI on `main`.
+- **Production runs only by hand.** `.github/workflows/production.yml` has no `workflow_run` trigger. It runs only on
+  `workflow_dispatch` on `main`, with the owner as actor and triggering actor, after the owner approves a release. The
+  owner types the production ref (`confirm_ref`) as before.
+- **What it releases.** The optional input `sha` names the commit of `main` to release; empty means main's head at
+  dispatch. It must be a full 40-character SHA. The run refuses it unless CI passed on it (a push run), Staging
+  succeeded for it (a Staging run on `main` with that head SHA), it is on `main`, and it contains the commit production
+  already holds (the branch's commit itself when it is on `main`, else its only parent): migrations only go forward,
+  so a release never takes the frontend back behind the database. Its tree's `vercel.json` must enable `production`,
+  since the branch's commit carries that tree. The project guard and the destructive-migration scan of D-280 are
+  unchanged.
+- **The frontend follows the backend.** After the db push and the function deploy succeed, the run moves the
+  `production` branch the way Staging moves `staging` (D-292): `git commit-tree` with the release's tree and the release
+  as its only parent, message `production: release <sha>`, pushed with `--force-with-lease` on the branch's head, then
+  checked (same tree, only parent). A failed migration or function deploy stops the job before the branch moves, so
+  the frontend is never ahead of the backend.
+- **Vercel.** `vercel.json` sets `git.deploymentEnabled` to `{ "**": false, "main": false, "staging": true,
+  "production": true }`: a merge to `main` no longer builds anything on Vercel, `staging` builds its Preview, and
+  `production` builds. Vercel's Production branch must be `production` (Project Settings → Environments → Production →
+  Branch Tracking); only the owner can change it (OI-294). The owner made that change on 2026-11-13 at about 08:16Z
+  (confirmed by the orchestrator).
+- **Permissions.** The job gets `contents: write` to push the branch; `GITHUB_TOKEN` cannot start other workflows, and
+  Vercel's GitHub integration builds the push like any other.
+- **Rejected.** Keeping `main` as Vercel's Production branch: every merge would ship the frontend before the owner
+  approves, and before the backend it needs. A GitHub environment with required reviewers: paid for private
+  repositories, and the owner chose repository-level values (D-280); the owner starting the run is the approval.
+**Why:** the owner approves each production release. One manual run releases the backend and then the frontend of the
+same commit that staging already ran.
+
+## D-341 — The staging seed writes RFC UUIDs, and a db test parses every seeded row
+2026-11-13 · accepted · ref D-281 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- A seeded id is `pg_temp.seed_id(org || ':seed:' || key)`: the key's md5 with the version nibble set to 4 and the
+  variant nibble to 8, an RFC 9562 version-4 UUID. It stays derived from the key, so a re-run adds nothing (D-281).
+- `src/data/server/seed.dbtest.ts` bootstraps an owner through the gateway, runs `scripts/seed-staging.sql` and parses
+  every row of every table with the contracts. It checks the script; it does not use the seed's rows as data for
+  other tests (no mock data outside tests).
+- A database seeded before this decision holds ids the contracts reject. Its rows cannot be rewritten in place (the
+  foreign keys are not deferrable and `leave_events` is append-only), so the seed refuses it: staging is reset, the
+  owner signs in once, and the seed runs again.
+- Production is not affected: migrations create ids only with `gen_random_uuid()`.
+**Why:** a bare `md5(...)::uuid` carries arbitrary version and variant bits, so about seven in eight seeded ids failed
+`z.uuid()`. Every read of a seeded table threw while parsing, and the call answered `internal`, so every staging
+screen showed the generic error. D-281 said no test reads the seed; this one does, because only a parse catches it.

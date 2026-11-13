@@ -207,6 +207,7 @@ export function ModuleDrawer() {
 
   return (
     <Drawer
+      inUrl
       titleKey={group.titleKey}
       onClose={panel.close}
       header={

@@ -1,7 +1,8 @@
 import { t, type I18nKey } from '@i18n'
 import { Plus } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Dialog, Modal, ModalOverlay } from 'react-aria-components'
+import { Dialog, Modal } from 'react-aria-components'
+import { ModalOverlay } from '../primitives/overlays'
 import { Button } from '../primitives/Button'
 
 // No dead ends (D-285): a field whose definition is missing offers it in place. Who may create it gets the module's own
