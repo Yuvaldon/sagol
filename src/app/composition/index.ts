@@ -16,7 +16,7 @@ export async function composePorts(env: Env, origin: string, shell: ShellPort): 
     const data = createLocalDataAdapter({
       identity: auth,
       time: systemTime,
-      // The names a store from before gives the built-in leave group (D-346): user data, proposed as the claim proposes them.
+      // The names a store from before gives the built-in leave group (D-347): user data, proposed as the claim proposes them.
       rotationLeave: { group: t('onboarding.rotationGroupName'), type: t('onboarding.rotationTypeName') },
     })
     return { auth, data, time: systemTime, shell, device: browserDeviceStores() }

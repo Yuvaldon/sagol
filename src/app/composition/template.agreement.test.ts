@@ -157,7 +157,7 @@ describe('the company template', () => {
     // The duty group lost both its types, so it is not made.
     const groups = valueOf(await repositories.leave_type_groups.list(query)).map((group) => group.name)
     expect(groups).not.toContain('duty')
-    // The built-in group's type came with the claim (D-346).
+    // The built-in group's type came with the claim (D-347).
     expect(valueOf(await repositories.leave_types.list(query))).toHaveLength(offered.keptLeaveTypes.length - 2 + 1)
     expect(valueOf(await repositories.tags.list(query))).toHaveLength(offered.keptTags.length - 1)
     expect(valueOf(await repositories.availability_rules.list(query))).toHaveLength(template.rules.length)
