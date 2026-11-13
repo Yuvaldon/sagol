@@ -41,7 +41,7 @@ am = amends, ref = refines, ext = extends.
 | D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050, D-171; ref D-261 |
 | D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108; ref D-112, D-115; ref D-119, D-120; ref D-132; am D-332 |
 | D-024 | First designed component | ui | ref D-077 |
-| D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075 |
+| D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075; ext D-357 |
 | D-026 | Libraries | all | ext D-034, D-077, D-080 |
 | D-027 | Backend target (superseded) | backend | sup D-200 |
 | D-028 | Unified scope model with relative anchors | contracts, domain, data, backend | ref D-053, D-054, D-055 |
@@ -91,7 +91,7 @@ am = amends, ref = refines, ext = extends.
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142; ref D-146 |
 | D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132; ref D-185 |
-| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154 |
+| D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154; ext D-357 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152; ref D-215; ref D-349, D-354 |
 | D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111 |
 | D-078 | Audits follow milestones | docs | am D-284 |
@@ -199,7 +199,7 @@ am = amends, ref = refines, ext = extends.
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285; ref D-297; ref D-347 |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253; ext D-356 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
-| D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | ref D-351 |
+| D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | ref D-351; ext D-357 |
 | D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-274; ref D-354 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
@@ -327,9 +327,10 @@ am = amends, ref = refines, ext = extends.
 | D-351 | The service worker is built with `injectManifest` in `app`, and holds the push handlers | app, tooling | |
 | D-352 | Push dispatch runs after the commit, best effort, from the gateway only | data, config, backend | |
 | D-353 | Who gets a push: one push per recipient per command, decided by the policy at send time | domain, data | |
-| D-354 | The screens: "עדכונים" on שלי with its badge, and the "התראות" group in the profile | logic, ui | |
-| D-355 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | |
+| D-354 | The screens: "עדכונים" on שלי with its badge, and the "התראות" group in the profile | logic, ui | ext D-357 |
+| D-355 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-357 |
 | D-356 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
+| D-357 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4825,3 +4826,23 @@ already sees are enough to decide whether to open the app.
 - `accounts.revokeLink` and archiving a soldier delete every subscription of that soldier in the same transaction.
 **Why:** a shared tablet must be able to stay silent, and a soldier who lost the account must stop getting pushes
 at once, on every device.
+
+## D-357 — The app's own service worker shows the notifications, and `app` and `i18n` may share a commit
+2026-11-13 · accepted · extends D-183, D-354, D-355; extends D-025, D-075 · decided under D-170
+- The service worker is `src/app/worker/sw.ts`, built by vite-plugin-pwa's `injectManifest`. It keeps D-183's work
+  (precache, the navigation fallback with the network-only paths, `SKIP_WAITING` for the update prompt) and adds
+  `push` and `notificationclick`.
+- A push becomes a notification in the worker, from `i18n` and the payload only (D-355). The title is the app's
+  name (the staging name on staging). The body is the outcome and the leave's days, absolute (`8–14 בנוב׳`), never
+  relative: a notification may be read days later. Several leaves of one command read `<count> <words>`, about the
+  first leave for `my_request`, and send who approves to the inbox under the one tag `awaiting_me`.
+- One tag per leave, so a newer push about it replaces the older one. A tap closes it, brings an open window of
+  the app forward and opens the leave there, or opens a new window.
+- A payload the contract refuses shows nothing. The open app gets no message from the worker: live changes
+  already refresh it (D-352).
+- The worker cannot import `ui` (it loads CSS), so it formats days itself with `@config`'s `DATE_FORMATS`, like
+  `ui/patterns/dates.ts`.
+- `app` and `i18n` may share one commit, like `i18n` and `ui`: the worker is the first `app` code with texts of
+  its own, and the i18n check refuses keys that nothing reads.
+**Why:** the notification must say what happened without opening the app, in the app's language, and the worker
+is the only code running when it arrives.
