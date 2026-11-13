@@ -19,6 +19,8 @@ const ROW = '(var(--spacing-chart-node-height) + var(--spacing-chart-row-gap))'
 const HALF_NODE = 'var(--spacing-chart-node) / 2'
 const HALF_ROW_GAP = 'var(--spacing-chart-row-gap) / 2'
 const LINE = 'pointer-events-none absolute bg-line'
+/** The attribute that names a card's unit, read to hold the view on a card (D-325). */
+const CARD_ID = 'data-unit-id'
 
 const across = (slot: number) => `calc(${COLUMN} * ${String(slot)})`
 const centerOf = (slot: number) => `calc(${COLUMN} * ${String(slot)} + ${HALF_NODE})`
@@ -159,10 +161,10 @@ export function UnitChart({
    * the view is held on this card instead; on its parent's when the card itself moved or left (OI-271).
    */
   const kept = useRef<{ readonly card: Spot; readonly parentId: string | null; readonly parent: Spot | null } | null>(null)
-  const cardOf = (id: string) => nodes.current?.querySelector(`[data-unit-id="${CSS.escape(id)}"]`) ?? null
+  const cardOf = (id: string) => nodes.current?.querySelector(`[${CARD_ID}="${CSS.escape(id)}"]`) ?? null
   const spotOf = (card: Element | null): Spot | null => {
     const element = viewport.current
-    const id = card?.getAttribute('data-unit-id') ?? null
+    const id = card?.getAttribute(CARD_ID) ?? null
     if (element === null || card === null || id === null) return null
     const at = card.getBoundingClientRect()
     const frame = element.getBoundingClientRect()
@@ -175,7 +177,7 @@ export function UnitChart({
     kept.current = { card: spot, parentId, parent: parentId === null ? null : spotOf(cardOf(parentId)) }
   }
   const keepFrom = (target: EventTarget | null) => {
-    if (target instanceof Element && nodes.current?.contains(target) === true) keep(target.closest('[data-unit-id]'))
+    if (target instanceof Element && nodes.current?.contains(target) === true) keep(target.closest(`[${CARD_ID}]`))
   }
 
   /** Zooms to `next`, keeping still what is under the screen's point (the viewport's center when none is given). */
