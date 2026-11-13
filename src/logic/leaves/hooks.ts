@@ -209,7 +209,7 @@ export function useLeaveTypeCommands() {
       return input === null ? unchanged : types.update(input)
     },
   )
-  /** A type of the built-in group, with no form (D-346): `nameOf` gives the name for its number, from i18n. */
+  /** A type of the built-in group, with no form (D-347): `nameOf` gives the name for its number, from i18n. */
   const addRotation = useCommand(
     keys,
     ({ group, all, nameOf }: { group: LeaveTypeGroup; all: readonly LeaveType[]; nameOf: (number: number) => string }) =>

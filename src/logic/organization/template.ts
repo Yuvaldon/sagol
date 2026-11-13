@@ -387,7 +387,7 @@ const live = <Row extends { readonly archived_at: string | null }>(rows: readonl
 
 /**
  * A fresh setup: the root alone, and none of what a template sets up. The built-in group's types come with the
- * claim, like the root, so they do not count (D-346).
+ * claim, like the root, so they do not count (D-347).
  */
 export function isFreshSetup(rows: {
   readonly units: readonly Unit[]

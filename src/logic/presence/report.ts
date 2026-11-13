@@ -30,7 +30,7 @@ export interface ReportEntry {
   readonly rank: CommandRank | null
   /** Absent only: the types of the leaves that make the soldier absent. NULL where the viewer may not read the type. */
   readonly absences: readonly (LeaveType | null)[]
-  /** Absent only: the reason texts of those leaves, where there is one (D-194); never of a rotation leave (D-346). */
+  /** Absent only: the reason texts of those leaves, where there is one (D-194); never of a rotation leave (D-347). */
   readonly reasons: readonly string[]
   readonly leaving: boolean
   readonly returning: boolean
@@ -83,7 +83,7 @@ export interface DayReportInput {
   readonly leaves: readonly Leave[]
   /** Archived ones too, so a leave keeps its type (D-113). */
   readonly types: readonly LeaveType[]
-  /** Archived ones too: a leave of the built-in group's types shows no reason (D-346). */
+  /** Archived ones too: a leave of the built-in group's types shows no reason (D-347). */
   readonly groups: readonly LeaveTypeGroup[]
   readonly days: readonly CalendarDate[]
   /** The selected unit, whose name starts no path below it. */

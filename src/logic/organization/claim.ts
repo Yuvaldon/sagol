@@ -22,7 +22,7 @@ export interface ClaimOrganizationValues {
   readonly soldier: { readonly first_name: string; readonly last_name: string }
   /** The UI proposes it, and the owner may rename the role later. */
   readonly owner_role_name: string
-  /** The built-in "סבב יציאות" group and its first type (D-345, D-346): names the UI proposes, user data afterwards. */
+  /** The built-in "סבב יציאות" group and its first type (D-345, D-347): names the UI proposes, user data afterwards. */
   readonly rotation_group_name: string
   readonly rotation_type_name: string
 }

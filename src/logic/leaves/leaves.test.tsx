@@ -122,7 +122,7 @@ describe('leave type sections (D-113)', () => {
   })
 })
 
-describe('the built-in group (D-346)', () => {
+describe('the built-in group (D-347)', () => {
   const builtIn: LeaveTypeGroup = { ...group(9, 0), is_rotation_leave: true }
   const groups = [builtIn, group(1, 1), group(2, 2, true)]
 

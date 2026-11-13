@@ -188,7 +188,7 @@ describe('the day report (D-193)', () => {
     expect(dayReport(input({ types: [], leaves: leaves.map((row) => ({ ...row, reason: null })) })).hasReasons).toBe(false)
   })
 
-  it('shows no reason of a leave of the built-in group, still counting the soldier absent (D-346)', () => {
+  it('shows no reason of a leave of the built-in group, still counting the soldier absent (D-347)', () => {
     const rotation: LeaveTypeGroup = {
       id: LeaveTypeGroupId.parse(uuid(71)),
       organization_id: ORGANIZATION,

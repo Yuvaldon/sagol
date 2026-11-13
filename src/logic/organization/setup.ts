@@ -75,7 +75,7 @@ export function useSetupProgress(): Loaded<readonly SetupStep[]> {
   }
   // The root comes with the claim (D-251), so the units step is done once a unit under it exists (D-223).
   if (units.status === 'ready' && rows.units !== undefined) rows.units = units.value.filter((unit) => unit.parent_id !== null)
-  // The built-in group's types come with the claim too, so the step is done once an ordinary type exists (D-346).
+  // The built-in group's types come with the claim too, so the step is done once an ordinary type exists (D-347).
   if (rows.leave_types !== undefined && leaveTypes.status === 'ready') {
     if (leaveGroups.status !== 'ready') return leaveGroups
     rows.leave_types = leaveTypes.value.filter((type) => !isRotationLeave(type, leaveGroups.value))

@@ -134,12 +134,12 @@ export function toCreateLeaveTypeGroupInput(name: string, groups: readonly Leave
 
 // ------------------------------------------------------------ built-in group
 
-/** The organization's built-in "סבב יציאות" group (D-346), or NULL while the store does not show it. */
+/** The organization's built-in "סבב יציאות" group (D-347), or NULL while the store does not show it. */
 export function rotationLeaveGroup(groups: readonly LeaveTypeGroup[]): LeaveTypeGroup | null {
   return groups.find((group) => group.is_rotation_leave) ?? null
 }
 
-/** The live groups an ordinary type may join: every one but the built-in group, whose types it makes itself (D-346). */
+/** The live groups an ordinary type may join: every one but the built-in group, whose types it makes itself (D-347). */
 export function ordinaryGroups(groups: readonly LeaveTypeGroup[]): LeaveTypeGroup[] {
   return liveGroups(groups).filter((group) => !group.is_rotation_leave)
 }
@@ -149,14 +149,14 @@ export function isRotationLeave(type: Pick<LeaveType, 'group_id'> | null | undef
   return isRotationLeaveType(type, groups)
 }
 
-/** Whether archiving `type` is refused: the built-in group keeps its last live type (D-346). */
+/** Whether archiving `type` is refused: the built-in group keeps its last live type (D-347). */
 export function isLastRotationLeaveType(type: LeaveType, groups: readonly LeaveTypeGroup[], types: readonly LeaveType[]): boolean {
   const group = groups.find((candidate) => candidate.id === type.group_id) ?? null
   return archiveLeaveTypeIssues(types, type, group).length > 0
 }
 
 /**
- * The number the next type of the built-in group is named with (D-346): how many types it ever held, archived included,
+ * The number the next type of the built-in group is named with (D-347): how many types it ever held, archived included,
  * so a name is never given twice. The first type is named without one, so the first added is 1.
  */
 export function nextRotationLeaveNumber(group: LeaveTypeGroup, types: readonly LeaveType[]): number {
