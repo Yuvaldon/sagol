@@ -151,7 +151,8 @@ export function useSortRules(): SortRulesState {
   const rules = search.sorts ?? DEFAULT_SORT_RULES
   const set = useCallback(
     (next: readonly SortRule[]) => {
-      change({ sorts: isDefaultSort(next) ? undefined : [...next] })
+      // The newest choice decides: rules written here drop a leave column's sort, as the headers do (D-313, OI-264).
+      change({ sort: undefined, order: undefined, sorts: isDefaultSort(next) ? undefined : [...next] })
     },
     [change],
   )
