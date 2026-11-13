@@ -153,6 +153,8 @@ function LeavesTable({ frame }: { readonly frame: BoardFrame }) {
     <EngineScroller labelKey="engines.tableLabel">
       {() => (
         <table className="w-full border-collapse text-name">
+          {/* What a row is, in words: one leave, not one soldier as in the list (D-338). */}
+          <caption className="px-lg py-sm text-start text-label text-text-muted">{t('engines.tableCaption')}</caption>
           <thead className="sticky top-under-bars z-10 bg-canvas md:top-under-bars-md">
             {table.getHeaderGroups().map((group) => (
               <tr key={group.id}>

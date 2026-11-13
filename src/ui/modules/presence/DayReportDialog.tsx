@@ -2,9 +2,11 @@ import { DAY_REPORT, DAY_REPORT_CATEGORIES, DEVICE_KEYS, PANEL_IDS } from '@conf
 import type { AppError, CalendarDate, Timestamp, UnitId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
+  filterUnitOf,
   reportText,
   unitTreeRows,
   useDayReport,
+  useDayViolations,
   useDeviceFlag,
   useModuleAccess,
   usePanel,
@@ -27,6 +29,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button as AriaButton, Dialog, Disclosure, DisclosurePanel, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import { groupLabel } from '../../board/labels'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
+import { RuleViolations } from '../../patterns/rules/RuleViolations'
 import { formatDate, formatDateRange } from '../../patterns/dates'
 import { Button, IconButton } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
@@ -209,14 +212,33 @@ interface Confirm {
   readonly isPending: boolean
 }
 
+/**
+ * The rules the day breaks for the board's unit, from the evaluation of the heat row (D-141, D-338). Nothing while it
+ * loads, or when nothing breaks.
+ */
+function Breaches({ date, unitId }: { readonly date: CalendarDate; readonly unitId: UnitId | null }) {
+  const violations = useDayViolations(date, unitId)
+  if (violations.status === 'failed') return <FailureNotice error={violations.error} />
+  if (violations.status !== 'ready' || violations.value.length === 0) return null
+  return (
+    <div className="flex flex-col gap-xs">
+      <p className="text-name font-semibold">{t('rules.dayTitle')}</p>
+      <RuleViolations violations={violations.value} />
+    </div>
+  )
+}
+
 function Day({
   day,
+  unitId,
   span,
   withReasons,
   confirmations,
   confirm,
 }: {
   readonly day: ReportDay
+  /** The board's unit, whose rules the day is judged by; NULL for the whole organization. */
+  readonly unitId: UnitId | null
   readonly span: boolean
   readonly withReasons: boolean
   readonly confirmations: DayConfirmations | undefined
@@ -231,6 +253,7 @@ function Day({
       {confirmations?.summary == null ? null : <Summary summary={confirmations.summary} />}
       <Counts counts={day.counts} size="large" />
       {day.counts.absent === 0 ? <p className="text-name text-text-muted">{t('presence.noneAbsent')}</p> : null}
+      <Breaches date={day.date} unitId={unitId} />
       <div className="flex flex-col gap-xs">
         {day.units.map((section) => (
           <UnitSection
@@ -381,6 +404,7 @@ function SpanControl({ until, setUntil }: { readonly until: CalendarDate | null;
 function DayReportBody() {
   const { day, until, today, days, rotations, canShift, shift, goToToday, setUntil } = usePresenceDay()
   const { filter } = useViewFilter()
+  const unit = filterUnitOf(filter)
   const report = useDayReport(days, filter, rotations)
   const confirmations = useReportConfirmations(days, report, rotations)
   const confirmCommand = useConfirmDayReport()
@@ -448,6 +472,7 @@ function DayReportBody() {
             <Day
               key={row.date}
               day={row}
+              unitId={unit.kind === 'unit' ? unit.unitId : null}
               span={report.value.days.length > 1}
               withReasons={reasons.value && report.value.hasReasons}
               confirmations={confirmations.status === 'ready' ? confirmations.value.get(row.date) : undefined}
