@@ -4417,6 +4417,8 @@ same one.
 - **Panels.** A panel opened from a layer over the main screen takes the layer's entry. A panel that closes leaves the
   entries of the layers open over it with its own (`layersAbove`, `takeLayerEntry`), and the navigation panel's entry
   stays its floor.
+- **A close while the history is still answering** asks for no less: a panel closed (Escape) while the dialog over it
+  is still leaving its entry leaves its own entry once the history answers. A repeat of the same close is dropped.
 - **What is kept.** Leaving a layer's entry never changes what the screen shows: a change made on it (a window chosen
   in a menu, a panel's row switched) is kept on the entry below.
 - **Only a popover on screen holds an entry.** A react-aria collection renders a hidden copy of its children to learn
