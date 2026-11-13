@@ -14,6 +14,7 @@ import {
   type FilterExpression,
   type Leave,
   type LeaveType,
+  type PropertyDefinition,
   type Soldier,
   type SoldierTag,
   type Unit,
@@ -47,6 +48,10 @@ const SINGLE = TagId.parse(uuid(42))
 const BLOOD = PropertyDefinitionId.parse(uuid(50))
 const LICENSED = PropertyDefinitionId.parse(uuid(51))
 const TYPE_A = PropertyOptionId.parse(uuid(52))
+const NOTE = PropertyDefinitionId.parse(uuid(53))
+const HEIGHT = PropertyDefinitionId.parse(uuid(54))
+const JOINED = PropertyDefinitionId.parse(uuid(55))
+const BUDDY = PropertyDefinitionId.parse(uuid(56))
 
 describe('the rules of the builder in the URL (D-312)', () => {
   const filter: SoldierFilter = {
@@ -57,9 +62,14 @@ describe('the rules of the builder in the URL (D-312)', () => {
       { kind: 'tag', negate: true, tagIds: [SINGLE] },
       { kind: 'rank', negate: true, rankIds: [RANK] },
       { kind: 'status', negate: false, statuses: ['active'] },
-      { kind: 'options', definitionId: BLOOD, negate: true, optionIds: [TYPE_A] },
+      { kind: 'options', definitionId: BLOOD, negate: true, ids: [TYPE_A] },
       { kind: 'empty', definitionId: BLOOD, empty: false },
       { kind: 'boolean', definitionId: LICENSED, value: true },
+      { kind: 'compare', definitionId: NOTE, operator: 'contains', value: 'gate' },
+      { kind: 'compare', definitionId: HEIGHT, operator: 'greater_or_equal', value: 170 },
+      { kind: 'compare', definitionId: JOINED, operator: 'less_than', value: '2026-01-01' },
+      { kind: 'compare', definitionId: NOTE, operator: 'not_equals', value: 'north' },
+      { kind: 'options', definitionId: BUDDY, negate: false, ids: [UNIT] },
     ],
   }
 
@@ -76,6 +86,11 @@ describe('the rules of the builder in the URL (D-312)', () => {
         { kind: 'not', node: { kind: 'property', operator: 'any_of', value: [TYPE_A] } },
         { kind: 'property', operator: 'is_not_empty', value: null },
         { kind: 'property', operator: 'equals', value: true },
+        { kind: 'property', operator: 'contains', value: 'gate' },
+        { kind: 'property', operator: 'greater_or_equal', value: 170 },
+        { kind: 'property', operator: 'less_than', value: '2026-01-01' },
+        { kind: 'property', operator: 'not_equals', value: 'north' },
+        { kind: 'property', operator: 'any_of', value: [UNIT] },
       ],
     })
     expect(readRules(written ?? null)).toEqual({ kind: 'rules', filter })
@@ -95,12 +110,16 @@ describe('the rules of the builder in the URL (D-312)', () => {
   it('leaves a rule without a value out of the URL, and reads what it cannot edit as another filter', () => {
     const empty = { kind: 'tag' as const, negate: false, tagIds: [] }
     expect(ruleHasValue(empty)).toBe(false)
+    expect(ruleHasValue({ kind: 'compare', definitionId: NOTE, operator: 'contains', value: null })).toBe(false)
+    expect(ruleHasValue({ kind: 'compare', definitionId: NOTE, operator: 'contains', value: '  ' })).toBe(false)
     expect(writeRules({ ...NO_RULES, rules: [empty] })).toBeUndefined()
     const others: FilterExpression[] = [
       { where: { kind: 'tag', match: 'all', tag_ids: [MEDIC] } },
       { where: { kind: 'and', nodes: [{ kind: 'or', nodes: [{ kind: 'tag', match: 'any', tag_ids: [MEDIC] }] }, { kind: 'soldier_status', statuses: ['active'] }] } },
       { where: { kind: 'not', node: { kind: 'property', property_definition_id: LICENSED, operator: 'equals', value: true } } },
       { where: { kind: 'seniority', min: 1, max: null } },
+      { where: { kind: 'property', property_definition_id: NOTE, operator: 'any_of', value: ['north'] } },
+      { where: { kind: 'not', node: { kind: 'property', property_definition_id: NOTE, operator: 'contains', value: 'gate' } } },
     ]
     for (const other of others) expect(readRules(other)).toEqual({ kind: 'other' })
   })
@@ -133,16 +152,39 @@ describe('leave conditions (D-132)', () => {
   const type = LeaveTypeId.parse(uuid(60))
   const other = LeaveTypeId.parse(uuid(61))
 
+  const none = new Map<PropertyDefinitionId, PropertyDefinition>()
+  const plain = { status: 'pending' as const, leave_type_id: type, properties: {} }
+
   it('matches every condition given, and everything without one', () => {
-    expect(leaveMatches({}, { status: 'pending', leave_type_id: type })).toBe(true)
-    expect(leaveMatches({ statuses: ['approved'] }, { status: 'pending', leave_type_id: type })).toBe(false)
-    expect(leaveMatches({ statuses: ['pending'], type_ids: [type] }, { status: 'pending', leave_type_id: type })).toBe(true)
-    expect(leaveMatches({ type_ids: [other] }, { status: 'pending', leave_type_id: type })).toBe(false)
+    expect(leaveMatches({}, none, plain)).toBe(true)
+    expect(leaveMatches({ statuses: ['approved'] }, none, plain)).toBe(false)
+    expect(leaveMatches({ statuses: ['pending'], type_ids: [type] }, none, plain)).toBe(true)
+    expect(leaveMatches({ type_ids: [other] }, none, plain)).toBe(false)
+  })
+
+  it("matches a leave's own properties, and no leave by a definition not of leaves (D-382)", () => {
+    const destination = propertyDefinition(80, 'leave', 'text')
+    const soldierNote = propertyDefinition(81, 'soldier', 'text')
+    const definitions = new Map([destination, soldierNote].map((definition) => [definition.id, definition]))
+    const eilat = { ...plain, properties: { [destination.id]: 'Eilat' } }
+    const node = (id: PropertyDefinitionId, operator: 'contains' | 'is_empty', value: string | null) =>
+      ({ kind: 'property', property_definition_id: id, operator, value }) as const
+    expect(leaveMatches({ properties: [node(destination.id, 'contains', 'eil')] }, definitions, eilat)).toBe(true)
+    expect(leaveMatches({ properties: [node(destination.id, 'contains', 'eil')] }, definitions, plain)).toBe(false)
+    expect(leaveMatches({ properties: [{ kind: 'not', node: node(destination.id, 'contains', 'eil') }] }, definitions, plain)).toBe(true)
+    expect(leaveMatches({ properties: [node(destination.id, 'is_empty', null)] }, definitions, plain)).toBe(true)
+    expect(leaveMatches({ properties: [node(soldierNote.id, 'is_empty', null)] }, definitions, plain)).toBe(false)
+    expect(leaveMatches({ properties: [node(destination.id, 'is_empty', null)] }, none, plain)).toBe(false)
+    expect(
+      leaveMatches({ statuses: ['approved'], properties: [node(destination.id, 'contains', 'eil')] }, definitions, eilat),
+    ).toBe(false)
   })
 
   it('takes only the statuses the board draws, and no empty list', () => {
     expect(LeaveConditions.safeParse({ statuses: ['rejected'] }).success).toBe(false)
     expect(LeaveConditions.safeParse({ type_ids: [] }).success).toBe(false)
+    expect(LeaveConditions.safeParse({ properties: [] }).success).toBe(false)
+    expect(LeaveConditions.safeParse({ properties: [{ kind: 'soldier_status', statuses: ['active'] }] }).success).toBe(false)
   })
 })
 
@@ -323,3 +365,21 @@ describe('present and absent lists (D-134, OI-090)', () => {
 })
 
 const READS_ALL = () => true
+
+function propertyDefinition(
+  n: number,
+  entity: PropertyDefinition['entity_type'],
+  dataType: PropertyDefinition['data_type'],
+): PropertyDefinition {
+  return {
+    id: PropertyDefinitionId.parse(uuid(n)),
+    organization_id: ORGANIZATION,
+    entity_type: entity,
+    label: `P${String(n)}`,
+    data_type: dataType,
+    options: [],
+    is_required: false,
+    sort_order: n,
+    ...audit,
+  }
+}
