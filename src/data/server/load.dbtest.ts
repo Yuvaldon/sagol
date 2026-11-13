@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 import {
+  LeaveTypeGroupId,
   DeploymentId,
   AccessGrantId,
   AuthUserId,
@@ -76,6 +77,7 @@ async function localExport(): Promise<OrganizationExport> {
     {
       identity: { current: () => owner, subscribe: (): Unsubscribe => () => undefined },
       time: { now: () => NOW },
+      rotationLeave: { group: 'Rotation leave', type: 'Rotation leave' },
     },
     { database: `load-${names}`, channel: `load-${names}` },
   )
@@ -94,6 +96,8 @@ async function localExport(): Promise<OrganizationExport> {
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
       root_unit_id: company,
       membership_id: UnitMembershipId.parse(crypto.randomUUID()),
+      rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: 'Rotation leave' },
+      rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: 'Rotation leave 1' },
     }),
   )
   valueOf(await commands.organizations.update({ expected_version: 1, changes: { baseline_role_id: ownerRole } }))

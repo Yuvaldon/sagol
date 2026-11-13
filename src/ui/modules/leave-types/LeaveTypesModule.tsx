@@ -1,12 +1,14 @@
-import { LEAVE_TYPE_PALETTE_KEYS, NEW_ENTITY, PANEL_IDS } from '@config'
+import { LEAVE_TYPE_PALETTE_KEYS, NEW_ENTITY, PANEL_IDS, ROTATION_LEAVE_PALETTE_KEYS } from '@config'
 import type { AppError, AvailabilityEffect, LeaveType, LeaveTypeGroup, LeaveTypeGroupId } from '@contracts'
 import { t } from '@i18n'
 import {
   NEW_LEAVE_TYPE_VALUES,
   leaveTypeFormIssues,
   leaveTypeFormValues,
+  isLastRotationLeaveType,
+  isRotationLeave,
   leaveTypeSections,
-  liveGroups,
+  ordinaryGroups,
   typesOfGroup,
   useLeaveTypeCommands,
   useLeaveTypeGroups,
@@ -23,7 +25,7 @@ import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
-import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
+import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
 import { Button } from '../../primitives/Button'
 import { ColorField } from '../../primitives/ColorField'
@@ -49,7 +51,7 @@ const NO_GROUP_KEY = 'none'
 function groupOptions(groups: readonly LeaveTypeGroup[]): SelectOption<LeaveTypeGroupId | null>[] {
   return [
     { key: NO_GROUP_KEY, label: { key: 'leaveTypes.noGroup' }, value: null },
-    ...liveGroups(groups).map((group) => ({ key: group.id, label: { text: group.name }, value: group.id })),
+    ...ordinaryGroups(groups).map((group) => ({ key: group.id, label: { text: group.name }, value: group.id })),
   ]
 }
 
@@ -71,6 +73,8 @@ function TypeForm({
   const { create, update } = useLeaveTypeCommands()
   const [opened] = useState(type)
   const [state, setState] = useState(CLEAN_FORM)
+  // A type of the built-in group keeps its group, effect and reason fixed, in a calm color (D-347).
+  const rotation = opened !== null && isRotationLeave(opened, groups)
   const backToList = () => {
     if (onDone === undefined) panel.open(PANEL_IDS.leaveTypes)
     else onDone(null)
@@ -117,42 +121,48 @@ function TypeForm({
           />
         )}
       </form.Field>
-      <form.Field name="group_id">
-        {(field) => (
-          <SelectField
-            labelKey="leaveTypes.group"
-            name={field.name}
-            value={field.state.value}
-            options={groupOptions(groups)}
-            onChange={field.handleChange}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
-        )}
-      </form.Field>
-      <form.Field name="availability_effect">
-        {(field) => (
-          <SelectField
-            labelKey="leaveTypes.effect"
-            name={field.name}
-            value={field.state.value}
-            options={EFFECT_OPTIONS}
-            onChange={field.handleChange}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
-        )}
-      </form.Field>
-      <p className="text-name text-text-muted">{t('leaveTypes.effectHint')}</p>
-      <form.Field name="requires_reason">
-        {(field) => (
-          <SwitchField labelKey="leaveTypes.requiresReason" name={field.name} value={field.state.value} onChange={field.handleChange} />
-        )}
-      </form.Field>
+      {rotation ? (
+        <p className="text-name text-text-muted">{t('leaveTypes.rotationHint')}</p>
+      ) : (
+        <>
+          <form.Field name="group_id">
+            {(field) => (
+              <SelectField
+                labelKey="leaveTypes.group"
+                name={field.name}
+                value={field.state.value}
+                options={groupOptions(groups)}
+                onChange={field.handleChange}
+                error={fieldError(field.state.meta.errors, field.name, state.answered)}
+              />
+            )}
+          </form.Field>
+          <form.Field name="availability_effect">
+            {(field) => (
+              <SelectField
+                labelKey="leaveTypes.effect"
+                name={field.name}
+                value={field.state.value}
+                options={EFFECT_OPTIONS}
+                onChange={field.handleChange}
+                error={fieldError(field.state.meta.errors, field.name, state.answered)}
+              />
+            )}
+          </form.Field>
+          <p className="text-name text-text-muted">{t('leaveTypes.effectHint')}</p>
+          <form.Field name="requires_reason">
+            {(field) => (
+              <SwitchField labelKey="leaveTypes.requiresReason" name={field.name} value={field.state.value} onChange={field.handleChange} />
+            )}
+          </form.Field>
+        </>
+      )}
       <form.Field name="color_key">
         {(field) => (
           <ColorField
             labelKey="palette.label"
             name={field.name}
-            keys={LEAVE_TYPE_PALETTE_KEYS}
+            keys={rotation ? ROTATION_LEAVE_PALETTE_KEYS : LEAVE_TYPE_PALETTE_KEYS}
             value={field.state.value}
             onChange={field.handleChange}
             error={fieldError(field.state.meta.errors, field.name, state.answered)}
@@ -249,6 +259,29 @@ function TypeSection({ title, children }: { readonly title: string; readonly chi
   )
 }
 
+/** The built-in group's "add" (D-347): a new type with no form, named and colored for it. */
+function AddRotationButton({
+  group,
+  isPending,
+  onAdd,
+}: {
+  readonly group: LeaveTypeGroup
+  readonly isPending: boolean
+  readonly onAdd: (group: LeaveTypeGroup) => void
+}) {
+  return (
+    <Button
+      isDisabled={isPending}
+      onPress={() => {
+        onAdd(group)
+      }}
+    >
+      <Plus aria-hidden size={14} />
+      {t('leaveTypes.addRotation')}
+    </Button>
+  )
+}
+
 export function LeaveTypesModule() {
   const panel = usePanel()
   const types = useLeaveTypes()
@@ -290,19 +323,6 @@ export function LeaveTypesModule() {
     return <TypeEditor key={type.id} type={type} groups={groups.value} types={all} />
   }
 
-  if (live.length === 0) {
-    return (
-      <EmptyNotice titleKey="leaveTypes.emptyTitle" bodyKey={permissions.create ? undefined : 'leaveTypes.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newType}>
-            <Plus aria-hidden size={14} />
-            {t('leaveTypes.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
-    )
-  }
-
   const step = (type: LeaveType, direction: -1 | 1) => {
     setFailure(null)
     void commands.step.run({ type, direction, all }).then((result) => {
@@ -320,7 +340,8 @@ export function LeaveTypesModule() {
       ...(permissions.update && index >= 0 && index < siblings.length - 1
         ? [{ id: 'down', labelKey: 'common.stepDown' as const, icon: <ArrowDown aria-hidden size={14} />, onAction: () => { step(type, 1) } }]
         : []),
-      ...(permissions.archive
+      // The built-in group keeps its last live type (D-347).
+      ...(permissions.archive && !isLastRotationLeaveType(type, groups.value, all)
         ? [
             {
               id: 'archive',
@@ -336,6 +357,15 @@ export function LeaveTypesModule() {
     ]
   }
 
+  const addRotation = (group: LeaveTypeGroup) => {
+    setFailure(null)
+    void commands.addRotation
+      .run({ group, all, nameOf: (number) => `${t('leaveTypes.rotationTypeName')} ${String(number)}` })
+      .then((result) => {
+        if (!result.ok) setFailure(result.error)
+      })
+  }
+
   const sectionTitle = (section: LeaveTypeSection) => section.group?.name ?? t('leaveTypes.noGroup')
 
   return (
@@ -348,6 +378,11 @@ export function LeaveTypesModule() {
             {section.types.map((type) => (
               <TypeRow key={type.id} type={type} canUpdate={permissions.update} actions={actionsOf(type)} />
             ))}
+            {permissions.create && section.group?.is_rotation_leave === true ? (
+              <li className="pt-xs">
+                <AddRotationButton group={section.group} isPending={commands.addRotation.isPending} onAdd={addRotation} />
+              </li>
+            ) : null}
           </TypeSection>
         ))}
       {permissions.create ? (

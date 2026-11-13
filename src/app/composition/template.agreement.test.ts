@@ -1,6 +1,8 @@
 import 'fake-indexeddb/auto'
 import { UNIT_TEMPLATES, type UnitTemplate } from '@config'
 import {
+  LeaveTypeGroupId,
+  LeaveTypeId,
   AccessGrantId,
   OrganizationId,
   RoleId,
@@ -50,7 +52,7 @@ async function claimedData(): Promise<DataAdapter> {
   const { createLocalAuthProvider, createLocalDataAdapter } = await loadLocalData()
   const auth = createLocalAuthProvider(memoryStore())
   const id = crypto.randomUUID()
-  const data = createLocalDataAdapter({ identity: auth, time: { now: () => NOW } }, { database: `template-${id}`, channel: `template-${id}` })
+  const data = createLocalDataAdapter({ identity: auth, time: { now: () => NOW }, rotationLeave: { group: 'Rotation leave', type: 'Rotation leave' } }, { database: `template-${id}`, channel: `template-${id}` })
   valueOf(await auth.signInAs({ email: 'owner@example.test', display_name: null }))
   valueOf(
     await data.commands.organizations.bootstrapOwner({
@@ -61,6 +63,8 @@ async function claimedData(): Promise<DataAdapter> {
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
       root_unit_id: UnitId.parse(crypto.randomUUID()),
       membership_id: UnitMembershipId.parse(crypto.randomUUID()),
+      rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: 'Rotation leave' },
+      rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: 'Rotation leave 1' },
     }),
   )
   return data
@@ -108,6 +112,7 @@ async function fresh(data: DataAdapter): Promise<boolean> {
     bindings: valueOf(await repositories.rank_role_bindings.list(query)),
     leaveTypes: valueOf(await repositories.leave_types.list(query)),
     tagCategories: valueOf(await repositories.tag_categories.list(query)),
+    leaveGroups: valueOf(await repositories.leave_type_groups.list(query)),
   })
 }
 
@@ -152,7 +157,8 @@ describe('the company template', () => {
     // The duty group lost both its types, so it is not made.
     const groups = valueOf(await repositories.leave_type_groups.list(query)).map((group) => group.name)
     expect(groups).not.toContain('duty')
-    expect(valueOf(await repositories.leave_types.list(query))).toHaveLength(offered.keptLeaveTypes.length - 2)
+    // The built-in group's type came with the claim (D-347).
+    expect(valueOf(await repositories.leave_types.list(query))).toHaveLength(offered.keptLeaveTypes.length - 2 + 1)
     expect(valueOf(await repositories.tags.list(query))).toHaveLength(offered.keptTags.length - 1)
     expect(valueOf(await repositories.availability_rules.list(query))).toHaveLength(template.rules.length)
     expect(await fresh(data)).toBe(false)

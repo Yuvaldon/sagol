@@ -7,6 +7,7 @@ import {
   SoldierStatus,
   SubjectRankConstraint,
   UnitKind,
+  AvailabilityEffect,
   type AsyncResult,
   type AuthIdentity,
   type DataCommands,
@@ -15,6 +16,7 @@ import {
   type Organization,
   type Session,
 } from '@contracts'
+import { FIRST_ROTATION_LEAVE_COLOR } from '@config'
 import { can, timeZoneIssues, todayIn, withPathPrefix } from '@domain'
 import { tableOf } from './store'
 import { createdBy, type LocalDependencies } from './dependencies'
@@ -103,6 +105,25 @@ async function writeBootstrap(
     color_key: null,
     ...createdBy(soldierId, now),
   })
+  // The built-in "סבב יציאות" group and its first type (D-345, D-347): absences that ask no reason, in the first calm color.
+  const rotationGroup = parsedRow('leave_type_groups', {
+    ...input.rotation_group,
+    organization_id: organizationId,
+    is_rotation_leave: true,
+    sort_order: 0,
+    ...createdBy(soldierId, now),
+  })
+  const rotationType = parsedRow('leave_types', {
+    ...input.rotation_type,
+    organization_id: organizationId,
+    group_id: input.rotation_group.id,
+    color_key: FIRST_ROTATION_LEAVE_COLOR,
+    icon_key: null,
+    availability_effect: AvailabilityEffect.enum.unavailable,
+    requires_reason: false,
+    sort_order: 0,
+    ...createdBy(soldierId, now),
+  })
   const permissions = everyPermission().map((pair) =>
     parsedRow('role_permissions', { ...pair, role_id: roleId, organization_id: organizationId }),
   )
@@ -127,7 +148,7 @@ async function writeBootstrap(
     revoked_by: null,
   })
 
-  return database.transaction('rw', [...POLICY_TABLES, 'account_link_requests'], async () => {
+  return database.transaction('rw', [...POLICY_TABLES, 'account_link_requests', 'leave_type_groups', 'leave_types'], async () => {
     const session = await resolveSession(database, identity)
     if (session.status === 'linked') return fail({ code: 'forbidden' })
     if (!(await bootstrapAllowed(database, identity, claimant))) return fail({ code: 'bootstrap_not_allowed' })
@@ -140,6 +161,8 @@ async function writeBootstrap(
     await tableOf(database, 'roles').add(role)
     await tableOf(database, 'role_permissions').bulkAdd(permissions)
     await tableOf(database, 'access_grants').add(grant)
+    await tableOf(database, 'leave_type_groups').add(rotationGroup)
+    await tableOf(database, 'leave_types').add(rotationType)
 
     // Checked on the state after the write, like every write that can change permissions (D-059).
     await requireAccessManager(database, organizationId, now)
@@ -231,6 +254,8 @@ export function createOrganizationCommands(
           { table: 'roles', ids: [input.owner_role.id] },
           { table: 'role_permissions', ids: [input.owner_role.id] },
           { table: 'access_grants', ids: [input.access_grant_id] },
+          { table: 'leave_type_groups', ids: [input.rotation_group.id] },
+          { table: 'leave_types', ids: [input.rotation_type.id] },
         ])
         return session
       }),

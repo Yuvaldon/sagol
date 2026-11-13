@@ -33,7 +33,9 @@ import { optimisticLeave } from './forms'
 import { leavesOfInput, sheetIssues, toCreateLeavesInput, type LeaveSheetValues, type RotationOf } from './sheet'
 import {
   toCreateLeaveTypeGroupInput,
+  toAddRotationLeaveTypeInput,
   toCreateLeaveTypeInput,
+  nextRotationLeaveNumber,
   toUpdateLeaveTypeInput,
   typesOfGroup,
   liveGroups,
@@ -207,6 +209,12 @@ export function useLeaveTypeCommands() {
       return input === null ? unchanged : types.update(input)
     },
   )
+  /** A type of the built-in group, with no form (D-347): `nameOf` gives the name for its number, from i18n. */
+  const addRotation = useCommand(
+    keys,
+    ({ group, all, nameOf }: { group: LeaveTypeGroup; all: readonly LeaveType[]; nameOf: (number: number) => string }) =>
+      types.create(toAddRotationLeaveTypeInput(group, all, nameOf(nextRotationLeaveNumber(group, all)))),
+  )
   const archive = useCommand(keys, (type: LeaveType) => types.archive({ id: type.id, expected_version: type.version }))
   /** Up or down inside its group (D-113). */
   const step = useCommand(
@@ -217,7 +225,7 @@ export function useLeaveTypeCommands() {
       return items === null ? unchanged : types.reorder({ items })
     },
   )
-  return { create, update, archive, step }
+  return { create, addRotation, update, archive, step }
 }
 
 export function useLeaveTypeGroupCommands() {

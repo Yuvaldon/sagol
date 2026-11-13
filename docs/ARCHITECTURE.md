@@ -196,6 +196,11 @@ The current state (D-128):
   holding today, else the next, else the latest ended; NULL is routine, `useRotationScope`); routine keeps the board
   under its band and hides the requests hub and the day report; `defaultDeploymentMembers` and `startingMembers` fill
   a new list from the unit or the previous rotation.
+- **The built-in "סבב יציאות" group** (D-345, D-347): `leave_type_groups.is_rotation_leave`, one per organization,
+  made by `bootstrapOwner` and the `20261114000000_rotation_leave.sql` migration (device store version 9). The command
+  core refuses archiving it or its last type, and keeps its types unavailable, reasonless and in calm colors
+  (`domain/leaves/types`); `logic/leaves/leaveTypes` adds a numbered type with no form; the forms ask no reason
+  and the day report shows none for its leaves.
 - **Leave batches and copies** (`leaves.createBatch`, `leaves.duplicate`): each leave planned and checked as a single
   one, the rules judged on all at once, all or none (D-179).
 - **The leave-round planner** (`domain/leaves/rounds`, `logic/leaves/planner`, D-316): groups of a rotation's soldiers,

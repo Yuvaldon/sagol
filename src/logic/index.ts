@@ -144,12 +144,16 @@ export {
 export { NewLeaveDraft } from './view-state/draft'
 export {
   NEW_LEAVE_TYPE_VALUES,
+  isLastRotationLeaveType,
+  isRotationLeave,
   leaveTypeFormIssues,
   leaveTypeFormValues,
   leaveTypeGroupFormIssues,
   leaveTypeSections,
   liveGroups,
+  ordinaryGroups,
   orderedLeaveTypes,
+  rotationLeaveGroup,
   typesOfGroup,
   type LeaveTypeFormValues,
   type LeaveTypeSection,

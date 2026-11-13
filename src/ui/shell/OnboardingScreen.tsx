@@ -13,6 +13,13 @@ import { IdentityList } from './IdentityList'
 import { LinkRequestForm, LinkRequestWaiting } from './LinkRequest'
 import { FailureScreen, LoadingScreen } from './states'
 
+/** The names the claim stores for the owner role and the built-in leave group (D-005, D-347): user data, proposed here. */
+const PROPOSED_NAMES = () => ({
+  owner_role_name: t('onboarding.ownerRoleName'),
+  rotation_group_name: t('onboarding.rotationGroupName'),
+  rotation_type_name: t('onboarding.rotationTypeName'),
+})
+
 function ClaimForm() {
   const { claim, isPending } = useClaimOrganization()
   const panel = usePanel()
@@ -25,12 +32,12 @@ function ClaimForm() {
       soldier: { first_name: '', last_name: '' },
     },
     validators: {
-      onSubmit: ({ value }) => validatorResult(claimIssues({ ...value, owner_role_name: t('onboarding.ownerRoleName') })),
+      onSubmit: ({ value }) => validatorResult(claimIssues({ ...value, ...PROPOSED_NAMES() })),
     },
     onSubmit: async ({ value }) => {
       setAnswered([])
       setFailure(null)
-      const result = await claim({ ...value, owner_role_name: t('onboarding.ownerRoleName') })
+      const result = await claim({ ...value, ...PROPOSED_NAMES() })
       // The new unit opens on its setup, which offers a template first (D-262).
       if (result.ok) {
         panel.open(PANEL_IDS.setup)

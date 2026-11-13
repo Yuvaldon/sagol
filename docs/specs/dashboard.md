@@ -1,11 +1,11 @@
 # Spec: Dashboard ("דשבורד")
 
-Status: spec-complete (D-347, D-348), not scheduled. The slice gets its V-number, and its P-n get D-numbers, when it
+Status: spec-complete (D-348, D-349), not scheduled. The slice gets its V-number, and its P-n get D-numbers, when it
 starts. It is excluded from the current autonomous build: the owner decides when it is built (OI-222).
 Context: both (rotation and routine). On 2026-11-13 the owner renamed it from "situation picture" ("תמונת מצב") and
 asked for charts and key figures, not a single number (D-338). The same day the owner set its shape: command boards
 built from a fixed catalogue of modules, two or three templates or a board of one's own, and a small fixed personal
-board for every soldier (D-347, D-348). D-343 names the readers: the platoon commanders run the leaves, the company
+board for every soldier (D-348, D-349). D-343 names the readers: the platoon commanders run the leaves, the company
 commander plans and controls, and a rotation's report owner reads the daily report.
 
 #### Vnn: Dashboard
@@ -40,7 +40,7 @@ Nothing derived is stored.
 - **Open items:** OI-222.
 - **Decisions:** D-003, D-008, D-013, D-019, D-023, D-032, D-041, D-076, D-102, D-105, D-112, D-141, D-170, D-174,
   D-187, D-211, D-214, D-221, D-253, D-257, D-259, D-265, D-269, D-270, D-272, D-285, D-290, D-293, D-333, D-336,
-  D-338, D-342, D-343, D-345, D-347, D-348.
+  D-338, D-342, D-343, D-345, D-348, D-349.
 
 ## User stories
 
@@ -279,7 +279,7 @@ Fixed, not composable, the same for everyone; a soldier never configures it and 
  "preferences" JSONB NOT NULL DEFAULT '{}',  -- validated by contracts SoldierPreferences:
                                              -- create_leaves_as_approved (D-121),
                                              -- appearance (D-181);
-+                                            -- dashboard (D-347): the board's template or custom modules;
++                                            -- dashboard (D-348): the board's template or custom modules;
 ```
 
 - The slice's first commit updates `schema.sql`'s comment, `DECISIONS.md` and `contracts` together (rule 5). A stored
@@ -519,8 +519,8 @@ module entry has no count: the board is a picture, not a queue; requests keep th
 - דוח 1 (V30): shares the copy mechanism and reads confirmations.
 - Filters (V33): the board's 'absent' sort calls `daysTally`; a test checks it sorts the same.
 - Rotations (V26, V31) and the planner (D-270): read only; a planned round is an approved leave like any other.
-- "סבב יציאות" (D-345, OI-295): requests exclude its types; `home_by_type` merges them into one bar. The dashboard ships
-  after OI-295 (a 1.0 Must, D-344).
+- "סבב יציאות" (D-345, D-347, built in OI-295): requests exclude the built-in group's types (its marker);
+  `home_by_type` merges them into one bar.
 - Notifications: the span event query is the seam the notifications feed can reuse.
 - Permissions (V10): policy-scoped rows and aggregates (P-4).
 - Import/export (V12): the `dashboard` key follows the existing preferences treatment. PWA: none.
@@ -531,7 +531,7 @@ and the stored shape in contracts, strings in i18n, colours as theme tokens (hea
 
 ## Dependencies
 
-- OI-295 ("סבב יציאות", a 1.0 Must) before the request figures, which exclude its types.
+- The built-in "סבב יציאות" group (OI-295, done, D-347), whose marker the request figures read.
 - None else. It reads attached and mission memberships correctly once they exist (D-336).
 
 ## Assumptions

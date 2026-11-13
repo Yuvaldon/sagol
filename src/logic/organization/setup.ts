@@ -2,7 +2,8 @@ import { SETUP_STEPS, type PanelId, type SetupStepId } from '@config'
 import type { PermissionCheck } from '@contracts'
 import { useRankBindings } from '../access/hooks'
 import { useDeployments } from '../deployments/hooks'
-import { useLeaveTypes } from '../leaves/hooks'
+import { useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
+import { isRotationLeave } from '../leaves/leaveTypes'
 import { useCan } from '../permissions/hooks'
 import type { Loaded } from '../queries/loaded'
 import { useCommandRanks, useSoldiers } from '../roster/hooks'
@@ -54,12 +55,14 @@ export function useSetupAccess(): readonly SetupStepId[] {
 export function useSetupProgress(): Loaded<readonly SetupStep[]> {
   const allowed = useSetupAccess()
   const units = useUnits()
+  const leaveTypes = useLeaveTypes()
+  const leaveGroups = useLeaveTypeGroups()
   const sources: Readonly<Record<SetupStepId, Loaded<SetupRows>>> = {
     unit_levels: useUnitLevels(),
     units,
     command_ranks: useCommandRanks(),
     rank_bindings: useRankBindings(),
-    leave_types: useLeaveTypes(),
+    leave_types: leaveTypes,
     tags: useTags(),
     soldiers: useSoldiers(),
     deployments: useDeployments(),
@@ -72,6 +75,11 @@ export function useSetupProgress(): Loaded<readonly SetupStep[]> {
   }
   // The root comes with the claim (D-251), so the units step is done once a unit under it exists (D-223).
   if (units.status === 'ready' && rows.units !== undefined) rows.units = units.value.filter((unit) => unit.parent_id !== null)
+  // The built-in group's types come with the claim too, so the step is done once an ordinary type exists (D-347).
+  if (rows.leave_types !== undefined && leaveTypes.status === 'ready') {
+    if (leaveGroups.status !== 'ready') return leaveGroups
+    rows.leave_types = leaveTypes.value.filter((type) => !isRotationLeave(type, leaveGroups.value))
+  }
   return { status: 'ready', value: setupSteps(allowed, rows) }
 }
 

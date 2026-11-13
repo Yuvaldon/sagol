@@ -1,6 +1,7 @@
 import {
   DeploymentId,
   LeaveId,
+  LeaveTypeGroupId,
   LeaveTypeId,
   OrganizationId,
   SoldierId,
@@ -9,6 +10,7 @@ import {
   type CalendarDate,
   type Leave,
   type LeaveType,
+  type LeaveTypeGroup,
   type Soldier,
   type Unit,
   type UnitMembership,
@@ -141,6 +143,7 @@ function input(overrides: Partial<DayReportInput> = {}): DayReportInput {
     filter: null,
     leaves,
     types: [HOME],
+    groups: [],
     days: [DAY],
     scopeUnitId: null,
     rotations: [],
@@ -183,6 +186,22 @@ describe('the day report (D-193)', () => {
     expect(away?.reasons).toEqual(['חתונה'])
     expect(dayReport(input()).hasReasons).toBe(true)
     expect(dayReport(input({ types: [], leaves: leaves.map((row) => ({ ...row, reason: null })) })).hasReasons).toBe(false)
+  })
+
+  it('shows no reason of a leave of the built-in group, still counting the soldier absent (D-347)', () => {
+    const rotation: LeaveTypeGroup = {
+      id: LeaveTypeGroupId.parse(uuid(71)),
+      organization_id: ORGANIZATION,
+      name: 'סבב יציאות',
+      is_rotation_leave: true,
+      sort_order: 0,
+      ...audit,
+    }
+    const [rotationDay] = dayReport(input({ types: [{ ...HOME, group_id: rotation.id }], groups: [rotation] })).days
+    const away = rotationDay?.absent.find((entry) => entry.soldier.first_name === 'F1')
+    expect(away?.reasons).toEqual([])
+    expect(away?.absences.map((type) => type?.name)).toEqual(['בית'])
+    expect(rotationDay?.counts.absent).toBe(2)
   })
 
   it('leaves out the soldiers whose leaves the viewer may not read (D-161), and starts paths below the scope', () => {

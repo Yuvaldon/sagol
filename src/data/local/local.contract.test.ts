@@ -2,6 +2,8 @@ import 'fake-indexeddb/auto'
 import { openDatabase } from './database'
 import { STORES, tableOf } from './store'
 import {
+  LeaveTypeGroupId,
+  LeaveTypeId,
   AuthUserId,
   OrganizationId,
   RoleId,
@@ -41,6 +43,8 @@ function memoryIdentity() {
   }
 }
 
+const ROTATION_LEAVE = { group: 'Rotation leave', type: 'Rotation leave' }
+
 function uniqueNames() {
   const id = crypto.randomUUID()
   return { database: `test-${id}`, channel: `test-${id}` }
@@ -49,8 +53,8 @@ function uniqueNames() {
 async function createHarness(): Promise<ContractHarness> {
   const identity = memoryIdentity()
   const names = uniqueNames()
-  const adapter = createLocalDataAdapter({ identity, time: { now: () => CONTRACT_NOW } }, names)
-  const store = openDatabase(names.database, { now: () => CONTRACT_NOW })
+  const adapter = createLocalDataAdapter({ identity, time: { now: () => CONTRACT_NOW }, rotationLeave: ROTATION_LEAVE }, names)
+  const store = openDatabase(names.database, { now: () => CONTRACT_NOW }, ROTATION_LEAVE)
   return {
     adapter,
     signIn: identity.set,
@@ -111,6 +115,8 @@ describe('local store', () => {
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
       root_unit_id: UnitId.parse(crypto.randomUUID()),
       membership_id: UnitMembershipId.parse(crypto.randomUUID()),
+      rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: 'Rotation leave' },
+      rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: 'Rotation leave 1' },
     })
     expect(result).toEqual({ ok: false, error: { code: 'internal' } })
     expect(await harness.rows('organizations')).toEqual([])
@@ -123,8 +129,8 @@ describe('local store', () => {
     const identity = memoryIdentity()
     const names = uniqueNames()
     const time = { now: () => CONTRACT_NOW }
-    const tabA = createLocalDataAdapter({ identity, time }, names)
-    const tabB = createLocalDataAdapter({ identity, time }, names)
+    const tabA = createLocalDataAdapter({ identity, time, rotationLeave: ROTATION_LEAVE }, names)
+    const tabB = createLocalDataAdapter({ identity, time, rotationLeave: ROTATION_LEAVE }, names)
     const heard = new Promise<string[]>((resolve) => {
       const stop = tabB.changes.subscribe((changes) => {
         stop()
@@ -146,6 +152,8 @@ describe('local store', () => {
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
       root_unit_id: UnitId.parse(crypto.randomUUID()),
       membership_id: UnitMembershipId.parse(crypto.randomUUID()),
+      rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: 'Rotation leave' },
+      rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: 'Rotation leave 1' },
     })
     expect(result.ok).toBe(true)
     expect(await heard).toContain('soldier_accounts')
