@@ -4101,10 +4101,14 @@ and the same rule now holds for every way leaves are created and every report wi
   on the whole tree: the units whose active soldiers have them as their primary unit on the date, under a rotation that
   runs that day. Only rotations whose summary the actor reads count: the named report owner, or with none named, who
   may confirm the rotation's unit's report (D-293). Its window is bounded (D-302).
+- **Unseen, counted on the server.** Each date also says how many of those sections the actor's own report does not
+  head: no soldier of the section is one the actor views with their unit (`soldiers:view` and `memberships:view`, as
+  the report places soldiers). The client cannot count this: its tree holds live units only, a hidden middle level
+  breaks its ancestry, and it does not know which rotations the actor reads.
 - **A count only.** The answer names no unit and no soldier, so nothing outside the actor's view is revealed beyond
   how many sections there are.
 - **The summary** keeps "N of M confirmed" on the sections the actor sees, and adds "יחידות מחוץ לתצוגה שלך: K", the
-  tree's count less the covered sections in view, when it is above zero.
+  unseen count, when it is above zero.
 **Why:** an owner who does not view every unit under the rotation read a partial count with no sign that units were
 missing (OI-257). Naming the hidden units would widen the view past the permissions; the count alone tells the owner
 to ask who sees them.

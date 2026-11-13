@@ -211,7 +211,8 @@ The current state (D-128):
   written after the confirmation, on the report with no view filter. Which unit and date the actor may confirm is
   `report_confirmations.confirmable`, answered on the whole tree, so a hidden middle level does not hide the button.
   `report_confirmations.sections` counts the rotations' sections on the whole tree for who reads the summary, a count
-  only, so the summary shows how many units lie outside the view (D-303). Both refuse a window past
+  only, and how many of them hold no soldier the actor views with their unit, so the summary shows how many units lie
+  outside the view (D-303). Both refuse a window past
   `DAY_REPORT.maxSpanDays`, and `createBatch` and the copies refuse more than `LEAVE_BATCH.maxLeaves`, checked in the
   command (D-302). A
   confirmation holds from the client's read of the leaves (`seen_at`, `confirmedAtOf`). `useReportConfirmations` reads
