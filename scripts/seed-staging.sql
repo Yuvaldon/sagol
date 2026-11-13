@@ -11,7 +11,7 @@
 -- adds nothing and changes nothing. Rows the owner edited in the app keep the owner's edits.
 
 -- An id derived from a key: its md5, with the version and variant bits of an RFC 9562 version-4 UUID set, because
--- the contracts accept only RFC UUIDs (z.uuid()) and an id they reject makes every read of its table fail (D-337).
+-- the contracts accept only RFC UUIDs (z.uuid()) and an id they reject makes every read of its table fail (D-341).
 CREATE OR REPLACE FUNCTION pg_temp.seed_id(key text) RETURNS uuid LANGUAGE sql IMMUTABLE AS $id$
   SELECT overlay(overlay(md5(key) PLACING '4' FROM 13) PLACING '8' FROM 17)::uuid
 $id$;
@@ -91,7 +91,7 @@ BEGIN
   IF n_roots <> 1 THEN
     RAISE EXCEPTION 'seed-staging: expected exactly one live root unit, found %; apply the root-units migration first', n_roots;
   END IF;
-  -- A run before D-337 used the bare md5 as the id. Its rows cannot be rewritten in place, and a run beside them
+  -- A run before D-341 used the bare md5 as the id. Its rows cannot be rewritten in place, and a run beside them
   -- would collide on their names and codes: the staging database is reset first.
   IF EXISTS (SELECT 1 FROM units WHERE id = md5(org || ':seed:unit:company')::uuid) THEN
     RAISE EXCEPTION 'seed-staging: the database holds an earlier seed with ids the contracts reject; reset staging first';
