@@ -4,7 +4,7 @@ import { NavigationRoute, registerRoute } from 'workbox-routing'
 import { readStaging } from '../env'
 import { asksForWaitingVersion, onNotificationClick, onPush, type TappedNotification, type WorkerClients, type WorkerRegistration } from './handlers'
 
-// The service worker (D-183, D-354): the app's files for offline use, every navigation answered by the app's page
+// The service worker (D-183, D-356): the app's files for offline use, every navigation answered by the app's page
 // except the server's own paths, the update the open app asks for, and the phone's notifications.
 
 interface WaitableEvent {

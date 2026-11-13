@@ -2,7 +2,7 @@ import { PWA } from '@config'
 import { PushPayload } from '@contracts'
 import { pushNotice } from './pushText'
 
-// What the service worker does with a push and with a tap on its notification (D-354, D-355, D-357). Written over
+// What the service worker does with a push and with a tap on its notification (D-356, D-357, D-359). Written over
 // the few parts of the worker's scope it uses, so tests hand in fakes and the app keeps the DOM types only.
 
 export interface NotificationShown {
@@ -46,7 +46,7 @@ export function asksForWaitingVersion(data: unknown): boolean {
 
 /**
  * Shows the push as a notification. A payload the contract refuses shows nothing: it is not from this server, or from
- * another version of it. The open app needs no message: live changes already refresh it (D-352).
+ * another version of it. The open app needs no message: live changes already refresh it (D-354).
  */
 export async function onPush(data: unknown, registration: WorkerRegistration, staging: boolean): Promise<void> {
   const parsed = PushPayload.safeParse(data)

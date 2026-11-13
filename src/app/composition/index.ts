@@ -9,7 +9,7 @@ import { systemTime } from '../time'
  * Builds the pair the env names (D-207), loading only that pair's chunk (D-210). Google's client
  * finishes a returning redirect before this answers, so the router never sees the OAuth code. It
  * rejects only when a chunk cannot load. The shell (D-183) is built before the env is read, so it is passed in;
- * the push port (D-354) needs the env's key, so it is built here.
+ * the push port (D-356) needs the env's key, so it is built here.
  */
 export async function composePorts(env: Env, origin: string, shell: ShellPort): Promise<LogicPorts> {
   if (env.authMode === 'local') {

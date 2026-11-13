@@ -3,7 +3,7 @@ import { NotificationKind, type CalendarDate, type PushOutcome, type PushPayload
 import { t, type I18nKey } from '@i18n'
 import { DateFormatter, parseDate } from '@internationalized/date'
 
-// One push as the notification the phone shows (D-355, D-357). The payload holds facts only; the words come from
+// One push as the notification the phone shows (D-357, D-359). The payload holds facts only; the words come from
 // `i18n`. Days are written absolutely (the leave's own days), never "tomorrow": a notification may be read days later.
 // The worker cannot load `ui`, so it formats the days itself, with the same formats as `ui/patterns/dates.ts`.
 

@@ -2,7 +2,7 @@ import { SubscribePushInput } from '@contracts'
 import type { PushAvailability, PushPort } from '@logic'
 import { isIos, isStandalone } from './device'
 
-// The browser's side of phone notifications (D-349, D-354): its permission and its one push subscription, kept by
+// The browser's side of phone notifications (D-351, D-356): its permission and its one push subscription, kept by
 // the service worker. It is built with the env, apart from the shell, because without the public key there is
 // nothing to offer and the profile shows no group (D-076).
 
@@ -90,7 +90,7 @@ export function createBrowserPush(publicKey: string | null): PushPort {
       return install
     },
     async disable() {
-      // Sign-out runs this first (D-356): a page whose worker never registered holds no subscription, and must not
+      // Sign-out runs this first (D-358): a page whose worker never registered holds no subscription, and must not
       // wait for one.
       const current = await navigator.serviceWorker.getRegistration()
       if (current === undefined) return null

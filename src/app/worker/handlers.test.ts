@@ -20,7 +20,7 @@ function registration() {
   }
 }
 
-describe('a push (D-355)', () => {
+describe('a push (D-357)', () => {
   it('tells the soldier what happened to the request, with its days, and opens the leave', async () => {
     const worker = registration()
     await onPush(approved, worker, false)
@@ -66,7 +66,7 @@ describe('a push (D-355)', () => {
   })
 })
 
-describe('a tap on the notification (D-354)', () => {
+describe('a tap on the notification (D-356)', () => {
   const tapped = (url: unknown) => ({ data: { url }, close: vi.fn() })
   const windowAt = (url: string): WorkerWindow => ({ url, focus: vi.fn(() => Promise.resolve()), navigate: vi.fn(() => Promise.resolve()) })
 
