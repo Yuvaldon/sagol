@@ -78,7 +78,7 @@ class FakeSender implements PushSender {
 }
 
 const deviceOf = (name: string) => ({
-  endpoint: `https://push.example.test/${name}-${crypto.randomUUID()}`,
+  endpoint: `https://fcm.googleapis.com/fcm/send/${name}-${crypto.randomUUID()}`,
   p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM',
   auth: 'tBHItJI5svbpez7KI4CCXg',
 })

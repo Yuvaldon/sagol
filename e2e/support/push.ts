@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test'
 // Playwright config gives the dev server a sample public key. Sample data, tests only.
 
 const SAMPLE_INSTALL = {
-  endpoint: 'https://push.example.test/device',
+  endpoint: 'https://fcm.googleapis.com/fcm/send/sample-device',
   keys: { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' },
 }
 
