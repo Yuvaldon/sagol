@@ -44,3 +44,9 @@ export function leaveOverlayEntry(history: RouterHistory, steps = 1): void {
   if (steps === 1) history.back()
   else history.go(-steps)
 }
+
+/** Whether the app has asked the history to leave the current entry and is waiting for it. */
+export function isLeavingEntry(history: RouterHistory): boolean {
+  const index = entryIndex(history.location)
+  return index !== undefined && leaving.get(history) === index
+}
