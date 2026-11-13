@@ -8,7 +8,7 @@ import { useOverlayLayer } from './layers'
 import { usePanel, type PanelState } from './panel'
 import { WorkspaceSearch, useChangeSearch, useWorkspaceSearch } from './search'
 
-// A menu or a dialog inside a component holds one history entry while it is open (D-335).
+// A menu or a dialog inside a component holds one history entry while it is open (D-337).
 
 interface Handles {
   panel: PanelState
@@ -65,7 +65,7 @@ async function step(run: () => void) {
   })
 }
 
-describe('local overlay entries (D-335)', () => {
+describe('local overlay entries (D-337)', () => {
   it('back closes an open menu and stays on the screen', async () => {
     const { history, handles } = await renderAt(['/?view=table'])
     const start = position(history)
@@ -201,6 +201,42 @@ describe('local overlay entries (D-335)', () => {
     await step(() => {
       handles.setDialog(false)
       handles.panel.close()
+    })
+    expect(shown().panel).toBeUndefined()
+    expect(position(history)).toBe(start)
+  })
+
+  it('a panel closed while its dialog is still leaving its entry closes too', async () => {
+    const { history, handles } = await renderAt(['/?view=table'])
+    const start = position(history)
+    await step(() => {
+      handles.panel.open(PANEL_IDS.soldiers)
+    })
+    await step(() => {
+      handles.setDialog(true)
+    })
+    // A browser answers a step back later, as a popstate: hold the answer until the panel has closed.
+    const held: (() => void)[] = []
+    const { go, back } = history
+    history.go = (steps) => {
+      held.push(() => {
+        go(steps)
+      })
+    }
+    history.back = () => {
+      held.push(back)
+    }
+    await step(() => {
+      handles.setDialog(false)
+    })
+    await step(() => {
+      handles.panel.close()
+    })
+    history.go = go
+    history.back = back
+    expect(held).toHaveLength(1)
+    await step(() => {
+      held[0]?.()
     })
     expect(shown().panel).toBeUndefined()
     expect(position(history)).toBe(start)
