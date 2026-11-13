@@ -16,7 +16,7 @@ export function archiveLeaveTypeGroupIssues(
 
 type GroupMarker = Pick<LeaveTypeGroup, 'id' | 'is_rotation_leave'>
 
-/** The organization's built-in "סבב יציאות" group is never archived (D-346). */
+/** The organization's built-in "סבב יציאות" group is never archived (D-347). */
 export function archiveBuiltInGroupIssues(group: Pick<LeaveTypeGroup, 'is_rotation_leave'>): Issue[] {
   return group.is_rotation_leave ? [{ path: [], code: IssueCode.enum.group_builtin }] : []
 }
@@ -31,7 +31,7 @@ export function isRotationLeaveType(
   return false
 }
 
-/** The built-in group always holds a type that is not archived: its last one stays (D-346). */
+/** The built-in group always holds a type that is not archived: its last one stays (D-347). */
 export function archiveLeaveTypeIssues(
   types: Iterable<Pick<LeaveType, 'id' | 'group_id' | 'archived_at'>>,
   type: Pick<LeaveType, 'id' | 'group_id'>,
@@ -45,7 +45,7 @@ export function archiveLeaveTypeIssues(
 }
 
 /**
- * What the built-in group fixes on a type (D-346): its types are absences that ask no reason, and a type neither moves
+ * What the built-in group fixes on a type (D-347): its types are absences that ask no reason, and a type neither moves
  * into the group nor out of it. `before` is NULL on create; each group is NULL when the type has none.
  */
 export function rotationLeaveTypeIssues(

@@ -266,7 +266,7 @@ describe('archiving a leave type group (D-113)', () => {
   })
 })
 
-describe('the built-in group (D-346)', () => {
+describe('the built-in group (D-347)', () => {
   const builtIn = { id: LeaveTypeGroupId.parse(uuid(42)), is_rotation_leave: true }
   const ordinary = { id: LeaveTypeGroupId.parse(uuid(43)), is_rotation_leave: false }
   const first = { id: LeaveTypeId.parse(uuid(44)), group_id: builtIn.id, archived_at: null }
