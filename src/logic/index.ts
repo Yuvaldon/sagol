@@ -39,24 +39,18 @@ export {
 } from './view-state/window'
 export { requestRotations, useRotationScope, type RotationScope } from './view-state/rotation'
 export {
-  NO_CONDITIONS,
   NO_RULES,
   filterUnitOf,
-  readFilter,
   readRules,
   ruleHasValue,
   writeRules,
   unitFilterOf,
   useViewFilter,
-  writeFilter,
   type FilterRule,
   type FilterUnit,
-  type ReadFilter,
   type ReadRules,
   type RuleMatch,
   type SoldierFilter,
-  type PropertyChip,
-  type SoldierConditions,
   type ViewFilterState,
 } from './view-state/filter'
 export { BoardLeaveStatus, LeaveConditions, hasLeaveConditions, leaveMatches } from './view-state/conditions'

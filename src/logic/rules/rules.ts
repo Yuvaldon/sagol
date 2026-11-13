@@ -19,12 +19,13 @@ import {
 } from '@contracts'
 import { optionalText } from '@domain'
 import { formIssues } from '../forms/issues'
-import { NO_CONDITIONS, readFilter, writeFilter } from '../view-state/filter'
+import { NO_RULES, readRules, writeRules, type FilterRule } from '../view-state/filter'
 
 // The rules module's form (D-140), between its fields and the rule commands (D-139). Pure. The population is built
-// with the filter bar's conditions (D-131): a tag chip per category and a rank chip; none selects everyone.
+// with the rule builder's rules (D-312): a tag category's "any of" per category and the rank's "any of"; none selects
+// everyone.
 
-/** Who a rule counts, as the bar's chips hold it, or a filter the form does not read (a rule written elsewhere). */
+/** Who a rule counts, as the builder's rules hold it, or a filter the form does not read (a rule written elsewhere). */
 export type RulePopulation =
   | { readonly kind: 'conditions'; readonly tagSets: readonly (readonly TagId[])[]; readonly rankIds: readonly CommandRankId[] }
   | { readonly kind: 'other'; readonly filter: FilterExpression }
@@ -90,17 +91,28 @@ export const NEW_RULE_VALUES: RuleFormValues = {
 
 /** The population the form reads from a stored filter. */
 export function rulePopulationOf(filter: FilterExpression): RulePopulation {
-  const read = readFilter(filter)
-  if (read.kind === 'other') return { kind: 'other', filter }
-  const { unitId, statuses, tagSets, rankIds } = read.conditions
-  // A unit or a status is no part of a population the form writes: the scope holds the unit (D-071).
-  if (unitId !== null || statuses.length > 0) return { kind: 'other', filter }
+  const read = readRules(filter)
+  const other: RulePopulation = { kind: 'other', filter }
+  // A unit is no part of a population the form writes: the scope holds the unit (D-071). Nor are או, a "none of", a
+  // status or a property: the form offers none of them.
+  if (read.kind === 'other' || read.filter.unitId !== null || read.filter.match !== 'all') return other
+  const tagSets: (readonly TagId[])[] = []
+  let rankIds: readonly CommandRankId[] = []
+  for (const rule of read.filter.rules) {
+    if (rule.kind === 'tag' && !rule.negate) tagSets.push(rule.tagIds)
+    else if (rule.kind === 'rank' && !rule.negate && rankIds.length === 0) rankIds = rule.rankIds
+    else return other
+  }
   return { kind: 'conditions', tagSets, rankIds }
 }
 
 export function rulePopulationFilter(population: RulePopulation): FilterExpression {
   if (population.kind === 'other') return population.filter
-  return writeFilter({ ...NO_CONDITIONS, tagSets: population.tagSets, rankIds: population.rankIds }) ?? {}
+  const rules: FilterRule[] = [
+    ...population.tagSets.map((tagIds): FilterRule => ({ kind: 'tag', negate: false, tagIds })),
+    ...(population.rankIds.length === 0 ? [] : [{ kind: 'rank' as const, negate: false, rankIds: population.rankIds }]),
+  ]
+  return writeRules({ ...NO_RULES, rules }) ?? {}
 }
 
 const textOf = (value: number | null) => (value === null ? '' : String(value))

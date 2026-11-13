@@ -188,7 +188,7 @@ describe('the rule form (D-140)', () => {
     expect(ruleFormIssues(filled)).toEqual([])
   })
 
-  it('writes the population with the bar conditions, and reads it back', () => {
+  it('writes the population with the builder rules, and reads it back (D-312)', () => {
     const input = toCreateRuleInput(filled)
     expect(input.population_filter).toEqual({ where: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } })
     expect(toCreateRuleInput({ ...filled, tag_sets: [] }).population_filter).toEqual({})
@@ -196,6 +196,12 @@ describe('the rule form (D-140)', () => {
     // A unit or a status in a stored filter is a population the form does not write.
     const other: FilterExpression = { where: { kind: 'soldier_status', statuses: ['active'] } }
     expect(rulePopulationOf(other)).toEqual({ kind: 'other', filter: other })
+    // A "none of", או, or a second rank is a filter the form does not offer either.
+    const others: FilterExpression[] = [
+      { where: { kind: 'not', node: { kind: 'tag', match: 'any', tag_ids: [MEDIC] } } },
+      { where: { kind: 'or', nodes: [{ kind: 'tag', match: 'any', tag_ids: [MEDIC] }] } },
+    ]
+    for (const filter of others) expect(rulePopulationOf(filter)).toEqual({ kind: 'other', filter })
   })
 
   it('keeps a stored filter it does not read until it is cleared', () => {
