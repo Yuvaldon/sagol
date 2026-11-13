@@ -201,7 +201,7 @@ export function openDatabase(name: string, time: TimeSource, names: RotationLeav
     })
   database.version(8).upgrade((transaction) => oneRoot(transaction, time))
   database.version(9).upgrade((transaction) => rotationLeave(transaction, time, names))
-  // Phone notifications of this browser's soldiers (D-349).
+  // Phone notifications of this browser's soldiers (D-351).
   database.version(DATABASE_VERSION).stores({ push_subscriptions: subscriptions })
   return {
     transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),

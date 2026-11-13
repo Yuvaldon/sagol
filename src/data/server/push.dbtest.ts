@@ -25,7 +25,7 @@ import { createCommandGateway, type GatewayResponse } from './gateway'
 import { CATALOG_QUERY, catalogOf, createPostgresStore, type SqlClient, type StoreCatalog } from './postgresStore'
 import { createPushDispatch, type CommittedCall, type PushDevice, type PushSender } from './push'
 
-// The push dispatch (D-352, D-353) over the migrated schema: the gateway hands each committed call over, and the
+// The push dispatch (D-354, D-355) over the migrated schema: the gateway hands each committed call over, and the
 // dispatch reads who should hear about it from the committed state. The push service is a fake sender.
 
 const url = import.meta.env.DATABASE_URL as string | undefined
@@ -184,7 +184,7 @@ afterAll(async () => {
   await sql.end()
 })
 
-describe('push dispatch (D-352, D-353)', () => {
+describe('push dispatch (D-354, D-355)', () => {
   it('tells the approvers of a new pending leave, never its actor or its soldier', async () => {
     await pendingLeave()
     expect(await dispatchCommitted()).toBe(1)
@@ -229,14 +229,14 @@ describe('push dispatch (D-352, D-353)', () => {
     expect(refused.result.ok).toBe(false)
     await gateway(owner, { kind: 'repositories', group: 'units', method: 'list', args: [{ include_archived: false }] })
     expect(committed).toEqual([])
-    // An install is not synced to any client (D-349), so its write publishes no change.
+    // An install is not synced to any client (D-351), so its write publishes no change.
     valueOf((await command(owner, 'notifications', 'subscribe', deviceOf('owner'))).result)
     expect(await dispatchCommitted()).toBe(0)
     expect(sender.sent).toEqual([])
     expect(logs).toEqual([])
   })
 
-  it('respects the soldier own choice of kinds (D-356)', async () => {
+  it('respects the soldier own choice of kinds (D-358)', async () => {
     const preferences = SoldierPreferences.parse({ notifications: { awaiting_me: false } })
     valueOf((await command(ari.identity, 'accounts', 'updateMyPreferences', { expected_version: null, preferences })).result)
     await pendingLeave()

@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
 import { NOW, PAST_DATE, errorOf, seedActor, seedRotation, valueOf } from './support'
 
-// Notifications against the shared contract (D-349, D-350): a soldier's browser installs, and the feed the updates
+// Notifications against the shared contract (D-351, D-352): a soldier's browser installs, and the feed the updates
 // are derived from. Sample data, test files only.
 
 const VIEW_LEAVES: Permission = { resource: 'leaves', action: 'view' }
@@ -48,7 +48,7 @@ export function describeNotificationContract(
       owner = claimed.owner
     })
 
-    describe('browser installs (D-349)', () => {
+    describe('browser installs (D-351)', () => {
       it('stores the caller install once per endpoint, in the caller organization', async () => {
         const install = device()
         expect(valueOf(await adapter().commands.notifications.subscribe(install))).toEqual({ subscribed: true })
@@ -107,7 +107,7 @@ export function describeNotificationContract(
       })
     })
 
-    describe('the updates feed (D-350)', () => {
+    describe('the updates feed (D-352)', () => {
       async function ownLeave() {
         const rotation = await seedRotation(harnessOf(), organization, [ownerId])
         const type = valueOf(

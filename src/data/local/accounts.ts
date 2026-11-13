@@ -479,7 +479,7 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
           if (stored.revoked_at !== null) return failValidation([{ path: ['id'], code: IssueCode.enum.archived }])
           const revoked = parsedRow('soldier_accounts', { ...stored, revoked_at: scope.now, revoked_by: scope.soldier_id })
           await accounts.put(revoked)
-          // The soldier's devices stop getting pushes with the link (D-349).
+          // The soldier's devices stop getting pushes with the link (D-351).
           await deleteSubscriptionsOf(database, stored.soldier_id)
           await requireAccessManager(database, scope.organization_id, scope.now)
           return revoked

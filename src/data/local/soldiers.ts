@@ -347,7 +347,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
         row.archived_at !== before.archived_at
       if (changed) await requireAccessManager(store, scope.organization_id, scope.now)
       if (row.command_rank_id !== before?.command_rank_id) await requireAfterRankWrite(store, scope, 'update', row.id)
-      // An archived soldier's devices stop getting pushes (D-349).
+      // An archived soldier's devices stop getting pushes (D-351).
       if (before !== null && before.archived_at === null && row.archived_at !== null) await deleteSubscriptionsOf(store, row.id)
     },
   })

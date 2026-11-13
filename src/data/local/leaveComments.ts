@@ -64,7 +64,7 @@ export function createLeaveCommentRepository(dependencies: LocalDependencies): D
             .map((row) => parsedRow('leave_comments', row))
         })
       }),
-    /** The soldier's comments since a time that the actor can see, not archived, newest first (D-350). */
+    /** The soldier's comments since a time that the actor can see, not archived, newest first (D-352). */
     feed: (raw) =>
       asResult(() => {
         const query = parseInput(LeaveFeedQuery, raw)

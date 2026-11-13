@@ -19,7 +19,7 @@ import { tableOf, type Store } from '../local/store'
 import type { Transact } from './gateway'
 import { createPostgresStore, type StoreCatalog } from './postgresStore'
 
-// The push dispatch (D-352): after a call committed, who gets a push about what it wrote (D-353), sent through the
+// The push dispatch (D-354): after a call committed, who gets a push about what it wrote (D-355), sent through the
 // `PushSender` port. Best effort: it never throws, and nothing it does changes the call's answer.
 
 /** One browser install, as the push service knows it. */

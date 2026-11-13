@@ -5,13 +5,13 @@ import type { LocalDependencies } from './dependencies'
 import { asResult, fail, parseInput, parsedRow } from './failure'
 import { requireLinked, resolveSession } from './session'
 
-// Phone notifications of the signed-in soldier's browser installs (D-349). The rows are the soldier's own, like
+// Phone notifications of the signed-in soldier's browser installs (D-351). The rows are the soldier's own, like
 // their preferences: no permission resource, a linked account only. This adapter only stores them; sending is the
-// server gateway's, after its transaction commits (D-353).
+// server gateway's, after its transaction commits (D-355).
 
 const SUBSCRIPTION_TABLES: readonly TableName[] = ['soldier_accounts', 'push_subscriptions']
 
-/** Every browser install of the soldier stops getting pushes: an account revoked, a soldier archived (D-349). */
+/** Every browser install of the soldier stops getting pushes: an account revoked, a soldier archived (D-351). */
 export async function deleteSubscriptionsOf(database: Store, soldierId: SoldierId): Promise<void> {
   const table = tableOf(database, 'push_subscriptions')
   const rows = await table.where('soldier_id').equals(soldierId).toArray()

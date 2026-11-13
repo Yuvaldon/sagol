@@ -50,7 +50,7 @@ export interface GatewayDependencies {
   readonly bootstrapOwnerEmail: string
   /**
    * Runs after a call that answered ok has committed, outside the retry loop, with who made it and what it changed
-   * (D-352). The function hands it to `waitUntil`; it must not throw, and nothing it does reaches the answer.
+   * (D-354). The function hands it to `waitUntil`; it must not throw, and nothing it does reaches the answer.
    */
   readonly afterCommit?: (call: { readonly identity: AuthIdentity; readonly changes: readonly DataChange[] }) => void
 }
@@ -128,7 +128,7 @@ export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEm
         }
         continue
       }
-      // Committed: a push about it never delays or changes the answer (D-352).
+      // Committed: a push about it never delays or changes the answer (D-354).
       if (afterCommit !== undefined && actor !== null && response.result.ok && response.changes.length > 0) {
         try {
           afterCommit({ identity: actor, changes: response.changes })

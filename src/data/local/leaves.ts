@@ -196,7 +196,7 @@ export function createLeaveEventRepository(dependencies: LocalDependencies): Dat
   }
 }
 
-/** The soldier's leaves the actor can see, the subjects of a feed (D-350). */
+/** The soldier's leaves the actor can see, the subjects of a feed (D-352). */
 export async function feedLeaves(database: Store, scope: ActorScope, query: LeaveFeedQuery): Promise<Leave[]> {
   const rows = await tableOf(database, 'leaves').where('soldier_id').equals(query.soldier_id).toArray()
   return rows.filter((row) => row.organization_id === scope.organization_id && canView(scope, row))
