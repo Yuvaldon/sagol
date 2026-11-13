@@ -91,6 +91,9 @@ export function createQueryClient(): QueryClient {
         // IndexedDB answers offline, and the adapter's answer is final: a refusal is not retried.
         networkMode: 'always',
         retry: false,
+        // Nor when another view of the same read mounts: a view that hides a pending read and shows a refused one
+        // would otherwise ask again at network speed (OI-290). A change still refreshes it (invalidateChanged).
+        retryOnMount: false,
         refetchOnWindowFocus: false,
         staleTime: Infinity,
       },
