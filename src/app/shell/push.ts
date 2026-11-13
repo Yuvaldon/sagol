@@ -90,7 +90,11 @@ export function createBrowserPush(publicKey: string | null): PushPort {
       return install
     },
     async disable() {
-      const subscription = await (await registration()).pushManager.getSubscription()
+      // Sign-out runs this first (D-356): a page whose worker never registered holds no subscription, and must not
+      // wait for one.
+      const current = await navigator.serviceWorker.getRegistration()
+      if (current === undefined) return null
+      const subscription = await current.pushManager.getSubscription()
       if (subscription === null) {
         await refresh()
         return null
