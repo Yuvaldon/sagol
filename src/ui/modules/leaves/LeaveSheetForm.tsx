@@ -2,6 +2,7 @@ import type { CalendarDate, LeaveType, LeaveTypeGroup, LeaveTypeId, Soldier, Sol
 import { t } from '@i18n'
 import {
   fullName,
+  isRotationLeave,
   leaveSheetIssues,
   newLeaveSheetValues,
   newSheetRow,
@@ -131,6 +132,7 @@ export function LeaveSheetForm({
             {rowsField.state.value.map((row, index) => {
               const title = `${t('leaves.row')} ${String(index + 1)}`
               const reasonRequired = typeOf(row.leave_type_id)?.requires_reason === true
+              const asksReason = !isRotationLeave(typeOf(row.leave_type_id), groups)
               return (
                 <div key={row.key} role="group" aria-label={title} className="flex flex-col gap-md rounded-control border border-line p-md">
                   <div className="flex items-center justify-between gap-sm">
@@ -150,7 +152,15 @@ export function LeaveSheetForm({
                       </IconButton>
                     ) : null}
                   </div>
-                  <form.Field name={`rows[${index}].leave_type_id`}>
+                  <form.Field
+                    name={`rows[${index}].leave_type_id`}
+                    listeners={{
+                      // A rotation leave asks no reason (D-346): one typed before the type changed is not sent with it.
+                      onChange: ({ value }) => {
+                        if (isRotationLeave(typeOf(value), groups)) form.setFieldValue(`rows[${index}].reason`, '')
+                      },
+                    }}
+                  >
                     {(field) => (
                       <>
                         <SelectField
@@ -194,19 +204,21 @@ export function LeaveSheetForm({
                       )}
                     </form.Field>
                   </div>
-                  <form.Field name={`rows[${index}].reason`}>
-                    {(field) => (
-                      <TextField
-                        labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
-                        name={field.name}
-                        isRequired={reasonRequired}
-                        value={field.state.value}
-                        onChange={field.handleChange}
-                        onBlur={field.handleBlur}
-                        error={error(field.state.meta.errors, index, 'reason')}
-                      />
-                    )}
-                  </form.Field>
+                  {asksReason ? (
+                    <form.Field name={`rows[${index}].reason`}>
+                      {(field) => (
+                        <TextField
+                          labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
+                          name={field.name}
+                          isRequired={reasonRequired}
+                          value={field.state.value}
+                          onChange={field.handleChange}
+                          onBlur={field.handleBlur}
+                          error={error(field.state.meta.errors, index, 'reason')}
+                        />
+                      )}
+                    </form.Field>
+                  ) : null}
                   <form.Field name={`rows[${index}].repeats`}>
                     {(field) => <SwitchField labelKey="leaves.repeats" name={field.name} value={field.state.value} onChange={field.handleChange} />}
                   </form.Field>

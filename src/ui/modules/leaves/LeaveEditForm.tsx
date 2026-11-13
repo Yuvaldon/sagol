@@ -1,6 +1,6 @@
 import type { Leave, LeaveType, LeaveTypeGroup, LeaveTypeId } from '@contracts'
 import { t } from '@i18n'
-import { editedLeaveCandidate, leaveEditIssues, leaveEditValues, useEditLeave, useLeaveActions } from '@logic'
+import { editedLeaveCandidate, isRotationLeave, leaveEditIssues, leaveEditValues, useEditLeave, useLeaveActions } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useMemo, useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -73,6 +73,7 @@ export function LeaveEditForm({
   })
   const values = useStore(form.store, (current) => current.values)
   const reasonRequired = typeOf(values.leave_type_id)?.requires_reason === true
+  const asksReason = !isRotationLeave(typeOf(values.leave_type_id), groups)
   const returnsToPending = actions.returnsToPending(values)
   // While the edit is sent, the board already moves; judging the form too would count the leave twice.
   const candidate = useMemo(
@@ -92,7 +93,15 @@ export function LeaveEditForm({
         void form.handleSubmit()
       }}
     >
-      <form.Field name="leave_type_id">
+      <form.Field
+        name="leave_type_id"
+        listeners={{
+          // A rotation leave asks no reason (D-346): one typed before the type changed is not sent with it.
+          onChange: ({ value }) => {
+            if (isRotationLeave(typeOf(value), groups)) form.setFieldValue('reason', '')
+          },
+        }}
+      >
         {(field) => (
           <SelectField
             labelKey="leaves.type"
@@ -128,19 +137,21 @@ export function LeaveEditForm({
           )}
         </form.Field>
       </div>
-      <form.Field name="reason">
-        {(field) => (
-          <TextField
-            labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
-            name={field.name}
-            isRequired={reasonRequired}
-            value={field.state.value}
-            onChange={field.handleChange}
-            onBlur={field.handleBlur}
-            error={fieldError(field.state.meta.errors, field.name, state.answered)}
-          />
-        )}
-      </form.Field>
+      {asksReason ? (
+        <form.Field name="reason">
+          {(field) => (
+            <TextField
+              labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
+              name={field.name}
+              isRequired={reasonRequired}
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
+              error={fieldError(field.state.meta.errors, field.name, state.answered)}
+            />
+          )}
+        </form.Field>
+      ) : null}
       {returnsToPending ? (
         <p role="status" className="rounded-control border border-dashed border-status-pending p-md text-name text-status-pending-text">
           {t('leaves.returnsToPending')}

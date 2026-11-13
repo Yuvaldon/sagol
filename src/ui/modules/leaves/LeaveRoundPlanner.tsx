@@ -3,6 +3,7 @@ import { t } from '@i18n'
 import {
   fullName,
   groupRounds,
+  isRotationLeave,
   leaveRoundIssues,
   newLeaveRoundValues,
   newRoundGroup,
@@ -108,6 +109,7 @@ export function LeaveRoundPlanner({
   const planned = values.groups.flatMap((group) => group.soldier_ids)
   const count = useMemo(() => plannedRounds(values, context).length, [values, context])
   const reasonRequired = typeOf(values.leave_type_id)?.requires_reason === true
+  const asksReason = !isRotationLeave(typeOf(values.leave_type_id), groups)
   const error = (errors: readonly unknown[], name: string) => fieldError(errors, name, state.answered)
   const rotationOptions: SelectOption<DeploymentId | null>[] = context.rotations.map((candidate) => ({
     key: candidate.id,
@@ -287,7 +289,15 @@ export function LeaveRoundPlanner({
         )}
       </form.Field>
       <p className="text-label text-text-muted">{[t('leaves.roundsCount'), String(count)].join(WORD)}</p>
-      <form.Field name="leave_type_id">
+      <form.Field
+        name="leave_type_id"
+        listeners={{
+          // A rotation leave asks no reason (D-346): one typed before the type changed is not sent with it.
+          onChange: ({ value }) => {
+            if (isRotationLeave(typeOf(value), groups)) form.setFieldValue('reason', '')
+          },
+        }}
+      >
         {(field) => (
           <>
             <SelectField
@@ -307,19 +317,21 @@ export function LeaveRoundPlanner({
           </>
         )}
       </form.Field>
-      <form.Field name="reason">
-        {(field) => (
-          <TextField
-            labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
-            name={field.name}
-            isRequired={reasonRequired}
-            value={field.state.value}
-            onChange={field.handleChange}
-            onBlur={field.handleBlur}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
+      {asksReason ? (
+        <form.Field name="reason">
+          {(field) => (
+            <TextField
+              labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
+              name={field.name}
+              isRequired={reasonRequired}
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
+              error={error(field.state.meta.errors, field.name)}
+            />
+          )}
+        </form.Field>
+      ) : null}
       <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
       <form.Field name="description">
         {(field) => (

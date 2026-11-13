@@ -1,6 +1,6 @@
 import type { CalendarDate, LeaveType, LeaveTypeGroup, LeaveTypeId, Soldier, SoldierId } from '@contracts'
 import { t } from '@i18n'
-import { fullName, leaveBatchIssues, newLeaveBatchValues, useLeaveBatchCommands, usePanel, useRequestRotation } from '@logic'
+import { fullName, isRotationLeave, leaveBatchIssues, newLeaveBatchValues, useLeaveBatchCommands, usePanel, useRequestRotation } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -71,6 +71,7 @@ export function LeaveBatchForm({
   const typeId = useStore(form.store, (current) => current.values.leave_type_id)
   const chosen = useStore(form.store, (current) => current.values.soldier_ids)
   const reasonRequired = typeOf(typeId)?.requires_reason === true
+  const asksReason = !isRotationLeave(typeOf(typeId), groups)
   const error = (errors: readonly unknown[], name: string) => fieldError(errors, name, state.answered)
 
   return (
@@ -112,7 +113,15 @@ export function LeaveBatchForm({
           </div>
         )}
       </form.Field>
-      <form.Field name="leave_type_id">
+      <form.Field
+        name="leave_type_id"
+        listeners={{
+          // A rotation leave asks no reason (D-346): one typed before the type changed is not sent with it.
+          onChange: ({ value }) => {
+            if (isRotationLeave(typeOf(value), groups)) form.setFieldValue('reason', '')
+          },
+        }}
+      >
         {(field) => (
           <>
             <SelectField
@@ -156,19 +165,21 @@ export function LeaveBatchForm({
           )}
         </form.Field>
       </div>
-      <form.Field name="reason">
-        {(field) => (
-          <TextField
-            labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
-            name={field.name}
-            isRequired={reasonRequired}
-            value={field.state.value}
-            onChange={field.handleChange}
-            onBlur={field.handleBlur}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
+      {asksReason ? (
+        <form.Field name="reason">
+          {(field) => (
+            <TextField
+              labelKey={reasonRequired ? 'leaves.reasonRequired' : 'leaves.reason'}
+              name={field.name}
+              isRequired={reasonRequired}
+              value={field.state.value}
+              onChange={field.handleChange}
+              onBlur={field.handleBlur}
+              error={error(field.state.meta.errors, field.name)}
+            />
+          )}
+        </form.Field>
+      ) : null}
       <PropertyFields fields={properties} errorOf={(name) => issueError([], state.answered, name)} />
       <form.Field name="description">
         {(field) => (
