@@ -9,7 +9,7 @@ import {
 } from 'react-aria-components'
 
 // The overlays of the app hold a history entry while they are open, so the back button closes the top one and
-// nothing else (D-336). They are the react-aria overlays, unchanged on screen.
+// nothing else (D-337). They are the react-aria overlays, unchanged on screen.
 
 /** A menu, a picker or a list that opens from its trigger. */
 export function Popover(props: PopoverProps) {

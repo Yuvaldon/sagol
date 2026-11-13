@@ -5,7 +5,7 @@ import { Button, Dialog, DialogTrigger, ListBox, ListBoxItem, Menu, MenuItem, Me
 import { describe, expect, it } from 'vitest'
 import { ModalOverlay, Popover } from './overlays'
 
-// The overlays hold one history entry while open, so the back button closes them (D-336). Test markup only.
+// The overlays hold one history entry while open, so the back button closes them (D-337). Test markup only.
 
 async function renderWith(content: () => ReactNode) {
   const rootRoute = createRootRoute()
@@ -58,7 +58,7 @@ function ClosedSelect() {
   )
 }
 
-describe('overlays (D-336)', () => {
+describe('overlays (D-337)', () => {
   it('a menu holds an entry the back button consumes by closing it', async () => {
     const history = await renderWith(() => <ActionsMenu />)
     const start = position(history)
