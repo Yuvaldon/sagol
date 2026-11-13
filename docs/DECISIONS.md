@@ -4359,6 +4359,8 @@ presses, so this is not the source of the staging bursts (OI-290).
 2026-11-13 · accepted · ref D-201, D-204 · OI-290 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
 - The query cache sets `retryOnMount: false` beside `retry: false`. A read that failed and holds no data stays failed
   when another component that reads it mounts; a change (`invalidateChanged`) or a command still refreshes it.
+- A change drops the refused reads it touches that no view shows (TanStack loads none of them on mount, stale or
+  not), so the next view reads them afresh under the change; shown ones are asked again as before.
 **Why:** OI-290. TanStack Query refetches, on mount, a query that failed with no data, and that refetch puts it back to
 `pending`. A view that hides a pending read's part and shows a part that reads it again once it failed therefore
 mounts, refetches, hides and fails again at network speed: staging logged thousands of 82-byte answers (a refusal) at
