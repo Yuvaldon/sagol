@@ -28,7 +28,9 @@ BEGIN
     )
   LOOP
     -- The built-in group comes first: the groups from before move down one place.
-    UPDATE "leave_type_groups" SET "sort_order" = "sort_order" + 1 WHERE "organization_id" = organization."id";
+    UPDATE "leave_type_groups"
+    SET "sort_order" = "sort_order" + 1, "updated_at" = now(), "version" = "version" + 1
+    WHERE "organization_id" = organization."id";
     INSERT INTO "leave_type_groups" ("organization_id", "name", "is_rotation_leave", "sort_order")
     VALUES (organization."id", 'סבב יציאות', true, 0)
     RETURNING "id" INTO rotation;
