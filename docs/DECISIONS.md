@@ -83,7 +83,7 @@ am = amends, ref = refines, ext = extends.
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130; ref D-176; ref D-186 |
 | D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-149 |
-| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147 |
+| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147; ref D-381 |
 | D-068 | Schema issue mapping | domain, data, logic | |
 | D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
 | D-070 | Availability of a soldier on a day | domain, data, logic, ui, backend | ref D-133, D-134 |
@@ -148,7 +148,7 @@ am = amends, ref = refines, ext = extends.
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260; ref D-285 |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177; sup D-326 |
-| D-132 | Leave conditions on the board | config, logic, ui | |
+| D-132 | Leave conditions on the board | config, logic, ui | ext D-382 |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
 | D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161; sup D-193 (panel) |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
@@ -193,7 +193,7 @@ am = amends, ref = refines, ext = extends.
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268; ref D-339 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
-| D-177 | Property chips in the filter bar | logic, ui | ref D-312 |
+| D-177 | Property chips in the filter bar | logic, ui | ref D-312; ref D-380 |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259; ref D-267, D-268, D-270 |
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285; ref D-297; ref D-347 |
@@ -288,7 +288,7 @@ am = amends, ref = refines, ext = extends.
 | D-303 | A rotation report's summary counts the sections outside the owner's view, without naming them | contracts, data, logic, i18n, ui | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301 |
-| D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326 |
+| D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326; ext D-380, D-382 |
 | D-313 | Several sorts, in order | config, logic, i18n, ui | ext D-324 |
 | D-314 | A filter chip's remove is a plain × | ui | |
 | D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | ref D-321; ref D-323 |
@@ -302,7 +302,7 @@ am = amends, ref = refines, ext = extends.
 | D-323 | A soldier with no unit joins the root the actor sees; no wider tree is read | logic | |
 | D-324 | A link from before D-313 is read as the sort rules | logic | |
 | D-325 | The chart holds the view on a card when its width changes | ui | |
-| D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
+| D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | ref D-382 |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
 | D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337 |
@@ -324,6 +324,9 @@ am = amends, ref = refines, ext = extends.
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
 | D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | |
 | D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
+| D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | |
+| D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
+| D-382 | Leave property conditions are leave conditions | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4735,3 +4738,44 @@ stored choice, not stored figures, keeps D-019.
   without reading one's own memberships, the section is not drawn.
 **Why:** the owner asked for a small personal picture for every soldier. Keeping it fixed and self-only needs no
 settings and leaks nothing.
+
+## D-380 — Typed filter conditions: text, number, date and reference properties
+2026-11-13 · accepted · refines D-177 · extends D-312 · OI-112 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- The rule builder offers every soldier property, not only select and yes / no ones. Operators by data type:
+  - **text:** "מכיל", "הוא", "אינו", "ריק", "לא ריק".
+  - **number:** "הוא", "אינו", greater / at least / less / at most, "ריק", "לא ריק".
+  - **date:** "הוא", "אינו", "לפני", "עד", "אחרי", "החל מ", "ריק", "לא ריק".
+  - **select, multi-select, soldier and unit references:** "אחד מ", "אף אחד מ", "ריק", "לא ריק", over the live
+    options, soldiers (by full name) or units (by name). A field with no choices is not offered.
+- A typed value is a `compare` rule: `equals`, `not_equals`, `contains` or an ordering operator over one value.
+  Dates are compared as calendar dates; "לפני" is `less_than`, "עד" `less_or_equal`, and so on. A rule without a
+  value writes nothing and lives only in the open builder (D-312).
+- Text and numbers are written when the field is left or Enter is pressed, not on every keystroke: no debounce
+  constant, no history step per letter. A number field whose text is not a number is marked invalid and writes
+  nothing. A date is written when it changes.
+- A unit property is offered beside the soldier ones, its name followed by "(של היחידה)", and reads as D-381 says.
+**Why:** OI-112. One operator set per data type keeps the builder predictable; writing on leave keeps the URL and
+the history clean.
+
+## D-381 — A unit property condition reads the soldier's primary unit that day
+2026-11-13 · accepted · refines D-067 · OI-112 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- A filter's property node over a unit definition reads the property of the soldier's primary unit on the evaluated
+  day; a soldier with no unit that day has no value (so "ריק" holds). Validation accepts soldier and unit
+  definitions; a leave definition, or a missing one, is still an issue and matches nobody.
+- The same evaluation serves the board filter and availability-rule populations (D-031). Nothing relied on the old
+  "a unit property matches nobody" behavior beyond its own test and the validation.
+**Why:** a unit's properties (D-016) describe its soldiers' place; reading them through the day's membership keeps
+filters dated as everything else in them is (D-029).
+
+## D-382 — Leave property conditions are leave conditions
+2026-11-13 · accepted · extends D-132 · refines D-326 · OI-112 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- A leave property condition selects the leaves the board draws, beside the status and type conditions (D-132); it
+  selects no soldier. It lives in the `leaves` search param as `properties`: property nodes, each alone or under
+  `not` for "none of", all of which must hold ("וגם" only). The operators are D-380's.
+- In the builder its rows come after the leave status and type rows. Choosing a leave property in a soldier row
+  moves the row among the leave conditions. Each condition is a chip; one the builder does not read shows as "other"
+  and can only be removed.
+- Like the status and type conditions, it changes what is drawn, not availability (D-133).
+**Why:** D-326 keeps one soldier rule model; a leave's properties describe leaves, so they extend the leave
+conditions rather than the soldier rules.
+

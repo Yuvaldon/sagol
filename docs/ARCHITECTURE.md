@@ -248,9 +248,11 @@ The current state (D-128):
   OI-098 (D-147).
 - **Who a view starts from:** soldiers not archived, active only unless the filter has a status rule (D-105, D-312).
 - **The rule builder** reads and writes `filter` as one model, the rules (`readRules`, `writeRules`): `and(unit, ...rules)` for וגם, `and(unit, or(...rules))` for או;
-  a tag category or rank takes any of or none of, a status is or is not, a select property any of, none of, empty or
-  not empty, a yes / no is, empty or not empty (D-312, D-322, D-326); anything else is "a filter the bar does not read". Leave conditions (statuses,
-  types) are a separate param, `leaves`, never part of `FilterExpression` (D-132). `missing` keeps soldiers absent on a
+  a tag category or rank takes any of or none of, a status is or is not, a select, multi-select, soldier or unit
+  property any of, none of, empty or not empty, a yes / no is, empty or not empty, a text, number or date property a
+  `compare` rule with one value (D-312, D-322, D-326, D-380); a unit property reads the soldier's primary unit that
+  day (D-381); anything else is "a filter the bar does not read". Leave conditions (statuses,
+  types, and leave property nodes in `properties`, D-382) are a separate param, `leaves`, never part of `FilterExpression` (D-132). `missing` keeps soldiers absent on a
   day of the window, approved leaves only (D-133).
 - **Presence lists** of a day (`day`) partition who the soldier filter selects that day, approved leaves only (D-134).
 - **The unit chart** is laid out in logic (`unitChart`: a column per leaf, a parent centered over its children, a row
