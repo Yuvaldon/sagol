@@ -373,7 +373,7 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 | קבוצה / קיבוץ (board rows, rule grouping) | grouping | hide: the unit's name heads its rows; a rule says "לפי" | board, rules |
 | כללים | `availability_rules` | rename: כללי נוכחות | נוכחות |
 | סבב / סבבים | `deployments` | keep (D-212) | top strip, סבבים |
-| יציאת סבב | a leave of a type in the built-in "סבב יציאות" group (OI-295) | new (D-345, D-346): the soldiers' ordinary rotation leave, no reason; "הוספת סבב" on the types screen adds "סבב יציאה N" with no form | board, דוח 1, סוגי היעדרות |
+| יציאת סבב | a leave of a type in the built-in "סבב יציאות" group (OI-295) | new (D-345, D-347): the soldiers' ordinary rotation leave, no reason; "הוספת סבב" on the types screen adds "סבב יציאה N" with no form | board, דוח 1, סוגי היעדרות |
 | תגית / תגיות | `tags` | keep | soldier's card, filter, תגיות |
 | קטגוריה | `tag_categories` | keep, advanced only (D-285) | from V32: הגדרות היחידה › מתקדם; a tag's form |
 | מאפיינים | `property_definitions` | rename: פרטים נוספים | from V32: "שדות נוספים" in הגדרות היחידה (the definitions), "פרטים נוספים" on the soldier's card (the values) (D-285) |

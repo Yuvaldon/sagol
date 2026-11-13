@@ -1,5 +1,5 @@
 -- =============================================================================
--- The built-in "סבב יציאות" leave-type group (D-345, D-346).
+-- The built-in "סבב יציאות" leave-type group (D-345, D-347).
 --
 -- 1. leave_type_groups gains is_rotation_leave, false for every existing group, and at most one
 --    group per organization holds it.

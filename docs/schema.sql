@@ -444,7 +444,7 @@ CREATE TABLE IF NOT EXISTS "leave_type_groups" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
 	"name" VARCHAR(100) NOT NULL,
-	-- The organization's built-in "סבב יציאות" group (D-345, D-346): one per organization, never archived.
+	-- The organization's built-in "סבב יציאות" group (D-345, D-347): one per organization, never archived.
 	"is_rotation_leave" BOOLEAN NOT NULL DEFAULT false,
 	"sort_order" INTEGER NOT NULL DEFAULT 0,
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

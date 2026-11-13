@@ -10,7 +10,7 @@ import { ExpectedVersion, changesOf } from './common'
  * `bootstrapOwner` (D-005): the first verified sign-in on an empty organization creates the
  * organization, its root unit (named as the organization, D-251), the owner soldier placed in it from today, the
  * account link, an owner role and its organization-scope grant, and the built-in "סבב יציאות" group with its one type
- * (D-345, D-346), atomically. Refused unless the identity's verified email
+ * (D-345, D-347), atomically. Refused unless the identity's verified email
  * matches the server secret. The identity comes from the session, never from input.
  */
 export const BootstrapOwnerInput = z.strictObject({
@@ -23,7 +23,7 @@ export const BootstrapOwnerInput = z.strictObject({
   owner_role: z.strictObject({ id: RoleId, name: Role.shape.name }),
   account_id: SoldierAccountId,
   access_grant_id: AccessGrantId,
-  /** The built-in leave group and its first type (D-346). Their names are user data, proposed by the UI. */
+  /** The built-in leave group and its first type (D-347). Their names are user data, proposed by the UI. */
   rotation_group: z.strictObject({ id: LeaveTypeGroupId, name: LeaveTypeGroup.shape.name }),
   rotation_type: z.strictObject({ id: LeaveTypeId, name: LeaveType.shape.name }),
 })
