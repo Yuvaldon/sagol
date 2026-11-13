@@ -81,6 +81,8 @@ The data layer is written as if it were the server:
   `supabase/migrations` builds the database from `schema.sql`, plus triggers (D-202). The API
   roles hold no privilege and RLS has no policy, so no client reaches a table (D-203); the one client policy is on
   `realtime.messages`, for hearing an organization's topic (D-347).
+  Each call logs one line, its name and answer code (D-335); when a stored row failed the contracts, also its table
+  and issue paths, never values (D-346).
 
 ## Identity and access (D-001 … D-006)
 

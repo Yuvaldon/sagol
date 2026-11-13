@@ -100,6 +100,18 @@ describe('createCommandHandler', () => {
     ])
   })
 
+  it('logs the table and issue paths of a row the contracts rejected, and never sends them (D-346)', async () => {
+    const { gateway, log, serve } = setup()
+    const rejection = { table: 'units', paths: ['id', 'name'] } as const
+    gateway.mockResolvedValueOnce({ result: { ok: false, error: { code: 'internal' } }, changes: [], rejection })
+    const call = { kind: 'repositories', group: 'units', method: 'list', args: [] }
+    const response = await serve(post(JSON.stringify(call)))
+    expect(await response.json()).toEqual({ result: { ok: false, error: { code: 'internal' } }, changes: [] })
+    expect(log.mock.calls).toEqual([
+      [JSON.stringify({ call: 'repositories.units.list', code: 'internal', table: 'units', paths: ['id', 'name'] })],
+    ])
+  })
+
   it('refuses an oversized body before parsing it', async () => {
     const { gateway, serve } = setup()
     expect((await serve(post('x'.repeat(1_000_001)))).status).toBe(413)

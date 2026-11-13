@@ -308,7 +308,7 @@ am = amends, ref = refines, ext = extends.
 | D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337 |
 | D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | ref D-342 |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
-| D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
+| D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | ext D-346 |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 | D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
 | D-338 | The Later features: the owner's order and conditions | docs | ref D-344 |
@@ -319,6 +319,7 @@ am = amends, ref = refines, ext = extends.
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
 | D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | |
+| D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
@@ -4605,6 +4606,21 @@ the company commander's need is a picture for planning, not approving.
   `schema.sql` first (rule 5).
 **Why:** the routine leave is the rotation itself, not an absence someone asked for; the day report and the board must
 tell it apart from requested leaves without anyone defining anything. The owner named the concept and the model.
+
+## D-346 — A row the contracts reject: the call's log line names its table and issue paths
+2026-11-13 · accepted · extends D-335 · ref D-341 · OI-296 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- `parsedRow` (`src/data/local/failure.ts`) parses with `safeParse`; a failure throws `RowRejected` with the table and
+  the zod issue paths (dot-joined, deduplicated). Values and issue messages are never kept: a message can quote a value.
+- `asResult` still answers `{ code: 'internal' }`; the caller's contract is unchanged. The rejection is kept in a
+  module `WeakMap` keyed by that error object and read with `rowRejectionOf`, so it follows the answer through a
+  nested `fail(result.error)` and is gone with it. Nothing serializes it.
+- The gateway puts it on `GatewayResponse.rejection`, the handler adds `table` and `paths` to the call's log line
+  (`{call, code, table, paths}`), and the reply carries only `result` and `changes`.
+- The local adapter keeps the rejection too, but nothing logs it in the browser: the server log is where a stored row
+  is found (staging and production).
+**Why:** D-341's failure showed only `internal` on every screen and a log line with the call's name, so the table and
+field were found only by reproducing the call. A field on `AppError` would have sent server internals to every client
+and changed the contracts for a log; a weak map beside the answer keeps the contract and loses nothing.
 
 ## D-347 — Live changes: a committed write is broadcast on its organization's private Realtime topic
 2026-11-13 · accepted · refines D-204, D-203 · OI-151 · decided under D-170

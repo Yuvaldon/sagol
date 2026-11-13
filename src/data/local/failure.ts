@@ -41,11 +41,41 @@ const STORAGE_ERROR_NAMES: readonly string[] = [
   STORE_UNAVAILABLE,
 ]
 
+/** Which stored row the contracts rejected (OI-296): the table and the issue paths, never the values. */
+export interface RowRejection {
+  readonly table: TableName
+  readonly paths: readonly string[]
+}
+
+/** A row read from storage that the contracts reject: a fault of the stored data, never of the caller. */
+class RowRejected extends Error {
+  readonly rejection: RowRejection
+
+  constructor(rejection: RowRejection) {
+    super(`row rejected: ${rejection.table}`)
+    this.rejection = rejection
+  }
+}
+
+// The caller sees only `internal`; the rejection stays beside the answer, keyed by its error object, for the
+// server's log line (D-346). Nothing here is serialized, so it never reaches a client.
+const rejections = new WeakMap<AppError, RowRejection>()
+
+/** The rejected row behind an `internal` answer, when a parse failure caused it. */
+export function rowRejectionOf(error: AppError): RowRejection | undefined {
+  return rejections.get(error)
+}
+
 export async function asResult<T>(work: () => Promise<T>): AsyncResult<T> {
   try {
     return { ok: true, value: await work() }
   } catch (error) {
     if (error instanceof CommandFailure) return { ok: false, error: error.failure }
+    if (error instanceof RowRejected) {
+      const failure: AppError = { code: 'internal' }
+      rejections.set(failure, error.rejection)
+      return { ok: false, error: failure }
+    }
     const storage = error instanceof Error && STORAGE_ERROR_NAMES.includes(error.name)
     return { ok: false, error: { code: storage ? 'unavailable' : 'internal' } }
   }
@@ -60,5 +90,8 @@ export function parseInput<T>(schema: z.ZodType<T>, input: unknown): T {
 
 /** IndexedDB is an untyped boundary (D-036): rows are parsed where they enter and leave it. */
 export function parsedRow<T extends TableName>(table: T, row: unknown): TableRow<T> {
-  return TABLE_SCHEMAS[table].parse(row) as TableRow<T>
+  const parsed = TABLE_SCHEMAS[table].safeParse(row)
+  if (parsed.success) return parsed.data as TableRow<T>
+  const paths = new Set(parsed.error.issues.map((issue) => issue.path.map(String).join('.')))
+  throw new RowRejected({ table, paths: [...paths] })
 }
