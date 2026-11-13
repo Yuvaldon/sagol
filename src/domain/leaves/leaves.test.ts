@@ -10,7 +10,11 @@ import {
 } from '@contracts'
 import {
   COMMENT_PERMISSIONS,
+  archiveBuiltInGroupIssues,
   archiveLeaveTypeGroupIssues,
+  archiveLeaveTypeIssues,
+  isRotationLeaveType,
+  rotationLeaveTypeIssues,
   archivedSoldierIssues,
   LEAVE_PERMISSIONS,
   commentChangeIssues,
@@ -259,6 +263,55 @@ describe('archiving a leave type group (D-113)', () => {
     expect(archiveLeaveTypeGroupIssues([{ group_id: other, archived_at: null }], group)).toEqual([])
     expect(archiveLeaveTypeGroupIssues([{ group_id: null, archived_at: null }], group)).toEqual([])
     expect(archiveLeaveTypeGroupIssues([], group)).toEqual([])
+  })
+})
+
+describe('the built-in group (D-346)', () => {
+  const builtIn = { id: LeaveTypeGroupId.parse(uuid(42)), is_rotation_leave: true }
+  const ordinary = { id: LeaveTypeGroupId.parse(uuid(43)), is_rotation_leave: false }
+  const first = { id: LeaveTypeId.parse(uuid(44)), group_id: builtIn.id, archived_at: null }
+  const second = { id: LeaveTypeId.parse(uuid(45)), group_id: builtIn.id, archived_at: null }
+  const fixed = (field: string) => ({ path: [field], code: 'fixed_by_group' })
+  const rotation = { group_id: builtIn.id, availability_effect: 'unavailable', requires_reason: false } as const
+
+  it('is never archived', () => {
+    expect(archiveBuiltInGroupIssues(builtIn)).toEqual([{ path: [], code: 'group_builtin' }])
+    expect(archiveBuiltInGroupIssues(ordinary)).toEqual([])
+  })
+
+  it('keeps its last live type', () => {
+    expect(archiveLeaveTypeIssues([first], first, builtIn)).toEqual([{ path: [], code: 'last_rotation_type' }])
+    expect(archiveLeaveTypeIssues([first, { ...second, archived_at: EARLIER }], first, builtIn)).toEqual([
+      { path: [], code: 'last_rotation_type' },
+    ])
+    expect(archiveLeaveTypeIssues([first, second], first, builtIn)).toEqual([])
+    expect(archiveLeaveTypeIssues([first], first, ordinary)).toEqual([])
+    expect(archiveLeaveTypeIssues([first], first, null)).toEqual([])
+  })
+
+  it('tells its types apart', () => {
+    expect(isRotationLeaveType(first, [builtIn, ordinary])).toBe(true)
+    expect(isRotationLeaveType({ group_id: ordinary.id }, [builtIn, ordinary])).toBe(false)
+    expect(isRotationLeaveType({ group_id: null }, [builtIn])).toBe(false)
+    expect(isRotationLeaveType(undefined, [builtIn])).toBe(false)
+  })
+
+  it('fixes its types as absences that ask no reason', () => {
+    expect(rotationLeaveTypeIssues(null, rotation, builtIn)).toEqual([])
+    expect(rotationLeaveTypeIssues(null, { ...rotation, availability_effect: 'available', requires_reason: true }, builtIn)).toEqual([
+      fixed('availability_effect'),
+      fixed('requires_reason'),
+    ])
+    expect(rotationLeaveTypeIssues(null, { ...rotation, group_id: ordinary.id, requires_reason: true }, ordinary)).toEqual([])
+  })
+
+  it('lets no type move into it or out of it', () => {
+    expect(rotationLeaveTypeIssues({ group: ordinary, group_id: ordinary.id }, rotation, builtIn)).toEqual([fixed('group_id')])
+    expect(rotationLeaveTypeIssues({ group: builtIn, group_id: builtIn.id }, { ...rotation, group_id: null }, null)).toEqual([
+      fixed('group_id'),
+    ])
+    expect(rotationLeaveTypeIssues({ group: builtIn, group_id: builtIn.id }, rotation, builtIn)).toEqual([])
+    expect(rotationLeaveTypeIssues({ group: null, group_id: null }, { ...rotation, group_id: ordinary.id }, ordinary)).toEqual([])
   })
 })
 
