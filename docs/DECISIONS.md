@@ -305,10 +305,11 @@ am = amends, ref = refines, ext = extends.
 | D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
-| D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | |
+| D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-336 |
 | D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
+| D-336 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4341,8 +4342,8 @@ not say which calls it made. With the name in the URL, the logs answer that with
   panel's params (`useOverlayHistory`).
 - **Leaving.** On the main screen with nothing open, the back button leaves the app.
 - This changes D-023's "the back button works" for view state, and D-092's back button for panels, to the above.
-  Deep links are unchanged. Menus and dialogs that live inside a component (popovers, confirmations) do not take part
-  yet (OI-291).
+  Deep links are unchanged. Menus and dialogs that live inside a component (popovers, confirmations) take part as
+  D-336 sets out.
 **Why:** the owner's report from the installed app on an Android phone: Back replayed every action, so a menu opened
 and closed came back. A probe walked the cause: every search change pushed an entry (four week moves and a panel
 opened and closed made six), and Back walked them one by one. The probe also made no remote call on any of 8 back
@@ -4378,3 +4379,27 @@ about five a second from one owner session. The adapter's answer is final (D-204
 **Why:** D-331 assumed the request logs keep the query string; they do not (`function_edge_logs` records
 `request.url` without it), so the tag named nothing anywhere. The function's own log does reach the logs, and it can
 also say what each call answered, which is what OI-290 lacked.
+
+## D-336 — Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one
+2026-11-13 · accepted · amends D-332 · OI-291 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Where.** The `ui` primitives `Popover` and `ModalOverlay` wrap the react-aria overlays, unchanged on screen, and
+  call `useOverlayLayer` (`logic/view-state/layers.ts`) with their open state and a close. Every menu, picker, sheet
+  and confirmation dialog built on them takes part; none adds its own code. A drawer whose state lives in the URL
+  (`inUrl`) adds no entry: its panel entry (D-332) is already the one Back consumes.
+- **Nesting.** Each open layer pushes an overlay entry over the one it opened on, so Back closes the innermost layer
+  first, one press each; after the last layer Back goes to the previous screen and then leaves the app (D-332).
+- **Closing any other way** (an item, a click outside, Escape, a button) takes the layer's entry back, so nothing is
+  left to replay. The take-back waits for the end of the turn: a layer that opens as another closes (a menu item that
+  opens a dialog) takes over the closing layer's entry instead of going back and forth. A layer that opens while an
+  entry is being left waits for the history to answer, then pushes its own.
+- **Panels.** A panel opened from a layer over the main screen takes the layer's entry. A panel that closes leaves the
+  entries of the layers open over it with its own (`layersAbove`, `takeLayerEntry`), and the navigation panel's entry
+  stays its floor.
+- **What is kept.** Leaving a layer's entry never changes what the screen shows: a change made on it (a window chosen
+  in a menu, a panel's row switched) is kept on the entry below.
+- **Only a popover on screen holds an entry.** A react-aria collection renders a hidden copy of its children to learn
+  its items; that copy can sit under another overlay's open state (a select inside an open drawer) and shows no
+  popover. `Popover` registers only once its element is attached.
+**Why:** OI-291. On Android the back button went past menus and dialogs that live inside a component, out of the
+screen under them. One place for every overlay keeps the rule in the layer that owns history and leaves the screens
+as they are (D-333).
