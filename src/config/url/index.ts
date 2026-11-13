@@ -36,6 +36,10 @@ export const SEARCH_PARAMS = {
   day: 'day',
   /** The last day of the day report's span (D-193). Absent: the report is of one day. */
   until: 'until',
+  /** The dashboard's unit (D-349). Absent: the actor's own unit, or the first they may read. */
+  unit: 'unit',
+  /** The dashboard's "כולל מתוכנן" (D-349): count the whole span, approved future leaves included. */
+  planned: 'planned',
   /** The soldier and days a drag on the timeline marked for a new leave (D-143). */
   draft: 'draft',
 } as const

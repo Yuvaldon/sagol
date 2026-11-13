@@ -38,6 +38,8 @@ export const PANEL_IDS = {
   accessGrants: 'access_grants',
   /** Import from a file, with its dry-run preview, and the organization's export (D-171). */
   dataTransfer: 'data_transfer',
+  /** The command dashboard (D-349). */
+  dashboard: 'dashboard',
   /** The organization's setup steps, each opening its own module (D-033, D-180). */
   setup: 'setup',
 } as const
@@ -65,6 +67,7 @@ export const PanelId = z.enum([
   PANEL_IDS.accessGrants,
   PANEL_IDS.dataTransfer,
   PANEL_IDS.setup,
+  PANEL_IDS.dashboard,
 ])
 export type PanelId = z.infer<typeof PanelId>
 
