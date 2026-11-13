@@ -62,6 +62,12 @@ const STATE_ISSUE_CODES = [
   'rank_in_use',
   /** A leave type group holds a type that is not archived (D-113). */
   'group_in_use',
+  /** The organization's built-in "סבב יציאות" group is never archived (D-346). */
+  'group_builtin',
+  /** The built-in group's last type that is not archived stays (D-346). */
+  'last_rotation_type',
+  /** The built-in group fixes the field: its types are absences with no reason and stay in it (D-346). */
+  'fixed_by_group',
   /** A leave's soldier is not a member of the rotation it belongs to (D-216). */
   'not_a_member',
   /** A leave's dates fall outside the soldier's days in its rotation (D-216). */

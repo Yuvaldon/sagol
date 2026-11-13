@@ -31,6 +31,8 @@ export const LeaveTypeGroup = z.object({
   id: LeaveTypeGroupId,
   organization_id: OrganizationId,
   name: label(100),
+  /** The organization's built-in "סבב יציאות" group: one per organization, never archived (D-345, D-346). */
+  is_rotation_leave: z.boolean(),
   sort_order: Integer,
   ...auditColumns,
 })

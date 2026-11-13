@@ -444,6 +444,8 @@ CREATE TABLE IF NOT EXISTS "leave_type_groups" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
 	"name" VARCHAR(100) NOT NULL,
+	-- The organization's built-in "סבב יציאות" group (D-345, D-346): one per organization, never archived.
+	"is_rotation_leave" BOOLEAN NOT NULL DEFAULT false,
 	"sort_order" INTEGER NOT NULL DEFAULT 0,
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"created_by" UUID REFERENCES "soldiers"("id"),
@@ -453,6 +455,9 @@ CREATE TABLE IF NOT EXISTS "leave_type_groups" (
 	"archived_at" TIMESTAMPTZ,
 	PRIMARY KEY("id")
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_leave_type_groups_rotation_leave"
+	ON "leave_type_groups"("organization_id") WHERE "is_rotation_leave";
 
 CREATE TABLE IF NOT EXISTS "leave_types" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),

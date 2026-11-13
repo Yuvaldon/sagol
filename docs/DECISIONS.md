@@ -48,7 +48,7 @@ am = amends, ref = refines, ext = extends.
 | D-029 | Effective seniority with personal overrides | contracts, domain, backend | ref D-057 |
 | D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149; ref D-163 |
 | D-031 | Availability rules: grouping, global scope, priority | contracts, domain, ui | ref D-067 (canonical population), D-071, D-072; ref D-139, D-140 |
-| D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070; ref D-111, D-113; ref D-134 |
+| D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070; ref D-111, D-113; ref D-134; ref D-346 |
 | D-033 | Simple first-run setup wizard | ui | ref D-180; ref D-261, D-262 |
 | D-034 | Icons: lucide-react, semantic icon keys | ui | ref D-113 |
 | D-035 | domain may import `@internationalized/date` | domain, tooling | am D-061 (tests) |
@@ -118,7 +118,7 @@ am = amends, ref = refines, ext = extends.
 | D-099 | Unit names in a soldier's history | logic, ui | ref D-106 |
 | D-100 | A new required port lands in `app` before `logic` | logic, app, docs | sup D-127 |
 | D-101 | Commands store blank optional text as NULL | contracts, data, logic, backend | |
-| D-102 | Reading private fields and placements needs only their own `view` | data, logic, ui, backend | |
+| D-102 | Reading private fields and placements needs only their own `view` | data, logic, ui, backend | ref D-346 |
 | D-103 | The date window in the URL | logic, ui | ref D-129; ref D-211 |
 | D-104 | The unit selector writes the filter | config, logic, ui | ref D-131; ref D-173; ref D-251 |
 | D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133; ref D-214 |
@@ -129,7 +129,7 @@ am = amends, ref = refines, ext = extends.
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
 | D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | ref D-174 |
-| D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | |
+| D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | ref D-346 |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143; sup D-255 (floating "+"); ref D-267 |
 | D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154; ref D-173; sup D-189 (bars); ref D-252 |
@@ -196,7 +196,7 @@ am = amends, ref = refines, ext = extends.
 | D-177 | Property chips in the filter bar | logic, ui | ref D-312 |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259; ref D-267, D-268, D-270 |
-| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285; ref D-297 |
+| D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285; ref D-297; ref D-346 |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
 | D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | |
@@ -226,7 +226,7 @@ am = amends, ref = refines, ext = extends.
 | D-214 | The board's sort | config, logic, ui | sup D-313 (one key) |
 | D-215 | Data and controls, not prose | i18n, ui | ref D-250 |
 | D-193 | The day report (דוח 1): who is present, absent, leaving and returning | domain, config, logic, ui | ref D-339 |
-| D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | ref D-339 |
+| D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | ref D-339; ref D-346 |
 | D-195 | The day report as text for a messaging app | config, i18n, logic | |
 | D-196 | The day report as an image: drawn on a canvas in the light tokens | ui | |
 | D-197 | A device store for conveniences | config, data, logic, tooling | ref D-301 |
@@ -239,7 +239,7 @@ am = amends, ref = refines, ext = extends.
 | D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | am D-296 |
 | D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
-| D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | |
+| D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | ref D-346 |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266, D-301 |
 | D-253 | The profile is personal only | ui | sup D-310 (rules row); ref D-311 |
 | D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
@@ -250,7 +250,7 @@ am = amends, ref = refines, ext = extends.
 | D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221, D-222; ref D-336 |
 | D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
-| D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
+| D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285; ref D-346 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
 | D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343 |
@@ -318,7 +318,8 @@ am = amends, ref = refines, ext = extends.
 | D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
 | D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | |
-| D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | |
+| D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-346 |
+| D-346 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4604,3 +4605,35 @@ the company commander's need is a picture for planning, not approving.
   `schema.sql` first (rule 5).
 **Why:** the routine leave is the rotation itself, not an absence someone asked for; the day report and the board must
 tell it apart from requested leaves without anyone defining anything. The owner named the concept and the model.
+
+## D-346 — The built-in "סבב יציאות" group: a marker, stored names, fixed absences in calm colors
+2026-11-13 · accepted · refines D-345 · ref D-005, D-032, D-102, D-111, D-112, D-113, D-180, D-194, D-251, D-261, D-262 · OI-295
+- **The marker.** `leave_type_groups.is_rotation_leave` (false by default), with at most one per organization (a
+  unique partial index). No input sets it: the group is created only with the organization, by `bootstrapOwner`, and
+  by the migration for existing ones (`20261114000000_rotation_leave.sql`, and the device store's version 9).
+- **The names are stored, not derived.** The group's and its types' names are user data, like the owner role's
+  (D-005): the UI proposes them from the dictionary ("סבב יציאות", "סבב יציאה", "סבב יציאה 1", ...) and the owner may
+  rename them like any other. Only the proposal is derived, once, when the type is added: the number is how many types
+  the group already holds, archived ones too, so it never repeats. A name kept apart from its proposal would also need
+  every screen, the export and the server to rebuild it; a stored name keeps one meaning for `name` everywhere.
+- **The guards, in the command core (both modes, no bypass).** The built-in group is never archived (`group_builtin`).
+  Its last type that is not archived is not archived (`last_rotation_type`). Its types are absences with no reason:
+  `availability_effect` stays `unavailable` and `requires_reason` false, and a type neither moves into it nor out of
+  it (`fixed_by_group`). A type is added to it by `createLeaveType` with its group id, as any other.
+- **Calm colors.** Its types take colors from `ROTATION_LEAVE_PALETTE_KEYS` in config (blue, cyan, teal, indigo,
+  purple, gray), with no alert hue (red, orange, amber, pink); the command core refuses another key. The "add" shortcut
+  gives a new type the first of them no live type of the group holds, and cycles once they are all held: there is no
+  upper limit on types, so "its own color" holds up to six. The first type is blue.
+- **Where it shows.** The leave forms hide the reason field for such a type; the day report leaves out the reasons of
+  leaves whose type is in the group (the type still shows, within the viewer's reads and the reasons switch). The board
+  draws them in their calm color, and the soldier counts as absent as before. The ordinary type form offers every
+  group but the built-in one; the types screen gives the built-in group an "add" button with no form.
+- **Setup.** The built-in group's types come with the claim, like the root (D-251): a setup is still fresh for a
+  template with only them (D-180), and the checklist's leave-types step is done once an ordinary type exists (D-262).
+  The new-leave panel and the types screen no longer have a "no types yet" state: a live type always exists (D-076).
+- **Export format 5:** the groups carry `is_rotation_leave`, so `EXPORT_FORMAT_VERSION` and `load_organization_export`
+  move to 5, as D-257 .. D-260 did; an older file is refused by its version, not by a missing column. The migration
+  puts the built-in group first and moves the groups from before down one place.
+**Why:** one marker and stored names keep the model and every reader of `name` as they are (D-345: no architecture
+change), while the guards keep the group whole in every mode.
+
