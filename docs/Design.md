@@ -373,6 +373,7 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 | קבוצה / קיבוץ (board rows, rule grouping) | grouping | hide: the unit's name heads its rows; a rule says "לפי" | board, rules |
 | כללים | `availability_rules` | rename: כללי נוכחות | נוכחות |
 | סבב / סבבים | `deployments` | keep (D-212) | top strip, סבבים |
+| יציאת סבב | a leave of a routine leave type (OI-295) | new (D-345): the rotation's fixed home leave, no request, no reason | board, דוח 1, סוגי היעדרות |
 | תגית / תגיות | `tags` | keep | soldier's card, filter, תגיות |
 | קטגוריה | `tag_categories` | keep, advanced only (D-285) | from V32: הגדרות היחידה › מתקדם; a tag's form |
 | מאפיינים | `property_definitions` | rename: פרטים נוספים | from V32: "שדות נוספים" in הגדרות היחידה (the definitions), "פרטים נוספים" on the soldier's card (the values) (D-285) |
@@ -417,8 +418,8 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 | Role | Cares about | Home | Quick action |
 |------|-------------|------|--------------|
 | Soldier, squad leader | Their own days and requests; opens the app to add or follow a request, or when asked | שלי | "בקשה חדשה" while a rotation is current or upcoming; none in routine |
-| Platoon commander, sergeant | The unit's requests, their own included; may delegate | לוח (their unit) | "בקשה חדשה" in a rotation; "פתיחת סבב" in routine if they may create one |
-| Company commander | The plan: wide view and control; rarely approves (HQ's requests) | לוח (the company) | "פתיחת סבב" in routine; "בקשה חדשה" in a rotation |
+| Platoon commander, sergeant | The default operators (D-343): the unit's requests, their own included; coordinate and control; may delegate; the sergeant, then an acting deputy, stands in | לוח (their unit) | "בקשה חדשה" in a rotation; "פתיחת סבב" in routine if they may create one |
+| Company commander | The plan: sees everything, plans and controls, steps in to coordinate (D-343); rarely approves (HQ's requests) | לוח (the company) | "פתיחת סבב" in routine; "בקשה חדשה" in a rotation |
 | מפל"ג (company HQ) | Dedicated roles under the company commander; the report owner (D-269) | by permission: לוח or שלי | as above, by permission |
 
 Requests come from the soldiers; a commander entering one for a soldier uses the form's requester or a drag on the

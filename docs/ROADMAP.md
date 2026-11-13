@@ -145,7 +145,23 @@ From here on, each slice also updates the remote adapter and server functions (D
 
 Order (D-271, amended by D-284): before launch, track A runs V32 (its docs first) → V28 and track B runs V26 → V27;
 then A7 on main once V27 and V28 are in. V29 is done. Before launch: "A7 fixes" (track A) and V33 "Board controls"
-(track B); then V30, V31, V21, V23; then A8 and "A8 fixes". OI-230 (the owner's production settings) gates launch.
+(track B); then V30, V31, V21, V23; then A8 and "A8 fixes". OI-230 (the owner's production settings) gated launch; closed in the 1.0 planning (D-344).
+
+## M7 — Version 1.0
+
+Version 1.0 is the first version technically ready for real use in place of the spreadsheet. Deploying it as it is,
+or holding it for one more update, is the owner's decision once it is ready (D-342). Who operates it: D-343. What it
+holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds until the design rounds approve a concept.
+
+| # | Stage | The owner sees | Status |
+|---|-------|----------------|--------|
+| R1 | Defining 1.0 | The definition, the target user and the stages (D-342, D-343) | ☑ |
+| R2 | Sorting the rest | Every open item and Later feature as Must, Should, Could or Won't for 1.0 (D-344) | ☑ |
+| R3 | Closing the gaps | The Must items closed (OI-117 on an iPhone, OI-293, OI-295 with D-345), then the Should items | ☐ |
+| R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker (OI-111) | ☐ |
+| R5 | Building the design | The approved concept in the product | ☐ |
+| R6 | Acceptance testing | The journeys walked on the real product; the decision point on who maintains the system after handover (D-342) | ☐ |
+| R7 | Release decision | A go / no-go: deploy as it is, or wait for one more update; production only on the owner's word (D-340) | ☐ |
 
 ## Later (no schema change required)
 
