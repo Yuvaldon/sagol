@@ -16,6 +16,11 @@ import {
   RolePermission,
   SchemaIssue,
   SoldierPreferences,
+  StrictSoldierPreferences,
+  LeaveEventQuery,
+  DASHBOARD_MAX_MODULES,
+  DASHBOARD_METRIC_IDS,
+  DASHBOARD_MODULE_IDS,
 } from './index'
 
 // Fixed sample ids and timestamps, test data only.
@@ -110,6 +115,7 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({})).toEqual({
       create_leaves_as_approved: false,
       appearance: 'light',
+      dashboard: null,
     })
   })
 
@@ -117,6 +123,7 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({ create_leaves_as_approved: true })).toEqual({
       create_leaves_as_approved: true,
       appearance: 'light',
+      dashboard: null,
     })
   })
 
@@ -129,7 +136,79 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'], rules_row_placement: 'above', appearance: 'dark' })).toEqual({
       create_leaves_as_approved: false,
       appearance: 'dark',
+      dashboard: null,
     })
+  })
+})
+
+describe('the stored dashboard (D-349, D-358)', () => {
+  const custom = (modules: unknown[]) => ({ dashboard: { kind: 'custom', modules } })
+
+  it('reads a template and a custom list', () => {
+    expect(SoldierPreferences.parse({ dashboard: { kind: 'template', template: 'control' } }).dashboard).toEqual({
+      kind: 'template',
+      template: 'control',
+    })
+    expect(SoldierPreferences.parse(custom([{ module: 'heat_map' }, { module: 'stat', metric: 'home_today' }])).dashboard).toEqual({
+      kind: 'custom',
+      modules: [{ module: 'heat_map' }, { module: 'stat', metric: 'home_today' }],
+    })
+  })
+
+  it('drops unknown and repeated modules on read, the first kept', () => {
+    const read = SoldierPreferences.parse(
+      custom([
+        { module: 'stat', metric: 'present_today' },
+        { module: 'gone' },
+        { module: 'stat', metric: 'retired_metric' },
+        { module: 'heat_map' },
+        { module: 'stat', metric: 'present_today' },
+        { module: 'heat_map' },
+        { module: 'stat', metric: 'home_today' },
+      ]),
+    )
+    expect(read.dashboard).toEqual({
+      kind: 'custom',
+      modules: [{ module: 'stat', metric: 'present_today' }, { module: 'heat_map' }, { module: 'stat', metric: 'home_today' }],
+    })
+  })
+
+  it('reads the whole catalogue once, however often it is stored', () => {
+    const many = DASHBOARD_METRIC_IDS.map((metric) => ({ module: 'stat', metric }))
+    const others = DASHBOARD_MODULE_IDS.filter((id) => id !== 'stat').map((module) => ({ module }))
+    const read = SoldierPreferences.parse(custom([...many, ...others, ...others]))
+    expect(read.dashboard?.kind === 'custom' && read.dashboard.modules).toHaveLength(many.length + others.length)
+    expect(many.length + others.length).toBeLessThanOrEqual(DASHBOARD_MAX_MODULES)
+  })
+
+  it('reads a layout that no longer parses as the default, keeping the rest', () => {
+    expect(SoldierPreferences.parse({ appearance: 'dark', dashboard: { kind: 'template', template: 'retired' } })).toEqual({
+      create_leaves_as_approved: false,
+      appearance: 'dark',
+      dashboard: null,
+    })
+  })
+
+  it('refuses unknown and repeated modules on write, takes the whole catalogue', () => {
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'heat_map' }])).success).toBe(true)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'gone' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'stat' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'heat_map', metric: 'home_today' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'upcoming' }, { module: 'upcoming' }])).success).toBe(false)
+    const stats = DASHBOARD_METRIC_IDS.map((metric) => ({ module: 'stat', metric }))
+    const others = DASHBOARD_MODULE_IDS.filter((id) => id !== 'stat').map((module) => ({ module }))
+    expect(StrictSoldierPreferences.safeParse(custom([...stats, ...others])).success).toBe(true)
+    expect(StrictSoldierPreferences.safeParse(custom([...stats, ...others, { module: 'stat', metric: 'x' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse({ dashboard: { kind: 'template', template: 'retired' } }).success).toBe(false)
+  })
+})
+
+describe('leave event queries (D-358)', () => {
+  it('takes a thread or a span, never both', () => {
+    expect(LeaveEventQuery.safeParse({ leave_id: ID.a }).success).toBe(true)
+    expect(LeaveEventQuery.safeParse({ deployment_id: ID.a, soldier_ids: [ID.b] }).success).toBe(true)
+    expect(LeaveEventQuery.safeParse({ leave_id: ID.a, deployment_id: ID.a, soldier_ids: [] }).success).toBe(false)
+    expect(LeaveEventQuery.safeParse({ deployment_id: ID.a }).success).toBe(false)
   })
 })
 

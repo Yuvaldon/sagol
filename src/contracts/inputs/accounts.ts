@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AccountLinkRequestId, CommandRankId, SoldierAccountId, SoldierId } from '../common/ids'
 import { AccountLinkRequest } from '../entities/accounts'
-import { SoldierPreferences } from '../settings'
+import { StrictSoldierPreferences } from '../settings'
 import { ExpectedVersion } from './common'
 import { MembershipPlacement } from './soldiers'
 
@@ -58,6 +58,6 @@ export type ReviewAccountLinkInput = z.infer<typeof ReviewAccountLinkInput>
 /** The signed-in soldier's own preferences. `expected_version` is NULL while no row exists. */
 export const UpdateMyPreferencesInput = z.strictObject({
   expected_version: ExpectedVersion.nullable(),
-  preferences: SoldierPreferences,
+  preferences: StrictSoldierPreferences,
 })
 export type UpdateMyPreferencesInput = z.infer<typeof UpdateMyPreferencesInput>

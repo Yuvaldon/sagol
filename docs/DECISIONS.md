@@ -322,9 +322,10 @@ am = amends, ref = refines, ext = extends.
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
-| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | |
+| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-358 |
 | D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
 | D-357 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
+| D-358 | The stored board reads leniently and writes strictly; leave events take a thread or a span query | contracts | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4747,3 +4748,15 @@ settings and leaks nothing.
   design-round change, not a rebuild.
 **Why:** the owner asked for it before the design rounds, and the spec is complete, so nothing waits for R4 but the
 dashboard's place on screen.
+
+## D-358 — The stored board reads leniently and writes strictly; leave events take a thread or a span query
+2026-11-13 · accepted · refines D-349 · ref D-041, D-076 · OI-222 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- `SoldierPreferences.dashboard` has two schemas. The read one drops a custom list's unknown and repeated items and
+  keeps the first 20; a layout that no longer parses at all (a removed template) reads as `null`, so the default
+  applies and the rest of the preferences still parse. The write one, `StrictSoldierPreferences`, which
+  `updateMyPreferences` takes, refuses the same items instead of repairing them.
+- `leave_events.list` takes `LeaveEventQuery`: a union of the thread's `LeaveThreadQuery { leave_id }` and
+  `LeaveEventSpanQuery { deployment_id, soldier_ids }`, both strict, so each adapter tells them apart by shape. The
+  span returns the events of that rotation's leaves of those soldiers, oldest first, only of leaves the actor reads.
+**Why:** a vocabulary change must never lock a person out of their preferences (D-041), while a write that names
+what does not exist is a client bug to refuse. One list method with two strict shapes keeps a single read policy.

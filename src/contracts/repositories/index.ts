@@ -124,6 +124,20 @@ export type AccountLinkRequestQuery = z.infer<typeof AccountLinkRequestQuery>
 export const LeaveThreadQuery = z.strictObject({ leave_id: LeaveId })
 export type LeaveThreadQuery = z.infer<typeof LeaveThreadQuery>
 
+/**
+ * The events of one rotation's leaves of these soldiers (D-349, D-358), oldest first: what the plan modules replay.
+ * An event is read when its leave is read, as in the thread.
+ */
+export const LeaveEventSpanQuery = z.strictObject({
+  deployment_id: DeploymentId,
+  soldier_ids: z.array(SoldierId),
+})
+export type LeaveEventSpanQuery = z.infer<typeof LeaveEventSpanQuery>
+
+/** A leave's thread, or a rotation's span. */
+export const LeaveEventQuery = z.union([LeaveThreadQuery, LeaveEventSpanQuery])
+export type LeaveEventQuery = z.infer<typeof LeaveEventQuery>
+
 export const DeploymentMemberQuery = z.strictObject({
   deployment_ids: z.array(DeploymentId).nullable(),
 })
@@ -224,7 +238,7 @@ export interface DataRepositories {
   leave_types: EntityRepository<LeaveType, LeaveTypeId, ReferenceQuery>
   leave_batches: EntityRepository<LeaveBatch, LeaveBatchId, EmptyQuery>
   leaves: EntityRepository<Leave, LeaveId, LeaveQuery>
-  leave_events: ListRepository<LeaveEvent, LeaveThreadQuery>
+  leave_events: ListRepository<LeaveEvent, LeaveEventQuery>
   /** Internal comments only with `internal_comments:view`. */
   leave_comments: EntityRepository<LeaveComment, LeaveCommentId, LeaveThreadQuery>
   deployments: EntityRepository<Deployment, DeploymentId, ReferenceQuery>
