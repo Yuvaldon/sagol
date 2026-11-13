@@ -105,3 +105,11 @@ export type ReschedulePolicy = z.infer<typeof ReschedulePolicy>
 /** The color scheme the soldier chose: light (the default), dark, or the device's (D-181). */
 export const Appearance = z.enum(['light', 'dark', 'system'])
 export type Appearance = z.infer<typeof Appearance>
+
+/** What a phone notification is about (D-349): an answer on one's own request, or a request awaiting one's approval. */
+export const NotificationKind = z.enum(['my_request', 'awaiting_me'])
+export type NotificationKind = z.infer<typeof NotificationKind>
+
+/** What happened to one's own request, as a `my_request` notification names it (D-355). */
+export const PushOutcome = z.enum(['created', 'approved', 'rejected', 'cancelled', 'rescheduled', 'reopened', 'comment'])
+export type PushOutcome = z.infer<typeof PushOutcome>

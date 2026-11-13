@@ -3,6 +3,7 @@ import {
   AccountLinkRequestId,
   AuthUserId,
   OrganizationId,
+  PushSubscriptionId,
   SoldierAccountId,
   SoldierId,
 } from '../common/ids'
@@ -53,3 +54,27 @@ export const SoldierPreferencesRecord = z.object({
   version: Version,
 })
 export type SoldierPreferencesRecord = z.infer<typeof SoldierPreferencesRecord>
+
+/** A push key of the browser (base64url): `p256dh` is its public key, `auth` its secret. */
+export function pushKey(max: number) {
+  return varchar(max).regex(/^[A-Za-z0-9_-]+=*$/)
+}
+
+/** The push service URL of one browser install: https only (D-349). */
+export const PushEndpoint = z.url({ protocol: /^https$/ }).max(2048)
+export type PushEndpoint = z.infer<typeof PushEndpoint>
+
+/**
+ * `push_subscriptions`: one browser install of a soldier that agreed to phone notifications (D-349). Device data:
+ * never exported, deleted with the soldier's link or archive (D-356), and by a push service that no longer knows it.
+ */
+export const PushSubscriptionRecord = z.object({
+  id: PushSubscriptionId,
+  organization_id: OrganizationId,
+  soldier_id: SoldierId,
+  endpoint: PushEndpoint,
+  p256dh: pushKey(200),
+  auth: pushKey(100),
+  created_at: Timestamp,
+})
+export type PushSubscriptionRecord = z.infer<typeof PushSubscriptionRecord>

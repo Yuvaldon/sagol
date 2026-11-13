@@ -28,7 +28,14 @@ export {
   SoldierPrivate,
   UnitMembership,
 } from './entities/soldiers'
-export { AccountLinkRequest, SoldierAccount, SoldierPreferencesRecord } from './entities/accounts'
+export {
+  AccountLinkRequest,
+  PushEndpoint,
+  PushSubscriptionRecord,
+  SoldierAccount,
+  SoldierPreferencesRecord,
+} from './entities/accounts'
+export { PushPayload } from './notifications'
 export { AccessGrant, RankRoleBinding, Role, RolePermission } from './entities/permissions'
 export { SoldierTag, Tag, TagCategory } from './entities/tags'
 export {

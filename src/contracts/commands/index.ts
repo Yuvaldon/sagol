@@ -23,6 +23,8 @@ import type {
   RequestAccountLinkInput,
   ReviewAccountLinkInput,
   RevokeAccountLinkInput,
+  SubscribePushInput,
+  UnsubscribePushInput,
   UpdateMyPreferencesInput,
 } from '../inputs/accounts'
 import type {
@@ -250,6 +252,13 @@ export interface DataCommands {
   day_reports: {
     /** `day_reports:confirm` on the unit, on a day a live rotation over it runs (D-293). Confirming again moves the row. */
     confirm: Command<ConfirmDayReportInput, ReportConfirmation>
+  }
+  /** Phone notifications of the signed-in soldier's browser installs; a linked, active account only (D-349). */
+  notifications: {
+    /** Upsert by endpoint: a row stored for another soldier moves to the caller (a shared device changed hands). */
+    subscribe: Command<SubscribePushInput, { subscribed: true }>
+    /** Idempotent: a missing row is success; another soldier's endpoint answers `not_found` (D-046). */
+    unsubscribe: Command<UnsubscribePushInput, { subscribed: false }>
   }
 }
 

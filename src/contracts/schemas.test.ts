@@ -110,6 +110,8 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({})).toEqual({
       create_leaves_as_approved: false,
       appearance: 'light',
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
     })
   })
 
@@ -117,6 +119,8 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({ create_leaves_as_approved: true })).toEqual({
       create_leaves_as_approved: true,
       appearance: 'light',
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
     })
   })
 
@@ -129,7 +133,16 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'], rules_row_placement: 'above', appearance: 'dark' })).toEqual({
       create_leaves_as_approved: false,
       appearance: 'dark',
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
     })
+  })
+
+  it('reads the notification choices, each kind defaulting to on (D-350, D-356)', () => {
+    const seen = '2026-11-13T08:00:00.000Z'
+    const read = SoldierPreferences.parse({ updates_seen_at: seen, notifications: { awaiting_me: false } })
+    expect(read.updates_seen_at).toBe(seen)
+    expect(read.notifications).toEqual({ my_request: true, awaiting_me: false })
   })
 })
 

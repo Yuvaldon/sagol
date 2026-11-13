@@ -103,6 +103,8 @@ const INPUT_TABLES: Record<string, Target> = {
   ReviewAccountLinkInput: { table: 'account_link_requests' },
   RevokeAccountLinkInput: { table: 'soldier_accounts' },
   UpdateMyPreferencesInput: { table: 'soldier_preferences' },
+  SubscribePushInput: { table: 'push_subscriptions' },
+  UnsubscribePushInput: { table: 'push_subscriptions' },
   CreateUnitLevelInput: { table: 'unit_levels' },
   UpdateUnitLevelInput: { table: 'unit_levels' },
   ArchiveUnitLevelInput: { table: 'unit_levels' },
@@ -439,9 +441,11 @@ describe('import and export (D-050)', () => {
     expect(ImportCommand.options).toHaveLength(ImportOperation.options.length)
   })
 
-  it('exports every table', () => {
+  it('exports every table but the devices, which belong to the browsers (D-349)', () => {
     expect(Object.keys(OrganizationExport.shape.tables.shape).sort()).toEqual(
-      Object.keys(TABLE_SCHEMAS).sort(),
+      Object.keys(TABLE_SCHEMAS)
+        .filter((table) => table !== 'push_subscriptions')
+        .sort(),
     )
   })
 })
@@ -505,7 +509,7 @@ describe('auth and session (D-048)', () => {
     expect(Session.safeParse({ status: 'linked', identity }).success).toBe(false)
   })
 
-  it('has one repository per table', () => {
-    expectTypeOf<keyof DataRepositories>().toEqualTypeOf<TableName>()
+  it('has one repository per table but the push subscriptions, which nothing reads back (D-349)', () => {
+    expectTypeOf<keyof DataRepositories>().toEqualTypeOf<Exclude<TableName, 'push_subscriptions'>>()
   })
 })
