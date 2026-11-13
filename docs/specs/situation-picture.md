@@ -1,6 +1,6 @@
 # Spec — Situation picture ("תמונת מצב")
 
-Status: proposed, not scheduled, needs joint design with the owner (OI-222, D-272). The slice gets its V-number,
+Status: proposed, not scheduled; the joint design (OI-222, D-272) is replaced by the assumed defaults below (D-170). The slice gets its V-number,
 and P-n get D-numbers, when it starts.
 Context: rotation (D-257); routine reads a chosen date range.
 
@@ -114,7 +114,8 @@ e2e:
 **Genuinely new.**
 - `daysTally`, `spreadOf` and the soldier-row table. The table engine's rows are leaves, so this needs its own
   table component on TanStack Table. No chart library: the spread strip is three numbers.
-- Unifying whole-unit membership (P-3): today `inDeployment` (`src/domain/availability/rules.ts:308`, correct),
+- Unifying whole-unit membership (P-3), a live bug tracked as OI-292 (A8 fixes), which may land it before this
+  slice: today `inDeployment` (`src/domain/availability/rules.ts:308`, correct),
   `servedDays` (`src/logic/leaves/planner.ts:126`, misses the subtree) and `WHOLE_UNIT`
   (`src/logic/leaves/rotation.ts:19`) disagree. This slice puts one `servesOn` in domain and moves all three to
   it, first.
@@ -143,16 +144,16 @@ module's UI (the row link goes through the URL).
 
 None to ship. Reads attached memberships correctly once they exist.
 
-## What I need from the owner (joint design, D-272)
-
-1. The sheets' summary rows you trusted: which numbers did you look at first?
-2. Is a course or a medical absence (if its type is `unavailable`) a "home" day for fairness, or apart?
-3. Fairness: the gap from the middle, or the ratio of home days to days served?
-4. Per platoon inside a company, or only the company as a whole?
-5. Should future approved leaves count by default?
-
 ## Assumptions
 
-- Fairness is about days home, measured against the unit's median.
-- Only approved leaves count; future ones only on request.
-- A soldier's days outside the unit are shown, not counted.
+The joint-design questions (D-272), each with the default this spec builds on (D-170); the owner corrects by
+reading:
+
+1. **Numbers looked at first:** days home per soldier and the unit's spread (fewest, middle, most).
+2. **A course or medical absence of an `unavailable` type:** counted as home, like any unavailable leave; a type
+   that should not count is set to `available` (one rule, D-032).
+3. **Fairness:** the gap in days from the unit's median, not a ratio; "outside" days are shown apart.
+4. **Level:** the chosen unit as a whole, with the sub-unit as a column; a platoon is picked as its own unit.
+5. **Future approved leaves:** not counted by default; "כולל מתוכנן" adds them.
+
+Only approved leaves count.
