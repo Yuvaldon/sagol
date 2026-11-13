@@ -67,11 +67,18 @@ jobs:
         run: |
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main"; exit 1; }
+      # The branch's commit carries the release's tree, so its vercel.json must let Vercel build `production` (D-340).
+      - name: Refuse a tree whose vercel.json does not build production
+        run: |
+          jq -e '.git.deploymentEnabled.production == true' vercel.json >/dev/null ||
+            { echo "::error::vercel.json at $SHA does not enable the production branch"; exit 1; }
       # Migrations only go forward, so a release never takes the frontend back behind what production already runs.
       - name: Refuse a commit behind the one production holds
         run: |
           if git fetch --no-tags origin production; then
-            current=$(git rev-parse 'FETCH_HEAD^')
+            # A release commit's only parent is the release; a branch set straight to a main commit is that commit.
+            current=$(git rev-parse FETCH_HEAD)
+            git merge-base --is-ancestor "$current" origin/main || current=$(git rev-parse 'FETCH_HEAD^')
             git merge-base --is-ancestor "$current" "$SHA" ||
               { echo "::error::production holds $current, and $SHA does not contain it"; exit 1; }
           fi
