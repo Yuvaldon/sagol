@@ -33,6 +33,9 @@ const catalogOnce = () => (catalog ??= sql.unsafe(CATALOG_QUERY).then(catalogOf)
 const serve = createCommandHandler({
   verify: supabaseTokenVerifier({ url: required('SUPABASE_URL'), apiKey: required('SUPABASE_ANON_KEY'), fetch }),
   origins,
+  log: (line) => {
+    console.info(line)
+  },
   gateway: async (identity, body) =>
     createCommandGateway({
       transact,
