@@ -260,7 +260,7 @@ am = amends, ref = refines, ext = extends.
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
 | D-270 | The leave-round planner | domain, logic, ui | ref D-316 |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
-| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
+| D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | ref D-338 |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | sup D-311 (sort placement) |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302 |
@@ -311,6 +311,7 @@ am = amends, ref = refines, ext = extends.
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 | D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
+| D-338 | The Later features: the owner's order and conditions | docs | |
 | D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 
@@ -4428,6 +4429,25 @@ same one.
 **Why:** OI-291. On Android the back button went past menus and dialogs that live inside a component, out of the
 screen under them. One place for every overlay keeps the rule in the layer that owns history and leaves the screens
 as they are (D-333).
+
+## D-338 — The Later features: the owner's order and conditions
+2026-11-13 · accepted · ref D-272, D-333 · OI-222 · specs `docs/specs/` · owner feedback, recorded as decided (D-170)
+- Order: the board calendar fix first, above every new feature (a fix, no spec); then saved views, notifications,
+  rotation templates, the dashboard, missions / operations, attached memberships. Hour-level leaves stay frozen.
+- Saved views ship only quiet by default: no new persistent control in the top strip, the tab bar or the chips row;
+  reached only from inside the existing view sheet; nothing of it shows until a view is saved, except one save
+  action in that sheet (`saved-views.md` P-6).
+- The situation picture is renamed **dashboard** ("דשבורד", `docs/specs/dashboard.md`, formerly
+  `situation-picture.md`, the path D-336 cites): key figures and charts, led by a fairness heat map of who is mostly
+  on base and who is mostly at home; all derived, never stored, within the free tier, every figure over the rows the
+  actor may read. It replaces OI-222's joint design.
+- Temporary task units are renamed **missions / operations** ("משימות / מבצעים", UI word "משימה",
+  `docs/specs/missions.md`): beyond the MVP, after the dashboard. Because they now precede attached memberships,
+  the missions slice builds the attachment core limited to temporary hosts; the attached-memberships slice later
+  opens it to standing hosts.
+**Why:** the owner's review of the specs: the calendar is used daily and comes first; saved views sit in a central
+place but are niche, so they must not complicate simple use; a commander reads fairness from a picture, not one
+number; missions matter more than attaching to standing units.
 
 ## D-340 — The production release is manual: the owner starts it after approving; Vercel builds `production`
 2026-11-13 · accepted · amends D-280 and D-295 · OI-294 · the owner's decision of 2026-11-13 at about 08:05Z, in the

@@ -149,5 +149,5 @@ then A7 on main once V27 and V28 are in. V29 is done. Before launch: "A7 fixes" 
 
 ## Later (no schema change required)
 
-Attached memberships, temporary task units, simulations, saved views, rotation templates
+Attached memberships, missions (משימות/מבצעים), simulations, saved views, rotation templates
 for leave batches, hour-level leaves (additive columns), notifications.
