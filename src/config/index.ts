@@ -99,7 +99,7 @@ export {
   isRotationLeavePaletteKey,
 } from './palette'
 export { ICON_KEYS, IconKeyName, isIconKey } from './icons'
-export { DATE_FORMATS, DATE_LOCALE, FIRST_DAY_OF_WEEK, MAX_TIMER_DELAY_MS, type DateFormat } from './dates'
+export { CALENDAR_DATE_ZONE, DATE_FORMATS, DATE_LOCALE, FIRST_DAY_OF_WEEK, MAX_TIMER_DELAY_MS, type DateFormat } from './dates'
 export {
   COMPANY_TEMPLATE,
   EMPTY_TEMPLATE,

@@ -127,8 +127,8 @@ const installedApp = ({ name, iconDir }: AppIdentity): ReturnType<typeof VitePWA
     manifest: {
       name,
       short_name: name,
-      lang: 'he',
-      dir: 'rtl',
+      lang: PWA.language,
+      dir: PWA.direction,
       display: 'standalone',
       start_url: '/',
       scope: '/',

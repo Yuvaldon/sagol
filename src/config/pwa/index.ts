@@ -15,6 +15,9 @@ export const PWA = {
   standaloneMediaQuery: '(display-mode: standalone)',
   /** iPhone, iPad and iPod, where installing is "Add to Home Screen" and not a browser prompt (D-184). */
   iosUserAgent: /iPad|iPhone|iPod/,
+  /** The app's language and direction, for the manifest and the notifications the worker shows (D-182, D-356). */
+  language: 'he',
+  direction: 'rtl',
   /** The icon a notification shows, one the build writes from the app's icon (D-182, D-356). */
   notificationIcon: '/pwa-192x192.png',
 } as const
