@@ -80,8 +80,8 @@ export function ViewSheet({ onClose }: { readonly onClose: () => void }) {
           </div>
         </RadioGroup>
         {focusMode.available ? (
+          // The key is named in the button's text, not as its shortcut: while this sheet is open the key is the sheet's.
           <AriaButton
-            aria-keyshortcuts={FOCUS_MODE.shortcut}
             onPress={() => {
               onClose()
               focusMode.enter()
