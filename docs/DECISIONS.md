@@ -4750,9 +4750,13 @@ settings and leaks nothing.
 - A typed value is a `compare` rule: `equals`, `not_equals`, `contains` or an ordering operator over one value.
   Dates are compared as calendar dates; "לפני" is `less_than`, "עד" `less_or_equal`, and so on. A rule without a
   value writes nothing and lives only in the open builder (D-312).
-- Text and numbers are written when the field is left or Enter is pressed, not on every keystroke: no debounce
-  constant, no history step per letter. A number field whose text is not a number is marked invalid and writes
-  nothing. A date is written when it changes.
+- Text and numbers are written when the field is left, Enter is pressed or the builder closes, not on every
+  keystroke: no debounce constant, no history step per letter. A number is a plain decimal (`-2.5`, not `1e3` or
+  `0x1A`); other text is marked invalid and writes nothing. A date is written when it changes.
+- A rule the builder would not write back unchanged (a hand-written link's `equals true` on a text property, a number
+  compared with a string), or one over the other entity's property, is a kept "other" row: editing another row never
+  changes it. A soldier or unit reference outside the live lists still names a stored value, so a "none of" over it
+  never reads as keeping everyone (OI-264).
 - A unit property is offered beside the soldier ones, its name followed by "(של היחידה)", and reads as D-381 says.
 **Why:** OI-112. One operator set per data type keeps the builder predictable; writing on leave keeps the URL and
 the history clean.
