@@ -1,3 +1,4 @@
+import { DAY_REPORT } from '@config'
 import {
   ConfirmableReportQuery,
   ConfirmDayReportInput,
@@ -19,6 +20,7 @@ import {
   CONFIRM_DAY_REPORT,
   confirmedAtOf,
   confirmReportIssues,
+  daysBetween,
   dayReportTarget,
   isAncestorOrSelf,
   reportRotationOf,
@@ -91,6 +93,10 @@ export function createReportConfirmationRepository(dependencies: LocalDependenci
     confirmable: (raw) =>
       asResult(() => {
         const query = parseInput(ConfirmableReportQuery, raw)
+        // The report's span bounds the window, as its input's shape: checked before any row is read (D-302).
+        if (daysBetween(query.window.start_date, query.window.end_date) + 1 > DAY_REPORT.maxSpanDays) {
+          failValidation([{ path: ['window', 'end_date'], code: IssueCode.enum.too_big }])
+        }
         return database.transaction('r', TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const units = await unitsOf(database, scope)

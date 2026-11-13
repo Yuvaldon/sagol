@@ -9,7 +9,8 @@ import {
   type Permission,
   type Timestamp,
 } from '@contracts'
-import { compareInstants } from '@domain'
+import { DAY_REPORT } from '@config'
+import { addDays, compareInstants } from '@domain'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
 import { NOW, errorOf, issuesOf, seedActor, valueOf } from './support'
@@ -156,6 +157,17 @@ export function describeReportContract(
           }),
         ),
       ).toEqual([])
+      // The report's span bounds the window (D-302): one day past it is refused before any row is read.
+      const longest = { start_date: DAY, end_date: addDays(DAY, DAY_REPORT.maxSpanDays - 1) }
+      valueOf(await adapter().repositories.report_confirmations.confirmable({ window: longest, unit_ids: [squad.id] }))
+      expect(
+        issuesOf(
+          await adapter().repositories.report_confirmations.confirmable({
+            window: { ...longest, end_date: addDays(longest.end_date, 1) },
+            unit_ids: [squad.id],
+          }),
+        ),
+      ).toEqual([{ path: ['window', 'end_date'], code: 'too_big' }])
       valueOf(await confirm(squad.id, DAY))
     })
 
