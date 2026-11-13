@@ -266,7 +266,7 @@ am = amends, ref = refines, ext = extends.
 | D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302 |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
-| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
+| D-280 | Production delivery: automatic after staging, guarded | backend, tooling | am D-340 |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
 | D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
@@ -277,7 +277,7 @@ am = amends, ref = refines, ext = extends.
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303 |
-| D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
+| D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | am D-340 |
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
@@ -311,6 +311,7 @@ am = amends, ref = refines, ext = extends.
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 | D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
+| D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -3708,6 +3709,9 @@ project list to reading the one project, so the scoped token needs no `projects_
 **Why:** a change reaches production by the same steps staging proved a moment earlier, from `main`'s green commit,
 with no laptop or session deploying by hand, and the one class of change that loses real data needs an explicit,
 reviewed marker.
+**Amended 2026-11-13 by D-340: the release is manual.** The `workflow_run` trigger is gone; production runs only when
+the owner starts it after approving a release, and it also moves the `production` branch that Vercel builds. "When it
+runs" above no longer holds; the guard, the destructive-migration scan and the failing-migration behaviour do.
 
 ## D-281 — Staging is seeded with made-up data by a guarded, re-runnable script
 
@@ -4421,3 +4425,35 @@ same one.
 **Why:** OI-291. On Android the back button went past menus and dialogs that live inside a component, out of the
 screen under them. One place for every overlay keeps the rule in the layer that owns history and leaves the screens
 as they are (D-333).
+
+## D-340 — The production release is manual: the owner starts it after approving; Vercel builds `production`
+2026-11-13 · accepted · amends D-280 and D-295 · OI-294 · the owner's decision of 2026-11-13 at about 08:05Z, in the
+owner's own words ("ותבצע את ההתאמות ושחרר ידנית באישור שלי"), relayed by the orchestrator. Track: tooling.
+- **Staging stays automatic.** Staging (D-276, D-292) still runs after every green CI on `main`.
+- **Production runs only by hand.** `.github/workflows/production.yml` has no `workflow_run` trigger. It runs only on
+  `workflow_dispatch` on `main`, with the owner as actor and triggering actor, after the owner approves a release. The
+  owner types the production ref (`confirm_ref`) as before.
+- **What it releases.** The optional input `sha` names the commit of `main` to release; empty means main's head at
+  dispatch. It must be a full 40-character SHA. The run refuses it unless CI passed on it (a push run), Staging
+  succeeded for it (a Staging run on `main` with that head SHA), it is on `main`, and it contains the commit production
+  already holds (the branch's commit itself when it is on `main`, else its only parent): migrations only go forward,
+  so a release never takes the frontend back behind the database. Its tree's `vercel.json` must enable `production`,
+  since the branch's commit carries that tree. The project guard and the destructive-migration scan of D-280 are
+  unchanged.
+- **The frontend follows the backend.** After the db push and the function deploy succeed, the run moves the
+  `production` branch the way Staging moves `staging` (D-292): `git commit-tree` with the release's tree and the release
+  as its only parent, message `production: release <sha>`, pushed with `--force-with-lease` on the branch's head, then
+  checked (same tree, only parent). A failed migration or function deploy stops the job before the branch moves, so
+  the frontend is never ahead of the backend.
+- **Vercel.** `vercel.json` sets `git.deploymentEnabled` to `{ "**": false, "main": false, "staging": true,
+  "production": true }`: a merge to `main` no longer builds anything on Vercel, `staging` builds its Preview, and
+  `production` builds. Vercel's Production branch must be `production` (Project Settings → Environments → Production →
+  Branch Tracking); only the owner can change it (OI-294). The owner made that change on 2026-11-13 at about 08:16Z
+  (confirmed by the orchestrator).
+- **Permissions.** The job gets `contents: write` to push the branch; `GITHUB_TOKEN` cannot start other workflows, and
+  Vercel's GitHub integration builds the push like any other.
+- **Rejected.** Keeping `main` as Vercel's Production branch: every merge would ship the frontend before the owner
+  approves, and before the backend it needs. A GitHub environment with required reviewers: paid for private
+  repositories, and the owner chose repository-level values (D-280); the owner starting the run is the approval.
+**Why:** the owner approves each production release. One manual run releases the backend and then the frontend of the
+same commit that staging already ran.
