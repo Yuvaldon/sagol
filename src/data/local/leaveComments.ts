@@ -4,6 +4,7 @@ import {
   ArchiveLeaveCommentInput,
   EditLeaveCommentInput,
   IssueCode,
+  LeaveFeedQuery,
   LeaveThreadQuery,
   type DataCommands,
   type DataRepositories,
@@ -11,13 +12,13 @@ import {
   type LeaveComment,
   type TableName,
 } from '@contracts'
-import { COMMENT_PERMISSIONS, commentChangeIssues, isCommentAuthor, soldierTarget } from '@domain'
+import { COMMENT_PERMISSIONS, commentChangeIssues, compareInstants, isCommentAuthor, soldierTarget } from '@domain'
 import type { z } from 'zod'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
 import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
-import { canView, visibleLeave } from './leaves'
+import { canView, feedLeaves, newestFirst, threadRows, visibleLeave } from './leaves'
 import { POLICY_TABLES } from './snapshot'
 
 // Leave comments (D-063, D-118). A comment is visible when its leave is and the actor holds the view pair of its
@@ -60,6 +61,23 @@ export function createLeaveCommentRepository(dependencies: LocalDependencies): D
           return rows
             .filter((row) => row.archived_at === null && canViewComment(scope, leave, row))
             .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+            .map((row) => parsedRow('leave_comments', row))
+        })
+      }),
+    /** The soldier's comments since a time that the actor can see, not archived, newest first (D-350). */
+    feed: (raw) =>
+      asResult(() => {
+        const query = parseInput(LeaveFeedQuery, raw)
+        return database.transaction('r', COMMENT_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const leaves = new Map((await feedLeaves(database, scope, query)).map((leave) => [leave.id, leave]))
+          const rows = await threadRows(database, 'leave_comments', [...leaves.values()])
+          return rows
+            .filter((row) => {
+              const leave = leaves.get(row.leave_id)
+              return compareInstants(row.created_at, query.since) >= 0 && row.archived_at === null && leave !== undefined && canViewComment(scope, leave, row)
+            })
+            .sort(newestFirst)
             .map((row) => parsedRow('leave_comments', row))
         })
       }),

@@ -1,8 +1,19 @@
 // The `commands` server function (D-201): the data layer's command gateway, served over HTTP on
 // Supabase Edge Functions. This file only wires the environment in: the database connection, the
 // auth server and the app's origins. Every rule runs in the data layer it imports.
-import { CATALOG_QUERY, catalogOf, createCommandGateway, createCommandHandler, supabaseTokenVerifier, type SqlClient, type StoreCatalog } from '@data/server'
+import {
+  CATALOG_QUERY,
+  catalogOf,
+  createCommandGateway,
+  createCommandHandler,
+  createPushDispatch,
+  supabaseTokenVerifier,
+  type CommittedCall,
+  type SqlClient,
+  type StoreCatalog,
+} from '@data/server'
 import postgres from 'postgres'
+import { createWebPushSender } from './webpush.ts'
 
 function required(name: string): string {
   const value = Deno.env.get(name)
@@ -30,18 +41,45 @@ async function transact<T>(work: (client: SqlClient) => Promise<T>): Promise<T> 
 let catalog: Promise<StoreCatalog> | undefined
 const catalogOnce = () => (catalog ??= sql.unsafe(CATALOG_QUERY).then(catalogOf))
 
+const log = (line: string) => {
+  console.info(line)
+}
+const time = { now: () => new Date().toISOString() }
+
+// Pushes (D-352) need both VAPID secrets. Without them no push is sent, and the app, built without
+// VITE_PUSH_PUBLIC_KEY, offers none (D-076).
+const vapidPrivateKey = Deno.env.get('PUSH_VAPID_PRIVATE_KEY') ?? ''
+const vapidSubject = Deno.env.get('PUSH_VAPID_SUBJECT') ?? ''
+const pushEnabled = vapidPrivateKey !== '' && vapidSubject !== ''
+if (!pushEnabled) log(JSON.stringify({ push: { code: 'push_not_configured' } }))
+let dispatch: Promise<(call: CommittedCall) => Promise<void>> | undefined
+const dispatchOnce = () =>
+  (dispatch ??= Promise.all([catalogOnce(), createWebPushSender(vapidPrivateKey, vapidSubject)]).then(([loaded, sender]) =>
+    createPushDispatch({ transact, catalog: loaded, time, sender, log }),
+  ))
+
+/** The push runs after the answer is sent; the runtime keeps the worker alive until it settles. */
+const runtime: { waitUntil(work: Promise<unknown>): void } | undefined = Reflect.get(globalThis, 'EdgeRuntime')
+const afterCommit = (call: CommittedCall) => {
+  const work = dispatchOnce()
+    .then((run) => run(call))
+    .catch(() => {
+      log(JSON.stringify({ push: { code: 'dispatch_failed' } }))
+    })
+  runtime?.waitUntil(work)
+}
+
 const serve = createCommandHandler({
   verify: supabaseTokenVerifier({ url: required('SUPABASE_URL'), apiKey: required('SUPABASE_ANON_KEY'), fetch }),
   origins,
-  log: (line) => {
-    console.info(line)
-  },
+  log,
   gateway: async (identity, body) =>
     createCommandGateway({
       transact,
       catalog: await catalogOnce(),
-      time: { now: () => new Date().toISOString() },
+      time,
       bootstrapOwnerEmail,
+      ...(pushEnabled ? { afterCommit } : {}),
     })(identity, body),
 })
 
