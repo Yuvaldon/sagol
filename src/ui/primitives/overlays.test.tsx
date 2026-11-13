@@ -1,11 +1,11 @@
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter, type RouterHistory } from '@tanstack/react-router'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { Button, Dialog, ListBox, ListBoxItem, Menu, MenuItem, MenuTrigger, Modal, Select, SelectValue } from 'react-aria-components'
+import { Button, Dialog, DialogTrigger, ListBox, ListBoxItem, Menu, MenuItem, MenuTrigger, Modal, Select, SelectValue } from 'react-aria-components'
 import { describe, expect, it } from 'vitest'
 import { ModalOverlay, Popover } from './overlays'
 
-// The overlays hold one history entry while open, so the back button closes them (D-335). Test markup only.
+// The overlays hold one history entry while open, so the back button closes them (D-336). Test markup only.
 
 async function renderWith(content: () => ReactNode) {
   const rootRoute = createRootRoute()
@@ -43,7 +43,22 @@ function ActionsMenu() {
   )
 }
 
-describe('overlays (D-335)', () => {
+function ClosedSelect() {
+  return (
+    <Select aria-label={ITEM}>
+      <Button>
+        <SelectValue />
+      </Button>
+      <Popover>
+        <ListBox>
+          <ListBoxItem id="a">{ITEM}</ListBoxItem>
+        </ListBox>
+      </Popover>
+    </Select>
+  )
+}
+
+describe('overlays (D-336)', () => {
   it('a menu holds an entry the back button consumes by closing it', async () => {
     const history = await renderWith(() => <ActionsMenu />)
     const start = position(history)
@@ -72,19 +87,26 @@ describe('overlays (D-335)', () => {
   })
 
   it('a closed select adds no entry', async () => {
-    const history = await renderWith(() => (
-      <Select aria-label={ITEM}>
-        <Button>
-          <SelectValue />
-        </Button>
-        <Popover>
-          <ListBox>
-            <ListBoxItem id="a">{ITEM}</ListBoxItem>
-          </ListBox>
-        </Popover>
-      </Select>
-    ))
+    const history = await renderWith(() => <ClosedSelect />)
     expect(position(history)).toBe(0)
+  })
+
+  it('a closed select inside an open dialog adds nothing to the dialog entry', async () => {
+    // The copy the select renders to learn its items sits under the dialog's open state, and shows nothing.
+    const history = await renderWith(() => (
+      <DialogTrigger defaultOpen>
+        <Button>{ACTIONS}</Button>
+        <ModalOverlay>
+          <Modal>
+            <Dialog aria-label={ACTIONS}>
+              <ClosedSelect />
+            </Dialog>
+          </Modal>
+        </ModalOverlay>
+      </DialogTrigger>
+    ))
+    await settle(() => undefined)
+    expect(position(history)).toBe(1)
   })
 
   it('an open dialog adds an entry', async () => {

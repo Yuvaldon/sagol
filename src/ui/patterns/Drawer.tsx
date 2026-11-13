@@ -21,7 +21,7 @@ export interface DrawerProps {
   /** Under the title, outside the scrolling body. */
   readonly header?: ReactNode
   readonly children: ReactNode
-  /** What is open lives in the URL, as a module panel's does, so the panel's entry is the drawer's (D-332, D-335). */
+  /** What is open lives in the URL, as a module panel's does, so the panel's entry is the drawer's (D-332, D-336). */
   readonly inUrl?: boolean
 }
 
