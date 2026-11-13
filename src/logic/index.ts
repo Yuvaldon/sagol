@@ -26,6 +26,7 @@ export { usePanel, type PanelState, type PanelTarget } from './view-state/panel'
 export { useOverlayEntry, useOverlayHistory, type OverlayEntry } from './view-state/history'
 export { useOverlayLayer } from './view-state/layers'
 export {
+  customSpan,
   dateWindowOf,
   pickableRotations,
   rotationDays,

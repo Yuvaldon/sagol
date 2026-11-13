@@ -9,6 +9,12 @@ import { TEXT_SEPARATOR } from './labels'
 // A rule's breach in every view (D-290, OI-221), from the same evaluation as the timeline's heat row (D-141): the days
 // of the window that break a rule for the board's unit, each opening the rules of its day.
 
+/** The heat row's tones, by the worst rule a day breaks. */
+export const BREACH_TONES = {
+  hard: 'bg-status-rejected text-on-action',
+  soft: 'border-2 border-dashed border-status-pending bg-surface text-status-pending-text',
+} as const satisfies Record<RuleEnforcement, string>
+
 /** A day's breach read aloud: the day, how many rules break, and whether a hard one is among them. */
 export function breachLabel(day: HeatDay): string {
   const worstKey = day.worst === RuleEnforcement.enum.hard ? 'rules.heatHard' : 'rules.heatSoft'

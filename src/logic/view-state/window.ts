@@ -53,8 +53,11 @@ export interface WindowParams {
   readonly rotation?: DeploymentId | undefined
 }
 
-/** A free pair from an older link, or NULL when it is missing a side, inverted or too long. */
-function linkedWindow({ from, to }: WindowParams): { from: CalendarDate; to: CalendarDate } | null {
+/**
+ * A free pair, from an older link or the picker's "טווח אחר" (D-211, D-339), or NULL when it is missing a side, inverted
+ * or longer than `DATE_WINDOW.maxDays`.
+ */
+export function customSpan({ from, to }: Pick<WindowParams, 'from' | 'to'>): { from: CalendarDate; to: CalendarDate } | null {
   if (from === undefined || to === undefined) return null
   const span = daysBetween(from, to) + 1
   return span >= 1 && span <= DATE_WINDOW.maxDays ? { from, to } : null
@@ -144,7 +147,7 @@ export function dateWindowOf(params: WindowParams, today: CalendarDate, rotation
     if (rotation !== null) return windowOf('rotation', rotationDays(rotation), today, false, rotation.id)
   }
   if (params.range === undefined) {
-    const linked = linkedWindow(params)
+    const linked = customSpan(params)
     if (linked !== null) return windowOf('custom', linked, today, false)
   }
   const kind = params.range === undefined || params.range === 'rotation' ? DEFAULT_RANGE_KIND : params.range
@@ -214,6 +217,8 @@ export interface DateWindowState {
   /** Another kind on the same days: a rotation by its id (D-211). */
   setRange(kind: Exclude<RangeKind, 'rotation'>): void
   showRotation(rotationId: DeploymentId): void
+  /** A free window from `from` to `to`, both included (D-339). False, changing nothing, when `customSpan` refuses it. */
+  showCustom(from: CalendarDate, to: CalendarDate): boolean
 }
 
 const NO_ROTATIONS: readonly Deployment[] = []
@@ -310,5 +315,16 @@ export function useDateWindow(): DateWindowState {
     [change],
   )
 
-  return { window, today, rotations, rotationsReady, canShift, shift, goToToday, setRange, showRotation }
+  const showCustom = useCallback(
+    (nextFrom: CalendarDate, nextTo: CalendarDate) => {
+      const span = customSpan({ from: nextFrom, to: nextTo })
+      if (span === null) return false
+      // No kind: a free pair is the `custom` window of D-211, the same URL an older link holds.
+      change({ range: undefined, rotation: undefined, ...span })
+      return true
+    },
+    [change],
+  )
+
+  return { window, today, rotations, rotationsReady, canShift, shift, goToToday, setRange, showRotation, showCustom }
 }

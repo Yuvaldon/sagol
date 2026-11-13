@@ -221,7 +221,7 @@ The current state (D-128):
   confirmation holds from the client's read of the leaves (`seen_at`, `confirmedAtOf`). `useReportConfirmations` reads
   them with those leaves; leave writes refresh it, and rotation writes refresh the confirmable answer.
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
-  (D-141), and the same breaches beside a calendar day and above the list (`ui/board/breaches.ts`, D-290); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
+  (D-141), and the same breaches beside a calendar day, as a phone day's tone, in the day report and above the list (`ui/board/breaches.ts`, D-290, D-339); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
 ## Filters (shared model)
 

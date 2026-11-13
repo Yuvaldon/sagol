@@ -123,8 +123,10 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **The other views (D-174):** each fills the same frame under the bars, a focusable region named for the view. The
   list is the board's rows: group headings, then a soldier's name, rank and leave chips with their dates. The table has
   a row per leave with sortable headers that stick under the bars. The calendar shows the window in whole weeks, seven
-  columns from `md` and one day per line below it; a day's heading holds its weekday, its number (today in the dark
-  pill) and how many are out, then a chip per leave with the soldier's name. A chip is a `pill` of `text-label`, a dot of
+  columns at every width (D-339); from `md` a day's heading holds its weekday, its number (today in the dark pill) and
+  how many are out, then a chip per leave with the soldier's name. Below `md` a day is one tap target: its weekday
+  letter, its number, today's pill, how many are out and its breach tone, no chips; a tap opens its day report. The
+  table's caption says what a row is. A chip is a `pill` of `text-label`, a dot of
   the leave's color, solid edge when approved and dashed in the type's edge color when pending.
   A day that breaks a rule shows a count beside its heading, and the list shows the window's broken days above its
   rows; each opens the rules of its day in the heat row's tones (D-290). With no view in the link, desktop opens on the
@@ -146,7 +148,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   "בקשה חדשה" for who may request leave for themselves while a rotation is current or upcoming; "פתיחת סבב" in routine
   for who may create a rotation; none otherwise (the root unit always exists, D-315, so there is no action to found the
   tree). It replaced the
-  floating "+". The routine band above the board only states the mode, in a neutral tone.
+  floating "+". The routine band above the board only states the mode, in a neutral tone, and that leave requests and דוח 1 open with a rotation (D-339).
 - **ניהול יחידה (D-173, D-254):** "ניהול", the last destination, opens a `glass-drawer` panel from the inline start (the
   right), at most `sheet` wide, as tall as its rows up to the screen and scrolling past it (D-278), on every screen. It
   holds daily work only (from V32, D-285): the setup's progress as a callout while unfinished, then its groups, each a muted
@@ -293,7 +295,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 ## Range, sort and a calm screen (V19, D-211 … D-215)
 
 - **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / חודש, then "סבב שלם" with the
-  scope's running and coming rotations and their dates; with none, the item is absent (D-218). The arrows'
+  scope's running and coming rotations and their dates, the latest first; with none, the item is absent (D-218). Last,
+  "טווח אחר" opens a small dialog with "מתאריך" and "עד תאריך", at most 186 days (D-339). The arrows'
   names follow the kind ("שבוע הבא", "חודש הבא", "סבב הבא"). The timeline narrows its days for a long range and drops
   the weekday name below 44 px. On a phone "היום" is an icon with its name in a tooltip.
 - **Sort (D-313)**: rows in "סינון ומיון": by name, rank, seniority, unit, days absent or a sortable soldier property;

@@ -3,14 +3,9 @@ import { t } from '@i18n'
 import type { HeatDay } from '@logic'
 import { Button as AriaButton } from 'react-aria-components'
 import { formatDate } from '../patterns/dates'
-import { breachLabel, type Breaches } from './breaches'
+import { BREACH_TONES, breachLabel, type Breaches } from './breaches'
 
 // A day's breach as the calendar and the list draw it (D-290, OI-221), in the heat row's tones (D-141).
-
-const TONES = {
-  hard: 'bg-status-rejected text-on-action',
-  soft: 'border-2 border-dashed border-status-pending bg-surface text-status-pending-text',
-} as const satisfies Record<RuleEnforcement, string>
 
 /** One day's breach: its count, or its date and count, in the heat row's tones. */
 export function BreachMark({ day, open, dated }: { readonly day: HeatDay; readonly open: (day: CalendarDate) => void; readonly dated: boolean }) {
@@ -20,7 +15,7 @@ export function BreachMark({ day, open, dated }: { readonly day: HeatDay; readon
       onPress={() => {
         open(day.date)
       }}
-      className={`inline-flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center gap-xs rounded-pill px-sm text-label font-bold tabular-nums outline-focus outline-offset-1 md:min-h-control md:min-w-control data-focus-visible:outline-2 ${TONES[day.worst ?? RuleEnforcement.enum.soft]}`}
+      className={`inline-flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center gap-xs rounded-pill px-sm text-label font-bold tabular-nums outline-focus outline-offset-1 md:min-h-control md:min-w-control data-focus-visible:outline-2 ${BREACH_TONES[day.worst ?? RuleEnforcement.enum.soft]}`}
     >
       {dated ? <span className="font-normal">{formatDate(day.date, 'dayMonth')}</span> : null}
       {String(day.broken)}

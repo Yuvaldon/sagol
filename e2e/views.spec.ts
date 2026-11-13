@@ -64,15 +64,25 @@ test('the list, the table and the calendar show the board\'s leaves', async ({ p
     await selectView(page, he.workspace.views.calendar)
     await expect(page).toHaveURL(/view=calendar/)
     const calendar = region(page, he.engines.calendarLabel)
-    await expect(calendar.getByRole('button', { name: `${OWNER.name} רגילה, ${he.leaves.statusPending}` })).toHaveCount(2)
-    await expect(calendar.getByRole('button', { name: `${OWNER.name} מחלה` })).toHaveCount(1)
-    // Only an approved leave takes a soldier out; a pending one is drawn but counts nobody (D-133).
-    await expect(calendar.getByRole('heading', { name: new RegExp(he.engines.away) })).toHaveCount(1)
+    if (isMobile) {
+      // A phone's day shows its number and who is out, and opens its report; the chips are from md up (D-339).
+      await expect(calendar.getByText(new RegExp(`^${he.engines.away} 1$`))).toHaveCount(1)
+    } else {
+      await expect(calendar.getByRole('button', { name: `${OWNER.name} רגילה, ${he.leaves.statusPending}` })).toHaveCount(2)
+      await expect(calendar.getByRole('button', { name: `${OWNER.name} מחלה` })).toHaveCount(1)
+      // Only an approved leave takes a soldier out; a pending one is drawn but counts nobody (D-133).
+      await expect(calendar.getByRole('heading', { name: new RegExp(he.engines.away) })).toHaveCount(1)
+    }
     await expectNoAxeViolations(page)
   })
 
   await test.step('a leave opens from any view', async () => {
-    await region(page, he.engines.calendarLabel).getByRole('button', { name: `${OWNER.name} מחלה` }).click()
+    // On a phone the calendar has no chips (D-339): the table opens the leave there.
+    if (isMobile) await selectView(page, he.workspace.views.table)
+    const opener = isMobile
+      ? region(page, he.engines.tableLabel).getByRole('button', { name: 'מחלה' })
+      : region(page, he.engines.calendarLabel).getByRole('button', { name: `${OWNER.name} מחלה` })
+    await opener.click()
     await expect(page).toHaveURL(/panel=leaves/)
     await expect(page.getByRole('dialog').last()).toContainText('מחלה')
   })
