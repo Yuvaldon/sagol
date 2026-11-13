@@ -45,6 +45,8 @@ const UNAVAILABLE_PREFIXES: readonly string[] = ['08', '53', '57P']
 export interface PostgresStore extends Store {
   /** True once a statement lost a serialization race: the request's transaction must be retried. */
   readonly mustRetry: () => boolean
+  /** The organizations whose rows the request's kept writes touched (D-348): where its change is announced. */
+  readonly writtenOrganizations: () => readonly string[]
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -70,6 +72,7 @@ export function primaryKeyOf(table: TableName): string[] {
 export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): PostgresStore {
   let retry = false
   let depth = 0
+  const written: string[] = []
 
   async function run(text: string, params: SqlParameter[]): Promise<readonly Record<string, unknown>[]> {
     try {
@@ -103,6 +106,12 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
             .map((column) => `'${column}', to_char(t.${quoted(column)} AT TIME ZONE 'UTC', '${INSTANT_FORMAT}')`)
             .join(', ')})`
     const fromRow = (row: Record<string, unknown>) => row.row as Row
+    /** The column naming the organization a row belongs to: its own id for the organization itself. */
+    const owner = types.has('organization_id') ? 'organization_id' : name === 'organizations' ? 'id' : null
+    const returning = owner === null ? '' : ` RETURNING ${quoted(owner)}::text AS organization`
+    function wrote(rows: readonly Record<string, unknown>[]): void {
+      for (const row of rows) if (typeof row.organization === 'string') written.push(row.organization)
+    }
 
     /** A value of the wrong form cannot be stored in the column, so it matches nothing (as in IndexedDB). */
     function matchable(column: string, value: unknown): boolean {
@@ -133,9 +142,11 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
 
     async function insert(rows: readonly Row[], conflict: string): Promise<void> {
       if (rows.length === 0) return
-      await run(`INSERT INTO ${table} SELECT * FROM jsonb_populate_recordset(NULL::${table}, $1::text::jsonb) ${conflict}`, [
-        JSON.stringify(rows),
-      ])
+      wrote(
+        await run(`INSERT INTO ${table} SELECT * FROM jsonb_populate_recordset(NULL::${table}, $1::text::jsonb) ${conflict}${returning}`, [
+          JSON.stringify(rows),
+        ]),
+      )
     }
 
     return {
@@ -154,9 +165,11 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
           return Object.fromEntries(key.map((column, index) => [column, values[index]]))
         })
         const columnList = key.map(quoted).join(', ')
-        await run(
-          `DELETE FROM ${table} WHERE (${columnList}) IN (SELECT ${columnList} FROM jsonb_populate_recordset(NULL::${table}, $1::text::jsonb))`,
-          [JSON.stringify(rows)],
+        wrote(
+          await run(
+            `DELETE FROM ${table} WHERE (${columnList}) IN (SELECT ${columnList} FROM jsonb_populate_recordset(NULL::${table}, $1::text::jsonb))${returning}`,
+            [JSON.stringify(rows)],
+          ),
         )
       },
     }
@@ -164,6 +177,7 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
 
   return {
     mustRetry: () => retry,
+    writtenOrganizations: () => [...new Set(written)],
     table: tableOf,
     // A refused write rolls back what it wrote, as an aborted IndexedDB transaction does. Inner
     // transactions join the outer one, as Dexie's do.
@@ -177,6 +191,7 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
         }
       }
       depth += 1
+      const kept = written.length
       await run('SAVEPOINT store_write', [])
       try {
         const value = await work()
@@ -184,6 +199,7 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
         return value
       } catch (error) {
         if (!retry) await run('ROLLBACK TO SAVEPOINT store_write', [])
+        written.length = kept
         throw error
       } finally {
         depth -= 1

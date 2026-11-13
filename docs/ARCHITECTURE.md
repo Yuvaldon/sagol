@@ -73,12 +73,14 @@ The data layer is written as if it were the server:
   slice and takes a `seed` port per adapter (D-076). The remote adapter (`src/data/remote`, D-204) passes the same
   suite, end to end through the gateway on Postgres, which is what makes the switch safe.
 - Repositories expose change subscriptions, so the UI has one live source of truth
-  across tabs and views.
+  across tabs and views. Remotely, other devices' writes arrive too: the gateway broadcasts a committed write's
+  table names on the organization's private Realtime topic, and the remote adapter listens while linked (D-348).
 - On the server (D-201) one function, the command gateway, runs the same command core over a
   Postgres `Store`, in one SERIALIZABLE transaction per request, as the identity of the verified
   token. `src/data/server/index.ts` is its entry; the app imports only `src/data/index.ts`.
   `supabase/migrations` builds the database from `schema.sql`, plus triggers (D-202). The API
-  roles hold no privilege and RLS has no policy, so no client reaches a table (D-203).
+  roles hold no privilege and RLS has no policy, so no client reaches a table (D-203); the one client policy is on
+  `realtime.messages`, for hearing an organization's topic (D-348).
   Each call logs one line, its name and answer code (D-335); when a stored row failed the contracts, also its table
   and issue paths, never values (D-346).
 
@@ -378,7 +380,7 @@ src/
   config/      breakpoints/ dates/ env/ icons/ inbox/ leaves/ palette/ panels/ pwa/ remote/ report/ routes/ startup/
                storage/ templates/ url/ views/
   data/        device/ (web storage for conveniences, D-197)  local/ (dexie schema, migrations, repositories, commands)  server/ (Postgres store, gateway, D-201)
-               remote/ (one POST per call to the gateway, D-204)
+               remote/ (one POST per call to the gateway, D-204; live changes, D-348)
                contract-tests/
   logic/       access/ accounts/ board/ deployments/ device/ filters/ forms/ home/ leaves/ organization/ permissions/
                presence/ (the day report) properties/ queries/ roster/ rules/ runtime/ seniority/ session/ shell/ tags/

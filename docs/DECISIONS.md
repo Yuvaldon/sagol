@@ -205,8 +205,8 @@ am = amends, ref = refines, ext = extends.
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
-| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188 |
-| D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207 |
+| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-348 |
+| D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207; ref D-348 |
 | D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
@@ -321,6 +321,7 @@ am = amends, ref = refines, ext = extends.
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
+| D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -2658,7 +2659,7 @@ already shut; revoking the privileges shuts it explicitly, and the tests prove i
   that is not JSON answers `unavailable`; any other non-OK status, or an answer of the wrong shape (checked with zod),
   answers `internal`. Otherwise the result is the server's own `Result`.
 - **Changes.** The answer's `changes` go to the adapter's change feed, which reaches the other tabs too
-  (`CHANGE_FEED_CHANNEL`). A change made on another device is not heard until a read runs again (OI-151).
+  (`CHANGE_FEED_CHANNEL`). A change made on another device arrives over Realtime (D-348).
 - **Session.** The session is read again when the identity source reports a change.
 - **Tests.** The repository contract suite runs over the remote adapter end to end, through the gateway on Postgres
   (`remote.contract.dbtest.ts`, replacing `postgres.contract.dbtest.ts`); `adapter.test.ts` covers what the gateway never
@@ -4653,3 +4654,42 @@ and changed the contracts for a log; a weak map beside the answer keeps the cont
 **Why:** one marker and stored names keep the model and every reader of `name` as they are (D-345: no architecture
 change), while the guards keep the group whole in every mode.
 
+## D-348 — Live changes: a committed write is broadcast on its organization's private Realtime topic
+2026-11-13 · accepted · refines D-204, D-203 · OI-151 · decided under D-170
+- **What is sent.** When a call succeeds, the gateway sends one Supabase Realtime broadcast per organization the call
+  wrote (`realtime.send`, private, event `REMOTE.liveEvent`), on the topic named by the organization's id. The payload is
+  `{origin, tables}`: the names of the tables the call changed and the calling adapter's origin id, never a row, an id
+  or a person's detail. It is sent inside the request's transaction, so Realtime delivers it only on commit: a refused
+  call, a read, a rollback or a retried race sends nothing. The store records which organizations each insert and
+  delete touched (`RETURNING` the owner column), and forgets them when a savepoint rolls back.
+- **Who hears.** A client joins the topic as a private channel; Realtime admits it only through one SELECT policy on
+  `realtime.messages`: the caller's identity holds a live (not revoked) soldier account in that organization, the same
+  rule as a linked session (D-008). The check is `live.hears(topic)`, a SECURITY DEFINER function in schema `live`,
+  outside `public`, that answers a boolean; no table is opened to the API roles, so D-203 holds. There is no INSERT
+  policy: no client sends on a topic. A revoked account stops hearing at its next join (a reconnect or a new session),
+  and anything it heard named only tables it was entitled to read anyway.
+- **The client.** The remote adapter follows the session it answers: linked, it listens on its organization's topic;
+  otherwise it stops. Each adapter has a random origin id, sent on every call in `REMOTE.originHeader`; the gateway
+  passes a well-formed one on and drops a malformed one. A message from another origin is published to the change
+  feed as `{table, ids: []}` per table, so the UI invalidates exactly as for its own writes; its own message is
+  skipped (its changes already came in the answer). The writer's other tabs may refresh twice; that is accepted.
+  After a lost connection Realtime rejoins, and the adapter re-reads every table, since messages sent meanwhile are
+  gone. A failure of the socket is silent: live changes are a convenience, reads stay correct.
+- **Cost (free plan).** One message per successful write call per organization, one socket per open tab, no
+  database change replication (`postgres_changes` is not used). That stays far under the free plan's 200 concurrent
+  connections, 2 million messages a month and 100 messages a second. Nothing is set in the dashboard: private
+  channels are authorized by the migration's policy.
+- **The client library.** `@supabase/realtime-js` (exact version), loaded with a dynamic import, so it is its own
+  chunk and never in the function bundle. Its `accessToken` callback is the auth provider's, refreshed on each
+  heartbeat.
+- **Tests.** `live.dbtest.ts` runs the migration on Postgres with a local stand-in for Supabase's `auth.uid()` and
+  `realtime` schema (`scripts/db-reset.ts`, created only when missing): a write announces its tables and origin, a
+  refused call and a read announce nothing, and the policy admits only a live member of the topic's organization.
+  `adapter.test.ts` covers the origin header, following the session, skipping its own and malformed messages, and the
+  re-read on resume. No e2e test: the e2e runs have no Realtime server.
+- **Left open.** A requester whose link is still pending is not a member, so their approval shows after their next read
+  (OI-299).
+**Why:** a write on another device must show without a refresh, on the free plan. A broadcast of table names from the
+gateway's own transaction costs one message per write, reuses the change feed the UI already invalidates by, and
+needs no table, row or policy reachable by a client; replicating row changes would need RLS policies on the tables,
+which D-203 rules out.

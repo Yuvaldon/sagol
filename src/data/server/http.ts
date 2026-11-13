@@ -1,5 +1,7 @@
 import type { AuthIdentity } from '@contracts'
+import { REMOTE } from '@config'
 import { GatewayRequest, type GatewayResponse } from './gateway'
+import { LiveOrigin } from './live'
 import { AuthServerUnavailable } from './supabaseIdentity'
 
 // The gateway over HTTP (D-201): one POST per adapter call. The caller's identity comes from the
@@ -8,7 +10,7 @@ import { AuthServerUnavailable } from './supabaseIdentity'
 // only the app's own origins get CORS headers.
 
 export interface CommandHandlerDependencies {
-  readonly gateway: (identity: AuthIdentity | null, body: unknown) => Promise<GatewayResponse>
+  readonly gateway: (identity: AuthIdentity | null, body: unknown, origin: string | null) => Promise<GatewayResponse>
   readonly verify: (token: string) => Promise<AuthIdentity | null>
   /**
    * Origins of the app's deployments (environment), e.g. `https://sagol.vercel.app`. An entry may
@@ -29,7 +31,7 @@ function originMatcher(entry: string): (origin: string) => boolean {
 
 /** A request body above this many characters is refused before parsing (four arguments fit well under it). */
 const MAX_BODY = 1_000_000
-const ALLOWED_HEADERS = 'authorization, content-type, apikey, x-client-info'
+const ALLOWED_HEADERS = `authorization, content-type, apikey, x-client-info, ${REMOTE.originHeader}`
 
 /**
  * A call's log line (D-335): which method was called and what it answered, never its arguments or caller. When a
@@ -86,7 +88,9 @@ export function createCommandHandler({ gateway, verify, origins, log }: CommandH
     } catch {
       body = undefined
     }
-    const answer = await gateway(identity, body)
+    // The adapter's origin id only labels the call's announcement (D-348); a malformed one is dropped, not refused.
+    const writer = LiveOrigin.safeParse(request.headers.get(REMOTE.originHeader))
+    const answer = await gateway(identity, body, writer.success ? writer.data : null)
     log(callLine(body, answer))
     return reply(200, { result: answer.result, changes: answer.changes })
   }

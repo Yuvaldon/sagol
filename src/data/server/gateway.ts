@@ -4,6 +4,7 @@ import { createAdapterCore, type LocalDataAdapter } from '../local/core'
 import { ownerEmailClaimant } from '../local/dependencies'
 import { rowRejectionOf, type RowRejection } from '../local/failure'
 import type { LocalChangeFeed } from '../local/changes'
+import { announceChanges } from './live'
 import { createPostgresStore, type SqlClient, type StoreCatalog } from './postgresStore'
 
 // The command gateway (D-201): the one server function. A request names one adapter method and
@@ -84,8 +85,11 @@ function methodOf(adapter: LocalDataAdapter, request: GatewayRequest): Method | 
 
 export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEmail }: GatewayDependencies) {
   const claimant = ownerEmailClaimant(bootstrapOwnerEmail)
-  /** `identity` comes from the verified token, never from the request body. */
-  return async function handle(identity: AuthIdentity | null, body: unknown): Promise<GatewayResponse> {
+  /**
+   * `identity` comes from the verified token, never from the request body. `origin` names the calling adapter
+   * in the announcement of what the call changed (D-348), so that adapter can skip its own write.
+   */
+  return async function handle(identity: AuthIdentity | null, body: unknown, origin: string | null = null): Promise<GatewayResponse> {
     const request = GatewayRequest.safeParse(body)
     if (!request.success) {
       return { result: { ok: false, error: { code: 'validation_failed', issues: [{ path: [], code: 'invalid_type' }] } }, changes: [] }
@@ -105,9 +109,12 @@ export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEm
           const result = await method(...request.data.args)
           // The method answered `unavailable` for a lost race: run the whole request again.
           if (store.mustRetry()) throw new RetryRequest()
-          if (result.ok) return { result, changes: changes.collected }
-          const rejection = rowRejectionOf(result.error)
-          return rejection === undefined ? { result, changes: [] } : { result, changes: [], rejection }
+          if (!result.ok) {
+            const rejection = rowRejectionOf(result.error)
+            return rejection === undefined ? { result, changes: [] } : { result, changes: [], rejection }
+          }
+          await announceChanges(client, store.writtenOrganizations(), changes.collected, origin)
+          return { result, changes: changes.collected }
         })
       } catch (error) {
         if (!(error instanceof RetryRequest) && !isSerializationFailure(error)) {
