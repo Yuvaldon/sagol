@@ -167,7 +167,7 @@ am = amends, ref = refines, ext = extends.
 | D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | |
 | D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | ref D-163, D-164 |
 | D-150 | The account-links module | config, logic, ui | |
-| D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168 |
+| D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168; ref D-330 |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
 | D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-170; ref D-172; ref D-263, D-264 |
@@ -176,7 +176,7 @@ am = amends, ref = refines, ext = extends.
 | D-157 | A holder without seniority gets only `any`; a rank write is checked before and after | domain, data, backend | |
 | D-158 | An access manager holds the three pairs with `any` | domain, backend | |
 | D-159 | `self` lets a soldier see their own unit chain | domain, backend | |
-| D-160 | Without `organization:view` the board uses the device's day | logic, ui | |
+| D-160 | Without `organization:view` the board uses the device's day | logic, ui | ref D-330 |
 | D-161 | Presence lists leave out soldiers whose leaves the actor cannot read | logic, ui | |
 | D-162 | Live rule warnings only for an actor who reads everything a rule counts | logic, ui | |
 | D-163 | Revoking an account link | contracts, data, logic, ui, backend | |
@@ -303,6 +303,7 @@ am = amends, ref = refines, ext = extends.
 | D-324 | A link from before D-313 is read as the sort rules | logic | |
 | D-325 | The chart holds the view on a card when its width changes | ui | |
 | D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
+| D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4303,3 +4304,11 @@ in view jumped.
   `SoldierConditions`, `readFilter` and `writeFilter` are gone. The availability rule's population reads the rules:
   a tag category's "any of" per category and the rank's "any of"; anything else is a filter the form does not read.
 **Why:** two models over one expression drift apart; the builder already covers everything the bar did.
+
+## D-330 — A board that loads says it loads; "no board" is only for who has none
+2026-11-13 · accepted · ref D-151, D-160 · A8 fixes · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- The viewport's notice "הלוח לא זמין" shows only when `useNoBoard` holds: the soldier may not view the organization
+  and reads no soldier (D-151, D-160). A date window that is not there yet, while the rotations a bare link or a
+  rotation link opens on still load (D-222), shows the loading notice instead.
+**Why:** on the remote adapter that read can take seconds (a cold function, a deploy), and the owner of a staging
+organization read "no access yet" on a board that was only loading. A wait is never a refusal.
