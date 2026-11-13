@@ -5,6 +5,7 @@ import {
   useLeaveTypes,
   useOnlyMissing,
   useViewFilter,
+  ruleOfNode,
   type BoardLeaveStatus,
   type FilterRule,
 } from '@logic'
@@ -170,6 +171,18 @@ function useChips(): { readonly chips: readonly ChipOf[]; readonly any: boolean 
       target: { kind: 'leaveType' },
       remove: () => {
         leaves.setTypes([])
+      },
+    })
+  }
+  const properties = leaves.conditions.properties ?? []
+  for (const [index, node] of properties.entries()) {
+    const rule = ruleOfNode(node)
+    leave.push({
+      key: `leaveProperty:${String(index)}`,
+      ...(rule === null ? { name: t('filters.other'), qualifier: null, values: [] } : chipText(rule, fields)),
+      target: { kind: 'leaveProperty', index },
+      remove: () => {
+        leaves.setProperties(properties.filter((_, at) => at !== index))
       },
     })
   }

@@ -1,5 +1,5 @@
 import { BOARD_SORT_KEYS, SORT_ORDERS, SORTABLE_PROPERTY_TYPES, type BoardSortKey, type SortOrder } from '@config'
-import { LeaveTypeId } from '@contracts'
+import { CalendarDate, LeaveTypeId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
   BoardLeaveStatus,
@@ -12,8 +12,11 @@ import {
   usePropertyDefinitions,
   useSortRules,
   useViewFilter,
+  LeavePropertyNode,
   NO_RULES,
+  nodeOfRule,
   readRules,
+  ruleOfNode,
   writeRules,
   type FilterRule,
   type SoldierFilter,
@@ -28,18 +31,21 @@ import {
   Button as AriaButton,
   Dialog,
   DialogTrigger,
+  Input,
   ListBox,
   ListBoxItem,
   Select,
   SelectValue,
+  TextField as AriaTextField,
 } from 'react-aria-components'
 import { Popover } from '../primitives/overlays'
 import { Drawer } from '../patterns/Drawer'
 import { IconButton } from '../primitives/Button'
 import { CheckList, RadioList, type Choice } from '../primitives/ChoiceList'
+import { DateField } from '../primitives/DateField'
 import { leaveTypeToneOf } from '../theme/palette'
 import type { BuilderTarget } from './builderOpen'
-import { OPERATOR_LABELS, takesValues, useFilterFields, type Draft, type FilterFields, type Operator } from './filterFields'
+import { OPERATOR_LABELS, takesValues, useFilterFields, type Draft, type FilterField, type FilterFields, type Operator } from './filterFields'
 
 // "Filter and sort" (D-312, D-313): the soldier rules as rows of field · operator · values joined by וגם or או, the
 // leave conditions and "only who is missing" after them, one of each, and the sort rules as rows of property ·
@@ -166,16 +172,195 @@ const LEAVE_FIELD_LABELS: Record<LeaveField, I18nKey> = { leaveStatus: 'filters.
 const LEAVE_STATUS_KEYS: Record<BoardLeaveStatus, I18nKey> = { pending: 'leaves.statusPending', approved: 'leaves.statusApproved' }
 const MATCH_LABELS: Record<RuleMatch, I18nKey> = { all: 'filters.and', any: 'filters.or' }
 
+/** A text or number value, typed and written when the field is left or Enter is pressed (D-380). */
+function TypedText({
+  name,
+  input,
+  value,
+  autoFocus,
+  onChange,
+}: {
+  readonly name: string
+  readonly input: 'text' | 'number'
+  readonly value: string
+  readonly autoFocus: boolean
+  readonly onChange: (value: string) => void
+}) {
+  // The typed text follows a value changed from outside (a chip, back, forward).
+  const [typed, setTyped] = useState({ text: value, from: value })
+  const text = typed.from === value ? typed.text : value
+  if (typed.from !== value) setTyped({ text: value, from: value })
+  const commit = () => {
+    if (text !== value) onChange(text)
+  }
+  const invalid = input === 'number' && text.trim() !== '' && !Number.isFinite(Number(text))
+  return (
+    <AriaTextField
+      aria-label={[t('filters.values'), name].join(' ')}
+      value={text}
+      autoFocus={autoFocus}
+      isInvalid={invalid}
+      validationBehavior="aria"
+      onChange={(next) => {
+        setTyped({ text: next, from: value })
+      }}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') commit()
+      }}
+      className="min-w-none flex-1"
+    >
+      <Input
+        placeholder={t('filters.typeValue')}
+        {...(input === 'number' ? { inputMode: 'decimal' as const, dir: 'ltr' } : {})}
+        className={`${CONTROL} w-full cursor-text data-invalid:border-status-rejected ${input === 'number' ? 'text-end' : ''}`}
+      />
+    </AriaTextField>
+  )
+}
+
+/** The value of a row: chosen from its field's choices, or typed (D-380). */
+function RowValue({ field, draft, autoFocus, onChange }: { readonly field: FilterField; readonly draft: Draft; readonly autoFocus: boolean; readonly onChange: (values: readonly string[]) => void }) {
+  const [value = ''] = draft.values
+  switch (field.input) {
+    case 'choices':
+      return (
+        <Values name={field.name} choices={field.choicesOf(draft.values)} selected={draft.values} single={field.single} autoFocus={autoFocus} onChange={onChange} />
+      )
+    case 'date': {
+      const date = CalendarDate.safeParse(value)
+      return (
+        <div className="min-w-none flex-1">
+          <DateField
+            labelKey={{ text: field.name }}
+            hideLabel
+            name={field.key}
+            value={date.success ? date.data : ''}
+            error={null}
+            onChange={(next) => {
+              onChange(next === '' ? [] : [next])
+            }}
+          />
+        </div>
+      )
+    }
+    case 'text':
+    case 'number':
+      return (
+        <TypedText
+          name={field.name}
+          input={field.input}
+          value={value}
+          autoFocus={autoFocus}
+          onChange={(next) => {
+            onChange(next === '' ? [] : [next])
+          }}
+        />
+      )
+  }
+}
+
+/** One rule of the builder: field, operator and value (D-312). */
+function RuleRow({
+  connector,
+  field,
+  draft,
+  fieldOptions,
+  focused,
+  onField,
+  onDraft,
+  onRemove,
+}: {
+  readonly connector: ReactNode
+  readonly field: FilterField
+  readonly draft: Draft
+  readonly fieldOptions: readonly Option<string>[]
+  readonly focused: boolean
+  readonly onField: (key: string) => void
+  readonly onDraft: (draft: Draft) => void
+  readonly onRemove: () => void
+}) {
+  return (
+    <div className={ROW}>
+      <div className="flex items-center gap-xs">
+        {connector}
+        <Pick grow label={t('filters.field')} value={field.key} options={fieldOptions} onChange={onField} />
+        <RemoveButton labelKey="filters.remove" onPress={onRemove} />
+      </div>
+      <div className="flex items-center gap-xs">
+        {field.operators.length > 1 ? (
+          <Pick
+            label={t('filters.operator')}
+            value={draft.operator}
+            options={field.operators.map((operator) => ({ key: operator, label: t(OPERATOR_LABELS[operator]) }))}
+            onChange={(operator: Operator) => {
+              onDraft({ ...draft, operator, values: takesValues(operator) ? draft.values : [] })
+            }}
+          />
+        ) : (
+          <span className={CONNECTOR}>{t(OPERATOR_LABELS[draft.operator])}</span>
+        )}
+        {takesValues(draft.operator) ? (
+          <RowValue
+            field={field}
+            draft={draft}
+            autoFocus={focused}
+            onChange={(values) => {
+              onDraft({ ...draft, values })
+            }}
+          />
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+/** A row the builder does not read: it can only be removed. */
+function KeptRow({ connector, focused, onRemove }: { readonly connector: ReactNode; readonly focused: boolean; readonly onRemove: () => void }) {
+  return (
+    <div className={ROW}>
+      <div className="flex items-center gap-xs">
+        {connector}
+        <span className="min-w-none flex-1 truncate text-control text-text-muted">{t('filters.other')}</span>
+        <RemoveButton labelKey="filters.remove" autoFocus={focused} onPress={onRemove} />
+      </div>
+    </div>
+  )
+}
+
+interface Held {
+  /** The URL's conditions the rows hold, as a key; NULL before the fields load (OI-261). */
+  readonly read: string | null
+  /** The key of the conditions the rows last wrote, until the URL reads it back: the URL changes after the write. */
+  readonly wrote: string | null
+}
+
+/**
+ * Rows that follow the URL: built once the fields load, so no rule is read as "other" for want of its field, and built
+ * again when the URL changes from outside (back, forward, a chip). A row still without a value lives only here, and is
+ * lost only then (OI-261). `hold` keeps rows with the key their write reads back as.
+ */
+function useHeldRows<S extends Held>(empty: S, urlKey: string, ready: boolean, build: (held: S) => S): readonly [S, (next: S, wrote: string) => void] {
+  const [held, setHeld] = useState<S>(empty)
+  let state = held
+  if (ready && held.read !== urlKey) {
+    // The URL reading back the rows' own write keeps the rows; any other change builds them again.
+    state = held.wrote === urlKey ? { ...held, read: urlKey, wrote: null } : build(held)
+    setHeld(state)
+  }
+  const hold = (next: S, wrote: string) => {
+    // Until the URL changes, its old key still matches the rows.
+    setHeld({ ...next, wrote: wrote === next.read ? null : wrote })
+  }
+  return [state, hold]
+}
+
 type Row = { readonly id: number; readonly draft: Draft } | { readonly id: number; readonly kept: FilterRule }
 
-interface Rows {
+interface Rows extends Held {
   readonly match: RuleMatch
   readonly rows: readonly Row[]
   readonly nextId: number
-  /** The URL's rules the rows hold, as a key; NULL before the fields load (OI-261). */
-  readonly read: string | null
-  /** The key of the rules the rows last wrote, until the URL reads it back: the URL changes after the write. */
-  readonly wrote: string | null
 }
 
 const NO_ROWS: Rows = { match: 'all', rows: [], nextId: 0, read: null, wrote: null }
@@ -191,6 +376,35 @@ function rowsOf(read: ReadRules, fields: FilterFields, nextId: number): Rows {
     return draft === null ? { id, kept: rule } : { id, draft }
   })
   return { match, rows, nextId: nextId + rows.length, read: keyOf(read), wrote: null }
+}
+
+type LeaveRow = { readonly id: number; readonly draft: Draft } | { readonly id: number; readonly kept: LeavePropertyNode }
+
+interface LeaveRows extends Held {
+  readonly rows: readonly LeaveRow[]
+  readonly nextId: number
+}
+
+const NO_LEAVE_ROWS: LeaveRows = { rows: [], nextId: 0, read: null, wrote: null }
+
+const leaveKeyOf = (nodes: readonly LeavePropertyNode[]) => JSON.stringify(nodes)
+
+/** The rows of the URL's leave property conditions (D-382); one the builder does not read can only be removed. */
+function leaveRowsOf(nodes: readonly LeavePropertyNode[], fields: FilterFields, nextId: number): LeaveRows {
+  const rows = nodes.map((node, at): LeaveRow => {
+    const id = nextId + at
+    const rule = ruleOfNode(node)
+    const draft = rule === null ? null : fields.draftOf(rule)
+    return draft === null || fields.byKey.get(draft.field)?.entity !== 'leave' ? { id, kept: node } : { id, draft }
+  })
+  return { rows, nextId: nextId + rows.length, read: leaveKeyOf(nodes), wrote: null }
+}
+
+/** The leave condition a rule writes; none while it has no value (D-382). */
+function leaveNodesOf(rule: FilterRule | null): LeavePropertyNode[] {
+  const node = rule === null ? null : nodeOfRule(rule)
+  const parsed = LeavePropertyNode.safeParse(node)
+  return parsed.success ? [parsed.data] : []
 }
 
 function Connector({ index, match, onMatch }: { readonly index: number; readonly match: RuleMatch; readonly onMatch: ((match: RuleMatch) => void) | null }) {
@@ -216,17 +430,11 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
   const unitId = filter.rules.kind === 'rules' ? filter.rules.filter.unitId : null
-  // The rows follow the URL: built once the fields load, so no rule is read as "other" for want of its field, and
-  // built again when the URL changes from outside (back, forward, a chip). A row still without a value lives only here,
-  // and is lost only then (OI-261).
-  const [held, setHeld] = useState<Rows>(NO_ROWS)
-  const urlKey = keyOf(filter.rules)
-  let state = held
-  if (fields.ready && held.read !== urlKey) {
-    // The URL reading back the rows' own write keeps the rows; any other change builds them again.
-    state = held.wrote === urlKey ? { ...held, read: urlKey, wrote: null } : rowsOf(filter.rules, fields, held.nextId)
-    setHeld(state)
-  }
+  const [state, holdRows] = useHeldRows(NO_ROWS, keyOf(filter.rules), fields.ready, (held) => rowsOf(filter.rules, fields, held.nextId))
+  const leaveNodes = leaves.conditions.properties ?? []
+  const [leaveState, holdLeaveRows] = useHeldRows(NO_LEAVE_ROWS, leaveKeyOf(leaveNodes), fields.ready, (held) =>
+    leaveRowsOf(leaveNodes, fields, held.nextId),
+  )
   const [leaveDrafts, setLeaveDrafts] = useState<Readonly<Record<LeaveField, boolean>>>({ leaveStatus: false, leaveType: false })
 
   const write = (next: Rows) => {
@@ -238,10 +446,8 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
         return fields.byKey.get(row.draft.field)?.ruleOf(row.draft.operator, row.draft.values) ?? []
       }),
     }
-    // The key is the URL's as it will read back, so the rows are not built again from their own write. Until the
-    // URL changes, its old key still matches the rows.
-    const wrote = keyOf(readRules(writeRules(written) ?? null))
-    setHeld({ ...next, wrote: wrote === next.read ? null : wrote })
+    // The key is the URL's as it will read back, so the rows are not built again from their own write.
+    holdRows(next, keyOf(readRules(writeRules(written) ?? null)))
     filter.setRules(written)
   }
   const replace = (id: number, draft: Draft) => {
@@ -249,6 +455,25 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
   }
   const remove = (id: number) => {
     write({ ...state, rows: state.rows.filter((row) => row.id !== id) })
+  }
+
+  const writeLeaves = (next: LeaveRows) => {
+    const nodes = next.rows.flatMap((row) => {
+      if ('kept' in row) return [row.kept]
+      return leaveNodesOf(fields.byKey.get(row.draft.field)?.ruleOf(row.draft.operator, row.draft.values) ?? null)
+    })
+    const key = leaveKeyOf(nodes)
+    holdLeaveRows(next, key)
+    if (key !== next.read) leaves.setProperties(nodes)
+  }
+  const addLeaveRow = (field: FilterField) => {
+    const [operator] = field.operators
+    if (operator === undefined) return
+    writeLeaves({
+      ...leaveState,
+      rows: [...leaveState.rows, { id: leaveState.nextId, draft: { field: field.key, operator, values: [] } }],
+      nextId: leaveState.nextId + 1,
+    })
   }
 
   const statuses = leaves.conditions.statuses ?? []
@@ -270,11 +495,17 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
       }),
   ]
   const leaveRows = LEAVE_FIELDS.filter((field) => leaveShown[field])
-  const rowCount = state.rows.length + leaveRows.length
+  const leavePropertyStart = state.rows.length + leaveRows.length
+  const rowCount = leavePropertyStart + leaveState.rows.length
+  const leaveFieldOptions = fields.leaveOffered.map((offered) => ({ key: offered.key, label: offered.name }))
 
   const addRow = () => {
     const [field] = fields.offered
-    if (field === undefined) return
+    if (field === undefined) {
+      const [leaveField] = fields.leaveOffered
+      if (leaveField !== undefined) addLeaveRow(leaveField)
+      return
+    }
     const [operator] = field.operators
     if (operator === undefined) return
     write({ ...state, rows: [...state.rows, { id: state.nextId, draft: { field: field.key, operator, values: [] } }], nextId: state.nextId + 1 })
@@ -296,87 +527,50 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
           />
         )
         const focused = target.kind === 'rule' && target.index === index
-        if ('kept' in row) {
-          return (
-            <div key={row.id} className={ROW}>
-              <div className="flex items-center gap-xs">
-                {connector}
-                <span className="min-w-none flex-1 truncate text-control text-text-muted">{t('filters.other')}</span>
-                <RemoveButton
-                  labelKey="filters.remove"
-                  autoFocus={focused}
-                  onPress={() => {
-                    remove(row.id)
-                  }}
-                />
-              </div>
-            </div>
-          )
+        const drop = () => {
+          remove(row.id)
         }
+        if ('kept' in row) return <KeptRow key={row.id} connector={connector} focused={focused} onRemove={drop} />
         const field = fields.byKey.get(row.draft.field)
         if (field === undefined) return null
         const fieldOptions: Option<string>[] = [
           ...(fields.offered.includes(field) ? [] : [{ key: field.key, label: field.name }]),
           ...fields.offered.map((offered) => ({ key: offered.key, label: offered.name })),
           ...freeLeaveFields.map((leaveField) => ({ key: leaveField, label: t(LEAVE_FIELD_LABELS[leaveField]) })),
+          ...leaveFieldOptions,
         ]
         return (
-          <div key={row.id} className={ROW}>
-            <div className="flex items-center gap-xs">
-              {connector}
-              <Pick
-                grow
-                label={t('filters.field')}
-                value={field.key}
-                options={fieldOptions}
-                onChange={(key) => {
-                  const leaveField = LEAVE_FIELDS.find((candidate) => candidate === key)
-                  if (leaveField !== undefined) {
-                    // A leave condition has its own row, one of each (D-312).
-                    remove(row.id)
-                    setLeaveDrafts({ ...leaveDrafts, [leaveField]: true })
-                    return
-                  }
-                  const next = fields.byKey.get(key)
-                  const [operator] = next?.operators ?? []
-                  if (next === undefined || operator === undefined) return
-                  replace(row.id, { field: next.key, operator, values: [] })
-                }}
-              />
-              <RemoveButton
-                labelKey="filters.remove"
-                onPress={() => {
-                  remove(row.id)
-                }}
-              />
-            </div>
-            <div className="flex items-center gap-xs">
-              {field.operators.length > 1 ? (
-                <Pick
-                  label={t('filters.operator')}
-                  value={row.draft.operator}
-                  options={field.operators.map((operator) => ({ key: operator, label: t(OPERATOR_LABELS[operator]) }))}
-                  onChange={(operator: Operator) => {
-                    replace(row.id, { ...row.draft, operator, values: takesValues(operator) ? row.draft.values : [] })
-                  }}
-                />
-              ) : (
-                <span className={CONNECTOR}>{t(OPERATOR_LABELS[row.draft.operator])}</span>
-              )}
-              {takesValues(row.draft.operator) ? (
-                <Values
-                  name={field.name}
-                  choices={field.choicesOf(row.draft.values)}
-                  selected={row.draft.values}
-                  single={field.single}
-                  autoFocus={focused}
-                  onChange={(values) => {
-                    replace(row.id, { ...row.draft, values })
-                  }}
-                />
-              ) : null}
-            </div>
-          </div>
+          <RuleRow
+            key={row.id}
+            connector={connector}
+            field={field}
+            draft={row.draft}
+            fieldOptions={fieldOptions}
+            focused={focused}
+            onRemove={drop}
+            onDraft={(draft) => {
+              replace(row.id, draft)
+            }}
+            onField={(key) => {
+              const leaveField = LEAVE_FIELDS.find((candidate) => candidate === key)
+              if (leaveField !== undefined) {
+                // A leave condition has its own row, one of each (D-312).
+                remove(row.id)
+                setLeaveDrafts({ ...leaveDrafts, [leaveField]: true })
+                return
+              }
+              const next = fields.byKey.get(key)
+              const [operator] = next?.operators ?? []
+              if (next === undefined || operator === undefined) return
+              if (next.entity === 'leave') {
+                // A leave property is a leave condition (D-382): its row moves among them.
+                remove(row.id)
+                addLeaveRow(next)
+                return
+              }
+              replace(row.id, { field: next.key, operator, values: [] })
+            }}
+          />
         )
       })}
       {leaveRows.map((leaveField, at) => {
@@ -428,6 +622,40 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
           </div>
         )
       })}
+      {leaveState.rows.map((row, at) => {
+        const connector = <Connector index={leavePropertyStart + at} match="all" onMatch={null} />
+        // A chip names the condition by its place among those the URL holds; rows still without a value come after them.
+        const focused = target.kind === 'leaveProperty' && target.index === at
+        const drop = () => {
+          writeLeaves({ ...leaveState, rows: leaveState.rows.filter((held) => held.id !== row.id) })
+        }
+        if ('kept' in row) return <KeptRow key={row.id} connector={connector} focused={focused} onRemove={drop} />
+        const field = fields.byKey.get(row.draft.field)
+        if (field === undefined) return null
+        return (
+          <RuleRow
+            key={row.id}
+            connector={connector}
+            field={field}
+            draft={row.draft}
+            fieldOptions={[...(fields.leaveOffered.includes(field) ? [] : [{ key: field.key, label: field.name }]), ...leaveFieldOptions]}
+            focused={focused}
+            onRemove={drop}
+            onDraft={(draft) => {
+              writeLeaves({ ...leaveState, rows: leaveState.rows.map((held) => (held.id === row.id ? { id: row.id, draft } : held)) })
+            }}
+            onField={(key) => {
+              const next = fields.byKey.get(key)
+              const [operator] = next?.operators ?? []
+              if (next === undefined || operator === undefined) return
+              writeLeaves({
+                ...leaveState,
+                rows: leaveState.rows.map((held) => (held.id === row.id ? { id: row.id, draft: { field: next.key, operator, values: [] } } : held)),
+              })
+            }}
+          />
+        )
+      })}
       {missing.on ? (
         <div className={ROW}>
           <div className="flex items-center gap-xs">
@@ -444,7 +672,7 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
         </div>
       ) : null}
       <div className="flex flex-wrap items-center gap-xs">
-        {fields.offered.length === 0 ? null : (
+        {fields.offered.length === 0 && fields.leaveOffered.length === 0 ? null : (
           <AriaButton onPress={addRow} className={ADD}>
             <Plus aria-hidden size={14} />
             {t('filters.add')}
