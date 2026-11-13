@@ -32,6 +32,7 @@ import {
   isAncestorOrSelf,
   primaryUnitOn,
   reportRotationOf,
+  soldierTarget,
   unitTarget,
 } from '@domain'
 import { holds, loadActorScope, requirePermission, type ActorScope } from './actor'
@@ -64,6 +65,14 @@ function checkSpan(window: DateWindow): void {
 }
 
 /** Who reads a rotation's summary: its report owner, or, with none named, who may confirm its unit (D-293). */
+const SOLDIERS_VIEW = { resource: 'soldiers', action: 'view' } as const
+const MEMBERSHIPS_VIEW = { resource: 'memberships', action: 'view' } as const
+
+/** Whether the actor's report lists the soldier under their unit: it reads the soldier and their memberships. */
+function seesInReport(scope: ActorScope, soldierId: SoldierId): boolean {
+  return holds(scope, SOLDIERS_VIEW, soldierTarget(soldierId)) && holds(scope, MEMBERSHIPS_VIEW, soldierTarget(soldierId))
+}
+
 function readsSummaryOf(scope: ActorScope, rotation: Deployment): boolean {
   return rotation.report_owner_id === null
     ? holds(scope, CONFIRM_DAY_REPORT, dayReportTarget(rotation.unit_id))
@@ -172,11 +181,15 @@ export function createReportConfirmationRepository(dependencies: LocalDependenci
             )
             if (running.length === 0) continue
             const sections = new Set<UnitId>()
+            const seen = new Set<UnitId>()
             for (const soldier of soldiers) {
               const unitId = primaryUnitOn(bySoldier.get(soldier.id) ?? [], soldier.id, date)
-              if (unitId !== null && running.some((rotation) => isAncestorOrSelf(tree, rotation.unit_id, unitId))) sections.add(unitId)
+              if (unitId === null || !running.some((rotation) => isAncestorOrSelf(tree, rotation.unit_id, unitId))) continue
+              sections.add(unitId)
+              // The actor's report heads the unit when it holds a soldier the actor views with their unit.
+              if (seesInReport(scope, soldier.id)) seen.add(unitId)
             }
-            answers.push({ report_date: date, sections: sections.size })
+            answers.push({ report_date: date, sections: sections.size, unseen: sections.size - seen.size })
           }
           return answers
         })

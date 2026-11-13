@@ -202,9 +202,10 @@ export function describeReportContract(
       const sections = (deployment_ids: DeploymentId[], window = { start_date: DAY, end_date: OTHER_DAY }) =>
         adapter().repositories.report_confirmations.sections({ window, deployment_ids })
       // The company and its squad hold active soldiers; the quiet unit only an inactive one, the other unit is outside.
+      // The owner views every soldier, so no section is outside their view.
       expect(valueOf(await sections([owned.id]))).toEqual([
-        { report_date: DAY, sections: 2 },
-        { report_date: OTHER_DAY, sections: 2 },
+        { report_date: DAY, sections: 2, unseen: 0 },
+        { report_date: OTHER_DAY, sections: 2, unseen: 0 },
       ])
       expect(valueOf(await sections([owned.id], { start_date: OUTSIDE, end_date: OUTSIDE }))).toEqual([])
       expect(valueOf(await sections([]))).toEqual([])
@@ -217,7 +218,8 @@ export function describeReportContract(
       harnessOf().signIn(companyConfirmer.identity)
       expect(valueOf(await sections([owned.id]))).toEqual([])
 
-      // With no owner named, who may confirm the rotation's unit reads it; who may confirm only a squad does not.
+      // With no owner named, who may confirm the rotation's unit reads it, and views none of its soldiers here; who may
+      // confirm only a squad does not read it.
       harnessOf().signIn(owner)
       const unowned = valueOf(
         await adapter().commands.deployments.create({
@@ -231,10 +233,38 @@ export function describeReportContract(
       )
       const later = { start_date: OUTSIDE, end_date: OUTSIDE }
       harnessOf().signIn(companyConfirmer.identity)
-      expect(valueOf(await sections([unowned.id], later))).toEqual([{ report_date: OUTSIDE, sections: 2 }])
+      expect(valueOf(await sections([unowned.id], later))).toEqual([{ report_date: OUTSIDE, sections: 2, unseen: 2 }])
       const squadConfirmer = await seedActor(harnessOf(), organization, [pair('day_reports', 'confirm')], UNIT_SCOPE(squad.id))
       harnessOf().signIn(squadConfirmer.identity)
       expect(valueOf(await sections([unowned.id], later))).toEqual([])
+
+      // A named owner who views only the platoon's soldiers with their unit reads the battery's section as unseen.
+      harnessOf().signIn(owner)
+      const battery = await unit('Battery')
+      const platoon = await unit('Platoon', battery.id)
+      await member(battery.id)
+      await member(platoon.id)
+      const platoonViewer = await seedActor(
+        harnessOf(),
+        organization,
+        [pair('soldiers', 'view'), pair('memberships', 'view')],
+        UNIT_SCOPE(platoon.id),
+      )
+      const after = addDays(OUTSIDE, 1)
+      const partial = valueOf(
+        await adapter().commands.deployments.create({
+          id: DeploymentId.parse(crypto.randomUUID()),
+          name: 'Partial',
+          unit_id: battery.id,
+          start_date: after,
+          end_date: after,
+          report_owner_id: platoonViewer.soldierId,
+        }),
+      )
+      harnessOf().signIn(platoonViewer.identity)
+      expect(valueOf(await sections([partial.id], { start_date: after, end_date: after }))).toEqual([
+        { report_date: after, sections: 2, unseen: 1 },
+      ])
     })
 
     it('names only an active soldier as a report owner', async () => {
