@@ -4,7 +4,7 @@ import { drawer } from './support/leaves.ts'
 import { addUnit, enterAsOwner, openModule, organizationHeading, unitRow } from './support/workspace.ts'
 
 // A menu, a sheet or a dialog that lives inside a screen holds one history entry while it is open, so the back button
-// closes it, innermost first, and a close by its own controls leaves nothing behind (OI-291, D-336). On desktop and
+// closes it, innermost first, and a close by its own controls leaves nothing behind (OI-291, D-337). On desktop and
 // mobile. Sample data, tests only.
 
 const UNIT = 'מחלקה א'
