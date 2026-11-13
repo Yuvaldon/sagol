@@ -127,7 +127,7 @@ describe('the rotation of the mode (D-257, D-222)', () => {
   })
 })
 
-describe('a free range from the picker (D-338)', () => {
+describe('a free range from the picker (D-339)', () => {
   it('takes a pair in order, up to the cap, both days included', () => {
     expect(customSpan({ from: '2026-11-01', to: '2026-11-01' })).toEqual({ from: '2026-11-01', to: '2026-11-01' })
     const last = addDays('2026-11-01', DATE_WINDOW.maxDays - 1)

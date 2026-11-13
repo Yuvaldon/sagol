@@ -54,7 +54,7 @@ export interface WindowParams {
 }
 
 /**
- * A free pair, from an older link or the picker's "טווח אחר" (D-211, D-338), or NULL when it is missing a side, inverted
+ * A free pair, from an older link or the picker's "טווח אחר" (D-211, D-339), or NULL when it is missing a side, inverted
  * or longer than `DATE_WINDOW.maxDays`.
  */
 export function customSpan({ from, to }: Pick<WindowParams, 'from' | 'to'>): { from: CalendarDate; to: CalendarDate } | null {
@@ -217,7 +217,7 @@ export interface DateWindowState {
   /** Another kind on the same days: a rotation by its id (D-211). */
   setRange(kind: Exclude<RangeKind, 'rotation'>): void
   showRotation(rotationId: DeploymentId): void
-  /** A free window from `from` to `to`, both included (D-338). False, changing nothing, when `customSpan` refuses it. */
+  /** A free window from `from` to `to`, both included (D-339). False, changing nothing, when `customSpan` refuses it. */
   showCustom(from: CalendarDate, to: CalendarDate): boolean
 }
 
