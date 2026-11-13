@@ -32,7 +32,9 @@ import {
   leaveViolations,
   ruleDataOf,
   windowConflicts,
+  ruleDaysByUnit,
   type HeatDay,
+  type RuleDay,
   type WindowConflict,
 } from './evaluation'
 import { toCreateRuleInput, toUpdateRuleInput, type RuleFormValues } from './rules'
@@ -153,10 +155,14 @@ interface WindowRequest {
 }
 
 /** The rules and their data for a window, or NULL when the actor sees no rule: the heat row then has no place. */
-function useWindowEvaluation(window: WindowRequest | null): Loaded<{ rules: readonly AvailabilityRule[]; data: RuleData } | null> {
+function useWindowEvaluation(
+  window: WindowRequest | null,
+  rotationId?: DeploymentId | null,
+): Loaded<{ rules: readonly AvailabilityRule[]; data: RuleData } | null> {
   const rules = useAvailabilityRules()
-  // The heat row reads the days of the mode, so the tags of its rotation (D-222).
-  const data = useRuleData(window, useRotationScope().rotation?.id ?? null)
+  // The heat row reads the days of the mode, so the tags of its rotation (D-222); the dashboard names its own (D-349).
+  const scoped = useRotationScope().rotation?.id ?? null
+  const data = useRuleData(window, rotationId === undefined ? scoped : rotationId)
   return useMemo(() => {
     if (rules.status !== 'ready') return rules
     if (rules.value.length === 0) return { status: 'ready', value: null }
@@ -173,6 +179,23 @@ export function useHeatRow(window: WindowRequest | null, unitId: UnitId | null):
     if (evaluation.value === null || window === null) return { status: 'ready', value: null }
     return { status: 'ready', value: heatRow({ ...evaluation.value, days: window.days, unitId }) }
   }, [evaluation, window, unitId])
+}
+
+/**
+ * The rule figures of the dashboard's units over a window, counting approved and pending leaves as the heat row does
+ * (D-349). NULL when the actor sees no rule.
+ */
+export function useRuleDays(
+  window: WindowRequest | null,
+  rotationId: DeploymentId | null,
+  unitIds: readonly UnitId[],
+): Loaded<ReadonlyMap<UnitId, readonly RuleDay[] | null> | null> {
+  const evaluation = useWindowEvaluation(window, rotationId)
+  return useMemo(() => {
+    if (evaluation.status !== 'ready') return evaluation
+    if (evaluation.value === null || window === null) return { status: 'ready', value: null }
+    return { status: 'ready', value: ruleDaysByUnit({ ...evaluation.value, days: window.days }, unitIds) }
+  }, [evaluation, window, unitIds])
 }
 
 /** The broken rules of one day for the board's unit (D-141). */
@@ -269,3 +292,5 @@ function sameAnswer(answer: Loaded<readonly RuleViolation[]>, last: Loaded<reado
 }
 const NO_CHECK: Loaded<readonly RuleViolation[]> = { status: 'ready', value: NO_VIOLATIONS }
 const LOADING: Loaded<readonly RuleViolation[]> = { status: 'loading' }
+
+export type { RuleDay }

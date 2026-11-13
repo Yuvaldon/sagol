@@ -9,7 +9,7 @@ import { isOverlayEntry, overlayState } from './overlay'
 import { SortRules, isDefaultSort } from './sort-rules'
 
 // All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the
-// filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193) and a new leave's draft (D-143). A
+// filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193), a new leave's draft (D-143) and the dashboard's unit and planned days (D-349). A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
 
@@ -36,6 +36,9 @@ const WorkspaceSearchFields = z.object({
   [SEARCH_PARAMS.day]: CalendarDate.optional().catch(undefined),
   [SEARCH_PARAMS.until]: CalendarDate.optional().catch(undefined),
   [SEARCH_PARAMS.draft]: NewLeaveDraft.optional().catch(undefined),
+  // The dashboard's unit and "כולל מתוכנן" (D-349); its span is the window above.
+  [SEARCH_PARAMS.unit]: UnitId.optional().catch(undefined),
+  [SEARCH_PARAMS.planned]: z.literal(true).optional().catch(undefined),
 })
 type WorkspaceSearchFields = z.infer<typeof WorkspaceSearchFields>
 

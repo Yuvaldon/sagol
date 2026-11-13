@@ -1,7 +1,11 @@
 import {
+  AvailabilityEffect,
   LeaveCommentId,
   LeaveId,
+  LeaveStatus,
   type AvailabilityRuleId,
+  type CalendarDate,
+  type Deployment,
   type CommentVisibility,
   type Leave,
   type LeaveComment,
@@ -10,7 +14,19 @@ import {
   type PermissionCheck,
   type Result,
 } from '@contracts'
-import { COMMENT_PERMISSIONS, LEAVE_PERMISSIONS, type SoldierDay } from '@domain'
+import {
+  COMMENT_PERMISSIONS,
+  LEAVE_PERMISSIONS,
+  compareDates,
+  effectiveEffect,
+  isRotationLeaveType,
+  myRotationFigures,
+  spanCovers,
+  type DateSpan,
+  type MyRotationFigures,
+  type RotationMembership,
+  type SoldierDay,
+} from '@domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOn } from '../permissions/checks'
@@ -24,7 +40,8 @@ import { usePorts } from '../runtime/context'
 import { useSoldiersWithArchived } from '../roster/hooks'
 import { useCurrentOrganization, useSession } from '../session/hooks'
 import { useToday } from '../session/today'
-import { useLeaveTypes } from './hooks'
+import { useLeaveTypeGroups, useLeaveTypes } from './hooks'
+import { useDeployments, useRotationMembership } from '../deployments/hooks'
 import { cachedLeaves, leaveKey, leaveListKey, restoreLeaves, showLeave } from './cache'
 import {
   EDIT_PERMISSION,
@@ -361,4 +378,82 @@ export function useMyNextDays(): Loaded<readonly SoldierDay[]> | null {
     if (today === null) return { status: 'loading' }
     return { status: 'ready', value: myNextDays(soldierId, leaves.value, types.value, today) }
   }, [soldierId, leaves, types, today])
+}
+
+/** The rotation "הסבב שלי" counts, and the actor's figures over it. */
+export interface MyRotation {
+  readonly rotation: Deployment
+  readonly figures: MyRotationFigures
+}
+
+/**
+ * The rotation of "הסבב שלי" (D-350): the one the soldier serves in today, else the next one they will serve in, else
+ * the last one they served in. NULL with none: no rotation, or no read of their own memberships.
+ */
+export function myRotationOf(
+  rotations: readonly Deployment[],
+  membership: RotationMembership,
+  soldierId: Leave['soldier_id'],
+  today: CalendarDate,
+): { readonly rotation: Deployment; readonly served: readonly DateSpan[] } | null {
+  const served = rotations
+    .filter((rotation) => rotation.archived_at === null)
+    .map((rotation) => ({ rotation, served: membership.daysOf(rotation, soldierId) }))
+    .filter((item) => item.served.length > 0)
+  const current = served.find((item) => item.served.some((span) => spanCovers(span, today)))
+  if (current !== undefined) return current
+  const firstDay = (item: (typeof served)[number]): CalendarDate => item.served[0]?.valid_from ?? item.rotation.start_date
+  const next = served
+    .filter((item) => compareDates(firstDay(item), today) > 0)
+    .sort((a, b) => compareDates(firstDay(a), firstDay(b)))[0]
+  if (next !== undefined) return next
+  const lastDay = (item: (typeof served)[number]): CalendarDate => item.served.at(-1)?.valid_to ?? item.rotation.end_date ?? today
+  return served.sort((a, b) => compareDates(lastDay(b), lastDay(a)))[0] ?? null
+}
+
+/**
+ * "הסבב שלי" (D-350): the actor's own figures over their rotation, from their own leaves and memberships only (P-4).
+ * NULL when the actor is not linked or serves in no rotation they can read; the section is then not drawn (D-076).
+ */
+export function useMyRotation(): Loaded<MyRotation> | null {
+  const actor = useActor()
+  const today = useToday()
+  const leaves = useMyLeaveRows()
+  const types = useLeaveTypes()
+  const groups = useLeaveTypeGroups()
+  const deployments = useDeployments()
+  const membership = useRotationMembership()
+  const soldierId = actor?.soldier_id ?? null
+  return useMemo((): Loaded<MyRotation> | null => {
+    if (soldierId === null) return null
+    if (deployments.status === 'failed') return null
+    if (leaves.status !== 'ready') return leaves
+    if (types.status !== 'ready') return types
+    if (groups.status !== 'ready') return groups
+    if (deployments.status !== 'ready' || membership === null || today === null) return { status: 'loading' }
+    const chosen = myRotationOf(deployments.value, membership, soldierId, today)
+    if (chosen === null) return null
+    const { rotation, served } = chosen
+    const typeOf = new Map(types.value.map((type) => [type.id, type]))
+    const homeLeaves = leaves.value.filter(
+      (leave) =>
+        leave.status === LeaveStatus.enum.approved &&
+        effectiveEffect(leave, typeOf.get(leave.leave_type_id)) === AvailabilityEffect.enum.unavailable,
+    )
+    // A request of the rotation is one whose days meet the rotation's (D-350).
+    const inRotation = leaves.value.filter(
+      (leave) =>
+        compareDates(leave.end_date, rotation.start_date) >= 0 &&
+        (rotation.end_date === null || compareDates(leave.start_date, rotation.end_date) <= 0),
+    )
+    const figures = myRotationFigures({
+      rotation,
+      served,
+      today,
+      homeLeaves,
+      leaves: inRotation,
+      isRequestType: (typeId) => !isRotationLeaveType(typeOf.get(typeId), groups.value),
+    })
+    return { status: 'ready', value: { rotation, figures } }
+  }, [soldierId, deployments, membership, leaves, types, groups, today])
 }

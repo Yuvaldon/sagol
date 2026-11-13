@@ -61,6 +61,8 @@ const MODULE_CHECKS = {
   roles: { permission: { resource: 'roles', action: 'view' }, target: { kind: 'organization' } },
   /** A deployment is a target of its unit; any scope of `view` opens the module (D-179). */
   deployments: { permission: { resource: 'deployments', action: 'view' }, target: { kind: 'organization' } },
+  /** The dashboard reads leaves; any scope of `view` opens it, and its rows are what that scope reads (D-349). */
+  dashboard: { permission: { resource: 'leaves', action: 'view' }, target: { kind: 'organization' } },
 } as const satisfies Record<string, PermissionCheck>
 
 export const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
@@ -78,5 +80,6 @@ export function useModuleAccess() {
     rules: can(MODULE_CHECKS.rules),
     roles: can(MODULE_CHECKS.roles),
     deployments: can(MODULE_CHECKS.deployments),
+    dashboard: can(MODULE_CHECKS.dashboard),
   }
 }
