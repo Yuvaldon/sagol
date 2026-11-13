@@ -4423,8 +4423,8 @@ owner's own words ("ותבצע את ההתאמות ושחרר ידנית באי�
 - **Vercel.** `vercel.json` sets `git.deploymentEnabled` to `{ "**": false, "main": false, "staging": true,
   "production": true }`: a merge to `main` no longer builds anything on Vercel, `staging` builds its Preview, and
   `production` builds. Vercel's Production branch must be `production` (Project Settings → Environments → Production →
-  Branch Tracking); only the owner can change it (OI-294). Until then the `production` branch builds only as a Preview,
-  and with `main` off, no new Production deploy happens at all.
+  Branch Tracking); only the owner can change it (OI-294). The owner made that change on 2026-11-13 at about 08:16Z
+  (confirmed by the orchestrator).
 - **Permissions.** The job gets `contents: write` to push the branch; `GITHUB_TOKEN` cannot start other workflows, and
   Vercel's GitHub integration builds the push like any other.
 - **Rejected.** Keeping `main` as Vercel's Production branch: every merge would ship the frontend before the owner
