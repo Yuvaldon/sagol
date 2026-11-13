@@ -106,13 +106,23 @@ interface ChipOf {
   readonly remove: () => void
 }
 
+const QUALIFIER_SEPARATOR = ' · '
+
 /** The text of a rule of the URL: its field, its operator when not plain, its values. */
 function chipText(rule: FilterRule, fields: FilterFields): Pick<ChipOf, 'name' | 'qualifier' | 'values'> {
   const draft = fields.draftOf(rule)
   const field = draft === null ? undefined : fields.byKey.get(draft.field)
   if (draft === null || field === undefined) return { name: t('filters.unavailable'), qualifier: null, values: [] }
   const plain = draft.operator === 'anyOf' || draft.operator === 'is'
-  return { name: field.name, qualifier: plain ? null : t(OPERATOR_LABELS[draft.operator]), values: draft.values.map(field.labelOf) }
+  const operator = plain ? null : t(OPERATOR_LABELS[draft.operator])
+  // A "none of" or "is not" whose every value matches nobody keeps everyone; the chip says so (OI-264).
+  const negated = draft.operator === 'noneOf' || draft.operator === 'isNot'
+  const keepsEveryone = negated && draft.values.length > 0 && draft.values.every(field.inert)
+  return {
+    name: field.name,
+    qualifier: keepsEveryone ? [operator, t('filters.keepsEveryone')].join(QUALIFIER_SEPARATOR) : operator,
+    values: draft.values.map(field.labelOf),
+  }
 }
 
 const LEAVE_STATUS_KEYS: Record<BoardLeaveStatus, I18nKey> = { pending: 'leaves.statusPending', approved: 'leaves.statusApproved' }

@@ -31,6 +31,13 @@ function clampZoom(zoom: number): number {
   return Math.min(UNIT_CHART_ZOOM.max, Math.max(UNIT_CHART_ZOOM.min, zoom))
 }
 
+/** A card, and where it stood in the viewport. */
+interface Spot {
+  readonly id: string
+  readonly left: number
+  readonly top: number
+}
+
 /** Where a zoom keeps its point: a spot on the screen, and where it fell on the content at the zoom shown. */
 interface ZoomAnchor {
   readonly clientX: number
@@ -146,6 +153,30 @@ export function UnitChart({
   const pan = useRef<{ readonly x: number; readonly y: number; readonly left: number; readonly top: number } | null>(
     null,
   )
+  /**
+   * The card in focus or under the last press, where it stood in the viewport, and its parent's card. When the chart
+   * changes width, right to left the browser holds the scroll against the start edge and a narrow chart recenters, so
+   * the view is held on this card instead; on its parent's when the card itself moved or left (OI-271).
+   */
+  const kept = useRef<{ readonly card: Spot; readonly parentId: string | null; readonly parent: Spot | null } | null>(null)
+  const cardOf = (id: string) => nodes.current?.querySelector(`[data-unit-id="${CSS.escape(id)}"]`) ?? null
+  const spotOf = (card: Element | null): Spot | null => {
+    const element = viewport.current
+    const id = card?.getAttribute('data-unit-id') ?? null
+    if (element === null || card === null || id === null) return null
+    const at = card.getBoundingClientRect()
+    const frame = element.getBoundingClientRect()
+    return { id, left: at.left - frame.left, top: at.top - frame.top }
+  }
+  const keep = (card: Element | null) => {
+    const spot = spotOf(card)
+    if (spot === null) return
+    const parentId = units.find((unit) => unit.id === spot.id)?.parent_id ?? null
+    kept.current = { card: spot, parentId, parent: parentId === null ? null : spotOf(cardOf(parentId)) }
+  }
+  const keepFrom = (target: EventTarget | null) => {
+    if (target instanceof Element && nodes.current?.contains(target) === true) keep(target.closest('[data-unit-id]'))
+  }
 
   /** Zooms to `next`, keeping still what is under the screen's point (the viewport's center when none is given). */
   const zoomTo = useCallback((next: number, pointX?: number, pointY?: number) => {
@@ -222,6 +253,26 @@ export function UnitChart({
     element.scrollTop += at.top + held.contentY * ratio - held.clientY
   }, [zoom, center])
 
+  // After a unit is added, moved or archived, the kept card goes back to where it stood; a card that moved or left gives
+  // way to its parent's, and with neither the view is left as it is.
+  const shownChart = useRef(chart)
+  useLayoutEffect(() => {
+    if (shownChart.current === chart) return
+    shownChart.current = chart
+    const element = viewport.current
+    const held = kept.current
+    if (element === null || held === null) return
+    const unit = units.find((candidate) => candidate.id === held.card.id)
+    const stayed = unit !== undefined && unit.archived_at === null && unit.parent_id === held.parentId
+    const spot = stayed ? held.card : held.parent
+    const card = spot === null ? null : cardOf(spot.id)
+    if (spot === null || card === null) return
+    const at = card.getBoundingClientRect()
+    const frame = element.getBoundingClientRect()
+    element.scrollLeft += at.left - frame.left - spot.left
+    element.scrollTop += at.top - frame.top - spot.top
+  })
+
   /** A zoom the person asked for: the chart stops following the viewport's size. */
   const zoomByHand = useCallback(
     (next: number, pointX?: number, pointY?: number) => {
@@ -294,6 +345,7 @@ export function UnitChart({
     const element = viewport.current
     const target = event.target
     if (!(target instanceof Node) || !event.currentTarget.contains(target)) return
+    keepFrom(target)
     const onNode = nodes.current?.contains(target) === true
     if (element === null || event.pointerType !== 'mouse' || event.button !== 0 || onNode) return
     if (!inClientArea(element, event.clientX, event.clientY)) return
@@ -352,6 +404,12 @@ export function UnitChart({
             // The canvas scrolls by keyboard too.
             tabIndex={0}
             onPointerDown={onPointerDown}
+            onFocus={(event) => {
+              keepFrom(event.target)
+            }}
+            onScroll={() => {
+              keep(kept.current === null ? null : cardOf(kept.current.card.id))
+            }}
             onPointerMove={onPointerMove}
             onPointerUp={endPan}
             onPointerCancel={endPan}
