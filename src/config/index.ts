@@ -43,6 +43,8 @@ export {
   DEFAULT_VIEW_BY_DEVICE,
   RANGE_KINDS,
   RangeKind,
+  WEEK_SPANS,
+  type WeekSpanKind,
   SORT_ORDERS,
   SORTABLE_PROPERTY_TYPES,
   SortOrder,

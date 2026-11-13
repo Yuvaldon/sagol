@@ -21,10 +21,14 @@ export const DEFAULT_VIEW_BY_DEVICE = { desktop: 'timeline', phone: 'list' } as 
  */
 export const DATE_WINDOW = { days: 7, maxDays: 186 } as const
 
-/** The kinds of date window the range picker offers (D-211); the navigator steps by the chosen one. */
-export const RANGE_KINDS = ['day', 'week', 'month', 'rotation'] as const
+/** The kinds of date window the range picker offers (D-211, D-383); the navigator steps by the chosen one. */
+export const RANGE_KINDS = ['day', 'week', 'two_weeks', 'four_weeks', 'month', 'rotation'] as const
 export const RangeKind = z.enum(RANGE_KINDS)
 export type RangeKind = z.infer<typeof RangeKind>
+
+/** How many weeks a span of weeks holds, from the week's first day (D-383). */
+export const WEEK_SPANS = { week: 1, two_weeks: 2, four_weeks: 4 } as const satisfies Partial<Record<RangeKind, number>>
+export type WeekSpanKind = keyof typeof WEEK_SPANS
 
 /** The kind when the URL names none and holds no free window. */
 export const DEFAULT_RANGE_KIND = 'week' satisfies RangeKind
