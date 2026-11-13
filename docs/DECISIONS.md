@@ -267,7 +267,7 @@ am = amends, ref = refines, ext = extends.
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | am D-340 |
-| D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | |
+| D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | ref D-341 |
 | D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
@@ -312,6 +312,7 @@ am = amends, ref = refines, ext = extends.
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 | D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
 | D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
+| D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4459,3 +4460,18 @@ owner's own words ("ותבצע את ההתאמות ושחרר ידנית באי�
   repositories, and the owner chose repository-level values (D-280); the owner starting the run is the approval.
 **Why:** the owner approves each production release. One manual run releases the backend and then the frontend of the
 same commit that staging already ran.
+
+## D-341 — The staging seed writes RFC UUIDs, and a db test parses every seeded row
+2026-11-13 · accepted · ref D-281 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- A seeded id is `pg_temp.seed_id(org || ':seed:' || key)`: the key's md5 with the version nibble set to 4 and the
+  variant nibble to 8, an RFC 9562 version-4 UUID. It stays derived from the key, so a re-run adds nothing (D-281).
+- `src/data/server/seed.dbtest.ts` bootstraps an owner through the gateway, runs `scripts/seed-staging.sql` and parses
+  every row of every table with the contracts. It checks the script; it does not use the seed's rows as data for
+  other tests (no mock data outside tests).
+- A database seeded before this decision holds ids the contracts reject. Its rows cannot be rewritten in place (the
+  foreign keys are not deferrable and `leave_events` is append-only), so the seed refuses it: staging is reset, the
+  owner signs in once, and the seed runs again.
+- Production is not affected: migrations create ids only with `gen_random_uuid()`.
+**Why:** a bare `md5(...)::uuid` carries arbitrary version and variant bits, so about seven in eight seeded ids failed
+`z.uuid()`. Every read of a seeded table threw while parsing, and the call answered `internal`, so every staging
+screen showed the generic error. D-281 said no test reads the seed; this one does, because only a parse catches it.

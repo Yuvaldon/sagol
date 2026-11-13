@@ -10,6 +10,12 @@
 -- ON CONFLICT DO NOTHING, and every date is anchored to the week the organization was created, so a second run
 -- adds nothing and changes nothing. Rows the owner edited in the app keep the owner's edits.
 
+-- An id derived from a key: its md5, with the version and variant bits of an RFC 9562 version-4 UUID set, because
+-- the contracts accept only RFC UUIDs (z.uuid()) and an id they reject makes every read of its table fail (D-341).
+CREATE OR REPLACE FUNCTION pg_temp.seed_id(key text) RETURNS uuid LANGUAGE sql IMMUTABLE AS $id$
+  SELECT overlay(overlay(md5(key) PLACING '4' FROM 13) PLACING '8' FROM 17)::uuid
+$id$;
+
 DO $seed$
 DECLARE
   org uuid;
@@ -85,31 +91,36 @@ BEGIN
   IF n_roots <> 1 THEN
     RAISE EXCEPTION 'seed-staging: expected exactly one live root unit, found %; apply the root-units migration first', n_roots;
   END IF;
+  -- A run before D-341 used the bare md5 as the id. Its rows cannot be rewritten in place, and a run beside them
+  -- would collide on their names and codes: the staging database is reset first.
+  IF EXISTS (SELECT 1 FROM units WHERE id = md5(org || ':seed:unit:company')::uuid) THEN
+    RAISE EXCEPTION 'seed-staging: the database holds an earlier seed with ids the contracts reject; reset staging first';
+  END IF;
 
   -- Unit levels and units: the company under the root, its HQ, three platoons of two squads each.
   FOR i IN 1..3 LOOP
     INSERT INTO unit_levels (id, organization_id, name, sort_order, created_by, updated_by)
-    VALUES (md5(org || ':seed:level:' || i)::uuid, org, unit_level_names[i], i, owner_id, owner_id)
+    VALUES (pg_temp.seed_id(org || ':seed:level:' || i), org, unit_level_names[i], i, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
   END LOOP;
   INSERT INTO units (id, organization_id, name, code, parent_id, unit_level_id, color_key, sort_order, created_by, updated_by)
-  VALUES (md5(org || ':seed:unit:company')::uuid, org, 'פלוגה ב׳', 'SEED-B', root_id,
-          md5(org || ':seed:level:1')::uuid, 'blue', 1, owner_id, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:unit:company'), org, 'פלוגה ב׳', 'SEED-B', root_id,
+          pg_temp.seed_id(org || ':seed:level:1'), 'blue', 1, owner_id, owner_id)
   ON CONFLICT DO NOTHING;
   INSERT INTO units (id, organization_id, name, code, parent_id, unit_level_id, color_key, sort_order, created_by, updated_by)
-  VALUES (md5(org || ':seed:unit:hq')::uuid, org, 'מפל״ג', 'SEED-B-HQ', md5(org || ':seed:unit:company')::uuid,
-          md5(org || ':seed:level:2')::uuid, 'gray', 0, owner_id, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:unit:hq'), org, 'מפל״ג', 'SEED-B-HQ', pg_temp.seed_id(org || ':seed:unit:company'),
+          pg_temp.seed_id(org || ':seed:level:2'), 'gray', 0, owner_id, owner_id)
   ON CONFLICT DO NOTHING;
   FOR i IN 1..3 LOOP
     INSERT INTO units (id, organization_id, name, code, parent_id, unit_level_id, color_key, sort_order, created_by, updated_by)
-    VALUES (md5(org || ':seed:unit:p' || i)::uuid, org, 'מחלקה ' || i, 'SEED-B-' || i,
-            md5(org || ':seed:unit:company')::uuid, md5(org || ':seed:level:2')::uuid,
+    VALUES (pg_temp.seed_id(org || ':seed:unit:p' || i), org, 'מחלקה ' || i, 'SEED-B-' || i,
+            pg_temp.seed_id(org || ':seed:unit:company'), pg_temp.seed_id(org || ':seed:level:2'),
             (ARRAY['green','purple','cyan'])[i], i, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
     FOR k IN 1..2 LOOP
       INSERT INTO units (id, organization_id, name, code, parent_id, unit_level_id, sort_order, created_by, updated_by)
-      VALUES (md5(org || ':seed:unit:p' || i || 's' || k)::uuid, org, 'כיתה ' || i || '.' || k, 'SEED-B-' || i || '-' || k,
-              md5(org || ':seed:unit:p' || i)::uuid, md5(org || ':seed:level:3')::uuid, k, owner_id, owner_id)
+      VALUES (pg_temp.seed_id(org || ':seed:unit:p' || i || 's' || k), org, 'כיתה ' || i || '.' || k, 'SEED-B-' || i || '-' || k,
+              pg_temp.seed_id(org || ':seed:unit:p' || i), pg_temp.seed_id(org || ':seed:level:3'), k, owner_id, owner_id)
       ON CONFLICT DO NOTHING;
     END LOOP;
   END LOOP;
@@ -117,39 +128,39 @@ BEGIN
   -- Command ranks.
   FOR i IN 1..array_length(ranks, 1) LOOP
     INSERT INTO command_ranks (id, organization_id, title, short_title, seniority, color_key, created_by, updated_by)
-    VALUES (md5(org || ':seed:rank:' || i)::uuid, org, ranks[i][1], ranks[i][2], ranks[i][3]::integer, ranks[i][4],
+    VALUES (pg_temp.seed_id(org || ':seed:rank:' || i), org, ranks[i][1], ranks[i][2], ranks[i][3]::integer, ranks[i][4],
             owner_id, owner_id)
     ON CONFLICT DO NOTHING;
   END LOOP;
 
   -- Tags: a multiple-selection category of roles in the field and a single-selection category of shifts.
   INSERT INTO tag_categories (id, organization_id, name, selection_mode, color_key, sort_order, created_by, updated_by)
-  VALUES (md5(org || ':seed:tagcat:skill')::uuid, org, 'מקצוע', 'multiple', 'indigo', 1, owner_id, owner_id),
-         (md5(org || ':seed:tagcat:shift')::uuid, org, 'משמרת', 'single', 'pink', 2, owner_id, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:tagcat:skill'), org, 'מקצוע', 'multiple', 'indigo', 1, owner_id, owner_id),
+         (pg_temp.seed_id(org || ':seed:tagcat:shift'), org, 'משמרת', 'single', 'pink', 2, owner_id, owner_id)
   ON CONFLICT DO NOTHING;
   FOR i IN 1..4 LOOP
     INSERT INTO tags (id, organization_id, category_id, name, sort_order, created_by, updated_by)
-    VALUES (md5(org || ':seed:tag:skill:' || i)::uuid, org, md5(org || ':seed:tagcat:skill')::uuid,
+    VALUES (pg_temp.seed_id(org || ':seed:tag:skill:' || i), org, pg_temp.seed_id(org || ':seed:tagcat:skill'),
             (ARRAY['חובש','נהג','קשר','צלף'])[i], i, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
   END LOOP;
   FOR i IN 1..2 LOOP
     INSERT INTO tags (id, organization_id, category_id, name, sort_order, created_by, updated_by)
-    VALUES (md5(org || ':seed:tag:shift:' || i)::uuid, org, md5(org || ':seed:tagcat:shift')::uuid,
+    VALUES (pg_temp.seed_id(org || ':seed:tag:shift:' || i), org, pg_temp.seed_id(org || ':seed:tagcat:shift'),
             (ARRAY['משמרת א׳','משמרת ב׳'])[i], i, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
   END LOOP;
 
   -- Leave type groups and leave types.
   INSERT INTO leave_type_groups (id, organization_id, name, sort_order, created_by, updated_by)
-  VALUES (md5(org || ':seed:ltgroup:home')::uuid, org, 'יציאות', 1, owner_id, owner_id),
-         (md5(org || ':seed:ltgroup:health')::uuid, org, 'בריאות', 2, owner_id, owner_id),
-         (md5(org || ':seed:ltgroup:duty')::uuid, org, 'תפקיד', 3, owner_id, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:ltgroup:home'), org, 'יציאות', 1, owner_id, owner_id),
+         (pg_temp.seed_id(org || ':seed:ltgroup:health'), org, 'בריאות', 2, owner_id, owner_id),
+         (pg_temp.seed_id(org || ':seed:ltgroup:duty'), org, 'תפקיד', 3, owner_id, owner_id)
   ON CONFLICT DO NOTHING;
   FOR i IN 1..array_length(leave_kinds, 1) LOOP
     INSERT INTO leave_types (id, organization_id, group_id, name, color_key, icon_key, availability_effect,
                              requires_reason, sort_order, created_by, updated_by)
-    VALUES (md5(org || ':seed:ltype:' || i)::uuid, org, md5(org || ':seed:ltgroup:' || leave_kinds[i][6])::uuid,
+    VALUES (pg_temp.seed_id(org || ':seed:ltype:' || i), org, pg_temp.seed_id(org || ':seed:ltgroup:' || leave_kinds[i][6]),
             leave_kinds[i][1], leave_kinds[i][2], leave_kinds[i][3], leave_kinds[i][4], leave_kinds[i][5]::boolean,
             i, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
@@ -157,27 +168,27 @@ BEGIN
 
   -- Two rotations on the company: one that ended, and the current one.
   INSERT INTO deployments (id, organization_id, name, unit_id, start_date, end_date, created_by, updated_by)
-  VALUES (md5(org || ':seed:dep:past')::uuid, org, 'סבב קיץ', md5(org || ':seed:unit:company')::uuid,
+  VALUES (pg_temp.seed_id(org || ':seed:dep:past'), org, 'סבב קיץ', pg_temp.seed_id(org || ':seed:unit:company'),
           anchor - 63, anchor - 15, owner_id, owner_id),
-         (md5(org || ':seed:dep:current')::uuid, org, 'סבב סתיו', md5(org || ':seed:unit:company')::uuid,
+         (pg_temp.seed_id(org || ':seed:dep:current'), org, 'סבב סתיו', pg_temp.seed_id(org || ':seed:unit:company'),
           anchor - 14, anchor + 69, owner_id, owner_id)
   ON CONFLICT DO NOTHING;
 
   -- The owner joins the company and both rotations, unless the owner already has a primary unit.
   IF NOT EXISTS (SELECT 1 FROM unit_memberships WHERE soldier_id = owner_id AND membership_type = 'primary') THEN
     INSERT INTO unit_memberships (id, organization_id, soldier_id, unit_id, membership_type, valid_from, created_by, updated_by)
-    VALUES (md5(org || ':seed:membership:owner')::uuid, org, owner_id, md5(org || ':seed:unit:company')::uuid,
+    VALUES (pg_temp.seed_id(org || ':seed:membership:owner'), org, owner_id, pg_temp.seed_id(org || ':seed:unit:company'),
             'primary', anchor - 63, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
   END IF;
   INSERT INTO deployment_members (deployment_id, soldier_id, organization_id, created_by)
-  VALUES (md5(org || ':seed:dep:past')::uuid, owner_id, org, owner_id),
-         (md5(org || ':seed:dep:current')::uuid, owner_id, org, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:dep:past'), owner_id, org, owner_id),
+         (pg_temp.seed_id(org || ':seed:dep:current'), owner_id, org, owner_id)
   ON CONFLICT DO NOTHING;
 
   -- Soldiers, their private rows, memberships, tags and rotation memberships.
   FOR i IN 1..60 LOOP
-    sid := md5(org || ':seed:soldier:' || i)::uuid;
+    sid := pg_temp.seed_id(org || ':seed:soldier:' || i);
     IF i <= 6 THEN
       unit_key := 'hq';
       rank_key := CASE WHEN i = 1 THEN '2' ELSE '6' END;
@@ -192,38 +203,38 @@ BEGIN
       END IF;
     END IF;
     INSERT INTO soldiers (id, organization_id, first_name, last_name, command_rank_id, created_by, updated_by)
-    VALUES (sid, org, first_names[i], last_names[i], md5(org || ':seed:rank:' || rank_key)::uuid, owner_id, owner_id)
+    VALUES (sid, org, first_names[i], last_names[i], pg_temp.seed_id(org || ':seed:rank:' || rank_key), owner_id, owner_id)
     ON CONFLICT DO NOTHING;
     INSERT INTO soldier_private (soldier_id, organization_id, personal_id, updated_by)
     VALUES (sid, org, (9900000 + i)::text, owner_id)
     ON CONFLICT DO NOTHING;
     INSERT INTO unit_memberships (id, organization_id, soldier_id, unit_id, membership_type, valid_from, created_by, updated_by)
-    VALUES (md5(org || ':seed:membership:' || i)::uuid, org, sid, md5(org || ':seed:unit:' || unit_key)::uuid,
+    VALUES (pg_temp.seed_id(org || ':seed:membership:' || i), org, sid, pg_temp.seed_id(org || ':seed:unit:' || unit_key),
             'primary', anchor - 63, owner_id, owner_id)
     ON CONFLICT DO NOTHING;
     IF i % 7 = 0 OR i % 11 = 0 THEN
       INSERT INTO soldier_tags (soldier_id, tag_id, organization_id, created_by)
-      VALUES (sid, md5(org || ':seed:tag:skill:' || (i % 4 + 1))::uuid, org, owner_id)
+      VALUES (sid, pg_temp.seed_id(org || ':seed:tag:skill:' || (i % 4 + 1)), org, owner_id)
       ON CONFLICT DO NOTHING;
     END IF;
     INSERT INTO soldier_tags (soldier_id, tag_id, organization_id, created_by)
-    VALUES (sid, md5(org || ':seed:tag:shift:' || (i % 2 + 1))::uuid, org, owner_id)
+    VALUES (sid, pg_temp.seed_id(org || ':seed:tag:shift:' || (i % 2 + 1)), org, owner_id)
     ON CONFLICT DO NOTHING;
     INSERT INTO deployment_members (deployment_id, soldier_id, organization_id, created_by)
-    VALUES (md5(org || ':seed:dep:past')::uuid, sid, org, owner_id),
-           (md5(org || ':seed:dep:current')::uuid, sid, org, owner_id)
+    VALUES (pg_temp.seed_id(org || ':seed:dep:past'), sid, org, owner_id),
+           (pg_temp.seed_id(org || ':seed:dep:current'), sid, org, owner_id)
     ON CONFLICT DO NOTHING;
   END LOOP;
 
   -- Leaves: in each rotation, one leave in each third of it, so a soldier's leaves never overlap.
   -- Leaves already behind the organization's first week are settled; those ahead are a mix of requests.
   FOR i IN 1..60 LOOP
-    sid := md5(org || ':seed:soldier:' || i)::uuid;
+    sid := pg_temp.seed_id(org || ':seed:soldier:' || i);
     -- The reviewer: the platoon commander for platoon soldiers, the deputy for the HQ and the platoon commanders.
     IF i <= 7 OR (i - 7) % 18 = 0 THEN
-      reviewer := md5(org || ':seed:soldier:1')::uuid;
+      reviewer := pg_temp.seed_id(org || ':seed:soldier:1');
     ELSE
-      reviewer := md5(org || ':seed:soldier:' || (7 + ((i - 7) / 18) * 18))::uuid;
+      reviewer := pg_temp.seed_id(org || ':seed:soldier:' || (7 + ((i - 7) / 18) * 18));
     END IF;
     IF i = 1 THEN
       reviewer := owner_id;
@@ -246,11 +257,11 @@ BEGIN
         ELSE
           l_status := CASE WHEN (i + k) % 3 = 0 THEN 'pending' WHEN (i + k) % 19 = 0 THEN 'rejected' ELSE 'approved' END;
         END IF;
-        l_id := md5(org || ':seed:leave:' || dep_key || ':' || i || ':' || k)::uuid;
+        l_id := pg_temp.seed_id(org || ':seed:leave:' || dep_key || ':' || i || ':' || k);
         created_ts := (l_start - 10)::timestamp AT TIME ZONE 'UTC' + make_interval(hours => 8 + i % 10);
         INSERT INTO leaves (id, organization_id, soldier_id, leave_type_id, deployment_id, start_date, end_date, status,
                             reason, reviewed_by, reviewed_at, created_at, created_by, updated_at, updated_by)
-        VALUES (l_id, org, sid, md5(org || ':seed:ltype:' || l_type)::uuid, md5(org || ':seed:dep:' || dep_key)::uuid,
+        VALUES (l_id, org, sid, pg_temp.seed_id(org || ':seed:ltype:' || l_type), pg_temp.seed_id(org || ':seed:dep:' || dep_key),
                 l_start, l_start + l_len - 1, l_status,
                 CASE WHEN leave_kinds[l_type][5]::boolean THEN
                   (ARRAY['אירוע משפחתי','תור לרופא','בדיקות','חתונה של אח'])[(i + k) % 4 + 1] END,
@@ -263,17 +274,17 @@ BEGIN
         -- The history, written once: the request, then the decision.
         IF NOT EXISTS (SELECT 1 FROM leave_events WHERE leave_id = l_id) THEN
           INSERT INTO leave_events (id, organization_id, leave_id, actor_id, event_type, from_status, to_status, created_at)
-          VALUES (md5(org || ':seed:event:' || l_id || ':1')::uuid, org, l_id, sid, 'created', NULL, 'pending', created_ts);
+          VALUES (pg_temp.seed_id(org || ':seed:event:' || l_id || ':1'), org, l_id, sid, 'created', NULL, 'pending', created_ts);
           IF l_status <> 'pending' THEN
             INSERT INTO leave_events (id, organization_id, leave_id, actor_id, event_type, from_status, to_status, created_at)
-            VALUES (md5(org || ':seed:event:' || l_id || ':2')::uuid, org, l_id,
+            VALUES (pg_temp.seed_id(org || ':seed:event:' || l_id || ':2'), org, l_id,
                     CASE WHEN l_status = 'cancelled' THEN sid ELSE reviewer END,
                     l_status, 'pending', l_status, created_ts + interval '1 day');
           END IF;
         END IF;
         IF (i + k) % 8 = 0 THEN
           INSERT INTO leave_comments (id, organization_id, leave_id, author_id, body, visibility, created_at)
-          VALUES (md5(org || ':seed:comment:' || l_id)::uuid, org, l_id, reviewer,
+          VALUES (pg_temp.seed_id(org || ':seed:comment:' || l_id), org, l_id, reviewer,
                   CASE WHEN l_status = 'rejected' THEN 'לא מתאפשר, המחלקה בכוננות באותו שבוע'
                        ELSE 'מאושר, לחזור עד 10:00' END,
                   'shared', created_ts + interval '1 day')
@@ -285,11 +296,11 @@ BEGIN
 
   -- Roles: a commander sees and decides the leaves of the soldiers under them; a soldier asks for their own.
   INSERT INTO roles (id, organization_id, name, description, color_key, created_by, updated_by)
-  VALUES (md5(org || ':seed:role:commander')::uuid, org, 'מפקד', 'רואה ומאשר בקשות של הכפופים', 'amber', owner_id, owner_id),
-         (md5(org || ':seed:role:soldier')::uuid, org, 'חייל', 'מבקש יציאות לעצמו', 'gray', owner_id, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:role:commander'), org, 'מפקד', 'רואה ומאשר בקשות של הכפופים', 'amber', owner_id, owner_id),
+         (pg_temp.seed_id(org || ':seed:role:soldier'), org, 'חייל', 'מבקש יציאות לעצמו', 'gray', owner_id, owner_id)
   ON CONFLICT DO NOTHING;
   INSERT INTO role_permissions (role_id, organization_id, resource, action)
-  SELECT md5(org || ':seed:role:commander')::uuid, org, p[1], p[2]
+  SELECT pg_temp.seed_id(org || ':seed:role:commander'), org, p[1], p[2]
     FROM (VALUES (ARRAY['soldiers','view']), (ARRAY['memberships','view']), (ARRAY['deployments','view']),
                  (ARRAY['tags','view']), (ARRAY['leave_types','view']), (ARRAY['leaves','view']),
                  (ARRAY['leaves','create']), (ARRAY['leaves','update']), (ARRAY['leaves','approve']),
@@ -297,7 +308,7 @@ BEGIN
                  (ARRAY['internal_comments','view']), (ARRAY['internal_comments','create'])) AS v(p)
   ON CONFLICT DO NOTHING;
   INSERT INTO role_permissions (role_id, organization_id, resource, action)
-  SELECT md5(org || ':seed:role:soldier')::uuid, org, p[1], p[2]
+  SELECT pg_temp.seed_id(org || ':seed:role:soldier'), org, p[1], p[2]
     FROM (VALUES (ARRAY['soldiers','view']), (ARRAY['leave_types','view']), (ARRAY['leaves','view']),
                  (ARRAY['leaves','create']), (ARRAY['leave_comments','view']),
                  (ARRAY['leave_comments','create'])) AS v(p)
@@ -305,32 +316,32 @@ BEGIN
   -- The deputy reaches the whole company (one step up from the HQ); platoon and squad commanders reach their unit.
   INSERT INTO rank_role_bindings (id, organization_id, command_rank_id, role_id, anchor_type, anchor_steps,
                                   include_descendants, subject_rank_constraint, created_by, updated_by)
-  VALUES (md5(org || ':seed:binding:2')::uuid, org, md5(org || ':seed:rank:2')::uuid,
-          md5(org || ':seed:role:commander')::uuid, 'home_ancestor_steps', 1, true, 'junior', owner_id, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:binding:2'), org, pg_temp.seed_id(org || ':seed:rank:2'),
+          pg_temp.seed_id(org || ':seed:role:commander'), 'home_ancestor_steps', 1, true, 'junior', owner_id, owner_id)
   ON CONFLICT DO NOTHING;
   FOR i IN 3..5 LOOP
     INSERT INTO rank_role_bindings (id, organization_id, command_rank_id, role_id, anchor_type, include_descendants,
                                     subject_rank_constraint, created_by, updated_by)
-    VALUES (md5(org || ':seed:binding:' || i)::uuid, org, md5(org || ':seed:rank:' || i)::uuid,
-            md5(org || ':seed:role:commander')::uuid, 'home_unit', true, 'junior', owner_id, owner_id)
+    VALUES (pg_temp.seed_id(org || ':seed:binding:' || i), org, pg_temp.seed_id(org || ':seed:rank:' || i),
+            pg_temp.seed_id(org || ':seed:role:commander'), 'home_unit', true, 'junior', owner_id, owner_id)
     ON CONFLICT DO NOTHING;
   END LOOP;
   INSERT INTO rank_role_bindings (id, organization_id, command_rank_id, role_id, anchor_type, created_by, updated_by)
-  VALUES (md5(org || ':seed:binding:6')::uuid, org, md5(org || ':seed:rank:6')::uuid,
-          md5(org || ':seed:role:soldier')::uuid, 'self', owner_id, owner_id)
+  VALUES (pg_temp.seed_id(org || ':seed:binding:6'), org, pg_temp.seed_id(org || ':seed:rank:6'),
+          pg_temp.seed_id(org || ':seed:role:soldier'), 'self', owner_id, owner_id)
   ON CONFLICT DO NOTHING;
 
   -- Two soft availability rules for the current rotation.
   INSERT INTO availability_rules (id, organization_id, name, description, enforcement, scope_unit_id, scope_mode,
                                   population_filter, metric, min_value, deployment_id, created_by, updated_by)
-  VALUES (md5(org || ':seed:rule:platoons')::uuid, org, '70% בכל מחלקה', 'בכל יום לפחות 70% מכל מחלקה בבסיס',
-          'soft', md5(org || ':seed:unit:company')::uuid, 'each_child', '{}'::jsonb, 'percent', 70,
-          md5(org || ':seed:dep:current')::uuid, owner_id, owner_id),
-         (md5(org || ':seed:rule:medics')::uuid, org, 'חובש אחד לפחות', 'בכל יום לפחות חובש אחד בפלוגה',
-          'soft', md5(org || ':seed:unit:company')::uuid, 'unit_tree',
+  VALUES (pg_temp.seed_id(org || ':seed:rule:platoons'), org, '70% בכל מחלקה', 'בכל יום לפחות 70% מכל מחלקה בבסיס',
+          'soft', pg_temp.seed_id(org || ':seed:unit:company'), 'each_child', '{}'::jsonb, 'percent', 70,
+          pg_temp.seed_id(org || ':seed:dep:current'), owner_id, owner_id),
+         (pg_temp.seed_id(org || ':seed:rule:medics'), org, 'חובש אחד לפחות', 'בכל יום לפחות חובש אחד בפלוגה',
+          'soft', pg_temp.seed_id(org || ':seed:unit:company'), 'unit_tree',
           jsonb_build_object('where', jsonb_build_object('kind', 'tag', 'match', 'any',
-            'tag_ids', jsonb_build_array(md5(org || ':seed:tag:skill:1')::uuid))),
-          'count', 1, md5(org || ':seed:dep:current')::uuid, owner_id, owner_id)
+            'tag_ids', jsonb_build_array(pg_temp.seed_id(org || ':seed:tag:skill:1')))),
+          'count', 1, pg_temp.seed_id(org || ':seed:dep:current'), owner_id, owner_id)
   ON CONFLICT DO NOTHING;
 
   RAISE NOTICE 'seed-staging: organization % seeded', org;
