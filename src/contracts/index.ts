@@ -30,6 +30,7 @@ export {
 } from './entities/soldiers'
 export {
   AccountLinkRequest,
+  PUSH_SERVICE_HOSTS,
   PushEndpoint,
   PushSubscriptionRecord,
   SoldierAccount,

@@ -322,7 +322,7 @@ am = amends, ref = refines, ext = extends.
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
-| D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | |
+| D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | ext D-360 |
 | D-352 | In-app updates on "שלי" are derived from the events and the shared comments; only the seen time is stored | contracts, domain, data, logic, ui | |
 | D-353 | The service worker is built with `injectManifest` in `app`, and holds the push handlers | app, tooling | |
 | D-354 | Push dispatch runs after the commit, best effort, from the gateway only | data, config, backend | |
@@ -331,6 +331,7 @@ am = amends, ref = refines, ext = extends.
 | D-357 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-359 |
 | D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
+| D-360 | A push endpoint must belong to a known browser push service | contracts, data | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4846,3 +4847,18 @@ at once, on every device.
   its own, and the i18n check refuses keys that nothing reads.
 **Why:** the notification must say what happened without opening the app, in the app's language, and the worker
 is the only code running when it arrives.
+
+## D-360 — A push endpoint must belong to a known browser push service
+
+2026-11-13 · accepted · extends D-351 · decided under D-170
+- `PushEndpoint` accepts an https URL on a push service the browsers use, and nothing else: `fcm.googleapis.com`
+  (Chrome, Android, Opera, Samsung), `updates.push.services.mozilla.com` (Firefox), any host under `push.apple.com`
+  (Safari) and any host under `notify.windows.com` (Edge on Windows). The list is the contract's vocabulary
+  `PUSH_SERVICE_HOSTS`, exact hosts and parent domains apart.
+- The gateway posts to the stored endpoint with the server's VAPID signature, so an endpoint the caller chooses would
+  let any linked soldier make the server call any https address (server-side request forgery). The command refuses
+  such an endpoint with `invalid_input`, like one that is not https.
+- A browser that answers with another host is offered no switch: the app takes the subscription back, as for any
+  install the contract refuses (D-356).
+- A new browser push service is one line in the vocabulary.
+**Why:** the server must only ever call the push services, whatever a caller sends.

@@ -287,7 +287,7 @@ CREATE TABLE IF NOT EXISTS "push_subscriptions" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
 	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id"),
-	"endpoint" VARCHAR(2048) NOT NULL,               -- https only, checked by contracts PushEndpoint
+	"endpoint" VARCHAR(2048) NOT NULL,               -- https on a known push service, checked by contracts PushEndpoint (D-360)
 	"p256dh" VARCHAR(200) NOT NULL,
 	"auth" VARCHAR(100) NOT NULL,
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

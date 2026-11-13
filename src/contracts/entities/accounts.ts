@@ -60,8 +60,28 @@ export function pushKey(max: number) {
   return varchar(max).regex(/^[A-Za-z0-9_-]+=*$/)
 }
 
-/** The push service URL of one browser install: https only (D-351). */
-export const PushEndpoint = z.url({ protocol: /^https$/ }).max(2048)
+/**
+ * The push services the browsers use (D-360): exact hosts, and parent domains whose every host is the service's.
+ * The server posts to an endpoint, so one elsewhere is refused.
+ */
+export const PUSH_SERVICE_HOSTS = {
+  exact: ['fcm.googleapis.com', 'updates.push.services.mozilla.com'],
+  parents: ['push.apple.com', 'notify.windows.com'],
+} as const
+
+function onPushService(url: string): boolean {
+  const { hostname } = new URL(url)
+  return (
+    PUSH_SERVICE_HOSTS.exact.some((host) => hostname === host) ||
+    PUSH_SERVICE_HOSTS.parents.some((parent) => hostname.endsWith(`.${parent}`))
+  )
+}
+
+/** The push service URL of one browser install: https only, on a known push service (D-351, D-360). */
+export const PushEndpoint = z
+  .url({ protocol: /^https$/ })
+  .max(2048)
+  .refine(onPushService, { message: 'not a browser push service' })
 export type PushEndpoint = z.infer<typeof PushEndpoint>
 
 /**

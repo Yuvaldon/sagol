@@ -8,6 +8,7 @@ import {
   OrganizationSettings,
   PERMISSION_ACTIONS_BY_RESOURCE,
   Permission,
+  PushEndpoint,
   PermissionAction,
   PermissionCheck,
   PermissionResource,
@@ -295,6 +296,31 @@ describe('FilterExpression', () => {
     ]
     for (const where of invalid) {
       expect(FilterExpression.safeParse({ where }).success).toBe(false)
+    }
+  })
+})
+
+describe('PushEndpoint (D-360)', () => {
+  it('accepts the browsers push services', () => {
+    for (const url of [
+      'https://fcm.googleapis.com/fcm/send/abc',
+      'https://updates.push.services.mozilla.com/wpush/v2/abc',
+      'https://web.push.apple.com/abc',
+      'https://wns2-db5p.notify.windows.com/w/?token=abc',
+    ]) {
+      expect(PushEndpoint.safeParse(url).success).toBe(true)
+    }
+  })
+
+  it('refuses any other host, a look-alike, and plain http', () => {
+    for (const url of [
+      'https://internal.example.test/hook',
+      'https://evilpush.apple.com/abc',
+      'https://fcm.googleapis.com.example.test/abc',
+      'https://push.apple.com.example.test/abc',
+      'http://fcm.googleapis.com/fcm/send/abc',
+    ]) {
+      expect(PushEndpoint.safeParse(url).success).toBe(false)
     }
   })
 })
