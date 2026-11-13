@@ -12,11 +12,15 @@ import {
 import { z } from 'zod'
 import { createChangeFeed } from '../local/changes'
 import type { LocalDataAdapter } from '../local/core'
+import { LiveMessage } from '../server/live'
+import { realtimeListener, type LiveListener } from './live'
 
 // The remote adapter (D-204): every call is one POST to the command gateway (D-201), which runs
 // the same adapter core on the server. Nothing is decided here: the server derives the actor from
 // the access token and answers every check. The client only carries the call and the answer, and
 // publishes what the answer says changed to its change feed, which also reaches the other tabs.
+// Writes made on other devices arrive as live announcements of the tables they changed (D-347),
+// which go to the same feed, so the screens read those tables again.
 
 /** The adapter's groups and methods are the local adapter's (D-076): what exists on one exists on the other. */
 export type RemoteDataAdapter = LocalDataAdapter
@@ -120,12 +124,38 @@ function groupsOf<T>(kind: string, table: Readonly<Record<string, Readonly<Recor
   return Object.fromEntries(groups) as T
 }
 
+const ALL_TABLES = Object.keys(TABLE_SCHEMAS) as TableName[]
+
 export function createRemoteDataAdapter(
   { url, apiKey, identity, accessToken, fetch }: RemoteAdapterDependencies,
   channel: string = CHANGE_FEED_CHANNEL,
+  listen: LiveListener = realtimeListener({ url, apiKey, accessToken }),
 ): RemoteDataAdapter {
   const changes = createChangeFeed(channel)
   const endpoint = new URL(REMOTE.commandsPath, url)
+  /** Names this adapter in the announcements of its own writes, which it has already published. */
+  const origin = crypto.randomUUID()
+  const publishTables = (tables: readonly TableName[]) => changes.publish(tables.map((table) => ({ table, ids: [] })))
+
+  // The live topic follows the latest session answer: the linked organization's, or none.
+  let topic: string | null = null
+  let stopListening: Unsubscribe = () => undefined
+  function follow(session: Session): void {
+    const next = session.status === 'linked' ? session.organization_id : null
+    if (next === topic) return
+    stopListening()
+    stopListening = () => undefined
+    topic = next
+    if (next === null) return
+    stopListening = listen(
+      next,
+      (payload) => {
+        const message = LiveMessage.safeParse(payload)
+        if (message.success && message.data.origin !== origin) publishTables(message.data.tables)
+      },
+      () => publishTables(ALL_TABLES),
+    )
+  }
 
   const call: Call = async (kind, group, method, args) => {
     let response: Response
@@ -136,6 +166,7 @@ export function createRemoteDataAdapter(
         headers: {
           'content-type': 'application/json',
           apikey: apiKey,
+          [REMOTE.originHeader]: origin,
           ...(token === null ? {} : { authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({ kind, group, method, args }),
@@ -161,7 +192,11 @@ export function createRemoteDataAdapter(
     return answer.data.result
   }
 
-  const current = () => call('session', 'session', 'current', []) as Promise<Result<Session>>
+  const current = async () => {
+    const result = (await call('session', 'session', 'current', [])) as Result<Session>
+    if (result.ok) follow(result.value)
+    return result
+  }
 
   return {
     session: {

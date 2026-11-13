@@ -78,6 +78,8 @@ async function createHarness(): Promise<ContractHarness> {
       fetch: transport.fetch,
     },
     `contract-remote-${String(harnesses)}`,
+    // No Realtime server here: live changes are covered by `live.dbtest.ts` and the adapter's unit tests.
+    () => () => undefined,
   )
   const store = createPostgresStore(clientOf(sql), catalog)
   return {
