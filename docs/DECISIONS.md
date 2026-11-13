@@ -263,7 +263,7 @@ am = amends, ref = refines, ext = extends.
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | sup D-311 (sort placement) |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
-| D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | |
+| D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302 |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | |
@@ -276,7 +276,7 @@ am = amends, ref = refines, ext = extends.
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
-| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | |
+| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303 |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
@@ -284,13 +284,15 @@ am = amends, ref = refines, ext = extends.
 | D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
 | D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
 | D-301 | Focus mode | config, i18n, ui, e2e | |
+| D-302 | A leave batch, a set of copies and a report's window are bounded by config, checked in the command | config, data, logic | |
+| D-303 | A rotation report's summary counts the sections outside the owner's view, without naming them | contracts, data, logic, i18n, ui | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301 |
 | D-312 | Filtering is a rule builder | logic, i18n, ui | |
 | D-313 | Several sorts, in order | config, logic, i18n, ui | |
 | D-314 | A filter chip's remove is a plain × | ui | |
 | D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | |
-| D-316 | The leave-round planner as built: groups take turns, one collective leave, bounded by config | config, domain, logic, i18n, ui | |
+| D-316 | The leave-round planner as built: groups take turns, one collective leave, bounded by config | config, domain, logic, i18n, ui | D-302 |
 | D-317 | Rounds that overlap stack on the timeline; a rotation's creator sees close and reopen; rotation copies stay per soldier | logic, ui | |
 | D-318 | The unit tree reads as a list or as a chart, remembered per device; the chart takes the drawer's whole width | config, i18n, ui | |
 | D-319 | The chart's layout and its pan and zoom | config, logic, ui | |
@@ -4079,6 +4081,33 @@ before anything is touched. Production gains nothing and loses nothing.
 
 **Why:** a commander reading the board on a phone wants every row the screen can hold; one way in and one way out,
 both by touch and by keyboard, keep the hidden strips one step away.
+
+## D-302 — A leave batch, a set of copies and a report's window are bounded by config, checked in the command
+2026-11-13 · accepted · extends D-275 · refines D-293, D-316 · A8 fixes · decided under the owner's autonomy instruction of 2026-11-11
+- **The bounds are config values,** as D-275's sheet is: `LEAVE_BATCH.maxLeaves` (500) for one collective leave or one
+  set of copies, and `DAY_REPORT.maxSpanDays` for the window of the confirmable reports and of the section count
+  (D-303). The planner's `LEAVE_ROUNDS.maxLeaves` stays within the batch's, and a unit test holds it there.
+- **The command checks them,** before it reads a row, as `createMany` does: contracts cannot read config, so the
+  contract keeps only its shape. A batch or copies past the bound fail validation with `too_big` on `leaves` or
+  `copies`; a window past the span, with `too_big` on `window.end_date`. The server runs the same commands (8.1), so
+  no path skips the bound (rule 4).
+- **The forms say it first:** the collective and copy forms show `too_big` on the soldiers before anything is sent.
+**Why:** an unbounded batch or window lets one request write or read without limit; the sheet already had its bound,
+and the same rule now holds for every way leaves are created and every report window read (OI-265, OI-269).
+
+## D-303 — A rotation report's summary counts the sections outside the owner's view, without naming them
+2026-11-13 · accepted · refines D-293 · A8 fixes · decided under the owner's autonomy instruction of 2026-11-11
+- **The count.** `report_confirmations.sections` answers, per date, how many unit sections the rotations' reports hold
+  on the whole tree: the units whose active soldiers have them as their primary unit on the date, under a rotation that
+  runs that day. Only rotations whose summary the actor reads count: the named report owner, or with none named, who
+  may confirm the rotation's unit's report (D-293). Its window is bounded (D-302).
+- **A count only.** The answer names no unit and no soldier, so nothing outside the actor's view is revealed beyond
+  how many sections there are.
+- **The summary** keeps "N of M confirmed" on the sections the actor sees, and adds "יחידות מחוץ לתצוגה שלך: K", the
+  tree's count less the covered sections in view, when it is above zero.
+**Why:** an owner who does not view every unit under the rotation read a partial count with no sign that units were
+missing (OI-257). Naming the hidden units would widen the view past the permissions; the count alone tells the owner
+to ask who sees them.
 
 ## D-310 — The heat row always sits above the soldiers; the preference is gone
 2026-11-12 · accepted · supersedes D-173's `rules_row_placement` and D-253's "where the rules row sits" · V33 · decided under D-170
