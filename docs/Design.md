@@ -144,7 +144,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   and the "+".
 - **The quick action (D-252, D-266, D-296):** a filled round button at the destination strip's inline end, by mode:
   "בקשה חדשה" for who may request leave for themselves while a rotation is current or upcoming; "פתיחת סבב" in routine
-  for who may create a rotation ("הגדרת מבנה היחידות" while the unit has no units); none otherwise. It replaced the
+  for who may create a rotation; none otherwise (the root unit always exists, D-315, so there is no action to found the
+  tree). It replaced the
   floating "+". The routine band above the board only states the mode, in a neutral tone.
 - **ניהול יחידה (D-173, D-254):** "ניהול", the last destination, opens a `glass-drawer` panel from the inline start (the
   right), at most `sheet` wide, as tall as its rows up to the screen and scrolling past it (D-278), on every screen. It
@@ -317,7 +318,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   מחדש". Status and the tally are read on the whole unit, filter or not; while the view filter hides some of a
   section's soldiers, the button gives way to a muted line that confirming needs the full list. Above the count tiles,
   the report owner (or, with none named, whoever may confirm) reads "N אומתו מתוך M"
-  and, when some changed, "השתנו מאז: K". The copy stays one consolidated message. The rotation form takes an optional
+  and, when some changed, "השתנו מאז: K"; when the rotation covers units outside the reader's view,
+  "יחידות מחוץ לתצוגה שלך: K", a count only (D-303). The copy stays one consolidated message. The rotation form takes an optional
   "אחראי דוח 1" from the active soldiers.
 
 ## The rotation-centric workspace (V19, D-216 … D-220)
@@ -326,7 +328,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   label names the rotation: the dates say it, and the range menu's "סבב שלם" is a single item or, with more than one
   rotation, a short list by start.
 - With no rotation in scope the viewport shows "אין סבב פעיל": "פתיחת סבב" for whoever may create one, otherwise one
-  line saying the commander opens it; before any unit exists, "הגדרת מבנה היחידות" for whoever may found the tree. The dates, view switcher, filters, new-request button, inbox and "my requests"
+  line saying the commander opens it. The dates, view switcher, filters, new-request button, inbox and "my requests"
   are gone; the permanent modules stay.
 - The request forms pick the rotation that holds the soldier on those dates. Creating a rotation opens its members
   editor, which starts with the unit's soldiers.

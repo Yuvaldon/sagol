@@ -13,12 +13,11 @@ const CENTERED = 'flex h-full items-center justify-center px-lg'
 
 /**
  * Routine (D-257, D-296): a quiet band that names the mode and what opens it, with no action of its own; the quick
- * action in the bottom strip opens a rotation, or the unit structure first.
+ * action in the bottom strip opens a rotation.
  */
 function RoutineBand() {
   const action = useQuickAction()
-  const bodyKey =
-    action === 'found_units' ? 'deployments.emptyNoUnits' : action === 'open_rotation' ? 'workspace.routineOpenBody' : 'workspace.noRotationBody'
+  const bodyKey = action === 'open_rotation' ? 'workspace.routineOpenBody' : 'workspace.noRotationBody'
   return (
     <section
       aria-labelledby="routine-band"

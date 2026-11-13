@@ -1,6 +1,8 @@
+import { LEAVE_BATCH } from '@config'
 import {
   CreateLeaveBatchInput,
   DuplicateLeaveInput,
+  IssueCode,
   LeaveBatchId,
   LeaveId,
   type AvailabilityRuleId,
@@ -19,6 +21,11 @@ import type { RequestRotation } from './rotation'
 
 // A collective leave (D-012, D-179): one batch, the same type, dates and details for every soldier chosen, created
 // together or not at all (D-049). And a leave's copies (`leaves.duplicate`): other soldiers, other dates. Pure.
+
+/** The command's limit on the leaves it creates, on the soldier choice: the server refuses past it (D-302). */
+function countIssues(soldierIds: readonly SoldierId[]): Issue[] {
+  return soldierIds.length > LEAVE_BATCH.maxLeaves ? [{ path: ['soldier_ids'], code: IssueCode.enum.too_big }] : []
+}
 
 /**
  * A row's issue on the form's field: every row carries the same fields, so it is reported once. An empty list is the
@@ -94,7 +101,12 @@ export function leaveBatchIssues(
   const rotationIssues = rotation.issues.map((issue) =>
     issue.path[0] === 'soldier_id' ? { ...issue, path: ['soldier_ids'] } : issue,
   )
-  return [...fieldIssues, ...(type === null ? [] : leaveReasonIssues(type, optionalText(values.reason))), ...rotationIssues]
+  return [
+    ...fieldIssues,
+    ...countIssues(values.soldier_ids),
+    ...(type === null ? [] : leaveReasonIssues(type, optionalText(values.reason))),
+    ...rotationIssues,
+  ]
 }
 
 export function toCreateLeaveBatchInput(
@@ -136,7 +148,7 @@ function duplicateInput(source: Leave, values: DuplicateLeaveValues, acknowledge
 
 /** The schema's codes, a copy's on the form's field (D-068). */
 export function duplicateLeaveIssues(source: Leave, values: DuplicateLeaveValues): Issue[] {
-  return onFormFields(formIssues(DuplicateLeaveInput, duplicateInput(source, values)), 'copies')
+  return [...onFormFields(formIssues(DuplicateLeaveInput, duplicateInput(source, values)), 'copies'), ...countIssues(values.soldier_ids)]
 }
 
 export function toDuplicateLeaveInput(

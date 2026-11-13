@@ -1,4 +1,4 @@
-import { LEAVE_SHEET } from '@config'
+import { LEAVE_BATCH, LEAVE_SHEET } from '@config'
 import type { Store } from './store'
 import {
   CreateLeaveBatchInput,
@@ -148,6 +148,8 @@ export function createLeaveCreationCommands(
     createBatch: (raw) =>
       asResult(async () => {
         const input = parseInput(CreateLeaveBatchInput, raw)
+        // A batch's limit, as its input's shape: checked before any row is read (D-302).
+        if (input.leaves.length > LEAVE_BATCH.maxLeaves) failValidation([{ path: ['leaves'], code: IssueCode.enum.too_big }])
         const result = await database.transaction('rw', CREATION_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const batch = parsedRow('leave_batches', {
@@ -223,6 +225,7 @@ export function createLeaveCreationCommands(
     duplicate: (raw) =>
       asResult(async () => {
         const input = parseInput(DuplicateLeaveInput, raw)
+        if (input.copies.length > LEAVE_BATCH.maxLeaves) failValidation([{ path: ['copies'], code: IssueCode.enum.too_big }])
         const result = await database.transaction('rw', CREATION_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
           const source = await visibleLeave(database, scope, input.leave_id)

@@ -154,7 +154,6 @@ export const dictionary = {
     noRotationBody: 'המפקד פותח את הסבב, ואז אפשר להגיש בקשות.',
     routineOpenBody: 'בקשות יציאה ודוח היום נפתחים עם הסבב.',
     openRotation: 'פתיחת סבב',
-    foundUnits: 'הגדרת מבנה היחידות',
     sort: 'מיון',
     sortBy: 'מיון לפי',
     sortKeys: {
@@ -586,6 +585,7 @@ export const dictionary = {
     summaryConfirmed: 'אומתו',
     summaryOf: 'מתוך',
     summaryChanged: 'השתנו מאז:',
+    summaryUnseen: 'יחידות מחוץ לתצוגה שלך:',
     confirmNeedsFullList: 'הסינון מסתיר חלק מהחיילים כאן. כדי לאמת, צריך לנקות את הסינון ולראות את הרשימה המלאה.',
   },
   leaves: {

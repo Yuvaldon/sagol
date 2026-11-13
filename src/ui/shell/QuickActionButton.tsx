@@ -1,7 +1,7 @@
 import { NEW_ENTITY, PANEL_IDS, TOOLTIP } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { usePanel, useQuickAction, type QuickAction } from '@logic'
-import { CalendarPlus, Network, Plus, type LucideIcon } from 'lucide-react'
+import { CalendarPlus, Plus, type LucideIcon } from 'lucide-react'
 import { Button as AriaButton, TooltipTrigger } from 'react-aria-components'
 import { NameTooltip } from '../primitives/Button'
 
@@ -11,7 +11,6 @@ import { NameTooltip } from '../primitives/Button'
 const ACTIONS = {
   new_leave: { Icon: Plus, labelKey: 'leaves.new', panel: PANEL_IDS.leaves },
   open_rotation: { Icon: CalendarPlus, labelKey: 'workspace.openRotation', panel: PANEL_IDS.deployments },
-  found_units: { Icon: Network, labelKey: 'workspace.foundUnits', panel: PANEL_IDS.units },
 } as const satisfies Record<QuickAction, { readonly Icon: LucideIcon; readonly labelKey: I18nKey; readonly panel: string }>
 
 export function QuickActionButton() {

@@ -180,7 +180,7 @@ function UnitSection({
   )
 }
 
-/** "N of M confirmed", and how many changed since, for the report's owner. */
+/** "N of M confirmed", how many changed since, and how many units lie outside the view (D-303), for the report's owner. */
 function Summary({ summary }: { readonly summary: ConfirmationSummary }) {
   return (
     <p className="flex flex-wrap gap-x-md text-name font-semibold">
@@ -193,6 +193,11 @@ function Summary({ summary }: { readonly summary: ConfirmationSummary }) {
       {summary.changed === 0 ? null : (
         <span className="text-status-pending-text">
           {t('presence.summaryChanged')} <span className="tabular-nums">{summary.changed}</span>
+        </span>
+      )}
+      {summary.unseen === 0 ? null : (
+        <span className="text-text-muted">
+          {t('presence.summaryUnseen')} <span className="tabular-nums">{summary.unseen}</span>
         </span>
       )}
     </p>

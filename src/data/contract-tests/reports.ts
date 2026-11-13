@@ -3,13 +3,15 @@ import {
   ReportConfirmationId,
   SoldierId,
   UnitId,
+  UnitMembershipId,
   type AuthIdentity,
   type CalendarDate,
   type OrganizationId,
   type Permission,
   type Timestamp,
 } from '@contracts'
-import { compareInstants } from '@domain'
+import { DAY_REPORT } from '@config'
+import { addDays, compareInstants } from '@domain'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
 import { NOW, errorOf, issuesOf, seedActor, valueOf } from './support'
@@ -156,7 +158,119 @@ export function describeReportContract(
           }),
         ),
       ).toEqual([])
+      // The report's span bounds the window (D-302): one day past it is refused before any row is read.
+      const longest = { start_date: DAY, end_date: addDays(DAY, DAY_REPORT.maxSpanDays - 1) }
+      valueOf(await adapter().repositories.report_confirmations.confirmable({ window: longest, unit_ids: [squad.id] }))
+      expect(
+        issuesOf(
+          await adapter().repositories.report_confirmations.confirmable({
+            window: { ...longest, end_date: addDays(longest.end_date, 1) },
+            unit_ids: [squad.id],
+          }),
+        ),
+      ).toEqual([{ path: ['window', 'end_date'], code: 'too_big' }])
       valueOf(await confirm(squad.id, DAY))
+    })
+
+    async function member(unit_id: UnitId, status: 'active' | 'inactive' = 'active') {
+      return valueOf(
+        await adapter().commands.soldiers.create({
+          id: SoldierId.parse(crypto.randomUUID()),
+          first_name: 'Noa',
+          last_name: 'Bar',
+          nickname: null,
+          command_rank_id: null,
+          status,
+          properties: {},
+          private: null,
+          membership: { id: UnitMembershipId.parse(crypto.randomUUID()), unit_id, valid_from: START },
+        }),
+      )
+    }
+
+    it("counts a rotation's sections on the whole tree for who reads its summary (D-303)", async () => {
+      const company = await unit('Company')
+      const squad = await unit('Squad', company.id)
+      const quiet = await unit('Quiet', company.id)
+      const other = await unit('Other')
+      await member(company.id)
+      await member(squad.id)
+      await member(squad.id)
+      await member(quiet.id, 'inactive')
+      await member(other.id)
+      const owned = await rotation(company.id, ownerId)
+      const sections = (deployment_ids: DeploymentId[], window = { start_date: DAY, end_date: OTHER_DAY }) =>
+        adapter().repositories.report_confirmations.sections({ window, deployment_ids })
+      // The company and its squad hold active soldiers; the quiet unit only an inactive one, the other unit is outside.
+      // The owner views every soldier, so no section is outside their view.
+      expect(valueOf(await sections([owned.id]))).toEqual([
+        { report_date: DAY, sections: 2, unseen: 0 },
+        { report_date: OTHER_DAY, sections: 2, unseen: 0 },
+      ])
+      expect(valueOf(await sections([owned.id], { start_date: OUTSIDE, end_date: OUTSIDE }))).toEqual([])
+      expect(valueOf(await sections([]))).toEqual([])
+      expect(
+        issuesOf(await sections([owned.id], { start_date: DAY, end_date: addDays(DAY, DAY_REPORT.maxSpanDays) })),
+      ).toEqual([{ path: ['window', 'end_date'], code: 'too_big' }])
+
+      // Who may confirm the company does not read the summary of a rotation whose owner is another.
+      const companyConfirmer = await seedActor(harnessOf(), organization, [pair('day_reports', 'confirm')], UNIT_SCOPE(company.id))
+      harnessOf().signIn(companyConfirmer.identity)
+      expect(valueOf(await sections([owned.id]))).toEqual([])
+
+      // With no owner named, who may confirm the rotation's unit reads it, and views none of its soldiers here; who may
+      // confirm only a squad does not read it.
+      harnessOf().signIn(owner)
+      const unowned = valueOf(
+        await adapter().commands.deployments.create({
+          id: DeploymentId.parse(crypto.randomUUID()),
+          name: 'Later',
+          unit_id: company.id,
+          start_date: OUTSIDE,
+          end_date: OUTSIDE,
+          report_owner_id: null,
+        }),
+      )
+      const later = { start_date: OUTSIDE, end_date: OUTSIDE }
+      harnessOf().signIn(companyConfirmer.identity)
+      expect(valueOf(await sections([unowned.id], later))).toEqual([{ report_date: OUTSIDE, sections: 2, unseen: 2 }])
+      const squadConfirmer = await seedActor(harnessOf(), organization, [pair('day_reports', 'confirm')], UNIT_SCOPE(squad.id))
+      harnessOf().signIn(squadConfirmer.identity)
+      expect(valueOf(await sections([unowned.id], later))).toEqual([])
+
+      // A named owner whose report lists only the platoon (its unit, soldiers, their memberships and leaves) reads the
+      // battery's section as unseen; without the leaves, the report lists neither (D-161).
+      harnessOf().signIn(owner)
+      const battery = await unit('Battery')
+      const platoon = await unit('Platoon', battery.id)
+      await member(battery.id)
+      await member(platoon.id)
+      const reads = [pair('units', 'view'), pair('soldiers', 'view'), pair('memberships', 'view')]
+      const platoonViewer = await seedActor(harnessOf(), organization, [...reads, pair('leaves', 'view')], UNIT_SCOPE(platoon.id))
+      const noLeaves = await seedActor(harnessOf(), organization, reads, UNIT_SCOPE(platoon.id))
+      const ownedBy = async (report_owner_id: SoldierId, date: CalendarDate) =>
+        valueOf(
+          await adapter().commands.deployments.create({
+            id: DeploymentId.parse(crypto.randomUUID()),
+            name: 'Partial',
+            unit_id: battery.id,
+            start_date: date,
+            end_date: date,
+            report_owner_id,
+          }),
+        )
+      const after = addDays(OUTSIDE, 1)
+      const last = addDays(OUTSIDE, 2)
+      const partial = await ownedBy(platoonViewer.soldierId, after)
+      const blind = await ownedBy(noLeaves.soldierId, last)
+      harnessOf().signIn(platoonViewer.identity)
+      expect(valueOf(await sections([partial.id], { start_date: after, end_date: after }))).toEqual([
+        { report_date: after, sections: 2, unseen: 1 },
+      ])
+      harnessOf().signIn(noLeaves.identity)
+      expect(valueOf(await sections([blind.id], { start_date: last, end_date: last }))).toEqual([
+        { report_date: last, sections: 2, unseen: 2 },
+      ])
     })
 
     it('names only an active soldier as a report owner', async () => {

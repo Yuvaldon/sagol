@@ -14,7 +14,7 @@ import {
   type OrganizationId,
   type Permission,
 } from "@contracts";
-import { LEAVE_SHEET } from "@config";
+import { LEAVE_BATCH, LEAVE_SHEET } from "@config";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ContractHarness } from "./harness";
 import {
@@ -731,6 +731,39 @@ export function describeDeploymentContract(
         ]);
         expect(await harnessOf().rows("leaves")).toHaveLength(2);
         expect(await harnessOf().rows("leave_batches")).toHaveLength(1);
+      });
+
+      it("refuses a batch or copies past the batch's limit before reading a row (D-302)", async () => {
+        const type = await leaveType();
+        const person = await soldier(null, "Avi");
+        await serve(person.id);
+        const many = <T,>(make: () => T) => Array.from({ length: LEAVE_BATCH.maxLeaves + 1 }, make);
+        const batch = await adapter().commands.leaves.createBatch({
+          batch: { id: newBatchId(), name: "Holiday", description: null },
+          leaves: many(() => draft(person.id, type.id)),
+          deployment_id: rotation,
+          as_approved: false,
+          acknowledged_rule_ids: [],
+        });
+        expect(issuesOf(batch)).toEqual([{ path: ["leaves"], code: "too_big" }]);
+        const source = valueOf(
+          await adapter().commands.leaves.create({
+            ...draft(person.id, type.id),
+            deployment_id: rotation,
+            as_approved: false,
+            acknowledged_rule_ids: [],
+            comment: null,
+          }),
+        );
+        const copies = await adapter().commands.leaves.duplicate({
+          leave_id: source.id,
+          copies: many(() => ({ id: newLeaveId(), soldier_id: person.id, start_date: TODAY, end_date: TODAY })),
+          as_approved: false,
+          acknowledged_rule_ids: [],
+        });
+        expect(issuesOf(copies)).toEqual([{ path: ["copies"], code: "too_big" }]);
+        expect(await harnessOf().rows("leaves")).toHaveLength(1);
+        expect(await harnessOf().rows("leave_batches")).toHaveLength(0);
       });
 
       const single = (leave: ReturnType<typeof draft>): CreateLeaveInput => ({
