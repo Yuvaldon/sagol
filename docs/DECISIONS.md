@@ -306,7 +306,7 @@ am = amends, ref = refines, ext = extends.
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
 | D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | |
-| D-333 | UI freeze: no visual or UI change unless a fix strictly needs it | ui, docs | |
+| D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
 
@@ -4354,6 +4354,10 @@ presses, so this is not the source of the staging bursts (OI-290).
   styling. A fix may touch `ui` only when the defect cannot be fixed in the layer that owns it otherwise, and then
   changes only what the fix needs.
 **Why:** the owner's instruction: the product's look is settled for now, and fixes go first.
+- Amended 2026-11-13, owner clarification: the freeze is on the existing screens. Nothing that exists is moved,
+  restyled or reworked, so work is not redone. A feature may add the new UI components it needs (a screen, a
+  module, a control, a primitive), and may make small adjustments to an existing screen where needed to fit the new
+  feature in. The fix rule above is unchanged.
 
 ## D-334 — A refused read is not asked again because another view of it mounts
 2026-11-13 · accepted · ref D-201, D-204 · OI-290 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
