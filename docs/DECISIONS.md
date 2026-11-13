@@ -4558,7 +4558,7 @@ the company commander's need is a picture for planning, not approving.
 2026-11-13 · accepted · ref D-338, D-342 · the owner's picks in the planning review; where the owner made no pick, the orchestrator's recommendation stands
 | Item | Priority | Note |
 |------|----------|------|
-| OI-117 sign-in on a real phone | Must | Android verified by the owner; iPhone remains |
+| OI-117 sign-in on a real phone | Must | Android verified by the owner; the iPhone is checked in acceptance testing (the owner has none) |
 | OI-230 production settings | Must | Done: the owner replaced the token; closed |
 | OI-293 merges that go undeployed | Must | |
 | OI-295 routine leave types | Must | D-345 |
