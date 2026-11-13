@@ -89,7 +89,7 @@ function useSetupSections(): PanelSection[] {
   })).filter((section) => section.items.length > 0)
 }
 
-function Item({ item, onOpen }: { readonly item: PanelItem; readonly onOpen: () => void }) {
+function Item({ item, onOpen }: { readonly item: PanelItem; readonly onOpen: (run: () => void) => void }) {
   const lineId = useId()
   const countId = useId()
   const { entry } = item
@@ -99,8 +99,7 @@ function Item({ item, onOpen }: { readonly item: PanelItem; readonly onOpen: () 
       <AriaButton
         aria-describedby={`${lineId} ${countId}`}
         onPress={() => {
-          onOpen()
-          entry.onPress()
+          onOpen(entry.onPress)
         }}
         className={ROW}
       >
@@ -119,7 +118,7 @@ function Item({ item, onOpen }: { readonly item: PanelItem; readonly onOpen: () 
   )
 }
 
-function Sections({ sections, onOpen }: { readonly sections: readonly PanelSection[]; readonly onOpen: () => void }) {
+function Sections({ sections, onOpen }: { readonly sections: readonly PanelSection[]; readonly onOpen: (run: () => void) => void }) {
   return sections.map((section) => (
     <section key={section.id} aria-labelledby={`navigation-${section.id}`} className="flex flex-col gap-2xs">
       <h3 id={`navigation-${section.id}`} className="px-sm text-label font-semibold text-text-muted">
@@ -266,8 +265,9 @@ export function NavigationPanel() {
                             <SetupChecklist
                               steps={steps}
                               onGo={(step) => {
-                                close()
-                                panel.open(step.panel)
+                                navigation.handOff(() => {
+                                  panel.open(step.panel)
+                                })
                               }}
                             />
                           </section>
@@ -275,12 +275,12 @@ export function NavigationPanel() {
                       }
                     </WithSteps>
                   ) : null}
-                  <Sections sections={setup} onOpen={close} />
+                  <Sections sections={setup} onOpen={navigation.handOff} />
                 </>
               ) : (
                 <>
                   {stepsAllowed ? <WithSteps>{(steps) => <SetupCallout steps={steps} onPress={toSetup} />}</WithSteps> : null}
-                  <Sections sections={work} onOpen={close} />
+                  <Sections sections={work} onOpen={navigation.handOff} />
                   {/* With no setup module of theirs, the row leads only to steps still open, never to an empty view. */}
                   {setup.length > 0 ? (
                     <SetupRow onPress={toSetup} />

@@ -87,7 +87,7 @@ export function SetupModule() {
   // The run itself makes the unit no longer fresh: the wizard stays until the run answers, so it can close or stop.
   const [running, setRunning] = useState<TemplateBase | null>(null)
   const handOver = () => {
-    panel.close()
+    panel.handOver()
     toUnitSetup()
   }
   if (stopped !== null) {

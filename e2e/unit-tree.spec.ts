@@ -230,12 +230,14 @@ test('the tree: create, rename, color, level, reorder, move and archive', async 
     await expect(page.getByRole('alert')).toHaveCount(0)
   })
 
-  await test.step('Escape closes the drawer, and the back button reopens it', async () => {
+  // Escape takes the drawer's history entry with it, so the back button never reopens it (D-332).
+  await test.step('Escape closes the drawer, and the back button does not reopen it', async () => {
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(page).not.toHaveURL(/panel=/)
     await page.goBack()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).not.toHaveURL(/panel=/)
   })
 })
 
