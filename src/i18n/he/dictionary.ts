@@ -154,7 +154,6 @@ export const dictionary = {
     noRotationBody: 'המפקד פותח את הסבב, ואז אפשר להגיש בקשות.',
     routineOpenBody: 'בקשות יציאה ודוח היום נפתחים עם הסבב.',
     openRotation: 'פתיחת סבב',
-    foundUnits: 'הגדרת מבנה היחידות',
     sort: 'מיון',
     sortBy: 'מיון לפי',
     sortKeys: {
