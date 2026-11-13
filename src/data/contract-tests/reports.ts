@@ -3,6 +3,7 @@ import {
   ReportConfirmationId,
   SoldierId,
   UnitId,
+  UnitMembershipId,
   type AuthIdentity,
   type CalendarDate,
   type OrganizationId,
@@ -169,6 +170,71 @@ export function describeReportContract(
         ),
       ).toEqual([{ path: ['window', 'end_date'], code: 'too_big' }])
       valueOf(await confirm(squad.id, DAY))
+    })
+
+    async function member(unit_id: UnitId, status: 'active' | 'inactive' = 'active') {
+      return valueOf(
+        await adapter().commands.soldiers.create({
+          id: SoldierId.parse(crypto.randomUUID()),
+          first_name: 'Noa',
+          last_name: 'Bar',
+          nickname: null,
+          command_rank_id: null,
+          status,
+          properties: {},
+          private: null,
+          membership: { id: UnitMembershipId.parse(crypto.randomUUID()), unit_id, valid_from: START },
+        }),
+      )
+    }
+
+    it("counts a rotation's sections on the whole tree for who reads its summary (D-303)", async () => {
+      const company = await unit('Company')
+      const squad = await unit('Squad', company.id)
+      const quiet = await unit('Quiet', company.id)
+      const other = await unit('Other')
+      await member(company.id)
+      await member(squad.id)
+      await member(squad.id)
+      await member(quiet.id, 'inactive')
+      await member(other.id)
+      const owned = await rotation(company.id, ownerId)
+      const sections = (deployment_ids: DeploymentId[], window = { start_date: DAY, end_date: OTHER_DAY }) =>
+        adapter().repositories.report_confirmations.sections({ window, deployment_ids })
+      // The company and its squad hold active soldiers; the quiet unit only an inactive one, the other unit is outside.
+      expect(valueOf(await sections([owned.id]))).toEqual([
+        { report_date: DAY, sections: 2 },
+        { report_date: OTHER_DAY, sections: 2 },
+      ])
+      expect(valueOf(await sections([owned.id], { start_date: OUTSIDE, end_date: OUTSIDE }))).toEqual([])
+      expect(valueOf(await sections([]))).toEqual([])
+      expect(
+        issuesOf(await sections([owned.id], { start_date: DAY, end_date: addDays(DAY, DAY_REPORT.maxSpanDays) })),
+      ).toEqual([{ path: ['window', 'end_date'], code: 'too_big' }])
+
+      // Who may confirm the company does not read the summary of a rotation whose owner is another.
+      const companyConfirmer = await seedActor(harnessOf(), organization, [pair('day_reports', 'confirm')], UNIT_SCOPE(company.id))
+      harnessOf().signIn(companyConfirmer.identity)
+      expect(valueOf(await sections([owned.id]))).toEqual([])
+
+      // With no owner named, who may confirm the rotation's unit reads it; who may confirm only a squad does not.
+      harnessOf().signIn(owner)
+      const unowned = valueOf(
+        await adapter().commands.deployments.create({
+          id: DeploymentId.parse(crypto.randomUUID()),
+          name: 'Later',
+          unit_id: company.id,
+          start_date: OUTSIDE,
+          end_date: OUTSIDE,
+          report_owner_id: null,
+        }),
+      )
+      const later = { start_date: OUTSIDE, end_date: OUTSIDE }
+      harnessOf().signIn(companyConfirmer.identity)
+      expect(valueOf(await sections([unowned.id], later))).toEqual([{ report_date: OUTSIDE, sections: 2 }])
+      const squadConfirmer = await seedActor(harnessOf(), organization, [pair('day_reports', 'confirm')], UNIT_SCOPE(squad.id))
+      harnessOf().signIn(squadConfirmer.identity)
+      expect(valueOf(await sections([unowned.id], later))).toEqual([])
     })
 
     it('names only an active soldier as a report owner', async () => {
