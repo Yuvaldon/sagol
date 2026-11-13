@@ -235,7 +235,7 @@ am = amends, ref = refines, ext = extends.
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
-| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | ref D-291 |
+| D-221 | Rotation as a mode in practice: guards, the whole unit, tag scopes and the format | contracts, domain, data, logic, ui, backend | ref D-291; ref D-336 |
 | D-222 | Rotation as a mode on screen: routine, the form's close and members, tag lifetimes, whose tags count | logic, ui | am D-296 |
 | D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
@@ -247,7 +247,7 @@ am = amends, ref = refines, ext = extends.
 | D-256 | One path for each action | ui | ref D-285 |
 | D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221, D-222 |
 | D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
-| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221, D-222 |
+| D-259 | Who is in a rotation: the whole unit by default, a list when chosen | domain, data, logic, ui | ref D-221, D-222; ref D-336 |
 | D-260 | Tags have two lifetimes: persistent, or for one rotation | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
 | D-261 | Templates: a starter unit in config, names in i18n, applied through the commands | config, i18n, logic, ui | |
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285 |
@@ -309,6 +309,7 @@ am = amends, ref = refines, ext = extends.
 | D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | |
+| D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4378,3 +4379,20 @@ about five a second from one owner session. The adapter's answer is final (D-204
 **Why:** D-331 assumed the request logs keep the query string; they do not (`function_edge_logs` records
 `request.url` without it), so the tag named nothing anywhere. The function's own log does reach the logs, and it can
 also say what each call answered, which is what OI-290 lacked.
+
+## D-336 — Who serves in a rotation, and on which days, is one domain function
+2026-11-13 · accepted · ref D-259, D-221 · OI-292 · spec P-3 (`docs/specs/situation-picture.md`) · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- `createRotationMembership({ units, unit_memberships, deployment_members })` in `domain` answers, for a rotation and
+  a soldier, the days they serve (`daysOf`: sorted, merged spans within the rotation's dates), whether they serve on a
+  day (`servesOn`) and whether the rotation lists its members (`isListed`). A listed rotation reads only its rows,
+  narrowed by the member's dates (D-179); one with no rows holds the soldier's memberships, of any type, in its unit or
+  below it (D-259, D-221).
+- The availability rules (`inDeployment`), the command's whole-unit check (`wholeUnitSpans`), the leave-round planner
+  (`rotationSoldiers`, `plannedRounds`, which cuts rounds to each stretch of membership) and the request form's
+  rotation (`requestRotation`) all read it. The planner's `RoundContext.members` is the membership itself.
+- A request in a whole-unit rotation answers `not_a_member` on days the soldier's memberships do not cover, as the
+  command does; the form shows the command's answer, not its own.
+**Why:** three copies disagreed: the client held every soldier for every day of a whole-unit rotation, so a soldier
+outside its unit, or outside their membership days, was offered and passed the form, and only the submit refused the
+whole plan (OI-292). One function makes the screen and the command agree, and the situation picture (P-3) reads the
+same one.
