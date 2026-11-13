@@ -31,11 +31,15 @@ function originMatcher(entry: string): (origin: string) => boolean {
 const MAX_BODY = 1_000_000
 const ALLOWED_HEADERS = 'authorization, content-type, apikey, x-client-info'
 
-/** A call's log line (D-335): which method was called and what it answered, never its arguments or caller. */
-function callLine(body: unknown, { result }: GatewayResponse): string {
+/**
+ * A call's log line (D-335): which method was called and what it answered, never its arguments or caller. When a
+ * stored row failed the contracts, also its table and the issue paths, never the values (D-346).
+ */
+function callLine(body: unknown, { result, rejection }: GatewayResponse): string {
   const request = GatewayRequest.safeParse(body)
   const call = request.success ? `${request.data.kind}.${request.data.group}.${request.data.method}` : null
-  return JSON.stringify({ call, code: result.ok ? 'ok' : result.error.code })
+  const code = result.ok ? 'ok' : result.error.code
+  return JSON.stringify(rejection === undefined ? { call, code } : { call, code, table: rejection.table, paths: rejection.paths })
 }
 
 export function createCommandHandler({ gateway, verify, origins, log }: CommandHandlerDependencies) {
@@ -84,6 +88,6 @@ export function createCommandHandler({ gateway, verify, origins, log }: CommandH
     }
     const answer = await gateway(identity, body)
     log(callLine(body, answer))
-    return reply(200, answer)
+    return reply(200, { result: answer.result, changes: answer.changes })
   }
 }
