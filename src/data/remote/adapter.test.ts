@@ -149,7 +149,7 @@ describe('remote adapter transport (D-204)', () => {
   })
 })
 
-describe('live changes (D-347)', () => {
+describe('live changes (D-348)', () => {
   const identity: AuthIdentity = {
     auth_user_id: AuthUserId.parse(crypto.randomUUID()),
     provider: 'google',

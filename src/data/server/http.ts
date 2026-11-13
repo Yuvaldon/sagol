@@ -88,7 +88,7 @@ export function createCommandHandler({ gateway, verify, origins, log }: CommandH
     } catch {
       body = undefined
     }
-    // The adapter's origin id only labels the call's announcement (D-347); a malformed one is dropped, not refused.
+    // The adapter's origin id only labels the call's announcement (D-348); a malformed one is dropped, not refused.
     const writer = LiveOrigin.safeParse(request.headers.get(REMOTE.originHeader))
     const answer = await gateway(identity, body, writer.success ? writer.data : null)
     log(callLine(body, answer))

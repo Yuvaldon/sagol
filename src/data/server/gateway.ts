@@ -87,7 +87,7 @@ export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEm
   const claimant = ownerEmailClaimant(bootstrapOwnerEmail)
   /**
    * `identity` comes from the verified token, never from the request body. `origin` names the calling adapter
-   * in the announcement of what the call changed (D-347), so that adapter can skip its own write.
+   * in the announcement of what the call changed (D-348), so that adapter can skip its own write.
    */
   return async function handle(identity: AuthIdentity | null, body: unknown, origin: string | null = null): Promise<GatewayResponse> {
     const request = GatewayRequest.safeParse(body)

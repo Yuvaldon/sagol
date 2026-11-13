@@ -1,5 +1,5 @@
 -- =============================================================================
--- Live changes (D-347, OI-151).
+-- Live changes (D-348, OI-151).
 -- After a write commits, the command gateway sends one Realtime broadcast to the
 -- private topic named by the organization's id: the names of the tables it changed,
 -- never a row or an id. A client hears that topic only while its identity holds a

@@ -9,7 +9,7 @@ const MIGRATIONS = join(import.meta.dirname, '..', 'supabase', 'migrations')
 const API_ROLES: readonly string[] = ['anon', 'authenticated']
 const LOCAL_HOSTS: readonly string[] = ['localhost', '127.0.0.1', '::1']
 
-// The parts of Supabase's `auth` and `realtime` schemas the migrations rely on (D-347), for a plain
+// The parts of Supabase's `auth` and `realtime` schemas the migrations rely on (D-348), for a plain
 // Postgres: the caller's user id from the request's claims, and Realtime's broadcast table with its
 // `send` and `topic` functions. Each is created only where it is missing, so a Supabase stack keeps its own.
 const SUPABASE_SHIM = `

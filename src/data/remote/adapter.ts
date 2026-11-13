@@ -19,7 +19,7 @@ import { realtimeListener, type LiveListener } from './live'
 // the same adapter core on the server. Nothing is decided here: the server derives the actor from
 // the access token and answers every check. The client only carries the call and the answer, and
 // publishes what the answer says changed to its change feed, which also reaches the other tabs.
-// Writes made on other devices arrive as live announcements of the tables they changed (D-347),
+// Writes made on other devices arrive as live announcements of the tables they changed (D-348),
 // which go to the same feed, so the screens read those tables again.
 
 /** The adapter's groups and methods are the local adapter's (D-076): what exists on one exists on the other. */

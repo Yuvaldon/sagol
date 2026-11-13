@@ -1,7 +1,7 @@
 import { REMOTE } from '@config'
 import type { Unsubscribe } from '@contracts'
 
-// How the remote adapter hears other devices' writes (D-347): one private Realtime channel per
+// How the remote adapter hears other devices' writes (D-348): one private Realtime channel per
 // tab, on the topic of the organization the session is linked to. Realtime admits the channel
 // only while the caller's token names a live account in that organization (the migration's policy).
 

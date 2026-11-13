@@ -205,8 +205,8 @@ am = amends, ref = refines, ext = extends.
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
-| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-347 |
-| D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207; ref D-347 |
+| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-348 |
+| D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207; ref D-348 |
 | D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
 | D-207 | Google sign-in through Supabase Auth, loaded only in production modes | contracts, config, data, logic, ui, app | ref D-184 |
@@ -320,7 +320,7 @@ am = amends, ref = refines, ext = extends.
 | D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
-| D-347 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
+| D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -2658,7 +2658,7 @@ already shut; revoking the privileges shuts it explicitly, and the tests prove i
   that is not JSON answers `unavailable`; any other non-OK status, or an answer of the wrong shape (checked with zod),
   answers `internal`. Otherwise the result is the server's own `Result`.
 - **Changes.** The answer's `changes` go to the adapter's change feed, which reaches the other tabs too
-  (`CHANGE_FEED_CHANNEL`). A change made on another device arrives over Realtime (D-347).
+  (`CHANGE_FEED_CHANNEL`). A change made on another device arrives over Realtime (D-348).
 - **Session.** The session is read again when the identity source reports a change.
 - **Tests.** The repository contract suite runs over the remote adapter end to end, through the gateway on Postgres
   (`remote.contract.dbtest.ts`, replacing `postgres.contract.dbtest.ts`); `adapter.test.ts` covers what the gateway never
@@ -4622,7 +4622,7 @@ tell it apart from requested leaves without anyone defining anything. The owner 
 field were found only by reproducing the call. A field on `AppError` would have sent server internals to every client
 and changed the contracts for a log; a weak map beside the answer keeps the contract and loses nothing.
 
-## D-347 — Live changes: a committed write is broadcast on its organization's private Realtime topic
+## D-348 — Live changes: a committed write is broadcast on its organization's private Realtime topic
 2026-11-13 · accepted · refines D-204, D-203 · OI-151 · decided under D-170
 - **What is sent.** When a call succeeds, the gateway sends one Supabase Realtime broadcast per organization the call
   wrote (`realtime.send`, private, event `REMOTE.liveEvent`), on the topic named by the organization's id. The payload is

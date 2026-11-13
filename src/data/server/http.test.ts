@@ -40,7 +40,7 @@ describe('createCommandHandler', () => {
     expect(gateway).toHaveBeenCalledWith(null, undefined, null)
   })
 
-  it("hands on the adapter's origin id for the live announcement, and drops a malformed one (D-347)", async () => {
+  it("hands on the adapter's origin id for the live announcement, and drops a malformed one (D-348)", async () => {
     const { gateway, serve } = setup()
     const origin = crypto.randomUUID()
     await serve(post('{}', { [REMOTE.originHeader]: origin }))

@@ -17,7 +17,7 @@ import { createCommandGateway } from './gateway'
 import { LiveMessage } from './live'
 import { CATALOG_QUERY, catalogOf, type SqlClient, type StoreCatalog } from './postgresStore'
 
-// Live changes (D-347): a committed write is broadcast on its organization's private topic, and
+// Live changes (D-348): a committed write is broadcast on its organization's private topic, and
 // only a live member of that organization may hear the topic (the policy on `realtime.messages`).
 // Plain Postgres has no Realtime: `db-reset` gives it the table and `send` the policy relies on.
 
@@ -99,7 +99,7 @@ afterAll(async () => {
   await sql.end()
 })
 
-describe('live changes (D-347)', () => {
+describe('live changes (D-348)', () => {
   it("announces a committed write once, on its organization's private topic, by table name only", async () => {
     const answer = await gateway()(owner, bootstrap(), origin)
     expect(answer.result.ok).toBe(true)

@@ -3,7 +3,7 @@ import { TABLE_SCHEMAS, type DataChange, type TableName } from '@contracts'
 import { z } from 'zod'
 import type { SqlClient } from './postgresStore'
 
-// Live changes (D-347): a committed write is announced to the other devices of its organization.
+// Live changes (D-348): a committed write is announced to the other devices of its organization.
 // The gateway sends one Realtime broadcast per organization the request wrote to, on the private
 // topic named by that organization's id, inside the request's own transaction: Realtime delivers it
 // on commit, so a request that rolls back (or is retried) announces nothing. The message names the

@@ -45,7 +45,7 @@ const UNAVAILABLE_PREFIXES: readonly string[] = ['08', '53', '57P']
 export interface PostgresStore extends Store {
   /** True once a statement lost a serialization race: the request's transaction must be retried. */
   readonly mustRetry: () => boolean
-  /** The organizations whose rows the request's kept writes touched (D-347): where its change is announced. */
+  /** The organizations whose rows the request's kept writes touched (D-348): where its change is announced. */
   readonly writtenOrganizations: () => readonly string[]
 }
 
