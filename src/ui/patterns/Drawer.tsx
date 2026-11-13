@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import { IconButton } from '../primitives/Button'
 import { DrawerScrollContext } from './drawerScroll'
+import { DrawerWidthContext } from './drawerWidth'
 
 // The floating surface every management module opens in (D-023, D-092): a modal drawer on the inline
 // end from `md`, and below it a bottom sheet that also closes by dragging its grip down. Escape, the
@@ -25,6 +26,7 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
   const dragControls = useDragControls()
   const dialog = useRef<HTMLElement>(null)
   const [body, setBody] = useState<HTMLElement | null>(null)
+  const [wide, setWide] = useState(false)
 
   // When the row that held focus is removed (archived), focus falls to the body and the keyboard loses
   // the drawer. The next key brings it back, and Escape still closes. A dialog over the drawer holds
@@ -61,7 +63,7 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
           const fast = info.velocity.y > SHEET_DISMISS.velocityPxPerSecond
           if (far || fast) onClose()
         }}
-        className="enter-surface glass-drawer flex max-h-sheet-height w-full max-w-drawer flex-col overflow-hidden rounded-t-sheet md:max-h-full md:rounded-panel"
+        className={`enter-surface glass-drawer flex max-h-sheet-height w-full flex-col overflow-hidden rounded-t-sheet md:max-h-full md:rounded-panel ${wide ? 'max-w-full' : 'max-w-drawer'}`}
       >
         <Dialog ref={dialog} className="flex min-h-none flex-col outline-none">
           <div
@@ -85,7 +87,9 @@ export function Drawer({ titleKey, onClose, header, children }: DrawerProps) {
             {header}
           </header>
           <div ref={setBody} className="min-h-none overflow-y-auto px-lg pb-xl">
-            <DrawerScrollContext.Provider value={body}>{children}</DrawerScrollContext.Provider>
+            <DrawerScrollContext.Provider value={body}>
+              <DrawerWidthContext.Provider value={setWide}>{children}</DrawerWidthContext.Provider>
+            </DrawerScrollContext.Provider>
           </div>
         </Dialog>
       </MotionModal>

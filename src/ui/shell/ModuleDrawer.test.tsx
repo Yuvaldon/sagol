@@ -9,7 +9,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ModuleDrawer } from './ModuleDrawer'
 
@@ -38,6 +38,9 @@ const UNIT: Unit = {
   archived_at: null,
 }
 
+/** A device that keeps nothing, so every view starts at its default. */
+const NO_STORE = { read: () => null, write: () => undefined }
+
 function portsWith(allow: (check: PermissionCheck) => boolean) {
   const list = () => Promise.resolve({ ok: true, value: [UNIT] })
   return {
@@ -56,6 +59,7 @@ function portsWith(allow: (check: PermissionCheck) => boolean) {
       changes: { subscribe: () => () => undefined },
     },
     auth: {},
+    device: { local: NO_STORE, session: NO_STORE },
   } as unknown as LogicPorts
 }
 
@@ -93,6 +97,15 @@ describe('module drawer: controls follow the hints', () => {
     expect(screen.queryByRole('button', { name: he.common.actions })).toBeNull()
     expect(screen.queryByTestId('drag-handle')).toBeNull()
     expect(screen.queryByRole('button', { name: UNIT.name })).toBeNull()
+  })
+
+  it('shows the chart with names and no action to a soldier who may only read (D-320)', async () => {
+    await renderDrawer(portsWith(isView))
+    fireEvent.click(await screen.findByRole('radio', { name: he.units.viewChart }))
+    const chart = await screen.findByRole('region', { name: he.units.chartLabel })
+    expect(within(chart).getByText(UNIT.name)).toBeTruthy()
+    expect(within(chart).queryByRole('button', { name: he.common.actions })).toBeNull()
+    expect(within(chart).queryByRole('button', { name: UNIT.name })).toBeNull()
   })
 
   it('opens nothing for a soldier who may not read, even from a deep link (D-046)', async () => {
