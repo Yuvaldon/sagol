@@ -8,13 +8,14 @@ import type {
   Leave,
   LeaveId,
   LeaveType,
+  LeaveTypeGroup,
   LeaveTypeId,
   Soldier,
   SoldierId,
   Unit,
   UnitId,
 } from '@contracts'
-import { addDays, APPROVED_ONLY, compareDates, createAvailabilityContext, dayMovements, type SoldierMovement } from '@domain'
+import { addDays, APPROVED_ONLY, compareDates, createAvailabilityContext, dayMovements, isRotationLeaveType, type SoldierMovement } from '@domain'
 import { groupKeyOf, STATE_GROUPS, unitPathOf, type BoardGroupLabel } from '../board/rows'
 import { filterContextOf, populationOf, type FilterSource } from '../filters/source'
 import { byName, membershipsBySoldier, unitStateOn } from '../roster/roster'
@@ -29,7 +30,7 @@ export interface ReportEntry {
   readonly rank: CommandRank | null
   /** Absent only: the types of the leaves that make the soldier absent. NULL where the viewer may not read the type. */
   readonly absences: readonly (LeaveType | null)[]
-  /** Absent only: the reason texts of those leaves, where there is one (D-194). */
+  /** Absent only: the reason texts of those leaves, where there is one (D-194); never of a rotation leave (D-346). */
   readonly reasons: readonly string[]
   readonly leaving: boolean
   readonly returning: boolean
@@ -82,6 +83,8 @@ export interface DayReportInput {
   readonly leaves: readonly Leave[]
   /** Archived ones too, so a leave keeps its type (D-113). */
   readonly types: readonly LeaveType[]
+  /** Archived ones too: a leave of the built-in group's types shows no reason (D-346). */
+  readonly groups: readonly LeaveTypeGroup[]
   readonly days: readonly CalendarDate[]
   /** The selected unit, whose name starts no path below it. */
   readonly scopeUnitId: UnitId | null
@@ -188,7 +191,9 @@ export function dayReport(input: DayReportInput): DayReport {
   const entryOf = (soldier: Soldier, movement: SoldierMovement): ReportEntry => {
     const counted = movement.day.leaves.filter((leave) => leave.counted).map((leave) => leaveById.get(leave.leave_id))
     const absences = counted.map((leave) => (leave === undefined ? null : (typeById.get(leave.leave_type_id) ?? null)))
-    const reasons = counted.flatMap((leave) => (leave?.reason ? [leave.reason] : []))
+    const reasons = counted.flatMap((leave) =>
+      leave?.reason && !isRotationLeaveType(typeById.get(leave.leave_type_id), input.groups) ? [leave.reason] : [],
+    )
     if (reasons.length > 0 || absences.some((type) => type !== null)) hasReasons = true
     return {
       soldier,

@@ -38,6 +38,7 @@ import {
 import { useRankBindings } from '../access/hooks'
 import { nextSortOrder } from '../forms/order'
 import { useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
+import { isRotationLeave } from '../leaves/leaveTypes'
 import { useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
@@ -384,7 +385,10 @@ const TEMPLATE_CHECKS: readonly PermissionCheck[] = [
 const live = <Row extends { readonly archived_at: string | null }>(rows: readonly Row[]) =>
   rows.filter((row) => row.archived_at === null)
 
-/** A fresh setup: the root alone, and none of what a template sets up. */
+/**
+ * A fresh setup: the root alone, and none of what a template sets up. The built-in group's types come with the
+ * claim, like the root, so they do not count (D-346).
+ */
 export function isFreshSetup(rows: {
   readonly units: readonly Unit[]
   readonly levels: readonly UnitLevel[]
@@ -392,15 +396,17 @@ export function isFreshSetup(rows: {
   readonly bindings: readonly RankRoleBinding[]
   readonly leaveTypes: readonly LeaveType[]
   readonly tagCategories: readonly TagCategory[]
+  readonly leaveGroups: readonly LeaveTypeGroup[]
 }): boolean {
   const units = live(rows.units)
+  const leaveTypes = rows.leaveTypes.filter((type) => !isRotationLeave(type, rows.leaveGroups))
   return (
     units.length === 1 &&
     units[0]?.parent_id === null &&
     live(rows.levels).length +
       live(rows.ranks).length +
       live(rows.bindings).length +
-      live(rows.leaveTypes).length +
+      live(leaveTypes).length +
       live(rows.tagCategories).length ===
       0
   )
@@ -439,6 +445,7 @@ export function useTemplateOffer(): Loaded<TemplateBase | null> {
     bindings: bindings.value,
     leaveTypes: leaveTypes.value,
     tagCategories: tagCategories.value,
+    leaveGroups: leaveGroups.value,
   }
   const root = live(units.value).find((unit) => unit.parent_id === null)
   if (!isFreshSetup(rows) || root === undefined) return { status: 'ready', value: null }

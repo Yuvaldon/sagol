@@ -225,6 +225,8 @@ describe('session hooks', () => {
         organization: { name: 'Company', timezone: 'UTC' },
         soldier: { first_name: 'Dana', last_name: 'Levi' },
         owner_role_name: 'Owner',
+        rotation_group_name: 'Rotation leave',
+        rotation_type_name: 'Rotation leave 1',
       })
     })
     expect(fake.bootstrapOwner).toHaveBeenCalledTimes(1)
@@ -239,6 +241,8 @@ describe('claiming an organization', () => {
     organization: { name: 'Company', timezone: 'Asia/Jerusalem' },
     soldier: { first_name: 'Dana', last_name: 'Levi' },
     owner_role_name: 'Owner',
+    rotation_group_name: 'Rotation leave',
+    rotation_type_name: 'Rotation leave 1',
   }
 
   it('generates new ids on the caller side (D-044)', () => {

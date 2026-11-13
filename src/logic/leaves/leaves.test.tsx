@@ -18,7 +18,17 @@ import { fakePorts, organizationIn, wrapperOf } from '../testing/ports'
 import { boardLeaves } from '../board/leaves'
 import { WorkspaceSearch } from '../view-state/search'
 import { useLeaveCreation } from './hooks'
-import { NEW_LEAVE_TYPE_VALUES, leaveTypeFormValues, leaveTypeSections, toUpdateLeaveTypeInput } from './leaveTypes'
+import {
+  NEW_LEAVE_TYPE_VALUES,
+  isLastRotationLeaveType,
+  leaveTypeFormValues,
+  leaveTypeSections,
+  nextRotationLeaveNumber,
+  ordinaryGroups,
+  rotationLeaveGroup,
+  toAddRotationLeaveTypeInput,
+  toUpdateLeaveTypeInput,
+} from './leaveTypes'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -30,7 +40,7 @@ const ROTATION = DeploymentId.parse(uuid(70))
 const audit = { created_at: AT, created_by: null, updated_at: AT, updated_by: null, version: 1, archived_at: null }
 
 function group(n: number, sort_order: number, archived = false): LeaveTypeGroup {
-  return { id: LeaveTypeGroupId.parse(uuid(n)), organization_id: ORGANIZATION, name: `G${n}`, sort_order, ...audit, archived_at: archived ? AT : null }
+  return { id: LeaveTypeGroupId.parse(uuid(n)), organization_id: ORGANIZATION, name: `G${n}`, is_rotation_leave: false, sort_order, ...audit, archived_at: archived ? AT : null }
 }
 
 function type(n: number, groupN: number | null, sort_order: number, overrides: Partial<LeaveType> = {}): LeaveType {
@@ -109,6 +119,44 @@ describe('leave type sections (D-113)', () => {
 
   it('starts a new type as an absence with no reason (D-032)', () => {
     expect(NEW_LEAVE_TYPE_VALUES).toMatchObject({ availability_effect: 'unavailable', requires_reason: false, color_key: null })
+  })
+})
+
+describe('the built-in group (D-346)', () => {
+  const builtIn: LeaveTypeGroup = { ...group(9, 0), is_rotation_leave: true }
+  const groups = [builtIn, group(1, 1), group(2, 2, true)]
+
+  it('is found, and is not offered to an ordinary type', () => {
+    expect(rotationLeaveGroup(groups)?.id).toBe(builtIn.id)
+    expect(rotationLeaveGroup([group(1, 1)])).toBeNull()
+    expect(ordinaryGroups(groups).map((row) => row.name)).toEqual(['G1'])
+  })
+
+  it('numbers a new type after every type it held, archived included, in the first calm color left free', () => {
+    const types = [type(10, 9, 0, { color_key: 'blue' }), type(11, 9, 1, { color_key: 'cyan', archived_at: AT }), type(12, 1, 0)]
+    expect(nextRotationLeaveNumber(builtIn, types)).toBe(2)
+    const input = toAddRotationLeaveTypeInput(builtIn, types, 'סבב יציאה 2')
+    expect(input).toMatchObject({
+      group_id: builtIn.id,
+      name: 'סבב יציאה 2',
+      color_key: 'cyan',
+      availability_effect: 'unavailable',
+      requires_reason: false,
+      sort_order: 1,
+    })
+  })
+
+  it('gives the calm colors again once every one is held', () => {
+    const keys = ['blue', 'cyan', 'teal', 'indigo', 'purple', 'gray']
+    const types = keys.map((color_key, index) => type(20 + index, 9, index, { color_key }))
+    expect(toAddRotationLeaveTypeInput(builtIn, types, 'x').color_key).toBe('blue')
+  })
+
+  it('keeps its last live type', () => {
+    const only = type(10, 9, 0)
+    expect(isLastRotationLeaveType(only, groups, [only, type(11, 9, 1, { archived_at: AT })])).toBe(true)
+    expect(isLastRotationLeaveType(only, groups, [only, type(11, 9, 1)])).toBe(false)
+    expect(isLastRotationLeaveType(type(12, 1, 0), groups, [type(12, 1, 0)])).toBe(false)
   })
 })
 
