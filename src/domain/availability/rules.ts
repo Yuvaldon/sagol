@@ -33,7 +33,10 @@ import { createRotationMembership } from './deployments'
 // available count is fixed by the structure (units, memberships, filters), so a leave change
 // only re-counts availability on the same targets.
 
-export type RuleUnit = Pick<Unit, 'id' | 'parent_id' | 'unit_level_id' | 'archived_at' | 'valid_from' | 'valid_to'>
+export type RuleUnit = Pick<
+  Unit,
+  'id' | 'parent_id' | 'unit_level_id' | 'archived_at' | 'valid_from' | 'valid_to' | 'properties'
+>
 export type RuleSoldier = Pick<
   Soldier,
   'id' | 'first_name' | 'last_name' | 'command_rank_id' | 'status' | 'properties' | 'archived_at'
