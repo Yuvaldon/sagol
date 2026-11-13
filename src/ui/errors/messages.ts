@@ -73,6 +73,9 @@ const ISSUE_MESSAGES = {
   rotation_not_ended: 'issues.rotationNotEnded',
   not_reportable: 'issues.notReportable',
   soldier_inactive: 'issues.soldierInactive',
+  group_builtin: 'issues.groupBuiltin',
+  last_rotation_type: 'issues.lastRotationType',
+  fixed_by_group: 'issues.fixedByGroup',
 } as const satisfies Record<string, I18nKey>
 
 const ISSUE_KEYS: Record<IssueCode, I18nKey> = ISSUE_MESSAGES

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { MARK_NAME, NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, OWNER } from './support/workspace.ts'
+import { MARK_NAME, NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 import { selectColors } from './support/board.ts'
 
 // V4's demo: leave types and their groups, a new leave from the floating "+", bars, lanes and a marker on the
@@ -27,17 +27,25 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
 
-  await test.step('a new leave needs a type first, and the way to one is right there', async () => {
-    await page.getByRole('button', { name: he.leaves.new }).click()
-    await expect(drawer(page).getByRole('heading', { name: he.leaves.noTypesTitle })).toBeVisible()
+  await test.step('the built-in rotation group is there from the start, and a rotation needs no form (D-347)', async () => {
+    await openModule(page, he.leaveTypes.open)
+    await expect(drawer(page).getByRole('heading', { name: he.onboarding.rotationGroupName })).toBeVisible()
+    await expect(drawer(page).getByText(he.leaveTypes.rotationTypeName, { exact: true })).toBeVisible()
+    await drawer(page).getByRole('button', { name: he.leaveTypes.addRotation }).click()
+    await expect(drawer(page).getByText(`${he.leaveTypes.rotationTypeName} 1`, { exact: true })).toBeVisible()
     await expectNoAxeViolations(page)
-    await drawer(page).getByRole('button', { name: he.leaves.openTypes }).click()
-    await expect(page).toHaveURL(/panel=leave_types/)
-    await expect(drawer(page).getByRole('heading', { name: he.leaveTypes.newTitle })).toBeVisible()
-    await page.getByRole('button', { name: he.common.cancel }).click()
+    await closeDrawer(page)
+  })
+
+  await test.step('a rotation leave never asks for a reason', async () => {
+    await page.getByRole('button', { name: he.leaves.new }).click()
+    await choose(page, he.leaves.type, `${he.onboarding.rotationGroupName} · ${he.leaveTypes.rotationTypeName}`)
+    await expect(drawer(page).getByRole('textbox', { name: new RegExp(he.leaves.reason) })).toHaveCount(0)
+    await closeDrawer(page)
   })
 
   await test.step('groups and types, with their colors, icons and effects', async () => {
+    await openModule(page, he.leaveTypes.open)
     await createGroup(page, 'חופשות')
     await createType(page, { name: 'רגילה', group: 'חופשות', color: he.palette.teal, icon: he.icons.home })
     await createType(page, { name: 'מחלה', color: he.palette.red, requiresReason: true })
@@ -106,5 +114,5 @@ test('a link opens the new-leave form', async ({ page }) => {
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
   await page.goto('/?panel=leaves&entity=new')
-  await expect(drawer(page).getByRole('heading', { name: he.leaves.noTypesTitle })).toBeVisible()
+  await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
 })

@@ -9,8 +9,11 @@ import {
   DATE_LOCALE,
   DEFAULT_BAR_COLOR_MODE,
   DEFAULT_VIEW_BY_DEVICE,
+  FIRST_ROTATION_LEAVE_COLOR,
   LEAVE_TYPE_PALETTE_KEYS,
+  ROTATION_LEAVE_PALETTE_KEYS,
   isLeaveTypePaletteKey,
+  isRotationLeavePaletteKey,
   DARK_SCHEME_MEDIA_QUERY,
   DESKTOP_MEDIA_QUERY,
   SETUP_SECTIONS,
@@ -229,6 +232,14 @@ describe('views, url, storage, breakpoints, dates', () => {
     expect(isLeaveTypePaletteKey('green')).toBe(false)
     expect(isLeaveTypePaletteKey('blue')).toBe(true)
     expect(isLeaveTypePaletteKey('nope')).toBe(false)
+  })
+
+  it('offers the built-in group calm leave colors only, blue first (D-347)', () => {
+    expect(ROTATION_LEAVE_PALETTE_KEYS[0]).toBe(FIRST_ROTATION_LEAVE_COLOR)
+    for (const key of ROTATION_LEAVE_PALETTE_KEYS) expect(isLeaveTypePaletteKey(key)).toBe(true)
+    expect(isRotationLeavePaletteKey('cyan')).toBe(true)
+    expect(isRotationLeavePaletteKey('red')).toBe(false)
+    expect(isRotationLeavePaletteKey('nope')).toBe(false)
   })
 
   it('has unique URL parameter names', () => {

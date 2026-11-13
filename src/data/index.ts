@@ -5,6 +5,7 @@
 // The adapters are reached only through the loaders below (D-210); a static export would put both
 // pairs, Dexie included, in the entry chunk of every build.
 export type { LocalAdapterDependencies, LocalDataAdapter } from './local/adapter'
+export type { RotationLeaveNames } from './local/database'
 export type { IdentityStore } from './local/identity'
 // The device store is a few lines with no dependency, so it is static (D-197).
 export { browserDeviceStores, deviceStoreOver, type DeviceStore } from './device'

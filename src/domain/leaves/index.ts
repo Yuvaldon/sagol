@@ -20,6 +20,12 @@ export {
   type LeaveWorkflowStep,
 } from './workflow'
 export { COMMENT_PERMISSIONS, commentChangeIssues, isCommentAuthor } from './comments'
-export { archiveLeaveTypeGroupIssues } from './types'
+export {
+  archiveBuiltInGroupIssues,
+  archiveLeaveTypeGroupIssues,
+  archiveLeaveTypeIssues,
+  isRotationLeaveType,
+  rotationLeaveTypeIssues,
+} from './types'
 export { duplicatedLeaveColumns, type DuplicatedLeaveColumns } from './duplicate'
 export { roundDays, type LeaveDays, type RoundRhythm } from './rounds'

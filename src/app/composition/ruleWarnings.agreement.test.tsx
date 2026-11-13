@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 import {
+  LeaveTypeGroupId,
   DeploymentId,
   AccessGrantId,
   AvailabilityRuleId,
@@ -74,7 +75,7 @@ async function ownerPorts(): Promise<LogicPorts> {
   const { createLocalAuthProvider, createLocalDataAdapter } = await loadLocalData()
   const auth = createLocalAuthProvider(memoryStore())
   const id = crypto.randomUUID()
-  const data = createLocalDataAdapter({ identity: auth, time }, { database: `agreement-${id}`, channel: `agreement-${id}` })
+  const data = createLocalDataAdapter({ identity: auth, time, rotationLeave: { group: 'Rotation leave', type: 'Rotation leave' } }, { database: `agreement-${id}`, channel: `agreement-${id}` })
   valueOf(await auth.signInAs({ email: 'owner@example.test', display_name: null }))
   valueOf(
     await data.commands.organizations.bootstrapOwner({
@@ -85,6 +86,8 @@ async function ownerPorts(): Promise<LogicPorts> {
       access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
       root_unit_id: UnitId.parse(crypto.randomUUID()),
       membership_id: UnitMembershipId.parse(crypto.randomUUID()),
+      rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: 'Rotation leave' },
+      rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: 'Rotation leave 1' },
     }),
   )
   const shell = { subscribe: () => () => undefined, current: () => QUIET_SHELL, applyUpdate: () => undefined, install: () => Promise.resolve() }

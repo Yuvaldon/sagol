@@ -9,6 +9,8 @@ import {
   type LeaveTypeGroup,
   type UpdateLeaveTypeInput,
 } from '@contracts'
+import { FIRST_ROTATION_LEAVE_COLOR, ROTATION_LEAVE_PALETTE_KEYS, type PaletteKey } from '@config'
+import { archiveLeaveTypeIssues, isRotationLeaveType } from '@domain'
 import { formIssues } from '../forms/issues'
 import { bySortOrder, nextSortOrder } from '../forms/order'
 
@@ -128,4 +130,57 @@ export function leaveTypeGroupFormIssues(name: string): Issue[] {
 
 export function toCreateLeaveTypeGroupInput(name: string, groups: readonly LeaveTypeGroup[]): CreateLeaveTypeGroupInput {
   return CreateLeaveTypeGroupInput.parse(createGroupInput(name, groups))
+}
+
+// ------------------------------------------------------------ built-in group
+
+/** The organization's built-in "סבב יציאות" group (D-347), or NULL while the store does not show it. */
+export function rotationLeaveGroup(groups: readonly LeaveTypeGroup[]): LeaveTypeGroup | null {
+  return groups.find((group) => group.is_rotation_leave) ?? null
+}
+
+/** The live groups an ordinary type may join: every one but the built-in group, whose types it makes itself (D-347). */
+export function ordinaryGroups(groups: readonly LeaveTypeGroup[]): LeaveTypeGroup[] {
+  return liveGroups(groups).filter((group) => !group.is_rotation_leave)
+}
+
+/** Whether `type` belongs to the built-in group, so its group, effect and reason are fixed and no reason is asked. */
+export function isRotationLeave(type: Pick<LeaveType, 'group_id'> | null | undefined, groups: readonly LeaveTypeGroup[]): boolean {
+  return isRotationLeaveType(type, groups)
+}
+
+/** Whether archiving `type` is refused: the built-in group keeps its last live type (D-347). */
+export function isLastRotationLeaveType(type: LeaveType, groups: readonly LeaveTypeGroup[], types: readonly LeaveType[]): boolean {
+  const group = groups.find((candidate) => candidate.id === type.group_id) ?? null
+  return archiveLeaveTypeIssues(types, type, group).length > 0
+}
+
+/**
+ * The number the next type of the built-in group is named with (D-347): how many types it ever held, archived included,
+ * so a name is never given twice. The first type is named without one, so the first added is 1.
+ */
+export function nextRotationLeaveNumber(group: LeaveTypeGroup, types: readonly LeaveType[]): number {
+  return types.filter((type) => type.group_id === group.id).length
+}
+
+/** The first calm color no live type of the group holds; once all are held, they are given again in turn. */
+export function nextRotationLeaveColor(group: LeaveTypeGroup, types: readonly LeaveType[]): PaletteKey {
+  const held = typesOfGroup(types, group.id).map((type) => type.color_key)
+  const free = ROTATION_LEAVE_PALETTE_KEYS.find((key) => !held.includes(key))
+  if (free !== undefined) return free
+  return ROTATION_LEAVE_PALETTE_KEYS[held.length % ROTATION_LEAVE_PALETTE_KEYS.length] ?? FIRST_ROTATION_LEAVE_COLOR
+}
+
+/** A new type of the built-in group, with no form: the name the UI proposes, the next calm color, last in order. */
+export function toAddRotationLeaveTypeInput(group: LeaveTypeGroup, types: readonly LeaveType[], name: string): CreateLeaveTypeInput {
+  return CreateLeaveTypeInput.parse({
+    id: LeaveTypeId.parse(crypto.randomUUID()),
+    group_id: group.id,
+    name,
+    color_key: nextRotationLeaveColor(group, types),
+    icon_key: null,
+    availability_effect: AvailabilityEffect.enum.unavailable,
+    requires_reason: false,
+    sort_order: nextSortOrder(typesOfGroup(types, group.id)),
+  })
 }
