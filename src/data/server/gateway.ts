@@ -2,6 +2,7 @@ import { AuthIdentity, type DataChange, type Result, type TimeSource, type Unsub
 import { z } from 'zod'
 import { createAdapterCore, type LocalDataAdapter } from '../local/core'
 import { ownerEmailClaimant } from '../local/dependencies'
+import { rowRejectionOf, type RowRejection } from '../local/failure'
 import type { LocalChangeFeed } from '../local/changes'
 import { createPostgresStore, type SqlClient, type StoreCatalog } from './postgresStore'
 
@@ -33,6 +34,8 @@ export type GatewayRequest = z.infer<typeof GatewayRequest>
 export interface GatewayResponse {
   readonly result: Result<unknown>
   readonly changes: readonly DataChange[]
+  /** For the server's log only, never sent (D-346): the stored row the contracts rejected, behind an `internal`. */
+  readonly rejection?: RowRejection
 }
 
 /** Runs `work` in one SERIALIZABLE transaction; a throw rolls it back. */
@@ -102,7 +105,9 @@ export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEm
           const result = await method(...request.data.args)
           // The method answered `unavailable` for a lost race: run the whole request again.
           if (store.mustRetry()) throw new RetryRequest()
-          return { result, changes: result.ok ? changes.collected : [] }
+          if (result.ok) return { result, changes: changes.collected }
+          const rejection = rowRejectionOf(result.error)
+          return rejection === undefined ? { result, changes: [] } : { result, changes: [], rejection }
         })
       } catch (error) {
         if (!(error instanceof RetryRequest) && !isSerializationFailure(error)) {
