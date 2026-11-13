@@ -150,6 +150,21 @@ export type ConfirmableReportQuery = z.infer<typeof ConfirmableReportQuery>
 export const ConfirmableReport = z.object({ unit_id: UnitId, report_date: CalendarDate })
 export type ConfirmableReport = z.infer<typeof ConfirmableReport>
 
+/** The sections of the rotations' reports on the window's dates, as the summary's reader counts them (D-303). */
+export const ReportSectionQuery = z.strictObject({
+  window: DateWindow,
+  deployment_ids: z.array(DeploymentId),
+})
+export type ReportSectionQuery = z.infer<typeof ReportSectionQuery>
+
+/**
+ * How many unit sections the rotations' report holds on a date, read on the whole unit tree, which the actor may not
+ * see: the units under a rotation that runs on the date and whose summary the actor reads, each holding an active
+ * soldier on the date (D-303). A count, so no unit outside the actor's view is named.
+ */
+export const ReportSectionCount = z.object({ report_date: CalendarDate, sections: z.number().int().nonnegative() })
+export type ReportSectionCount = z.infer<typeof ReportSectionCount>
+
 /** Why a soldier is proposed for a link request (D-030). Shown to the reviewer only. */
 export const LinkCandidateMatch = z.enum(['personal_id', 'name'])
 export type LinkCandidateMatch = z.infer<typeof LinkCandidateMatch>
@@ -214,6 +229,7 @@ export interface DataRepositories {
   /** Readable by who views the unit, may confirm it, or owns the report of a rotation over it (D-293). */
   report_confirmations: ListRepository<ReportConfirmation, ReportConfirmationQuery> & {
     confirmable(query: ConfirmableReportQuery): AsyncResult<ConfirmableReport[]>
+    sections(query: ReportSectionQuery): AsyncResult<ReportSectionCount[]>
   }
 }
 
