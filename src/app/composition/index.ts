@@ -1,5 +1,6 @@
 import type { Env } from '@config'
 import { browserDeviceStores, loadLocalData, loadRemoteData } from '@data'
+import { t } from '@i18n'
 import type { LogicPorts, ShellPort } from '@logic'
 import { systemTime } from '../time'
 
@@ -12,7 +13,12 @@ export async function composePorts(env: Env, origin: string, shell: ShellPort): 
   if (env.authMode === 'local') {
     const { browserIdentityStore, createLocalAuthProvider, createLocalDataAdapter } = await loadLocalData()
     const auth = createLocalAuthProvider(browserIdentityStore())
-    const data = createLocalDataAdapter({ identity: auth, time: systemTime })
+    const data = createLocalDataAdapter({
+      identity: auth,
+      time: systemTime,
+      // The names a store from before gives the built-in leave group (D-346): user data, proposed as the claim proposes them.
+      rotationLeave: { group: t('onboarding.rotationGroupName'), type: t('onboarding.rotationTypeName') },
+    })
     return { auth, data, time: systemTime, shell, device: browserDeviceStores() }
   }
   const { url, anonKey } = env.remote
