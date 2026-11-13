@@ -19,7 +19,7 @@ import { createCommandGateway } from './gateway'
 import { CATALOG_QUERY, catalogOf, createPostgresStore, type SqlClient, type StoreCatalog } from './postgresStore'
 
 // The staging seed (D-281) writes rows the app reads back through the contracts. A row the contracts reject turns
-// every read of its table into `internal` (D-337): this runs the seed on the owner's bootstrap and parses every row.
+// every read of its table into `internal` (D-341): this runs the seed on the owner's bootstrap and parses every row.
 
 const url = import.meta.env.DATABASE_URL as string | undefined
 if (url === undefined || url === '') throw new Error('test:db needs DATABASE_URL')
