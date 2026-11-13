@@ -11,7 +11,7 @@ const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0
 const ORGANIZATION = OrganizationId.parse(uuid(900))
 const ACTOR = SoldierId.parse(uuid(901))
 const INSTALL: SubscribePushInput = {
-  endpoint: 'https://push.example.test/device',
+  endpoint: 'https://fcm.googleapis.com/fcm/send/sample-device',
   p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM',
   auth: 'tBHItJI5svbpez7KI4CCXg',
 }
