@@ -34,10 +34,12 @@ export interface DeploymentFormValues {
   readonly start_date: CalendarDate | ''
   /** '' = open-ended. */
   readonly end_date: CalendarDate | ''
+  /** Who reads the rotation's consolidated daily report (D-293). NULL = none named. */
+  readonly report_owner_id: SoldierId | null
 }
 
 export function newDeploymentValues(today: CalendarDate, unitId: UnitId | null): DeploymentFormValues {
-  return { name: '', unit_id: unitId, start_date: today, end_date: '' }
+  return { name: '', unit_id: unitId, start_date: today, end_date: '', report_owner_id: null }
 }
 
 export function deploymentFormValues(deployment: Deployment): DeploymentFormValues {
@@ -46,6 +48,7 @@ export function deploymentFormValues(deployment: Deployment): DeploymentFormValu
     unit_id: deployment.unit_id,
     start_date: deployment.start_date,
     end_date: deployment.end_date ?? '',
+    report_owner_id: deployment.report_owner_id,
   }
 }
 
@@ -55,6 +58,7 @@ function deploymentContent(values: DeploymentFormValues) {
     unit_id: values.unit_id ?? undefined,
     start_date: values.start_date === '' ? undefined : values.start_date,
     end_date: values.end_date === '' ? null : values.end_date,
+    report_owner_id: values.report_owner_id,
   }
 }
 

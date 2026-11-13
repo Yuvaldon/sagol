@@ -1,22 +1,25 @@
 import { PANEL_IDS } from '@config'
-import type { CalendarDate, Deployment, Unit, UnitId } from '@contracts'
-import { deploymentFormIssues, deploymentFormValues, newDeploymentValues, useDeploymentCommands, usePanel } from '@logic'
+import type { CalendarDate, Deployment, Soldier, Unit, UnitId } from '@contracts'
+import { deploymentFormIssues, deploymentFormValues, fullName, newDeploymentValues, useDeploymentCommands, usePanel } from '@logic'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { EntityForm } from '../../patterns/EntityForm'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
 import { DateField } from '../../primitives/DateField'
 import { SelectField } from '../../primitives/SelectField'
-import { TextField } from '../../primitives/fields'
+import { ComboField, TextField } from '../../primitives/fields'
 import { unitOptions } from '../soldiers/unitOptions'
 
-// A deployment (D-019, D-179): its name, its unit and its days. An open end runs until it is given one.
+// A deployment (D-019, D-179): its name, its unit and its days. An open end runs until it is given one. Its report owner,
+// when named, reads the daily report's confirmation summary (D-293).
 
-const DEPLOYMENT_FIELDS: readonly string[] = ['name', 'unit_id', 'start_date', 'end_date']
+const DEPLOYMENT_FIELDS: readonly string[] = ['name', 'unit_id', 'start_date', 'end_date', 'report_owner_id']
 
 export interface DeploymentFormProps {
   readonly deployment: Deployment | null
   readonly units: readonly Unit[]
+  /** Who may own the report: the active soldiers, and the one already named. */
+  readonly soldiers: readonly Soldier[]
   readonly today: CalendarDate
   /** The other live rotations: one runs at a time, checked before the command answers it (D-257). */
   readonly others: readonly Deployment[]
@@ -27,7 +30,7 @@ export interface DeploymentFormProps {
   readonly onCreated?: (deployment: Deployment) => void
 }
 
-export function DeploymentForm({ deployment, units, today, others, placeable, onReload, onCreated }: DeploymentFormProps) {
+export function DeploymentForm({ deployment, units, soldiers, today, others, placeable, onReload, onCreated }: DeploymentFormProps) {
   const panel = usePanel()
   const { create, update } = useDeploymentCommands()
   const [opened] = useState(deployment)
@@ -121,6 +124,21 @@ export function DeploymentForm({ deployment, units, today, others, placeable, on
           )}
         </form.Field>
       </div>
+      <form.Field name="report_owner_id">
+        {(field) => (
+          <ComboField
+            labelKey="deployments.reportOwner"
+            toggleLabelKey="deployments.reportOwnerToggle"
+            name={field.name}
+            value={field.state.value}
+            options={soldiers.map((soldier) => ({ key: soldier.id, label: fullName(soldier) }))}
+            onChange={(key) => {
+              field.handleChange(soldiers.find((soldier) => soldier.id === key)?.id ?? null)
+            }}
+            error={error(field.state.meta.errors, field.name)}
+          />
+        )}
+      </form.Field>
     </EntityForm>
   )
 }

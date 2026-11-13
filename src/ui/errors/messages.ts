@@ -71,6 +71,8 @@ const ISSUE_MESSAGES = {
   rotation_overlap: 'issues.rotationOverlap',
   rotation_closed: 'issues.rotationClosed',
   rotation_not_ended: 'issues.rotationNotEnded',
+  not_reportable: 'issues.notReportable',
+  soldier_inactive: 'issues.soldierInactive',
 } as const satisfies Record<string, I18nKey>
 
 const ISSUE_KEYS: Record<IssueCode, I18nKey> = ISSUE_MESSAGES

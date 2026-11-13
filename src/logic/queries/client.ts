@@ -38,6 +38,7 @@ export const QUERY_KEYS = {
   rolePermissions: [TABLE_SCOPE, 'role_permissions'],
   rankRoleBindings: [TABLE_SCOPE, 'rank_role_bindings'],
   accessGrants: [TABLE_SCOPE, 'access_grants'],
+  reportConfirmations: [TABLE_SCOPE, 'report_confirmations'],
   /** Every table at once: an import may write to any of them (D-171). */
   tables: [TABLE_SCOPE],
   can: ['can'],
@@ -61,6 +62,9 @@ const LINK_REQUEST_TABLES: ReadonlySet<TableName> = new Set<TableName>([
   'unit_memberships',
   'access_grants',
 ])
+
+/** Tables, beside the policy's, the answer of which daily reports the actor may confirm is read from (D-293). */
+const CONFIRMABLE_TABLES: ReadonlySet<TableName> = new Set<TableName>(['deployments'])
 
 /**
  * Tables the policy is computed from (D-053 … D-058). Every list the adapter answers is filtered by the policy, so a change
@@ -104,6 +108,7 @@ export function invalidateChanged(client: QueryClient, changes: readonly DataCha
     if (policyChanged) continue
     void client.invalidateQueries({ queryKey: [TABLE_SCOPE, change.table] })
     if (LINK_REQUEST_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.accountLinkRequests })
+    if (CONFIRMABLE_TABLES.has(change.table)) void client.invalidateQueries({ queryKey: QUERY_KEYS.reportConfirmations })
   }
   // Many tables feed the policy, and a hint is cheap to ask again (D-091).
   if (changes.length > 0) void client.invalidateQueries({ queryKey: QUERY_KEYS.can })

@@ -257,7 +257,7 @@ am = amends, ref = refines, ext = extends.
 | D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296 |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290 |
-| D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | |
+| D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
 | D-270 | The leave-round planner | domain, logic, ui | ref D-316 |
 | D-271 | Order of the slices after the journeys matrix | docs | am D-284 |
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | |
@@ -276,6 +276,7 @@ am = amends, ref = refines, ext = extends.
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
+| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | |
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
@@ -3894,6 +3895,51 @@ across the views.
 
 **Why:** every Staging run must end with a Preview of main's code, on its own and without an owner step. A commit with
 the same tree on top of main is the smallest change Vercel's integration builds.
+
+## D-293 — The daily report workflow: confirmations per unit and date, a rotation's report owner
+2026-11-12 · accepted · refines D-269 · V30 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Stored:** `report_confirmations` (`unit_id`, `report_date`, `confirmed_by`, `confirmed_at`), unique by unit and
+  date. A new confirmation of a confirmed unit and date moves that row to the actor; rows are never deleted.
+  `deployments.report_owner_id` (NULL = none named) names who reads the rotation's consolidated report. Nothing else.
+- **Changed since is derived, never stored:** a confirmed unit's report reads "changed since" when a leave of any status
+  of a soldier in its section, touching the day before through the day after (the day's leaving and returning, D-193),
+  was written (`updated_at`) after `confirmed_at`. A leave moved wholly off those days, and a soldier moved between
+  units, are not caught yet (OI-254).
+- **A confirmation holds from what the confirmer saw:** the command takes `seen_at`, the latest `updated_at` among the
+  leaves the client read for the report's days (the server's stamps, never the client's clock; the earliest instant
+  when it read none), and stores `confirmed_at` = the earlier of now and `seen_at`. A leave written after the
+  confirmer's read, and before the confirm, still shows as a change. A leave whose older `updated_at` commits on the
+  server after the read is not caught yet (OI-255).
+- **Read on the whole unit section:** the status, "changed since" and the summary read every soldier of the unit's
+  section, whatever the view's filter hides. While a filter hides some of a section's soldiers, the section offers no
+  confirm button; a line says that confirming needs the full list, so the filter is cleared first.
+- **Permission:** the resource `day_reports` with the action `confirm`, checked on the section's unit. The migration
+  grants it to every role that holds `leaves:approve`, as the commanders who approve confirm; the local upgrade does the
+  same.
+- **When a report may be confirmed:** a live rotation over the unit (its own unit or one above it) runs on the date
+  (`not_reportable` otherwise) and is open (`rotation_closed` otherwise). D-269's routine case, with no rotation, keeps
+  the live report and has no confirmations: there is no owner to send it up to. A section no rotation of the day
+  covers shows no status and does not count in the summary, unless a confirmation of it stands or the actor may
+  confirm it. An id another unit and date already hold
+  answers `already_exists`, also when the unit and date already have a row of another id.
+- **Which reports the actor may confirm is the data layer's answer:** `report_confirmations.confirmable` takes units and
+  a window and returns the unit and date pairs the actor may confirm now (the permission and an open live rotation over
+  the unit), read on the whole unit tree. A confirmer who does not see a level between their unit and the rotation's
+  unit is offered the button all the same; the client never walks a tree it cannot see. A rotation write refreshes
+  the answer.
+- **Who reads the confirmations:** who views the unit (`units:view`), who may confirm it, or the report owner of a live
+  rotation over it on that date. A unit the actor may not see answers `reference_not_found`.
+- **The report dialog:** each unit section shows its status, and a "confirm" (not yet) or "confirm again" (changed
+  since) button to whoever may confirm it now. A section with no unit (D-106) has no status. The summary line ("N of M
+  confirmed, K changed", over the day's unit sections) shows to the report owner, or, with none named, to whoever may
+  confirm the rotation's unit. The copied text stays one consolidated message.
+- **The rotation form** takes an optional report owner: the active soldiers, plus the current owner. A newly named
+  owner must be an active soldier on both sides (`soldier_inactive`); an unchanged one is left alone. Changing the
+  owner refreshes the confirmations read, as it changes who reads them.
+- **Export format 4:** the export holds the confirmations and the rotations' owner, so `EXPORT_FORMAT_VERSION` and
+  `load_organization_export` move to 4, as the rotation model did (D-257 .. D-260).
+**Why:** D-269 fixed the chain; this fixes what is stored and who may act. One row per unit and day keeps the history
+small and makes "confirm again" the same act as the first; deriving "changed since" means it can never go stale.
 
 ## D-295 — Vercel builds only `main` and `staging`; other branches get no preview
 

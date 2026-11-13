@@ -47,7 +47,8 @@ export function useDeploymentMembers(): Loaded<readonly DeploymentMember[]> {
 export function useDeploymentCommands() {
   const { data } = usePorts()
   const deployments = data.commands.deployments
-  const keys = [QUERY_KEYS.deployments, QUERY_KEYS.deploymentMembers]
+  // A rotation's owner and dates decide who confirms its reports and who reads the summary (D-293).
+  const keys = [QUERY_KEYS.deployments, QUERY_KEYS.deploymentMembers, QUERY_KEYS.reportConfirmations]
   const create = useCommand(keys, (values: DeploymentFormValues) => deployments.create(toCreateDeploymentInput(values)))
   const update = useCommand(
     keys,
