@@ -61,7 +61,7 @@ export function pushKey(max: number) {
 }
 
 /**
- * The push services the browsers use (D-360): exact hosts, and parent domains whose every host is the service's.
+ * The push services the browsers use (D-351): exact hosts, and parent domains whose every host is the service's.
  * The server posts to an endpoint, so one elsewhere is refused.
  */
 export const PUSH_SERVICE_HOSTS = {
@@ -77,7 +77,7 @@ function onPushService(url: string): boolean {
   )
 }
 
-/** The push service URL of one browser install: https only, on a known push service (D-351, D-360). */
+/** The push service URL of one browser install: https only, on a known push service (D-351). */
 export const PushEndpoint = z
   .url({ protocol: /^https$/ })
   .max(2048)
