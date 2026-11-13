@@ -80,18 +80,20 @@ const shared: LeaveComment = {
 interface Fakes {
   readonly events: LeaveEvent[]
   readonly seenAt?: string | null
+  /** The stored time when it changes between reads (another device's save). */
+  readonly storedSeenAt?: () => string | null
   readonly updateMyPreferences?: (input: UpdateMyPreferencesInput) => Promise<Result<SoldierPreferencesRecord>>
 }
 
 function portsWith(fakes: Fakes) {
   const session = { status: 'linked', identity: {}, soldier_id: ACTOR, organization_id: ORGANIZATION }
-  const record: SoldierPreferencesRecord = {
+  const record = (): SoldierPreferencesRecord => ({
     soldier_id: ACTOR,
     organization_id: ORGANIZATION,
-    preferences: SoldierPreferences.parse({ updates_seen_at: fakes.seenAt ?? null }),
+    preferences: SoldierPreferences.parse({ updates_seen_at: fakes.storedSeenAt?.() ?? fakes.seenAt ?? null }),
     updated_at: AT,
     version: 1,
-  }
+  })
   const feed = vi.fn((query: LeaveFeedQuery) => Promise.resolve({ ok: true, value: fakes.events.filter((row) => row.created_at >= query.since) }))
   const ports = fakePorts({
     session: { current: () => Promise.resolve({ ok: true, value: session }), can: allowEverything },
@@ -100,7 +102,7 @@ function portsWith(fakes: Fakes) {
       leave_events: { feed },
       leave_comments: { feed: () => Promise.resolve({ ok: true, value: [shared] }) },
       organizations: organizationIn(),
-      soldier_preferences: { mine: () => Promise.resolve({ ok: true, value: record }) },
+      soldier_preferences: { mine: () => Promise.resolve({ ok: true, value: record() }) },
     },
     commands: { accounts: { updateMyPreferences: fakes.updateMyPreferences } },
     now: () => AT,
@@ -183,5 +185,23 @@ describe('marking the updates seen (D-352)', () => {
     })
     expect(updateMyPreferences).toHaveBeenCalledTimes(2)
     expect(outcome).toMatchObject({ ok: true })
+  })
+
+  it('keeps a later time another device saved meanwhile', async () => {
+    const later = '2026-11-09T08:00:00.000Z'
+    let stored: string | null = null
+    const updateMyPreferences = vi
+      .fn<(input: UpdateMyPreferencesInput) => Promise<Result<SoldierPreferencesRecord>>>()
+      .mockImplementationOnce(() => {
+        stored = later
+        return Promise.resolve({ ok: false, error: { code: 'stale_version' } })
+      })
+      .mockImplementation((input) => Promise.resolve(saved(input)))
+    const { result } = await render({ events: [], storedSeenAt: () => stored, updateMyPreferences })
+    await act(async () => {
+      await result.current.mark(shared.created_at)
+    })
+    expect(updateMyPreferences).toHaveBeenCalledTimes(2)
+    expect(updateMyPreferences.mock.calls[1]?.[0].preferences.updates_seen_at).toBe(later)
   })
 })

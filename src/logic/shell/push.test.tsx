@@ -1,10 +1,10 @@
-import { OrganizationId, SoldierId, type Result, type SubscribePushInput } from '@contracts'
-import { act, renderHook } from '@testing-library/react'
+import { OrganizationId, SoldierId, SoldierPreferences, type Result, type SoldierPreferencesRecord, type SubscribePushInput, type UpdateMyPreferencesInput } from '@contracts'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { PushAvailability, PushPort } from '../ports'
 import { useSignOut } from '../session/hooks'
 import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
-import { useDeviceNotifications } from './push'
+import { useDeviceNotifications, useNotificationKinds } from './push'
 
 // Sample data, test files only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -157,5 +157,34 @@ describe('sign-out (D-358)', () => {
       await result.current.signOut()
     })
     expect(signOut).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the kinds (D-358)', () => {
+  it('keeps both of two quick switches', async () => {
+    const stored = (preferences: SoldierPreferences, version: number): SoldierPreferencesRecord => ({
+      soldier_id: ACTOR,
+      organization_id: ORGANIZATION,
+      preferences,
+      updated_at: '2026-11-08T08:00:00.000Z',
+      version,
+    })
+    let row = stored(SoldierPreferences.parse({}), 1)
+    const updateMyPreferences = vi.fn((input: UpdateMyPreferencesInput) => {
+      row = stored(SoldierPreferences.parse(input.preferences), row.version + 1)
+      return Promise.resolve({ ok: true, value: row })
+    })
+    const ports = fakePorts({
+      repositories: { soldier_preferences: { mine: () => Promise.resolve({ ok: true, value: row }) } },
+      commands: { accounts: { updateMyPreferences } },
+    })
+    const { result } = renderHook(() => useNotificationKinds(), { wrapper: wrapperOf(ports) })
+    await waitFor(() => {
+      expect(result.current.kinds).not.toBeNull()
+    })
+    await act(async () => {
+      await Promise.all([result.current.setKind('my_request', false), result.current.setKind('awaiting_me', false)])
+    })
+    expect(row.preferences.notifications).toMatchObject({ my_request: false, awaiting_me: false })
   })
 })

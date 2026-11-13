@@ -1,4 +1,4 @@
-import type { Leave, LeaveComment, LeaveEvent, LeaveFeedQuery, Result, SoldierPreferencesRecord, Timestamp } from '@contracts'
+import type { Leave, LeaveComment, LeaveEvent, LeaveFeedQuery, Result, SoldierPreferences, SoldierPreferencesRecord, Timestamp } from '@contracts'
 import { NOTIFICATIONS } from '@config'
 import { addDays, compareInstants, isUnread, startOfDay, unreadCount, updatesFor, type LeaveUpdate } from '@domain'
 import { useQuery } from '@tanstack/react-query'
@@ -100,9 +100,13 @@ export function useMarkUpdatesSeen(): (newest: Timestamp) => Promise<Result<Sold
   return useCallback(
     async (newest) => {
       if (!ready || (seenAt !== null && compareInstants(newest, seenAt) <= 0)) return null
-      const first = await run({ updates_seen_at: newest })
+      // Over the row as stored: a later time another device saved stays.
+      const later = (stored: SoldierPreferences) => ({
+        updates_seen_at: stored.updates_seen_at !== null && compareInstants(newest, stored.updates_seen_at) <= 0 ? stored.updates_seen_at : newest,
+      })
+      const first = await run(later)
       if (first.ok || first.error.code !== 'stale_version') return first
-      return run({ updates_seen_at: newest })
+      return run(later)
     },
     [ready, seenAt, run],
   )

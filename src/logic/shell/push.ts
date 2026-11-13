@@ -1,4 +1,4 @@
-import { SoldierPreferences, type NotificationKind, type Result } from '@contracts'
+import { type NotificationKind, type Result } from '@contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useSyncExternalStore } from 'react'
 import type { PushAvailability, PushPort, DataPort } from '../ports'
@@ -75,6 +75,7 @@ export function useNotificationKinds(): NotificationKinds {
   const kinds = preferences.status === 'ready' ? preferences.value.notifications : null
   return {
     kinds,
-    setKind: (kind, on) => save.run({ notifications: { ...(kinds ?? SoldierPreferences.parse({}).notifications), [kind]: on } }),
+    // Over the row as stored at save time: two quick switches both stay.
+    setKind: (kind, on) => save.run((stored) => ({ notifications: { ...stored.notifications, [kind]: on } })),
   }
 }

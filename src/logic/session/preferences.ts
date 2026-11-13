@@ -40,6 +40,9 @@ export function useMyPreferences(): Loaded<SoldierPreferences> {
 /** One save at a time per client: each one reads what the previous one stored, so quick presses do not collide. */
 const saving = new WeakMap<QueryClient, Promise<unknown>>()
 
+/** A change, or a change worked out from the row as stored when its turn comes, so it never undoes an earlier save. */
+export type PreferenceChange = Partial<SoldierPreferences> | ((stored: SoldierPreferences) => Partial<SoldierPreferences>)
+
 /**
  * Saves a change over what is stored, at the stored version. Saves run in turn, each over the latest stored row, so a
  * change made while another is saving builds on it; a save that missed a change elsewhere answers `stale_version`.
@@ -47,10 +50,11 @@ const saving = new WeakMap<QueryClient, Promise<unknown>>()
 export function useUpdateMyPreferences() {
   const { data } = usePorts()
   const client = useQueryClient()
-  return useCommand([QUERY_KEYS.soldierPreferences], (changes: Partial<SoldierPreferences>): Promise<Result<SoldierPreferencesRecord>> => {
+  return useCommand([QUERY_KEYS.soldierPreferences], (change: PreferenceChange): Promise<Result<SoldierPreferencesRecord>> => {
     const save = async (): Promise<Result<SoldierPreferencesRecord>> => {
       const stored = client.getQueryData<MyPreferences>(QUERY_KEYS.soldierPreferences)
       if (stored === undefined) return { ok: false, error: { code: 'unavailable' } }
+      const changes = typeof change === 'function' ? change(stored.preferences) : change
       const result = await data.commands.accounts.updateMyPreferences({
         expected_version: stored.version,
         preferences: { ...stored.preferences, ...changes },
