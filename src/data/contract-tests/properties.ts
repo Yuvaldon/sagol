@@ -108,6 +108,18 @@ export function describePropertyContract(
       expect(issuesOf(mixed)).toEqual([{ path: ['items'], code: 'invalid_order' }])
     })
 
+    it('restores an archived definition, and refuses a live one (D-371)', async () => {
+      const definition = await create()
+      const restore = (expected_version: number) =>
+        adapter().commands.property_definitions.restore({ id: definition.id, expected_version })
+      expect(issuesOf(await restore(1))).toEqual([{ path: [], code: 'not_archived' }])
+      valueOf(await adapter().commands.property_definitions.archive({ id: definition.id, expected_version: 1 }))
+      expect(valueOf(await restore(2))).toMatchObject({ archived_at: null, version: 3 })
+      expect(valueOf(await adapter().repositories.property_definitions.list({ include_archived: false })).map((row) => row.id)).toEqual([
+        definition.id,
+      ])
+    })
+
     it('keeps definitions behind the properties resource (D-053)', async () => {
       await create()
       const { identity } = await seedActor(harnessOf(), organization, [], { anchor_type: 'organization' })

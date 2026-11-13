@@ -8,6 +8,8 @@ import {
   LeaveTypeGroup,
   ReorderLeaveTypeGroupsInput,
   ReorderLeaveTypesInput,
+  RestoreLeaveTypeGroupInput,
+  RestoreLeaveTypeInput,
   UpdateLeaveTypeGroupInput,
   UpdateLeaveTypeInput,
   type DataCommands,
@@ -26,6 +28,8 @@ import {
   createReferenceCommands,
   createReferenceRepository,
   createReorderCommand,
+  createRestoreCommand,
+  noRestoreIssues,
   permissionOf,
   type ReferenceSpec,
   type RowCheck,
@@ -118,6 +122,7 @@ export function createLeaveTypeGroupCommands(dependencies: LocalDependencies): D
       },
     }),
     reorder: createReorderCommand(dependencies, GROUP_SPEC, ReorderLeaveTypeGroupsInput, () => null),
+    restore: createRestoreCommand(dependencies, GROUP_SPEC, { input: RestoreLeaveTypeGroupInput, restoreIssues: noRestoreIssues }),
   }
 }
 
@@ -138,5 +143,10 @@ export function createLeaveTypeCommands(dependencies: LocalDependencies): DataCo
     }),
     // Types are ordered inside their group (D-113).
     reorder: createReorderCommand(dependencies, TYPE_SPEC, ReorderLeaveTypesInput, (row) => row.group_id),
+    // A restored type needs a live group (D-371). It never left its group, so the built-in group's rules still hold.
+    restore: createRestoreCommand(dependencies, TYPE_SPEC, {
+      input: RestoreLeaveTypeInput,
+      restoreIssues: (check) => groupIssues({ ...check, before: null }),
+    }),
   }
 }

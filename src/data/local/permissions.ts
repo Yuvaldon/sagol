@@ -306,7 +306,7 @@ export function createRankRoleBindingCommands(dependencies: LocalDependencies): 
 const GRANT_TABLES: readonly TableName[] = [...new Set<TableName>([...POLICY_TABLES, ...ANCHOR_TABLES])]
 
 /** Not revoked and not expired: what the list shows by default. A grant that starts later is active too. */
-function grantActive(grant: AccessGrant, now: Timestamp): boolean {
+export function grantActive(grant: AccessGrant, now: Timestamp): boolean {
   return grant.revoked_at === null && (grant.valid_to === null || grant.valid_to > now)
 }
 
