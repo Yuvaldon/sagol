@@ -234,7 +234,7 @@ describe('views, url, storage, breakpoints, dates', () => {
     expect(isLeaveTypePaletteKey('nope')).toBe(false)
   })
 
-  it('offers the built-in group calm leave colors only, blue first (D-346)', () => {
+  it('offers the built-in group calm leave colors only, blue first (D-347)', () => {
     expect(ROTATION_LEAVE_PALETTE_KEYS[0]).toBe(FIRST_ROTATION_LEAVE_COLOR)
     for (const key of ROTATION_LEAVE_PALETTE_KEYS) expect(isLeaveTypePaletteKey(key)).toBe(true)
     expect(isRotationLeavePaletteKey('cyan')).toBe(true)

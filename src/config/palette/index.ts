@@ -42,7 +42,7 @@ export function isLeaveTypePaletteKey(value: string): value is PaletteKey {
 export const IMPORTED_LEAVE_TYPE_STAND_IN: PaletteKey = 'gray'
 
 /**
- * The calm keys the built-in "סבב יציאות" group's types take (D-346): a routine absence, not an alert, so the warm keys
+ * The calm keys the built-in "סבב יציאות" group's types take (D-347): a routine absence, not an alert, so the warm keys
  * are not offered. The first is the first type's; each type added takes the first one its group's live types leave free.
  */
 export const FIRST_ROTATION_LEAVE_COLOR: PaletteKey = 'blue'
