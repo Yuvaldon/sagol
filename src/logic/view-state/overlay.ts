@@ -30,7 +30,7 @@ const leaving = new WeakMap<RouterHistory, number>()
 
 /**
  * Leaves the current overlay entry, and `steps - 1` entries under it that belong to overlays above the screen
- * (D-335), once however often it is asked before the history answers.
+ * (D-336), once however often it is asked before the history answers.
  */
 export function leaveOverlayEntry(history: RouterHistory, steps = 1): void {
   const index = entryIndex(history.location)
