@@ -4808,7 +4808,7 @@ the soldiers know stays as it is.
 
 ## D-354 — Push dispatch runs after the commit, best effort, from the gateway only
 2026-11-13 · accepted · refines D-201 · decided under D-170 (spec P-5)
-- **The seam.** The gateway takes an optional `afterCommit(changes)`. It runs only when the call succeeded, after the
+- **The seam.** The gateway takes an optional `afterCommit({ identity, changes })`: who called, and what the call wrote. It runs only when the call succeeded, after the
   transaction committed and outside the retry loop, inside `EdgeRuntime.waitUntil` where it exists, so the answer is
   not delayed and a push failure never changes a result. A refused or rolled back call sends nothing.
 - **The work.** Dispatch re-reads, in one read, the leave events and comments the changes name, asks the domain who
