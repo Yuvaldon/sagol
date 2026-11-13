@@ -1,18 +1,16 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
+import { NEW_ENTITY } from '@config'
 import { t } from '@i18n'
 import {
   useLeaveCreation,
   useLeaveRoundSetup,
   useLeaveTypeGroups,
-  useLeaveTypePermissions,
   useLeaveTypes,
-  useModuleAccess,
   useMyPreferences,
   usePanel,
   useSoldiers,
   useToday,
 } from '@logic'
-import { CalendarSync, Tags, User, Users, type LucideIcon } from 'lucide-react'
+import { CalendarSync, User, Users, type LucideIcon } from 'lucide-react'
 import type { I18nKey } from '@i18n'
 import { useState } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -25,8 +23,6 @@ import { LeaveSheetForm } from './LeaveSheetForm'
 /** What the panel shows before the form: what is missing, and the way to it when the actor may take it. */
 function NewLeave() {
   const panel = usePanel()
-  const access = useModuleAccess()
-  const typePermissions = useLeaveTypePermissions()
   const today = useToday()
   const soldiers = useSoldiers()
   const types = useLeaveTypes()
@@ -44,23 +40,6 @@ function NewLeave() {
   }
 
   const liveTypes = types.value.filter((type) => type.archived_at === null)
-  if (liveTypes.length === 0) {
-    return (
-      <EmptyNotice titleKey="leaves.noTypesTitle" bodyKey={typePermissions.create ? 'leaves.noTypesBody' : 'leaves.noTypesReadOnly'}>
-        {typePermissions.create && access.leaveTypes ? (
-          <Button
-            variant="primary"
-            onPress={() => {
-              panel.open(PANEL_IDS.leaveTypes, { entity: NEW_ENTITY })
-            }}
-          >
-            <Tags aria-hidden size={14} />
-            {t('leaves.openTypes')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
-    )
-  }
   if (!creation.any) return <EmptyNotice titleKey="leaves.noSoldiersTitle" bodyKey="leaves.noSoldiersBody" />
   // A draft counts only for a soldier the form offers, who the actor may ask for (a link may name anyone).
   const draft =

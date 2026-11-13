@@ -3,6 +3,8 @@ import {
   UnitId,
   UnitMembershipId,
   BootstrapOwnerInput,
+  LeaveTypeGroupId,
+  LeaveTypeId,
   OrganizationId,
   RoleId,
   SoldierAccountId,
@@ -20,6 +22,9 @@ export interface ClaimOrganizationValues {
   readonly soldier: { readonly first_name: string; readonly last_name: string }
   /** The UI proposes it, and the owner may rename the role later. */
   readonly owner_role_name: string
+  /** The built-in "סבב יציאות" group and its first type (D-345, D-347): names the UI proposes, user data afterwards. */
+  readonly rotation_group_name: string
+  readonly rotation_type_name: string
 }
 
 export function toBootstrapInput(values: ClaimOrganizationValues): BootstrapOwnerInput {
@@ -31,6 +36,8 @@ export function toBootstrapInput(values: ClaimOrganizationValues): BootstrapOwne
     access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
     root_unit_id: UnitId.parse(crypto.randomUUID()),
     membership_id: UnitMembershipId.parse(crypto.randomUUID()),
+    rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: values.rotation_group_name },
+    rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: values.rotation_type_name },
   }
 }
 

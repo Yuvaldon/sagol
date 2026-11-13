@@ -19,7 +19,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { useRotationScope } from '../view-state/rotation'
 import { useFilterSource } from '../filters/source'
-import { useLeaves, useLeavesOfAnyStatus, useLeaveTypes } from '../leaves/hooks'
+import { useLeaves, useLeavesOfAnyStatus, useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
 import { checkOf, checkOn } from '../permissions/checks'
 import { useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
@@ -88,6 +88,7 @@ export function useDayReport(
   const source = useFilterSource(useRotationScope().rotation?.id ?? null)
   const leaves = useLeaves(span)
   const types = useLeaveTypes()
+  const groups = useLeaveTypeGroups()
   const soldiers = source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS
   const checks = useMemo((): readonly PermissionCheck[] => soldiers.map(leavesCheckOf), [soldiers])
   const answers = useCanAnswers(checks)
@@ -97,6 +98,7 @@ export function useDayReport(
     if (source.status !== 'ready') return source
     if (leaves.status !== 'ready') return leaves
     if (types.status !== 'ready') return types
+    if (groups.status !== 'ready') return groups
     // The report waits for every answer, so a soldier never moves out of it a moment later (D-161, D-122).
     if (!checks.every(answers.known) || !placements.settled) return { status: 'loading' }
     const unit = filterUnitOf(filter)
@@ -107,6 +109,7 @@ export function useDayReport(
         filter,
         leaves: leaves.value,
         types: types.value,
+        groups: groups.value,
         days,
         scopeUnitId: unit.kind === 'unit' ? unit.unitId : null,
         rotations,
@@ -114,7 +117,7 @@ export function useDayReport(
         readsPlacements: placements.readsOrPending,
       }),
     }
-  }, [span, source, leaves, types, checks, answers, placements, filter, days, rotations])
+  }, [span, source, leaves, types, groups, checks, answers, placements, filter, days, rotations])
 }
 
 /** The confirmations the actor reads of `days` (D-293). Loading while the days are unknown. */

@@ -89,7 +89,13 @@ type Target = { table: TableName; nested?: Record<string, TableName> }
 const INPUT_TABLES: Record<string, Target> = {
   BootstrapOwnerInput: {
     table: 'organizations',
-    nested: { organization: 'organizations', soldier: 'soldiers', owner_role: 'roles' },
+    nested: {
+      organization: 'organizations',
+      soldier: 'soldiers',
+      owner_role: 'roles',
+      rotation_group: 'leave_type_groups',
+      rotation_type: 'leave_types',
+    },
   },
   UpdateOrganizationInput: { table: 'organizations' },
   RequestAccountLinkInput: { table: 'account_link_requests' },

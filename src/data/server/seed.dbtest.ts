@@ -1,6 +1,8 @@
 import {
   AccessGrantId,
   AuthUserId,
+  LeaveTypeGroupId,
+  LeaveTypeId,
   OrganizationId,
   RoleId,
   SoldierAccountId,
@@ -64,6 +66,8 @@ beforeAll(async () => {
         owner_role: { id: RoleId.parse(crypto.randomUUID()), name: 'Owner' },
         account_id: SoldierAccountId.parse(crypto.randomUUID()),
         access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
+        rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: 'Rotation leave' },
+        rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: 'Rotation leave 1' },
       },
     ],
   })

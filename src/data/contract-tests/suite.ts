@@ -1,4 +1,6 @@
 import {
+  LeaveTypeGroupId,
+  LeaveTypeId,
   AccessGrantId,
   UnitId,
   UnitMembershipId,
@@ -66,6 +68,8 @@ export function bootstrapInput(overrides: Partial<BootstrapOwnerInput> = {}): Bo
     access_grant_id: AccessGrantId.parse(crypto.randomUUID()),
     root_unit_id: UnitId.parse(crypto.randomUUID()),
     membership_id: UnitMembershipId.parse(crypto.randomUUID()),
+    rotation_group: { id: LeaveTypeGroupId.parse(crypto.randomUUID()), name: 'Rotation leave' },
+    rotation_type: { id: LeaveTypeId.parse(crypto.randomUUID()), name: 'Rotation leave 1' },
     ...overrides,
   }
 }
@@ -89,6 +93,8 @@ const BOOTSTRAP_WRITES = [
   'roles',
   'role_permissions',
   'access_grants',
+  'leave_type_groups',
+  'leave_types',
 ] as const satisfies readonly TableName[]
 
 export function describeAdapterContract(name: string, createHarness: () => Promise<ContractHarness>): void {

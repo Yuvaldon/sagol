@@ -78,7 +78,16 @@ const CREATE_INTERNAL: Permission = { resource: 'internal_comments', action: 'cr
 
 export function describeLeaveContract(
   harnessOf: () => ContractHarness,
-  claim: () => Promise<{ input: { organization: { id: OrganizationId }; soldier: { id: SoldierId }; root_unit_id: UnitId }; owner: AuthIdentity }>,
+  claim: () => Promise<{
+    input: {
+      organization: { id: OrganizationId }
+      soldier: { id: SoldierId }
+      root_unit_id: UnitId
+      rotation_group: { id: LeaveTypeGroupId; name: string }
+      rotation_type: { id: LeaveTypeId; name: string }
+    }
+    owner: AuthIdentity
+  }>,
 ): void {
   const adapter = () => harnessOf().adapter
 
@@ -88,10 +97,14 @@ export function describeLeaveContract(
     let ownerId: SoldierId
     let owner: AuthIdentity
     let rotation: DeploymentId
+    let rotationGroup: LeaveTypeGroupId
+    let rotationType: LeaveTypeId
 
     beforeEach(async () => {
       const claimed = await claim()
       organization = claimed.input.organization.id
+      rotationGroup = claimed.input.rotation_group.id
+      rotationType = claimed.input.rotation_type.id
       root = claimed.input.root_unit_id
       ownerId = claimed.input.soldier.id
       owner = claimed.owner
@@ -167,7 +180,8 @@ export function describeLeaveContract(
         const second = valueOf(await adapter().commands.leave_type_groups.create({ id: newGroupId(), name: 'Courses', sort_order: 1 }))
         const first = valueOf(await adapter().commands.leave_type_groups.create({ id: newGroupId(), name: 'Home', sort_order: 0 }))
         const groups = valueOf(await adapter().repositories.leave_type_groups.list({ include_archived: false }))
-        expect(groups.map((group) => group.id)).toEqual([first.id, second.id])
+        expect(groups.filter((group) => !group.is_rotation_leave).map((group) => group.id)).toEqual([first.id, second.id])
+        expect([first, second].map((group) => group.is_rotation_leave)).toEqual([false, false])
 
         const type = await createType({ group_id: first.id, icon_key: 'home' })
         expect(type).toMatchObject({ availability_effect: 'unavailable', requires_reason: false, version: 1, created_by: ownerId })
@@ -255,6 +269,65 @@ export function describeLeaveContract(
         harnessOf().signIn(local)
         expect(valueOf(await adapter().repositories.leave_types.get(type.id)).id).toBe(type.id)
         expect(errorOf(await adapter().commands.leave_types.create(typeInput())).code).toBe('forbidden')
+      })
+    })
+
+    describe('the built-in group (D-345, D-347)', () => {
+      it('comes with the organization, holding one calm type that asks no reason', async () => {
+        const groups = valueOf(await adapter().repositories.leave_type_groups.list({ include_archived: false }))
+        expect(groups.filter((group) => group.is_rotation_leave)).toEqual([
+          expect.objectContaining({ id: rotationGroup, name: 'Rotation leave', archived_at: null }),
+        ])
+        expect(valueOf(await adapter().repositories.leave_types.get(rotationType))).toMatchObject({
+          group_id: rotationGroup,
+          name: 'Rotation leave 1',
+          color_key: 'blue',
+          availability_effect: 'unavailable',
+          requires_reason: false,
+        })
+      })
+
+      it('refuses to archive the group or its last type, in any order', async () => {
+        expect(issuesOf(await adapter().commands.leave_type_groups.archive({ id: rotationGroup, expected_version: 1 }))).toEqual([
+          { path: [], code: 'group_builtin' },
+        ])
+        expect(issuesOf(await adapter().commands.leave_types.archive({ id: rotationType, expected_version: 1 }))).toEqual([
+          { path: [], code: 'last_rotation_type' },
+        ])
+        const second = await createType({ group_id: rotationGroup, name: 'Rotation leave 2', color_key: 'cyan' })
+        expect(valueOf(await adapter().commands.leave_types.archive({ id: rotationType, expected_version: 1 })).archived_at).toBe(NOW)
+        expect(issuesOf(await adapter().commands.leave_types.archive({ id: second.id, expected_version: 1 }))).toEqual([
+          { path: [], code: 'last_rotation_type' },
+        ])
+      })
+
+      it('fixes what a type of the group is: absent, no reason, a calm color, and no moving in or out', async () => {
+        expect(
+          issuesOf(
+            await adapter().commands.leave_types.create(
+              typeInput({ group_id: rotationGroup, availability_effect: 'available', requires_reason: true, color_key: 'red' }),
+            ),
+          ),
+        ).toEqual([
+          { path: ['availability_effect'], code: 'fixed_by_group' },
+          { path: ['requires_reason'], code: 'fixed_by_group' },
+          { path: ['color_key'], code: 'invalid_value' },
+        ])
+        const loose = await createType()
+        expect(issuesOf(await adapter().commands.leave_types.update({ id: loose.id, expected_version: 1, changes: { group_id: rotationGroup } }))).toEqual([
+          { path: ['changes', 'group_id'], code: 'fixed_by_group' },
+        ])
+        expect(issuesOf(await adapter().commands.leave_types.update({ id: rotationType, expected_version: 1, changes: { group_id: null } }))).toEqual([
+          { path: ['changes', 'group_id'], code: 'fixed_by_group' },
+        ])
+        const renamed = valueOf(await adapter().commands.leave_types.update({ id: rotationType, expected_version: 1, changes: { name: 'Weekend', color_key: 'teal' } }))
+        expect(renamed).toMatchObject({ name: 'Weekend', color_key: 'teal' })
+      })
+
+      it('makes an ordinary group from a command', async () => {
+        const group = valueOf(await adapter().commands.leave_type_groups.create({ id: newGroupId(), name: 'G', sort_order: 0 }))
+        expect(group.is_rotation_leave).toBe(false)
+        expect(valueOf(await adapter().repositories.leave_type_groups.list({ include_archived: false })).filter((row) => row.is_rotation_leave)).toHaveLength(1)
       })
     })
 
