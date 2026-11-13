@@ -1,5 +1,5 @@
 import type { AuthIdentity } from '@contracts'
-import type { GatewayResponse } from './gateway'
+import { GatewayRequest, type GatewayResponse } from './gateway'
 import { AuthServerUnavailable } from './supabaseIdentity'
 
 // The gateway over HTTP (D-201): one POST per adapter call. The caller's identity comes from the
@@ -15,6 +15,8 @@ export interface CommandHandlerDependencies {
    * hold `*`, which stands for one or more of `a-z`, `0-9` and `-`, for preview deployments (D-209).
    */
   readonly origins: readonly string[]
+  /** Where each call's line goes: the function's log (D-335). */
+  readonly log: (line: string) => void
 }
 
 /** One origin entry as a matcher: literal text, with each `*` matching inside one DNS label only. */
@@ -29,7 +31,14 @@ function originMatcher(entry: string): (origin: string) => boolean {
 const MAX_BODY = 1_000_000
 const ALLOWED_HEADERS = 'authorization, content-type, apikey, x-client-info'
 
-export function createCommandHandler({ gateway, verify, origins }: CommandHandlerDependencies) {
+/** A call's log line (D-335): which method was called and what it answered, never its arguments or caller. */
+function callLine(body: unknown, { result }: GatewayResponse): string {
+  const request = GatewayRequest.safeParse(body)
+  const call = request.success ? `${request.data.kind}.${request.data.group}.${request.data.method}` : null
+  return JSON.stringify({ call, code: result.ok ? 'ok' : result.error.code })
+}
+
+export function createCommandHandler({ gateway, verify, origins, log }: CommandHandlerDependencies) {
   const matchers = origins.map(originMatcher)
   return async function serve(request: Request): Promise<Response> {
     const origin = request.headers.get('origin')
@@ -73,6 +82,8 @@ export function createCommandHandler({ gateway, verify, origins }: CommandHandle
     } catch {
       body = undefined
     }
-    return reply(200, await gateway(identity, body))
+    const answer = await gateway(identity, body)
+    log(callLine(body, answer))
+    return reply(200, answer)
   }
 }

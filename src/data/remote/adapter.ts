@@ -131,10 +131,7 @@ export function createRemoteDataAdapter(
     let response: Response
     try {
       const token = await accessToken()
-      // The call's name rides in the URL only for the request logs (D-331); no argument ever does.
-      const target = new URL(endpoint)
-      target.searchParams.set(REMOTE.callParam, `${kind}.${group}.${method}`)
-      response = await fetch(target, {
+      response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

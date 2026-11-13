@@ -41,6 +41,7 @@ function handlerFetch(): { fetch: typeof fetch; tokenOf(identity: AuthIdentity):
     }),
     verify: (token) => Promise.resolve(tokens.get(token) ?? null),
     origins: [],
+    log: () => undefined,
   })
   return {
     fetch: (input, init) => serve(new Request(input, init)),

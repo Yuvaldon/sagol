@@ -42,6 +42,7 @@ const BEFORE_NARROW = "2025-07-01";
 const NARROW_DAY = "2025-07-02";
 const ELSEWHERE_DAY = "2025-08-01";
 const NEXT_MONTH = "2026-12-01";
+const BEFORE_ROTATION = "2025-12-31";
 
 const newDeploymentId = () => DeploymentId.parse(crypto.randomUUID());
 const newOverrideId = () => SeniorityOverrideId.parse(crypto.randomUUID());
@@ -783,6 +784,17 @@ export function describeDeploymentContract(
         expect(
           issuesOf(await adapter().commands.leaves.create(single(draft(outside.id, type.id)))),
         ).toEqual([{ path: ["soldier_id"], code: "not_a_member" }]);
+      });
+
+      it("answers outside_rotation, not not_a_member, for a whole-unit request before the rotation (D-221, D-336)", async () => {
+        const type = await leaveType();
+        const { unit_id, start_date } = valueOf(await adapter().repositories.deployments.get(rotation));
+        const inside = await soldier(unit_id, "Avi");
+        const early = single({ ...draft(inside.id, type.id), start_date: BEFORE_ROTATION, end_date: TODAY });
+        expect(start_date > BEFORE_ROTATION).toBe(true);
+        expect(issuesOf(await adapter().commands.leaves.create(early))).toEqual([
+          { path: ["start_date"], code: "outside_rotation" },
+        ]);
       });
 
       it("refuses a move that strands a request of the whole unit (D-216, D-221)", async () => {

@@ -11,8 +11,7 @@ import {
 } from '@contracts'
 import {
   EDITABLE_LEAVE_STATUSES,
-  buildUnitTree,
-  descendantsOf,
+  createRotationMembership,
   leaveRotationIssues,
   rotationClosedIssues,
   wholeUnitRotationIssues,
@@ -71,16 +70,20 @@ export async function hasMemberRows(database: Store, deployment: Pick<Deployment
   return rows.some((row) => row.deployment_id === deployment.id)
 }
 
-/** The days the whole unit of `deployment` holds the soldier: their memberships, of any type, in its subtree (D-221). */
+/**
+ * The days the whole unit of `deployment` holds the soldier: their memberships, of any type, in its unit or below it,
+ * within its dates (D-221). The rotation's membership test is the domain's, the same one the client reads (D-336); the
+ * caller has found no member row, so the rotation holds the whole unit.
+ */
 export async function wholeUnitSpans(
   database: Store,
-  deployment: Pick<Deployment, 'organization_id' | 'unit_id'>,
+  deployment: Pick<Deployment, 'id' | 'organization_id' | 'unit_id' | 'start_date' | 'end_date'>,
   soldierId: SoldierId,
 ): Promise<DateSpan[]> {
   const units = await tableOf(database, 'units').where('organization_id').equals(deployment.organization_id).toArray()
-  const subtree = new Set<string>([deployment.unit_id, ...descendantsOf(buildUnitTree(units), deployment.unit_id)])
   const rows = await tableOf(database, 'unit_memberships').where('soldier_id').equals(soldierId).toArray()
-  return rows.filter((row) => row.organization_id === deployment.organization_id && subtree.has(row.unit_id))
+  const unit_memberships = rows.filter((row) => row.organization_id === deployment.organization_id)
+  return createRotationMembership({ units, unit_memberships, deployment_members: [] }).daysOf(deployment, soldierId)
 }
 
 /** The live requests of a rotation (D-216). */
@@ -103,7 +106,7 @@ export function holdsLeaves(
 /** Whether the soldier's live requests still fit the whole unit of `deployment` (D-221). */
 export async function wholeUnitHoldsLeaves(
   database: Store,
-  deployment: Pick<Deployment, 'organization_id' | 'unit_id' | 'start_date' | 'end_date'>,
+  deployment: Pick<Deployment, 'id' | 'organization_id' | 'unit_id' | 'start_date' | 'end_date'>,
   soldierId: SoldierId,
   leaves: readonly Leave[],
 ): Promise<boolean> {

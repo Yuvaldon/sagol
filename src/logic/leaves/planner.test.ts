@@ -1,5 +1,6 @@
 import { LEAVE_ROUNDS } from '@config'
-import { DeploymentId, LeaveTypeId, OrganizationId, SoldierId, UnitId, type Deployment, type DeploymentMember } from '@contracts'
+import { DeploymentId, LeaveTypeId, OrganizationId, SoldierId, UnitId, UnitLevelId, type Deployment, type DeploymentMember } from '@contracts'
+import { createRotationMembership } from '@domain'
 import { describe, expect, it } from 'vitest'
 import {
   groupRounds,
@@ -22,12 +23,17 @@ const TYPE = LeaveTypeId.parse(uuid(30))
 const DANA = SoldierId.parse(uuid(1))
 const ELI = SoldierId.parse(uuid(2))
 const GAL = SoldierId.parse(uuid(3))
+const HILA = SoldierId.parse(uuid(4))
+const COMPANY = UnitId.parse(uuid(10))
+const PLATOON = UnitId.parse(uuid(11))
+const OTHER = UnitId.parse(uuid(12))
+const LEVEL = UnitLevelId.parse(uuid(80))
 
 const rotation = (overrides: Partial<Deployment> = {}): Deployment => ({
   id: DeploymentId.parse(uuid(70)),
   organization_id: ORGANIZATION,
   name: 'סבב חורף',
-  unit_id: UnitId.parse(uuid(10)),
+  unit_id: COMPANY,
   start_date: '2026-12-01',
   end_date: '2026-12-31',
   closed_at: null,
@@ -51,7 +57,28 @@ const member = (soldierId: SoldierId, start: string | null = null, end: string |
   created_at: AT,
   created_by: null,
 })
-const WHOLE_UNIT: RoundContext = { rotations: [ROTATION], members: [] }
+const UNITS = [
+  { id: COMPANY, parent_id: null, unit_level_id: LEVEL },
+  { id: PLATOON, parent_id: COMPANY, unit_level_id: LEVEL },
+  { id: OTHER, parent_id: null, unit_level_id: LEVEL },
+]
+const placed = (soldier_id: SoldierId, unit_id: UnitId, valid_from = '2026-01-01', valid_to: string | null = null) => ({
+  soldier_id,
+  unit_id,
+  valid_from,
+  valid_to,
+})
+/** Dana in the company, Eli in its platoon, Gal in another unit; Hila in the platoon on two stretches of December. */
+const MEMBERSHIPS = [
+  placed(DANA, COMPANY),
+  placed(ELI, PLATOON),
+  placed(GAL, OTHER),
+  placed(HILA, PLATOON, '2026-12-03', '2026-12-09'),
+  placed(HILA, PLATOON, '2026-12-19', null),
+]
+const membership = (deployment_members: readonly DeploymentMember[] = [], unit_memberships = MEMBERSHIPS) =>
+  createRotationMembership({ units: UNITS, unit_memberships, deployment_members })
+const WHOLE_UNIT: RoundContext = { rotations: [ROTATION], members: membership() }
 
 /** Two groups taking turns on 8 in, 6 home, over December. */
 function plan(overrides: Partial<LeaveRoundValues> = {}): LeaveRoundValues {
@@ -108,15 +135,31 @@ describe('the planned rounds (D-270, D-316)', () => {
   })
 
   it('cuts the rounds to the days each soldier serves, and skips who does not serve', () => {
-    const context = { rotations: [ROTATION], members: [member(DANA, '2026-12-03', '2026-12-16'), member(ELI)] }
-    const values = plan({ groups: [{ key: 'a', soldier_ids: [DANA, GAL], first_home: '2026-12-01' }] })
+    const context = { rotations: [ROTATION], members: membership([member(DANA, '2026-12-03', '2026-12-16'), member(GAL)]) }
+    const values = plan({ groups: [{ key: 'a', soldier_ids: [DANA, ELI], first_home: '2026-12-01' }] })
     expect(plannedRounds(values, context).map((round) => [round.soldier_id, round.start_date, round.end_date])).toEqual([
       [DANA, '2026-12-03', '2026-12-06'],
       [DANA, '2026-12-15', '2026-12-16'],
     ])
-    expect(rotationSoldiers(ROTATION, context.members, [DANA, ELI, GAL])).toEqual([DANA, ELI])
-    expect(rotationSoldiers(ROTATION, [], [DANA, GAL])).toEqual([DANA, GAL])
-    expect(rotationSoldiers(null, [], [DANA])).toEqual([])
+    expect(rotationSoldiers(ROTATION, context.members, [DANA, ELI, GAL])).toEqual([DANA, GAL])
+    expect(rotationSoldiers(null, context.members, [DANA])).toEqual([])
+  })
+
+  it('offers a whole-unit rotation only the soldiers of its unit and below it (D-336, OI-292)', () => {
+    expect(rotationSoldiers(ROTATION, WHOLE_UNIT.members, [DANA, ELI, GAL, HILA])).toEqual([DANA, ELI, HILA])
+    const values = plan({ groups: [{ key: 'a', soldier_ids: [GAL], first_home: '2026-12-01' }] })
+    expect(plannedRounds(values, WHOLE_UNIT)).toEqual([])
+  })
+
+  it("cuts a whole-unit rotation's rounds to the soldier's membership days, gaps included (D-336, OI-292)", () => {
+    const values = plan({ groups: [{ key: 'a', soldier_ids: [HILA], first_home: '2026-12-01' }] })
+    expect(plannedRounds(values, WHOLE_UNIT).map((round) => [round.start_date, round.end_date])).toEqual([
+      ['2026-12-03', '2026-12-06'],
+      ['2026-12-19', '2026-12-20'],
+      ['2026-12-29', '2026-12-31'],
+    ])
+    const outside = plan({ start_date: '2026-12-10', end_date: '2026-12-18', groups: [{ key: 'a', soldier_ids: [HILA], first_home: '2026-12-10' }] })
+    expect(plannedRounds(outside, WHOLE_UNIT)).toEqual([])
   })
 
   it('sends one collective leave in the rotation, a leave per soldier and round', () => {
@@ -183,14 +226,15 @@ describe('the plan form (D-316)', () => {
   it('caps how many leaves one plan makes', () => {
     const many = Array.from({ length: 60 }, (_, n) => SoldierId.parse(uuid(100 + n)))
     const values = plan({ days_in: '1', days_home: '1', groups: [{ key: 'a', soldier_ids: many, first_home: '2026-12-01' }] })
-    expect(plannedRounds(values, WHOLE_UNIT).length).toBeGreaterThan(LEAVE_ROUNDS.maxLeaves)
-    expect(leaveRoundIssues(values, null, WHOLE_UNIT)).toContainEqual({ path: ['end_date'], code: 'too_big' })
+    const context: RoundContext = { rotations: [ROTATION], members: membership([], many.map((soldierId) => placed(soldierId, COMPANY))) }
+    expect(plannedRounds(values, context).length).toBeGreaterThan(LEAVE_ROUNDS.maxLeaves)
+    expect(leaveRoundIssues(values, null, context)).toContainEqual({ path: ['end_date'], code: 'too_big' })
   })
 
   it('refuses an open rotation planned to a far end date without walking every day', () => {
     const open = rotation({ end_date: null })
     const values = plan({ deployment_id: open.id, end_date: '9999-12-31', days_in: '1', days_home: '1' })
-    const context: RoundContext = { rotations: [open], members: [] }
+    const context: RoundContext = { rotations: [open], members: membership() }
     expect(groupRounds(values, values.groups[0] ?? { key: 'none', soldier_ids: [], first_home: '' })).toHaveLength(LEAVE_ROUNDS.maxLeaves + 1)
     expect(leaveRoundIssues(values, null, context)).toContainEqual({ path: ['end_date'], code: 'too_big' })
   })

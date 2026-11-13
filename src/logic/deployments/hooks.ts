@@ -1,10 +1,12 @@
 import type { Deployment, DeploymentMember, PermissionCheck, Result, Unit, UnitId } from '@contracts'
+import { createRotationMembership, type RotationMembership } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOf } from '../permissions/checks'
 import { useCan } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
+import { useMemberships, useUnitsWithArchived } from '../roster/hooks'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
@@ -30,6 +32,23 @@ export function useDeployments(): Loaded<readonly Deployment[]> {
       queryKey: [...QUERY_KEYS.deployments, WITH_ARCHIVED],
       queryFn: () => unwrap(data.repositories.deployments.list(WITH_ARCHIVED)),
     }),
+  )
+}
+
+/**
+ * Who serves in each rotation the actor reads, and on which days: the domain's one membership test (D-336), fed with
+ * the member rows, the units (archived ones too, as the command reads them) and the memberships. NULL while they load.
+ */
+export function useRotationMembership(): RotationMembership | null {
+  const members = useDeploymentMembers()
+  const units = useUnitsWithArchived()
+  const memberships = useMemberships()
+  return useMemo(
+    () =>
+      members.status === 'ready' && units.status === 'ready' && memberships.status === 'ready'
+        ? createRotationMembership({ units: units.value, unit_memberships: memberships.value, deployment_members: members.value })
+        : null,
+    [members, units, memberships],
   )
 }
 

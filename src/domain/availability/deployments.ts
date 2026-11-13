@@ -1,5 +1,16 @@
-import { IssueCode, type CalendarDate, type Deployment, type DeploymentMember, type Issue } from '@contracts'
-import { addDays, compareDates, spansOverlap, type DateSpan } from '../time'
+import {
+  IssueCode,
+  type CalendarDate,
+  type Deployment,
+  type DeploymentId,
+  type DeploymentMember,
+  type Issue,
+  type SoldierId,
+  type UnitId,
+  type UnitMembership,
+} from '@contracts'
+import { buildUnitTree, descendantsOf, type UnitNode } from '../hierarchy'
+import { addDays, compareDates, spanCovers, spansOverlap, type DateSpan } from '../time'
 
 // Deployments and their members (D-019, D-071, D-179). Pure.
 
@@ -146,4 +157,108 @@ export function spansCoverRange(
     }
   }
   return false
+}
+
+/** The rotation columns membership reads. Full `Deployment` rows fit. */
+export type MembershipRotation = Pick<Deployment, 'id' | 'unit_id' | 'start_date' | 'end_date'>
+
+/** What rotation membership reads (D-259, D-221). Full contract rows fit. */
+export interface RotationMembershipData {
+  readonly units: Iterable<UnitNode>
+  readonly unit_memberships: Iterable<Pick<UnitMembership, 'soldier_id' | 'unit_id' | 'valid_from' | 'valid_to'>>
+  readonly deployment_members: Iterable<Pick<DeploymentMember, 'deployment_id' | 'soldier_id' | 'start_date' | 'end_date'>>
+}
+
+/** Who serves in a rotation, and on which days: the one membership test of rules, commands, planner and form (D-336). */
+export interface RotationMembership {
+  /**
+   * The soldier's days in the rotation, sorted and merged, within the rotation's own dates; empty when the soldier
+   * serves on none. A listed rotation: the member's own dates, else the rotation's (D-179). A rotation with no member
+   * row holds the whole unit (D-259): the soldier's memberships, of any type, in the rotation's unit or below it (D-221).
+   */
+  daysOf(rotation: MembershipRotation, soldierId: SoldierId): DateSpan[]
+  /** Whether the soldier serves in the rotation on `date`. */
+  servesOn(rotation: MembershipRotation, soldierId: SoldierId, date: CalendarDate): boolean
+  /** Whether the rotation lists its members; one with no member row holds the whole unit (D-259). */
+  isListed(rotation: Pick<Deployment, 'id'>): boolean
+}
+
+export function createRotationMembership(data: RotationMembershipData): RotationMembership {
+  const tree = buildUnitTree([...data.units])
+  const membershipsBySoldier = new Map<SoldierId, DateSpanIn[]>()
+  for (const row of data.unit_memberships) {
+    const own = membershipsBySoldier.get(row.soldier_id)
+    if (own === undefined) membershipsBySoldier.set(row.soldier_id, [row])
+    else own.push(row)
+  }
+  const members = new Map<string, DeploymentMemberDates>()
+  const listed = new Set<DeploymentId>()
+  for (const member of data.deployment_members) {
+    members.set(`${member.deployment_id}|${member.soldier_id}`, member)
+    listed.add(member.deployment_id)
+  }
+  const subtrees = new Map<UnitId, ReadonlySet<UnitId>>()
+  function subtreeOf(unitId: UnitId): ReadonlySet<UnitId> {
+    const cached = subtrees.get(unitId)
+    if (cached !== undefined) return cached
+    const subtree = new Set<UnitId>([unitId, ...descendantsOf(tree, unitId)])
+    subtrees.set(unitId, subtree)
+    return subtree
+  }
+  const cache = new Map<string, DateSpan[]>()
+  function daysOf(rotation: MembershipRotation, soldierId: SoldierId): DateSpan[] {
+    const key = `${rotation.id}|${soldierId}`
+    const cached = cache.get(key)
+    if (cached !== undefined) return cached
+    let spans: DateSpan[]
+    if (listed.has(rotation.id)) {
+      const member = members.get(key)
+      const span = member === undefined ? null : memberSpan(rotation, member)
+      spans = span === null ? [] : clippedSpans(rotation, [{ valid_from: span.start_date, valid_to: span.end_date }])
+    } else {
+      const subtree = subtreeOf(rotation.unit_id)
+      spans = clippedSpans(rotation, (membershipsBySoldier.get(soldierId) ?? []).filter((row) => subtree.has(row.unit_id)))
+    }
+    cache.set(key, spans)
+    return spans
+  }
+  return {
+    daysOf,
+    servesOn: (rotation, soldierId, date) => daysOf(rotation, soldierId).some((span) => spanCovers(span, date)),
+    isListed: (rotation) => listed.has(rotation.id),
+  }
+}
+
+type DateSpanIn = Pick<UnitMembership, 'unit_id' | 'valid_from' | 'valid_to'>
+
+/** `spans` cut to the rotation's dates, sorted, with overlapping and adjacent ones merged into one. */
+function clippedSpans(rotation: Pick<Deployment, 'start_date' | 'end_date'>, spans: readonly DateSpan[]): DateSpan[] {
+  const cut: DateSpan[] = []
+  for (const span of spans) {
+    const from = compareDates(span.valid_from, rotation.start_date) < 0 ? rotation.start_date : span.valid_from
+    const to = earlierEnd(span.valid_to, rotation.end_date)
+    if (to === null || compareDates(from, to) <= 0) cut.push({ valid_from: from, valid_to: to })
+  }
+  cut.sort((a, b) => compareDates(a.valid_from, b.valid_from))
+  const merged: DateSpan[] = []
+  for (const span of cut) {
+    const last = merged.at(-1)
+    if (last !== undefined && (last.valid_to === null || compareDates(span.valid_from, addDays(last.valid_to, 1)) <= 0)) {
+      merged[merged.length - 1] = { valid_from: last.valid_from, valid_to: laterEnd(last.valid_to, span.valid_to) }
+    } else merged.push(span)
+  }
+  return merged
+}
+
+/** The earlier of two ends; NULL runs open, so the other one is earlier. */
+function earlierEnd(a: CalendarDate | null, b: CalendarDate | null): CalendarDate | null {
+  if (a === null) return b
+  if (b === null) return a
+  return compareDates(a, b) <= 0 ? a : b
+}
+
+/** The later of two ends; NULL runs open, so it is the latest. */
+function laterEnd(a: CalendarDate | null, b: CalendarDate | null): CalendarDate | null {
+  if (a === null || b === null) return null
+  return compareDates(a, b) >= 0 ? a : b
 }
