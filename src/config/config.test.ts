@@ -127,7 +127,7 @@ describe('env', () => {
     })
   })
 
-  it('reads the push public key when it is one, and nothing when blank (D-349)', () => {
+  it('reads the push public key when it is one, and nothing when blank (D-351)', () => {
     const key = `B${'a'.repeat(86)}`
     expect(parseEnv({ ...REMOTE, VITE_PUSH_PUBLIC_KEY: key }, PROD)).toMatchObject({ ok: true, value: { pushPublicKey: key } })
     expect(parseEnv({ ...LOCAL, VITE_PUSH_PUBLIC_KEY: ' ' }, DEV)).toMatchObject({ ok: true, value: { pushPublicKey: null } })

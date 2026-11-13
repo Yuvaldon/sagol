@@ -29,7 +29,7 @@ function optional<T extends z.ZodType>(schema: T) {
 }
 
 /**
- * The VAPID public key (D-349): an uncompressed P-256 point, 65 bytes in unpadded base64url. Unset, the app offers no
+ * The VAPID public key (D-351): an uncompressed P-256 point, 65 bytes in unpadded base64url. Unset, the app offers no
  * phone notifications (D-076).
  */
 export const PushPublicKey = z.string().trim().regex(/^[A-Za-z0-9_-]{87}$/)
@@ -43,7 +43,7 @@ export const EnvSchema = z.object({
   [ENV_VARIABLES.pushPublicKey]: optional(PushPublicKey),
 })
 
-/** The parsed environment, in the shape the app uses: one of the two pairs (D-207), and the push key (D-349). */
+/** The parsed environment, in the shape the app uses: one of the two pairs (D-207), and the push key (D-351). */
 export type Env = (
   | { readonly authMode: 'local'; readonly dataAdapter: 'local'; readonly remote: null }
   | {
