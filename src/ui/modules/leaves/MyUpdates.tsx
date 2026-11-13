@@ -7,7 +7,7 @@ import { Button as AriaButton, Disclosure, DisclosurePanel, Heading } from 'reac
 import { formatInstant } from '../../patterns/dates'
 import { leaveDatesText, personNames, updateText } from './leaveText'
 
-// "עדכונים" on שלי (D-350, D-354): what others did on my leaves, newest first. Unread lines are bold. The section is
+// "עדכונים" on שלי (D-352, D-356): what others did on my leaves, newest first. Unread lines are bold. The section is
 // open while something is unread and closed to its header when all is read; opening it marks up to the newest line
 // seen. A line opens the leave's details.
 
@@ -46,7 +46,7 @@ function UpdatesSection({ lines, unread, newest }: { readonly lines: readonly My
   const timezone = useTimezone()
   const soldiers = useSoldiersWithArchived()
   const nameOf = personNames(soldiers.status === 'ready' ? soldiers.value : [])
-  // Marking seen never reports a failure (D-350): the next visit tries again. Only the opening marks, so an update
+  // Marking seen never reports a failure (D-352): the next visit tries again. Only the opening marks, so an update
   // that arrives while the section is open stays unread.
   const markShown = () => {
     if (newest !== null && unread > 0) void mark(newest)

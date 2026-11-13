@@ -35,7 +35,7 @@ const APPEARANCES = [
   { key: Appearance.enum.system, labelKey: 'account.appearanceSystem' },
 ] as const
 
-/** Who is signed in, the dev identity switcher (D-006), the appearance (D-181, D-253), notifications (D-354), installing the app when the device offers it (D-184) and sign-out. Nothing about the unit's work is here (D-253). */
+/** Who is signed in, the dev identity switcher (D-006), the appearance (D-181, D-253), notifications (D-356), installing the app when the device offers it (D-184) and sign-out. Nothing about the unit's work is here (D-253). */
 export function UserMenu({ identity }: { readonly identity: AuthIdentity }) {
   const authMode = useAuthMode()
   const { signOut } = useSignOut()

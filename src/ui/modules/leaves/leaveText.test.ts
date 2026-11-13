@@ -4,7 +4,7 @@ import type { MyUpdateLine } from '@logic'
 import { describe, expect, it } from 'vitest'
 import { updateText } from './leaveText'
 
-// An update line names who did what (D-350). Sample data, test files only.
+// An update line names who did what (D-352). Sample data, test files only.
 
 const DAN = SoldierId.parse('00000000-0000-4000-8000-000000000002')
 const nameOf = (id: SoldierId | null) => (id === DAN ? 'דן כהן' : '?')

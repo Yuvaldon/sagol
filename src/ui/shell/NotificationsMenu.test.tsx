@@ -6,7 +6,7 @@ import { Menu } from 'react-aria-components'
 import { describe, expect, it, vi } from 'vitest'
 import { NotificationsMenu } from './NotificationsMenu'
 
-// The profile's notifications group (D-354): hidden where the browser cannot push, the device switch with the
+// The profile's notifications group (D-356): hidden where the browser cannot push, the device switch with the
 // browser's answer, and the kinds only while this device is on. Test data only.
 
 const NO_STORE = { read: () => null, write: () => undefined }
@@ -43,7 +43,7 @@ function renderMenu(availability: PushAvailability, onIosInstall = vi.fn()) {
   )
 }
 
-describe('the notifications group (D-354)', () => {
+describe('the notifications group (D-356)', () => {
   it('does not exist where the browser cannot push (D-076)', () => {
     renderMenu('unsupported')
     expect(screen.queryByText(he.notifications.group)).toBeNull()

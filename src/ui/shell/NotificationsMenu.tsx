@@ -6,7 +6,7 @@ import { Header, MenuItem, MenuSection, Text } from 'react-aria-components'
 import { useInboxAccess } from './inboxAccess'
 import { useReportPreferenceSave } from './preferenceFailure'
 
-// The profile's "התראות" group (D-354): this device's switch, then the kinds the soldier wants on all of their devices.
+// The profile's "התראות" group (D-356): this device's switch, then the kinds the soldier wants on all of their devices.
 // It exists only where the browser can push and the app has its key (D-076); iOS offers push to the installed app
 // only, so there the group points at installing it.
 

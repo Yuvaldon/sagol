@@ -12,7 +12,7 @@ import { MyUpdates } from './MyUpdates'
 
 // "Mine" (D-265, D-167): the actor's next days, in or out, then their own leaves, the open ones and the history. A row
 // opens the leave's details, where its steps and comments are (D-119). Above the requests, what others did on them
-// ("עדכונים", D-354). A new request is the strip's quick action.
+// ("עדכונים", D-356). A new request is the strip's quick action.
 
 const LINE_SEPARATOR = ' · '
 const NO_TYPES: readonly never[] = []
