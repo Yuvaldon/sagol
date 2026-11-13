@@ -19,6 +19,7 @@ const PLACED = '0a1b2c3d-1111-4aaa-8aaa-00000000000a'
 const UNPLACED = '0a1b2c3d-1111-4aaa-8aaa-00000000000b'
 const GONE = '0a1b2c3d-1111-4aaa-8aaa-00000000000c'
 const TIME = { now: () => '2026-11-13T08:00:00.000Z' }
+const ROTATION_LEAVE = { group: 'Rotation leaves', type: 'Rotation leave' }
 
 describe('local database versions', () => {
   it('moves a version 2 store to format 3, keeping every soldier tag', async () => {
@@ -30,7 +31,7 @@ describe('local database versions', () => {
     await old.table('deployments').add({ id: DEPLOYMENT, organization_id: ORG, end_date: null })
     old.close()
 
-    const store = openDatabase(name, TIME)
+    const store = openDatabase(name, TIME, ROTATION_LEAVE)
     const [tag] = await store.table('soldier_tags').toArray()
     expect(tag).toMatchObject({ soldier_id: SOLDIER, tag_id: TAG, deployment_id: null })
     expect(typeof (tag as { id: unknown }).id).toBe('string')
@@ -51,7 +52,7 @@ describe('local database versions', () => {
     ])
     old.close()
 
-    const store = openDatabase(name, TIME)
+    const store = openDatabase(name, TIME, ROTATION_LEAVE)
     expect(await store.table('deployments').get(DEPLOYMENT)).toMatchObject({ report_owner_id: null })
     expect(await store.table('report_confirmations').toArray()).toEqual([])
     const confirming = (await store.table('role_permissions').toArray()).filter((row) => (row as { action: string }).action === 'confirm')
@@ -86,7 +87,7 @@ describe('local database versions', () => {
     })
     old.close()
 
-    const store = openDatabase(name, TIME)
+    const store = openDatabase(name, TIME, ROTATION_LEAVE)
     const units = (await store.table('units').toArray()).map((row) => row as { id: string; name?: string; parent_id: string | null })
     const roots = units.filter((unit) => unit.parent_id === null)
     expect(roots).toHaveLength(1)
@@ -107,6 +108,34 @@ describe('local database versions', () => {
     ])
     expect(of(UNPLACED)).toEqual([[root?.id, '2026-01-02', null]])
     expect(of(GONE)).toEqual([])
+    store.close()
+  })
+
+  it('gives each organization of a version 8 store the built-in leave group and its first type (D-346)', async () => {
+    const name = `sagol-${crypto.randomUUID()}`
+    const old = new Dexie(name)
+    old.version(8).stores(STORES)
+    await old.table('organizations').add({ id: ORG, name: 'Battalion', timezone: 'Asia/Jerusalem' })
+    await old.table('leave_type_groups').add({ id: CATEGORY, organization_id: ORG, name: 'Home', sort_order: 0 })
+    old.close()
+
+    const store = openDatabase(name, TIME, ROTATION_LEAVE)
+    const groups = (await store.table('leave_type_groups').toArray()).map((row) => row as { id: string; name: string; is_rotation_leave: boolean })
+    expect(groups.find((group) => group.id === CATEGORY)).toMatchObject({ is_rotation_leave: false, sort_order: 1 })
+    const builtIn = groups.filter((group) => group.is_rotation_leave)
+    expect(builtIn).toHaveLength(1)
+    expect(builtIn[0]).toMatchObject({ organization_id: ORG, name: 'Rotation leaves', archived_at: null })
+    expect(await store.table('leave_types').toArray()).toEqual([
+      expect.objectContaining({
+        organization_id: ORG,
+        group_id: builtIn[0]?.id,
+        name: 'Rotation leave',
+        color_key: 'blue',
+        availability_effect: 'unavailable',
+        requires_reason: false,
+        archived_at: null,
+      }),
+    ])
     store.close()
   })
 })

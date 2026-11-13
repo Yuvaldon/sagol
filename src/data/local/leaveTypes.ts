@@ -13,11 +13,13 @@ import {
   type DataCommands,
   type DataRepositories,
   type Issue,
+  type LeaveTypeGroupId,
 } from '@contracts'
-import { archiveLeaveTypeGroupIssues } from '@domain'
-import { holds } from './actor'
-import { iconKeyIssues, leaveTypeColorIssues } from './checks'
-import { tableOf } from './store'
+import { isRotationLeavePaletteKey } from '@config'
+import { archiveBuiltInGroupIssues, archiveLeaveTypeGroupIssues, archiveLeaveTypeIssues, rotationLeaveTypeIssues } from '@domain'
+import { holds, type ActorScope } from './actor'
+import { colorKeyIssues, iconKeyIssues, leaveTypeColorIssues } from './checks'
+import { tableOf, type Store } from './store'
 import type { LocalDependencies } from './dependencies'
 import {
   bySortOrder,
@@ -42,6 +44,26 @@ const GROUP_SPEC: ReferenceSpec<LeaveTypeGroup> = {
   optionalText: [],
   targetOf: () => ORGANIZATION,
   rowIssues: () => Promise.resolve([]),
+  // Only the bootstrap and the migration make the built-in group (D-346); a group made by a command is an ordinary one.
+  createdColumns: { is_rotation_leave: false },
+}
+
+/** The organization's group with this id, or NULL: none named, or none of the organization's. */
+async function groupOf(database: Store, scope: ActorScope, id: LeaveTypeGroupId | null): Promise<LeaveTypeGroup | null> {
+  if (id === null) return null
+  const group = await tableOf(database, 'leave_type_groups').get(id)
+  return group?.organization_id === scope.organization_id ? group : null
+}
+
+/**
+ * What the built-in group fixes on its types (D-346), in the command core so no mode skips it: an absence that asks no
+ * reason, in a calm color, and no type moves into the group or out of it. A color it held before stays.
+ */
+async function rotationIssues({ database, scope, row, before }: RowCheck<LeaveType>): Promise<Issue[]> {
+  const group = await groupOf(database, scope, row.group_id)
+  const previous = before === null ? null : { group: await groupOf(database, scope, before.group_id), group_id: before.group_id }
+  const colors = group?.is_rotation_leave === true ? colorKeyIssues(before?.color_key, row.color_key, isRotationLeavePaletteKey) : []
+  return [...rotationLeaveTypeIssues(previous, row, group), ...colors]
 }
 
 /** A new group must exist, be visible and be live. An unchanged one is left alone (D-088, D-113). */
@@ -68,6 +90,7 @@ const TYPE_SPEC: ReferenceSpec<LeaveType> = {
     ...leaveTypeColorIssues(check.before?.color_key, check.row.color_key),
     ...iconKeyIssues(check.before?.icon_key, check.row.icon_key),
     ...(await groupIssues(check)),
+    ...(await rotationIssues(check)),
   ],
 }
 
@@ -88,6 +111,8 @@ export function createLeaveTypeGroupCommands(dependencies: LocalDependencies): D
       archive: ArchiveLeaveTypeGroupInput,
       placementOf: () => ORGANIZATION,
       archiveIssues: async (database, scope, group) => {
+        const builtIn = archiveBuiltInGroupIssues(group)
+        if (builtIn.length > 0) return builtIn
         const types = await tableOf(database, 'leave_types').where('organization_id').equals(scope.organization_id).toArray()
         return archiveLeaveTypeGroupIssues(types, group.id)
       },
@@ -103,6 +128,13 @@ export function createLeaveTypeCommands(dependencies: LocalDependencies): DataCo
       update: UpdateLeaveTypeInput,
       archive: ArchiveLeaveTypeInput,
       placementOf: () => ORGANIZATION,
+      // The built-in group always keeps a live type (D-346).
+      archiveIssues: async (database, scope, type) => {
+        const group = await groupOf(database, scope, type.group_id)
+        if (group?.is_rotation_leave !== true) return []
+        const types = await tableOf(database, 'leave_types').where('organization_id').equals(scope.organization_id).toArray()
+        return archiveLeaveTypeIssues(types, type, group)
+      },
     }),
     // Types are ordered inside their group (D-113).
     reorder: createReorderCommand(dependencies, TYPE_SPEC, ReorderLeaveTypesInput, (row) => row.group_id),

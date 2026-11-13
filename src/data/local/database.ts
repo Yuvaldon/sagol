@@ -1,4 +1,5 @@
-import { MembershipType, UnitKind, type TableRow, type TimeSource } from '@contracts'
+import { FIRST_ROTATION_LEAVE_COLOR } from '@config'
+import { AvailabilityEffect, MembershipType, UnitKind, type TableRow, type TimeSource } from '@contracts'
 import { dayBefore, todayIn } from '@domain'
 import Dexie, { type Transaction } from 'dexie'
 import { parsedRow } from './failure'
@@ -9,7 +10,7 @@ import { STORES, type Store } from './store'
 // names are schema.sql names (D-038). Primary keys and uniques mirror it where IndexedDB can: a
 // compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL".
 
-const DATABASE_VERSION = 8
+const DATABASE_VERSION = 9
 
 /** Versions 1 and 2 keyed a soldier's tags by the pair; format 3 gives each row an id and a scope (D-221). */
 const VERSION_2_SOLDIER_TAGS = '[soldier_id+tag_id], organization_id, tag_id'
@@ -99,12 +100,68 @@ async function oneRoot(transaction: Transaction, time: TimeSource): Promise<void
   }
 }
 
+/** The built-in leave group's names for the organizations a store holds from before (D-346): user data, proposed by the UI. */
+export interface RotationLeaveNames {
+  readonly group: string
+  readonly type: string
+}
+
+type LeaveTypeGroup = Pick<TableRow<'leave_type_groups'>, 'organization_id' | 'is_rotation_leave' | 'sort_order'>
+
+/**
+ * Every organization gets the built-in "סבב יציאות" group and its first type, as the server's migration gives them
+ * (D-345, D-346); the groups from before are ordinary ones.
+ */
+async function rotationLeave(transaction: Transaction, time: TimeSource, names: RotationLeaveNames): Promise<void> {
+  const now = time.now()
+  const groups = transaction.table<LeaveTypeGroup>('leave_type_groups')
+  // The built-in group comes first: the groups from before move down one place.
+  await groups.toCollection().modify((group: LeaveTypeGroup) => {
+    Object.assign(group, { is_rotation_leave: false, sort_order: group.sort_order + 1 })
+  })
+  for (const organization of await transaction.table<Organization>('organizations').toArray()) {
+    const group = parsedRow('leave_type_groups', {
+      id: crypto.randomUUID(),
+      organization_id: organization.id,
+      name: names.group,
+      is_rotation_leave: true,
+      sort_order: 0,
+      created_at: now,
+      created_by: null,
+      updated_at: now,
+      updated_by: null,
+      version: 1,
+      archived_at: null,
+    })
+    await groups.add(group)
+    await transaction.table('leave_types').add(
+      parsedRow('leave_types', {
+        id: crypto.randomUUID(),
+        organization_id: organization.id,
+        group_id: group.id,
+        name: names.type,
+        color_key: FIRST_ROTATION_LEAVE_COLOR,
+        icon_key: null,
+        availability_effect: AvailabilityEffect.enum.unavailable,
+        requires_reason: false,
+        sort_order: 0,
+        created_at: now,
+        created_by: null,
+        updated_at: now,
+        updated_by: null,
+        version: 1,
+        archived_at: null,
+      }),
+    )
+  }
+}
+
 /** The IndexedDB store, which a test closes when it is done. */
 export interface LocalStore extends Store {
   close(): void
 }
 
-export function openDatabase(name: string, time: TimeSource): LocalStore {
+export function openDatabase(name: string, time: TimeSource, names: RotationLeaveNames): LocalStore {
   const database = new Dexie(name)
   // Tables added after version 6 are declared at their own version, so an older store creates them on upgrade.
   const { report_confirmations: confirmations, ...earlier } = STORES
@@ -142,7 +199,8 @@ export function openDatabase(name: string, time: TimeSource): LocalStore {
       const approving = (await permissions.toArray()).filter((row) => row.resource === 'leaves' && row.action === 'approve')
       await permissions.bulkPut(approving.map((row) => ({ ...row, resource: 'day_reports', action: 'confirm' })))
     })
-  database.version(DATABASE_VERSION).upgrade((transaction) => oneRoot(transaction, time))
+  database.version(8).upgrade((transaction) => oneRoot(transaction, time))
+  database.version(DATABASE_VERSION).upgrade((transaction) => rotationLeave(transaction, time, names))
   return {
     transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),
     table: (name) => database.table(name),
