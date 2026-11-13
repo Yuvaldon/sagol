@@ -174,9 +174,11 @@ interface Rows {
   readonly nextId: number
   /** The URL's rules the rows hold, as a key; NULL before the fields load (OI-261). */
   readonly read: string | null
+  /** The key of the rules the rows last wrote, until the URL reads it back: the URL changes after the write. */
+  readonly wrote: string | null
 }
 
-const NO_ROWS: Rows = { match: 'all', rows: [], nextId: 0, read: null }
+const NO_ROWS: Rows = { match: 'all', rows: [], nextId: 0, read: null, wrote: null }
 
 const keyOf = (read: ReadRules) => JSON.stringify(read)
 
@@ -188,7 +190,7 @@ function rowsOf(read: ReadRules, fields: FilterFields, nextId: number): Rows {
     const draft = fields.draftOf(rule)
     return draft === null ? { id, kept: rule } : { id, draft }
   })
-  return { match, rows, nextId: nextId + rows.length, read: keyOf(read) }
+  return { match, rows, nextId: nextId + rows.length, read: keyOf(read), wrote: null }
 }
 
 function Connector({ index, match, onMatch }: { readonly index: number; readonly match: RuleMatch; readonly onMatch: ((match: RuleMatch) => void) | null }) {
@@ -221,7 +223,8 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
   const urlKey = keyOf(filter.rules)
   let state = held
   if (fields.ready && held.read !== urlKey) {
-    state = rowsOf(filter.rules, fields, held.nextId)
+    // The URL reading back the rows' own write keeps the rows; any other change builds them again.
+    state = held.wrote === urlKey ? { ...held, read: urlKey, wrote: null } : rowsOf(filter.rules, fields, held.nextId)
     setHeld(state)
   }
   const [leaveDrafts, setLeaveDrafts] = useState<Readonly<Record<LeaveField, boolean>>>({ leaveStatus: false, leaveType: false })
@@ -235,8 +238,10 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
         return fields.byKey.get(row.draft.field)?.ruleOf(row.draft.operator, row.draft.values) ?? []
       }),
     }
-    // The key is the URL's as it will read back, so the rows are not built again from their own write.
-    setHeld({ ...next, read: keyOf(readRules(writeRules(written) ?? null)) })
+    // The key is the URL's as it will read back, so the rows are not built again from their own write. Until the
+    // URL changes, its old key still matches the rows.
+    const wrote = keyOf(readRules(writeRules(written) ?? null))
+    setHeld({ ...next, wrote: wrote === next.read ? null : wrote })
     filter.setRules(written)
   }
   const replace = (id: number, draft: Draft) => {
