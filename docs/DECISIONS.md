@@ -4399,7 +4399,7 @@ whole plan (OI-292). One function makes the screen and the command agree, and th
 same one.
 
 ## D-339 — The phone calendar is a month grid; another range from and to; the day report shows its breaches
-2026-11-13 · accepted · refines D-174, D-211, D-193, D-194, D-268, D-296 · OI-293 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+2026-11-13 · accepted · refines D-174, D-211, D-193, D-194, D-268, D-296 · OI-295 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
 - **Calendar.** Seven columns at every width; the one-day-per-line phone list goes. From `md` a day is as before:
   heading, count and a chip per leave. Below `md` a day is one cell: its weekday letter, its number, today's pill, how
   many are out and the heat row's tone of its worst breach (D-290). No "near breach" tone: the rules have none. At
@@ -4413,7 +4413,7 @@ same one.
 - **Day report.** Each day shows the rules it breaks, from the same evaluation as the heat row and the calendar
   (`useDayViolations`), under its counts. The copy stays one tap away above the days and the confirmation is D-293's.
   Reasons stay behind the switch and the viewer's reads (D-194, D-102): the model has no "regular" leave type that
-  would let a reason show only for the others (OI-293).
+  would let a reason show only for the others (OI-295).
 - **The table** has a one-line caption: a row is one leave in the window. **Routine** keeps no report (D-222); its band
   says that leave requests and דוח 1 open with a rotation.
 **Why:** the owner's review on a phone: the calendar was a list, no whole rotation or free range could be picked, the
