@@ -304,6 +304,7 @@ am = amends, ref = refines, ext = extends.
 | D-325 | The chart holds the view on a card when its width changes | ui | |
 | D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
+| D-331 | Each remote call names itself in its URL, for the request logs | config, data | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4312,3 +4313,11 @@ in view jumped.
   rotation link opens on still load (D-222), shows the loading notice instead.
 **Why:** on the remote adapter that read can take seconds (a cold function, a deploy), and the owner of a staging
 organization read "no access yet" on a board that was only loading. A wait is never a refusal.
+
+## D-331 — Each remote call names itself in its URL, for the request logs
+2026-11-13 · accepted · ref D-201, D-204 · A8 fixes · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- The remote adapter posts each call to `commands?call=<kind>.<group>.<method>` (`REMOTE.callParam`), for example
+  `?call=repositories.leaves.list`. The name is all it adds: no argument, identity or token goes in the URL, and the
+  server reads only the body, as before.
+**Why:** the server's request logs keep the path and query but no body, so a burst of calls on staging (OI-290) could
+not say which calls it made. With the name in the URL, the logs answer that without logging any data.

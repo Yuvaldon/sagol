@@ -52,7 +52,9 @@ describe('remote adapter transport (D-204)', () => {
     const { adapter, sent } = adapterWith(() => json({ result: { ok: true, value: [] }, changes: [] }))
     expect(await adapter.repositories.units.list({ include_archived: false })).toEqual({ ok: true, value: [] })
     expect(sent).toHaveLength(1)
-    expect(sent[0]?.url).toBe(new URL(REMOTE.commandsPath, BACKEND).href)
+    const url = new URL(REMOTE.commandsPath, BACKEND)
+    url.searchParams.set(REMOTE.callParam, 'repositories.units.list')
+    expect(sent[0]?.url).toBe(url.href)
     expect(sent[0]?.headers.get('apikey')).toBe(KEY)
     expect(sent[0]?.headers.get('authorization')).toBe('Bearer token-1')
     expect(sent[0]?.body).toEqual({
