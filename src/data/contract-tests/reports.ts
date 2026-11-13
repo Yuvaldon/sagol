@@ -238,32 +238,38 @@ export function describeReportContract(
       harnessOf().signIn(squadConfirmer.identity)
       expect(valueOf(await sections([unowned.id], later))).toEqual([])
 
-      // A named owner who views only the platoon's soldiers with their unit reads the battery's section as unseen.
+      // A named owner whose report lists only the platoon (its unit, soldiers, their memberships and leaves) reads the
+      // battery's section as unseen; without the leaves, the report lists neither (D-161).
       harnessOf().signIn(owner)
       const battery = await unit('Battery')
       const platoon = await unit('Platoon', battery.id)
       await member(battery.id)
       await member(platoon.id)
-      const platoonViewer = await seedActor(
-        harnessOf(),
-        organization,
-        [pair('soldiers', 'view'), pair('memberships', 'view')],
-        UNIT_SCOPE(platoon.id),
-      )
+      const reads = [pair('units', 'view'), pair('soldiers', 'view'), pair('memberships', 'view')]
+      const platoonViewer = await seedActor(harnessOf(), organization, [...reads, pair('leaves', 'view')], UNIT_SCOPE(platoon.id))
+      const noLeaves = await seedActor(harnessOf(), organization, reads, UNIT_SCOPE(platoon.id))
+      const ownedBy = async (report_owner_id: SoldierId, date: CalendarDate) =>
+        valueOf(
+          await adapter().commands.deployments.create({
+            id: DeploymentId.parse(crypto.randomUUID()),
+            name: 'Partial',
+            unit_id: battery.id,
+            start_date: date,
+            end_date: date,
+            report_owner_id,
+          }),
+        )
       const after = addDays(OUTSIDE, 1)
-      const partial = valueOf(
-        await adapter().commands.deployments.create({
-          id: DeploymentId.parse(crypto.randomUUID()),
-          name: 'Partial',
-          unit_id: battery.id,
-          start_date: after,
-          end_date: after,
-          report_owner_id: platoonViewer.soldierId,
-        }),
-      )
+      const last = addDays(OUTSIDE, 2)
+      const partial = await ownedBy(platoonViewer.soldierId, after)
+      const blind = await ownedBy(noLeaves.soldierId, last)
       harnessOf().signIn(platoonViewer.identity)
       expect(valueOf(await sections([partial.id], { start_date: after, end_date: after }))).toEqual([
         { report_date: after, sections: 2, unseen: 1 },
+      ])
+      harnessOf().signIn(noLeaves.identity)
+      expect(valueOf(await sections([blind.id], { start_date: last, end_date: last }))).toEqual([
+        { report_date: last, sections: 2, unseen: 2 },
       ])
     })
 

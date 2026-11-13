@@ -67,10 +67,20 @@ function checkSpan(window: DateWindow): void {
 /** Who reads a rotation's summary: its report owner, or, with none named, who may confirm its unit (D-293). */
 const SOLDIERS_VIEW = { resource: 'soldiers', action: 'view' } as const
 const MEMBERSHIPS_VIEW = { resource: 'memberships', action: 'view' } as const
+const LEAVES_VIEW = { resource: 'leaves', action: 'view' } as const
 
-/** Whether the actor's report lists the soldier under their unit: it reads the soldier and their memberships. */
-function seesInReport(scope: ActorScope, soldierId: SoldierId): boolean {
-  return holds(scope, SOLDIERS_VIEW, soldierTarget(soldierId)) && holds(scope, MEMBERSHIPS_VIEW, soldierTarget(soldierId))
+/**
+ * Whether the actor's report lists the soldier under the unit: it reads the soldier, their memberships and leaves
+ * (D-161), and the unit itself, as the report builds its sections.
+ */
+function seesInReport(scope: ActorScope, soldierId: SoldierId, unit: Unit | undefined): boolean {
+  const target = soldierTarget(soldierId)
+  return (
+    viewsUnit(scope, unit) &&
+    holds(scope, SOLDIERS_VIEW, target) &&
+    holds(scope, MEMBERSHIPS_VIEW, target) &&
+    holds(scope, LEAVES_VIEW, target)
+  )
 }
 
 function readsSummaryOf(scope: ActorScope, rotation: Deployment): boolean {
@@ -160,6 +170,7 @@ export function createReportConfirmationRepository(dependencies: LocalDependenci
           // no unit (D-303). A section is a unit whose active soldiers it holds on the day, archived units too, as the
           // report heads them (D-147).
           const tree = buildUnitTree(units)
+          const unitById = new Map(units.map((unit) => [unit.id, unit]))
           const read = (await rotationsOf(database, scope)).filter(
             (rotation) =>
               query.deployment_ids.includes(rotation.id) && rotation.archived_at === null && readsSummaryOf(scope, rotation),
@@ -186,8 +197,8 @@ export function createReportConfirmationRepository(dependencies: LocalDependenci
               const unitId = primaryUnitOn(bySoldier.get(soldier.id) ?? [], soldier.id, date)
               if (unitId === null || !running.some((rotation) => isAncestorOrSelf(tree, rotation.unit_id, unitId))) continue
               sections.add(unitId)
-              // The actor's report heads the unit when it holds a soldier the actor views with their unit.
-              if (seesInReport(scope, soldier.id)) seen.add(unitId)
+              // The actor's report heads the unit when it holds a soldier the report lists under it.
+              if (seesInReport(scope, soldier.id, unitById.get(unitId))) seen.add(unitId)
             }
             answers.push({ report_date: date, sections: sections.size, unseen: sections.size - seen.size })
           }
