@@ -139,7 +139,7 @@ From here on, each slice also updates the remote adapter and server functions (D
 | V30 | דוח 1 as a workflow | Each unit confirms its list, the report owner sends one message up (D-269; schema change) | ☐ |
 | V33 | Board controls | The heat row fixed above; the view picker as cards from the board's tab; filtering and sorting as a rule builder with AND/OR and several sorts; flat chips; a root unit for every organization (D-310 … D-315; data migration) | ☑ |
 | V31 | Leave-round planner | The routine rhythm generated for groups of soldiers in a rotation, sent as one collective leave; overlapping rounds stacked on the timeline (D-270, D-316, D-317) | ☑ |
-| V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units | ☐ |
+| V21 | Unit tree canvas | The unit tree as a pannable, zoomable org chart, a view switch beside the tree, with editing on the canvas for whoever may edit units (D-318 … D-320) | ☑ |
 
 Order (D-271, amended by D-284): before launch, track A runs V32 (its docs first) → V28 and track B runs V26 → V27;
 then A7 on main once V27 and V28 are in. V29 is done. Before launch: "A7 fixes" (track A) and V33 "Board controls"

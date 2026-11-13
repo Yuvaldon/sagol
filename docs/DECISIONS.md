@@ -290,6 +290,9 @@ am = amends, ref = refines, ext = extends.
 | D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | |
 | D-316 | The leave-round planner as built: groups take turns, one collective leave, bounded by config | config, domain, logic, i18n, ui | |
 | D-317 | Rounds that overlap stack on the timeline; a rotation's creator sees close and reopen; rotation copies stay per soldier | logic, ui | |
+| D-318 | The unit tree reads as a list or as a chart, remembered per device; the chart takes the drawer's whole width | config, i18n, ui | |
+| D-319 | The chart's layout and its pan and zoom | config, logic, ui | |
+| D-320 | Editing on the chart: the list's actions and permissions, no drag | ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4107,3 +4110,38 @@ leaves of one batch, so the board, the requests and the rules need nothing new.
   bulk when a rotation is created. Design (b)1 says so.
 **Why:** a hidden band is a hidden leave; an action the command allows must be on screen for who may run it; and the
 per-soldier copy was already decided, so building a bulk copy would contradict it.
+
+## D-318 — The unit tree reads as a list or as a chart, remembered per device; the chart takes the drawer's whole width
+2026-11-12 · accepted · refines D-092, D-197 · V21 · decided under D-170
+- **The switch.** Above the tree, when there are units and no form is open: "רשימה" and "תרשים", a segmented control
+  (one always pressed, arrow keys between them). The list stays the default.
+- **Remembered per device.** The choice is a device flag (`unitsChart`, D-197): a convenience of one screen, never data.
+- **The width.** While the chart shows, the drawer is as wide as the screen from `md`; below `md` the sheet already is.
+  A form, the levels section or the empty state bring the drawer back to its usual width.
+**Why:** a deep tree reads as indentation in a list but as a shape in a chart; commanders draw their unit as a chart,
+and a chart in a form-wide drawer would show two nodes at a time.
+
+## D-319 — The chart's layout and its pan and zoom
+2026-11-12 · accepted · V21 · decided under D-170
+- **Layout (logic).** Top-down, tidy: leaves take columns in tree order, a parent is centered over its first and last
+  child, each depth is a row. Lengths come from the theme's chart tokens; the chart is placed from the inline start, so
+  it reads right to left.
+- **Pan.** The canvas scrolls: a finger or the wheel pans it natively, and a mouse also pans by dragging the canvas's
+  background; a node keeps its own presses. The canvas takes focus and scrolls by keyboard.
+- **Zoom.** Buttons ("הגדלה", "הקטנה", "התאמה למסך"), Ctrl+wheel (a trackpad's pinch) and a two-finger pinch, between
+  `UNIT_CHART_ZOOM.min` and `max`. A zoom keeps the point under the pointer, or the center for the buttons, still. The
+  chart opens fitted, never larger than its natural size, its top in sight.
+- **CSS `zoom`**, not a transform: the scroll area follows the zoomed size, so scrolling and right to left need no
+  arithmetic of their own.
+**Why:** native scroll gives momentum, scrollbars and keyboard for free; only pinch and Ctrl+wheel need listeners of
+their own, to keep the page's zoom out of it.
+
+## D-320 — Editing on the chart: the list's actions and permissions, no drag
+2026-11-12 · accepted · refines D-092 · V21 · decided under D-170
+- A node is the list's row: the name opens the unit's form for who may update it, and its menu holds the same actions
+  under the same permissions (add a unit under it, up, down, move to, archive), through the same commands. Both views
+  share one component for the actions and their dialogs.
+- **No drag on the chart.** Moving is "move to" from the menu, or a drag in the list; a drag on the canvas pans.
+- A soldier who may only read sees the chart with names and no actions (D-076).
+**Why:** one set of actions in two shapes keeps the rules in one place; a drag on a pannable canvas would fight the pan,
+and the list already offers it.
