@@ -21,8 +21,8 @@ export async function composePorts(env: Env, origin: string, shell: ShellPort): 
       // The names a store from before gives the built-in leave group (D-347): user data, proposed as the claim proposes them.
       rotationLeave: { group: t('onboarding.rotationGroupName'), type: t('onboarding.rotationTypeName') },
     })
-    // The local adapter sends no push (spec parity), so the profile offers none there (D-076).
-    return { auth, data, time: systemTime, shell, push: createBrowserPush(null), device: browserDeviceStores() }
+    // The local adapter stores the device and sends nothing (spec parity); with no key there is no switch (D-076).
+    return { auth, data, time: systemTime, shell, push: createBrowserPush(env.pushPublicKey), device: browserDeviceStores() }
   }
   const { url, anonKey } = env.remote
   const { createRemoteDataAdapter, loadGoogleAuth } = await loadRemoteData()
