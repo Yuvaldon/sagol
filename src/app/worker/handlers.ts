@@ -36,6 +36,14 @@ export interface TappedNotification {
 
 const LANG = 'he'
 
+/** The message `workbox-window` sends when the open app takes the waiting version (D-183). */
+const SKIP_WAITING = 'SKIP_WAITING'
+
+/** Whether a message from the app asks the waiting worker to take over; nothing else does (D-183). */
+export function asksForWaitingVersion(data: unknown): boolean {
+  return typeof data === 'object' && data !== null && 'type' in data && data.type === SKIP_WAITING
+}
+
 /**
  * Shows the push as a notification. A payload the contract refuses shows nothing: it is not from this server, or from
  * another version of it. The open app needs no message: live changes already refresh it (D-352).

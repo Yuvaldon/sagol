@@ -1,7 +1,7 @@
 import { LeaveId, type PushPayload } from '@contracts'
 import { dictionary as he } from '@i18n'
 import { describe, expect, it, vi } from 'vitest'
-import { onNotificationClick, onPush, type NotificationShown, type WorkerWindow } from './handlers'
+import { asksForWaitingVersion, onNotificationClick, onPush, type NotificationShown, type WorkerWindow } from './handlers'
 import { daysText } from './pushText'
 
 // Sample payloads, test files only.
@@ -91,5 +91,12 @@ describe('a tap on the notification (D-354)', () => {
     const openWindow = vi.fn()
     await onNotificationClick(tapped(7), { matchAll: () => Promise.resolve([]), openWindow }, ORIGIN)
     expect(openWindow).not.toHaveBeenCalled()
+  })
+})
+
+describe('the update the open app asks for (D-183)', () => {
+  it('takes the waiting version on the message workbox-window sends, and on nothing else', () => {
+    expect(asksForWaitingVersion({ type: 'SKIP_WAITING' })).toBe(true)
+    for (const other of [null, 'SKIP_WAITING', {}, { type: 'OTHER' }, { kind: 'SKIP_WAITING' }]) expect(asksForWaitingVersion(other)).toBe(false)
   })
 })
