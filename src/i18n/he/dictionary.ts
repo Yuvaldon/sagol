@@ -1329,6 +1329,7 @@ export const dictionary = {
     added: 'נוספו',
     cancelled: 'בוטלו',
     moved: 'הוזזו',
+    unrecorded: 'בקשות ללא היסטוריה',
     range: 'ימי בית',
     soldiers: 'חיילים',
     type: 'סוג',

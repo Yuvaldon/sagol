@@ -126,6 +126,8 @@ export function PresenceTrend({ dashboard, rules }: { readonly dashboard: Dashbo
   )
 }
 
+const CHANGES_SEPARATOR = ' · '
+
 /** "תכנון מול ביצוע": per group two bars and the difference, then what changed since the plan. */
 export function PlanVsActual({
   dashboard,
@@ -146,7 +148,13 @@ export function PlanVsActual({
           : unitNameOf(dashboard.scope.units, group.unitId)
     return { group, name, key: group.soldier?.id ?? group.unitId ?? 'own' }
   })
-  const changes = `${t('dashboard.added')} ${numberText(plan.added)} · ${t('dashboard.cancelled')} ${numberText(plan.cancelled)} · ${t('dashboard.moved')} ${numberText(plan.moved)}`
+  const changes = [
+    `${t('dashboard.added')} ${numberText(plan.added)}`,
+    `${t('dashboard.cancelled')} ${numberText(plan.cancelled)}`,
+    `${t('dashboard.moved')} ${numberText(plan.moved)}`,
+    // Leaves with no history are taken as they are now, so the note says how many (D-349).
+    ...(plan.unrecorded > 0 ? [`${numberText(plan.unrecorded)} ${t('dashboard.unrecorded')}`] : []),
+  ].join(CHANGES_SEPARATOR)
   return (
     <div className="flex flex-col gap-sm">
       <Legend
