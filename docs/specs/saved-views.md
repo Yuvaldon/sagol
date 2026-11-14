@@ -1,6 +1,6 @@
 # Spec — Saved views
 
-Status: proposed, not scheduled. The slice gets its V-number, and P-n get D-numbers, when it starts.
+Status: built (D-384..D-388), the MVP with move up and down; "שמירת השינויים" is OI-331.
 Context: both. Approved by the owner on 2026-11-13 with a condition (D-170, recorded as decided): it sits in a
 very central place but is a niche feature, so it must not burden or complicate simple everyday use. It stays
 quiet by default (P-6): no new persistent control in the top strip or the chips row; it is reached only from

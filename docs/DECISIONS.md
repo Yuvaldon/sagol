@@ -4792,6 +4792,9 @@ settings and leaks nothing.
   rename, move up and down, delete (confirmed), and the start view (with "ללא" first).
 - The spec's "שמירת השינויים" (overwrite the view left by a change) is not built yet (OI-331).
 - Shown only to who has the board (D-076, D-265).
+- The save dialog suggests "view · range kind" as the name; no "saved" toast: the new card, selected as current,
+  is the feedback. The manage list replaces the sheet's body, with "חזרה לתצוגות" above it. A view whose stored
+  part no longer reads opens without it, and a workspace toast says so and offers to save it cleaned.
 **Why:** the owner approved the feature on the condition that it never burdens simple everyday use.
 
 ## D-388 — A preference change from a function of the stored row, retried once over another device's save
@@ -4800,6 +4803,8 @@ settings and leaks nothing.
   over the row as stored; on `stale_version` the row is read again and the change computed once more, so an edit on
   another device survives (two saves from two devices both land). A plain value keeps D-187: the choice is shown
   over the stored row and made again.
-- Saved views show their change at once and roll it back when the save fails; the failure is shown as every
+- Saved views show their change at once, over the stored row it was made on only: once the row moves on (the save
+  landed, or another device saved), the stored row is shown, so a change never shows twice. They roll it back when
+  the save fails; the failure is shown as every
   preference failure is (D-187).
 **Why:** a list edited from two devices must merge; a single choice is better made again.

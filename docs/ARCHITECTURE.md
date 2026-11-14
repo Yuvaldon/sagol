@@ -232,10 +232,18 @@ The current state (D-128):
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
   (D-141), and the same breaches beside a calendar day, as a phone day's tone, in the day report and above the list (`ui/board/breaches.ts`, D-290, D-339); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
+## Saved views (D-384..D-388)
+
+A saved view is the board's view-state params as a link holds them, in `soldier_preferences.saved_views` with
+`start_view_id`; no table. `logic/view-state/savedViews.ts` captures, applies (through `WorkspaceSearch`, dropping
+what no longer reads), matches and summarizes them; `savedViewsState.ts` edits the list as functions of the stored
+row (D-388), and `useStartView` sends a bare open of the board to the start view (D-386). The UI is
+`ui/shell/SavedViewsSection.tsx`, inside the view sheet only (D-387).
+
 ## Filters (shared model)
 
 One `FilterExpression` schema (contracts) and evaluator (domain) is used by view filters,
-saved views (later) and rule populations. A filter means the same thing everywhere: it is
+saved views (D-384, inside their stored query) and rule populations. A filter means the same thing everywhere: it is
 evaluated per soldier per day (unit and seniority on that day), negative operators are
 complements, and text compares case-insensitively. Rules compare populations by a
 structural canonical key (D-067).
