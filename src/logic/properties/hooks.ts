@@ -58,6 +58,9 @@ export function usePropertyDefinitionCommands() {
   const archive = useCommand(keys, (definition: PropertyDefinition) =>
     definitions.archive({ id: definition.id, expected_version: definition.version }),
   )
+  const restore = useCommand(keys, (definition: PropertyDefinition) =>
+    definitions.restore({ id: definition.id, expected_version: definition.version }),
+  )
   /** Up or down among the definitions of its entity type. */
   const step = useCommand(
     keys,
@@ -67,7 +70,7 @@ export function usePropertyDefinitionCommands() {
       return items === null ? unchanged : definitions.reorder({ items })
     },
   )
-  return { create, update, archive, step }
+  return { create, update, archive, restore, step }
 }
 
 // ---------------------------------------------------------------------- hints

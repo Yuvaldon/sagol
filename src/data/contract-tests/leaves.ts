@@ -212,6 +212,21 @@ export function describeLeaveContract(
         ])
       })
 
+      it('restores a type only into a live group (D-371)', async () => {
+        const group = valueOf(await adapter().commands.leave_type_groups.create({ id: newGroupId(), name: 'G', sort_order: 0 }))
+        const type = await createType({ group_id: group.id })
+        valueOf(await adapter().commands.leave_types.archive({ id: type.id, expected_version: 1 }))
+        valueOf(await adapter().commands.leave_type_groups.archive({ id: group.id, expected_version: 1 }))
+        expect(issuesOf(await adapter().commands.leave_types.restore({ id: type.id, expected_version: 2 }))).toEqual([
+          { path: ['group_id'], code: 'reference_archived' },
+        ])
+        expect(errorOf(await adapter().commands.leave_type_groups.restore({ id: group.id, expected_version: 1 })).code).toBe(
+          'stale_version',
+        )
+        valueOf(await adapter().commands.leave_type_groups.restore({ id: group.id, expected_version: 2 }))
+        expect(valueOf(await adapter().commands.leave_types.restore({ id: type.id, expected_version: 2 })).archived_at).toBeNull()
+      })
+
       it('refuses to archive a group that holds a live type, and allows it once none does', async () => {
         const group = valueOf(await adapter().commands.leave_type_groups.create({ id: newGroupId(), name: 'G', sort_order: 0 }))
         const type = await createType({ group_id: group.id })

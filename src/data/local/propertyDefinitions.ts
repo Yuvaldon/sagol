@@ -3,6 +3,7 @@ import {
   CreatePropertyDefinitionInput,
   PropertyDefinition,
   ReorderPropertyDefinitionsInput,
+  RestorePropertyDefinitionInput,
   UpdatePropertyDefinitionInput,
   type DataCommands,
   type DataRepositories,
@@ -16,6 +17,8 @@ import {
   createReferenceCommands,
   createReferenceRepository,
   createReorderCommand,
+  createRestoreCommand,
+  noRestoreIssues,
   type ReferenceSpec,
 } from './reference'
 import type { LocalDependencies } from './dependencies'
@@ -77,5 +80,6 @@ export function createPropertyDefinitionCommands(dependencies: LocalDependencies
     }),
     // Each entity type has its own order: a soldier's properties are never placed among a leave's.
     reorder: createReorderCommand(dependencies, SPEC, ReorderPropertyDefinitionsInput, (row) => row.entity_type),
+    restore: createRestoreCommand(dependencies, SPEC, { input: RestorePropertyDefinitionInput, restoreIssues: noRestoreIssues }),
   }
 }

@@ -2,6 +2,7 @@ import { LEAVE_TYPE_PALETTE_KEYS, NEW_ENTITY, PANEL_IDS, ROTATION_LEAVE_PALETTE_
 import type { AppError, AvailabilityEffect, LeaveType, LeaveTypeGroup, LeaveTypeGroupId } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   NEW_LEAVE_TYPE_VALUES,
   leaveTypeFormIssues,
   leaveTypeFormValues,
@@ -22,6 +23,7 @@ import { Archive, ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -298,6 +300,14 @@ export function LeaveTypesModule() {
   const all = types.value
   const sections = leaveTypeSections(groups.value, all)
   const live = sections.flatMap((section) => section.types)
+  // Archived types come back from a quiet section under the list, for whoever may archive them (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={permissions.archive ? archivedRows(all) : []}
+      nameOf={(type) => type.name}
+      restore={commands.restore}
+    />
+  )
   const newType = () => {
     setFailure(null)
     panel.open(PANEL_IDS.leaveTypes, { entity: NEW_ENTITY })
@@ -393,6 +403,7 @@ export function LeaveTypesModule() {
           </Button>
         </div>
       ) : null}
+      {archived}
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"

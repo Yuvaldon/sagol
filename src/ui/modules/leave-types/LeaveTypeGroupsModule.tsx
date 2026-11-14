@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, LeaveTypeGroup } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   leaveTypeGroupFormIssues,
   liveGroups,
   useLeaveTypeGroupCommands,
@@ -14,6 +15,7 @@ import { Archive, ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -113,6 +115,14 @@ export function LeaveTypeGroupsModule() {
   if (groups.status === 'loading') return <LoadingNotice />
 
   const live = liveGroups(groups.value)
+  // Archived groups come back from a quiet section under the list, for whoever may archive them (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={permissions.archive ? archivedRows(groups.value) : []}
+      nameOf={(group) => group.name}
+      restore={commands.restore}
+    />
+  )
   const newGroup = () => {
     setFailure(null)
     panel.open(PANEL_IDS.leaveTypeGroups, { entity: NEW_ENTITY })
@@ -140,14 +150,17 @@ export function LeaveTypeGroupsModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="leaveTypeGroups.emptyTitle" bodyKey={permissions.create ? undefined : 'leaveTypeGroups.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newGroup}>
-            <Plus aria-hidden size={14} />
-            {t('leaveTypeGroups.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        <EmptyNotice titleKey="leaveTypeGroups.emptyTitle" bodyKey={permissions.create ? undefined : 'leaveTypeGroups.emptyReadOnly'}>
+          {permissions.create ? (
+            <Button variant="primary" onPress={newGroup}>
+              <Plus aria-hidden size={14} />
+              {t('leaveTypeGroups.new')}
+            </Button>
+          ) : null}
+        </EmptyNotice>
+        {archived}
+      </div>
     )
   }
 
@@ -213,6 +226,7 @@ export function LeaveTypeGroupsModule() {
           </Button>
         </div>
       ) : null}
+      {archived}
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"

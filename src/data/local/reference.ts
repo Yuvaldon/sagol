@@ -355,3 +355,55 @@ export function createReorderCommand<Row extends SortableRow>(
       return rows
     })
 }
+
+/** A table whose rows reference nothing that a restore must check again. */
+export function noRestoreIssues(): Promise<Issue[]> {
+  return Promise.resolve([])
+}
+
+export interface RestoreOptions<Row extends ReferenceRow> {
+  readonly input: z.ZodType<VersionedInput<Row['id']>>
+  /** The row's references and uniques as a live row. Paths are relative to the row. */
+  readonly restoreIssues: (check: RowCheck<Row>) => Promise<Issue[]>
+  /** Invariants of the state after the restore. A refusal undoes the write. */
+  readonly afterWrite?: (check: RowCheck<Row>) => Promise<void>
+  /** Tables the checks read beyond the spec's own. */
+  readonly tables?: readonly TableName[]
+}
+
+/**
+ * Restore: an archived row comes back live, checked like any write (D-371). The order is D-090's: the row is visible →
+ * `delete` on its target, as for archive → its state (archived, and the expected version) → `restoreIssues`, the
+ * row's references and uniques as a live row → write. `afterWrite` checks the state after it, as for archive.
+ */
+export function createRestoreCommand<Row extends ReferenceRow>(
+  dependencies: LocalDependencies,
+  spec: ReferenceSpec<Row>,
+  options: RestoreOptions<Row>,
+) {
+  const { database, changes: feed } = dependencies
+  const tables = [...new Set<TableName>([...tablesOf(spec), ...(options.tables ?? [])])]
+  return (raw: VersionedInput<Row['id']>) =>
+    asResult(async () => {
+      const { id, expected_version } = parseInput(options.input, raw)
+      const row = await database.transaction('rw', tables, async () => {
+        const scope = await loadActorScope(dependencies)
+        const before = await visibleRow(database, spec, scope, id)
+        requirePermission(scope, permissionOf(spec.resource, 'delete'), spec.targetOf(before))
+        if (before.archived_at === null) return failValidation([{ path: [], code: IssueCode.enum.not_archived }])
+        if (before.version !== expected_version) return fail({ code: 'stale_version' })
+        const restored = spec.schema.parse({
+          ...before,
+          archived_at: null,
+          ...updatedBy(scope.soldier_id, scope.now, before.version),
+        })
+        const issues = await options.restoreIssues({ database, scope, row: restored, before })
+        if (issues.length > 0) return failValidation(issues)
+        await tableFor(database, spec).put(restored)
+        await options.afterWrite?.({ database, scope, row: restored, before })
+        return restored
+      })
+      feed.publish([{ table: spec.table, ids: [row.id] }])
+      return row
+    })
+}

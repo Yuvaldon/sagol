@@ -58,6 +58,9 @@ const REFERENCE = { get: true, list: true } as const
 const LIST = { list: true } as const
 const EDIT = { create: true, update: true, archive: true } as const
 const SORTED_EDIT = { ...EDIT, reorder: true } as const
+/** Reference tables whose archived rows come back (D-371). */
+const RESTORABLE = { ...EDIT, restore: true } as const
+const SORTED_RESTORABLE = { ...SORTED_EDIT, restore: true } as const
 
 const REPOSITORY_METHODS = {
   organizations: { current: true },
@@ -95,21 +98,21 @@ const REPOSITORY_METHODS = {
 const COMMAND_METHODS = {
   organizations: { bootstrapOwner: true, update: true },
   accounts: { requestLink: true, cancelLinkRequest: true, reviewLink: true, revokeLink: true, updateMyPreferences: true },
-  unit_levels: SORTED_EDIT,
-  units: { ...SORTED_EDIT, move: true },
-  command_ranks: EDIT,
-  soldiers: { ...EDIT, updatePrivate: true, setTags: true, changeMembership: true },
+  unit_levels: SORTED_RESTORABLE,
+  units: { ...SORTED_RESTORABLE, move: true },
+  command_ranks: RESTORABLE,
+  soldiers: { ...RESTORABLE, updatePrivate: true, setTags: true, changeMembership: true },
   roles: EDIT,
   rank_role_bindings: EDIT,
   access_grants: { grant: true, revoke: true },
-  tag_categories: SORTED_EDIT,
-  tags: SORTED_EDIT,
-  leave_type_groups: SORTED_EDIT,
-  leave_types: SORTED_EDIT,
+  tag_categories: SORTED_RESTORABLE,
+  tags: SORTED_RESTORABLE,
+  leave_type_groups: SORTED_RESTORABLE,
+  leave_types: SORTED_RESTORABLE,
   leaves: { create: true, update: true, transition: true, createBatch: true, createMany: true, duplicate: true },
   leave_comments: { add: true, edit: true, archive: true },
-  availability_rules: EDIT,
-  property_definitions: SORTED_EDIT,
+  availability_rules: RESTORABLE,
+  property_definitions: SORTED_RESTORABLE,
   seniority_overrides: { create: true, revoke: true },
   deployments: { ...EDIT, setMembers: true, close: true, reopen: true },
   day_reports: { confirm: true },

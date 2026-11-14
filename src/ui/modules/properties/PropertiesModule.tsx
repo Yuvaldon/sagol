@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import { PropertyDataType, PropertyEntityType, type AppError, type Issue, type PropertyDefinition } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   definitionsOf,
   hasOptions,
   newPropertyDefinitionValues,
@@ -20,6 +21,7 @@ import { Archive, ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -350,6 +352,14 @@ export function PropertiesModule() {
   const all = definitions.value
   const sections = PropertyEntityType.options.map((type) => ({ type, definitions: definitionsOf(all, type) }))
   const live = sections.flatMap((section) => section.definitions)
+  // Archived definitions come back from a quiet section under the list, for whoever may archive them (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={permissions.archive ? archivedRows(all) : []}
+      nameOf={(definition) => definition.label}
+      restore={commands.restore}
+    />
+  )
   const newDefinition = () => {
     setFailure(null)
     panel.open(PANEL_IDS.properties, { entity: NEW_ENTITY })
@@ -378,14 +388,17 @@ export function PropertiesModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="properties.emptyTitle" bodyKey={permissions.create ? undefined : 'properties.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newDefinition}>
-            <Plus aria-hidden size={14} />
-            {t('properties.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        <EmptyNotice titleKey="properties.emptyTitle" bodyKey={permissions.create ? undefined : 'properties.emptyReadOnly'}>
+          {permissions.create ? (
+            <Button variant="primary" onPress={newDefinition}>
+              <Plus aria-hidden size={14} />
+              {t('properties.new')}
+            </Button>
+          ) : null}
+        </EmptyNotice>
+        {archived}
+      </div>
     )
   }
 
@@ -448,6 +461,7 @@ export function PropertiesModule() {
           </Button>
         </div>
       ) : null}
+      {archived}
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"

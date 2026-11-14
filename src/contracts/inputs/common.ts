@@ -69,6 +69,11 @@ export function archiveInput<Id extends z.ZodType>(id: Id) {
   return z.strictObject({ id, expected_version: ExpectedVersion })
 }
 
+/** `{ id, expected_version }`: restore an archived row (D-371). */
+export function restoreInput<Id extends z.ZodType>(id: Id) {
+  return z.strictObject({ id, expected_version: ExpectedVersion })
+}
+
 /**
  * Reorder: the full ordered list of rows being sorted. `sort_order` is derived from the
  * position, so it is never input elsewhere after creation.
