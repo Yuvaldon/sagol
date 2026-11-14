@@ -167,5 +167,5 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 
 ## Later (no schema change required)
 
-Attached memberships, missions (משימות/מבצעים), simulations, saved views, rotation templates
-for leave batches, hour-level leaves (additive columns).
+Attached memberships, missions (משימות/מבצעים), simulations, rotation templates
+for leave batches, hour-level leaves (additive columns). Saved views are built (D-384..D-388).

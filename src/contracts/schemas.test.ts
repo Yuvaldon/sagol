@@ -4,6 +4,7 @@ import {
   AvailabilityRule,
   Deployment,
   FilterExpression,
+  IssueCode,
   Leave,
   OrganizationSettings,
   PERMISSION_ACTIONS_BY_RESOURCE,
@@ -15,6 +16,7 @@ import {
   PolicyTarget,
   RankRoleBinding,
   RolePermission,
+  SAVED_VIEW_LIMITS,
   SchemaIssue,
   SoldierPreferences,
   StrictSoldierPreferences,
@@ -116,6 +118,8 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: false,
       appearance: 'light',
       dashboard: null,
+      saved_views: [],
+      start_view_id: null,
       updates_seen_at: null,
       notifications: { my_request: true, awaiting_me: true },
     })
@@ -126,6 +130,8 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: true,
       appearance: 'light',
       dashboard: null,
+      saved_views: [],
+      start_view_id: null,
       updates_seen_at: null,
       notifications: { my_request: true, awaiting_me: true },
     })
@@ -141,8 +147,52 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: false,
       appearance: 'dark',
       dashboard: null,
+      saved_views: [],
+      start_view_id: null,
       updates_seen_at: null,
       notifications: { my_request: true, awaiting_me: true },
+    })
+  })
+
+  describe('saved views (D-384)', () => {
+    const view = (id: string, name: string, query: Record<string, string> = { range: '"week"' }) => ({ id, name, query })
+
+    it('reads views in order, with their start view', () => {
+      const parsed = SoldierPreferences.parse({ saved_views: [view(ID.a, 'בוקר'), view(ID.b, 'נהגים')], start_view_id: ID.b })
+      expect(parsed.saved_views.map((saved) => saved.name)).toEqual(['בוקר', 'נהגים'])
+      expect(parsed.start_view_id).toBe(ID.b)
+    })
+
+    it('keeps at most twelve views', () => {
+      const idOf = (index: number) => `0a1b2c3d-2222-4aaa-8aaa-${String(index).padStart(12, '0')}`
+      const twelve = Array.from({ length: SAVED_VIEW_LIMITS.max }, (_, index) => view(idOf(index), `view ${String(index)}`))
+      expect(SoldierPreferences.safeParse({ saved_views: twelve }).success).toBe(true)
+      expect(SoldierPreferences.safeParse({ saved_views: [...twelve, view(idOf(SAVED_VIEW_LIMITS.max), 'one more')] }).success).toBe(false)
+    })
+
+    it('refuses an empty or a too long name', () => {
+      expect(SoldierPreferences.safeParse({ saved_views: [view(ID.a, '  ')] }).success).toBe(false)
+      expect(SoldierPreferences.safeParse({ saved_views: [view(ID.a, 'x'.repeat(SAVED_VIEW_LIMITS.nameMax + 1))] }).success).toBe(false)
+    })
+
+    it('refuses a second view of the same name', () => {
+      const result = SoldierPreferences.safeParse({ saved_views: [view(ID.a, 'בוקר'), view(ID.b, ' בוקר ')] })
+      expect(result.success).toBe(false)
+      expect(result.error?.issues.map((issue) => [issue.message, issue.path])).toEqual([
+        [IssueCode.enum.duplicate_item, ['saved_views', 1, 'name']],
+      ])
+    })
+
+    it('drops a param it does not keep, and refuses a value past the limit', () => {
+      const parsed = SoldierPreferences.parse({ saved_views: [view(ID.a, 'בוקר', { range: '"week"', from: '"2026-11-13"', panel: '"tags"' })] })
+      expect(parsed.saved_views[0]?.query).toEqual({ range: '"week"' })
+      const long = view(ID.a, 'בוקר', { filter: 'x'.repeat(SAVED_VIEW_LIMITS.valueMax + 1) })
+      expect(SoldierPreferences.safeParse({ saved_views: [long] }).success).toBe(false)
+    })
+
+    it('reads a start view that is no longer saved as none', () => {
+      expect(SoldierPreferences.parse({ saved_views: [view(ID.a, 'בוקר')], start_view_id: ID.b }).start_view_id).toBeNull()
+      expect(SoldierPreferences.parse({ start_view_id: 'not an id' }).start_view_id).toBeNull()
     })
   })
 
@@ -199,9 +249,19 @@ describe('the stored dashboard (D-349, D-361)', () => {
       create_leaves_as_approved: false,
       appearance: 'dark',
       dashboard: null,
+      saved_views: [],
+      start_view_id: null,
       updates_seen_at: null,
       notifications: { my_request: true, awaiting_me: true },
     })
+  })
+
+  it('writes saved views strictly and a start view no longer saved as NULL (D-384, D-386)', () => {
+    const id = ID.a
+    const views = [{ id, name: 'בוקר', query: { view: 'month' } }]
+    expect(StrictSoldierPreferences.parse({ saved_views: views, start_view_id: id }).start_view_id).toBe(id)
+    expect(StrictSoldierPreferences.parse({ saved_views: [], start_view_id: id }).start_view_id).toBeNull()
+    expect(StrictSoldierPreferences.safeParse({ saved_views: [...views, { ...views[0], id: ID.b }] }).success).toBe(false)
   })
 
   it('refuses unknown and repeated modules on write, takes the whole catalogue', () => {

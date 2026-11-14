@@ -88,3 +88,7 @@ export type PropertyDefinitionId = z.infer<typeof PropertyDefinitionId>
 /** Id of one option inside `property_definitions.options` (select / multi_select). */
 export const PropertyOptionId = z.uuid().brand<'PropertyOptionId'>()
 export type PropertyOptionId = z.infer<typeof PropertyOptionId>
+
+/** Id of one saved view inside `soldier_preferences.preferences.saved_views` (D-384). */
+export const SavedViewId = z.uuid().brand<'SavedViewId'>()
+export type SavedViewId = z.infer<typeof SavedViewId>

@@ -274,6 +274,7 @@ CREATE TABLE IF NOT EXISTS "soldier_preferences" (
 	                                                 -- updates_seen_at (D-352), notifications (D-358);
 	                                                 -- dashboard (D-349, D-361): the board's template or
 	                                                 -- custom modules, NULL for the default;
+	                                                 -- saved_views, start_view_id (D-384, D-386);
 	                                                 -- missing keys read as defaults, unknown keys
 	                                                 -- are dropped on read (rules_row_placement, D-310);
 	                                                 -- pinned_modules (D-221) is gone and never written (D-291)
