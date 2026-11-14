@@ -315,17 +315,17 @@ am = amends, ref = refines, ext = extends.
 | D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | ref D-345 |
 | D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
-| D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | am D-357 |
+| D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | am D-360 |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
-| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-357 |
+| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360 |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
-| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-358 |
+| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361 |
 | D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
-| D-357 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
-| D-358 | The stored board reads leniently and writes strictly; leave events take a thread or a span query | contracts | |
+| D-360 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
+| D-361 | The stored board reads leniently and writes strictly; leave events take a thread or a span query | contracts | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4738,7 +4738,7 @@ stored choice, not stored figures, keeps D-019.
 **Why:** the owner asked for a small personal picture for every soldier. Keeping it fixed and self-only needs no
 settings and leaks nothing.
 
-## D-357 — The dashboard is built now, for 1.0, as an R3 item under OI-222
+## D-360 — The dashboard is built now, for 1.0, as an R3 item under OI-222
 2026-11-13 · accepted · amends D-344, D-342 · ref D-338, D-349, D-350 · OI-222 · the owner's approval of 2026-11-13 ("מבחינתי לגמרי ללכת על זה")
 - D-344 sorted the dashboard (OI-222) as a Should for 1.0 and left when to build it to the owner; the owner approved
   building it now. It is built in stage R3 ("Closing the gaps"), as the other Should items are, under OI-222, with no
@@ -4749,7 +4749,7 @@ settings and leaks nothing.
 **Why:** the owner asked for it before the design rounds, and the spec is complete, so nothing waits for R4 but the
 dashboard's place on screen.
 
-## D-358 — The stored board reads leniently and writes strictly; leave events take a thread or a span query
+## D-361 — The stored board reads leniently and writes strictly; leave events take a thread or a span query
 2026-11-13 · accepted · refines D-349 · ref D-041, D-076 · OI-222 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
 - `SoldierPreferences.dashboard` has two schemas. The read one drops a custom list's unknown and repeated items and
   keeps the first 20; a layout that no longer parses at all (a removed template) reads as `null`, so the default

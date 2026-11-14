@@ -266,7 +266,7 @@ CREATE TABLE IF NOT EXISTS "soldier_preferences" (
 	"preferences" JSONB NOT NULL DEFAULT '{}',       -- validated by contracts SoldierPreferences:
 	                                                 -- create_leaves_as_approved (D-121),
 	                                                 -- appearance (D-181);
-	                                                 -- dashboard (D-349, D-358): the board's template or
+	                                                 -- dashboard (D-349, D-361): the board's template or
 	                                                 -- custom modules, NULL for the default;
 	                                                 -- missing keys read as defaults, unknown keys
 	                                                 -- are dropped on read (rules_row_placement, D-310);
