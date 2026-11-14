@@ -41,6 +41,16 @@ describe('row level security (D-203)', () => {
     expect(open.map((row) => String(row.relname))).toEqual([])
   })
 
+  // The gateway connects as the role that ran the migrations; on Supabase that role is no superuser, so it passes
+  // row level security with no policy (change_counters included) only as the owner of an unforced table (D-411).
+  it('lets the owner the gateway connects as through: it owns every table, and none forces row level security', async () => {
+    const barred = await sql`
+      SELECT relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r'
+        AND (c.relforcerowsecurity OR pg_get_userbyid(c.relowner) <> current_user)`
+    expect(barred.map((row) => String(row.relname))).toEqual([])
+  })
+
   it('leaves the API roles no privilege on a table, a sequence or a function', async () => {
     const granted = await sql`
       SELECT grantee, table_name AS name FROM information_schema.role_table_grants
