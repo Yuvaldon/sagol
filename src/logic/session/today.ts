@@ -1,5 +1,5 @@
 import type { CalendarDate } from '@contracts'
-import { millisecondsUntilNextDay, todayIn } from '@domain'
+import { millisecondsUntil, millisecondsUntilNextDay, startOfHour, todayIn } from '@domain'
 import { useEffect, useState } from 'react'
 import { usePorts } from '../runtime/context'
 import { useCurrentOrganization } from './hooks'
@@ -39,4 +39,30 @@ export function useToday(): CalendarDate | null {
   }, [timezone, time, turns])
 
   return timezone === null ? null : todayIn(timezone, time.now())
+}
+
+/**
+ * Whether the clock has passed `hour` o'clock today in the screens' time zone, and it turns at that hour with the screen
+ * open, then back at midnight (D-443). NULL while today loads. A timer that fires early sets the next one.
+ */
+export function usePastHour(hour: number): boolean | null {
+  const { time } = usePorts()
+  const timezone = useTimezone()
+  const today = useToday()
+  const [turns, setTurns] = useState(0)
+  const due = timezone === null || today === null ? null : startOfHour(today, hour, timezone)
+
+  useEffect(() => {
+    if (due === null) return undefined
+    const left = millisecondsUntil(time.now(), due)
+    if (left <= 0) return undefined
+    const timer = setTimeout(() => {
+      setTurns((count) => count + 1)
+    }, left)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [due, time, turns])
+
+  return due === null ? null : millisecondsUntil(time.now(), due) <= 0
 }

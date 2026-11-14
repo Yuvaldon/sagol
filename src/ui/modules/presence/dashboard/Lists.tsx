@@ -9,6 +9,7 @@ import {
   type Dashboard,
   type DashboardOutstanding,
   type DashboardReport,
+  type DashboardReportDay,
   type ReportSectionStatus,
   type UpcomingLeave,
 } from '@logic'
@@ -127,17 +128,26 @@ const STATUS_ICONS = {
   changed_since: <AlertCircle aria-hidden size={14} className="shrink-0 text-status-pending-text" />,
 } as const satisfies Record<ReportSectionStatus['status'], ReactNode>
 
-/** "סטטוס דוח 1": each section's confirmation; pressing opens the day report. */
+/** "סטטוס דוח 1": each section's confirmation; pressing opens the day report. After the cut-over hour it shows tomorrow's too (D-443). */
 export function ReportStatusList({ report }: { readonly report: DashboardReport }) {
+  return (
+    <div className="flex flex-col gap-sm">
+      <ReportStatusDay day={report} />
+      {report.next === null ? null : <ReportStatusDay day={report.next} />}
+    </div>
+  )
+}
+
+function ReportStatusDay({ day }: { readonly day: DashboardReportDay }) {
   const { openOn } = usePresenceDay()
   return (
     <div className="flex flex-col gap-xs">
-      <AriaButton className={`${ROW} flex-col items-stretch py-xs`} onPress={() => openOn(report.date)}>
-        <span className="text-label font-semibold">{reportHeading(report.date)}</span>
-        <span className="text-micro text-text-muted">{reportTotals(report.present, report.absent)}</span>
+      <AriaButton className={`${ROW} flex-col items-stretch py-xs`} onPress={() => openOn(day.date)}>
+        <span className="text-label font-semibold">{reportHeading(day.date)}</span>
+        <span className="text-micro text-text-muted">{reportTotals(day.present, day.absent)}</span>
       </AriaButton>
       <ul className="flex flex-col gap-2xs px-xs">
-        {report.sections.map((section) => (
+        {day.sections.map((section) => (
           <li key={section.key} className="flex items-center gap-xs text-name">
             {STATUS_ICONS[section.status]}
             <span className="min-w-none flex-1 truncate">{groupLabel(section.label)}</span>

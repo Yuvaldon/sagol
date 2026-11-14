@@ -1,3 +1,4 @@
+import { readFileSync, writeFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { PWA } from '../src/config/pwa/index.ts'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
@@ -5,6 +6,13 @@ import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 // V18's demo, against a production build (D-182, D-183): the manifest in Hebrew and RTL, colored from the light theme,
 // its icons served, the service worker in control of the page, and Chrome finds the app installable. The build has no
 // env here, so the page is the startup failure screen: the shell starts before the env is read, on purpose.
+// A new version (D-183, D-444) is a deploy on the same origin: the test changes the built worker on disk, and the
+// browser's own update check finds it. The failure screen has no form to lose, so the page takes the waiting worker at
+// once, through `SKIP_WAITING`, and reloads; the toast and "רענון" on an open workspace are unit tested
+// (`UpdateToast.test.tsx`), because a production build never opens the workspace with the local identity (D-006).
+
+/** The built worker the preview serves; only this test changes it, and it puts it back. */
+const BUILT_WORKER = `dist${PWA.serviceWorkerPath}`
 
 interface ManifestIcon {
   readonly src: string
@@ -80,5 +88,31 @@ test('the production build is an installable app', async ({ page, request, brows
     const QUOTE = '[`"\']'
     for (const event of ['message', 'push', 'notificationclick']) expect(worker).toMatch(new RegExp(`addEventListener\\(${QUOTE}${event}${QUOTE}`))
     expect(worker).toContain('SKIP_WAITING')
+  })
+
+  await test.step('a new version installs, takes over through SKIP_WAITING, and the page reloads once (D-183)', async () => {
+    const built = readFileSync(BUILT_WORKER, 'utf8')
+    try {
+      writeFileSync(BUILT_WORKER, `${built}\n// ${test.info().testId}\n`)
+      await page.evaluate(() => {
+        Object.assign(window, { beforeUpdate: true })
+      })
+      // The update is started, not awaited in the page: the new worker takes over and the page reloads, which ends
+      // this page's context, so nothing is read back from it until the reload.
+      const reloaded = page.waitForEvent('load')
+      await page.evaluate(() => {
+        void navigator.serviceWorker.ready.then((registration) => registration.update())
+      })
+      await reloaded
+      expect(await page.evaluate(() => 'beforeUpdate' in window)).toBe(false)
+      const after = await page.evaluate(async () => {
+        const registration = await navigator.serviceWorker.ready
+        return { controlled: navigator.serviceWorker.controller !== null, waiting: registration.waiting !== null }
+      })
+      expect(after).toEqual({ controlled: true, waiting: false })
+      expect(await (await page.request.get(PWA.serviceWorkerPath)).text()).toContain(test.info().testId)
+    } finally {
+      writeFileSync(BUILT_WORKER, built)
+    }
   })
 })

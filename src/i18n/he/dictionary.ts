@@ -161,6 +161,7 @@ export const dictionary = {
     savedViews: {
       mine: 'התצוגות שלי',
       save: 'שמירת התצוגה הנוכחית',
+      overwrite: 'שמירת השינויים',
       maxHint: 'אפשר לשמור עד',
       maxHintUnit: 'תצוגות',
       newTitle: 'תצוגה חדשה',

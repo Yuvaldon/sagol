@@ -7,6 +7,11 @@ export type DayReportCategory = (typeof DAY_REPORT_CATEGORIES)[number]
 export const DAY_REPORT = {
   /** The most days a span holds, the first included (D-193). */
   maxSpanDays: 7,
+  /**
+   * The hour, in the organization's time zone, from which the dashboard's "סטטוס דוח 1" also shows tomorrow's report,
+   * the one the unit prepares that evening (D-443).
+   */
+  nextDayFromHour: 18,
   /** How long a notice of the copy or the image stays on screen. */
   noticeMs: 2400,
   /**

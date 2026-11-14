@@ -1,6 +1,6 @@
 # Spec — Saved views
 
-Status: built (D-384..D-388), the MVP with move up and down; "שמירת השינויים" is OI-331.
+Status: built (D-384..D-388, D-442), with move up and down and "שמירת השינויים".
 Context: both. Approved by the owner on 2026-11-13 with a condition (D-170, recorded as decided): it sits in a
 very central place but is a niche feature, so it must not burden or complicate simple everyday use. It stays
 quiet by default (P-6): no new persistent control in the top strip or the chips row; it is reached only from
@@ -120,7 +120,7 @@ toast "חלק מהתנאים בתצוגה כבר לא קיימים" with "עדכ
 **Current** — when the board's state equals a saved view (`matchingView`), that view's card is marked as
 selected inside the sheet, and only there: no chip, no title and no badge on the board (P-6). After a change
 that leaves a view, the sheet offers "שמירת השינויים" beside the save action (overwrite the view that matched
-before the change).
+before the change). Built as the view the board was last put in, from the sheet (D-442).
 
 **Manage** — from the cards row, "ניהול התצוגות": a list with rename (inline), move up/down, delete (confirm),
 and "תצוגת פתיחה" (radio, with "ללא" first). Deleting the start view clears it.

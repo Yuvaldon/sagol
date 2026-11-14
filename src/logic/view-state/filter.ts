@@ -1,5 +1,7 @@
 import {
+  COMPARE_OPERATORS,
   type CommandRankId,
+  type CompareOperator,
   type FilterExpression,
   type FilterNode,
   type JsonValue,
@@ -24,18 +26,6 @@ function idsOf(value: JsonValue): string[] | null {
   const ids = value.map((item) => Id.safeParse(item))
   return ids.every((id) => id.success) ? ids.map((id) => id.data) : null
 }
-
-/** The operators a typed value is compared by (D-380): text, number and date properties. */
-export const COMPARE_OPERATORS = [
-  'equals',
-  'not_equals',
-  'contains',
-  'greater_than',
-  'greater_or_equal',
-  'less_than',
-  'less_or_equal',
-] as const satisfies readonly PropertyOperator[]
-export type CompareOperator = (typeof COMPARE_OPERATORS)[number]
 
 function compareOperatorOf(operator: PropertyOperator): CompareOperator | null {
   return COMPARE_OPERATORS.find((item) => item === operator) ?? null
