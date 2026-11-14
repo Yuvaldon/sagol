@@ -9,4 +9,9 @@ export const NOTIFICATIONS = {
   pushTtlSeconds: 86_400,
   /** RFC 8030 urgency: a leave update is shown to the soldier, so the service wakes the phone for it (D-411). */
   pushUrgency: 'high',
+  /**
+   * Sign-out waits this long for the device's unsubscribe, then signs out anyway (D-358, D-433): a push service that
+   * hangs never keeps a soldier signed in. The server row ends on the next 404 or 410, or on revoke.
+   */
+  signOutUnsubscribeTimeoutMs: 4_000,
 } as const
