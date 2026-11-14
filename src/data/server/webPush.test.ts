@@ -2,7 +2,7 @@ import { NOTIFICATIONS } from '@config'
 import { PushPayload } from '@contracts'
 import { instantAt, millisecondsUntil } from '@domain'
 import { describe, expect, it } from 'vitest'
-import { PushDeliveryError, createWebPushSender, decodeBase64Url, encodeBase64Url } from './webPush'
+import { PushDeliveryError, createWebPushSender, decodeBase64Url, encodeBase64Url, encryptPush } from './webPush'
 
 // The owned Web Push request (D-435): the test plays the browser, decrypting what the sender posts, and the push
 // service, answering with each status. Test data only.
@@ -173,5 +173,38 @@ describe('the owned web push request (D-435)', () => {
     await sender.send(install.device, PAYLOAD)
     const [first, second] = service.posted.map((post) => post.init.body as Uint8Array)
     expect(first?.slice(0, 86)).not.toEqual(second?.slice(0, 86))
+  })
+})
+
+// RFC 8291 Appendix A: the RFC's own keys, salt and message, and the exact body it publishes (D-435).
+const RFC8291 = {
+  plaintext: 'When I grow up, I want to be a watermelon',
+  serverPrivate: 'yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw',
+  serverPublic: 'BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8',
+  uaPublic: 'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4',
+  auth: 'BTBZMqHH6r4Tts7J_aSIgg',
+  salt: 'DGv6ra1nlYgDCS1FRnbzlw',
+  body:
+    'DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN',
+}
+
+describe('the encryption against RFC 8291 Appendix A', () => {
+  it('produces the body the RFC publishes', async () => {
+    const point = decodeBase64Url(RFC8291.serverPublic)
+    const jwk = {
+      kty: 'EC',
+      crv: 'P-256',
+      x: encodeBase64Url(point.slice(1, 33)),
+      y: encodeBase64Url(point.slice(33, 65)),
+      d: RFC8291.serverPrivate,
+    }
+    const privateKey = await crypto.subtle.importKey('jwk', jwk, P256, false, ['deriveBits'])
+    const publicKey = await crypto.subtle.importKey('raw', point, P256, true, [])
+    const body = await encryptPush(
+      { p256dh: RFC8291.uaPublic, auth: RFC8291.auth },
+      new TextEncoder().encode(RFC8291.plaintext),
+      { keys: { privateKey, publicKey }, salt: decodeBase64Url(RFC8291.salt) },
+    )
+    expect(encodeBase64Url(body)).toBe(RFC8291.body)
   })
 })

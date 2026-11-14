@@ -68,18 +68,31 @@ const infoOf = (label: string) => concat(encoder.encode(label), new Uint8Array([
 
 /**
  * The `aes128gcm` body of one push for the install with public key `p256dh` and secret `auth` (RFC 8291 §3.4). A fresh
- * key pair and salt per push, as the RFC asks, so no two pushes share a content key.
+ * key pair and salt per push, as the RFC asks, so no two pushes share a content key; `ephemeral` fixes them only for
+ * the RFC's own example (Appendix A).
  */
-export async function encryptPush(device: Pick<PushDevice, 'p256dh' | 'auth'>, plaintext: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
+export interface PushEphemeral {
+  readonly keys: CryptoKeyPair
+  readonly salt: Uint8Array<ArrayBuffer>
+}
+
+async function freshEphemeral(): Promise<PushEphemeral> {
+  return { keys: await crypto.subtle.generateKey(P256, false, ['deriveBits']), salt: crypto.getRandomValues(new Uint8Array(16)) }
+}
+
+export async function encryptPush(
+  device: Pick<PushDevice, 'p256dh' | 'auth'>,
+  plaintext: Uint8Array,
+  ephemeral?: PushEphemeral,
+): Promise<Uint8Array<ArrayBuffer>> {
   const uaPublic = decodeBase64Url(device.p256dh)
   const authSecret = decodeBase64Url(device.auth)
-  const local = await crypto.subtle.generateKey(P256, false, ['deriveBits'])
+  const { keys: local, salt } = ephemeral ?? (await freshEphemeral())
   const localPublic = new Uint8Array(await crypto.subtle.exportKey('raw', local.publicKey))
   const remote = await crypto.subtle.importKey('raw', uaPublic, P256, false, [])
   const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: remote }, local.privateKey, 256))
 
   const ikm = await hkdf(shared, authSecret, concat(infoOf('WebPush: info'), uaPublic, localPublic), 32)
-  const salt = crypto.getRandomValues(new Uint8Array(16))
   const contentKey = await hkdf(ikm, salt, infoOf('Content-Encoding: aes128gcm'), 16)
   const nonce = await hkdf(ikm, salt, infoOf('Content-Encoding: nonce'), 12)
 
