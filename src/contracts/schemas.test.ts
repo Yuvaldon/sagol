@@ -225,6 +225,10 @@ describe('permission checks (D-053, D-091)', () => {
     expect(PermissionCheck.safeParse({ permission: { resource: 'units', action: 'approve' }, target }).success).toBe(false)
     expect(PolicyTarget.safeParse({ kind: 'unit' }).success).toBe(false)
   })
+
+  it('names "some unit" without an id (D-359)', () => {
+    expect(PolicyTarget.safeParse({ kind: 'some_unit' }).success).toBe(true)
+  })
 })
 
 describe('permission vocabulary (D-040)', () => {
