@@ -1,10 +1,10 @@
-import type { DashboardModule } from '@contracts'
+import { dashboardModuleKey, type DashboardModule } from '@contracts'
 import { t } from '@i18n'
 import { ChevronLeft, Plus } from 'lucide-react'
 import { Menu, MenuItem, MenuTrigger, SubmenuTrigger } from 'react-aria-components'
 import { Popover } from '../../../primitives/overlays'
 import { Button } from '../../../primitives/Button'
-import { MODULE_KEYS, moduleKeyOf, moduleTitleKey } from './moduleWords'
+import { MODULE_KEYS, moduleTitleKey } from './moduleWords'
 
 // "הוספת רכיב" (D-349): the modules not on the board that the scope can draw; a big number opens its metrics.
 
@@ -34,7 +34,7 @@ export function AddMenu({ addable, onAdd }: { readonly addable: readonly Dashboa
               <Popover className={SURFACE}>
                 <Menu className={LIST}>
                   {stats.map((module) => (
-                    <MenuItem key={moduleKeyOf(module)} id={moduleKeyOf(module)} textValue={t(moduleTitleKey(module))} onAction={() => onAdd(module)} className={ITEM}>
+                    <MenuItem key={dashboardModuleKey(module)} id={dashboardModuleKey(module)} textValue={t(moduleTitleKey(module))} onAction={() => onAdd(module)} className={ITEM}>
                       {t(moduleTitleKey(module))}
                     </MenuItem>
                   ))}
@@ -43,7 +43,7 @@ export function AddMenu({ addable, onAdd }: { readonly addable: readonly Dashboa
             </SubmenuTrigger>
           )}
           {others.map((module) => (
-            <MenuItem key={moduleKeyOf(module)} id={moduleKeyOf(module)} textValue={t(moduleTitleKey(module))} onAction={() => onAdd(module)} className={ITEM}>
+            <MenuItem key={dashboardModuleKey(module)} id={dashboardModuleKey(module)} textValue={t(moduleTitleKey(module))} onAction={() => onAdd(module)} className={ITEM}>
               {t(moduleTitleKey(module))}
             </MenuItem>
           ))}

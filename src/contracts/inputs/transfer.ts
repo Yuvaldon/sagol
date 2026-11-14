@@ -98,7 +98,8 @@ export const EXPORT_FORMAT_VERSION = 6
 
 /**
  * Full organization export (`data_transfer:export`): every table's rows, as stored.
- * `unit_closure` is derived and never exported (D-039).
+ * `unit_closure` is derived and never exported (D-039); nor are `change_counters`, which the load continues from the
+ * largest number in the rows (D-373).
  */
 export const OrganizationExport = z.object({
   format_version: z.literal(EXPORT_FORMAT_VERSION),

@@ -21,6 +21,7 @@ import {
   SoldierPreferences,
   StrictSoldierPreferences,
   DASHBOARD_MAX_MODULES,
+  dashboardModuleKey,
   DASHBOARD_METRIC_IDS,
   DASHBOARD_MODULE_IDS,
 } from './index'
@@ -241,7 +242,7 @@ describe('the stored dashboard (D-349, D-361)', () => {
     const others = DASHBOARD_MODULE_IDS.filter((id) => id !== 'stat').map((module) => ({ module }))
     const read = SoldierPreferences.parse(custom([...many, ...others, ...others]))
     expect(read.dashboard?.kind === 'custom' && read.dashboard.modules).toHaveLength(many.length + others.length)
-    expect(many.length + others.length).toBeLessThanOrEqual(DASHBOARD_MAX_MODULES)
+    expect(many.length + others.length).toBe(DASHBOARD_MAX_MODULES)
   })
 
   it('reads a layout that no longer parses as the default, keeping the rest', () => {
@@ -273,6 +274,7 @@ describe('the stored dashboard (D-349, D-361)', () => {
     const stats = DASHBOARD_METRIC_IDS.map((metric) => ({ module: 'stat', metric }))
     const others = DASHBOARD_MODULE_IDS.filter((id) => id !== 'stat').map((module) => ({ module }))
     expect(StrictSoldierPreferences.safeParse(custom([...stats, ...others])).success).toBe(true)
+    expect(stats.length + others.length).toBe(DASHBOARD_MAX_MODULES)
     expect(StrictSoldierPreferences.safeParse(custom([...stats, ...others, { module: 'stat', metric: 'x' }])).success).toBe(false)
     expect(StrictSoldierPreferences.safeParse({ dashboard: { kind: 'template', template: 'retired' } }).success).toBe(false)
   })
@@ -295,6 +297,16 @@ describe('permission checks (D-053, D-091)', () => {
 
   it('names "some unit" without an id (D-362)', () => {
     expect(PolicyTarget.safeParse({ kind: 'some_unit' }).success).toBe(true)
+  })
+
+  it('names "the whole unit" with its unit id (D-403)', () => {
+    expect(PolicyTarget.safeParse({ kind: 'whole_unit', unit_id: ID.a }).success).toBe(true)
+    expect(PolicyTarget.safeParse({ kind: 'whole_unit' }).success).toBe(false)
+  })
+
+  it('keys a module by its id, and a big number by its metric too (D-405)', () => {
+    expect(dashboardModuleKey({ module: 'heat_map' })).toBe(dashboardModuleKey({ module: 'heat_map' }))
+    expect(dashboardModuleKey({ module: 'stat', metric: 'home_today' })).not.toBe(dashboardModuleKey({ module: 'stat', metric: 'serving' }))
   })
 })
 

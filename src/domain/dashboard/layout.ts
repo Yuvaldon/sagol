@@ -1,14 +1,9 @@
-import type { DashboardLayout, DashboardModule, DashboardTemplateId } from '@contracts'
+import { dashboardModuleKey, type DashboardLayout, type DashboardModule, type DashboardTemplateId } from '@contracts'
 
 // The board's layout (D-349): a template or one's own list of modules. Only the choice is stored (P-6).
 
 /** The modules of each template, in order (config's `DASHBOARD_TEMPLATES`). */
 export type DashboardTemplates = Readonly<Record<DashboardTemplateId, readonly DashboardModule[]>>
-
-/** The key that tells modules apart: a module once, a `stat` once per metric. */
-export function moduleKey(module: DashboardModule): string {
-  return module.module === 'stat' ? `stat:${module.metric}` : module.module
-}
 
 /** The default of a scope: `control` when the unit has `minimum` or more direct sub-units with rows, else `leaves`. */
 export function defaultTemplate(subUnitsWithRows: number, minimum: number): DashboardTemplateId {
@@ -53,6 +48,6 @@ export function removeModule(modules: readonly DashboardModule[], index: number)
 
 /** `modules` with `module` last; unchanged when it is already there. */
 export function addModule(modules: readonly DashboardModule[], module: DashboardModule): readonly DashboardModule[] {
-  const key = moduleKey(module)
-  return modules.some((existing) => moduleKey(existing) === key) ? modules : [...modules, module]
+  const key = dashboardModuleKey(module)
+  return modules.some((existing) => dashboardModuleKey(existing) === key) ? modules : [...modules, module]
 }

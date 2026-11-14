@@ -74,22 +74,24 @@ export function useMyUpdates(): Loaded<MyUpdates> | null {
     if (preferences.status !== 'ready') return preferences
     const byId = new Map(leaves.value.map((leave) => [leave.id, leave]))
     const updates = updatesFor(soldierId, { leaves: leaves.value, events: events.value, comments: comments.value }, query.since)
-    if (updates.length === 0) return { status: 'ready', value: NO_LINES }
     const seenAt = preferences.value.updates_seen_at
     const lines = updates.flatMap((update): MyUpdateLine[] => {
       const leave = byId.get(update.leave_id)
       return leave === undefined ? [] : [{ update, leave, unread: isUnread(update, seenAt) }]
     })
+    if (lines.length === 0) return { status: 'ready', value: NO_LINES }
+    // The newest is of the lines shown, as the count is: an update with no line is never marked seen.
     return {
       status: 'ready',
-      value: { lines, unread: unreadCount(lines.map((line) => line.update), seenAt), newest: updates[0]?.created_at ?? null },
+      value: { lines, unread: unreadCount(lines.map((line) => line.update), seenAt), newest: lines[0]?.update.created_at ?? null },
     }
   }, [soldierId, query, leaves, events, comments, preferences])
 }
 
 /**
- * Marks the updates up to `newest` seen (D-352). A save that met another device's save is tried once more over the
- * row as stored; a time that is not newer than the stored one saves nothing.
+ * Marks the updates up to `newest` seen (D-352). The change is a function of the stored row, so a save that met another
+ * device's save is computed once more over the row read afresh, by the save itself (D-388); a time that is not newer
+ * than the stored one saves nothing.
  */
 export function useMarkUpdatesSeen(): (newest: Timestamp) => Promise<Result<SoldierPreferencesRecord> | null> {
   const preferences = useMyPreferences()
@@ -104,8 +106,6 @@ export function useMarkUpdatesSeen(): (newest: Timestamp) => Promise<Result<Sold
       const later = (stored: SoldierPreferences) => ({
         updates_seen_at: stored.updates_seen_at !== null && compareInstants(newest, stored.updates_seen_at) <= 0 ? stored.updates_seen_at : newest,
       })
-      const first = await run(later)
-      if (first.ok || first.error.code !== 'stale_version') return first
       return run(later)
     },
     [ready, seenAt, run],

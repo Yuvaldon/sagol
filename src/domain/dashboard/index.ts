@@ -4,7 +4,6 @@ export {
   defaultTemplate,
   layoutModules,
   layoutTemplate,
-  moduleKey,
   moveModule,
   removeModule,
   templateChoice,

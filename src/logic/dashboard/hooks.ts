@@ -2,6 +2,7 @@ import { DASHBOARD, DASHBOARD_TEMPLATES, PANEL_IDS } from '@config'
 import {
   DASHBOARD_METRIC_IDS,
   DASHBOARD_MODULE_IDS,
+  dashboardModuleKey,
   type CalendarDate,
   type DashboardLayout,
   type DashboardModule,
@@ -11,35 +12,27 @@ import {
   type LeaveEvent,
   type LeaveId,
   type PermissionCheck,
-  type Soldier,
   type SoldierId,
   type Unit,
   type UnitId,
-  type UnitMembership,
 } from '@contracts'
 import {
   LEAVE_PERMISSIONS,
   addDays,
   addModule,
-  ancestorsOf,
   buildUnitTree,
   compareDates,
   defaultTemplate,
-  descendantsOf,
   eachDay,
   layoutModules,
   layoutTemplate,
-  moduleKey,
   moveModule,
   planOf,
   primaryUnitOn,
   removeModule,
-  spanCovers,
-  spansOverlap,
   startOfDay,
   templateChoice,
   type PlanEvent,
-  type UnitTree,
 } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
@@ -47,7 +40,7 @@ import { useDeployments, useLoadedRotationMembership } from '../deployments/hook
 import { useFilterSource } from '../filters/source'
 import { useLeaveTypeGroups, useLeaveTypes, useLeaves, useLeavesOfAnyStatus } from '../leaves/hooks'
 import { usePendingRequests } from '../leaves/workflowHooks'
-import { checkOn } from '../permissions/checks'
+import { checkOf, checkOn } from '../permissions/checks'
 import { useCanAnswers } from '../permissions/hooks'
 import { type BoardGroupLabel } from '../board/rows'
 import { useDayReport, useReportConfirmations } from '../presence/hooks'
@@ -63,6 +56,7 @@ import { bySortOrder } from '../units/tree'
 import { unitFilterOf } from '../view-state/filter'
 import { useChangeSearch, useWorkspaceSearch } from '../view-state/search'
 import { rotationDays, scopeRotations, useDateWindow, type DateWindow } from '../view-state/window'
+import { chosenUnit, pickableUnits, rowsOf } from './scope'
 import { dashboardTally, planTally, type DashboardRowInput, type DashboardTally, type PlanTally } from './tally'
 
 // The command dashboard (D-349): its scope, the one tally every module reads, the parts that need more than the tally,
@@ -162,88 +156,8 @@ const PLAN_MODULES = (module: DashboardModule) =>
 const REPORT_MODULES = (module: DashboardModule) =>
   module.module === 'report_status' || (module.module === 'stat' && module.metric === 'unconfirmed_units')
 
-/** The direct child of `unitId` on the way from `memberUnit` up, `unitId` itself for its own members, or NULL. */
-function subUnitOf(tree: UnitTree, unitId: UnitId, memberUnit: UnitId): UnitId | null | undefined {
-  if (memberUnit === unitId) return null
-  const path = [memberUnit, ...ancestorsOf(tree, memberUnit)]
-  const at = path.indexOf(unitId)
-  return at > 0 ? path[at - 1] : undefined
-}
-
-interface RowsInput {
-  readonly tree: UnitTree
-  readonly unitId: UnitId
-  readonly window: DateWindow
-  readonly rotation: Deployment | null
-  readonly servesInRotation: ((soldierId: SoldierId, day: CalendarDate) => boolean) | null
-  readonly today: CalendarDate
-  readonly memberships: readonly UnitMembership[]
-}
-
-/**
- * The rows of the unit (P-3): who serves in the span in the unit's tree. In a rotation, its days, with a membership in
- * the tree that day or the rotation's unit in the tree; in a routine range, a membership in the tree that day.
- */
-function rowsOf(input: RowsInput & { readonly readable: readonly Soldier[] }): DashboardRowInput[] {
-  const { tree, unitId, window, rotation, servesInRotation } = input
-  const inTree = new Set<UnitId>([unitId, ...descendantsOf(tree, unitId)])
-  const rotationInTree = rotation !== null && inTree.has(rotation.unit_id)
-  const span = { valid_from: window.from, valid_to: window.to }
-  return input.readable.flatMap((soldier) => {
-    const own = input.memberships.filter(
-      (membership) => membership.soldier_id === soldier.id && inTree.has(membership.unit_id) && spansOverlap(membership, span),
-    )
-    if (own.length === 0 && !rotationInTree) return []
-    const inUnit = (day: CalendarDate) => own.some((membership) => spanCovers(membership, day))
-    const serves =
-      servesInRotation === null
-        ? inUnit
-        : (day: CalendarDate) => servesInRotation(soldier.id, day) && (rotationInTree || inUnit(day))
-    if (!window.days.some(serves)) return []
-    // The sub-unit of the membership that holds today, else of the first in the span; a primary one before others.
-    const ordered = [...own].sort(
-      (a, b) =>
-        Number(spanCovers(b, input.today)) - Number(spanCovers(a, input.today)) ||
-        Number(b.membership_type === 'primary') - Number(a.membership_type === 'primary') ||
-        compareDates(a.valid_from, b.valid_from),
-    )
-    const first = ordered[0]
-    const subUnitId = first === undefined ? null : (subUnitOf(tree, unitId, first.unit_id) ?? null)
-    return [{ soldier, subUnitId, serves }]
-  })
-}
-
-/**
- * The live units the actor reads whole in the span, in tree order: a unit, or one above it, holds a membership of a
- * readable soldier, and none of a soldier the actor sees but may not read, so a platoon's commander cannot pick the company and
- * see the platoon's figures under its name (D-349).
- */
-function pickableUnits(
-  units: readonly Unit[],
-  tree: UnitTree,
-  known: ReadonlySet<SoldierId>,
-  readable: ReadonlySet<SoldierId>,
-  memberships: readonly UnitMembership[],
-  window: DateWindow,
-): Unit[] {
-  const span = { valid_from: window.from, valid_to: window.to }
-  const held = new Set<UnitId>()
-  const partial = new Set<UnitId>()
-  for (const membership of memberships) {
-    if (!known.has(membership.soldier_id) || !spansOverlap(membership, span)) continue
-    const into = readable.has(membership.soldier_id) ? held : partial
-    for (const unitId of [membership.unit_id, ...ancestorsOf(tree, membership.unit_id)]) into.add(unitId)
-  }
-  return units.filter((unit) => held.has(unit.id) && !partial.has(unit.id))
-}
-
-/** The board's unit: the URL's when it may be picked, else the actor's own unit today, else the first. */
-function chosenUnit(pickable: readonly Unit[], asked: UnitId | undefined, own: UnitId | null): UnitId | null {
-  const ids = new Set(pickable.map((unit) => unit.id))
-  if (asked !== undefined && ids.has(asked)) return asked
-  if (own !== null && ids.has(own)) return own
-  return pickable[0]?.id ?? null
-}
+/** Whether the actor reads all of a unit's leaves, its unseen soldiers too (D-403). */
+const wholeUnitCheck = (unitId: UnitId) => checkOf(LEAVE_PERMISSIONS.view, { kind: 'whole_unit', unit_id: unitId })
 
 /** The leaves the tally reads: the span, the day before today and the days ahead. */
 function leaveSpanOf(window: DateWindow, today: CalendarDate) {
@@ -284,12 +198,16 @@ export function useDashboard(): Loaded<DashboardBoard> | null {
   }, [window, deployments])
   const source = useFilterSource(rotation?.id ?? null)
   const soldiers = source.status === 'ready' ? source.value.soldiers : null
+  const units = source.status === 'ready' ? source.value.units : null
   const checks = useMemo(
     () =>
-      soldiers === null
+      soldiers === null || units === null
         ? NO_CHECKS
-        : soldiers.flatMap((soldier) => [checkOn(LEAVE_PERMISSIONS.view, soldier.id), checkOn(LEAVE_PERMISSIONS.approve, soldier.id)]),
-    [soldiers],
+        : [
+            ...soldiers.flatMap((soldier) => [checkOn(LEAVE_PERMISSIONS.view, soldier.id), checkOn(LEAVE_PERMISSIONS.approve, soldier.id)]),
+            ...units.map((unit) => wholeUnitCheck(unit.id)),
+          ],
+    [soldiers, units],
   )
   const answers = useCanAnswers(checks)
   const actorId = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null
@@ -305,7 +223,8 @@ export function useDashboard(): Loaded<DashboardBoard> | null {
     const tree = buildUnitTree(unitTree)
     const readableSoldiers = source.value.soldiers.filter((soldier) => answers.can(checkOn(LEAVE_PERMISSIONS.view, soldier.id)))
     const readable = new Set(readableSoldiers.map((soldier) => soldier.id))
-    const pickable = pickableUnits(units, tree, new Set(source.value.soldiers.map((soldier) => soldier.id)), readable, memberships, window)
+    const known = new Set(source.value.soldiers.map((soldier) => soldier.id))
+    const pickable = pickableUnits(units, tree, known, readable, memberships, window, (unitId) => answers.can(wholeUnitCheck(unitId)))
     const own = actorId === null ? null : primaryUnitOn(memberships, actorId, today)
     const unitId = chosenUnit(pickable, search.unit, own)
     if (unitId === null) return null
@@ -536,11 +455,30 @@ function stateOf<T>(value: Loaded<T> | null, shown: (value: T) => boolean): Modu
 
 const isSome = <T>(value: T | null) => value !== null
 
+/** The modules that count past days: before the span's first counted day they wait (D-404). */
+const PAST_DAY_MODULES: ReadonlySet<string> = new Set(
+  (
+    [
+      { module: 'heat_map' },
+      { module: 'presence_trend' },
+      { module: 'plan_vs_actual' },
+      { module: 'fairness_spread' },
+      { module: 'home_distribution' },
+      { module: 'home_by_type' },
+      { module: 'stat', metric: 'avg_home_days' },
+      { module: 'stat', metric: 'fairness_gap' },
+      { module: 'stat', metric: 'below_minimum_days' },
+      { module: 'stat', metric: 'plan_drift' },
+    ] satisfies DashboardModule[]
+  ).map(dashboardModuleKey),
+)
+
 /** Whether a module is drawn for the scope (the spec's "drawn when"): a module with nothing to show is not (D-076). */
 export function moduleState(module: DashboardModule, dashboard: Dashboard): ModuleState {
   const { tally, rules, plan, report, approver } = dashboard
   const { figures } = tally
   const ready = (shown: boolean): ModuleState => (shown ? 'ready' : 'hidden')
+  if (tally.counted.length === 0 && PAST_DAY_MODULES.has(dashboardModuleKey(module))) return 'hidden'
   if (module.module === 'stat') {
     switch (module.metric) {
       case 'present_today':
@@ -596,12 +534,12 @@ export const DASHBOARD_CATALOGUE: readonly DashboardModule[] = DASHBOARD_MODULE_
  * report are read only for the board's own modules, so one not on the board is offered where the scope could hold it.
  */
 export function addableModules(modules: readonly DashboardModule[], dashboard: Dashboard): DashboardModule[] {
-  const on = new Set(modules.map(moduleKey))
+  const on = new Set(modules.map(dashboardModuleKey))
   const { scope } = dashboard
   const mayPlan = scope.rotation !== null && compareDates(scope.rotation.start_date, scope.today) <= 0
   const mayReport = scope.rotation !== null && scope.window.holdsToday
   return DASHBOARD_CATALOGUE.filter((module) => {
-    if (on.has(moduleKey(module))) return false
+    if (on.has(dashboardModuleKey(module))) return false
     if (PLAN_MODULES(module) && dashboard.plan === null) return mayPlan
     if (REPORT_MODULES(module) && dashboard.report.status === 'ready' && dashboard.report.value === null && !modules.some(REPORT_MODULES)) return mayReport
     const state = moduleState(module, dashboard)

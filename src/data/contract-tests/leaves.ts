@@ -657,6 +657,9 @@ export function describeLeaveContract(
         expect(
           valueOf(await adapter().repositories.leave_events.list({ leave_ids: [seen.id], after_seq: 0 })),
         ).toHaveLength(1)
+        // Every event after a number holds only what the actor sees too (D-373).
+        const all = valueOf(await adapter().repositories.leave_events.list({ leave_ids: null, after_seq: 0 }))
+        expect(all.map((event) => event.leave_id)).toEqual([seen.id])
       })
 
     })

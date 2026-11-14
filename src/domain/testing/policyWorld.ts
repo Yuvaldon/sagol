@@ -240,6 +240,7 @@ export const soldierTarget = (name: SoldierName): PolicyTarget => ({ kind: 'sold
 export const unitTarget = (unitId: UnitId): PolicyTarget => ({ kind: 'unit', unit_id: unitId })
 export const ORG: PolicyTarget = { kind: 'organization' }
 export const SOME_UNIT: PolicyTarget = { kind: 'some_unit' }
+export const wholeUnitTarget = (unitId: UnitId): PolicyTarget => ({ kind: 'whole_unit', unit_id: unitId })
 
 // ================================================================================ matrix
 // actor × permission × target → allowed. One row per rule it proves.
@@ -325,4 +326,12 @@ export const MATRIX: MatrixRow[] = [
   ['a unit scope covers some unit', 'f21', 'leaves', 'view', SOME_UNIT, true],
   ['a self scope does not cover some unit', 'f11', 'leaves', 'view', SOME_UNIT, false],
   ['tags do not accept some unit', 'admin', 'tags', 'view', SOME_UNIT, false],
+  // The whole unit, to count it on the board (D-403)
+  ['a unit scope with descendants covers a whole unit under it', 'cc', 'leaves', 'view', wholeUnitTarget(UNIT.S21), true],
+  ['a unit anchor covers its whole unit', 'f21', 'leaves', 'view', wholeUnitTarget(UNIT.S21), true],
+  ['a unit anchor without descendants does not cover its parent', 'f21', 'leaves', 'view', wholeUnitTarget(UNIT.P2), false],
+  ['a rank constraint does not cover a whole unit', 'pc1', 'leaves', 'view', wholeUnitTarget(UNIT.S11), false],
+  ['an organization scope with a rank constraint does not either', 'norank', 'leaves', 'view', wholeUnitTarget(UNIT.S11), false],
+  ['a self scope does not cover a whole unit', 'f11', 'leaves', 'view', wholeUnitTarget(UNIT.S11), false],
+  ['tags do not accept a whole unit', 'admin', 'tags', 'view', wholeUnitTarget(UNIT.S11), false],
 ]

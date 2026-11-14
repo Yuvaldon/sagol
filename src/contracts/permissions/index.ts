@@ -116,6 +116,11 @@ export const PolicyTarget = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('every_soldier') }),
   /** Some unit: the actor holds the permission over at least one unit, at unit or organization scope, to open a commander's module (D-362). */
   z.object({ kind: z.literal('some_unit') }),
+  /**
+   * The whole of one unit, every soldier of it whatever their rank: a unit scope covering it, or organization scope,
+   * with `any` covers it; one soldier never does (D-403).
+   */
+  z.object({ kind: z.literal('whole_unit'), unit_id: UnitId }),
 ])
 export type PolicyTarget = z.infer<typeof PolicyTarget>
 

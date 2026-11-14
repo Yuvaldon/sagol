@@ -39,8 +39,3 @@ export const TEMPLATE_KEYS = {
 export function moduleTitleKey(module: DashboardModule): I18nKey {
   return module.module === 'stat' ? METRIC_KEYS[module.metric] : MODULE_KEYS[module.module]
 }
-
-/** A module's identity on the board: a big number once per metric. */
-export function moduleKeyOf(module: DashboardModule): string {
-  return module.module === 'stat' ? `stat:${module.metric}` : module.module
-}

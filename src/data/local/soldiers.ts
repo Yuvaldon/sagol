@@ -360,7 +360,7 @@ async function restoreIssues(check: RowCheck<Soldier>): Promise<Issue[]> {
   const memberships = await tableOf(database, 'unit_memberships').where('soldier_id').equals(row.id).toArray()
   const placements = []
   for (const unitId of new Set(memberships.filter((m) => m.valid_to === null || m.valid_to >= today).map((m) => m.unit_id))) {
-    placements.push(...(await placementIssues(database, scope, unitId, ['unit_id'])))
+    placements.push(...(await placementIssues(database, scope, unitId, ['membership', 'unit_id'])))
   }
   const stored = await tableOf(database, 'soldier_private').get(row.id)
   return [

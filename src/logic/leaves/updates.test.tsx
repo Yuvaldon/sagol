@@ -132,6 +132,20 @@ describe('the updates on שלי (D-352)', () => {
   })
 })
 
+describe('the newest update is of the lines shown', () => {
+  it('ignores an update whose leave has no line', async () => {
+    const other = { ...event(3, DAN, '2026-11-08T09:30:00.000Z'), leave_id: LeaveId.parse(uuid(11)) }
+    const { ports } = portsWith({ events: [other] })
+    const { result } = renderHook(() => useMyUpdates(), { wrapper: wrapperOf(ports) })
+    await waitFor(() => {
+      expect(result.current?.status).toBe('ready')
+    })
+    const value = result.current?.status === 'ready' ? result.current.value : null
+    expect(value?.lines.every((line) => line.leave.id === LEAVE)).toBe(true)
+    expect(value?.newest).toBe(shared.created_at)
+  })
+})
+
 describe('marking the updates seen (D-352)', () => {
   const saved = (input: UpdateMyPreferencesInput): Result<SoldierPreferencesRecord> => ({
     ok: true,
@@ -186,6 +200,19 @@ describe('marking the updates seen (D-352)', () => {
     })
     expect(updateMyPreferences).toHaveBeenCalledTimes(2)
     expect(outcome).toMatchObject({ ok: true })
+  })
+
+  it('computes the change again at most once, however often another device saves first (D-388)', async () => {
+    const updateMyPreferences = vi
+      .fn<(input: UpdateMyPreferencesInput) => Promise<Result<SoldierPreferencesRecord>>>()
+      .mockResolvedValue({ ok: false, error: { code: 'stale_version' } })
+    const { result } = await render({ events: [], updateMyPreferences })
+    let outcome: Result<SoldierPreferencesRecord> | null = null
+    await act(async () => {
+      outcome = await result.current.mark(shared.created_at)
+    })
+    expect(updateMyPreferences).toHaveBeenCalledTimes(2)
+    expect(outcome).toMatchObject({ ok: false, error: { code: 'stale_version' } })
   })
 
   it('keeps a later time another device saved meanwhile', async () => {

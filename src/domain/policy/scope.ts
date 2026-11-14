@@ -120,6 +120,9 @@ export function scopeCovers(
     // A commander's module opens for a unit scope; one soldier, the holder or a named one, is not a unit (D-362).
     case 'some_unit':
       return scope.kind === 'unit'
+    // The whole unit: a unit scope over it; a soldier scope reads its chain, never the unit's other soldiers (D-403).
+    case 'whole_unit':
+      return scope.kind === 'unit' && unitCovered(scope, target.unit_id, facts.tree)
     default:
       return target satisfies never
   }

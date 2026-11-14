@@ -1,4 +1,4 @@
-import { UnitId, type Leave } from '@contracts'
+import { DASHBOARD_MAX_MODULES, UnitId, type Leave } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import { DASHBOARD_CATALOGUE, moduleState, outstandingOf, type Dashboard, type DashboardRules } from './hooks'
 import { dashboardTally } from './tally'
@@ -51,8 +51,25 @@ describe('moduleState (D-349)', () => {
     expect(moduleState({ module: 'stat', metric: 'below_minimum_days' }, dashboard({ rules }))).toBe('failed')
   })
 
+  it('before the first counted day, hides only the cards that count past days (D-404)', () => {
+    const tally = dashboardTally({ days: DAYS, today: '2026-11-09', planned: false, rows: [], subUnitIds: [], leaves: [], types: [], groups: [] })
+    expect(tally.counted).toEqual([])
+    const board = dashboard({ tally, rules: { status: 'ready', value: RULES }, plan: { status: 'loading' } })
+    expect(moduleState({ module: 'stat', metric: 'below_minimum_days' }, board)).toBe('hidden')
+    expect(moduleState({ module: 'stat', metric: 'plan_drift' }, board)).toBe('hidden')
+    expect(moduleState({ module: 'plan_vs_actual' }, board)).toBe('hidden')
+    expect(moduleState({ module: 'presence_trend' }, board)).toBe('hidden')
+    expect(moduleState({ module: 'upcoming' }, board)).toBe('ready')
+    expect(moduleState({ module: 'outstanding' }, board)).toBe('ready')
+    expect(moduleState({ module: 'stat', metric: 'serving' }, board)).toBe('ready')
+    // Under "כולל מתוכנן" the whole span is counted, so the cards return.
+    const planned = dashboardTally({ days: DAYS, today: '2026-11-09', planned: true, rows: [], subUnitIds: [], leaves: [], types: [], groups: [] })
+    const plannedBoard = dashboard({ tally: planned, rules: { status: 'ready', value: RULES } })
+    expect(moduleState({ module: 'stat', metric: 'below_minimum_days' }, plannedBoard)).toBe('ready')
+  })
+
   it('lists every module and every metric once', () => {
-    expect(DASHBOARD_CATALOGUE).toHaveLength(10 + 9)
+    expect(DASHBOARD_CATALOGUE).toHaveLength(DASHBOARD_MAX_MODULES)
   })
 })
 

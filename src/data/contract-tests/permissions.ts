@@ -481,6 +481,34 @@ export function describePermissionContract(
         expect(errorOf(raised).code).toBe('forbidden')
       })
 
+      it('refuses a restore that brings back a soldier beyond the actor’s constraint (D-157, D-371)', async () => {
+        const junior = await rank(1)
+        const senior = await rank(9)
+        const above = await soldier()
+        const below = await soldier()
+        for (const [row, ranked] of [[above, senior], [below, junior]] as const) {
+          valueOf(await adapter().commands.soldiers.update({ id: row.id, expected_version: 1, changes: { command_rank_id: ranked.id } }))
+          valueOf(await adapter().commands.soldiers.archive({ id: row.id, expected_version: 2 }))
+        }
+        // The actor sees and restores any soldier, but updates only juniors or equals: only the check after the write stops them.
+        const { identity, soldierId } = await actorWith(
+          [VIEW_SOLDIERS, { resource: 'soldiers', action: 'delete' }, { resource: 'command_ranks', action: 'view' }],
+          { anchor_type: 'organization' },
+        )
+        const mid = await rank(5)
+        const actorRow = (await harnessOf().rows('soldiers')).find((row) => row.id === soldierId) as TableRow<'soldiers'>
+        await harnessOf().seed('soldiers', [{ ...actorRow, command_rank_id: mid.id }])
+        const updater = valueOf(await adapter().commands.roles.create(roleInput([UPDATE_SOLDIERS])))
+        const grant = valueOf(await adapter().commands.access_grants.grant(grantInput(soldierId, updater.id)))
+        const stored = (await harnessOf().rows('access_grants')).find((row) => row.id === grant.id) as TableRow<'access_grants'>
+        await harnessOf().seed('access_grants', [{ ...stored, subject_rank_constraint: 'junior_or_equal' }])
+        harnessOf().signIn(identity)
+
+        expect(errorOf(await adapter().commands.soldiers.restore({ id: above.id, expected_version: 3 })).code).toBe('forbidden')
+        expect((await harnessOf().rows('soldiers')).find((row) => row.id === above.id)?.archived_at).not.toBeNull()
+        expect(valueOf(await adapter().commands.soldiers.restore({ id: below.id, expected_version: 3 })).archived_at).toBeNull()
+      })
+
       it('refuses a seniority override that leaves the soldier beyond the actor’s constraint, or is the actor’s own (D-179)', async () => {
         const junior = await rank(1)
         const target = await soldier()
