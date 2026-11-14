@@ -401,12 +401,15 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 - **Profile (avatar):** name · appearance (light or dark) · install · "התראות" (D-356) · identity switch (local) ·
   sign-out.
 - **ניהול יחידה (work, from V32, D-285):** the setup's progress (while unfinished) · אנשים: חיילים, בקשות הצטרפות, הרשאות
-  אישיות · נוכחות: סבבים, כללי נוכחות · then "הגדרות היחידה". No pins. Setup is laid out in "Work and unit setup"
+  אישיות · נוכחות: דשבורד (who reads a unit, D-349), סבבים, כללי נוכחות · then "הגדרות היחידה". No pins. Setup is laid out in "Work and unit setup"
   below.
 - **Home (D-265):** who approves or manages someone lands on the board at their widest scope; everyone else on
   "שלי". One press apart; the last choice is remembered on the device; a link that names a panel or view wins.
-- **שלי:** my next days, in or out · my requests, open and history, with their status. A new request starts from the
-  strip's quick action.
+- **שלי:** "הסבב שלי" (D-350, D-362), five cards on the actor's current or next rotation · my next days, in or out · my
+  requests, open and history, with their status. A new request starts from the strip's quick action.
+- **דשבורד (D-349, D-362):** the unit (when more than one), the span and "כולל מתוכנן"; the template (ניהול יציאות,
+  תכנון ובקרה, דוח יומי) or the actor's own list; in edit mode add, remove, move up or down, and "חזרה לתבנית". Cards are big
+  numbers and CSS charts on theme tokens, each with a hidden table; the heat map copies as text and as an image.
 - **עדכונים (D-356):** on שלי, what happened to my requests since I last looked, newest first; the count shows on
   "שלי" until the list is opened.
 - **בקשות (the inbox, who approves):** the approve-now switch in its header (who may approve their own) · ממתינות

@@ -322,7 +322,7 @@ am = amends, ref = refines, ext = extends.
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
-| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361 |
+| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361; ref D-362 |
 | D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
 | D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | |
 | D-352 | In-app updates on "שלי" are derived from the events and the shared comments; only the seen time is stored | contracts, domain, data, logic, ui | |
@@ -335,6 +335,7 @@ am = amends, ref = refines, ext = extends.
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
 | D-360 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
 | D-361 | The stored board reads leniently and writes strictly; leave events take a thread or a span query | contracts | |
+| D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | |
 | D-383 | The range picker offers two and four weeks | config, logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
@@ -4922,6 +4923,33 @@ dashboard's place on screen.
   span returns the events of that rotation's leaves of those soldiers, oldest first, only of leaves the actor reads.
 **Why:** a vocabulary change must never lock a person out of their preferences (D-041), while a write that names
 what does not exist is a client bug to refuse. One list method with two strict shapes keeps a single read policy.
+
+## D-362 — The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits
+2026-11-14 · accepted · refines D-349, D-350 · ref D-076, D-195, D-196, D-360, D-361 · OI-222 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Charts.** No chart library: the bars, the histogram and the trend are CSS on theme tokens (`ui/primitives/charts.tsx`),
+  and each chart carries its figures as a visually hidden table, so a screen reader and axe read numbers, not shapes.
+  The heat map's steps are one blue, light to dark, by the share of a week at home, and each step also has a dotted
+  pattern, sparse to dense, so the steps read without color. The histogram's bins are whole days, so a narrow spread
+  draws fewer than six bins.
+- **Who opens it.** The dashboard opens for whoever holds `leaves:view` over at least one unit, at unit or organization
+  scope (the new `some_unit` policy target); a scope of one soldier, the holder or a named one, is not a unit. Any unit
+  scope opens it, as the spec says. The unit picker shows only with more than one unit, and lists only units the actor
+  reads whole: a unit is offered when no soldier of it in the span is known to the actor but unreadable.
+- **The screen.** It is the first item of the presence group in "ניהול יחידה", and a rotation's row in "סבבים" has
+  "דשבורד" in its actions, which opens it on that rotation. The span picker is the board's `WindowNavigator`. The span
+  line names the rotation and its dates, or the routine range. In edit mode, modules that the scope hides still show,
+  marked, so they can be removed. Leaving the actor's own list, by a template or by "חזרה לתבנית", asks first.
+- **What the cards do.** The heat map copies as text and as an image with the day report's `CopyActions`; the image
+  takes its file name from `DAY_REPORT.image`. A trend bar opens דוח 1 on its day only where that day can be reported.
+  "סטטוס דוח 1" is one button that opens the report, plus the list of units and their state. The stat card's metric is
+  chosen from a submenu of "הוספת רכיב". "תכנון מול ביצוע" counts the changes from the leaves' history and says how many
+  requests in the span have no history to compare ("בקשות ללא היסטוריה"), rather than guessing their plan.
+- **"הסבב שלי".** The requests card is pressable only while there are open requests, and brings them into view.
+- **What waits.** Reordering by dragging on a desktop (OI-310), opening a soldier or a week from the heat map (OI-311),
+  and the report status showing tomorrow after the cut-over hour (OI-312). The arrows keep the order changeable meanwhile.
+**Why:** CSS bars on the theme keep the charts in the design system, in both themes and in RTL, with no library to
+learn or ship; the hidden tables make them readable. Opening by unit scope keeps a commander's module from a soldier who
+reads only themself. A note on what cannot be counted is more honest than a figure that pretends.
 
 ## D-383 — The range picker offers two and four weeks
 2026-11-13 · accepted · extends D-211 · OI-111 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
