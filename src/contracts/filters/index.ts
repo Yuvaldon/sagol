@@ -3,6 +3,7 @@ import { CommandRankId, PropertyDefinitionId, SoldierId, TagId, UnitId } from '.
 import { Integer, JsonValue } from '../common/scalars'
 import { SchemaIssue } from '../common/issues'
 import { SoldierStatus } from '../enums'
+import type { FilterOperator } from './operators'
 
 // FilterExpression: one model that selects soldiers, shared by view filters, saved views
 // and availability-rule populations (ARCHITECTURE "Filters", D-014, D-031). Evaluated and
@@ -26,6 +27,34 @@ export const PropertyOperator = z.enum([
   'is_not_empty',
 ])
 export type PropertyOperator = z.infer<typeof PropertyOperator>
+
+/** The operators a typed value is compared by (D-380): text, number and date properties. */
+export const COMPARE_OPERATORS = [
+  'equals',
+  'not_equals',
+  'contains',
+  'greater_than',
+  'greater_or_equal',
+  'less_than',
+  'less_or_equal',
+] as const satisfies readonly PropertyOperator[]
+export type CompareOperator = (typeof COMPARE_OPERATORS)[number]
+
+/** The stored operator a compared value is written with (D-380); a date's "before" is "less than". */
+export const COMPARE_OPERATOR_OF = {
+  is: 'equals',
+  isNot: 'not_equals',
+  contains: 'contains',
+  greaterThan: 'greater_than',
+  greaterOrEqual: 'greater_or_equal',
+  lessThan: 'less_than',
+  lessOrEqual: 'less_or_equal',
+  before: 'less_than',
+  onOrBefore: 'less_or_equal',
+  after: 'greater_than',
+  onOrAfter: 'greater_or_equal',
+} as const satisfies Partial<Record<FilterOperator, CompareOperator>>
+
 
 export const FilterNodeKind = z.enum([
   'and',
@@ -103,3 +132,5 @@ export const FilterExpression = z.object({
   where: FilterNode.optional(),
 })
 export type FilterExpression = z.infer<typeof FilterExpression>
+
+export * from './operators'
