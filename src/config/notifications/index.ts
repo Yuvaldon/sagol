@@ -16,7 +16,7 @@ export const NOTIFICATIONS = {
   pushVapidTokenSeconds: 3_600,
   /**
    * Sign-out waits this long for the device's unsubscribe, then signs out anyway (D-358, D-433): a push service that
-   * hangs never keeps a soldier signed in. The server row ends on the next 404 or 410, or on revoke.
+   * hangs never keeps a soldier signed in. The server's and the browser's unsubscribe leave together (D-438).
    */
   signOutUnsubscribeTimeoutMs: 4_000,
 } as const
