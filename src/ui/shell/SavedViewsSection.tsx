@@ -2,7 +2,7 @@ import { DEFAULT_RANGE_KIND, type RangeKind, type ViewId } from '@config'
 import { IssueCode, SAVED_VIEW_LIMITS, type SavedView, type SavedViewId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { applyView, savedViewNameIssue, savedViewSummary, useWorkspaceSearch, type SavedViewsState } from '@logic'
-import { ArrowDown, ArrowLeft, ArrowUp, Bookmark, Pencil, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, Bookmark, BookmarkCheck, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button as AriaButton, Label, Radio, RadioGroup } from 'react-aria-components'
 import { engineOf } from '../engines/registry'
@@ -122,13 +122,32 @@ export interface SaveViewActionProps {
   readonly onManage: () => void
 }
 
-/** "שמירת התצוגה הנוכחית", while the board matches no saved view; at the limit it says so and opens the list (D-387). */
+/**
+ * "שמירת התצוגה הנוכחית", while the board matches no saved view; at the limit it says so and opens the list (D-387).
+ * After a change that left a saved view, "שמירת השינויים" beside it saves the board over that view, under its name (D-442).
+ */
 export function SaveViewAction({ saved, shown, onManage }: SaveViewActionProps) {
   const [saving, setSaving] = useState(false)
+  const reportSave = useReportPreferenceSave()
   const { range } = useWorkspaceSearch()
   if (saved.current !== null) return null
+  const { left } = saved
   return (
     <>
+      {left === null ? null : (
+        <AriaButton
+          onPress={() => {
+            reportSave(saved.overwrite(left.id))
+          }}
+          className={ACTION}
+        >
+          <BookmarkCheck aria-hidden size={16} />
+          <span className="flex flex-1 flex-col text-start">
+            {t('workspace.savedViews.overwrite')}
+            <span className="text-label text-text-muted">{left.name}</span>
+          </span>
+        </AriaButton>
+      )}
       <AriaButton
         onPress={() => {
           if (saved.full) onManage()

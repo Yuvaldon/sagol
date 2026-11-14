@@ -7,6 +7,9 @@ import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './suppor
 // template, takes the actor's own list of modules and keeps it, and "הסבב שלי" sums the actor's rotation at the top of
 // "שלי" (D-349, D-350). On desktop and mobile, RTL, with axe. Sample data, tests only.
 
+/** 19:00 in Jerusalem on NOW's day: past the cut-over hour (D-443), and tomorrow is in the rotation. */
+const EVENING = '2026-11-11T17:00:00Z'
+
 function card(page: Page, title: string) {
   return drawer(page).getByRole('region', { name: title, exact: true })
 }
@@ -67,6 +70,21 @@ test('the command board and "הסבב שלי"', async ({ page }) => {
     await confirm.getByRole('button', { name: he.dashboard.leaveCustomConfirm }).click()
     await expect(templates(page).getByRole('radio', { name: he.dashboard.templateLeaves })).toBeChecked()
     await expect(card(page, he.dashboard.metricHomeToday)).toBeVisible()
+    await closeDrawer(page)
+  })
+
+  await test.step('after the cut-over hour, "סטטוס דוח 1" shows tomorrow\'s report too (D-443)', async () => {
+    const report = () => card(page, he.dashboard.moduleReportStatus).getByRole('button', { name: new RegExp(`^${he.presence.openDay}`) })
+    await openModule(page, he.dashboard.open)
+    await templates(page).getByRole('radio', { name: he.dashboard.templateReport }).click()
+    await expect(report()).toHaveCount(1)
+    await page.clock.setFixedTime(EVENING)
+    await page.reload()
+    await expect(report()).toHaveCount(2)
+    await expectNoAxeViolations(page)
+    await page.clock.setFixedTime(NOW)
+    await page.reload()
+    await expect(report()).toHaveCount(1)
     await closeDrawer(page)
   })
 

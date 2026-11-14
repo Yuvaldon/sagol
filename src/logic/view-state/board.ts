@@ -36,29 +36,34 @@ export function useLeaveConditions(): LeaveConditionsState {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
   const conditions = search.leaves ?? NO_LEAVE_CONDITIONS
+  // Each part is written over the conditions as the URL holds them when it is written, so a second part set in the
+  // same gesture keeps the first (OI-330, D-440).
   const write = useCallback(
-    (next: LeaveConditions) => {
-      change({ leaves: hasLeaveConditions(next) ? next : undefined })
+    (part: Partial<LeaveConditions>) => {
+      change((current) => {
+        const next = { ...(current.leaves ?? NO_LEAVE_CONDITIONS), ...part }
+        return { leaves: hasLeaveConditions(next) ? next : undefined }
+      })
     },
     [change],
   )
   const setStatuses = useCallback(
     (statuses: readonly BoardLeaveStatus[]) => {
-      write({ ...conditions, statuses: statuses.length === 0 ? undefined : [...statuses] })
+      write({ statuses: statuses.length === 0 ? undefined : [...statuses] })
     },
-    [conditions, write],
+    [write],
   )
   const setTypes = useCallback(
     (typeIds: readonly LeaveTypeId[]) => {
-      write({ ...conditions, type_ids: typeIds.length === 0 ? undefined : [...typeIds] })
+      write({ type_ids: typeIds.length === 0 ? undefined : [...typeIds] })
     },
-    [conditions, write],
+    [write],
   )
   const setProperties = useCallback(
     (nodes: readonly LeavePropertyNode[]) => {
-      write({ ...conditions, properties: nodes.length === 0 ? undefined : [...nodes] })
+      write({ properties: nodes.length === 0 ? undefined : [...nodes] })
     },
-    [conditions, write],
+    [write],
   )
   return { conditions, setStatuses, setTypes, setProperties }
 }

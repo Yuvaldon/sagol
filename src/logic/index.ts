@@ -56,7 +56,6 @@ export {
 } from './view-state/window'
 export { requestRotations, useRotationScope, type RotationScope } from './view-state/rotation'
 export {
-  COMPARE_OPERATORS,
   NO_RULES,
   filterUnitOf,
   nodeOfRule,
@@ -66,7 +65,6 @@ export {
   writeRules,
   unitFilterOf,
   useViewFilter,
-  type CompareOperator,
   type FilterRule,
   type PropertyRule,
   type FilterUnit,
@@ -399,6 +397,7 @@ export {
   type DashboardOutstanding,
   type DashboardPlan,
   type DashboardReport,
+  type DashboardReportDay,
   type DashboardRules,
   type DashboardScope,
   type ModuleState,

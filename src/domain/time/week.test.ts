@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, daysBetween, millisecondsUntil, millisecondsUntilNextDay, startOfDay, startOfWeek, weekdayOf } from './index'
+import { addDays, daysBetween, millisecondsUntil, millisecondsUntilNextDay, startOfDay, startOfHour, startOfWeek, weekdayOf } from './index'
 
 const HOUR_MS = 3_600_000
 
@@ -42,5 +42,11 @@ describe('weeks and days', () => {
     expect(startOfDay('2026-11-10', 'Asia/Jerusalem')).toBe('2026-11-09T22:00:00.000Z')
     expect(startOfDay('2026-07-10', 'Asia/Jerusalem')).toBe('2026-07-09T21:00:00.000Z')
     expect(startOfDay('2026-11-10', 'UTC')).toBe('2026-11-10T00:00:00.000Z')
+  })
+
+  it('names the instant an hour of a day starts in a time zone (D-443)', () => {
+    expect(startOfHour('2026-11-10', 18, 'Asia/Jerusalem')).toBe('2026-11-10T16:00:00.000Z')
+    expect(startOfHour('2026-07-10', 18, 'Asia/Jerusalem')).toBe('2026-07-10T15:00:00.000Z')
+    expect(startOfHour('2026-11-10', 0, 'UTC')).toBe('2026-11-10T00:00:00.000Z')
   })
 })

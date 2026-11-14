@@ -1,9 +1,16 @@
 import {
+  COMPARE_OPERATOR_OF,
   CalendarDate,
   CommandRankId,
+  FILTER_OPERATORS_OF,
+  NEGATING_FILTER_OPERATORS,
+  PLAIN_FILTER_OPERATORS,
   SoldierStatus,
   TagId,
+  VALUELESS_FILTER_OPERATORS,
   type CommandRank,
+  type CompareOperator,
+  type FilterOperator,
   type PropertyDefinition,
   type Tag,
   type TagCategory,
@@ -23,7 +30,6 @@ import {
   useTags,
   useSoldiers,
   useUnits,
-  type CompareOperator,
   type FilterRule,
 } from '@logic'
 import { useMemo } from 'react'
@@ -34,24 +40,8 @@ import { formatDate } from '../patterns/dates'
 // The soldier fields of the rule builder (D-312): what a rule may filter by, its operators and its values, and the way
 // between a rule of the URL and a row of the builder. Every field reads its values from the data, never a list here.
 
-export const OPERATORS = [
-  'anyOf',
-  'noneOf',
-  'is',
-  'isNot',
-  'contains',
-  'greaterThan',
-  'greaterOrEqual',
-  'lessThan',
-  'lessOrEqual',
-  'before',
-  'onOrBefore',
-  'after',
-  'onOrAfter',
-  'isEmpty',
-  'isNotEmpty',
-] as const
-export type Operator = (typeof OPERATORS)[number]
+/** A row's operator (D-312), from the vocabulary in `contracts` (OI-340, D-441). */
+export type Operator = FilterOperator
 
 export const OPERATOR_LABELS: Record<Operator, I18nKey> = {
   anyOf: 'filters.operators.anyOf',
@@ -71,24 +61,26 @@ export const OPERATOR_LABELS: Record<Operator, I18nKey> = {
   isNotEmpty: 'filters.operators.isNotEmpty',
 }
 
-/** The operator a compared value is written with (D-380); a date's "before" is "less than". */
-const COMPARE_OF: Partial<Record<Operator, CompareOperator>> = {
-  is: 'equals',
-  isNot: 'not_equals',
-  contains: 'contains',
-  greaterThan: 'greater_than',
-  greaterOrEqual: 'greater_or_equal',
-  lessThan: 'less_than',
-  lessOrEqual: 'less_or_equal',
-  before: 'less_than',
-  onOrBefore: 'less_or_equal',
-  after: 'greater_than',
-  onOrAfter: 'greater_or_equal',
-}
-
 /** The operators that need no value. */
 export function takesValues(operator: Operator): boolean {
-  return operator !== 'isEmpty' && operator !== 'isNotEmpty'
+  return !VALUELESS_FILTER_OPERATORS.some((valueless) => valueless === operator)
+}
+
+const COMPARE_OF: Partial<Record<Operator, CompareOperator>> = COMPARE_OPERATOR_OF
+
+/** The stored operator a compared value is written with (D-380), if the operator compares. */
+function compareOf(operator: Operator): CompareOperator | undefined {
+  return COMPARE_OF[operator]
+}
+
+/** Whether an operator negates what it matches ("none of", "is not"). */
+export function negates(operator: Operator): boolean {
+  return NEGATING_FILTER_OPERATORS.some((negating) => negating === operator)
+}
+
+/** Whether an operator is a field's plain one, which a chip does not name ("any of", "is"). */
+export function plain(operator: Operator): boolean {
+  return PLAIN_FILTER_OPERATORS.some((held) => held === operator)
 }
 
 /** A row of the builder: a field, an operator and the values chosen so far. */
@@ -135,8 +127,6 @@ function withExtras(choices: readonly Choice[], values: readonly string[], extra
   return [...choices, ...values.filter((value) => !choices.some((choice) => choice.key === value)).map(extra)]
 }
 
-const negated = (operator: Operator) => operator === 'noneOf' || operator === 'isNot'
-
 function parsed<T>(values: readonly string[], parse: (value: string) => T | null): T[] {
   return values.flatMap((value) => {
     const held = parse(value)
@@ -163,7 +153,7 @@ function tagField(category: TagCategory, categories: readonly TagCategory[], tag
     name: category.name,
     entity: 'soldier',
     input: 'choices',
-    operators: ['anyOf', 'noneOf'],
+    operators: FILTER_OPERATORS_OF.set,
     single: false,
     choicesOf: (values) =>
       withExtras(live, values, (value) => {
@@ -171,7 +161,7 @@ function tagField(category: TagCategory, categories: readonly TagCategory[], tag
         const tag = id === null ? undefined : byId.get(id)
         return tag === undefined ? unknownChoice(value) : { key: value, label: { text: tag.name }, note: 'soldiers.tagArchived' }
       }),
-    ruleOf: (operator, values) => ({ kind: 'tag', negate: negated(operator), tagIds: parsed(values, safe(TagId)) }),
+    ruleOf: (operator, values) => ({ kind: 'tag', negate: negates(operator), tagIds: parsed(values, safe(TagId)) }),
     labelOf: (value) => {
       const id = safe(TagId)(value)
       return (id === null ? undefined : byId.get(id)?.name) ?? t('filters.unavailable')
@@ -192,14 +182,14 @@ function rankField(ranks: readonly CommandRank[]): FilterField {
     name: t('filters.rank'),
     entity: 'soldier',
     input: 'choices',
-    operators: ['anyOf', 'noneOf'],
+    operators: FILTER_OPERATORS_OF.set,
     single: false,
     choicesOf: (values) =>
       withExtras(live, values, (value) => {
         const title = titleOf(value)
         return title === null ? unknownChoice(value) : { key: value, label: { text: title } }
       }),
-    ruleOf: (operator, values) => ({ kind: 'rank', negate: negated(operator), rankIds: parsed(values, safe(CommandRankId)) }),
+    ruleOf: (operator, values) => ({ kind: 'rank', negate: negates(operator), rankIds: parsed(values, safe(CommandRankId)) }),
     labelOf: (value) => titleOf(value) ?? t('filters.unavailable'),
     inert: (value) => titleOf(value) === null,
   }
@@ -211,7 +201,7 @@ function statusField(): FilterField {
   name: t('filters.status'),
   entity: 'soldier',
   input: 'choices',
-  operators: ['is', 'isNot'],
+  operators: FILTER_OPERATORS_OF.status,
   single: false,
   choicesOf: (values) =>
     withExtras(
@@ -219,7 +209,7 @@ function statusField(): FilterField {
       values,
       unknownChoice,
     ),
-  ruleOf: (operator, values) => ({ kind: 'status', negate: negated(operator), statuses: parsed(values, safe(SoldierStatus)) }),
+  ruleOf: (operator, values) => ({ kind: 'status', negate: negates(operator), statuses: parsed(values, safe(SoldierStatus)) }),
   labelOf: (value) => {
     const status = safe(SoldierStatus)(value)
     return status === null ? t('filters.unavailable') : t(STATUS_KEYS[status])
@@ -261,7 +251,7 @@ function canonical(value: unknown): string {
   )
 }
 
-const INPUT_OF: Partial<Record<PropertyDefinition['data_type'], FieldInput>> = { text: 'text', number: 'number', date: 'date' }
+const INPUT_OF: Partial<Record<PropertyDefinition['data_type'], Exclude<FieldInput, 'choices'>>> = { text: 'text', number: 'number', date: 'date' }
 
 /**
  * A property the builder filters by (D-312, D-380): select, multi-select, soldier and unit by their choices, yes / no by
@@ -279,7 +269,7 @@ function propertyField(definition: PropertyDefinition, refs: RefChoices): Filter
     return {
       ...base,
       input: 'choices',
-      operators: ['is', 'isEmpty', 'isNotEmpty'],
+      operators: FILTER_OPERATORS_OF.yes_no,
       single: true,
       choicesOf: () => [...BOOLEAN_CHOICES],
       ruleOf: (operator, values) => {
@@ -293,12 +283,7 @@ function propertyField(definition: PropertyDefinition, refs: RefChoices): Filter
   }
   const input = INPUT_OF[definition.data_type]
   if (input !== undefined) {
-    const operators: readonly Operator[] =
-      input === 'text'
-        ? ['contains', 'is', 'isNot', 'isEmpty', 'isNotEmpty']
-        : input === 'number'
-          ? ['is', 'isNot', 'greaterThan', 'greaterOrEqual', 'lessThan', 'lessOrEqual', 'isEmpty', 'isNotEmpty']
-          : ['is', 'isNot', 'before', 'onOrBefore', 'after', 'onOrAfter', 'isEmpty', 'isNotEmpty']
+    const operators: readonly Operator[] = FILTER_OPERATORS_OF[input]
     return {
       ...base,
       input,
@@ -306,7 +291,7 @@ function propertyField(definition: PropertyDefinition, refs: RefChoices): Filter
       single: true,
       choicesOf: () => [],
       ruleOf: (operator, values) => {
-        const compare = COMPARE_OF[operator]
+        const compare = compareOf(operator)
         if (!takesValues(operator) || compare === undefined) return emptyRule(operator)
         return { kind: 'compare', definitionId, operator: compare, value: typedValue(input, values[0]) }
       },
@@ -335,11 +320,11 @@ function propertyField(definition: PropertyDefinition, refs: RefChoices): Filter
   return {
     ...base,
     input: 'choices',
-    operators: ['anyOf', 'noneOf', 'isEmpty', 'isNotEmpty'],
+    operators: FILTER_OPERATORS_OF.list,
     single: false,
     choicesOf: (values) => withExtras(live, values, unknownChoice),
     ruleOf: (operator, values) =>
-      takesValues(operator) ? { kind: 'options', definitionId, negate: negated(operator), ids: [...values] } : emptyRule(operator),
+      takesValues(operator) ? { kind: 'options', definitionId, negate: negates(operator), ids: [...values] } : emptyRule(operator),
     labelOf: (value) => textOf(value) ?? t('filters.unavailable'),
     // A soldier or unit outside the live lists is still a value a property holds, so it is never inert (D-380).
     inert: (value) => !isReference && textOf(value) === null,
@@ -439,7 +424,7 @@ export function useFilterFields(): FilterFields {
           })
         case 'compare': {
           const field = `property:${rule.definitionId}`
-          const operator = byKey.get(field)?.operators.find((candidate) => COMPARE_OF[candidate] === rule.operator)
+          const operator = byKey.get(field)?.operators.find((candidate) => compareOf(candidate) === rule.operator)
           if (operator === undefined) return null
           return known({ field, operator, values: rule.value === null ? [] : [String(rule.value)] })
         }

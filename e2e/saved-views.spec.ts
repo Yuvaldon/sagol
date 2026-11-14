@@ -5,7 +5,8 @@ import { openViewSheet, selectView, setOnlyMissing, viewSheet } from './support/
 import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
 
 // Saved views (D-384..D-388): saved from the view sheet, applied by a card, marked current while the board matches,
-// renamed, moved and deleted in "ניהול התצוגות", and the start view opens a bare link. Desktop and mobile, RTL, with
+// renamed, moved and deleted in "ניהול התצוגות", the start view opens a bare link, and "שמירת השינויים" saves a
+// changed board over the view it left (D-442). Desktop and mobile, RTL, with
 // axe. Sample data, tests only.
 
 const views = he.workspace.savedViews
@@ -115,5 +116,22 @@ test('saved views: save, apply, manage, and the start view', async ({ page }) =>
     await expectMissingList(page)
     await page.reload()
     await expectMissingList(page)
+  })
+
+  await test.step('a change that leaves the start view is saved over it, under the same name (D-442)', async () => {
+    await selectView(page, he.workspace.views.table)
+    await openViewSheet(page)
+    await expect(card(page, 'חסרים')).not.toBeChecked()
+    const overwrite = viewSheet(page).getByRole('button', { name: views.overwrite })
+    await expect(overwrite).toContainText('חסרים')
+    await expect(viewSheet(page).getByRole('button', { name: views.save })).toBeVisible()
+    await overwrite.click()
+    await expect(card(page, 'חסרים')).toBeChecked()
+    await expect(overwrite).toHaveCount(0)
+    await expectNoAxeViolations(page)
+    await page.keyboard.press('Escape')
+    await page.goto('/')
+    await expect(page).toHaveURL(/missing=true/)
+    await expect(page).toHaveURL(/view=table/)
   })
 })

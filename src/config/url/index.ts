@@ -42,6 +42,8 @@ export const SEARCH_PARAMS = {
   planned: 'planned',
   /** The soldier and days a drag on the timeline marked for a new leave (D-143). */
   draft: 'draft',
+  /** The saved view the board was last put in, kept while the board drifts from it, to save the changes over (D-442). */
+  saved: 'saved',
 } as const
 
 export type SearchParamName = (typeof SEARCH_PARAMS)[keyof typeof SEARCH_PARAMS]

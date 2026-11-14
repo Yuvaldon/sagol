@@ -172,7 +172,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   range") and "לפתוח את האפליקציה בתצוגה הזאת". Once one exists, the first row "התצוגות שלי": two-column cards (icon, name,
   "פתיחה" on the start view, the range kind and the condition count), the current one selected; then "ניהול התצוגות",
   which replaces the sheet's body: per row, up, down, rename in place and delete (confirmed), then the start view as a
-  radio list with "ללא" first. Nothing else on the board changes.
+  radio list with "ללא" first. Nothing else on the board changes. Once a change leaves the view the board was put in,
+  "שמירת השינויים" with that view's name sits beside the save and writes the board over it (D-442).
 - **"סינון ומיון" (D-312, D-313):** one control in the top strip, an icon with its name from `md` and the icon alone
   below. It opens the rule builder, a `Drawer` of two sections. "סינון": a row per rule, the property, its operator and
   its values (a button that opens a list of them), with "הסרת סינון"; "+ הוספת סינון"; "וגם" / "או" once there are two

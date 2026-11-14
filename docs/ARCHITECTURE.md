@@ -251,7 +251,8 @@ A saved view is the board's view-state params as a link holds them, in `soldier_
 `start_view_id`; no table. `logic/view-state/savedViews.ts` captures, applies (through `WorkspaceSearch`, dropping
 what no longer reads), matches and summarizes them; `savedViewsState.ts` edits the list as functions of the stored
 row (D-388), and `useStartView` sends a bare open of the board to the start view (D-386). The UI is
-`ui/shell/SavedViewsSection.tsx`, inside the view sheet only (D-387).
+`ui/shell/SavedViewsSection.tsx`, inside the view sheet only (D-387). The `saved` param keeps the view the board was
+put in, and `left` is that view while the board no longer matches it, which "שמירת השינויים" saves over (D-442).
 
 ## Filters (shared model)
 
@@ -259,7 +260,8 @@ One `FilterExpression` schema (contracts) and evaluator (domain) is used by view
 saved views (D-384, inside their stored query) and rule populations. A filter means the same thing everywhere: it is
 evaluated per soldier per day (unit and seniority on that day), negative operators are
 complements, and text compares case-insensitively. Rules compare populations by a
-structural canonical key (D-067).
+structural canonical key (D-067). The builder's operator vocabulary (which operators each kind of field offers, in
+order) is in `contracts/filters/operators.ts`, read by `logic` and `ui` (D-441).
 
 The current state (D-128):
 
@@ -336,7 +338,8 @@ The current state, in short (D-128). The entries hold the reasons.
   id, date window, filters, open panel and its entity. Switching views keeps filters. Deep
   links and the back button work. Parameter names come from `config`. The window's kind (`range`: day, week, month,
   a rotation) and the board's sort (`sort`, `order`, shared with the table) live there too; `useDateWindow` and
-  `useBoardSort` in `logic/view-state` read and write them (D-211, D-214).
+  `useBoardSort` in `logic/view-state` read and write them (D-211, D-214). `useChangeSearch` writes each change over
+  the router's latest search, never over a render's snapshot, so two writes in one gesture both land (D-440).
 - The back button closes the top overlay only (D-332, D-337): a panel or the navigation panel holds one history entry,
   and every `Popover` and `ModalOverlay` in `ui/primitives` holds one through `useOverlayLayer` while open, innermost first.
 - Other routes exist only for sign-in and onboarding.
@@ -371,7 +374,9 @@ independent. Only the timeline has a core and a view; the list, the table and th
   opens by the `some_unit` policy target (D-362); `logic/dashboard/scope.ts` picks its units (only those the actor
   reads whole, the `whole_unit` target, D-403) and its rows. Before the span's first counted day, the past-day cards
   wait and the rest still show (D-404). A module's identity is `dashboardModuleKey` in `contracts` (D-405). `ui/modules/presence/DashboardModule.tsx` draws it with CSS charts
-  from `ui/primitives/charts.tsx`; `ui/modules/leaves/MyRotationSection.tsx` draws "הסבב שלי".
+  from `ui/primitives/charts.tsx`; `ui/modules/leaves/MyRotationSection.tsx` draws "הסבב שלי". "סטטוס דוח 1" adds
+  tomorrow's report from `DAY_REPORT.nextDayFromHour` in the organization's time zone, through `usePastHour` in
+  `logic/session` (D-443).
 
 ## Design system
 

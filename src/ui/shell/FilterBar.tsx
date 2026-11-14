@@ -13,7 +13,7 @@ import { ListFilter, X } from 'lucide-react'
 import { Fragment, useEffect } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { useBuilderOpen, type BuilderTarget } from './builderOpen'
-import { OPERATOR_LABELS, useFilterFields, type FieldEntity, type FilterFields } from './filterFields'
+import { OPERATOR_LABELS, negates, plain, useFilterFields, type FieldEntity, type FilterFields } from './filterFields'
 import { useFilterFocus } from './filterFocus'
 import { useIsDesktop } from '../patterns/media'
 
@@ -114,11 +114,9 @@ function chipText(rule: FilterRule, fields: FilterFields, entity: FieldEntity): 
   const draft = fields.draftOf(rule, entity)
   const field = draft === null ? undefined : fields.byKey.get(draft.field)
   if (draft === null || field === undefined) return { name: t('filters.unavailable'), qualifier: null, values: [] }
-  const plain = draft.operator === 'anyOf' || draft.operator === 'is'
-  const operator = plain ? null : t(OPERATOR_LABELS[draft.operator])
+  const operator = plain(draft.operator) ? null : t(OPERATOR_LABELS[draft.operator])
   // A "none of" or "is not" whose every value matches nobody keeps everyone; the chip says so (OI-264).
-  const negated = draft.operator === 'noneOf' || draft.operator === 'isNot'
-  const keepsEveryone = negated && draft.values.length > 0 && draft.values.every(field.inert)
+  const keepsEveryone = negates(draft.operator) && draft.values.length > 0 && draft.values.every(field.inert)
   return {
     name: field.name,
     qualifier: keepsEveryone ? [operator, t('filters.keepsEveryone')].join(QUALIFIER_SEPARATOR) : operator,
