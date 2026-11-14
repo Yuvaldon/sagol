@@ -57,17 +57,27 @@ export function useDeviceNotifications(): DeviceNotifications {
 
 /**
  * Sign-out's first step (D-358): best effort, so a failure here never keeps the soldier signed in, and bounded, so a
- * push service that hangs never does either (D-433). What is left unsent ends on the server at the next 404 or 410.
+ * push service that hangs never does either (D-433). Both requests leave at once, while the session still holds
+ * (D-438): the server forgets the endpoint the browser holds even when the browser's own unsubscribe never answers,
+ * and nothing is sent after the limit, when the session may be gone.
  */
-export function forgetThisDevice(push: PushPort, data: DataPort): Promise<void> {
+export async function forgetThisDevice(push: PushPort, data: DataPort): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const limit = new Promise<void>((resolve) => {
     timer = setTimeout(resolve, NOTIFICATIONS.signOutUnsubscribeTimeoutMs)
   })
-  const forgotten = forgetDevice(push, data).then(
-    () => undefined,
-    () => undefined,
-  )
+  const forgotten = push
+    .installed()
+    .then((install) =>
+      Promise.allSettled([
+        (async () => push.disable())(),
+        (async () => (install === null ? null : data.commands.notifications.unsubscribe({ endpoint: install.endpoint })))(),
+      ]),
+    )
+    .then(
+      () => undefined,
+      () => undefined,
+    )
   return Promise.race([forgotten, limit]).finally(() => {
     clearTimeout(timer)
   })

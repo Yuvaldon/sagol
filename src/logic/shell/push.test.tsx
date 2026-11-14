@@ -164,9 +164,10 @@ describe('sign-out (D-358)', () => {
   it('signs out when the push service never answers, after the limit (D-433)', async () => {
     vi.useFakeTimers()
     try {
-      const push = { ...browserOf('on'), disable: () => new Promise<string | null>(() => undefined) }
+      const hangs = () => new Promise<never>(() => undefined)
+      const push = { ...browserOf('on'), disable: hangs }
       const signOut = vi.fn(() => Promise.resolve({ ok: true, value: null }))
-      const ports = fakePorts({ push, auth: { signOut } })
+      const ports = fakePorts({ push, commands: { notifications: { unsubscribe: hangs } }, auth: { signOut } })
       const { result } = renderHook(() => useSignOut(), { wrapper: wrapperOf(ports) })
       let done: Promise<unknown> = Promise.resolve()
       act(() => {
@@ -176,6 +177,29 @@ describe('sign-out (D-358)', () => {
       expect(signOut).not.toHaveBeenCalled()
       await act(() => vi.advanceTimersByTimeAsync(1))
       await act(() => done)
+      expect(signOut).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('sign-out when the browser never answers (D-438)', () => {
+  it('still forgets the install on the server, before signing out', async () => {
+    vi.useFakeTimers()
+    try {
+      const push = { ...browserOf('on'), disable: () => new Promise<string | null>(() => undefined) }
+      const unsubscribe = vi.fn(() => Promise.resolve({ ok: true, value: { subscribed: false } }))
+      const signOut = vi.fn(() => Promise.resolve({ ok: true, value: null }))
+      const ports = fakePorts({ push, commands: { notifications: { unsubscribe } }, auth: { signOut } })
+      const { result } = renderHook(() => useSignOut(), { wrapper: wrapperOf(ports) })
+      let done: Promise<unknown> = Promise.resolve()
+      act(() => {
+        done = result.current.signOut()
+      })
+      await act(() => vi.advanceTimersByTimeAsync(NOTIFICATIONS.signOutUnsubscribeTimeoutMs))
+      await act(() => done)
+      expect(unsubscribe).toHaveBeenCalledWith({ endpoint: INSTALL.endpoint })
       expect(signOut).toHaveBeenCalledTimes(1)
     } finally {
       vi.useRealTimers()
