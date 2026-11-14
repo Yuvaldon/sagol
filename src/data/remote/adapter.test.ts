@@ -199,13 +199,28 @@ describe('live changes (D-348)', () => {
   })
 
   it('listens on the linked organization, and stops when the session is no longer linked', async () => {
-    const { adapter, realtime } = sessionAdapter([linked, linked, { status: 'unlinked', identity }])
+    const { adapter, realtime } = sessionAdapter([linked, linked, { status: 'signed_out' }])
     await adapter.session.current()
     await adapter.session.current()
     expect(realtime.topics.map((entry) => entry.topic)).toEqual([organization])
     expect(realtime.topics[0]?.stopped).toBe(false)
     await adapter.session.current()
     expect(realtime.topics[0]?.stopped).toBe(true)
+    expect(realtime.topics).toHaveLength(1)
+  })
+
+  it('listens on its own topic while unlinked, where its link request is answered, then on the organization (D-437)', async () => {
+    const { adapter, realtime } = sessionAdapter([{ status: 'unlinked', identity }, linked])
+    await adapter.session.current()
+    expect(realtime.topics.map((entry) => entry.topic)).toEqual([`${REMOTE.identityTopicPrefix}${identity.auth_user_id}`])
+    const heard = heardBy(adapter)
+    realtime.topics[0]?.message({ origin: crypto.randomUUID(), tables: ['account_link_requests', 'soldier_accounts'] })
+    await vi.waitFor(() => {
+      expect(heard[0]?.map((change) => change.table)).toEqual(['account_link_requests', 'soldier_accounts'])
+    })
+    await adapter.session.current()
+    expect(realtime.topics[0]?.stopped).toBe(true)
+    expect(realtime.topics[1]?.topic).toBe(organization)
   })
 
   it('publishes the tables another device changed, and skips its own writes and malformed messages', async () => {

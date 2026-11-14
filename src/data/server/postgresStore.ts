@@ -48,6 +48,11 @@ export interface PostgresStore extends Store {
   readonly mustRetry: () => boolean
   /** The organizations whose rows the request's kept writes touched (D-348): where its change is announced. */
   readonly writtenOrganizations: () => readonly string[]
+  /**
+   * The identities whose own rows (those carrying `auth_user_id`) the request's kept writes touched, each with the
+   * tables it touched (D-437): where a requester with no live account hears the answer to their request.
+   */
+  readonly writtenIdentities: () => ReadonlyMap<string, readonly TableName[]>
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -74,6 +79,7 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
   let retry = false
   let depth = 0
   const written: string[] = []
+  const identities: { identity: string; table: TableName }[] = []
 
   async function run(text: string, params: SqlParameter[]): Promise<readonly Record<string, unknown>[]> {
     try {
@@ -109,9 +115,16 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
     const fromRow = (row: Record<string, unknown>) => row.row as Row
     /** The column naming the organization a row belongs to: its own id for the organization itself. */
     const owner = types.has('organization_id') ? 'organization_id' : name === 'organizations' ? 'id' : null
-    const returning = owner === null ? '' : ` RETURNING ${quoted(owner)}::text AS organization`
+    const returned = [
+      ...(owner === null ? [] : [`${quoted(owner)}::text AS organization`]),
+      ...(types.has('auth_user_id') ? ['"auth_user_id"::text AS identity'] : []),
+    ]
+    const returning = returned.length === 0 ? '' : ` RETURNING ${returned.join(', ')}`
     function wrote(rows: readonly Record<string, unknown>[]): void {
-      for (const row of rows) if (typeof row.organization === 'string') written.push(row.organization)
+      for (const row of rows) {
+        if (typeof row.organization === 'string') written.push(row.organization)
+        if (typeof row.identity === 'string') identities.push({ identity: row.identity, table: name })
+      }
     }
 
     /** A value of the wrong form cannot be stored in the column, so it matches nothing (as in IndexedDB). */
@@ -205,6 +218,11 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
   return {
     mustRetry: () => retry,
     writtenOrganizations: () => [...new Set(written)],
+    writtenIdentities() {
+      const tables = new Map<string, Set<TableName>>()
+      for (const { identity, table } of identities) tables.set(identity, (tables.get(identity) ?? new Set()).add(table))
+      return new Map([...tables].map(([identity, touched]) => [identity, [...touched]]))
+    },
     table: tableOf,
     // A refused write rolls back what it wrote, as an aborted IndexedDB transaction does. Inner
     // transactions join the outer one, as Dexie's do.
@@ -219,6 +237,7 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
       }
       depth += 1
       const kept = written.length
+      const keptIdentities = identities.length
       await run('SAVEPOINT store_write', [])
       try {
         const value = await work()
@@ -227,6 +246,7 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
       } catch (error) {
         if (!retry) await run('ROLLBACK TO SAVEPOINT store_write', [])
         written.length = kept
+        identities.length = keptIdentities
         throw error
       } finally {
         depth -= 1

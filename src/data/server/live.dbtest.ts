@@ -1,6 +1,7 @@
 import { REMOTE } from '@config'
 import {
   AccessGrantId,
+  AccountLinkRequestId,
   AuthUserId,
   LeaveTypeGroupId,
   LeaveTypeId,
@@ -16,7 +17,7 @@ import {
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCommandGateway } from './gateway'
-import { LiveMessage } from './live'
+import { LiveMessage, identityTopic } from './live'
 import { CATALOG_QUERY, catalogOf, type SqlClient, type StoreCatalog } from './postgresStore'
 
 // Live changes (D-348): a committed write is broadcast on its organization's private topic, and
@@ -34,6 +35,13 @@ const owner: AuthIdentity = {
   auth_user_id: AuthUserId.parse(crypto.randomUUID()),
   provider: 'google',
   email: 'owner@example.test',
+  email_verified: true,
+  display_name: null,
+}
+const requester: AuthIdentity = {
+  auth_user_id: AuthUserId.parse(crypto.randomUUID()),
+  provider: 'google',
+  email: 'requester@example.test',
   email_verified: true,
   display_name: null,
 }
@@ -71,14 +79,22 @@ const bootstrap = () => ({
   ],
 })
 
-const messages = async () =>
-  (await sql.unsafe('SELECT topic, extension, event, payload, private FROM realtime.messages ORDER BY id')) as unknown as {
+const messages = async (topic?: string) => {
+  const rows = (await sql.unsafe('SELECT topic, extension, event, payload, private FROM realtime.messages ORDER BY id')) as unknown as {
     topic: string
     extension: string
     event: string
     payload: unknown
     private: boolean
   }[]
+  return topic === undefined ? rows : rows.filter((row) => row.topic === topic)
+}
+
+/** The tables of the latest announcement on `topic`. */
+const lastTables = async (topic: string) => {
+  const sent = await messages(topic)
+  return [...LiveMessage.parse(sent.at(-1)?.payload).tables].sort()
+}
 
 /** How many announcements `user` may read on `topic`, as Realtime asks when that user joins it. */
 async function heard(user: string | null, topic: string): Promise<number> {
@@ -107,13 +123,17 @@ describe('live changes (D-348)', () => {
   it("announces a committed write once, on its organization's private topic, by table name only", async () => {
     const answer = await gateway()(owner, bootstrap(), origin)
     expect(answer.result.ok).toBe(true)
-    const sent = await messages()
+    const sent = await messages(organization)
     expect(sent).toHaveLength(1)
     expect(sent[0]).toMatchObject({ topic: organization, extension: 'broadcast', event: REMOTE.liveEvent, private: true })
     const message = LiveMessage.parse(sent[0]?.payload)
     expect(message.origin).toBe(origin)
     expect([...message.tables].sort()).toEqual([...new Set(answer.changes.map((change) => change.table))].sort())
     expect(JSON.stringify(sent[0]?.payload)).not.toContain(owner.email)
+    // The owner's own account row is announced to their identity too, and nothing else is (D-437).
+    expect(await messages(identityTopic(owner.auth_user_id))).toHaveLength(1)
+    expect(await lastTables(identityTopic(owner.auth_user_id))).toEqual(['soldier_accounts'])
+    expect(await messages()).toHaveLength(2)
   })
 
   it('announces nothing for a refused call or a read', async () => {
@@ -121,6 +141,36 @@ describe('live changes (D-348)', () => {
     expect((await gateway()(owner, bootstrap(), origin)).result.ok).toBe(false)
     expect((await gateway()(owner, { kind: 'repositories', group: 'units', method: 'list', args: [{ include_archived: false }] })).result.ok).toBe(true)
     expect(await messages()).toHaveLength(before)
+  })
+
+  it("announces a link request's answer on the requester's own topic (D-437)", async () => {
+    const topic = identityTopic(requester.auth_user_id)
+    const id = AccountLinkRequestId.parse(crypto.randomUUID())
+    const request = {
+      kind: 'commands',
+      group: 'accounts',
+      method: 'requestLink',
+      args: [{ id, claimed_personal_id: null, first_name: 'Noa', last_name: 'Cohen', account_id: SoldierAccountId.parse(crypto.randomUUID()) }],
+    }
+    const asked = await gateway()(requester, request, origin)
+    expect(asked.result).toEqual({ ok: true, value: { outcome: 'pending_review' } })
+    expect(await lastTables(topic)).toEqual(['account_link_requests'])
+
+    const review = { kind: 'commands', group: 'accounts', method: 'reviewLink', args: [{ id, resolution: { kind: 'reject' } }] }
+    expect((await gateway()(owner, review, crypto.randomUUID())).result.ok).toBe(true)
+    const sent = await messages(topic)
+    expect(sent).toHaveLength(2)
+    expect(await lastTables(topic)).toEqual(['account_link_requests'])
+    expect(JSON.stringify(sent.map((row) => row.payload))).not.toContain(requester.email)
+  })
+
+  it('lets each identity hear its own topic and no other (D-437)', async () => {
+    const topic = identityTopic(requester.auth_user_id)
+    expect(await heard(requester.auth_user_id, topic)).toBeGreaterThan(0)
+    expect(await heard(owner.auth_user_id, topic)).toBe(0)
+    expect(await heard(null, topic)).toBe(0)
+    // A pending requester hears nothing of the organization.
+    expect(await heard(requester.auth_user_id, organization)).toBe(0)
   })
 
   it("lets only a live member of the organization hear its topic", async () => {
