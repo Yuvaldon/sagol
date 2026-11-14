@@ -10,6 +10,11 @@ export const NOTIFICATIONS = {
   /** RFC 8030 urgency: a leave update is shown to the soldier, so the service wakes the phone for it (D-411). */
   pushUrgency: 'high',
   /**
+   * The VAPID token a push carries is valid this long (RFC 8292 allows at most a day). The server signs one per push, so
+   * an hour covers any delivery delay without leaving a long-lived token in a push service's logs (D-435).
+   */
+  pushVapidTokenSeconds: 3_600,
+  /**
    * Sign-out waits this long for the device's unsubscribe, then signs out anyway (D-358, D-433): a push service that
    * hangs never keeps a soldier signed in. The server row ends on the next 404 or 410, or on revoke.
    */
