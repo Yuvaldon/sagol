@@ -88,3 +88,8 @@ every read must ignore by default, which touches every query, rule and permissio
 planner's preview already answers "what if" for a leave round, and rotation templates plus the dashboard
 cover repeating and checking a plan. Revisit only if commanders ask for multi-rotation planning; then spec it as
 a read-only scenario over derived data, never as stored copies.
+
+## Design rounds (R4)
+
+- [ux-concept-r4.md](ux-concept-r4.md): the proposed interface concept for ROADMAP R4, for the owner's review. Its
+  "Proposed D-42x" and OI-36x become real only on approval, and R5 builds what is approved.
