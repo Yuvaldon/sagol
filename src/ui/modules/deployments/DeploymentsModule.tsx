@@ -14,12 +14,14 @@ import {
   useDeploymentPermissions,
   useDeployments,
   useMemberships,
+  useModuleAccess,
+  useOpenRotationDashboard,
   usePanel,
   useSoldiersWithArchived,
   useToday,
   useUnitsWithArchived,
 } from '@logic'
-import { Archive, Lock, LockOpen, Plus, Users } from 'lucide-react'
+import { Archive, LayoutDashboard, Lock, LockOpen, Plus, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
@@ -186,6 +188,8 @@ export function DeploymentsModule() {
   const units = useUnitsWithArchived()
   const soldiers = useSoldiersWithArchived()
   const commands = useDeploymentCommands()
+  const access = useModuleAccess()
+  const openDashboard = useOpenRotationDashboard()
   const liveUnits = useMemo(() => (units.status === 'ready' ? units.value.filter((row) => row.archived_at === null) : NO_UNITS), [units])
   const live = useMemo(() => (deployments.status === 'ready' ? liveDeployments(deployments.value) : NO_DEPLOYMENTS), [deployments])
   const permissions = useDeploymentPermissions(liveUnits, live)
@@ -264,6 +268,18 @@ export function DeploymentsModule() {
     panel.open(PANEL_IDS.deployments, { entity: NEW_ENTITY })
   }
   const actionsOf = (deployment: Deployment): RowAction[] => [
+    ...(access.dashboard
+      ? [
+          {
+            id: 'dashboard',
+            labelKey: 'dashboard.open' as const,
+            icon: <LayoutDashboard aria-hidden size={14} />,
+            onAction: () => {
+              openDashboard(deployment)
+            },
+          },
+        ]
+      : []),
     ...(permissions.update(deployment)
       ? [
           {

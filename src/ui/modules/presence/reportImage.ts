@@ -7,7 +7,7 @@ import { REPORT_IMAGE_FONT, REPORT_IMAGE_TONES, REPORT_IMAGE_WEIGHTS } from '../
 
 type Style = 'title' | 'heading' | 'body' | 'strong' | 'muted'
 
-interface ImageLine {
+export interface ImageLine {
   readonly text: string
   readonly style: Style
   /** Room above the line, a rule across the image for a new day. */
@@ -158,9 +158,9 @@ export async function reportImage(lines: readonly ImageLine[]): Promise<Blob> {
   })
 }
 
-/** The file of the image, named by its first day. */
-export function reportFile(blob: Blob, firstDay: string): File {
-  return new File([blob], `${image.fileStem}-${firstDay}.${EXTENSION}`, { type: image.mimeType })
+/** The file of the image, named by its stem and its first day. */
+export function reportFile(blob: Blob, firstDay: string, stem: string = image.fileStem): File {
+  return new File([blob], `${stem}-${firstDay}.${EXTENSION}`, { type: image.mimeType })
 }
 
 /** Whether the browser can hand a file to the share sheet (D-196). */

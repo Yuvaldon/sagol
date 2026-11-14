@@ -2,12 +2,14 @@ import { PANEL_IDS } from '@config'
 import { AvailabilityEffect, type Leave, type LeaveType } from '@contracts'
 import { t } from '@i18n'
 import { useLeaveTypes, useMyLeaves, useMyLeavesAccess, useMyNextDays, usePanel } from '@logic'
+import { useRef } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { formatDate } from '../../patterns/dates'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { VirtualList } from '../../patterns/VirtualList'
 import { StatusChip, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, typeNameOf } from './leaveText'
+import { MyRotationSection } from './MyRotationSection'
 
 // "Mine" (D-265, D-167): the actor's next days, in or out, then their own leaves, the open ones and the history. A row
 // opens the leave's details, where its steps and comments are (D-119). A new request is the strip's quick action.
@@ -72,6 +74,8 @@ export function MyLeavesModule() {
   const mine = useMyLeaves()
   const next = useMyNextDays()
   const types = useLeaveTypes()
+  // "בקשות פתוחות" brings the open requests into view (D-350).
+  const openRef = useRef<HTMLElement>(null)
 
   if (mine.status === 'failed') return <FailureNotice error={mine.error} />
   if (mine.status === 'loading' || types.status === 'loading') return <LoadingNotice />
@@ -85,12 +89,24 @@ export function MyLeavesModule() {
     const leave = all.find((row) => row.id === id)
     return leave === undefined ? null : typeOf(leave)
   }
-  const nextDays = <NextDays days={next} typeOf={typeOfLeave} />
+  const typeById = (id: LeaveType['id']) => typeList.find((type) => type.id === id) ?? null
+  const top = (
+    <>
+      <MyRotationSection
+        typeOf={typeById}
+        onOpenRequests={() => {
+          openRef.current?.scrollIntoView({ block: 'start' })
+          openRef.current?.focus()
+        }}
+      />
+      <NextDays days={next} typeOf={typeOfLeave} />
+    </>
+  )
 
   if (all.length === 0) {
     return (
       <div className="flex flex-col gap-md">
-        {nextDays}
+        {top}
         <EmptyNotice titleKey="myLeaves.emptyTitle" bodyKey={access?.create === true ? 'myLeaves.emptyCreate' : 'myLeaves.emptyReadOnly'} />
       </div>
     )
@@ -98,8 +114,8 @@ export function MyLeavesModule() {
 
   return (
     <div className="flex flex-col gap-md">
-      {nextDays}
-      <section className="flex flex-col gap-xs">
+      {top}
+      <section ref={openRef} tabIndex={-1} className="flex flex-col gap-xs outline-none">
         <h3 className="text-label font-semibold text-text-muted">{t('myLeaves.openTitle')}</h3>
         {open.length === 0 ? (
           <p className="text-name text-text-muted">{t('myLeaves.emptyOpen')}</p>

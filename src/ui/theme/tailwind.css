@@ -77,6 +77,20 @@
   --color-palette-purple: #8341c4;
   --color-palette-pink: #c43c86;
   --color-palette-gray: #6f6d67;
+  /*
+   * The dashboard's heat steps (D-359): one blue, light to dark, by the share of a week a soldier spent at home, and the
+   * ink a number reads in on each step. The steps differ in pattern density too (`heat-pattern-*`), so color is not alone.
+   */
+  --color-heat-0: #eef3fb;
+  --color-heat-1: #c3d5f1;
+  --color-heat-2: #7fa3dc;
+  --color-heat-3: #2f5fae;
+  --color-heat-ink-0: #1a1a18;
+  --color-heat-ink-1: #1a1a18;
+  --color-heat-ink-2: #1a1a18;
+  --color-heat-ink-3: #ffffff;
+  /* The dashboard's plan against what happened: the plan quiet, the actual in the action's ink. */
+  --color-plan: #a9b8cf;
 
   --font-sans: "Heebo Variable", system-ui, sans-serif;
 
@@ -128,6 +142,10 @@
   --spacing-chart-gap: 16px;
   --spacing-chart-row-gap: 40px;
   --spacing-chart: 60dvh;
+  /* The dashboard (D-359): a heat map's week cell and its name column, and the height of a day chart. */
+  --spacing-heat-cell: 36px;
+  --spacing-heat-name: 128px;
+  --spacing-trend: 160px;
 
   --container-sheet: 420px;
   --container-menu: 260px;
@@ -196,6 +214,15 @@
     --color-palette-purple: #b27fe8;
     --color-palette-pink: #e36cab;
     --color-palette-gray: #9b9890;
+    --color-heat-0: #262c35;
+    --color-heat-1: #2e4467;
+    --color-heat-2: #5a86cc;
+    --color-heat-3: #9dc0f5;
+    --color-heat-ink-0: #ecebe6;
+    --color-heat-ink-1: #ecebe6;
+    --color-heat-ink-2: #1a1a18;
+    --color-heat-ink-3: #1a1a18;
+    --color-plan: #56637a;
     --shadow-rim: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
     --shadow-float: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.07);
     --shadow-action: 0 12px 32px rgba(0, 0, 0, 0.5);
@@ -319,6 +346,25 @@
     color-mix(in srgb, currentColor 28%, transparent) 0 1px,
     transparent 1px 6px
   );
+}
+
+/*
+ * The dashboard's heat steps by density as well as color (D-359): a dotted pattern in the step's ink, sparse to dense,
+ * so a reader who does not see the blue still reads the step. Step 0 has none.
+ */
+@utility heat-pattern-1 {
+  background-image: radial-gradient(color-mix(in srgb, currentColor 22%, transparent) 1px, transparent 1px);
+  background-size: 9px 9px;
+}
+
+@utility heat-pattern-2 {
+  background-image: radial-gradient(color-mix(in srgb, currentColor 26%, transparent) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+@utility heat-pattern-3 {
+  background-image: radial-gradient(color-mix(in srgb, currentColor 30%, transparent) 1px, transparent 1px);
+  background-size: 4px 4px;
 }
 
 /* While the filter row shows, content starts under it too (D-131, D-173). */

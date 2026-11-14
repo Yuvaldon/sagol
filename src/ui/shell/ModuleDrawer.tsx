@@ -21,6 +21,7 @@ const ClosedLeavesModule = lazy(() => import('../modules/leaves/LeaveInboxModule
 const PendingRequestsModule = lazy(() => import('../modules/leaves/LeaveInboxModule').then((module) => ({ default: module.PendingRequestsModule })))
 const LeavesModule = lazy(() => import('../modules/leaves/LeavesModule').then((module) => ({ default: module.LeavesModule })))
 const MyLeavesModule = lazy(() => import('../modules/leaves/MyLeavesModule').then((module) => ({ default: module.MyLeavesModule })))
+const DashboardModule = lazy(() => import('../modules/presence/DashboardModule').then((module) => ({ default: module.DashboardModule })))
 const RulesModule = lazy(() => import('../modules/rules/RulesModule').then((module) => ({ default: module.RulesModule })))
 const SetupModule = lazy(() => import('../modules/setup/SetupModule').then((module) => ({ default: module.SetupModule })))
 const DeploymentsModule = lazy(() => import('../modules/deployments/DeploymentsModule').then((module) => ({ default: module.DeploymentsModule })))
@@ -112,6 +113,10 @@ const GROUPS: readonly ModuleGroup[] = [
     sections: [
       { panel: PANEL_IDS.properties, labelKey: 'properties.title', isAllowed: (access) => access.properties, Module: PropertiesModule },
     ],
+  },
+  {
+    titleKey: 'dashboard.title',
+    sections: [{ panel: PANEL_IDS.dashboard, labelKey: 'dashboard.title', isAllowed: (access) => access.dashboard, Module: DashboardModule }],
   },
   {
     titleKey: 'rules.title',
