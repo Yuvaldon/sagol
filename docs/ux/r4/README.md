@@ -26,6 +26,8 @@ The design is kept. What changed is the numbers and the weight.
   - Absence marks are thin, quiet lines.
   - The name of anyone away today is muted.
   - Tapping a day opens that day's faces, grouped by unit, and then who is not here.
+- The rule sentence uses the same words, with correct singular forms ("one medic would remain…").
+
 ### The board tension
 
 On the board a commander marks a block to create a leave. That is right, and the owner asked for it.
@@ -43,8 +45,6 @@ Both needs are legitimate, and neither wins. Each gets its own layer:
 - **At the moment of marking, the two meet.**
   - Selecting days for a new leave shows "on those days in <unit>: N here" at once, plus the rule sentence if one breaks.
   - Every absence you create shows its cost in who remains.
-
-- The rule sentence uses the same words, with correct singular forms ("one medic would remain…").
 
 ## Approach
 
