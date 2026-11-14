@@ -1,6 +1,7 @@
 import {
   ReportConfirmationId,
   type CalendarDate,
+  type ChangeSeq,
   type Deployment,
   type FilterExpression,
   type PermissionCheck,
@@ -11,15 +12,14 @@ import {
   type ReportSectionQuery,
   type ReportConfirmationQuery,
   type Soldier,
-  type Timestamp,
   type UnitId,
 } from '@contracts'
-import { addDays, buildUnitTree, compareCodeUnits, compareInstants, CONFIRM_DAY_REPORT, dayReportTarget, instantAt } from '@domain'
+import { addDays, buildUnitTree, compareCodeUnits, CONFIRM_DAY_REPORT, dayReportTarget } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { useRotationScope } from '../view-state/rotation'
 import { useFilterSource } from '../filters/source'
-import { useLeaves, useLeavesOfAnyStatus, useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
+import { useLeaves, useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
 import { checkOf, checkOn } from '../permissions/checks'
 import { useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
@@ -33,7 +33,7 @@ import { usePlacementHints } from '../roster/hooks'
 import { useUnits } from '../units/hooks'
 import { filterUnitOf } from '../view-state/filter'
 import { presenceLists, type PresenceLists } from './presence'
-import { dayConfirmations, type DayConfirmations } from './confirmations'
+import { dayConfirmations, type DayConfirmations, type ReadChanges } from './confirmations'
 import { dayReport, type DayReport } from './report'
 
 // The present and absent lists of a day, read like the board (D-134), and the day report (D-193).
@@ -120,24 +120,67 @@ export function useDayReport(
   }, [span, source, leaves, types, groups, checks, answers, placements, filter, days, rotations])
 }
 
-/** The confirmations the actor reads of `days` (D-293). Loading while the days are unknown. */
-function useDayConfirmations(days: readonly CalendarDate[]): Loaded<readonly ReportConfirmation[]> {
+interface ConfirmationReads {
+  readonly seenSeq: ChangeSeq
+  readonly confirmations: readonly ReportConfirmation[]
+  readonly changes: ReadChanges
+}
+
+/**
+ * The confirmations the actor reads of `days` (D-293), and what was written after the smallest `seen_seq` among them,
+ * read in the order D-373 needs: the change counter first, then the confirmations, the leave events after that number,
+ * the leaves of those events, and the memberships in `units`. A change committed between the reads shows as one until
+ * the next read; none is ever missed. Loading while the days are unknown.
+ */
+function useConfirmationReads(
+  days: readonly CalendarDate[],
+  units: readonly UnitId[] | null,
+): Loaded<ConfirmationReads> {
   const { data } = usePorts()
+  const { repositories } = data
   const first = days[0]
   const last = days.at(-1)
   const query = useMemo(
     (): ReportConfirmationQuery | null =>
-      first === undefined || last === undefined ? null : { window: { start_date: first, end_date: last }, unit_ids: null },
-    [first, last],
+      first === undefined || last === undefined || units === null
+        ? null
+        : { window: { start_date: first, end_date: last }, unit_ids: null },
+    [first, last, units],
   )
   return loaded(
     useQuery({
-      queryKey: [...QUERY_KEYS.reportConfirmations, query],
-      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.report_confirmations.list(query))),
+      queryKey: [...QUERY_KEYS.reportConfirmations, CHANGES, query, units],
+      queryFn: async (): Promise<ConfirmationReads> => {
+        const seenSeq = await unwrap(repositories.change_counters.current())
+        if (query === null || units === null) return { seenSeq, confirmations: [], changes: NO_CHANGES }
+        const confirmations = await unwrap(repositories.report_confirmations.list(query))
+        if (confirmations.length === 0) return { seenSeq, confirmations, changes: NO_CHANGES }
+        const after = Math.min(...confirmations.map((row) => row.seen_seq))
+        const events = await unwrap(repositories.leave_events.list({ leave_ids: null, after_seq: after }))
+        const ids = [...new Set(events.map((event) => event.leave_id))].sort(compareCodeUnits)
+        const leaves =
+          ids.length === 0
+            ? []
+            : await unwrap(repositories.leaves.list({ ids, window: null, soldier_ids: null, statuses: null }))
+        const memberships =
+          units.length === 0
+            ? []
+            : await unwrap(
+                repositories.unit_memberships.list({ soldier_ids: null, unit_ids: [...units], window: null }),
+              )
+        return {
+          seenSeq,
+          confirmations,
+          changes: { leaves, events, memberships: memberships.filter((row) => row.change_seq > after) },
+        }
+      },
       enabled: query !== null,
     }),
   )
 }
+
+const CHANGES = 'changes'
+const NO_CHANGES: ReadChanges = { leaves: [], events: [], memberships: [] }
 
 function confirmCheckOf(unitId: UnitId): PermissionCheck {
   return checkOf(CONFIRM_DAY_REPORT, dayReportTarget(unitId))
@@ -192,8 +235,8 @@ const NO_UNITS: readonly UnitId[] = []
 
 /**
  * Where each unit's section of the report's days stands (D-269, D-293), by date. Read on the whole report, with no
- * view filter, from the leaves of every status that bear on the days, so a leave written after a confirmation shows
- * at once as a change; `shown` is the report as the view filter shows it. Loading until both reports, the
+ * view filter, from what was written after each confirmation's change number (D-373), so a leave or a placement written
+ * after it shows at once as a change; `shown` is the report as the view filter shows it. Loading until both reports, the
  * confirmations, the confirmable answer and the permission answers are in.
  */
 export function useReportConfirmations(
@@ -202,22 +245,15 @@ export function useReportConfirmations(
   rotations: readonly Deployment[],
 ): Loaded<ReadonlyMap<CalendarDate, DayConfirmations>> {
   const report = useDayReport(days, null, rotations)
-  const first = days[0]
-  const last = days.at(-1)
-  const span = useMemo(
-    () => (first === undefined || last === undefined ? null : { from: addDays(first, -1), to: addDays(last, 1) }),
-    [first, last],
-  )
-  const confirmations = useDayConfirmations(days)
-  const leaves = useLeavesOfAnyStatus(span)
   const reportDays = report.status === 'ready' ? report.value.days : null
-  const units = useMemo((): readonly UnitId[] => {
-    if (reportDays === null) return NO_UNITS
+  const units = useMemo((): readonly UnitId[] | null => {
+    if (reportDays === null) return null
     const ids = new Set<UnitId>()
     for (const day of reportDays) for (const section of day.units) if (section.unitId !== null) ids.add(section.unitId)
     return [...ids].sort(compareCodeUnits)
   }, [reportDays])
-  const confirmable = useConfirmable(reportDays === null ? [] : days, units)
+  const reads = useConfirmationReads(days, units)
+  const confirmable = useConfirmable(reportDays === null ? [] : days, units ?? NO_UNITS)
   const sectionCounts = useReportSections(days, rotations)
   const session = useSession()
   const live = useUnits()
@@ -230,8 +266,7 @@ export function useReportConfirmations(
   return useMemo((): Loaded<ReadonlyMap<CalendarDate, DayConfirmations>> => {
     if (report.status !== 'ready') return report
     if (shown.status !== 'ready') return shown
-    if (confirmations.status !== 'ready') return confirmations
-    if (leaves.status !== 'ready') return leaves
+    if (reads.status !== 'ready') return reads
     if (confirmable.status !== 'ready') return confirmable
     if (sectionCounts.status !== 'ready') return sectionCounts
     if (session.status !== 'ready') return session
@@ -243,7 +278,6 @@ export function useReportConfirmations(
     const shownDays = new Map(shown.value.days.map((day) => [day.date, day] as const))
     const mayConfirm = (unitId: UnitId) => answers.can(confirmCheckOf(unitId))
     const actorId = session.value.status === 'linked' ? session.value.soldier_id : null
-    const seenAt = leaves.value.reduce((latest, leave) => (compareInstants(leave.updated_at, latest) > 0 ? leave.updated_at : latest), instantAt(0))
     return {
       status: 'ready',
       value: new Map(
@@ -252,36 +286,37 @@ export function useReportConfirmations(
           dayConfirmations({
             day,
             shown: shownDays.get(day.date) ?? day,
-            confirmations: confirmations.value,
-            leaves: leaves.value,
+            confirmations: reads.value.confirmations,
+            changes: reads.value.changes,
             confirmable: (unitId, date) => pairs.has(pairKeyOf(unitId, date)),
             mayConfirm,
             tree,
             actorId,
-            seenAt,
+            seenSeq: reads.value.seenSeq,
             unseen: counts.get(day.date) ?? 0,
           }),
         ]),
       ),
     }
-  }, [report, shown, confirmations, leaves, confirmable, sectionCounts, session, tree, checks, answers])
+  }, [report, shown, reads, confirmable, sectionCounts, session, tree, checks, answers])
 }
 
 const pairKeyOf = (unitId: UnitId, date: CalendarDate) => `${date} ${unitId}`
 
 /**
- * Confirms a unit's report of a date (D-293), as seen at `seenAt`; confirming again moves the confirmation to the
- * actor.
+ * Confirms a unit's report of a date (D-293), as read at change number `seenSeq` (D-373); confirming again moves the
+ * confirmation to the actor.
  */
 export function useConfirmDayReport() {
   const { data } = usePorts()
   const command = useCommand(
     [QUERY_KEYS.reportConfirmations],
-    (input: { unit_id: UnitId; report_date: CalendarDate; seen_at: Timestamp }) =>
+    (input: { unit_id: UnitId; report_date: CalendarDate; seen_seq: ChangeSeq }) =>
       data.commands.day_reports.confirm({ id: ReportConfirmationId.parse(crypto.randomUUID()), ...input }),
   )
   const run = useCallback(
-    (unitId: UnitId, date: CalendarDate, seenAt: Timestamp) => command.run({ unit_id: unitId, report_date: date, seen_at: seenAt }),
+    (unitId: UnitId, date: CalendarDate, seenSeq: ChangeSeq) =>
+      command.run({ unit_id: unitId, report_date: date, seen_seq: seenSeq }),
     [command],
   )
   return { run, isPending: command.isPending }

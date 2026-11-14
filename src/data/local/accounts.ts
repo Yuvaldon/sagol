@@ -44,6 +44,7 @@ import { deleteSubscriptionsOf } from './notifications'
 import { permissionOf } from './reference'
 import { requireLinked, resolveSession } from './session'
 import { POLICY_TABLES, requireAccessManager } from './snapshot'
+import { counterChange } from './changeCounters'
 import { MEMBERSHIPS_UPDATE, ROSTER_TABLES, insertSoldier, personalIdIssues } from './soldiers'
 
 // Account linking (D-005, D-030, D-066, D-148, D-149) and the signed-in soldier's own preferences (D-041, D-121).
@@ -438,7 +439,9 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
             )
             touched.push(
               { table: 'soldiers', ids: [created.soldier.id] },
-              ...(membership === null ? [] : [{ table: 'unit_memberships' as const, ids: [membership.id] }]),
+              ...(membership === null
+                ? []
+                : [{ table: 'unit_memberships' as const, ids: [membership.id] }, counterChange(scope.organization_id)]),
               ...(created.hasPrivate ? [{ table: 'soldier_private' as const, ids: [created.soldier.id] }] : []),
             )
           }

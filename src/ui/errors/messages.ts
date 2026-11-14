@@ -48,6 +48,7 @@ const ISSUE_MESSAGES = {
   reference_not_found: 'issues.referenceNotFound',
   reference_archived: 'issues.referenceArchived',
   archived: 'issues.archived',
+  not_archived: 'issues.notArchived',
   unit_cycle: 'issues.unitCycle',
   membership_overlap: 'issues.membershipOverlap',
   seniority_override_overlap: 'issues.seniorityOverrideOverlap',

@@ -40,6 +40,7 @@ import { toCreateRuleInput, toUpdateRuleInput, type RuleFormValues } from './rul
 // Reading and changing availability rules, and evaluating them over what the actor reads (D-139 … D-142).
 
 const LIVE = { include_archived: false }
+const WITH_ARCHIVED = { include_archived: true }
 
 /** The live rules the actor sees, by priority then name (D-140). */
 export function useAvailabilityRules(): Loaded<readonly AvailabilityRule[]> {
@@ -48,6 +49,17 @@ export function useAvailabilityRules(): Loaded<readonly AvailabilityRule[]> {
     useQuery({
       queryKey: [...QUERY_KEYS.availabilityRules, LIVE],
       queryFn: () => unwrap(data.repositories.availability_rules.list(LIVE)),
+    }),
+  )
+}
+
+/** The rules the actor sees, archived ones too: the archived ones are offered for restore (D-371). */
+export function useAvailabilityRulesWithArchived(): Loaded<readonly AvailabilityRule[]> {
+  const { data } = usePorts()
+  return loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.availabilityRules, WITH_ARCHIVED],
+      queryFn: () => unwrap(data.repositories.availability_rules.list(WITH_ARCHIVED)),
     }),
   )
 }
@@ -66,7 +78,8 @@ export function useRuleCommands() {
     },
   )
   const archive = useCommand(keys, (rule: AvailabilityRule) => rules.archive({ id: rule.id, expected_version: rule.version }))
-  return { create, update, archive }
+  const restore = useCommand(keys, (rule: AvailabilityRule) => rules.restore({ id: rule.id, expected_version: rule.version }))
+  return { create, update, archive, restore }
 }
 
 // ---------------------------------------------------------------------- hints

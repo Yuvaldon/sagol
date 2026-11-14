@@ -2,6 +2,7 @@ import {
   ArchiveUnitLevelInput,
   CreateUnitLevelInput,
   ReorderUnitLevelsInput,
+  RestoreUnitLevelInput,
   UpdateUnitLevelInput,
   UnitLevel,
   type DataCommands,
@@ -13,6 +14,8 @@ import {
   createReferenceCommands,
   createReferenceRepository,
   createReorderCommand,
+  createRestoreCommand,
+  noRestoreIssues,
   type ReferenceSpec,
 } from './reference'
 
@@ -42,5 +45,6 @@ export function createUnitLevelCommands(dependencies: LocalDependencies): DataCo
       placementOf: () => ({ kind: 'organization' }),
     }),
     reorder: createReorderCommand(dependencies, SPEC, ReorderUnitLevelsInput, () => null),
+    restore: createRestoreCommand(dependencies, SPEC, { input: RestoreUnitLevelInput, restoreIssues: noRestoreIssues }),
   }
 }

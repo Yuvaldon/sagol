@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, TagCategory, TagLifetime, TagSelectionMode } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   NEW_TAG_CATEGORY_VALUES,
   liveCategories,
   tagCategoryFormIssues,
@@ -16,6 +17,7 @@ import { Archive, ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -173,6 +175,14 @@ export function TagCategoriesModule() {
   if (categories.status === 'loading') return <LoadingNotice />
 
   const live = liveCategories(categories.value)
+  // Archived categories come back from a quiet section under the list, for whoever may archive them (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={permissions.archive ? archivedRows(categories.value) : []}
+      nameOf={(category) => category.name}
+      restore={commands.restore}
+    />
+  )
   const newCategory = () => {
     setFailure(null)
     panel.open(PANEL_IDS.tagCategories, { entity: NEW_ENTITY })
@@ -200,14 +210,17 @@ export function TagCategoriesModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="tagCategories.emptyTitle" bodyKey={permissions.create ? undefined : 'tagCategories.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newCategory}>
-            <Plus aria-hidden size={14} />
-            {t('tagCategories.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        <EmptyNotice titleKey="tagCategories.emptyTitle" bodyKey={permissions.create ? undefined : 'tagCategories.emptyReadOnly'}>
+          {permissions.create ? (
+            <Button variant="primary" onPress={newCategory}>
+              <Plus aria-hidden size={14} />
+              {t('tagCategories.new')}
+            </Button>
+          ) : null}
+        </EmptyNotice>
+        {archived}
+      </div>
     )
   }
 
@@ -281,6 +294,7 @@ export function TagCategoriesModule() {
           </Button>
         </div>
       ) : null}
+      {archived}
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"

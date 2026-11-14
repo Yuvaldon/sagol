@@ -232,7 +232,12 @@ export function describeRosterContract(
           version: 1,
           updated_by: ownerId,
         })
-        expect((await heard).map((change) => change.table).sort()).toEqual(['soldier_private', 'soldiers', 'unit_memberships'])
+        expect((await heard).map((change) => change.table).sort()).toEqual([
+          'change_counters',
+          'soldier_private',
+          'soldiers',
+          'unit_memberships',
+        ])
       })
 
       it('writes no private row for empty private fields', async () => {
@@ -402,6 +407,63 @@ export function describeRosterContract(
       })
     })
 
+    describe('restoring a soldier (D-371)', () => {
+      const restore = (id: SoldierId, expected_version: number) => adapter().commands.soldiers.restore({ id, expected_version })
+
+      it('restores an archived soldier, who still holds their number (D-098)', async () => {
+        const { platoonA } = await sampleUnits()
+        const soldier = valueOf(
+          await adapter().commands.soldiers.create(
+            soldierInput({ membership: placement(platoonA.id), private: { ...emptyPrivate, personal_id: '777' } }),
+          ),
+        )
+        expect(issuesOf(await restore(soldier.id, 1))).toEqual([{ path: [], code: 'not_archived' }])
+        valueOf(await adapter().commands.soldiers.archive({ id: soldier.id, expected_version: 1 }))
+        expect(errorOf(await restore(soldier.id, 1)).code).toBe('stale_version')
+        expect(valueOf(await restore(soldier.id, 2))).toMatchObject({ archived_at: null, version: 3, updated_by: ownerId })
+        expect((await liveSoldiers()).map((row) => row.id)).toContain(soldier.id)
+        expect(valueOf(await adapter().repositories.soldier_private.get(soldier.id)).personal_id).toBe('777')
+      })
+
+      it('refuses a placement in an archived unit and an archived rank, until they are back', async () => {
+        const { platoonA } = await sampleUnits()
+        const rank = valueOf(await adapter().commands.command_ranks.create(rankInput()))
+        const soldier = valueOf(
+          await adapter().commands.soldiers.create(soldierInput({ membership: placement(platoonA.id), command_rank_id: rank.id })),
+        )
+        valueOf(await adapter().commands.soldiers.archive({ id: soldier.id, expected_version: 1 }))
+        valueOf(await adapter().commands.units.archive({ id: platoonA.id, expected_version: 1 }))
+        valueOf(await adapter().commands.command_ranks.archive({ id: rank.id, expected_version: 1 }))
+        expect(issuesOf(await restore(soldier.id, 2))).toEqual([
+          { path: ['command_rank_id'], code: 'reference_archived' },
+          { path: ['unit_id'], code: 'reference_archived' },
+        ])
+        valueOf(await adapter().commands.units.restore({ id: platoonA.id, expected_version: 2 }))
+        valueOf(await adapter().commands.command_ranks.restore({ id: rank.id, expected_version: 2 }))
+        expect(valueOf(await restore(soldier.id, 2)).archived_at).toBeNull()
+      })
+
+      it('needs the delete pair, and every pair the soldier gets back (D-056, D-060)', async () => {
+        const plain = valueOf(await adapter().commands.soldiers.create(soldierInput()))
+        valueOf(await adapter().commands.soldiers.archive({ id: plain.id, expected_version: 1 }))
+        const { soldierId: granted } = await actorWith([VIEW_PRIVATE], { anchor_type: 'organization' })
+        valueOf(await adapter().commands.soldiers.archive({ id: granted, expected_version: 1 }))
+
+        const { identity: viewer } = await actorWith([VIEW_SOLDIERS], { anchor_type: 'organization' })
+        harnessOf().signIn(viewer)
+        expect(errorOf(await restore(plain.id, 2)).code).toBe('forbidden')
+
+        harnessOf().signIn(owner)
+        const { identity: deleter } = await actorWith([VIEW_SOLDIERS, DELETE_SOLDIERS], { anchor_type: 'organization' })
+        harnessOf().signIn(deleter)
+        expect(errorOf(await restore(granted, 2)).code).toBe('forbidden')
+        expect(valueOf(await restore(plain.id, 2)).archived_at).toBeNull()
+
+        harnessOf().signIn(owner)
+        expect(valueOf(await restore(granted, 2)).archived_at).toBeNull()
+      })
+    })
+
     describe('the last access manager (D-059)', () => {
       const lastManager = [{ path: [], code: 'last_access_manager' }]
 
@@ -567,6 +629,15 @@ export function describeRosterContract(
           { unit_id: units.platoonA.id, valid_from: LAST_WEEK, valid_to: '2026-11-07', version: 2 },
           { unit_id: units.platoonB.id, valid_from: TODAY, valid_to: null, version: 1 },
         ])
+      })
+
+      it('numbers each membership it writes, after the placement it was created with (D-373)', async () => {
+        const current = async () => valueOf(await adapter().repositories.change_counters.current())
+        const before = await current()
+        expect((await open()).change_seq).toBe(before)
+        valueOf(await change(TODAY, units.platoonB.id))
+        expect((await membershipsOf(soldierId)).map((row) => row.change_seq).sort()).toEqual([before + 1, before + 2])
+        expect(await current()).toBe(before + 2)
       })
 
       it('accepts a future date, and the soldier stays in the old unit until then', async () => {

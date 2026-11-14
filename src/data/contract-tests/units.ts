@@ -214,6 +214,10 @@ export function describeUnitContract(
       expect(valueOf(await adapter().repositories.unit_levels.list({ include_archived: true }))).toEqual([archived])
       const again = await adapter().commands.unit_levels.archive({ id: level.id, expected_version: 2 })
       expect(issuesOf(again)).toEqual([{ path: [], code: 'archived' }])
+      // D-371: back in the lists, in its place.
+      const restored = valueOf(await adapter().commands.unit_levels.restore({ id: level.id, expected_version: 2 }))
+      expect(restored).toMatchObject({ archived_at: null, version: 3, sort_order: level.sort_order })
+      expect(valueOf(await adapter().repositories.unit_levels.list({ include_archived: false }))).toEqual([restored])
     })
 
     it('allows archiving a level in use, and the unit keeps it (D-088)', async () => {
@@ -593,6 +597,53 @@ export function describeUnitContract(
       })
     })
 
+    describe('restore (D-371)', () => {
+      const restore = (id: UnitId, expected_version: number) => adapter().commands.units.restore({ id, expected_version })
+
+      it('restores an archived unit: live again, version raised, place kept', async () => {
+        const { platoonA } = await sampleTree()
+        valueOf(await adapter().commands.units.archive({ id: platoonA.id, expected_version: 1 }))
+        const restored = valueOf(await restore(platoonA.id, 2))
+        expect(restored).toMatchObject({ archived_at: null, version: 3, sort_order: platoonA.sort_order, updated_at: NOW })
+        expect((await liveUnits()).map((unit) => unit.id)).toContain(platoonA.id)
+      })
+
+      it('refuses a live unit, and a stale version (D-045)', async () => {
+        const { platoonA } = await sampleTree()
+        expect(issuesOf(await restore(platoonA.id, 1))).toEqual([{ path: [], code: 'not_archived' }])
+        valueOf(await adapter().commands.units.archive({ id: platoonA.id, expected_version: 1 }))
+        expect(errorOf(await restore(platoonA.id, 1)).code).toBe('stale_version')
+      })
+
+      it('refuses a unit whose parent is archived, until the parent is back', async () => {
+        const { company, platoonA, platoonB } = await sampleTree()
+        valueOf(await adapter().commands.units.archive({ id: platoonA.id, expected_version: 1 }))
+        valueOf(await adapter().commands.units.archive({ id: platoonB.id, expected_version: 1 }))
+        valueOf(await adapter().commands.units.archive({ id: company.id, expected_version: 1 }))
+        expect(issuesOf(await restore(platoonA.id, 2))).toEqual([{ path: ['parent_id'], code: 'reference_archived' }])
+        valueOf(await restore(company.id, 2))
+        valueOf(await restore(platoonA.id, 2))
+      })
+
+      it('keeps one root: refuses an archived top-level unit while another root is live (D-251)', async () => {
+        const live = (await harnessOf().rows('units')).find((unit) => unit.id === root)
+        if (live === undefined) throw new Error('no root')
+        const old = { ...live, id: newUnitId(), code: null, archived_at: NOW, version: 2 }
+        await harnessOf().seed('units', [old])
+        expect(issuesOf(await restore(old.id, 2))).toEqual([{ path: ['parent_id'], code: 'required' }])
+      })
+
+      it('refuses an archived level the unit points at (D-088)', async () => {
+        const level = valueOf(await adapter().commands.unit_levels.create({ id: newLevelId(), name: 'L', sort_order: 0 }))
+        const unit = valueOf(await adapter().commands.units.create(unitInput({ unit_level_id: level.id })))
+        valueOf(await adapter().commands.units.archive({ id: unit.id, expected_version: 1 }))
+        valueOf(await adapter().commands.unit_levels.archive({ id: level.id, expected_version: 1 }))
+        expect(issuesOf(await restore(unit.id, 2))).toEqual([{ path: ['unit_level_id'], code: 'reference_archived' }])
+        valueOf(await adapter().commands.unit_levels.restore({ id: level.id, expected_version: 2 }))
+        valueOf(await restore(unit.id, 2))
+      })
+    })
+
     describe('denial paths, before their screens exist (D-076, D-089)', () => {
       const VIEW: Permission = { resource: 'units', action: 'view' }
       const CREATE: Permission = { resource: 'units', action: 'create' }
@@ -618,6 +669,7 @@ export function describeUnitContract(
         })
         expect(errorOf(update).code).toBe('not_found')
         expect(errorOf(await adapter().commands.units.archive({ id: company.id, expected_version: 1 })).code).toBe('not_found')
+        expect(errorOf(await adapter().commands.units.restore({ id: company.id, expected_version: 1 })).code).toBe('not_found')
       })
 
       it('answers forbidden to a soldier who sees the row but may not change it', async () => {
@@ -635,6 +687,7 @@ export function describeUnitContract(
         expect(errorOf(await adapter().commands.units.move({ id: company.id, expected_version: 1, parent_id: null })).code).toBe(
           'forbidden',
         )
+        expect(errorOf(await adapter().commands.units.restore({ id: company.id, expected_version: 1 })).code).toBe('forbidden')
       })
 
       it('checks permission before state: no write permission, no answer about a code (D-090)', async () => {

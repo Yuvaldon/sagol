@@ -312,6 +312,11 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Sort (D-313)**: rows in "סינון ומיון": by name, rank, seniority, unit, days absent or a sortable soldier property;
   ascending or descending; the first row leads and the next break its ties. The table's leave headers keep their own.
 - **"Only who is missing"** is a suggestion in the builder and a chip while on (D-213, D-312).
+- **Property conditions (D-380, D-382)**: every soldier, unit and leave property is a field of the builder; a unit
+  property's name ends in "(של היחידה)". Operators follow the type: text "מכיל", "הוא", "אינו"; numbers add the
+  orderings; dates "לפני", "עד", "אחרי", "החל מ"; lists and references any of or none of; all add empty and not empty.
+  Text and numbers are typed and written on leaving the field or Enter; a date in a date field. Leave property rows
+  come after the leave status and type rows, joined by "וגם", and each is a chip.
 - **Calm**: no explanatory hints (presence and seniority keep theirs); empty states are a title and an action; icon
   buttons have a tooltip with their name (D-215). The interface says סבב for a deployment (D-212).
 
@@ -574,6 +579,10 @@ is absent. The owner sees everything because the owner role holds every permissi
   `dl` of what it is; one `role="group"` of the steps the actor may take now, the primary one first; then its thread.
   A step with no question acts at once and shows before the command answers. A step that closes something asks in a
   `SmallDialog` with an optional note. A refusal shows in a `FailureNotice` above the steps, over the row as stored.
+- **Archived rows (D-371):** at the end of a list, a closed `Disclosure` "בארכיון" with a count pill, drawn only when
+  there are archived rows the actor may restore. Its rows are muted, each with a small "החזרה מהארכיון" `IconButton`;
+  a `SmallDialog` names the row and asks once. A refusal says why inside the dialog (an archived or missing reference,
+  a taken name or number, a second root). The archive actions themselves stay as they are (OI-297).
 - **A list of choices:** `CheckList` (many) or `RadioList` (one, with "ללא"), each row a box that carries a check, the
   name, an optional dot of its color and a quiet note ("בארכיון"). A soldier's tags and the filter chips use them.
 - **Tags on a soldier's page (D-130):** a section with the tags held, each a pill on `inner` with its color's dot, under
@@ -623,6 +632,7 @@ is absent. The owner sees everything because the owner role holds every permissi
 | `Segmented` | `ui/primitives` | A few ways to show one thing, one always pressed (D-318) |
 | `UnitActionsScope`, `UnitChart` | `ui/modules/units` | The units' actions and dialogs, shared by the list and the chart; the chart (D-319, D-320) |
 | `EntityForm`, `FailureNotice`, `EmptyNotice`, `LoadingNotice` | `ui/patterns` | The frame and the states of a module |
+| `ArchivedSection` | `ui/patterns` | A module's archived rows and their restore (D-371) |
 | `VirtualList` | `ui/patterns` | A long list inside a drawer |
 | `formatDate`, `formatDateRange`, `formatInstant` | `ui/patterns` | A stored day, two as one range (`8–14 בנוב׳`), or a moment in a time zone, from the presets in `config` |
 | `useIsDesktop`, `unitStateLabel` | `ui/patterns` | The breakpoint as a value; the label of a unit the actor does not see |

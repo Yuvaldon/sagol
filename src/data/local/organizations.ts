@@ -84,6 +84,8 @@ async function writeBootstrap(
     membership_type: MembershipType.enum.primary,
     valid_from: todayIn(input.organization.timezone, now),
     valid_to: null,
+    // The organization's first change (D-373): its counter starts at it.
+    change_seq: 1,
     ...createdBy(soldierId, now),
   })
   const account = parsedRow('soldier_accounts', {
@@ -148,21 +150,28 @@ async function writeBootstrap(
     revoked_by: null,
   })
 
-  return database.transaction('rw', [...POLICY_TABLES, 'account_link_requests', 'leave_type_groups', 'leave_types'], async () => {
-    const session = await resolveSession(database, identity)
-    if (session.status === 'linked') return fail({ code: 'forbidden' })
-    if (!(await bootstrapAllowed(database, identity, claimant))) return fail({ code: 'bootstrap_not_allowed' })
+  return database.transaction(
+    'rw',
+    [...POLICY_TABLES, 'account_link_requests', 'leave_type_groups', 'leave_types', 'change_counters'],
+    async () => {
+      const session = await resolveSession(database, identity)
+      if (session.status === 'linked') return fail({ code: 'forbidden' })
+      if (!(await bootstrapAllowed(database, identity, claimant))) return fail({ code: 'bootstrap_not_allowed' })
 
-    await tableOf(database, 'organizations').add(organization)
-    await tableOf(database, 'soldiers').add(soldier)
-    await tableOf(database, 'units').add(rootUnit)
-    await tableOf(database, 'unit_memberships').add(membership)
-    await tableOf(database, 'soldier_accounts').add(account)
-    await tableOf(database, 'roles').add(role)
-    await tableOf(database, 'role_permissions').bulkAdd(permissions)
-    await tableOf(database, 'access_grants').add(grant)
-    await tableOf(database, 'leave_type_groups').add(rotationGroup)
-    await tableOf(database, 'leave_types').add(rotationType)
+      await tableOf(database, 'organizations').add(organization)
+      await tableOf(database, 'soldiers').add(soldier)
+      await tableOf(database, 'units').add(rootUnit)
+      await tableOf(database, 'unit_memberships').add(membership)
+      await tableOf(database, 'change_counters').add({
+        organization_id: organizationId,
+        last_seq: membership.change_seq,
+      })
+      await tableOf(database, 'soldier_accounts').add(account)
+      await tableOf(database, 'roles').add(role)
+      await tableOf(database, 'role_permissions').bulkAdd(permissions)
+      await tableOf(database, 'access_grants').add(grant)
+      await tableOf(database, 'leave_type_groups').add(rotationGroup)
+      await tableOf(database, 'leave_types').add(rotationType)
 
     // Checked on the state after the write, like every write that can change permissions (D-059).
     await requireAccessManager(database, organizationId, now)
@@ -250,6 +259,7 @@ export function createOrganizationCommands(
           { table: 'soldiers', ids: [input.soldier.id] },
           { table: 'units', ids: [input.root_unit_id] },
           { table: 'unit_memberships', ids: [input.membership_id] },
+          { table: 'change_counters', ids: [input.organization.id] },
           { table: 'soldier_accounts', ids: [input.account_id] },
           { table: 'roles', ids: [input.owner_role.id] },
           { table: 'role_permissions', ids: [input.owner_role.id] },

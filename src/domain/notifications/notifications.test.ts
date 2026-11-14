@@ -45,6 +45,7 @@ function event(
     to_status: to,
     changes: {},
     acknowledged_rule_ids: [],
+    change_seq: sequence,
     created_at: createdAt,
   }
 }

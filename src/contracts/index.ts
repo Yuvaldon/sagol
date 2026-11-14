@@ -5,14 +5,7 @@
 // names (D-038).
 
 export * from './common/ids'
-export {
-  CalendarDate,
-  ColorKey,
-  Email,
-  IconKey,
-  JsonValue,
-  Timestamp,
-} from './common/scalars'
+export { CalendarDate, ChangeSeq, ColorKey, Email, IconKey, JsonValue, Timestamp } from './common/scalars'
 export { SchemaIssue } from './common/issues'
 export * from './enums'
 export * from './permissions'
@@ -51,7 +44,7 @@ export {
 export { Deployment, DeploymentMember } from './entities/deployments'
 export { AvailabilityRule } from './entities/rules'
 export { PropertyDefinition } from './entities/properties'
-export { ReportConfirmation } from './entities/reports'
+export { ChangeCounter, ReportConfirmation } from './entities/reports'
 
 export { TABLE_SCHEMAS, type TableName, type TableRow } from './tables'
 

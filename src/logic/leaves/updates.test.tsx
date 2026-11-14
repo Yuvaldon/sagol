@@ -61,6 +61,7 @@ function event(n: number, actorId: SoldierId, createdAt: string): LeaveEvent {
     to_status: 'approved',
     changes: {},
     acknowledged_rule_ids: [],
+    change_seq: n,
     created_at: createdAt,
   }
 }

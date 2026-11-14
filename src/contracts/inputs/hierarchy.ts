@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { UnitId, UnitLevelId } from '../common/ids'
 import { checkDateRange } from '../common/refinements'
 import { UnitColumns, UnitLevel } from '../entities/hierarchy'
-import { ExpectedVersion, archiveInput, reorderInput, updateInput } from './common'
+import { ExpectedVersion, archiveInput, restoreInput, reorderInput, updateInput } from './common'
 
 export const CreateUnitLevelInput = z.strictObject(
   UnitLevel.pick({ id: true, name: true, sort_order: true }).shape,
@@ -14,6 +14,8 @@ export type UpdateUnitLevelInput = z.infer<typeof UpdateUnitLevelInput>
 
 export const ArchiveUnitLevelInput = archiveInput(UnitLevelId)
 export type ArchiveUnitLevelInput = z.infer<typeof ArchiveUnitLevelInput>
+export const RestoreUnitLevelInput = restoreInput(UnitLevelId)
+export type RestoreUnitLevelInput = z.infer<typeof RestoreUnitLevelInput>
 
 export const ReorderUnitLevelsInput = reorderInput(UnitLevelId)
 export type ReorderUnitLevelsInput = z.infer<typeof ReorderUnitLevelsInput>
@@ -48,6 +50,8 @@ export type UpdateUnitInput = z.infer<typeof UpdateUnitInput>
 
 export const ArchiveUnitInput = archiveInput(UnitId)
 export type ArchiveUnitInput = z.infer<typeof ArchiveUnitInput>
+export const RestoreUnitInput = restoreInput(UnitId)
+export type RestoreUnitInput = z.infer<typeof RestoreUnitInput>
 
 /** Orders the children of one parent. */
 export const ReorderUnitsInput = reorderInput(UnitId)

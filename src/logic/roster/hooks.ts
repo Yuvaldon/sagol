@@ -123,7 +123,8 @@ export function useCommandRankCommands() {
     },
   )
   const archive = useCommand(keys, (rank: CommandRank) => ranks.archive({ id: rank.id, expected_version: rank.version }))
-  return { create, update, archive }
+  const restore = useCommand(keys, (rank: CommandRank) => ranks.restore({ id: rank.id, expected_version: rank.version }))
+  return { create, update, archive, restore }
 }
 
 export function useSoldierCommands() {
@@ -158,7 +159,11 @@ export function useSoldierCommands() {
     ({ soldierId, open, values }: { soldierId: SoldierId; open: UnitMembership | null; values: MoveFormValues }) =>
       soldiers.changeMembership(toChangeMembershipInput(soldierId, open, values)),
   )
-  return { create, update, archive, updatePrivate, move }
+  /** The soldier comes back with the personal id they kept while archived (D-371). */
+  const restore = useCommand([QUERY_KEYS.soldiers], (soldier: Soldier) =>
+    soldiers.restore({ id: soldier.id, expected_version: soldier.version }),
+  )
+  return { create, update, archive, restore, updatePrivate, move }
 }
 
 // ---------------------------------------------------------------------- hints

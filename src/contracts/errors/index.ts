@@ -35,6 +35,8 @@ const STATE_ISSUE_CODES = [
   'reference_archived',
   /** The target row is archived, cancelled or revoked and cannot change. */
   'archived',
+  /** A restore names a row that is not archived (D-371). */
+  'not_archived',
   'unit_cycle',
   'membership_overlap',
   'seniority_override_overlap',

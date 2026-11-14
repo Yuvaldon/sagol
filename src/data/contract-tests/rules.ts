@@ -120,6 +120,19 @@ export function describeRuleContract(
       expect(issuesOf(again)).toEqual([{ path: [], code: 'archived' }])
     })
 
+    it('restores a rule only over a live scope unit (D-371)', async () => {
+      const company = await newUnit('Company')
+      const rule = await create({ scope_unit_id: company.id })
+      expect(issuesOf(await rules().restore({ id: rule.id, expected_version: 1 }))).toEqual([{ path: [], code: 'not_archived' }])
+      valueOf(await rules().archive({ id: rule.id, expected_version: 1 }))
+      valueOf(await adapter().commands.units.archive({ id: company.id, expected_version: 1 }))
+      expect(issuesOf(await rules().restore({ id: rule.id, expected_version: 2 }))).toEqual([
+        { path: ['scope_unit_id'], code: 'reference_archived' },
+      ])
+      valueOf(await adapter().commands.units.restore({ id: company.id, expected_version: 2 }))
+      expect(valueOf(await rules().restore({ id: rule.id, expected_version: 2 }))).toMatchObject({ archived_at: null, version: 3 })
+    })
+
     it('checks the row the way schema.sql does', async () => {
       const inverted = await rules().create(ruleInput({ min_value: 3, max_value: 2 }))
       expect(issuesOf(inverted)).toEqual([{ path: ['max_value'], code: 'rule_threshold_inverted' }])

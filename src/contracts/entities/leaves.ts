@@ -15,6 +15,7 @@ import {
 import { checkDateRange } from '../common/refinements'
 import {
   CalendarDate,
+  ChangeSeq,
   ColorKey,
   IconKey,
   Integer,
@@ -111,6 +112,8 @@ export const LeaveEvent = z.object({
   changes: z.record(z.string(), FieldChange),
   /** Soft rules knowingly overridden (D-014). */
   acknowledged_rule_ids: z.array(AvailabilityRuleId),
+  /** Commit-ordered change number in the organization (D-373). */
+  change_seq: ChangeSeq,
   created_at: Timestamp,
 })
 export type LeaveEvent = z.infer<typeof LeaveEvent>

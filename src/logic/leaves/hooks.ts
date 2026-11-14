@@ -75,7 +75,12 @@ export function useLeaveTypes(): Loaded<readonly LeaveType[]> {
 type LeaveSpan = Pick<DateWindow, 'from' | 'to'>
 
 function leaveQueryOf(window: LeaveSpan): LeaveQuery {
-  return { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: DRAWN_STATUSES }
+  return {
+    ids: null,
+    window: { start_date: window.from, end_date: window.to },
+    soldier_ids: null,
+    statuses: DRAWN_STATUSES,
+  }
 }
 
 /** The pending and approved leaves the actor may see that overlap the window. Loading while there is no window. */
@@ -99,7 +104,9 @@ export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly 
   const { data } = usePorts()
   const query = useMemo(
     (): LeaveQuery | null =>
-      window === null ? null : { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: null },
+      window === null
+        ? null
+        : { ids: null, window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: null },
     [window],
   )
   return loaded(
@@ -112,7 +119,7 @@ export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly 
 }
 
 /** Never asked: the key of a list that waits for its window. */
-const NO_WINDOW_QUERY: LeaveQuery = { window: null, soldier_ids: [], statuses: DRAWN_STATUSES }
+const NO_WINDOW_QUERY: LeaveQuery = { ids: null, window: null, soldier_ids: [], statuses: DRAWN_STATUSES }
 
 /**
  * The request sheet (`leaves.createMany`, D-275) with an optimistic update: every leave joins the cached windows it
@@ -216,6 +223,7 @@ export function useLeaveTypeCommands() {
       types.create(toAddRotationLeaveTypeInput(group, all, nameOf(nextRotationLeaveNumber(group, all)))),
   )
   const archive = useCommand(keys, (type: LeaveType) => types.archive({ id: type.id, expected_version: type.version }))
+  const restore = useCommand(keys, (type: LeaveType) => types.restore({ id: type.id, expected_version: type.version }))
   /** Up or down inside its group (D-113). */
   const step = useCommand(
     keys,
@@ -225,7 +233,7 @@ export function useLeaveTypeCommands() {
       return items === null ? unchanged : types.reorder({ items })
     },
   )
-  return { create, addRotation, update, archive, step }
+  return { create, addRotation, update, archive, restore, step }
 }
 
 export function useLeaveTypeGroupCommands() {
@@ -244,6 +252,9 @@ export function useLeaveTypeGroupCommands() {
     return groups.update({ id: group.id, expected_version: openedVersion, changes: { name } })
   })
   const archive = useCommand(keys, (group: LeaveTypeGroup) => groups.archive({ id: group.id, expected_version: group.version }))
+  const restore = useCommand(keys, (group: LeaveTypeGroup) =>
+    groups.restore({ id: group.id, expected_version: group.version }),
+  )
   const step = useCommand(
     keys,
     async ({ group, direction, all }: { group: LeaveTypeGroup; direction: -1 | 1; all: readonly LeaveTypeGroup[] }) => {
@@ -252,7 +263,7 @@ export function useLeaveTypeGroupCommands() {
       return items === null ? unchanged : groups.reorder({ items })
     },
   )
-  return { create, rename, archive, step }
+  return { create, rename, archive, restore, step }
 }
 
 // ---------------------------------------------------------------------- hints

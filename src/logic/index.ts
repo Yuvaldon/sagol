@@ -22,6 +22,7 @@ export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
 export { claimIssues, timeZoneChoices, type ClaimOrganizationValues } from './organization/claim'
 export type { Loaded } from './queries/loaded'
+export { archivedRows } from './queries/archived'
 export {
   useAuthMode,
   useClaimOrganization,
@@ -55,21 +56,32 @@ export {
 } from './view-state/window'
 export { requestRotations, useRotationScope, type RotationScope } from './view-state/rotation'
 export {
+  COMPARE_OPERATORS,
   NO_RULES,
   filterUnitOf,
+  nodeOfRule,
   readRules,
   ruleHasValue,
+  ruleOfNode,
   writeRules,
   unitFilterOf,
   useViewFilter,
+  type CompareOperator,
   type FilterRule,
+  type PropertyRule,
   type FilterUnit,
   type ReadRules,
   type RuleMatch,
   type SoldierFilter,
   type ViewFilterState,
 } from './view-state/filter'
-export { BoardLeaveStatus, LeaveConditions, hasLeaveConditions, leaveMatches } from './view-state/conditions'
+export {
+  BoardLeaveStatus,
+  LeaveConditions,
+  LeavePropertyNode,
+  hasLeaveConditions,
+  leaveMatches,
+} from './view-state/conditions'
 export {
   useBoardFilters,
   useLeaveConditions,
@@ -360,6 +372,7 @@ export {
 export { acknowledgedRuleIds, type HeatDay, type WindowConflict } from './rules/evaluation'
 export {
   useAvailabilityRules,
+  useAvailabilityRulesWithArchived,
   useDayViolations,
   useHeatRow,
   useLeaveRuleCheck,

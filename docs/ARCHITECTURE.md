@@ -55,6 +55,9 @@ The data layer is written as if it were the server:
 - **Writes** are validated (Zod schema → visibility → policy → state → integrity → domain invariants, D-090) inside one
   transaction, bump `version`, reject stale versions, and write audit events.
 - **What can take permissions away** is checked on the state after the write, inside its transaction (D-059, D-096).
+- **Restore (D-371)** brings an archived reference row back through the checks of a write: `delete` on its target,
+  `not_archived`, the version, then its references and uniques as a live row. Roles, bindings and deployments are not
+  restorable yet (OI-320).
 - **Workflow changes are commands**, not field updates: `createLeave`, `transitionLeave`,
   `rescheduleLeave`, `grantAccess`, `revokeAccess`, `requestAccountLink`,
   `reviewAccountLink`, `bootstrapOwner`, `moveUnit`, `changeMembership`, `importBatch`.
@@ -222,17 +225,20 @@ The current state (D-128):
   `ui` draws the image on a canvas (`modules/presence/reportImage.ts`).
 - **Report confirmations** (D-293): `report_confirmations` holds one row per unit and date, moved by
   `day_reports.confirm` and never deleted; `deployments.report_owner_id` names who reads the summary. `domain/reports`
-  holds the confirm rule (an open, live rotation over the unit on the date) and `confirmationStatus`; "changed since" is
-  derived in `logic/presence/confirmations.ts` from the section's soldiers' leaves of any status touching the day ±1,
-  written after the confirmation, on the report with no view filter. Which unit and date the actor may confirm is
+  holds the confirm rule (an open, live rotation over the unit on the date) and `confirmationStatus`, which reads
+  "changed since" from the change numbers (D-373): a leave event after the confirmation's `seen_seq` for a leave of the
+  section's soldiers that touched the day ±1 in any state since, or a membership in the unit written after it.
+  `logic/presence/confirmations.ts` gathers each section's changes on the report with no view filter. Which unit and date the actor may confirm is
   `report_confirmations.confirmable`, answered on the whole tree, so a hidden middle level does not hide the button.
   `report_confirmations.sections` counts the rotations' sections on the whole tree for who reads the summary, a count
   only, and how many of them the actor's report cannot head (the unit, or every soldier of it, is outside the actor's view), so the summary shows how many units lie
   outside the view (D-303). Both refuse a window past
   `DAY_REPORT.maxSpanDays`, and `createBatch` and the copies refuse more than `LEAVE_BATCH.maxLeaves`, checked in the
   command (D-302). A
-  confirmation holds from the client's read of the leaves (`seen_at`, `confirmedAtOf`). `useReportConfirmations` reads
-  them with those leaves; leave writes refresh it, and rotation writes refresh the confirmable answer.
+  confirmation holds from the organization's change counter (`change_counters`, D-373), read before the report: every
+  leave and membership write takes the next number in its serializable transaction, so numbers follow commit order.
+  `useConfirmationReads` reads the counter, the confirmations, the events after the smallest `seen_seq`, those leaves
+  and the units' memberships; leave and rotation writes refresh it, and membership writes refresh everything.
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
   (D-141), and the same breaches beside a calendar day, as a phone day's tone, in the day report and above the list (`ui/board/breaches.ts`, D-290, D-339); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
@@ -260,9 +266,11 @@ The current state (D-128):
   OI-098 (D-147).
 - **Who a view starts from:** soldiers not archived, active only unless the filter has a status rule (D-105, D-312).
 - **The rule builder** reads and writes `filter` as one model, the rules (`readRules`, `writeRules`): `and(unit, ...rules)` for וגם, `and(unit, or(...rules))` for או;
-  a tag category or rank takes any of or none of, a status is or is not, a select property any of, none of, empty or
-  not empty, a yes / no is, empty or not empty (D-312, D-322, D-326); anything else is "a filter the bar does not read". Leave conditions (statuses,
-  types) are a separate param, `leaves`, never part of `FilterExpression` (D-132). `missing` keeps soldiers absent on a
+  a tag category or rank takes any of or none of, a status is or is not, a select, multi-select, soldier or unit
+  property any of, none of, empty or not empty, a yes / no is, empty or not empty, a text, number or date property a
+  `compare` rule with one value (D-312, D-322, D-326, D-380); a unit property reads the soldier's primary unit that
+  day (D-381); anything else is "a filter the bar does not read". Leave conditions (statuses,
+  types, and leave property nodes in `properties`, D-382) are a separate param, `leaves`, never part of `FilterExpression` (D-132). `missing` keeps soldiers absent on a
   day of the window, approved leaves only (D-133).
 - **Presence lists** of a day (`day`) partition who the soldier filter selects that day, approved leaves only (D-134).
 - **The unit chart** is laid out in logic (`unitChart`: a column per leaf, a parent centered over its children, a row

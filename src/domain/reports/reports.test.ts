@@ -1,7 +1,15 @@
 import type { CalendarDate, Timestamp, UnitId } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import { buildUnitTree } from '../hierarchy'
-import { confirmationStatus, confirmedAtOf, confirmReportIssues, reportRotationOf } from '.'
+import {
+  confirmationStatus,
+  confirmReportIssues,
+  leaveChangedSince,
+  reportRotationOf,
+  sectionChangedSince,
+  type LeaveChanges,
+  type SectionChanges,
+} from '.'
 
 // The daily report's status and when it may be confirmed (D-293). Sample rows, test file only.
 
@@ -17,30 +25,65 @@ const tree = buildUnitTree([
 ])
 const rotation = { unit_id: BATTALION, start_date: day('2026-11-01'), end_date: day('2026-11-20'), archived_at: null, closed_at: null }
 
-describe('confirmationStatus', () => {
-  const confirmation = { confirmed_at: at('2026-11-10T08:00:00.000Z') }
+describe('confirmationStatus and sectionChangedSince (D-373)', () => {
+  const DATE = day('2026-11-10')
+  const at10 = at('2026-11-09T10:00:00.000Z')
+  const at11 = at('2026-11-09T11:00:00.000Z')
+  const NONE: SectionChanges = { leaves: [], memberships: [] }
+  const dates = (start_date: string, end_date: string) => ({ start_date: day(start_date), end_date: day(end_date) })
+  const moved = (from: [string, string], seq: number, created_at = at10) => ({
+    change_seq: seq,
+    created_at,
+    changes: { start_date: { before: from[0], after: null }, end_date: { before: from[1], after: null } },
+  })
+  const approved = (seq: number, created_at = at10) => ({ change_seq: seq, created_at, changes: {} })
+  const only = (leave: LeaveChanges): SectionChanges => ({ leaves: [leave], memberships: [] })
 
-  it('is not_yet without a confirmation', () => {
-    expect(confirmationStatus(null, [])).toBe('not_yet')
+  it('is not_yet without a confirmation, and confirmed with nothing after it', () => {
+    expect(confirmationStatus(null, NONE, DATE)).toBe('not_yet')
+    expect(confirmationStatus({ seen_seq: 0 }, NONE, DATE)).toBe('confirmed')
   })
 
-  it('is confirmed when nothing was written after it', () => {
-    expect(confirmationStatus(confirmation, [at('2026-11-10T07:59:59.000Z'), at('2026-11-10T08:00:00.000Z')])).toBe('confirmed')
+  it('counts an event after seen_seq on a leave that touches the day or its neighbors, and none at or before it', () => {
+    const leave = { leave: { ...dates('2026-11-11', '2026-11-14'), updated_at: at10 }, events: [approved(5)] }
+    expect(confirmationStatus({ seen_seq: 4 }, only(leave), DATE)).toBe('changed_since')
+    expect(confirmationStatus({ seen_seq: 5 }, only(leave), DATE)).toBe('confirmed')
+    const far = { leave: { ...dates('2026-11-12', '2026-11-14'), updated_at: at10 }, events: [approved(5)] }
+    expect(confirmationStatus({ seen_seq: 4 }, only(far), DATE)).toBe('confirmed')
   })
 
-  it('is changed_since when a leaf was written after it, whatever the offset', () => {
-    expect(confirmationStatus(confirmation, [at('2026-11-10T10:00:01+02:00')])).toBe('changed_since')
+  it('counts a leave moved wholly off the day, read back through the before-values (OI-254)', () => {
+    const offDay = {
+      leave: { ...dates('2026-11-20', '2026-11-22'), updated_at: at10 },
+      events: [moved(['2026-11-09', '2026-11-10'], 7)],
+    }
+    expect(leaveChangedSince(offDay, DATE, 6)).toBe(true)
+    expect(leaveChangedSince(offDay, DATE, 7)).toBe(false)
   })
-})
 
-describe('confirmedAtOf', () => {
-  it('holds from what the confirmer saw, never later than now', () => {
-    const now = at('2026-11-12T10:00:00Z')
-    const earlier = at('2026-11-12T09:59:00Z')
-    const later = at('2026-11-12T10:05:00Z')
-    expect(confirmedAtOf(now, earlier)).toBe(earlier)
-    expect(confirmedAtOf(now, later)).toBe(now)
-    expect(confirmedAtOf(now, at('2026-11-12T12:00:00+02:00'))).toBe(now)
+  it('walks back only through the events after seen_seq', () => {
+    const leave = {
+      leave: { ...dates('2026-11-20', '2026-11-22'), updated_at: at11 },
+      events: [moved(['2026-11-25', '2026-11-26'], 9, at11), moved(['2026-11-10', '2026-11-10'], 3)],
+    }
+    expect(leaveChangedSince(leave, DATE, 8)).toBe(false)
+    expect(leaveChangedSince(leave, DATE, 2)).toBe(true)
+  })
+
+  it('counts a leave written after its events were read: its walk back is not whole', () => {
+    const stale = { leave: { ...dates('2026-11-20', '2026-11-22'), updated_at: at11 }, events: [approved(5, at10)] }
+    expect(leaveChangedSince(stale, DATE, 5)).toBe(true)
+    expect(leaveChangedSince({ ...stale, events: [] }, DATE, 0)).toBe(false)
+  })
+
+  it('counts a membership in the unit written after seen_seq that starts on or before the day (OI-254)', () => {
+    const joined = (valid_from: string, change_seq: number): SectionChanges => ({
+      leaves: [],
+      memberships: [{ valid_from: day(valid_from), change_seq }],
+    })
+    expect(sectionChangedSince(joined('2026-11-10', 4), DATE, 3)).toBe(true)
+    expect(sectionChangedSince(joined('2026-11-01', 4), DATE, 4)).toBe(false)
+    expect(sectionChangedSince(joined('2026-11-11', 4), DATE, 3)).toBe(false)
   })
 })
 

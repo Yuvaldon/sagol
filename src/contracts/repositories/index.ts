@@ -24,12 +24,8 @@ import {
 } from '../common/ids'
 import { checkDateRange } from '../common/refinements'
 import type { AsyncResult, Unsubscribe } from '../common/result'
-import { CalendarDate, Timestamp } from '../common/scalars'
-import type {
-  AccountLinkRequest,
-  SoldierAccount,
-  SoldierPreferencesRecord,
-} from '../entities/accounts'
+import { CalendarDate, ChangeSeq, Timestamp } from '../common/scalars'
+import type { AccountLinkRequest, SoldierAccount, SoldierPreferencesRecord } from '../entities/accounts'
 import type { Deployment, DeploymentMember } from '../entities/deployments'
 import type { Unit, UnitLevel } from '../entities/hierarchy'
 import type {
@@ -79,8 +75,9 @@ export const DateWindow = z
   })
 export type DateWindow = z.infer<typeof DateWindow>
 
-/** Leaves overlapping the window; a NULL window means any dates (D-120). */
+/** Leaves overlapping the window; a NULL window means any dates (D-120). `ids` narrows to those leaves (D-373). */
 export const LeaveQuery = z.strictObject({
+  ids: z.array(LeaveId).nullable(),
   window: DateWindow.nullable(),
   soldier_ids: z.array(SoldierId).nullable(),
   statuses: z.array(LeaveStatus).nullable(),
@@ -120,9 +117,16 @@ export const AccountLinkRequestQuery = z.strictObject({
 })
 export type AccountLinkRequestQuery = z.infer<typeof AccountLinkRequestQuery>
 
-/** Events or comments of one leave, oldest first. */
+/** Comments of one leave, oldest first. */
 export const LeaveThreadQuery = z.strictObject({ leave_id: LeaveId })
 export type LeaveThreadQuery = z.infer<typeof LeaveThreadQuery>
+
+/**
+ * Leave events written after a change number, of the given leaves or of any (D-373), in change order. A leave's
+ * thread is `{ leave_ids: [id], after_seq: 0 }`.
+ */
+export const LeaveEventsQuery = z.strictObject({ leave_ids: z.array(LeaveId).nullable(), after_seq: ChangeSeq })
+export type LeaveEventsQuery = z.infer<typeof LeaveEventsQuery>
 
 /**
  * The updates on one soldier's own leaves since a time (D-352): the events and the comments, newest first. The policy
@@ -231,7 +235,9 @@ export interface DataRepositories {
   leave_types: EntityRepository<LeaveType, LeaveTypeId, ReferenceQuery>
   leave_batches: EntityRepository<LeaveBatch, LeaveBatchId, EmptyQuery>
   leaves: EntityRepository<Leave, LeaveId, LeaveQuery>
-  leave_events: ListRepository<LeaveEvent, LeaveThreadQuery> & { feed(query: LeaveFeedQuery): AsyncResult<LeaveEvent[]> }
+  leave_events: ListRepository<LeaveEvent, LeaveEventsQuery> & {
+    feed(query: LeaveFeedQuery): AsyncResult<LeaveEvent[]>
+  }
   /** Internal comments only with `internal_comments:view`. */
   leave_comments: EntityRepository<LeaveComment, LeaveCommentId, LeaveThreadQuery> & {
     feed(query: LeaveFeedQuery): AsyncResult<LeaveComment[]>
@@ -245,6 +251,8 @@ export interface DataRepositories {
     confirmable(query: ConfirmableReportQuery): AsyncResult<ConfirmableReport[]>
     sections(query: ReportSectionQuery): AsyncResult<ReportSectionCount[]>
   }
+  /** The organization's last change number (D-373). Any member reads it; it is a number, not a row. */
+  change_counters: { current(): AsyncResult<ChangeSeq> }
 }
 
 // ------------------------------------------------------------------- changes

@@ -155,7 +155,8 @@ export function describeLeaveWorkflowContract(
         comment: overrides.comment === undefined ? null : { id: newCommentId(), body: 'Why', visibility: overrides.comment },
       })
 
-    const eventsOf = async (leave: Leave) => valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))
+    const eventsOf = async (leave: Leave) =>
+      valueOf(await adapter().repositories.leave_events.list({ leave_ids: [leave.id], after_seq: 0 }))
     /** The suite's clock stands still, so events are found by their type, not by their place. */
     const eventOf = async (leave: Leave, type: LeaveEventType) => (await eventsOf(leave)).find((event) => event.event_type === type)
 
@@ -175,10 +176,45 @@ export function describeLeaveWorkflowContract(
           })
         })
         const approved = valueOf(await step(leave, 'approve'))
-        expect(approved).toMatchObject({ status: 'approved', reviewed_by: ownerId, reviewed_at: NOW, version: 2, updated_by: ownerId })
-        expect((await heard).map((change) => change.table).sort()).toEqual(['leave_events', 'leaves'])
+        expect(approved).toMatchObject({
+          status: 'approved',
+          reviewed_by: ownerId,
+          reviewed_at: NOW,
+          version: 2,
+          updated_by: ownerId,
+        })
+        expect((await heard).map((change) => change.table).sort()).toEqual([
+          'change_counters',
+          'leave_events',
+          'leaves',
+        ])
         expect(await eventsOf(leave)).toHaveLength(2)
         expect(await eventOf(leave, 'approved')).toMatchObject({ from_status: 'pending', to_status: 'approved', actor_id: ownerId, changes: {} })
+      })
+
+      it('numbers each change in commit order, and reads the events after a number (D-373)', async () => {
+        const current = async () => valueOf(await adapter().repositories.change_counters.current())
+        const first = await leaveOf()
+        const afterFirst = await current()
+        expect((await eventsOf(first)).map((event) => event.change_seq)).toEqual([afterFirst])
+        const second = await leaveOf()
+        valueOf(await step(first, 'approve'))
+        const after = valueOf(
+          await adapter().repositories.leave_events.list({ leave_ids: null, after_seq: afterFirst }),
+        )
+        expect(after.map((event) => [event.leave_id, event.event_type])).toEqual([
+          [second.id, 'created'],
+          [first.id, 'approved'],
+        ])
+        const numbers = after.map((event) => event.change_seq)
+        expect(numbers).toEqual([afterFirst + 1, afterFirst + 2])
+        expect(await current()).toBe(afterFirst + 2)
+        const listed = { leave_ids: [first.id], after_seq: afterFirst }
+        expect(valueOf(await adapter().repositories.leave_events.list(listed))).toMatchObject([
+          { event_type: 'approved' },
+        ])
+        const byId = { ids: [second.id], window: null, soldier_ids: null, statuses: null }
+        expect(valueOf(await adapter().repositories.leaves.list(byId)).map((leave) => leave.id)).toEqual([second.id])
       })
 
       it('walks the state machine: reject, reopen, cancel, and the review each keeps or clears', async () => {
@@ -612,7 +648,7 @@ export function describeLeaveWorkflowContract(
       it('lists leaves of any dates, by status', async () => {
         const far = await leaveOf({ start_date: '2027-03-01', end_date: '2027-03-02' })
         const closed = valueOf(await step(await leaveOf(), 'reject'))
-        const query = { window: null, soldier_ids: null }
+        const query = { ids: null, window: null, soldier_ids: null }
         const pending = valueOf(await adapter().repositories.leaves.list({ ...query, statuses: ['pending'] }))
         expect(pending.map((leave) => leave.id)).toEqual([far.id])
         const done = valueOf(await adapter().repositories.leaves.list({ ...query, statuses: ['rejected', 'cancelled'] }))
@@ -656,7 +692,11 @@ export function describeLeaveWorkflowContract(
       // A guard for the helpers above: an actor with no pair sees neither.
       await leaveOf()
       await actorWith([VIEW_SOLDIERS, VIEW_TYPES])
-      expect(valueOf(await adapter().repositories.leaves.list({ window: null, soldier_ids: null, statuses: null }))).toEqual([])
+      expect(
+        valueOf(
+          await adapter().repositories.leaves.list({ ids: null, window: null, soldier_ids: null, statuses: null }),
+        ),
+      ).toEqual([])
     })
   })
 }

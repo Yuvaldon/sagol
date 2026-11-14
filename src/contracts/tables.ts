@@ -6,7 +6,7 @@ import { Leave, LeaveBatch, LeaveComment, LeaveEvent, LeaveType, LeaveTypeGroup 
 import { Organization } from './entities/organization'
 import { AccessGrant, RankRoleBinding, Role, RolePermission } from './entities/permissions'
 import { PropertyDefinition } from './entities/properties'
-import { ReportConfirmation } from './entities/reports'
+import { ChangeCounter, ReportConfirmation } from './entities/reports'
 import { AvailabilityRule } from './entities/rules'
 import {
   CommandRank,
@@ -52,6 +52,7 @@ export const TABLE_SCHEMAS = {
   availability_rules: AvailabilityRule,
   property_definitions: PropertyDefinition,
   report_confirmations: ReportConfirmation,
+  change_counters: ChangeCounter,
   push_subscriptions: PushSubscriptionRecord,
 } as const satisfies Record<string, z.ZodObject>
 

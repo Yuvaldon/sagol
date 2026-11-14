@@ -83,7 +83,7 @@ am = amends, ref = refines, ext = extends.
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130; ref D-176; ref D-186 |
 | D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-149 |
-| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147 |
+| D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147; ref D-381 |
 | D-068 | Schema issue mapping | domain, data, logic | |
 | D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
 | D-070 | Availability of a soldier on a day | domain, data, logic, ui, backend | ref D-133, D-134 |
@@ -114,7 +114,7 @@ am = amends, ref = refines, ext = extends.
 | D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
 | D-096 | Permissions of the roster commands | domain, data, logic, ui, backend | ref D-102; ref D-130 |
 | D-097 | Changing a soldier's membership | domain, data, logic, ui, backend | |
-| D-098 | Archiving a soldier | data, ui, backend | ref D-124 |
+| D-098 | Archiving a soldier | data, ui, backend | ref D-124; ref D-371 |
 | D-099 | Unit names in a soldier's history | logic, ui | ref D-106 |
 | D-100 | A new required port lands in `app` before `logic` | logic, app, docs | sup D-127 |
 | D-101 | Commands store blank optional text as NULL | contracts, data, logic, backend | |
@@ -148,7 +148,7 @@ am = amends, ref = refines, ext = extends.
 | D-129 | Two behaviors of the leaves panel | logic, ui | |
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260; ref D-285 |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177; sup D-326 |
-| D-132 | Leave conditions on the board | config, logic, ui | |
+| D-132 | Leave conditions on the board | config, logic, ui | ext D-382 |
 | D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
 | D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161; sup D-193 (panel) |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
@@ -193,7 +193,7 @@ am = amends, ref = refines, ext = extends.
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268; ref D-339 |
 | D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
-| D-177 | Property chips in the filter bar | logic, ui | ref D-312 |
+| D-177 | Property chips in the filter bar | logic, ui | ref D-312; ref D-380 |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
 | D-179 | Deployments, collective leave, copies of a leave and personal seniority on screen | domain, data, logic, config, contracts, ui | ref D-212; ref D-257, D-258, D-259; ref D-267, D-268, D-270 |
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285; ref D-297; ref D-347 |
@@ -276,7 +276,7 @@ am = amends, ref = refines, ext = extends.
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
-| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303 |
+| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303, D-373 |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | am D-340 |
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | ref D-339 |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
@@ -288,7 +288,7 @@ am = amends, ref = refines, ext = extends.
 | D-303 | A rotation report's summary counts the sections outside the owner's view, without naming them | contracts, data, logic, i18n, ui | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301; ext D-387 |
-| D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326 |
+| D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326; ext D-380, D-382 |
 | D-313 | Several sorts, in order | config, logic, i18n, ui | ext D-324 |
 | D-314 | A filter chip's remove is a plain × | ui | |
 | D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | ref D-321; ref D-323 |
@@ -302,7 +302,7 @@ am = amends, ref = refines, ext = extends.
 | D-323 | A soldier with no unit joins the root the actor sees; no wider tree is read | logic | |
 | D-324 | A link from before D-313 is read as the sort rules | logic | |
 | D-325 | The chart holds the view on a card when its width changes | ui | |
-| D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | |
+| D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | ref D-382 |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
 | D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337; ref D-385 |
@@ -317,7 +317,7 @@ am = amends, ref = refines, ext = extends.
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 | D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
-| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | |
+| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | ref D-370 |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
@@ -333,6 +333,12 @@ am = amends, ref = refines, ext = extends.
 | D-357 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-359 |
 | D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
+| D-370 | The 1.0 Could items are built while the owner is away | docs | |
+| D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | |
+| D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | |
+| D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | |
+| D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
+| D-382 | Leave property conditions are leave conditions | logic, ui | |
 | D-383 | The range picker offers two and four weeks | config, logic, ui | |
 | D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | |
 | D-385 | Applying a saved view replaces the board's state; what no longer parses is dropped and reported | logic, ui | |
@@ -4586,10 +4592,10 @@ the company commander's need is a picture for planning, not approving.
 | OI-296 the failing table in the log | Should | |
 | OI-151 live changes from other devices | Should | The owner's pick |
 | Notifications (Later) | Should | The owner's pick |
-| OI-104 restore an archived row | Could | Archiving is protected in the design (OI-297) |
+| OI-104 restore an archived row | Could | Archiving is protected in the design (OI-297). Built under D-370: D-371; roles, bindings and deployments: OI-320 |
 | OI-111 spans other than a week | Could | The range picker is reviewed in the design rounds |
 | OI-112 more filter conditions | Could | |
-| OI-254, OI-255 "changed since" misses | Could | OI-254: only the mark is missed; the copy is right |
+| OI-254, OI-255 "changed since" misses | Could | OI-254: only the mark is missed; the copy is right. Built under D-370 |
 | Saved views (Later) | Could | |
 | OI-102 invite links | Won't (1.0) | |
 | OI-116 offline queue | Won't (1.0) | |
@@ -4902,6 +4908,133 @@ at once, on every device.
   its own, and the i18n check refuses keys that nothing reads.
 **Why:** the notification must say what happened without opening the app, in the app's language, and the worker
 is the only code running when it arrives.
+
+## D-370 — The 1.0 Could items are built while the owner is away
+2026-11-13 · accepted · ref D-170, D-344 · the owner's instruction of 2026-11-13
+- While the owner is unavailable, the Could items of D-344 are built without waiting for a review: each as its own
+  pull request, green in CI and left unmerged for the orchestrator. The choices they need are decided and recorded
+  under D-170.
+- D-344's rows for the items built this way say so and name their decisions.
+**Why:** the owner asked that the remaining 1.0 work not wait on them; recording it keeps the trail of who decided what.
+
+## D-371 — Restoring an archived row: one `restore` command per reference entity, checked like a write
+2026-11-13 · accepted · refines D-098 · ref D-012, D-046, D-076, D-088, D-095, D-152, D-251 · OI-104 · decided under the owner's autonomy instruction (D-370, D-170)
+- **What is restorable.** Unit levels, units, command ranks, soldiers, tag categories, tags, leave type groups, leave
+  types, property definitions and availability rules each get `restore`, input `{id, expected_version}`. Roles, rank
+  role bindings and deployments are not restorable yet (OI-320): each needs its own rules about what it gives back.
+- **Same checks as a write.** The permission is the entity's `delete` on the row's target, as for archive. A live row
+  is refused with `not_archived`; a version mismatch is `stale_version`; the version and `updated_*` are bumped (D-012).
+  Every reference the row holds must be live and visible again: a unit's parent and level, and only one live root
+  (D-251); a soldier's rank, the units of current and future placements, and the pairs of the soldier's active grants
+  of live roles, which the actor must hold (D-156), and after the write the actor still passes D-157 on the soldier;
+  a tag's category, and its name free among live tags (`uq_tags_name`); a leave type's group; a rule's scope, level,
+  category and rotation. A reference that is archived refuses with `reference_archived` on its field; the actor
+  restores it first.
+- **The personal id.** An archived soldier keeps their number (D-098, D-152), so restoring gives it back. The unique
+  check still runs, defensively: a clash refuses with `already_exists` on `personal_id`.
+- **Position.** `sort_order` is kept: a restored row comes back where it was among its siblings. A gap or a tie with a
+  row added meanwhile is ordered by id (`bySortOrder`) and settled by the next reorder.
+- **The UI is quiet.** At the end of each list, a collapsed "בארכיון (N)" disclosure, drawn only when N > 0 and the
+  actor may restore (D-076). Archived rows are dimmed, each with a small "החזרה" action and a confirmation that names
+  the row. The archive entry points themselves are unchanged (OI-297). A refused restore says why in the dialog:
+  an archived reference ("restore it first"), a missing one, a taken name or number, or a second root; anything else
+  shows the common failure text.
+- **The archive confirmations** no longer say there is no way back. A soldier's still says the personal id stays
+  taken until the soldier is restored. D-098 stands otherwise.
+- No schema change: `archived_at` back to NULL is the whole state change.
+**Why:** OI-104. A mistaken archive was permanent, and an archived soldier's number could not be used again. A restore
+that runs every check of a write cannot bring back a row into a state a write would refuse.
+
+## D-373 — "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq`
+
+2026-11-14 · accepted · refines D-293 · closes OI-254 and OI-255 · decided under the owner's autonomy instruction (D-170)
+
+- **The gaps.** D-293 compared `leaves.updated_at` with `confirmed_at`. It missed a leave moved wholly off the day ±1
+  (its current dates no longer touch the day), a soldier moved into or out of the unit (no leave changes), and a leave
+  transaction that began before the confirmer's read and committed after it (its `updated_at` is older than what the
+  client saw).
+- **A change number per organization.** `change_counters` holds one row per organization, `last_seq`, the last number
+  handed out. Every leave write (each `leave_events` row) and every membership write takes the next number inside its
+  own transaction, by reading and writing that row, and stamps it: `leave_events.change_seq`, and
+  `unit_memberships.change_seq` (the number of its last write). Writers of one organization all write that one row,
+  so under the gateway's SERIALIZABLE transaction (D-201) two of them never interleave: the later one waits or fails
+  with 40001 and is retried, as any conflict is. A number is therefore visible to a reader only once every smaller one
+  is: the order of the numbers is the order of the commits. IndexedDB serializes its `rw` transactions by itself.
+  A Postgres sequence was not used: it hands numbers out in start order, not commit order, which is OI-255 again.
+- **The counter is not data a reader derives.** It is a serialization point, so it is stored. It is not exported;
+  the loader sets it to the largest number it loads. Any member reads it (`change_counters.current`): it says how many
+  changes there were, nothing about them.
+- **A confirmation holds from a number.** The client reads the counter first, then the confirmations, the leave events
+  after the smallest `seen_seq` among them, the leaves of those events, and the memberships. The confirm command takes
+  `seen_seq`, the counter read before the report's leaves; `confirmed_at` is now. Every change numbered at or below it
+  had committed before that read, so the report shown already holds it. A change between the reads shows as changed
+  until the next read: a false positive, never a false negative. The command refuses a `seen_seq` above the
+  organization's counter (`seen_seq`, `too_big`): no read could have seen it.
+- **Changed since.** A confirmed section reads "changed since" when, after its `seen_seq`:
+  - a leave event of a soldier in the section was written, for a leave whose dates touched the day before through the
+    day after (D-193) in any state since: its current dates, and each earlier pair read back through the events'
+    `changes` before-values of `start_date` and `end_date`. A leave with writes newer than the events read counts as
+    changed until the next read; or
+  - a membership in the section's unit was written that starts on or before the day. A membership corrected in the
+    past also counts: the rule leans to a false positive.
+- **Existing rows.** The migration and the local upgrade number the existing events per organization by
+  (`created_at`, `id`) from 1, with the append-only trigger (D-202) set aside for that one update; events have no
+  `version`, so D-012 does not apply. Memberships start at 0 by the column default, with no write and no `version`
+  bump: D-293 never caught a membership change, so none is lost. A confirmation's `seen_seq` is the largest event
+  number of its organization created at or before its `confirmed_at`, which is the D-293 answer, as a leave's
+  `updated_at` is the time of its last event. The counter starts at the largest event number, or 0.
+- **The reads.** `leave_events.list` takes `LeaveEventsQuery` `{ leave_ids, after_seq }`: the events numbered after
+  `after_seq` of the visible leaves, of the listed ones or (NULL) of every one, ordered by number. A listed leave the
+  actor may not see answers `not_found` (D-046), as the thread did; the thread reads `{ leave_ids: [id], after_seq: 0 }`.
+  `LeaveQuery` takes `ids` (NULL = any), so the client reads the current state of the changed leaves.
+- **Export format 6.** Events and memberships carry `change_seq`, confirmations `seen_seq`. The loader takes format 5
+  too, and numbers its rows as the migration does.
+**Why:** a number the database orders by commit is the only stamp a reader can compare with what it read; times
+cannot be, and a leave's current dates cannot say where it was.
+
+## D-380 — Typed filter conditions: text, number, date and reference properties
+2026-11-13 · accepted · refines D-177 · extends D-312 · OI-112 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- The rule builder offers every soldier property, not only select and yes / no ones. Operators by data type:
+  - **text:** "מכיל", "הוא", "אינו", "ריק", "לא ריק".
+  - **number:** "הוא", "אינו", greater / at least / less / at most, "ריק", "לא ריק".
+  - **date:** "הוא", "אינו", "לפני", "עד", "אחרי", "החל מ", "ריק", "לא ריק".
+  - **select, multi-select, soldier and unit references:** "אחד מ", "אף אחד מ", "ריק", "לא ריק", over the live
+    options, soldiers (by full name) or units (by name). A field with no choices is not offered.
+- A typed value is a `compare` rule: `equals`, `not_equals`, `contains` or an ordering operator over one value.
+  Dates are compared as calendar dates; "לפני" is `less_than`, "עד" `less_or_equal`, and so on. A rule without a
+  value writes nothing and lives only in the open builder (D-312).
+- Text and numbers are written when the field is left, Enter is pressed or the builder closes, not on every
+  keystroke: no debounce constant, no history step per letter. A number is a plain decimal (`-2.5`, not `1e3` or
+  `0x1A`); other text is marked invalid and writes nothing. A date is written when it changes.
+- A rule the builder would not write back unchanged (a hand-written link's `equals true` on a text property, a number
+  compared with a string), or one over the other entity's property, is a kept "other" row: editing another row never
+  changes it. A soldier or unit reference outside the live lists still names a stored value, so a "none of" over it
+  never reads as keeping everyone (OI-264).
+- A unit property is offered beside the soldier ones, its name followed by "(של היחידה)", and reads as D-381 says.
+**Why:** OI-112. One operator set per data type keeps the builder predictable; writing on leave keeps the URL and
+the history clean.
+
+## D-381 — A unit property condition reads the soldier's primary unit that day
+2026-11-13 · accepted · refines D-067 · OI-112 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- A filter's property node over a unit definition reads the property of the soldier's primary unit on the evaluated
+  day; a soldier with no unit that day has no value (so "ריק" holds). Validation accepts soldier and unit
+  definitions; a leave definition, or a missing one, is still an issue and matches nobody.
+- The same evaluation serves the board filter and availability-rule populations (D-031). Nothing relied on the old
+  "a unit property matches nobody" behavior beyond its own test and the validation.
+**Why:** a unit's properties (D-016) describe its soldiers' place; reading them through the day's membership keeps
+filters dated as everything else in them is (D-029).
+
+## D-382 — Leave property conditions are leave conditions
+2026-11-13 · accepted · extends D-132 · refines D-326 · OI-112 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- A leave property condition selects the leaves the board draws, beside the status and type conditions (D-132); it
+  selects no soldier. It lives in the `leaves` search param as `properties`: property nodes, each alone or under
+  `not` for "none of", all of which must hold ("וגם" only). The operators are D-380's.
+- In the builder its rows come after the leave status and type rows. Choosing a leave property in a soldier row
+  moves the row among the leave conditions. Each condition is a chip; one the builder does not read shows as "other"
+  and can only be removed.
+- Like the status and type conditions, it changes what is drawn, not availability (D-133).
+**Why:** D-326 keeps one soldier rule model; a leave's properties describe leaves, so they extend the leave
+conditions rather than the soldier rules.
 
 ## D-383 — The range picker offers two and four weeks
 2026-11-13 · accepted · extends D-211 · OI-111 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
