@@ -54,7 +54,7 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
 | Before | R4 |
 |---|---|
 | Dashboard: fairness modules, charts, KPIs | Manage → Round: one "days home" bar per unit or soldier |
-| Separate report-1 page, a status per unit | One button at the end of Today. Units get a check mark only once confirmed |
+| Separate report-1 page: tables, numbers, a status per unit | One button at the end of Today. The report is a plain list of names (present, home, coming in, going out) and is copied in exactly that shape |
 | Separate request queue with a counter | The first rows of Today. With no requests there is no section |
 | Four board views as visible tabs | Board → one view button (timeline by default) |
 | Permanent filter panel | Filter sheet. Active filters show as removable chips |
@@ -76,7 +76,8 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
   - near-black ink;
   - one action color: deep violet, the product's name;
   - amber only for a rule breach, red only for destructive actions.
-- **Absence type colors** appear only on the board, the calendar and the type picker.
+- **Character:** a people-management tool, not a "military app". No olive, camo, insignia-like badges or tactical color language.
+- **Absence color:** one leave color on the board and the soldier calendar, plus a separate color only for sickness. The type itself is text in the sheet. No colored dots in chips or rows.
 - **Type:** IBM Plex Sans Hebrew, with tabular numerals.
 - **Icons:** a 1.75 stroke, only in navigation and icon buttons, and every icon has a label.
 - **Glass:** kept, but only for surfaces that float over content: the nav bar, sheets, menus and the toast. Cards and rows are opaque so text always reads. There is an opaque fallback without `backdrop-filter`.
@@ -89,14 +90,15 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
 - Type icons next to names. A type is text.
 - Row descriptions in Manage.
 - Old rejected or cancelled requests on the soldier home. They live in History.
+- Per-type colors, the check mark on unit rows, and the unit name on every "out" row.
 
 ## Overload counts (indicators plus unrequested text lines)
 
 | Screen | Before | R4 |
 |---|---|---|
 | Company commander home | ~45 | 9 |
-| Request approval sheet | ~18 | 6 |
-| Soldier home | 7 | 5 |
+| Request approval sheet | ~18 | 3 |
+| Soldier home | 7 | 2 |
 | Board, two weeks | ~60 | ~30 (bars plus totals row) |
 
 ## Proposed decisions (not yet in DECISIONS.md)
@@ -109,15 +111,16 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
   - managers get Today · Board · Manage.
   - The profile holds personal settings and the commander's own requests.
 - **D-463:** Approval by swipe, with a 5-second undo toast. A hard rule breach never approves by swipe; it opens the sheet.
-- **D-464:** A rule breach is one sentence, in amber for a soft breach and red for a hard one, shown only in the request sheet and on the board's totals row.
-- **D-465:** Palette, type and icons:
+- **D-464:** A rule breach is one sentence under the "same days" line, in amber for a soft breach and red for a hard one, with no banner or icon. It shows only in the request sheet and on the board's totals row.
+- **D-465:** Palette, type and icons (a people-management tool, not a military app):
   - a warm paper ground with one violet action color;
   - IBM Plex Sans Hebrew;
-  - 1.75-stroke icons only in navigation and icon buttons.
+  - 1.75-stroke icons only in navigation and icon buttons;
+  - one leave color plus one sickness color; no per-type colors.
   - This replaces the previous palette and icon family.
 - **D-466:** Glass only on floating surfaces (nav, sheets, menus, toast), with an opaque fallback. Content surfaces are opaque.
 - **D-467:** Board has one view control (timeline, calendar, list, table). Filters live in a sheet; active filters show as chips. Pending leaves are dashed bars.
-- **D-468:** Report 1 is one action at the end of Today. A confirmed report shows one check per unit, and a change after confirming asks for reconfirmation.
+- **D-468:** Report 1 is one action at the end of Today. The report is a list of names grouped as present, home, coming in and going out, with one total, and is copied as the same text. On a multi-day leave the departure day counts as present. A change after confirming asks for reconfirmation.
 - **D-469:** Desktop is the same IA with a right-hand rail and two columns. It is not a separate product.
 
 ## Proposed open items (not yet in OPEN_ITEMS.md)
