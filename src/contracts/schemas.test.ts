@@ -460,6 +460,18 @@ describe('PushEndpoint (D-351)', () => {
     }
   })
 
+  it('refuses another port and credentials on a push service host (D-411)', () => {
+    for (const url of [
+      'https://fcm.googleapis.com:8443/fcm/send/abc',
+      'https://user@fcm.googleapis.com/fcm/send/abc',
+      'https://user:secret@web.push.apple.com/abc',
+      'https://:secret@web.push.apple.com/abc',
+    ]) {
+      expect(PushEndpoint.safeParse(url).success).toBe(false)
+    }
+    expect(PushEndpoint.safeParse('https://fcm.googleapis.com:443/fcm/send/abc').success).toBe(true)
+  })
+
   it('refuses a value that is not a URL without throwing (OI-350)', () => {
     expect(() => PushEndpoint.safeParse('not a url')).not.toThrow()
     expect(PushEndpoint.safeParse('not a url').success).toBe(false)
