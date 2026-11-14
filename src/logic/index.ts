@@ -363,6 +363,7 @@ export {
   outstandingOf,
   useChangeDashboardScope,
   useDashboard,
+  useOpenRotationDashboard,
   type DashboardBoard,
   type Dashboard,
   type DashboardLayoutState,

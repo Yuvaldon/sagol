@@ -1,4 +1,4 @@
-import { DASHBOARD, DASHBOARD_TEMPLATES } from '@config'
+import { DASHBOARD, DASHBOARD_TEMPLATES, PANEL_IDS } from '@config'
 import {
   DASHBOARD_METRIC_IDS,
   DASHBOARD_MODULE_IDS,
@@ -251,7 +251,6 @@ function aheadWindow(today: CalendarDate) {
   return { from: today, to, days: eachDay({ start_date: today, end_date: to }) }
 }
 
-/** The scope, the tally and the parts of the board; `modules` are the board's, so the plan and report load only for it. */
 /** The board and its layout together: the layout's default follows the tally, and the board reads what the layout shows. */
 export interface DashboardBoard {
   readonly dashboard: Dashboard
@@ -661,6 +660,30 @@ export function useChangeDashboardScope() {
       setUnit: (unitId: UnitId) => change({ unit: unitId }),
       setPlanned: (planned: boolean) => change({ planned: planned ? true : undefined }),
     }),
+    [change],
+  )
+}
+
+/**
+ * Opens the board on a rotation, from its row (D-349): the rotation's span, its unit and the dashboard panel, in one
+ * change of the URL, so no part overwrites another.
+ */
+export function useOpenRotationDashboard() {
+  const change = useChangeSearch()
+  return useCallback(
+    (rotation: Pick<Deployment, 'id' | 'unit_id'>) => {
+      change({
+        range: 'rotation',
+        rotation: rotation.id,
+        from: undefined,
+        to: undefined,
+        unit: rotation.unit_id,
+        panel: PANEL_IDS.dashboard,
+        entity: undefined,
+        parent: undefined,
+        draft: undefined,
+      })
+    },
     [change],
   )
 }
