@@ -28,7 +28,7 @@ am = amends, ref = refines, ext = extends.
 | D-009 | Unit hierarchy: `parent_id` only, derived ancestry | contracts, domain, data, backend | |
 | D-010 | Memberships are time-bounded rows | contracts, domain, data, backend | ref D-097 |
 | D-011 | Multi-tenant from day one | contracts, data, backend | |
-| D-012 | Leaves: whole days, overlaps, availability by union | contracts, domain, data, ui | ext D-032, D-049; ref D-070; ref D-111; ref D-355 |
+| D-012 | Leaves: whole days, overlaps, availability by union | contracts, domain, data, ui | ext D-032, D-049; ref D-070; ref D-111; ref D-355; ref D-436 |
 | D-013 | Approval behavior | domain, data, logic, ui | ref D-041, D-063, D-064; ext D-049; ref D-114, D-115; ref D-117, D-121; ref D-355 |
 | D-014 | Availability rules | contracts, domain, data, logic, ui | ext D-031; ref D-047, D-071, D-073; ref D-139, D-140, D-141; ref D-145 |
 | D-015 | Tag categories with selection mode | contracts, domain, ui | ref D-065; ref D-130; ref D-260; ref D-285 |
@@ -205,7 +205,7 @@ am = amends, ref = refines, ext = extends.
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
 | D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188; ref D-354; ref D-410 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
-| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-348; ref D-351; ref D-412 |
+| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-348; ref D-351; ref D-412; ref D-437 |
 | D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207; ref D-348 |
 | D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
@@ -320,25 +320,25 @@ am = amends, ref = refines, ext = extends.
 | D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360; ref D-370; ref D-400 |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
-| D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
-| D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
+| D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | ref D-430 |
+| D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | ref D-437 |
 | D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361; ref D-362; ref D-404 |
 | D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | ref D-362 |
 | D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | ref D-411 |
 | D-352 | In-app updates on "שלי" are derived from the events and the shared comments; only the seen time is stored | contracts, domain, data, logic, ui | |
 | D-353 | The service worker is built with `injectManifest` in `app`, and holds the push handlers | app, tooling | |
-| D-354 | Push dispatch runs after the commit, best effort, from the gateway only | data, config, backend | |
+| D-354 | Push dispatch runs after the commit, best effort, from the gateway only | data, config, backend | ref D-435 |
 | D-355 | Who gets a push: one push per recipient per command, decided by the policy at send time | domain, data | sup D-401 |
 | D-356 | The screens: "עדכונים" on שלי with its badge, and the "התראות" group in the profile | logic, ui | ext D-359 |
 | D-357 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-359 |
-| D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
+| D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | ref D-433, D-434 |
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
 | D-360 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
 | D-361 | The stored board reads leniently and writes strictly; the plan reads its own leaves' events | contracts | |
 | D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | ref D-403; ref D-404; ref D-405 |
 | D-370 | The 1.0 Could items are built while the owner is away | docs | ref D-400 |
 | D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | |
-| D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | ref D-402 |
+| D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | ref D-402; ref D-431 |
 | D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | |
 | D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
 | D-382 | Leave property conditions are leave conditions | logic, ui | |
@@ -350,13 +350,21 @@ am = amends, ref = refines, ext = extends.
 | D-388 | A preference change from a function of the stored row, retried once over another device's save | logic | |
 | D-400 | What was built under D-370 is recorded in the roadmap, as row R3·C | docs | |
 | D-401 | Access managers stay permanent and organization-wide | domain, docs | |
-| D-402 | A confirmation's `seen_seq` is read before the report's leaves, in the same query | logic | |
+| D-402 | A confirmation's `seen_seq` is read before the report's leaves, in the same query | logic | ref D-432 |
 | D-403 | The dashboard offers a unit only when the actor reads that unit's leaves whole: the `whole_unit` target | contracts, domain, logic | |
 | D-404 | A board before the first counted day: only the past-day cards wait; "no units" offers the template back | logic, ui | |
 | D-405 | One module key, in contracts; the board's module limit is the catalogue's size | contracts, domain, logic, ui | |
 | D-410 | Schema and function compatibility during a deploy: the server store writes only the row's columns | data, backend, tooling | |
-| D-411 | A push endpoint is https on its default port with no credentials; push TTL and urgency are config | contracts, config, backend | |
+| D-411 | A push endpoint is https on its default port with no credentials; push TTL and urgency are config | contracts, config, backend | ref D-435 |
 | D-412 | Audit A9a: route targets, the owner's reach and the export loader need no change | backend, data, logic, docs | |
+| D-430 | A built-in group leave's reason is refused in the command core | domain, data | |
+| D-431 | The local adapter starts an organization's change counter in one function | data | |
+| D-432 | The report's memberships are read in the counted query, after the change number | logic | |
+| D-433 | Sign-out waits a bounded time for the device's unsubscribe | config, logic | |
+| D-434 | The app sends the browser's current push install again once per linked sign-in | logic, app | |
+| D-435 | The Web Push request is owned: Web Crypto encryption and VAPID, never a followed redirect | data, config, backend | |
+| D-436 | Every migration is tested over a database that already holds rows | tooling, backend | |
+| D-437 | An identity's own live topic: a pending requester hears their request's answer | data, config, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5285,3 +5293,85 @@ every migration must remember.
 - `load_organization_export` is called only by the owner from the SQL editor (D-206) and by the database tests; the
   API roles hold no execute on it (`load.dbtest.ts`).
 **Why:** an audit finding that turns out safe is recorded with its reason, so the next audit does not reopen it.
+
+## D-430 — A built-in group leave's reason is refused in the command core
+2026-11-14 · accepted · refines D-347, D-117 · OI-298 · decided under D-170
+- `rotationLeaveReasonIssues` (domain) refuses a reason that is not blank on a leave whose type is in the built-in
+  group, with `fixed_by_group` on `reason`. The command core checks it with `leaveReasonIssues` in one place
+  (`leaveReasonCheck`, `src/data/local/leaves.ts`), on create, update and reschedule, so the local adapter and the
+  gateway answer the same; the forms keep hiding the field.
+- A blank reason passes: the forms send NULL, and a blank one is no reason. A stored row that already holds a reason is
+  not rewritten; its next edit must clear it.
+**Why:** a rule only a form keeps is not kept (rule 4); the core is the one path every mode takes.
+
+## D-431 — The local adapter starts an organization's change counter in one function
+2026-11-14 · accepted · refines D-373 · OI-341 · audit A9a
+- `changeCounterStart(organizationId, lastSeq = 0)` in `src/data/local/changeCounters.ts` builds the counter row; the
+  organization's creation, the database upgrade and the import call it. The server starts its counter in its
+  migration and its load, as before.
+**Why:** three copies of one row's shape drift.
+
+## D-432 — The report's memberships are read in the counted query, after the change number
+2026-11-14 · accepted · refines D-402 · OI-342 · decided under D-170
+- `useCountedLeaves` reads the change number, then the span's leaves, then every membership, in one query, and the
+  report uses those memberships. A membership committed between the number and its read is above the number, so it
+  shows as changed until the next read; one committed after both reads is missed by both. Tests prove the order.
+**Why:** D-402's guarantee must hold for every input the confirmation covers, not only the leaves.
+
+## D-433 — Sign-out waits a bounded time for the device's unsubscribe
+2026-11-14 · accepted · refines D-358 · OI-302 · decided under D-170
+- Sign-out waits for the device's unsubscribe at most `NOTIFICATIONS.signOutUnsubscribeTimeoutMs` (4 seconds), then
+  signs out. A push service that hangs leaves the server row, which ends on its next 404 or 410, or on revoke.
+**Why:** sign-out must never depend on a third party answering; the leftover row is harmless and ends on its own.
+
+## D-434 — The app sends the browser's current push install again once per linked sign-in
+2026-11-14 · accepted · refines D-358, D-351 · OI-301 · decided under D-170
+- A browser may renew or drop its push subscription on its own (`pushsubscriptionchange`). Once per linked sign-in
+  (the session read from the cache, wherever it came from), the app reads the install the browser holds now,
+  asking nothing (`PushPort.installed`: NULL without a subscription or a granted permission), and sends it with
+  `notifications.subscribe`. The server stores by endpoint, so an unchanged install is a no-op and a renewed one is
+  stored. Best effort: a failure waits for the next start.
+- Not chosen: resubscribing in the service worker's `pushsubscriptionchange`. The worker has no session to call the
+  gateway with, and the event is not fired by every browser. A dropped or replaced endpoint ends on its next 404 or 410
+  (D-358).
+**Why:** the app's start is the one place that holds both the browser's install and a session to send it with.
+
+## D-435 — The Web Push request is owned: Web Crypto encryption and VAPID, never a followed redirect
+2026-11-14 · accepted · refines D-411, D-354, D-351 · OI-354 · audit A9a
+- `src/data/server/webPush.ts` implements the `PushSender` port with standard Web Crypto only: the payload is encrypted
+  for the install (RFC 8291 over RFC 8188 `aes128gcm`, a fresh key pair and salt per push), the request carries a VAPID
+  token (RFC 8292, ES256, valid `NOTIFICATIONS.pushVapidTokenSeconds`, one hour), and it is posted with
+  `redirect: 'manual'`. 2xx is `sent`, 404 and 410 are `gone`, and anything else, a redirect or the opaque answer a
+  browser gives one included, is a `PushDeliveryError` carrying the status only, never the endpoint (D-335).
+- `@negrel/webpush` is removed: it posted with the global `fetch`'s default `redirect: 'follow'` and kept its
+  encryption helpers private. The key stays `PUSH_VAPID_PRIVATE_KEY`, a P-256 private JWK.
+- Unit tests play the browser (decrypting what is posted) and the push service (each status), and verify the token.
+**Why:** the only way not to follow a redirect is to own the request, and the protocol is small enough to own.
+
+## D-436 — Every migration is tested over a database that already holds rows
+2026-11-14 · accepted · refines D-012 · OI-300 · decided under D-170
+- `src/data/server/history.dbtest.ts` builds a database of its own (`<db>_history`) and applies the migrations one by
+  one; after the migration that brings a table, `SEEDS` writes sample rows for it, so every later migration meets the
+  rows a hosted database holds. It then checks the columns match the database `test:db` builds and that the moved rows
+  are consistent (a moved row is a new version, D-012). A new migration joins by being in the folder; one that adds a
+  table adds its rows to `SEEDS`. The API roles and the Supabase stand-in are `scripts/db-shim.sql`, shared with
+  `db-reset`.
+- Leaves are seeded after `20261112000200_leave_deployment.sql`: that migration fills `deployment_id` without raising
+  the version, so it cannot run over leaves. It ran on every hosted database before any leave existed, and a migration
+  that ran is never edited.
+**Why:** a migration that changes rows failed on staging after passing on an empty database; the test must meet rows.
+
+## D-437 — An identity's own live topic: a pending requester hears their request's answer
+2026-11-14 · accepted · refines D-348, D-203 · OI-299 · decided under D-170
+- Besides the organization's topic, the gateway announces on the private topic `identity:<auth user id>`
+  (`REMOTE.identityTopicPrefix`, repeated in the migration) the tables of the rows it wrote that carry that
+  `auth_user_id`: `account_link_requests` and `soldier_accounts`. The payload is `{origin, tables}` as on the
+  organization's topic: table names only. The store records each written row's identity (`RETURNING auth_user_id`) as
+  it records the organization, and forgets it on a savepoint rollback.
+- `live.hears(topic)` (`20261114002000_live_identity.sql`) also admits the caller to `identity:` followed by their own
+  `auth.uid()`; no other identity's topic, and still no table opened to the API roles.
+- The remote adapter listens on its identity's topic while the session is `unlinked`, and on the organization's once
+  linked. The waiting screen already re-reads on a change of `account_link_requests` or `soldier_accounts`, so an
+  approval or a rejection shows at once. A db test covers the request, its review and the policy; an adapter test the
+  switch of topics.
+**Why:** a requester has no organization to hear, and their own rows are the only thing their answer changes.
