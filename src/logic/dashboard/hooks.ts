@@ -149,6 +149,7 @@ export type ModuleState = 'hidden' | 'loading' | 'ready' | 'failed'
 
 const NO_ROTATIONS: readonly Deployment[] = []
 const NO_DAYS: readonly CalendarDate[] = []
+const NO_MODULES: readonly DashboardModule[] = []
 const NO_CHECKS: readonly PermissionCheck[] = []
 
 /** The modules that read the plan. */
@@ -251,7 +252,17 @@ function aheadWindow(today: CalendarDate) {
 }
 
 /** The scope, the tally and the parts of the board; `modules` are the board's, so the plan and report load only for it. */
-export function useDashboard(modules: readonly DashboardModule[]): Loaded<Dashboard> | null {
+/** The board and its layout together: the layout's default follows the tally, and the board reads what the layout shows. */
+export interface DashboardBoard {
+  readonly dashboard: Dashboard
+  readonly layout: DashboardLayoutState
+}
+
+/**
+ * The command board (D-349): NULL where the actor reads no unit. The layout is read here, after the tally, since its
+ * default template counts the sub-units with rows, and the plan and the report are read only for the modules it shows.
+ */
+export function useDashboard(): Loaded<DashboardBoard> | null {
   const search = useWorkspaceSearch()
   const session = useSession()
   const timezone = useTimezone()
@@ -331,6 +342,9 @@ export function useDashboard(modules: readonly DashboardModule[]): Loaded<Dashbo
     }
   }, [scope, leaves, types, groups])
 
+  const subUnitsWithRows = tally?.status === 'ready' ? tally.value.subUnits.filter((unit) => unit.rows > 0).length : null
+  const layout = useDashboardLayout(subUnitsWithRows)
+  const modules = layout.status === 'ready' ? layout.value.modules : NO_MODULES
   const counted = tally?.status === 'ready' ? tally.value.counted : NO_DAYS
   const plan = usePlan(ready, counted, timezone, modules.some(PLAN_MODULES))
   const rules = useRules(ready, counted)
@@ -343,13 +357,15 @@ export function useDashboard(modules: readonly DashboardModule[]): Loaded<Dashbo
   }, [pending, ready])
   const report = useReport(ready, deployments.status === 'ready' ? deployments.value : NO_ROTATIONS, modules.some(REPORT_MODULES))
 
-  return useMemo((): Loaded<Dashboard> | null => {
+  return useMemo((): Loaded<DashboardBoard> | null => {
     if (tally === null || scope === null) return null
     if (tally.status !== 'ready') return tally
     if (scope.status !== 'ready') return scope
+    if (layout.status !== 'ready') return layout
     const approver = scope.value.rows.some((row) => answers.can(checkOn(LEAVE_PERMISSIONS.approve, row.soldier.id)))
-    return { status: 'ready', value: { scope: scope.value, tally: tally.value, plan, rules, approver, requests, report } }
-  }, [tally, scope, plan, rules, requests, report, answers])
+    const dashboard = { scope: scope.value, tally: tally.value, plan, rules, approver, requests, report }
+    return { status: 'ready', value: { dashboard, layout: layout.value } }
+  }, [tally, scope, layout, plan, rules, requests, report, answers])
 }
 
 /** The rotation's leaves of the rows, now and at the rotation's first day (P-9). */
@@ -597,7 +613,7 @@ export interface DashboardLayoutState {
 }
 
 /** The layout, once the preferences are read; `subUnitsWithRows` picks the default template. */
-export function useDashboardLayout(subUnitsWithRows: number | null): Loaded<DashboardLayoutState> {
+function useDashboardLayout(subUnitsWithRows: number | null): Loaded<DashboardLayoutState> {
   const preferences = useMyPreferences()
   const update = useUpdateMyPreferences()
   const stored = preferences.status === 'ready' ? preferences.value.dashboard : null

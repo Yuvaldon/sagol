@@ -363,7 +363,7 @@ export {
   outstandingOf,
   useChangeDashboardScope,
   useDashboard,
-  useDashboardLayout,
+  type DashboardBoard,
   type Dashboard,
   type DashboardLayoutState,
   type DashboardOutstanding,
