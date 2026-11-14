@@ -26,6 +26,24 @@ The design is kept. What changed is the numbers and the weight.
   - Absence marks are thin, quiet lines.
   - The name of anyone away today is muted.
   - Tapping a day opens that day's faces, grouped by unit, and then who is not here.
+### The board tension
+
+On the board a commander marks a block to create a leave. That is right, and the owner asked for it.
+But it acts on who is *not* here, while the same commander reads the board to see who *is* with them.
+Both needs are legitimate, and neither wins. Each gets its own layer:
+
+- **Absence is the editing object.**
+  - Bars stay: you create, tap and approve them.
+  - They are thin and quiet so they are not what the eye reads first.
+  - Their hit area stays full height.
+- **Presence is the reading.**
+  - The board's headline is the "here" row.
+  - Names of people away today are muted; everyone else is full ink.
+  - A day opens faces, not a list of who is missing.
+- **At the moment of marking, the two meet.**
+  - Selecting days for a new leave shows "on those days in <unit>: N here" at once, plus the rule sentence if one breaks.
+  - Every absence you create shows its cost in who remains.
+
 - The rule sentence uses the same words, with correct singular forms ("one medic would remain…").
 
 ## Approach
@@ -146,7 +164,7 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
   - This replaces the previous palette and icon family.
 - **D-466:** Glass only on floating surfaces (nav, sheets, menus, toast), with an opaque fallback. Content surfaces are opaque.
 - **D-467:** Board has one view control (timeline, calendar, list, table). Filters live in a sheet; active filters show as chips. Pending leaves are dashed bars.
-  - The "here" row sits at the top, beside the dates; each day opens that day's faces.
+  - The "here" row sits at the top, beside the dates; each day opens that day's faces. The new-request sheet shows the same "here" line as soon as days are selected.
   - Absence marks are thin and light.
   - The name of anyone away today is muted.
 - **D-468:** Report 1 is one action at the end of Today. The report is a list of names grouped as present, home, coming in and going out, with one total, and is copied as the same text. On a multi-day leave the departure day counts as present. A change after confirming asks for reconfirmation.
