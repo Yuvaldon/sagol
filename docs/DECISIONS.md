@@ -199,7 +199,7 @@ am = amends, ref = refines, ext = extends.
 | D-180 | The organization's setup: steps, who sees them, where it opens | config, logic, ui | ref D-251, D-254, D-256, D-262; am D-285; ref D-297; ref D-347 |
 | D-181 | The dark set, and the soldier's choice of appearance | contracts, logic, ui | ref D-187; ref D-253; ext D-358 |
 | D-182 | The installable app: manifest, icons and head, from the theme and i18n | config, ui, tooling | |
-| D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | ref D-353; ext D-359 |
+| D-183 | The service worker caches the app shell only, and a new version waits for the soldier | config, logic, ui, app, tooling | ref D-353; ext D-359; ref D-444 |
 | D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-274; ref D-356 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
@@ -288,7 +288,7 @@ am = amends, ref = refines, ext = extends.
 | D-303 | A rotation report's summary counts the sections outside the owner's view, without naming them | contracts, data, logic, i18n, ui | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301; ext D-387 |
-| D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326; ext D-380, D-382 |
+| D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326; ext D-380, D-382; ref D-441 |
 | D-313 | Several sorts, in order | config, logic, i18n, ui | ext D-324 |
 | D-314 | A filter chip's remove is a plain × | ui | |
 | D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | ref D-321; ref D-323 |
@@ -305,7 +305,7 @@ am = amends, ref = refines, ext = extends.
 | D-326 | One filter model: the builder's rules; the D-131 conditions are retired | logic, ui | ref D-382 |
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
-| D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337; ref D-385 |
+| D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337; ref D-385; ref D-440 |
 | D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | ref D-342 |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | ext D-346 |
@@ -335,18 +335,18 @@ am = amends, ref = refines, ext = extends.
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
 | D-360 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
 | D-361 | The stored board reads leniently and writes strictly; the plan reads its own leaves' events | contracts | |
-| D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | ref D-403; ref D-404; ref D-405 |
+| D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | ref D-403; ref D-404; ref D-405; ref D-443 |
 | D-370 | The 1.0 Could items are built while the owner is away | docs | ref D-400 |
 | D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | |
 | D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | ref D-402 |
-| D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | |
+| D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | ref D-441 |
 | D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
 | D-382 | Leave property conditions are leave conditions | logic, ui | |
 | D-383 | The range picker offers two and four weeks | config, logic, ui | |
-| D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | |
+| D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | ext D-442 |
 | D-385 | Applying a saved view replaces the board's state; what no longer parses is dropped and reported | logic, ui | |
 | D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
-| D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | |
+| D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | ext D-442 |
 | D-388 | A preference change from a function of the stored row, retried once over another device's save | logic | |
 | D-400 | What was built under D-370 is recorded in the roadmap, as row R3·C | docs | |
 | D-401 | Access managers stay permanent and organization-wide | domain, docs | |
@@ -357,6 +357,11 @@ am = amends, ref = refines, ext = extends.
 | D-410 | Schema and function compatibility during a deploy: the server store writes only the row's columns | data, backend, tooling | |
 | D-411 | A push endpoint is https on its default port with no credentials; push TTL and urgency are config | contracts, config, backend | |
 | D-412 | Audit A9a: route targets, the owner's reach and the export loader need no change | backend, data, logic, docs | |
+| D-440 | A URL write goes over the search as the router holds it when it is written | logic | |
+| D-441 | The filter builder's operator vocabulary lives in contracts | contracts, logic, ui | |
+| D-442 | "שמירת השינויים": the board keeps the saved view it was put in, and saves a change over it | config, logic, i18n, ui | |
+| D-443 | "סטטוס דוח 1" adds tomorrow's report from a config cut-over hour in the organization's time zone | domain, config, logic, ui | |
+| D-444 | The D-183 update flow is walked in a browser by changing the built worker on disk | tooling | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5285,3 +5290,70 @@ every migration must remember.
 - `load_organization_export` is called only by the owner from the SQL editor (D-206) and by the database tests; the
   API roles hold no execute on it (`load.dbtest.ts`).
 **Why:** an audit finding that turns out safe is recorded with its reason, so the next audit does not reopen it.
+
+## D-440 — A URL write goes over the search as the router holds it when it is written
+2026-11-14 · accepted · refines D-332 · R3 · OI-330
+- `useChangeSearch` reads `router.latestLocation.search` when it writes, never the search that the render read. Two
+  changes in one gesture (a leave property value typed, then "only who is missing" pressed) both land.
+- A change may be a function of the search as it is at that moment (`SearchChange`). `useLeaveConditions` writes each
+  part this way, over the conditions the URL holds then, so a second part keeps the first.
+- The history rule of D-332 is unchanged: only opening a panel where none is open adds an entry.
+**Why:** a write made from a render's snapshot loses whatever another write put in the URL since that render. The
+router's own latest location is the one value both writes agree on, and it costs nothing to read.
+
+## D-441 — The filter builder's operator vocabulary lives in contracts
+2026-11-14 · accepted · refines D-312, D-380 · R3 · OI-340
+- `src/contracts/filters/operators.ts` holds the row operators (`FilterOperator`), the kinds of field
+  (`FilterFieldKind`), which operators each kind offers in order (`FILTER_OPERATORS_OF`, the first being a new row's),
+  and the valueless, plain and negating sets. `COMPARE_OPERATORS`, the stored operator each comparison is written
+  with, sits beside the rule in `contracts/filters/index.ts`.
+- `logic` reads them to read and write a builder row, and `ui` reads them for its menus and chips. Neither defines an
+  operator list of its own.
+**Why:** a vocabulary is a contract (rule 2). It was in `ui`, so `logic` could not check a row against it without
+reaching up a layer.
+
+## D-442 — "שמירת השינויים": the board keeps the saved view it was put in, and saves a change over it
+2026-11-14 · accepted · extends D-384, D-387 · R3 · OI-331
+- **The param.** `saved` (`SEARCH_PARAMS.saved`) holds the id of the saved view the board was last put in. It is
+  written when a view is saved, applied from its card, or opened as the start view. It travels with the rest of the
+  view state, and a value that is not one of the soldier's views is ignored. A board matched by hand, without the
+  sheet, is not recorded: there was no "put in", and writing it from an effect would add params to a bare link and
+  undo the start view's bare-open check (D-386).
+- **Left.** While no card matches the board and `saved` names a view the soldier still holds, the sheet offers
+  "שמירת השינויים" beside the save action. It shows the view's name. It saves the board over that view, under the
+  same name, with the same start mark and place, and the card is current again. A deleted view, or a board that
+  matches a card again, offers nothing (D-076).
+- The new save stays as it was, so a change can still become a second view.
+**Why:** the spec asked for an overwrite, and the only honest source of "the view it left" is the last gesture that
+put the board in a view. The URL is where view state lives (D-023), so a reload or a shared link keeps it.
+
+## D-443 — "סטטוס דוח 1" adds tomorrow's report from a config cut-over hour in the organization's time zone
+2026-11-14 · accepted · refines D-362 · R3 · OI-312
+- **The hour.** `DAY_REPORT.nextDayFromHour` (18) in config. From that hour on in the organization's time zone, until
+  midnight, the card shows tomorrow's report under today's, with the same rows, totals and press (it opens the day
+  report on that day). `startOfHour` in `domain` turns the hour into an instant. `usePastHour` in `logic` arms one
+  timer to the hour, and again to midnight, so the card turns with the screen open.
+- **Only a reportable day.** Tomorrow is shown only when the scope reports on it: a rotation that ends today shows
+  no second day (D-193).
+- **What stays on today.** The `unconfirmed_units` stat ("n out of m") stays on today's report. Tomorrow is added
+  information, not a replacement.
+- The spec says "the organization's cut-over hour". There is no such setting today, and adding one is a model
+  change outside this item. One config hour serves every organization until R5 decides the setting (OI-380).
+**Why:** a commander in the evening confirms tomorrow's report. The day report already allows that, so the card
+should show it then. A fixed hour is the smallest honest rule; a per-organization setting needs its own decision.
+
+## D-444 — The D-183 update flow is walked in a browser by changing the built worker on disk
+2026-11-14 · accepted · refines D-183 · R3 · OI-303
+- The `installable` project runs against `vite preview` of a production build. The test rewrites `dist/sw.js` with
+  one more comment line, which is what a deploy on the same origin does, and puts it back in a `finally`. The
+  browser's own update check (`registration.update()`, which the app's hourly tick calls) finds a new worker.
+- The build has no env, so the page is the startup failure screen. There is no form to lose there, so the page takes
+  the waiting worker at once (D-183): it posts `SKIP_WAITING`, the worker activates, and the page reloads once. The
+  test checks the reload, a controlled page with no waiting worker, and the new script served.
+- Not walked in a browser: the toast "גרסה חדשה זמינה" and "רענון" on an open workspace. A production build refuses
+  the local identity (D-006), so no browser test reaches the workspace in one. That part stays unit tested
+  (`UpdateToast.test.tsx`, `logic/shell/hooks.test.tsx`), and so does the worker's message handler
+  (`app/worker/handlers.test.ts`). The shell's `applyUpdate` is the same function in both paths.
+**Why:** Playwright cannot route a worker script's update fetch, but it does not need to: the preview serves the file
+from disk, so changing the file is a real new version. Everything up to the toast runs for real; the toast itself is
+the one part that needs a workspace, and a test would need a bypass of D-006 to reach it.
