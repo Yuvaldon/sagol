@@ -1,16 +1,19 @@
 import { BAR_COLOR_MODES, FOCUS_MODE, type BarColorMode } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useActiveView, useBarColors } from '@logic'
+import { useActiveView, useBarColors, useSavedViews } from '@logic'
 import { Maximize2 } from 'lucide-react'
+import { useState } from 'react'
 import { Button as AriaButton, Label, Radio, RadioGroup } from 'react-aria-components'
 import { Drawer } from '../patterns/Drawer'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
 import { useViewDevice } from '../patterns/media'
 import { useFocusMode } from './focusMode'
+import { ManageSavedViews, SaveViewAction, SavedViewCards } from './SavedViewsSection'
 
 // The view picker (D-311): a card per view the device offers, the current one marked, and under them the colors of
 // the leaves. Picking a view, even the current one, shows it and closes the sheet; the colors stay open to compare.
-// Focus mode is the sheet's last control, with the board's other view controls (D-301).
+// Focus mode is the sheet's last control, with the board's other view controls (D-301). The soldier's saved views
+// come first once one is saved, and saving one sits beside focus mode (D-387).
 
 const CARD =
   'flex min-h-touch cursor-pointer flex-col items-center justify-center gap-xs rounded-panel border border-line p-md text-control text-text outline-focus outline-offset-2 data-focus-visible:outline-2 data-hovered:bg-inner data-selected:border-action-solid data-selected:bg-inner data-selected:font-semibold'
@@ -29,9 +32,27 @@ export function ViewSheet({ onClose }: { readonly onClose: () => void }) {
   const { view, select } = useActiveView(AVAILABLE_VIEWS, useViewDevice())
   const colors = useBarColors()
   const focusMode = useFocusMode()
+  const saved = useSavedViews(view)
+  const [managing, setManaging] = useState(false)
+  const manage = () => {
+    setManaging(true)
+  }
+  if (managing && saved.available && saved.views.length > 0) {
+    return (
+      <Drawer titleKey="workspace.savedViews.manage" onClose={onClose}>
+        <ManageSavedViews
+          saved={saved}
+          onBack={() => {
+            setManaging(false)
+          }}
+        />
+      </Drawer>
+    )
+  }
   return (
     <Drawer titleKey="workspace.view" onClose={onClose}>
       <div className="flex flex-col gap-xl">
+        {saved.available ? <SavedViewCards saved={saved} shown={view} onManage={manage} onClose={onClose} /> : null}
         <RadioGroup
           aria-label={t('workspace.view')}
           value={view}
@@ -79,6 +100,7 @@ export function ViewSheet({ onClose }: { readonly onClose: () => void }) {
             ))}
           </div>
         </RadioGroup>
+        {saved.available ? <SaveViewAction saved={saved} shown={view} onManage={manage} /> : null}
         {focusMode.available ? (
           // The key is named in the button's text, not as its shortcut: while this sheet is open the key is the sheet's.
           <AriaButton
