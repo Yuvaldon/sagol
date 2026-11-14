@@ -8,7 +8,6 @@ import {
   type CalendarDate,
   type OrganizationId,
   type Permission,
-  type Timestamp,
 } from '@contracts'
 import { DAY_REPORT } from '@config'
 import { addDays, compareInstants } from '@domain'
@@ -25,9 +24,6 @@ const OTHER_DAY = '2026-11-06'
 const OUTSIDE = '2026-12-15'
 const END = '2026-11-30'
 const WINDOW = { start_date: START, end_date: END }
-// What the confirmer saw: after now in the usual case, so the confirmation holds from now.
-const SEEN_LATER: Timestamp = '2026-11-08T11:00:00.000Z'
-const SEEN_EARLIER: Timestamp = '2026-11-08T09:00:00.000Z'
 
 const newId = () => ReportConfirmationId.parse(crypto.randomUUID())
 const pair = (resource: Permission['resource'], action: Permission['action']) => ({ resource, action }) as Permission
@@ -88,9 +84,10 @@ export function describeReportContract(
       )
     }
 
-    const confirm = (unit_id: UnitId, report_date: CalendarDate, id = newId(), seen_at = SEEN_LATER) =>
-      adapter().commands.day_reports.confirm({ id, unit_id, report_date, seen_at })
-    const list = async () => valueOf(await adapter().repositories.report_confirmations.list({ window: WINDOW, unit_ids: null }))
+    const confirm = (unit_id: UnitId, report_date: CalendarDate, id = newId(), seen_seq = 0) =>
+      adapter().commands.day_reports.confirm({ id, unit_id, report_date, seen_seq })
+    const list = async () =>
+      valueOf(await adapter().repositories.report_confirmations.list({ window: WINDOW, unit_ids: null }))
 
     it('confirms a unit under an open rotation, and a second confirm moves the same row', async () => {
       const company = await unit('Company')
@@ -127,11 +124,19 @@ export function describeReportContract(
       ])
     })
 
-    it('holds a confirmation from what the confirmer saw, never later than now', async () => {
+    it('holds a confirmation from a number the counter handed out, confirmed now (D-373)', async () => {
       const company = await unit('Company')
       await rotation(company.id)
-      expect(compareInstants(valueOf(await confirm(company.id, DAY)).confirmed_at, NOW)).toBe(0)
-      expect(compareInstants(valueOf(await confirm(company.id, DAY, newId(), SEEN_EARLIER)).confirmed_at, SEEN_EARLIER)).toBe(0)
+      const counter = valueOf(await adapter().repositories.change_counters.current())
+      // The claim placed its soldier: the organization's first change.
+      expect(counter).toBeGreaterThan(0)
+      const held = valueOf(await confirm(company.id, DAY, newId(), counter))
+      expect(held).toMatchObject({ seen_seq: counter })
+      expect(compareInstants(held.confirmed_at, NOW)).toBe(0)
+      expect(issuesOf(await confirm(company.id, DAY, newId(), counter + 1))).toEqual([
+        { path: ['seen_seq'], code: 'too_big' },
+      ])
+      expect(await list()).toMatchObject([{ id: held.id, seen_seq: counter }])
     })
 
     it('answers which reports the actor may confirm, through a level the actor does not see', async () => {

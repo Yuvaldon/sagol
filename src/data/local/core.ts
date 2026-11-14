@@ -7,6 +7,7 @@ import type {
   SessionService,
 } from '@contracts'
 import { createPermissionHints } from './actor'
+import { createChangeCounterRepository } from './changeCounters'
 import { createCommandRankCommands, createCommandRankRepository } from './commandRanks'
 import type { LocalDependencies } from './dependencies'
 import { createDeploymentCommands, createDeploymentMemberRepository, createDeploymentRepository } from './deployments'
@@ -96,6 +97,7 @@ export interface LocalDataAdapter {
     | 'deployments'
     | 'deployment_members'
     | 'report_confirmations'
+    | 'change_counters'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']
@@ -162,6 +164,7 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       deployments: createDeploymentRepository(dependencies),
       deployment_members: createDeploymentMemberRepository(dependencies),
       report_confirmations: createReportConfirmationRepository(dependencies),
+      change_counters: createChangeCounterRepository(dependencies),
     },
     commands: {
       organizations: createOrganizationCommands(dependencies),

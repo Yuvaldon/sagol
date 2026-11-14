@@ -1,6 +1,6 @@
 import { FIRST_ROTATION_LEAVE_COLOR } from '@config'
 import { AvailabilityEffect, MembershipType, UnitKind, type TableRow, type TimeSource } from '@contracts'
-import { dayBefore, todayIn } from '@domain'
+import { compareInstants, dayBefore, todayIn } from '@domain'
 import Dexie, { type Transaction } from 'dexie'
 import { parsedRow } from './failure'
 import { STORES, type Store } from './store'
@@ -10,7 +10,7 @@ import { STORES, type Store } from './store'
 // names are schema.sql names (D-038). Primary keys and uniques mirror it where IndexedDB can: a
 // compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL".
 
-const DATABASE_VERSION = 10
+const DATABASE_VERSION = 11
 
 /** Versions 1 and 2 keyed a soldier's tags by the pair; format 3 gives each row an id and a scope (D-221). */
 const VERSION_2_SOLDIER_TAGS = '[soldier_id+tag_id], organization_id, tag_id'
@@ -90,6 +90,7 @@ async function oneRoot(transaction: Transaction, time: TimeSource): Promise<void
         membership_type: MembershipType.enum.primary,
         valid_from: createdOn,
         valid_to: first === undefined ? null : dayBefore(first),
+        change_seq: 0,
         created_at: now,
         created_by: null,
         updated_at: now,
@@ -156,6 +157,47 @@ async function rotationLeave(transaction: Transaction, time: TimeSource, names: 
   }
 }
 
+type NumberedEvent = Pick<TableRow<'leave_events'>, 'id' | 'organization_id' | 'created_at' | 'change_seq'>
+type SeenConfirmation = Pick<TableRow<'report_confirmations'>, 'organization_id' | 'confirmed_at' | 'seen_seq'>
+
+/**
+ * The existing events are numbered per organization by (`created_at`, `id`) from 1; memberships start at 0, the
+ * column's default, with no write of their own; a confirmation has seen the last event created by its time; the
+ * counter starts at the largest number (D-373).
+ */
+async function changeNumbers(transaction: Transaction): Promise<void> {
+  const events = transaction.table<NumberedEvent>('leave_events')
+  const ordered = (await events.toArray()).sort(
+    (a, b) => compareInstants(a.created_at, b.created_at) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  )
+  const last = new Map<string, number>()
+  const numbered = new Map<string, { at: NumberedEvent['created_at']; seq: number }[]>()
+  for (const event of ordered) {
+    const seq = (last.get(event.organization_id) ?? 0) + 1
+    last.set(event.organization_id, seq)
+    event.change_seq = seq
+    numbered.set(event.organization_id, [
+      ...(numbered.get(event.organization_id) ?? []),
+      { at: event.created_at, seq },
+    ])
+  }
+  await events.bulkPut(ordered)
+  await transaction.table('unit_memberships').toCollection().modify({ change_seq: 0 })
+  await transaction
+    .table<SeenConfirmation>('report_confirmations')
+    .toCollection()
+    .modify((row: SeenConfirmation) => {
+      const seen = (numbered.get(row.organization_id) ?? []).filter(
+        (event) => compareInstants(event.at, row.confirmed_at) <= 0,
+      )
+      row.seen_seq = Math.max(0, ...seen.map((event) => event.seq))
+    })
+  const organizations = await transaction.table<Pick<Organization, 'id'>>('organizations').toArray()
+  await transaction
+    .table('change_counters')
+    .bulkPut(organizations.map((row) => ({ organization_id: row.id, last_seq: last.get(row.id) ?? 0 })))
+}
+
 /** The IndexedDB store, which a test closes when it is done. */
 export interface LocalStore extends Store {
   close(): void
@@ -164,7 +206,12 @@ export interface LocalStore extends Store {
 export function openDatabase(name: string, time: TimeSource, names: RotationLeaveNames): LocalStore {
   const database = new Dexie(name)
   // Tables added after version 6 are declared at their own version, so an older store creates them on upgrade.
-  const { report_confirmations: confirmations, push_subscriptions: subscriptions, ...earlier } = STORES
+  const {
+    report_confirmations: confirmations,
+    push_subscriptions: subscriptions,
+    change_counters: counters,
+    ...earlier
+  } = STORES
   const before = { ...earlier, soldier_tags: VERSION_2_SOLDIER_TAGS }
   database.version(1).stores({ ...before, soldier_accounts: VERSION_1_ACCOUNTS })
   database.version(2).stores(before)
@@ -202,7 +249,12 @@ export function openDatabase(name: string, time: TimeSource, names: RotationLeav
   database.version(8).upgrade((transaction) => oneRoot(transaction, time))
   database.version(9).upgrade((transaction) => rotationLeave(transaction, time, names))
   // Phone notifications of this browser's soldiers (D-351).
-  database.version(DATABASE_VERSION).stores({ push_subscriptions: subscriptions })
+  database.version(10).stores({ push_subscriptions: subscriptions })
+  // Commit-ordered change numbers (D-373), as the server's migration gives them.
+  database
+    .version(DATABASE_VERSION)
+    .stores({ change_counters: counters })
+    .upgrade((transaction) => changeNumbers(transaction))
   return {
     transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),
     table: (name) => database.table(name),

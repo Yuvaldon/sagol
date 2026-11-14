@@ -352,8 +352,12 @@ export function describeLeaveContract(
           version: 1,
           created_by: ownerId,
         })
-        expect((await heard).map((change) => change.table).sort()).toEqual(['leave_events', 'leaves'])
-        const events = valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))
+        expect((await heard).map((change) => change.table).sort()).toEqual([
+          'change_counters',
+          'leave_events',
+          'leaves',
+        ])
+        const events = valueOf(await adapter().repositories.leave_events.list({ leave_ids: [leave.id], after_seq: 0 }))
         expect(events).toMatchObject([
           { event_type: 'created', from_status: null, to_status: 'pending', actor_id: ownerId, acknowledged_rule_ids: [], changes: {} },
         ])
@@ -364,7 +368,7 @@ export function describeLeaveContract(
         const yael = await soldier(null)
         const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { as_approved: true })))
         expect(leave).toMatchObject({ status: 'approved', reviewed_by: ownerId, reviewed_at: NOW })
-        const [event] = valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))
+        const [event] = valueOf(await adapter().repositories.leave_events.list({ leave_ids: [leave.id], after_seq: 0 }))
         expect(event?.to_status).toBe('approved')
       })
 
@@ -597,12 +601,21 @@ export function describeLeaveContract(
           await adapter().commands.leaves.create(leaveInput(dan.id, type.id, { start_date: NEXT_WEEK, end_date: NEXT_WEEK, as_approved: true })),
         )
         const window = { start_date: TODAY, end_date: NEXT_WEEK }
-        const all = valueOf(await adapter().repositories.leaves.list({ window, soldier_ids: null, statuses: null }))
+        const all = valueOf(
+          await adapter().repositories.leaves.list({ ids: null, window, soldier_ids: null, statuses: null }),
+        )
         expect(all.map((leave) => leave.id)).toEqual([across.id, approved.id])
-        const onlyApproved = valueOf(await adapter().repositories.leaves.list({ window, soldier_ids: null, statuses: ['approved'] }))
+        const onlyApproved = valueOf(
+          await adapter().repositories.leaves.list({ ids: null, window, soldier_ids: null, statuses: ['approved'] }),
+        )
         expect(onlyApproved.map((leave) => leave.id)).toEqual([approved.id])
         const ofYael = valueOf(
-          await adapter().repositories.leaves.list({ window: { start_date: LAST_WEEK, end_date: NEXT_WEEK }, soldier_ids: [yael.id], statuses: null }),
+          await adapter().repositories.leaves.list({
+            ids: null,
+            window: { start_date: LAST_WEEK, end_date: NEXT_WEEK },
+            soldier_ids: [yael.id],
+            statuses: null,
+          }),
         )
         expect(ofYael.map((leave) => leave.id).sort()).toEqual([before.id, across.id].sort())
       })
@@ -618,11 +631,17 @@ export function describeLeaveContract(
         const { identity } = await actorWith([VIEW_LEAVES], { anchor_type: 'unit', anchor_unit_id: platoonA.id })
         harnessOf().signIn(identity)
         const window = { start_date: TODAY, end_date: TOMORROW }
-        const listed = valueOf(await adapter().repositories.leaves.list({ window, soldier_ids: null, statuses: null }))
+        const listed = valueOf(
+          await adapter().repositories.leaves.list({ ids: null, window, soldier_ids: null, statuses: null }),
+        )
         expect(listed.map((leave) => leave.id)).toEqual([seen.id])
         expect(errorOf(await adapter().repositories.leaves.get(hidden.id)).code).toBe('not_found')
-        expect(errorOf(await adapter().repositories.leave_events.list({ leave_id: hidden.id })).code).toBe('not_found')
-        expect(valueOf(await adapter().repositories.leave_events.list({ leave_id: seen.id }))).toHaveLength(1)
+        expect(
+          errorOf(await adapter().repositories.leave_events.list({ leave_ids: [hidden.id], after_seq: 0 })).code,
+        ).toBe('not_found')
+        expect(
+          valueOf(await adapter().repositories.leave_events.list({ leave_ids: [seen.id], after_seq: 0 })),
+        ).toHaveLength(1)
       })
     })
 
@@ -657,8 +676,10 @@ export function describeLeaveContract(
           code: 'rule_acknowledgment_required',
           violations: [{ rule_id: ruleId, days: [{ date: TODAY, required: 1, actual: 0 }, { date: TOMORROW, required: 1, actual: 0 }] }],
         })
-        const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { acknowledged_rule_ids: [ruleId] })))
-        const [event] = valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))
+        const leave = valueOf(
+          await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { acknowledged_rule_ids: [ruleId] })),
+        )
+        const [event] = valueOf(await adapter().repositories.leave_events.list({ leave_ids: [leave.id], after_seq: 0 }))
         expect(event?.acknowledged_rule_ids).toEqual([ruleId])
       })
 
@@ -685,7 +706,9 @@ export function describeLeaveContract(
         expect(await harnessOf().rows('leaves')).toEqual([])
         const created = valueOf(await sheet([ruleId]))
         for (const leave of created) {
-          expect(valueOf(await adapter().repositories.leave_events.list({ leave_id: leave.id }))).toMatchObject([
+          expect(
+            valueOf(await adapter().repositories.leave_events.list({ leave_ids: [leave.id], after_seq: 0 })),
+          ).toMatchObject([
             { event_type: 'created', from_status: null, to_status: 'pending', acknowledged_rule_ids: [ruleId] },
           ])
         }

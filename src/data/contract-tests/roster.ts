@@ -232,7 +232,12 @@ export function describeRosterContract(
           version: 1,
           updated_by: ownerId,
         })
-        expect((await heard).map((change) => change.table).sort()).toEqual(['soldier_private', 'soldiers', 'unit_memberships'])
+        expect((await heard).map((change) => change.table).sort()).toEqual([
+          'change_counters',
+          'soldier_private',
+          'soldiers',
+          'unit_memberships',
+        ])
       })
 
       it('writes no private row for empty private fields', async () => {
@@ -567,6 +572,15 @@ export function describeRosterContract(
           { unit_id: units.platoonA.id, valid_from: LAST_WEEK, valid_to: '2026-11-07', version: 2 },
           { unit_id: units.platoonB.id, valid_from: TODAY, valid_to: null, version: 1 },
         ])
+      })
+
+      it('numbers each membership it writes, after the placement it was created with (D-373)', async () => {
+        const current = async () => valueOf(await adapter().repositories.change_counters.current())
+        const before = await current()
+        expect((await open()).change_seq).toBe(before)
+        valueOf(await change(TODAY, units.platoonB.id))
+        expect((await membershipsOf(soldierId)).map((row) => row.change_seq).sort()).toEqual([before + 1, before + 2])
+        expect(await current()).toBe(before + 2)
       })
 
       it('accepts a future date, and the soldier stays in the old unit until then', async () => {

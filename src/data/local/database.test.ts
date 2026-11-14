@@ -138,4 +138,59 @@ describe('local database versions', () => {
     ])
     store.close()
   })
+
+  it('numbers the events of a version 10 store by time, has each confirmation see the events before it, and starts the counter (D-373)', async () => {
+    const name = `sagol-${crypto.randomUUID()}`
+    const old = new Dexie(name)
+    const { change_counters: _counters, ...earlier } = STORES
+    old.version(10).stores(earlier)
+    await old.table('organizations').add({ id: ORG, name: 'Battalion', timezone: 'Asia/Jerusalem' })
+    await old.table('organizations').add({ id: DEPLOYMENT, name: 'Empty', timezone: 'Asia/Jerusalem' })
+    const event = (id: string, created_at: string) => ({ id, organization_id: ORG, leave_id: TAG, created_at })
+    await old
+      .table('leave_events')
+      .bulkAdd([
+        event(SECOND, '2026-11-10T09:00:00.000Z'),
+        event(FIRST, '2026-11-10T08:00:00.000Z'),
+        event(PLACED, '2026-11-10T09:00:00.000Z'),
+      ])
+    await old
+      .table('unit_memberships')
+      .add({ id: UNPLACED, organization_id: ORG, soldier_id: SOLDIER, unit_id: CATEGORY, version: 3 })
+    await old.table('report_confirmations').bulkAdd([
+      {
+        id: ROLE,
+        organization_id: ORG,
+        unit_id: CATEGORY,
+        report_date: '2026-11-10',
+        confirmed_at: '2026-11-10T08:30:00.000Z',
+      },
+      {
+        id: VIEWER,
+        organization_id: ORG,
+        unit_id: CATEGORY,
+        report_date: '2026-11-09',
+        confirmed_at: '2026-11-10T07:00:00.000Z',
+      },
+    ])
+    old.close()
+
+    const store = openDatabase(name, TIME, ROTATION_LEAVE)
+    const seqOf = async (table: 'leave_events' | 'report_confirmations', id: string, column: string) =>
+      ((await store.table(table).get(id)) as Record<string, unknown>)[column]
+    expect(await seqOf('leave_events', FIRST, 'change_seq')).toBe(1)
+    // The same time orders by id.
+    expect(await seqOf('leave_events', SECOND, 'change_seq')).toBe(2)
+    expect(await seqOf('leave_events', PLACED, 'change_seq')).toBe(3)
+    expect(await seqOf('report_confirmations', ROLE, 'seen_seq')).toBe(1)
+    expect(await seqOf('report_confirmations', VIEWER, 'seen_seq')).toBe(0)
+    expect(await store.table('unit_memberships').get(UNPLACED)).toMatchObject({ change_seq: 0, version: 3 })
+    expect(await store.table('change_counters').toArray()).toEqual(
+      expect.arrayContaining([
+        { organization_id: ORG, last_seq: 3 },
+        { organization_id: DEPLOYMENT, last_seq: 0 },
+      ]),
+    )
+    store.close()
+  })
 })
