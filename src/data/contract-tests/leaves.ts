@@ -625,7 +625,7 @@ export function describeLeaveContract(
         expect(valueOf(await adapter().repositories.leave_events.list({ leave_id: seen.id }))).toHaveLength(1)
       })
 
-      it("reads a rotation's span of events, only of leaves the actor reads (D-358)", async () => {
+      it("reads a rotation's span of events, only of leaves the actor reads (D-361)", async () => {
         const type = await createType()
         const platoonA = await unit('Platoon A')
         const platoonB = await unit('Platoon B')

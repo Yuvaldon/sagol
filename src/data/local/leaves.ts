@@ -163,7 +163,7 @@ export function createLeaveRepository(dependencies: LocalDependencies): DataRepo
 }
 
 /**
- * A leave's events, or a rotation's span of them (D-358), oldest first. An invisible leave answers `not_found`
+ * A leave's events, or a rotation's span of them (D-361), oldest first. An invisible leave answers `not_found`
  * (D-046); a span holds only the events of leaves the actor reads.
  */
 export function createLeaveEventRepository(dependencies: LocalDependencies): DataRepositories['leave_events'] {
