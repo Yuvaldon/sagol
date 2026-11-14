@@ -100,7 +100,12 @@ export function useUnitCommands() {
     })
   })
 
-  return { create, update, archive, move, step, drop }
+  /** An archived unit comes back where it was (D-371). */
+  const restore = useCommand([QUERY_KEYS.units], (unit: Unit) =>
+    units.restore({ id: unit.id, expected_version: unit.version }),
+  )
+
+  return { create, update, archive, restore, move, step, drop }
 }
 
 export function useUnitLevelCommands() {
@@ -119,7 +124,10 @@ export function useUnitLevelCommands() {
   const reorder = useCommand([QUERY_KEYS.unitLevels], (order: readonly UnitLevel[]) =>
     levels.reorder({ items: order.map((level) => ({ id: level.id, expected_version: level.version })) }),
   )
-  return { create, update, archive, reorder }
+  const restore = useCommand([QUERY_KEYS.unitLevels], (level: UnitLevel) =>
+    levels.restore({ id: level.id, expected_version: level.version }),
+  )
+  return { create, update, archive, restore, reorder }
 }
 
 // ---------------------------------------------------------------------- hints

@@ -130,6 +130,32 @@ export function describeTagContract(
         expect(valueOf(await adapter().commands.tags.create(tagInput(category))).archived_at).toBeNull()
       })
 
+      it('restores a tag into a live category, under a free name (D-371)', async () => {
+        const category = await createCategory()
+        const tag = await createTag(category)
+        expect(issuesOf(await adapter().commands.tags.restore({ id: tag.id, expected_version: 1 }))).toEqual([
+          { path: [], code: 'not_archived' },
+        ])
+        valueOf(await adapter().commands.tags.archive({ id: tag.id, expected_version: 1 }))
+        const taken = await createTag(category)
+        expect(issuesOf(await adapter().commands.tags.restore({ id: tag.id, expected_version: 2 }))).toEqual([
+          { path: ['name'], code: 'already_exists' },
+        ])
+        valueOf(await adapter().commands.tags.archive({ id: taken.id, expected_version: 1 }))
+        valueOf(await adapter().commands.tag_categories.archive({ id: category.id, expected_version: 1 }))
+        expect(issuesOf(await adapter().commands.tags.restore({ id: tag.id, expected_version: 2 }))).toEqual([
+          { path: ['category_id'], code: 'reference_archived' },
+        ])
+        expect(valueOf(await adapter().commands.tag_categories.restore({ id: category.id, expected_version: 2 }))).toMatchObject({
+          archived_at: null,
+          version: 3,
+        })
+        expect(valueOf(await adapter().commands.tags.restore({ id: tag.id, expected_version: 2 }))).toMatchObject({
+          archived_at: null,
+          version: 3,
+        })
+      })
+
       it('refuses archiving a category with a live tag, and picking an archived one', async () => {
         const category = await createCategory()
         const tag = await createTag(category)

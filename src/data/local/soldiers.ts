@@ -6,6 +6,7 @@ import {
   IssueCode,
   MembershipQuery,
   MembershipType,
+  RestoreSoldierInput,
   SetSoldierTagsInput,
   Soldier,
   SoldierScopedQuery,
@@ -43,6 +44,7 @@ import { asResult, fail, failValidation, parseInput, parsedRow } from './failure
 import {
   createReferenceCommands,
   createReferenceRepository,
+  createRestoreCommand,
   parsedCandidate,
   permissionOf,
   requireWritable,
@@ -52,10 +54,11 @@ import {
   type ReferenceSpec,
   type RowCheck,
 } from './reference'
-import { rolePairs, requireHeld } from './permissions'
+import { grantActive, rolePairs, requireHeld } from './permissions'
 import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 import { SOLDIER_TAG_TABLES, soldierTagIssues, tagScopeIssues } from './tags'
 import { membershipsHoldLeaves } from './leaveRotation'
+import { deleteSubscriptionsOf } from './notifications'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
 // (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097. A soldier's tags
@@ -102,7 +105,7 @@ const SPEC: ReferenceSpec<Soldier> = {
   table: 'soldiers',
   resource: 'soldiers',
   schema: Soldier,
-  checkTables: ['property_definitions'],
+  checkTables: ['property_definitions', 'push_subscriptions'],
   optionalText: ['nickname'],
   targetOf: (row) => soldierTarget(row.id),
   rowIssues: async (check) => [
@@ -328,6 +331,37 @@ export function createMembershipRepository(dependencies: LocalDependencies): Dat
   }
 }
 
+/**
+ * A restored soldier is a live soldier again (D-371), and gets back what D-056 withheld while archived: the rank's
+ * bound roles and the access grants still in force. The actor holds every pair of them, as when binding a rank or
+ * granting (D-060, D-156). The rank is live, the units the soldier is placed in today or later are live, and the
+ * personal id is still the soldier's own (D-098).
+ */
+async function restoreIssues(check: RowCheck<Soldier>): Promise<Issue[]> {
+  const { database, scope, row } = check
+  const grants = await tableOf(database, 'access_grants').where('grantee_soldier_id').equals(row.id).toArray()
+  const roleIds = new Set(grants.filter((grant) => grantActive(grant, scope.now)).map((grant) => grant.role_id))
+  const pairs = []
+  for (const roleId of roleIds) {
+    const role = await tableOf(database, 'roles').get(roleId)
+    if (role !== undefined && role.archived_at === null) pairs.push(...(await rolePairs(database, roleId)))
+  }
+  requireHeld(scope, pairs)
+
+  const today = scope.context.clock.today
+  const memberships = await tableOf(database, 'unit_memberships').where('soldier_id').equals(row.id).toArray()
+  const placements = []
+  for (const unitId of new Set(memberships.filter((m) => m.valid_to === null || m.valid_to >= today).map((m) => m.unit_id))) {
+    placements.push(...(await placementIssues(database, scope, unitId, ['unit_id'])))
+  }
+  const stored = await tableOf(database, 'soldier_private').get(row.id)
+  return [
+    ...(await rankIssues({ ...check, before: null })),
+    ...placements,
+    ...(await personalIdIssues(database, scope, row.id, stored?.personal_id ?? null, ['personal_id'])),
+  ]
+}
+
 // ------------------------------------------------------------------ commands
 
 export function createSoldierCommands(dependencies: LocalDependencies): DataCommands['soldiers'] {
@@ -346,12 +380,23 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
         row.archived_at !== before.archived_at
       if (changed) await requireAccessManager(store, scope.organization_id, scope.now)
       if (row.command_rank_id !== before?.command_rank_id) await requireAfterRankWrite(store, scope, 'update', row.id)
+      // An archived soldier's devices stop getting pushes (D-351).
+      if (before !== null && before.archived_at === null && row.archived_at !== null) await deleteSubscriptionsOf(store, row.id)
     },
   })
 
   return {
     update,
     archive,
+    restore: createRestoreCommand(dependencies, SPEC, {
+      input: RestoreSoldierInput,
+      restoreIssues,
+      tables: ['soldier_private'],
+      // D-157: with the rank back, the actor still passes the check on the soldier as stored after the restore.
+      afterWrite: async ({ database: store, scope, row }) => {
+        if (row.command_rank_id !== null) await requireAfterRankWrite(store, scope, 'update', row.id)
+      },
+    }),
 
     // D-130: the whole set, guarded by the soldier's version, which it bumps (D-045).
     setTags: (raw) =>

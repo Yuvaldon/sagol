@@ -103,24 +103,30 @@ const INPUT_TABLES: Record<string, Target> = {
   ReviewAccountLinkInput: { table: 'account_link_requests' },
   RevokeAccountLinkInput: { table: 'soldier_accounts' },
   UpdateMyPreferencesInput: { table: 'soldier_preferences' },
+  SubscribePushInput: { table: 'push_subscriptions' },
+  UnsubscribePushInput: { table: 'push_subscriptions' },
   CreateUnitLevelInput: { table: 'unit_levels' },
   UpdateUnitLevelInput: { table: 'unit_levels' },
   ArchiveUnitLevelInput: { table: 'unit_levels' },
+  RestoreUnitLevelInput: { table: 'unit_levels' },
   ReorderUnitLevelsInput: { table: 'unit_levels', nested: { items: 'unit_levels' } },
   CreateUnitInput: { table: 'units' },
   UpdateUnitInput: { table: 'units' },
   ArchiveUnitInput: { table: 'units' },
+  RestoreUnitInput: { table: 'units' },
   ReorderUnitsInput: { table: 'units', nested: { items: 'units' } },
   MoveUnitInput: { table: 'units' },
   CreateCommandRankInput: { table: 'command_ranks' },
   UpdateCommandRankInput: { table: 'command_ranks' },
   ArchiveCommandRankInput: { table: 'command_ranks' },
+  RestoreCommandRankInput: { table: 'command_ranks' },
   CreateSoldierInput: {
     table: 'soldiers',
     nested: { private: 'soldier_private', membership: 'unit_memberships' },
   },
   UpdateSoldierInput: { table: 'soldiers' },
   ArchiveSoldierInput: { table: 'soldiers' },
+  RestoreSoldierInput: { table: 'soldiers' },
   UpdateSoldierPrivateInput: { table: 'soldier_private' },
   SetSoldierTagsInput: { table: 'soldier_tags' },
   ChangeMembershipInput: {
@@ -140,18 +146,22 @@ const INPUT_TABLES: Record<string, Target> = {
   CreateTagCategoryInput: { table: 'tag_categories' },
   UpdateTagCategoryInput: { table: 'tag_categories' },
   ArchiveTagCategoryInput: { table: 'tag_categories' },
+  RestoreTagCategoryInput: { table: 'tag_categories' },
   ReorderTagCategoriesInput: { table: 'tag_categories', nested: { items: 'tag_categories' } },
   CreateTagInput: { table: 'tags' },
   UpdateTagInput: { table: 'tags' },
   ArchiveTagInput: { table: 'tags' },
+  RestoreTagInput: { table: 'tags' },
   ReorderTagsInput: { table: 'tags', nested: { items: 'tags' } },
   CreateLeaveTypeGroupInput: { table: 'leave_type_groups' },
   UpdateLeaveTypeGroupInput: { table: 'leave_type_groups' },
   ArchiveLeaveTypeGroupInput: { table: 'leave_type_groups' },
+  RestoreLeaveTypeGroupInput: { table: 'leave_type_groups' },
   ReorderLeaveTypeGroupsInput: { table: 'leave_type_groups', nested: { items: 'leave_type_groups' } },
   CreateLeaveTypeInput: { table: 'leave_types' },
   UpdateLeaveTypeInput: { table: 'leave_types' },
   ArchiveLeaveTypeInput: { table: 'leave_types' },
+  RestoreLeaveTypeInput: { table: 'leave_types' },
   ReorderLeaveTypesInput: { table: 'leave_types', nested: { items: 'leave_types' } },
   CreateLeaveInput: { table: 'leaves', nested: { comment: 'leave_comments' } },
   CreateLeaveBatchInput: { table: 'leaves', nested: { batch: 'leave_batches', leaves: 'leaves' } },
@@ -171,9 +181,11 @@ const INPUT_TABLES: Record<string, Target> = {
   CreateAvailabilityRuleInput: { table: 'availability_rules' },
   UpdateAvailabilityRuleInput: { table: 'availability_rules' },
   ArchiveAvailabilityRuleInput: { table: 'availability_rules' },
+  RestoreAvailabilityRuleInput: { table: 'availability_rules' },
   CreatePropertyDefinitionInput: { table: 'property_definitions' },
   UpdatePropertyDefinitionInput: { table: 'property_definitions' },
   ArchivePropertyDefinitionInput: { table: 'property_definitions' },
+  RestorePropertyDefinitionInput: { table: 'property_definitions' },
   ReorderPropertyDefinitionsInput: {
     table: 'property_definitions',
     nested: { items: 'property_definitions' },
@@ -439,9 +451,11 @@ describe('import and export (D-050)', () => {
     expect(ImportCommand.options).toHaveLength(ImportOperation.options.length)
   })
 
-  it('exports every table', () => {
+  it('exports every table but the devices, which belong to the browsers (D-351)', () => {
     expect(Object.keys(OrganizationExport.shape.tables.shape).sort()).toEqual(
-      Object.keys(TABLE_SCHEMAS).sort(),
+      Object.keys(TABLE_SCHEMAS)
+        .filter((table) => table !== 'push_subscriptions')
+        .sort(),
     )
   })
 })
@@ -505,7 +519,7 @@ describe('auth and session (D-048)', () => {
     expect(Session.safeParse({ status: 'linked', identity }).success).toBe(false)
   })
 
-  it('has one repository per table', () => {
-    expectTypeOf<keyof DataRepositories>().toEqualTypeOf<TableName>()
+  it('has one repository per table but the push subscriptions, which nothing reads back (D-351)', () => {
+    expectTypeOf<keyof DataRepositories>().toEqualTypeOf<Exclude<TableName, 'push_subscriptions'>>()
   })
 })

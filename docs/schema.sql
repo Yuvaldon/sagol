@@ -1,5 +1,5 @@
 -- =============================================================================
--- Sagol — PostgreSQL schema. Revision 3.2 (2026-11-10).
+-- Sagol — PostgreSQL schema. Revision 3.3 (2026-11-13).
 -- Single Source of Truth for entity and column names. `src/contracts` mirrors it;
 -- a drift test keeps the two identical. Decisions: docs/DECISIONS.md (D-xxx).
 --
@@ -39,6 +39,10 @@
 --
 -- Revision 3.2 changes vs revision 3.1
 --   + CHECK lists on leave_events.from_status and to_status (OI-013)
+--
+-- Revision 3.3 changes vs revision 3.2
+--   + push_subscriptions: device rows, deleted rather than archived (D-351)
+--   * soldier_preferences.preferences: updates_seen_at (D-352), notifications (D-358)
 -- =============================================================================
 
 -- Extensions live outside the app's schema (D-188).
@@ -266,12 +270,29 @@ CREATE TABLE IF NOT EXISTS "soldier_preferences" (
 	"preferences" JSONB NOT NULL DEFAULT '{}',       -- validated by contracts SoldierPreferences:
 	                                                 -- create_leaves_as_approved (D-121),
 	                                                 -- appearance (D-181);
+	                                                 -- updates_seen_at (D-352), notifications (D-358);
 	                                                 -- missing keys read as defaults, unknown keys
 	                                                 -- are dropped on read (rules_row_placement, D-310);
 	                                                 -- pinned_modules (D-221) is gone and never written (D-291)
 	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"version" INTEGER NOT NULL DEFAULT 1,
 	PRIMARY KEY("soldier_id")
+);
+
+-- One browser install of a soldier that agreed to phone notifications (D-351). Device data, not
+-- organization data: never exported, and deleted (not archived) when the soldier unsubscribes, loses
+-- the link or is archived, or when the push service answers that it no longer knows the endpoint (D-358).
+-- The endpoint is the natural key: subscribing again from the same browser moves the row to the caller.
+CREATE TABLE IF NOT EXISTS "push_subscriptions" (
+	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
+	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
+	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id"),
+	"endpoint" VARCHAR(2048) NOT NULL,               -- https on a known push service, checked by contracts PushEndpoint (D-351)
+	"p256dh" VARCHAR(200) NOT NULL,
+	"auth" VARCHAR(100) NOT NULL,
+	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY("id"),
+	CONSTRAINT "push_subscriptions_endpoint_key" UNIQUE ("endpoint")
 );
 
 -- -----------------------------------------------------------------------------
@@ -735,6 +756,7 @@ CREATE INDEX IF NOT EXISTS "idx_leave_events_leave"         ON "leave_events"("l
 CREATE INDEX IF NOT EXISTS "idx_leave_comments_leave"       ON "leave_comments"("leave_id", "created_at");
 CREATE INDEX IF NOT EXISTS "idx_deployments_unit_id"        ON "deployments"("unit_id");
 CREATE INDEX IF NOT EXISTS "idx_report_confirmations_date" ON "report_confirmations"("organization_id", "report_date");
+CREATE INDEX IF NOT EXISTS "idx_push_subscriptions_soldier" ON "push_subscriptions"("soldier_id");
 CREATE INDEX IF NOT EXISTS "idx_availability_rules_scope"   ON "availability_rules"("scope_unit_id") WHERE "archived_at" IS NULL;
 
 -- -----------------------------------------------------------------------------

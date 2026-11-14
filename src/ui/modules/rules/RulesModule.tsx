@@ -2,8 +2,9 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import { RuleEnforcement, type AppError, type AvailabilityRule, type CalendarDate, type UnitId } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   liveRules,
-  useAvailabilityRules,
+  useAvailabilityRulesWithArchived,
   useCommandRanks,
   useDateWindow,
   useDayViolations,
@@ -24,6 +25,7 @@ import { Archive, Plus, X } from 'lucide-react'
 import { useId, useMemo, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatDate } from '../../patterns/dates'
@@ -159,7 +161,7 @@ function RuleEditor(props: Omit<RuleFormProps, 'onReload'>) {
 
 export function RulesModule() {
   const panel = usePanel()
-  const rules = useAvailabilityRules()
+  const rules = useAvailabilityRulesWithArchived()
   const units = useUnitsWithArchived()
   const levels = useUnitLevels()
   const categories = useTagCategories()
@@ -173,7 +175,9 @@ export function RulesModule() {
   const commands = useRuleCommands()
   const liveUnits = useMemo(() => (units.status === 'ready' ? units.value.filter((row) => row.archived_at === null) : NO_ROWS), [units])
   const live = useMemo(() => (rules.status === 'ready' ? liveRules(rules.value) : NO_ROWS), [rules])
-  const permissions = useRulePermissions(liveUnits, live)
+  const archivedRules = useMemo(() => (rules.status === 'ready' ? archivedRows(rules.value) : NO_ROWS), [rules])
+  const everyRule = useMemo(() => [...live, ...archivedRules], [live, archivedRules])
+  const permissions = useRulePermissions(liveUnits, everyRule)
   const [failure, setFailure] = useState<AppError | null>(null)
   const [archiving, setArchiving] = useState<AvailabilityRule | null>(null)
 
@@ -274,6 +278,12 @@ export function RulesModule() {
           </Section>
         </>
       )}
+      {/* Archived rules come back from a quiet section under the list, for whoever may archive them (D-371). */}
+      <ArchivedSection
+        rows={archivedRules.filter((rule) => permissions.archive(rule))}
+        nameOf={(rule) => rule.name}
+        restore={commands.restore}
+      />
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"

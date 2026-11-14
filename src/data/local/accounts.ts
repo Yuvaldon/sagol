@@ -40,6 +40,7 @@ import { holds, loadActorScope, requirePermission, type ActorScope } from './act
 import { tableOf } from './store'
 import { updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
+import { deleteSubscriptionsOf } from './notifications'
 import { permissionOf } from './reference'
 import { requireLinked, resolveSession } from './session'
 import { POLICY_TABLES, requireAccessManager } from './snapshot'
@@ -467,7 +468,7 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
     revokeLink: (raw) =>
       asResult(async () => {
         const input = parseInput(RevokeAccountLinkInput, raw)
-        const row = await database.transaction('rw', POLICY_TABLES, async () => {
+        const row = await database.transaction('rw', [...POLICY_TABLES, 'push_subscriptions'], async () => {
           const scope = await loadActorScope(dependencies)
           const accounts = tableOf(database, 'soldier_accounts')
           const stored = await accounts.get(input.id)
@@ -478,6 +479,8 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
           if (stored.revoked_at !== null) return failValidation([{ path: ['id'], code: IssueCode.enum.archived }])
           const revoked = parsedRow('soldier_accounts', { ...stored, revoked_at: scope.now, revoked_by: scope.soldier_id })
           await accounts.put(revoked)
+          // The soldier's devices stop getting pushes with the link (D-351).
+          await deleteSubscriptionsOf(database, stored.soldier_id)
           await requireAccessManager(database, scope.organization_id, scope.now)
           return revoked
         })

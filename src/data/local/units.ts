@@ -5,6 +5,7 @@ import {
   IssueCode,
   MoveUnitInput,
   ReorderUnitsInput,
+  RestoreUnitInput,
   Unit,
   UpdateUnitInput,
   type DataCommands,
@@ -30,6 +31,7 @@ import {
   createReferenceCommands,
   createReferenceRepository,
   createReorderCommand,
+  createRestoreCommand,
   permissionOf,
   requireWritable,
   tablesOf,
@@ -121,6 +123,19 @@ async function archiveIssues(database: Store, scope: ActorScope, unit: Unit): Pr
   )
 }
 
+/**
+ * A restored unit is a live unit again (D-371): its parent and its level are live, and it is not a second root
+ * (D-251). Its code stayed taken while it was archived, so it is not checked again.
+ */
+async function restoreIssues(check: RowCheck<Unit>): Promise<Issue[]> {
+  const { database, scope, row } = check
+  return [
+    ...(await parentIssues(database, scope, row.parent_id)),
+    ...rootIssues(await organizationUnits(database, scope), row.id, row.parent_id),
+    ...(await levelIssues({ ...check, before: null })),
+  ]
+}
+
 export function createUnitRepository(dependencies: LocalDependencies): DataRepositories['units'] {
   return createReferenceRepository(dependencies, SPEC, bySortOrder)
 }
@@ -137,6 +152,8 @@ export function createUnitCommands(dependencies: LocalDependencies): DataCommand
     }),
 
     reorder: createReorderCommand(dependencies, SPEC, ReorderUnitsInput, (row) => row.parent_id),
+
+    restore: createRestoreCommand(dependencies, SPEC, { input: RestoreUnitInput, restoreIssues }),
 
     move: (raw) =>
       asResult(async () => {

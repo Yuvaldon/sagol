@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, Tag, TagCategory, TagCategoryId } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   liveCategories,
   newTagValues,
   tagColorOf,
@@ -20,6 +21,7 @@ import { Archive, ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -225,6 +227,14 @@ export function TagsModule() {
   const all = tags.value
   const sections = tagSections(categories.value, all)
   const live = sections.flatMap((section) => section.tags)
+  // Archived tags come back from a quiet section under the list, for whoever may archive them (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={permissions.archive ? archivedRows(all) : []}
+      nameOf={(tag) => tag.name}
+      restore={commands.restore}
+    />
+  )
   const newTag = () => {
     setFailure(null)
     panel.open(PANEL_IDS.tags, { entity: NEW_ENTITY })
@@ -252,14 +262,17 @@ export function TagsModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="tags.emptyTitle" bodyKey={permissions.create ? undefined : 'tags.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newTag}>
-            <Plus aria-hidden size={14} />
-            {t('tags.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        <EmptyNotice titleKey="tags.emptyTitle" bodyKey={permissions.create ? undefined : 'tags.emptyReadOnly'}>
+          {permissions.create ? (
+            <Button variant="primary" onPress={newTag}>
+              <Plus aria-hidden size={14} />
+              {t('tags.new')}
+            </Button>
+          ) : null}
+        </EmptyNotice>
+        {archived}
+      </div>
     )
   }
 
@@ -324,6 +337,7 @@ export function TagsModule() {
           </Button>
         </div>
       ) : null}
+      {archived}
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"

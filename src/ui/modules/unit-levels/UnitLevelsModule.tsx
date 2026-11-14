@@ -2,6 +2,7 @@ import { DRAG_ACTIVATION_PX, NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, UnitLevel } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   liveLevels,
   steppedOrder,
   unitLevelFormIssues,
@@ -18,6 +19,7 @@ import { Archive, ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -264,12 +266,21 @@ export function UnitLevelsModule() {
   const panel = usePanel()
   const levels = useUnitLevels()
   const permissions = useUnitLevelPermissions()
+  const { restore } = useUnitLevelCommands()
   const [failure, setFailure] = useState<AppError | null>(null)
 
   if (levels.status === 'failed') return <FailureNotice error={levels.error} />
   if (levels.status === 'loading') return <LoadingNotice />
 
   const live = liveLevels(levels.value)
+  // Restoring is the reverse of archiving, under the same permission (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={permissions.archive ? archivedRows(levels.value) : []}
+      nameOf={(level) => level.name}
+      restore={restore}
+    />
+  )
   const newLevel = () => {
     setFailure(null)
     panel.open(PANEL_IDS.unitLevels, { entity: NEW_ENTITY })
@@ -298,14 +309,17 @@ export function UnitLevelsModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="unitLevels.emptyTitle" bodyKey={permissions.create ? undefined : 'unitLevels.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newLevel}>
-            <Plus aria-hidden size={14} />
-            {t('unitLevels.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        <EmptyNotice titleKey="unitLevels.emptyTitle" bodyKey={permissions.create ? undefined : 'unitLevels.emptyReadOnly'}>
+          {permissions.create ? (
+            <Button variant="primary" onPress={newLevel}>
+              <Plus aria-hidden size={14} />
+              {t('unitLevels.new')}
+            </Button>
+          ) : null}
+        </EmptyNotice>
+        {archived}
+      </div>
     )
   }
 
@@ -321,6 +335,7 @@ export function UnitLevelsModule() {
           </Button>
         </div>
       ) : null}
+      {archived}
     </div>
   )
 }

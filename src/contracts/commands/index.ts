@@ -23,6 +23,8 @@ import type {
   RequestAccountLinkInput,
   ReviewAccountLinkInput,
   RevokeAccountLinkInput,
+  SubscribePushInput,
+  UnsubscribePushInput,
   UpdateMyPreferencesInput,
 } from '../inputs/accounts'
 import type {
@@ -36,6 +38,8 @@ import type {
 import type { ConfirmDayReportInput } from '../inputs/reports'
 import type {
   ArchiveUnitInput,
+  RestoreUnitInput,
+  RestoreUnitLevelInput,
   ArchiveUnitLevelInput,
   CreateUnitInput,
   CreateUnitLevelInput,
@@ -50,6 +54,8 @@ import type {
   ArchiveLeaveCommentInput,
   ArchiveLeaveTypeGroupInput,
   ArchiveLeaveTypeInput,
+  RestoreLeaveTypeGroupInput,
+  RestoreLeaveTypeInput,
   CreateLeaveBatchInput,
   CreateLeavesInput,
   CreateLeaveInput,
@@ -77,18 +83,22 @@ import type {
 } from '../inputs/permissions'
 import type {
   ArchivePropertyDefinitionInput,
+  RestorePropertyDefinitionInput,
   CreatePropertyDefinitionInput,
   ReorderPropertyDefinitionsInput,
   UpdatePropertyDefinitionInput,
 } from '../inputs/properties'
 import type {
   ArchiveAvailabilityRuleInput,
+  RestoreAvailabilityRuleInput,
   CreateAvailabilityRuleInput,
   UpdateAvailabilityRuleInput,
 } from '../inputs/rules'
 import type {
   ArchiveCommandRankInput,
   ArchiveSoldierInput,
+  RestoreCommandRankInput,
+  RestoreSoldierInput,
   ChangeMembershipInput,
   CreateCommandRankInput,
   CreateSeniorityOverrideInput,
@@ -102,6 +112,8 @@ import type {
 import type {
   ArchiveTagCategoryInput,
   ArchiveTagInput,
+  RestoreTagCategoryInput,
+  RestoreTagInput,
   CreateTagCategoryInput,
   CreateTagInput,
   ReorderTagCategoriesInput,
@@ -125,6 +137,11 @@ export interface ReferenceCommands<CreateInput, UpdateInput, ArchiveInput, Row> 
   create: Command<CreateInput, Row>
   update: Command<UpdateInput, Row>
   archive: Command<ArchiveInput, Row>
+}
+
+/** Restore of an archived row, checked like any write (D-371). */
+export interface RestorableCommands<RestoreInput, Row> {
+  restore: Command<RestoreInput, Row>
 }
 
 /** Reorder of a sortable entity; returns the rows in their new order. */
@@ -152,8 +169,10 @@ export interface DataCommands {
     ArchiveUnitLevelInput,
     UnitLevel
   > &
+    RestorableCommands<RestoreUnitLevelInput, UnitLevel> &
     SortableCommands<ReorderUnitLevelsInput, UnitLevel>
   units: ReferenceCommands<CreateUnitInput, UpdateUnitInput, ArchiveUnitInput, Unit> &
+    RestorableCommands<RestoreUnitInput, Unit> &
     SortableCommands<ReorderUnitsInput, Unit> & {
       move: Command<MoveUnitInput, Unit>
     }
@@ -162,8 +181,10 @@ export interface DataCommands {
     UpdateCommandRankInput,
     ArchiveCommandRankInput,
     CommandRank
-  >
-  soldiers: ReferenceCommands<CreateSoldierInput, UpdateSoldierInput, ArchiveSoldierInput, Soldier> & {
+  > &
+    RestorableCommands<RestoreCommandRankInput, CommandRank>
+  soldiers: ReferenceCommands<CreateSoldierInput, UpdateSoldierInput, ArchiveSoldierInput, Soldier> &
+    RestorableCommands<RestoreSoldierInput, Soldier> & {
     updatePrivate: Command<UpdateSoldierPrivateInput, SoldierPrivate>
     setTags: Command<SetSoldierTagsInput, SoldierTag[]>
     /** Returns the closed and the opened membership rows. */
@@ -190,8 +211,10 @@ export interface DataCommands {
     ArchiveTagCategoryInput,
     TagCategory
   > &
+    RestorableCommands<RestoreTagCategoryInput, TagCategory> &
     SortableCommands<ReorderTagCategoriesInput, TagCategory>
   tags: ReferenceCommands<CreateTagInput, UpdateTagInput, ArchiveTagInput, Tag> &
+    RestorableCommands<RestoreTagInput, Tag> &
     SortableCommands<ReorderTagsInput, Tag>
   leave_type_groups: ReferenceCommands<
     CreateLeaveTypeGroupInput,
@@ -199,6 +222,7 @@ export interface DataCommands {
     ArchiveLeaveTypeGroupInput,
     LeaveTypeGroup
   > &
+    RestorableCommands<RestoreLeaveTypeGroupInput, LeaveTypeGroup> &
     SortableCommands<ReorderLeaveTypeGroupsInput, LeaveTypeGroup>
   leave_types: ReferenceCommands<
     CreateLeaveTypeInput,
@@ -206,6 +230,7 @@ export interface DataCommands {
     ArchiveLeaveTypeInput,
     LeaveType
   > &
+    RestorableCommands<RestoreLeaveTypeInput, LeaveType> &
     SortableCommands<ReorderLeaveTypesInput, LeaveType>
   /** Leave commands evaluate affected availability rules (D-014, D-047). */
   leaves: {
@@ -239,17 +264,26 @@ export interface DataCommands {
     UpdateAvailabilityRuleInput,
     ArchiveAvailabilityRuleInput,
     AvailabilityRule
-  >
+  > &
+    RestorableCommands<RestoreAvailabilityRuleInput, AvailabilityRule>
   property_definitions: ReferenceCommands<
     CreatePropertyDefinitionInput,
     UpdatePropertyDefinitionInput,
     ArchivePropertyDefinitionInput,
     PropertyDefinition
   > &
+    RestorableCommands<RestorePropertyDefinitionInput, PropertyDefinition> &
     SortableCommands<ReorderPropertyDefinitionsInput, PropertyDefinition>
   day_reports: {
     /** `day_reports:confirm` on the unit, on a day a live rotation over it runs (D-293). Confirming again moves the row. */
     confirm: Command<ConfirmDayReportInput, ReportConfirmation>
+  }
+  /** Phone notifications of the signed-in soldier's browser installs; a linked, active account only (D-351). */
+  notifications: {
+    /** Upsert by endpoint: a row stored for another soldier moves to the caller (a shared device changed hands). */
+    subscribe: Command<SubscribePushInput, { subscribed: true }>
+    /** Idempotent: a missing row is success; another soldier's endpoint answers `not_found` (D-046). */
+    unsubscribe: Command<UnsubscribePushInput, { subscribed: false }>
   }
 }
 

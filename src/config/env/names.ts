@@ -8,6 +8,7 @@ export const ENV_VARIABLES = {
   remoteUrl: 'VITE_REMOTE_URL',
   remoteAnonKey: 'VITE_REMOTE_ANON_KEY',
   appStage: 'VITE_APP_ENV',
+  pushPublicKey: 'VITE_PUSH_PUBLIC_KEY',
 } as const
 
 export type EnvVariable = (typeof ENV_VARIABLES)[keyof typeof ENV_VARIABLES]

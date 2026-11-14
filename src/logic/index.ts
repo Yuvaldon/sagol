@@ -1,14 +1,28 @@
 // Public entry point of the LOGIC layer.
 // Business rules, services and the hooks exposed to the UI. Receives
 // repositories by injection and never imports @data.
-export type { AuthPort, DataPort, DevicePort, DeviceStore, InstallOffer, LogicPorts, ShellPort, ShellState } from './ports'
+export type {
+  AuthPort,
+  DataPort,
+  DevicePort,
+  DeviceStore,
+  InstallOffer,
+  LogicPorts,
+  PushAvailability,
+  PushPort,
+  ShellPort,
+  ShellState,
+} from './ports'
 export { useAppUpdate, useInstallInvitation, useInstallOffer } from './shell/hooks'
+export { useDeviceNotifications, useNotificationKinds, type DeviceNotifications, type NotificationKinds } from './shell/push'
+export { useMarkUpdatesSeen, useMyUpdates, type MyUpdateLine, type MyUpdates } from './leaves/updatesHooks'
 export { useHome, type Home } from './home/hooks'
 export { useQuickAction, type QuickAction } from './home/quickAction'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
 export { claimIssues, timeZoneChoices, type ClaimOrganizationValues } from './organization/claim'
 export type { Loaded } from './queries/loaded'
+export { archivedRows } from './queries/archived'
 export {
   useAuthMode,
   useClaimOrganization,
@@ -355,6 +369,7 @@ export {
 export { acknowledgedRuleIds, type HeatDay, type WindowConflict } from './rules/evaluation'
 export {
   useAvailabilityRules,
+  useAvailabilityRulesWithArchived,
   useDayViolations,
   useHeatRow,
   useLeaveRuleCheck,

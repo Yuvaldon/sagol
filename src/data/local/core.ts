@@ -30,6 +30,7 @@ import {
   createRolePermissionRepository,
   createRoleRepository,
 } from './permissions'
+import { createNotificationCommands } from './notifications'
 import { createOrganizationCommands, createOrganizationRepository } from './organizations'
 import {
   createAccountCommands,
@@ -117,6 +118,7 @@ export interface LocalDataAdapter {
     readonly seniority_overrides: DataCommands['seniority_overrides']
     readonly deployments: DataCommands['deployments']
     readonly day_reports: DataCommands['day_reports']
+    readonly notifications: DataCommands['notifications']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed
@@ -182,6 +184,7 @@ export function createAdapterCore(dependencies: LocalDependencies): LocalDataAda
       seniority_overrides: createSeniorityOverrideCommands(dependencies),
       deployments: createDeploymentCommands(dependencies),
       day_reports: createDayReportCommands(dependencies),
+      notifications: createNotificationCommands(dependencies),
     },
     transfer: createTransfer(dependencies),
     changes,

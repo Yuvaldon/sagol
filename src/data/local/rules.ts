@@ -4,6 +4,7 @@ import {
   AvailabilityRule,
   CreateAvailabilityRuleInput,
   IssueCode,
+  RestoreAvailabilityRuleInput,
   UpdateAvailabilityRuleInput,
   type DataCommands,
   type DataRepositories,
@@ -21,6 +22,7 @@ import { parsedRow } from './failure'
 import {
   createReferenceCommands,
   createReferenceRepository,
+  createRestoreCommand,
   permissionOf,
   type ReferenceSpec,
   type RowCheck,
@@ -158,15 +160,23 @@ export function createAvailabilityRuleRepository(dependencies: LocalDependencies
 }
 
 export function createAvailabilityRuleCommands(dependencies: LocalDependencies): DataCommands['availability_rules'] {
-  return createReferenceCommands(dependencies, SPEC, {
-    create: CreateAvailabilityRuleInput,
-    update: UpdateAvailabilityRuleInput,
-    archive: ArchiveAvailabilityRuleInput,
-    placementOf: (input) => ruleTarget(input.scope_unit_id),
-    // Moving a rule needs authority where it lands too (D-139), checked with the stored target's.
-    updateTargetsOf: (input, before) =>
-      input.changes.scope_unit_id === undefined || input.changes.scope_unit_id === before.scope_unit_id
-        ? []
-        : [ruleTarget(input.changes.scope_unit_id)],
-  })
+  return {
+    ...createReferenceCommands(dependencies, SPEC, {
+      create: CreateAvailabilityRuleInput,
+      update: UpdateAvailabilityRuleInput,
+      archive: ArchiveAvailabilityRuleInput,
+      placementOf: (input) => ruleTarget(input.scope_unit_id),
+      // Moving a rule needs authority where it lands too (D-139), checked with the stored target's.
+      updateTargetsOf: (input, before) =>
+        input.changes.scope_unit_id === undefined || input.changes.scope_unit_id === before.scope_unit_id
+          ? []
+          : [ruleTarget(input.changes.scope_unit_id)],
+    }),
+    // A restored rule's scope unit, level, category and rotation are live (D-371). Its population filter, like any
+    // stored filter, may name archived rows (D-017).
+    restore: createRestoreCommand(dependencies, SPEC, {
+      input: RestoreAvailabilityRuleInput,
+      restoreIssues: (check) => referenceIssues({ ...check, before: null }),
+    }),
+  }
 }
