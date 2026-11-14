@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AvailabilityRuleId } from '../common/ids'
 import { AvailabilityRuleColumns, checkAvailabilityRule } from '../entities/rules'
-import { archiveInput, updateInput } from './common'
+import { archiveInput, restoreInput, updateInput } from './common'
 
 const ruleContent = AvailabilityRuleColumns.omit({
   id: true,
@@ -24,3 +24,5 @@ export type UpdateAvailabilityRuleInput = z.infer<typeof UpdateAvailabilityRuleI
 
 export const ArchiveAvailabilityRuleInput = archiveInput(AvailabilityRuleId)
 export type ArchiveAvailabilityRuleInput = z.infer<typeof ArchiveAvailabilityRuleInput>
+export const RestoreAvailabilityRuleInput = restoreInput(AvailabilityRuleId)
+export type RestoreAvailabilityRuleInput = z.infer<typeof RestoreAvailabilityRuleInput>

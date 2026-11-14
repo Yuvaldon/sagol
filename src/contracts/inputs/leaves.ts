@@ -12,6 +12,7 @@ import {
   AcknowledgedRuleIds,
   ExpectedVersion,
   archiveInput,
+  restoreInput,
   changesOf,
   checkDistinct,
   reorderInput,
@@ -33,6 +34,8 @@ export type UpdateLeaveTypeGroupInput = z.infer<typeof UpdateLeaveTypeGroupInput
 
 export const ArchiveLeaveTypeGroupInput = archiveInput(LeaveTypeGroupId)
 export type ArchiveLeaveTypeGroupInput = z.infer<typeof ArchiveLeaveTypeGroupInput>
+export const RestoreLeaveTypeGroupInput = restoreInput(LeaveTypeGroupId)
+export type RestoreLeaveTypeGroupInput = z.infer<typeof RestoreLeaveTypeGroupInput>
 
 export const ReorderLeaveTypeGroupsInput = reorderInput(LeaveTypeGroupId)
 export type ReorderLeaveTypeGroupsInput = z.infer<typeof ReorderLeaveTypeGroupsInput>
@@ -60,6 +63,8 @@ export type UpdateLeaveTypeInput = z.infer<typeof UpdateLeaveTypeInput>
 
 export const ArchiveLeaveTypeInput = archiveInput(LeaveTypeId)
 export type ArchiveLeaveTypeInput = z.infer<typeof ArchiveLeaveTypeInput>
+export const RestoreLeaveTypeInput = restoreInput(LeaveTypeId)
+export type RestoreLeaveTypeInput = z.infer<typeof RestoreLeaveTypeInput>
 
 export const ReorderLeaveTypesInput = reorderInput(LeaveTypeId)
 export type ReorderLeaveTypesInput = z.infer<typeof ReorderLeaveTypesInput>

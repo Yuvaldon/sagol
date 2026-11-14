@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { PropertyDefinitionId } from '../common/ids'
 import { PropertyDefinition } from '../entities/properties'
-import { archiveInput, reorderInput, updateInput } from './common'
+import { archiveInput, restoreInput, reorderInput, updateInput } from './common'
 
 const definitionContent = PropertyDefinition.pick({
   label: true,
@@ -25,6 +25,8 @@ export type UpdatePropertyDefinitionInput = z.infer<typeof UpdatePropertyDefinit
 
 export const ArchivePropertyDefinitionInput = archiveInput(PropertyDefinitionId)
 export type ArchivePropertyDefinitionInput = z.infer<typeof ArchivePropertyDefinitionInput>
+export const RestorePropertyDefinitionInput = restoreInput(PropertyDefinitionId)
+export type RestorePropertyDefinitionInput = z.infer<typeof RestorePropertyDefinitionInput>
 
 /** Orders the definitions of one entity type. */
 export const ReorderPropertyDefinitionsInput = reorderInput(PropertyDefinitionId)

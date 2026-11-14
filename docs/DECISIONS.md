@@ -114,7 +114,7 @@ am = amends, ref = refines, ext = extends.
 | D-095 | Command ranks: order by seniority, archive refused while held | contracts, domain, data, logic, ui, backend | |
 | D-096 | Permissions of the roster commands | domain, data, logic, ui, backend | ref D-102; ref D-130 |
 | D-097 | Changing a soldier's membership | domain, data, logic, ui, backend | |
-| D-098 | Archiving a soldier | data, ui, backend | ref D-124 |
+| D-098 | Archiving a soldier | data, ui, backend | ref D-124; ref D-371 |
 | D-099 | Unit names in a soldier's history | logic, ui | ref D-106 |
 | D-100 | A new required port lands in `app` before `logic` | logic, app, docs | sup D-127 |
 | D-101 | Commands store blank optional text as NULL | contracts, data, logic, backend | |
@@ -317,7 +317,7 @@ am = amends, ref = refines, ext = extends.
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 | D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | am D-360 |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
-| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360 |
+| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360; ref D-370 |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
@@ -336,6 +336,8 @@ am = amends, ref = refines, ext = extends.
 | D-360 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
 | D-361 | The stored board reads leniently and writes strictly; leave events take a thread or a span query | contracts | |
 | D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | |
+| D-370 | The 1.0 Could items are built while the owner is away | docs | |
+| D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | |
 | D-383 | The range picker offers two and four weeks | config, logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
@@ -4584,10 +4586,10 @@ the company commander's need is a picture for planning, not approving.
 | OI-296 the failing table in the log | Should | |
 | OI-151 live changes from other devices | Should | The owner's pick |
 | Notifications (Later) | Should | The owner's pick |
-| OI-104 restore an archived row | Could | Archiving is protected in the design (OI-297) |
+| OI-104 restore an archived row | Could | Archiving is protected in the design (OI-297). Built under D-370: D-371; roles, bindings and deployments: OI-320 |
 | OI-111 spans other than a week | Could | The range picker is reviewed in the design rounds |
 | OI-112 more filter conditions | Could | |
-| OI-254, OI-255 "changed since" misses | Could | OI-254: only the mark is missed; the copy is right |
+| OI-254, OI-255 "changed since" misses | Could | OI-254: only the mark is missed; the copy is right. Built under D-370 |
 | Saved views (Later) | Could | |
 | OI-102 invite links | Won't (1.0) | |
 | OI-116 offline queue | Won't (1.0) | |
@@ -4950,6 +4952,42 @@ what does not exist is a client bug to refuse. One list method with two strict s
 **Why:** CSS bars on the theme keep the charts in the design system, in both themes and in RTL, with no library to
 learn or ship; the hidden tables make them readable. Opening by unit scope keeps a commander's module from a soldier who
 reads only themself. A note on what cannot be counted is more honest than a figure that pretends.
+
+## D-370 — The 1.0 Could items are built while the owner is away
+2026-11-13 · accepted · ref D-170, D-344 · the owner's instruction of 2026-11-13
+- While the owner is unavailable, the Could items of D-344 are built without waiting for a review: each as its own
+  pull request, green in CI and left unmerged for the orchestrator. The choices they need are decided and recorded
+  under D-170.
+- D-344's rows for the items built this way say so and name their decisions.
+**Why:** the owner asked that the remaining 1.0 work not wait on them; recording it keeps the trail of who decided what.
+
+## D-371 — Restoring an archived row: one `restore` command per reference entity, checked like a write
+2026-11-13 · accepted · refines D-098 · ref D-012, D-046, D-076, D-088, D-095, D-152, D-251 · OI-104 · decided under the owner's autonomy instruction (D-370, D-170)
+- **What is restorable.** Unit levels, units, command ranks, soldiers, tag categories, tags, leave type groups, leave
+  types, property definitions and availability rules each get `restore`, input `{id, expected_version}`. Roles, rank
+  role bindings and deployments are not restorable yet (OI-320): each needs its own rules about what it gives back.
+- **Same checks as a write.** The permission is the entity's `delete` on the row's target, as for archive. A live row
+  is refused with `not_archived`; a version mismatch is `stale_version`; the version and `updated_*` are bumped (D-012).
+  Every reference the row holds must be live and visible again: a unit's parent and level, and only one live root
+  (D-251); a soldier's rank, the units of current and future placements, and the pairs of the soldier's active grants
+  of live roles, which the actor must hold (D-156), and after the write the actor still passes D-157 on the soldier;
+  a tag's category, and its name free among live tags (`uq_tags_name`); a leave type's group; a rule's scope, level,
+  category and rotation. A reference that is archived refuses with `reference_archived` on its field; the actor
+  restores it first.
+- **The personal id.** An archived soldier keeps their number (D-098, D-152), so restoring gives it back. The unique
+  check still runs, defensively: a clash refuses with `already_exists` on `personal_id`.
+- **Position.** `sort_order` is kept: a restored row comes back where it was among its siblings. A gap or a tie with a
+  row added meanwhile is ordered by id (`bySortOrder`) and settled by the next reorder.
+- **The UI is quiet.** At the end of each list, a collapsed "בארכיון (N)" disclosure, drawn only when N > 0 and the
+  actor may restore (D-076). Archived rows are dimmed, each with a small "החזרה" action and a confirmation that names
+  the row. The archive entry points themselves are unchanged (OI-297). A refused restore says why in the dialog:
+  an archived reference ("restore it first"), a missing one, a taken name or number, or a second root; anything else
+  shows the common failure text.
+- **The archive confirmations** no longer say there is no way back. A soldier's still says the personal id stays
+  taken until the soldier is restored. D-098 stands otherwise.
+- No schema change: `archived_at` back to NULL is the whole state change.
+**Why:** OI-104. A mistaken archive was permanent, and an archived soldier's number could not be used again. A restore
+that runs every check of a write cannot bring back a row into a state a write would refuse.
 
 ## D-383 — The range picker offers two and four weeks
 2026-11-13 · accepted · extends D-211 · OI-111 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)

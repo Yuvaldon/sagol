@@ -7,6 +7,8 @@ import {
   IssueCode,
   ReorderTagCategoriesInput,
   ReorderTagsInput,
+  RestoreTagCategoryInput,
+  RestoreTagInput,
   SoldierScopedQuery,
   Tag,
   TagCategory,
@@ -30,6 +32,8 @@ import {
   createReferenceCommands,
   createReferenceRepository,
   createReorderCommand,
+  createRestoreCommand,
+  noRestoreIssues,
   permissionOf,
   type ReferenceSpec,
   type RowCheck,
@@ -198,6 +202,7 @@ export function createTagCategoryCommands(dependencies: LocalDependencies): Data
         archiveTagCategoryIssues(await rowsOfOrganization(database, 'tags', scope), category.id),
     }),
     reorder: createReorderCommand(dependencies, CATEGORY_SPEC, ReorderTagCategoriesInput, () => null),
+    restore: createRestoreCommand(dependencies, CATEGORY_SPEC, { input: RestoreTagCategoryInput, restoreIssues: noRestoreIssues }),
   }
 }
 
@@ -211,5 +216,13 @@ export function createTagCommands(dependencies: LocalDependencies): DataCommands
     }),
     // Tags are ordered inside their category (D-130).
     reorder: createReorderCommand(dependencies, TAG_SPEC, ReorderTagsInput, (row) => row.category_id),
+    // A restored tag needs a live category, and its name free among the category's live tags (D-371).
+    restore: createRestoreCommand(dependencies, TAG_SPEC, {
+      input: RestoreTagInput,
+      restoreIssues: async (check) => [
+        ...(await categoryIssues({ ...check, before: null })),
+        ...(await nameIssues({ ...check, before: null })),
+      ],
+    }),
   }
 }

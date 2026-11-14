@@ -2,6 +2,7 @@ import {
   ArchiveCommandRankInput,
   CommandRank,
   CreateCommandRankInput,
+  RestoreCommandRankInput,
   UpdateCommandRankInput,
   type DataCommands,
   type DataRepositories,
@@ -10,7 +11,13 @@ import { archiveRankIssues } from '@domain'
 import { colorKeyIssues } from './checks'
 import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
-import { createReferenceCommands, createReferenceRepository, type ReferenceSpec } from './reference'
+import {
+  createReferenceCommands,
+  createReferenceRepository,
+  createRestoreCommand,
+  noRestoreIssues,
+  type ReferenceSpec,
+} from './reference'
 
 // `command_ranks`: organization data, ordered by `seniority` (D-002, D-095). There is no reorder: the
 // number is the order.
@@ -35,14 +42,17 @@ export function createCommandRankRepository(dependencies: LocalDependencies): Da
 }
 
 export function createCommandRankCommands(dependencies: LocalDependencies): DataCommands['command_ranks'] {
-  return createReferenceCommands(dependencies, SPEC, {
-    create: CreateCommandRankInput,
-    update: UpdateCommandRankInput,
-    archive: ArchiveCommandRankInput,
-    placementOf: () => ({ kind: 'organization' }),
-    archiveIssues: async (database, scope, rank) => {
-      const soldiers = await tableOf(database, 'soldiers').where('organization_id').equals(scope.organization_id).toArray()
-      return archiveRankIssues(soldiers, rank.id)
-    },
-  })
+  return {
+    ...createReferenceCommands(dependencies, SPEC, {
+      create: CreateCommandRankInput,
+      update: UpdateCommandRankInput,
+      archive: ArchiveCommandRankInput,
+      placementOf: () => ({ kind: 'organization' }),
+      archiveIssues: async (database, scope, rank) => {
+        const soldiers = await tableOf(database, 'soldiers').where('organization_id').equals(scope.organization_id).toArray()
+        return archiveRankIssues(soldiers, rank.id)
+      },
+    }),
+    restore: createRestoreCommand(dependencies, SPEC, { input: RestoreCommandRankInput, restoreIssues: noRestoreIssues }),
+  }
 }
