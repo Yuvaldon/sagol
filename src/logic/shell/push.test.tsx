@@ -161,6 +161,21 @@ describe('sign-out (D-358)', () => {
     expect(signOut).toHaveBeenCalledTimes(1)
   })
 
+  it('still unsubscribes the browser when it cannot read its install', async () => {
+    const browser = browserOf('on')
+    const push = { ...browser, installed: () => Promise.reject(new Error('no registration')) }
+    const unsubscribe = vi.fn(() => Promise.resolve({ ok: true, value: { subscribed: false } }))
+    const signOut = vi.fn(() => Promise.resolve({ ok: true, value: null }))
+    const ports = fakePorts({ push, commands: { notifications: { unsubscribe } }, auth: { signOut } })
+    const { result } = renderHook(() => useSignOut(), { wrapper: wrapperOf(ports) })
+    await act(async () => {
+      await result.current.signOut()
+    })
+    expect(browser.disable).toHaveBeenCalledTimes(1)
+    expect(unsubscribe).not.toHaveBeenCalled()
+    expect(signOut).toHaveBeenCalledTimes(1)
+  })
+
   it('signs out when the push service never answers, after the limit (D-433)', async () => {
     vi.useFakeTimers()
     try {
