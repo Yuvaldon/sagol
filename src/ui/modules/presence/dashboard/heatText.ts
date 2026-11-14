@@ -6,7 +6,7 @@ import { formatDateRange } from '../../../patterns/dates'
 import type { ImageLine } from '../reportImage'
 import { numberText, signedText } from './figures'
 
-// The heat map's order and its copies (D-349, D-359): the rows as the table shows them, as text for a messaging app
+// The heat map's order and its copies (D-349, D-362): the rows as the table shows them, as text for a messaging app
 // and as the lines of an image, after the day report's (D-195, D-196). The copy holds what the actor sees, nothing more.
 
 /** What the table sorts by: the name, a week (its index), or a row-end column. */

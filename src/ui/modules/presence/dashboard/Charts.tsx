@@ -9,7 +9,7 @@ import { leaveTypeToneOf } from '../../../theme/palette'
 import { markedDays, trendColumns, typeBars, type TrendColumn } from './chartData'
 import { numberText, percentText, rangeText, ratioText, signedText, unitNameOf } from './figures'
 
-// The dashboard's charts (D-349, D-359): CSS bars on theme tokens, each with its figures as a hidden table. Time runs
+// The dashboard's charts (D-349, D-362): CSS bars on theme tokens, each with its figures as a hidden table. Time runs
 // from the start edge, so in Hebrew the first day is on the right; bars grow from the start edge.
 
 const STRIP =

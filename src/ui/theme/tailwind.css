@@ -78,7 +78,7 @@
   --color-palette-pink: #c43c86;
   --color-palette-gray: #6f6d67;
   /*
-   * The dashboard's heat steps (D-359): one blue, light to dark, by the share of a week a soldier spent at home, and the
+   * The dashboard's heat steps (D-362): one blue, light to dark, by the share of a week a soldier spent at home, and the
    * ink a number reads in on each step. The steps differ in pattern density too (`heat-pattern-*`), so color is not alone.
    */
   --color-heat-0: #eef3fb;
@@ -142,7 +142,7 @@
   --spacing-chart-gap: 16px;
   --spacing-chart-row-gap: 40px;
   --spacing-chart: 60dvh;
-  /* The dashboard (D-359): a heat map's week cell and its name column, and the height of a day chart. */
+  /* The dashboard (D-362): a heat map's week cell and its name column, and the height of a day chart. */
   --spacing-heat-cell: 36px;
   --spacing-heat-name: 128px;
   --spacing-trend: 160px;
@@ -349,7 +349,7 @@
 }
 
 /*
- * The dashboard's heat steps by density as well as color (D-359): a dotted pattern in the step's ink, sparse to dense,
+ * The dashboard's heat steps by density as well as color (D-362): a dotted pattern in the step's ink, sparse to dense,
  * so a reader who does not see the blue still reads the step. Step 0 has none.
  */
 @utility heat-pattern-1 {

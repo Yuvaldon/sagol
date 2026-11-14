@@ -4,7 +4,7 @@ import { t } from '@i18n'
 
 import { percentOf } from './chartMath'
 
-// The dashboard's small charts (D-359): CSS bars on theme tokens, no chart library. Every chart beside them carries a
+// The dashboard's small charts (D-362): CSS bars on theme tokens, no chart library. Every chart beside them carries a
 // visually hidden table of its figures (`SrTable`), so a screen reader reads the numbers, not the shapes.
 
 /** A chart's figures as a table only a screen reader finds. */

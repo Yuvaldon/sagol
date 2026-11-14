@@ -1,7 +1,7 @@
 import type { CalendarDate, LeaveType } from '@contracts'
 import type { DashboardRules, HomeByType, TrendDay } from '@logic'
 
-// What the dashboard's charts draw, worked out before the JSX (D-349, D-359).
+// What the dashboard's charts draw, worked out before the JSX (D-349, D-362).
 
 /** A day of the trend: its bar, the minimum the rules ask, and the mark of a broken rule. */
 export interface TrendColumn {

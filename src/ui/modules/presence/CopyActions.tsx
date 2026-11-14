@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '../../primitives/Button'
 import { canShareFiles, downloadFile, reportFile, reportImage, type ImageLine } from './reportImage'
 
-// A text copy and an image to send (D-195, D-196): the day report's pair, shared with the dashboard's heat map (D-359).
+// A text copy and an image to send (D-195, D-196): the day report's pair, shared with the dashboard's heat map (D-362).
 
 const NOTICES = { copied: 'presence.copied', copyFailed: 'presence.copyFailed', imageFailed: 'presence.imageFailed' } as const satisfies Record<string, I18nKey>
 

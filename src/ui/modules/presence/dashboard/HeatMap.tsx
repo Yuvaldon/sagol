@@ -19,7 +19,7 @@ import {
   type HeatSortKey,
 } from './heatText'
 
-// "מפת חום" (D-349, D-359): a soldier per row, a week per column, each cell shaded by the share of that week's
+// "מפת חום" (D-349, D-362): a soldier per row, a week per column, each cell shaded by the share of that week's
 // served days spent at home. Shade, ink and dot density all step together, so the step is never color alone; the
 // number sits in the cell for whoever reads it, and a screen reader hears the whole cell.
 
