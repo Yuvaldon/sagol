@@ -133,6 +133,50 @@ export function describeRuleContract(
       expect(valueOf(await rules().restore({ id: rule.id, expected_version: 2 }))).toMatchObject({ archived_at: null, version: 3 })
     })
 
+    it('restores a rule only over a live level, category and rotation (D-371)', async () => {
+      const level = valueOf(await adapter().commands.unit_levels.create({ id: UnitLevelId.parse(crypto.randomUUID()), name: 'Platoon', sort_order: 0 }))
+      const category = valueOf(
+        await adapter().commands.tag_categories.create({
+          id: TagCategoryId.parse(crypto.randomUUID()),
+          name: 'Shift',
+          selection_mode: 'single',
+          default_lifetime: 'persistent',
+          color_key: 'teal',
+          sort_order: 0,
+        }),
+      )
+      const rotation = valueOf(
+        await adapter().commands.deployments.create({
+          id: DeploymentId.parse(crypto.randomUUID()),
+          name: 'Winter',
+          unit_id: root,
+          start_date: '2026-01-01',
+          end_date: null,
+          report_owner_id: null,
+        }),
+      )
+      const rule = await create({
+        scope_mode: 'each_descendant_at_level',
+        scope_level_id: level.id,
+        group_by: 'tag',
+        group_tag_category_id: category.id,
+        deployment_id: rotation.id,
+      })
+      valueOf(await rules().archive({ id: rule.id, expected_version: 1 }))
+      valueOf(await adapter().commands.unit_levels.archive({ id: level.id, expected_version: 1 }))
+      valueOf(await adapter().commands.tag_categories.archive({ id: category.id, expected_version: 1 }))
+      // No command archives a rotation yet (OI-320): the state is seeded.
+      const [stored] = (await harnessOf().rows('deployments')).filter((row) => row.id === rotation.id)
+      if (stored === undefined) throw new Error('no rotation')
+      await harnessOf().seed('deployments', [{ ...stored, archived_at: stored.updated_at }])
+      expect(issuesOf(await rules().restore({ id: rule.id, expected_version: 2 }))).toEqual([
+        { path: ['scope_level_id'], code: 'reference_archived' },
+        { path: ['group_tag_category_id'], code: 'reference_archived' },
+        { path: ['deployment_id'], code: 'reference_archived' },
+      ])
+      expect((await harnessOf().rows('availability_rules')).find((row) => row.id === rule.id)?.archived_at).not.toBeNull()
+    })
+
     it('checks the row the way schema.sql does', async () => {
       const inverted = await rules().create(ruleInput({ min_value: 3, max_value: 2 }))
       expect(issuesOf(inverted)).toEqual([{ path: ['max_value'], code: 'rule_threshold_inverted' }])

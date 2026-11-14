@@ -374,6 +374,8 @@ export function describeAccountContract(
           const { input } = await ask(asker, { claimed_personal_id: '808', first_name: 'New', last_name: 'Recruit' })
           const soldierId = SoldierId.parse(crypto.randomUUID())
           const membershipId = UnitMembershipId.parse(crypto.randomUUID())
+          const lastSeq = async () => (await harness().rows('change_counters')).find((row) => row.organization_id === organization)?.last_seq ?? 0
+          const before = await lastSeq()
           const row = valueOf(
             await review(owner, input.id, {
               kind: 'create_soldier',
@@ -393,7 +395,10 @@ export function describeAccountContract(
           expect((await harness().rows('unit_memberships')).find((membership) => membership.id === membershipId)).toMatchObject({
             soldier_id: soldierId,
             unit_id: unitId,
+            // The placement takes a change number, as any membership write (D-373).
+            change_seq: before + 1,
           })
+          expect(await lastSeq()).toBe(before + 1)
           expect((await harness().rows('soldier_private')).find((private_) => private_.soldier_id === soldierId)?.personal_id).toBe('808')
           harness().signIn(asker)
           expect(valueOf(await adapter().session.current())).toMatchObject({ status: 'linked', soldier_id: soldierId })

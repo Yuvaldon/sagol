@@ -210,6 +210,14 @@ export function describeRosterContract(
         expect(await membershipsOf(created.id)).toEqual([])
       })
 
+      it('numbers the placement it writes (D-373)', async () => {
+        const { platoonA } = await sampleUnits()
+        const before = valueOf(await adapter().repositories.change_counters.current())
+        const created = valueOf(await adapter().commands.soldiers.create(soldierInput({ membership: placement(platoonA.id) })))
+        expect((await membershipsOf(created.id)).map((row) => row.change_seq)).toEqual([before + 1])
+        expect(valueOf(await adapter().repositories.change_counters.current())).toBe(before + 1)
+      })
+
       it('writes the soldier, the placement and the private fields together, and tells the feed', async () => {
         const { platoonA } = await sampleUnits()
         const heard = new Promise<readonly DataChange[]>((resolve) => {
@@ -425,6 +433,19 @@ export function describeRosterContract(
         expect(valueOf(await adapter().repositories.soldier_private.get(soldier.id)).personal_id).toBe('777')
       })
 
+      it('tells the change feed', async () => {
+        const soldier = valueOf(await adapter().commands.soldiers.create(soldierInput()))
+        valueOf(await adapter().commands.soldiers.archive({ id: soldier.id, expected_version: 1 }))
+        const heard = new Promise<readonly DataChange[]>((resolve) => {
+          const stop = adapter().changes.subscribe((changes) => {
+            stop()
+            resolve(changes)
+          })
+        })
+        valueOf(await restore(soldier.id, 2))
+        expect((await heard).map((change) => change.table)).toContain('soldiers')
+      })
+
       it('refuses a placement in an archived unit and an archived rank, until they are back', async () => {
         const { platoonA } = await sampleUnits()
         const rank = valueOf(await adapter().commands.command_ranks.create(rankInput()))
@@ -436,7 +457,7 @@ export function describeRosterContract(
         valueOf(await adapter().commands.command_ranks.archive({ id: rank.id, expected_version: 1 }))
         expect(issuesOf(await restore(soldier.id, 2))).toEqual([
           { path: ['command_rank_id'], code: 'reference_archived' },
-          { path: ['unit_id'], code: 'reference_archived' },
+          { path: ['membership', 'unit_id'], code: 'reference_archived' },
         ])
         valueOf(await adapter().commands.units.restore({ id: platoonA.id, expected_version: 2 }))
         valueOf(await adapter().commands.command_ranks.restore({ id: rank.id, expected_version: 2 }))
