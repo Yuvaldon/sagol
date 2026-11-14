@@ -66,6 +66,7 @@ const PROP = {
   buddy: PropertyDefinitionId.parse(uuid(57)),
   unitNote: PropertyDefinitionId.parse(uuid(58)),
   missing: PropertyDefinitionId.parse(uuid(59)),
+  leaveNote: PropertyDefinitionId.parse(uuid(60)),
 }
 
 const day = (n: number) => `2026-11-${String(n).padStart(2, '0')}`
@@ -79,7 +80,7 @@ function world(): FilterData {
     valid_from: from,
     valid_to: to,
   })
-  const definition = (id: PropertyDefinitionId, data_type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi_select' | 'soldier_ref', entity_type: 'soldier' | 'unit' = 'soldier') => ({
+  const definition = (id: PropertyDefinitionId, data_type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi_select' | 'soldier_ref', entity_type: 'soldier' | 'unit' | 'leave' = 'soldier') => ({
     id,
     entity_type,
     data_type,
@@ -87,10 +88,10 @@ function world(): FilterData {
   })
   return {
     units: [
-      { id: UNIT.BAT, parent_id: null, unit_level_id: null },
-      { id: UNIT.COMP, parent_id: UNIT.BAT, unit_level_id: null },
-      { id: UNIT.P1, parent_id: UNIT.COMP, unit_level_id: null },
-      { id: UNIT.P2, parent_id: UNIT.COMP, unit_level_id: null },
+      { id: UNIT.BAT, parent_id: null, unit_level_id: null, properties: { [PROP.unitNote]: 'north' } },
+      { id: UNIT.COMP, parent_id: UNIT.BAT, unit_level_id: null, properties: {} },
+      { id: UNIT.P1, parent_id: UNIT.COMP, unit_level_id: null, properties: { [PROP.unitNote]: 'Gate A' } },
+      { id: UNIT.P2, parent_id: UNIT.COMP, unit_level_id: null, properties: {} },
     ],
     soldiers: [
       {
@@ -154,6 +155,7 @@ function world(): FilterData {
       definition(PROP.langs, 'multi_select'),
       definition(PROP.buddy, 'soldier_ref'),
       definition(PROP.unitNote, 'text', 'unit'),
+      definition(PROP.leaveNote, 'text', 'leave'),
     ],
   }
 }
@@ -256,10 +258,18 @@ describe('property conditions (D-067)', () => {
     expect(select(property(PROP.buddy, 'equals', S.s2))).toEqual([S.s1])
   })
 
-  it('a missing definition, or one of another entity, matches nobody', () => {
+  it('a missing definition, or a leave definition, matches nobody', () => {
     expect(select(property(PROP.missing, 'is_empty', null))).toEqual([])
-    expect(select(property(PROP.unitNote, 'is_empty', null))).toEqual([])
+    expect(select(property(PROP.leaveNote, 'is_empty', null))).toEqual([])
     expect(select({ kind: 'not', node: property(PROP.missing, 'is_empty', null) })).toHaveLength(5)
+  })
+
+  it("a unit property reads the soldier's own primary unit that day, not its ancestors (D-381)", () => {
+    expect(select(property(PROP.unitNote, 'contains', 'gate'))).toEqual([S.s1, S.s3])
+    // s3 moves to P2 on day 10; s4 has no unit, so no value; s5's company has none of its own.
+    expect(select(property(PROP.unitNote, 'contains', 'gate'), day(10))).toEqual([S.s1])
+    expect(select(property(PROP.unitNote, 'is_empty', null), day(10))).toEqual([S.s2, S.s3, S.s4, S.s5])
+    expect(select({ kind: 'not', node: property(PROP.unitNote, 'equals', 'Gate A') })).toEqual([S.s2, S.s4, S.s5])
   })
 
   it('an operator or operand that does not fit never satisfies a positive operator', () => {
@@ -279,6 +289,11 @@ describe('filterIssues', () => {
     expect(
       filterIssues(where({ kind: 'and', nodes: [property(PROP.age, 'any_of', [1, 2]), property(PROP.city, 'is_empty', null)] }), definitions),
     ).toEqual([])
+    // A unit property is a soldier condition too (D-381).
+    expect(filterIssues(where(property(PROP.unitNote, 'contains', 'gate')), definitions)).toEqual([])
+    expect(filterIssues(where(property(PROP.unitNote, 'greater_than', 'gate')), definitions)).toEqual([
+      { path: ['where', 'operator'], code: 'filter_operator_invalid' },
+    ])
   })
 
   it('reports unknown definitions, operators and operands at their path', () => {
@@ -288,7 +303,7 @@ describe('filterIssues', () => {
         property(PROP.missing, 'equals', 'x'),
         { kind: 'not', node: property(PROP.age, 'contains', 2) },
         { kind: 'or', nodes: [property(PROP.age, 'equals', '2'), property(PROP.city, 'is_empty', 'x')] },
-        property(PROP.unitNote, 'equals', 'x'),
+        property(PROP.leaveNote, 'equals', 'x'),
         property(PROP.shift, 'equals', uuid(99)),
         property(PROP.langs, 'any_of', []),
       ],
