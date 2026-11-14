@@ -263,6 +263,29 @@ describe('the install on start (D-434)', () => {
     expect(subscribe).toHaveBeenCalledTimes(1)
   })
 
+  it('sends again after a sign-out and the next linked sign-in, and for another linked user', async () => {
+    let announce: (session: unknown) => void = () => undefined
+    const subscribe = vi.fn(() => Promise.resolve(SUBSCRIBED))
+    const ports = fakePorts({
+      push: browserOf('on'),
+      session: {
+        current: () => Promise.resolve({ ok: true, value: linked }),
+        subscribe: (listener: (session: unknown) => void) => {
+          announce = listener
+          return () => undefined
+        },
+      },
+      commands: { notifications: { subscribe } },
+    })
+    renderHook(() => useSession(), { wrapper: wrapperOf(ports) })
+    await waitFor(() => expect(subscribe).toHaveBeenCalledTimes(1))
+    act(() => announce({ status: 'signed_out' }))
+    act(() => announce(linked))
+    await waitFor(() => expect(subscribe).toHaveBeenCalledTimes(2))
+    act(() => announce({ ...linked, identity: { ...linked.identity, auth_user_id: uuid(903) } }))
+    await waitFor(() => expect(subscribe).toHaveBeenCalledTimes(3))
+  })
+
   it('sends nothing for a browser with no install, or a session not linked', async () => {
     const none = start(browserOf('off'), linked)
     await waitFor(() => expect(none.view.result.current.status).toBe('ready'))
