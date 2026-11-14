@@ -134,6 +134,8 @@ export const dictionary = {
     previousWindow: {
       day: 'יום קודם',
       week: 'שבוע קודם',
+      two_weeks: 'שבועיים קודמים',
+      four_weeks: 'ארבעה שבועות קודמים',
       month: 'חודש קודם',
       rotation: 'סבב קודם',
       custom: 'הטווח הקודם',
@@ -141,6 +143,8 @@ export const dictionary = {
     nextWindow: {
       day: 'יום הבא',
       week: 'שבוע הבא',
+      two_weeks: 'השבועיים הבאים',
+      four_weeks: 'ארבעת השבועות הבאים',
       month: 'חודש הבא',
       rotation: 'סבב הבא',
       custom: 'הטווח הבא',
@@ -149,6 +153,8 @@ export const dictionary = {
     ranges: {
       day: 'יום',
       week: 'שבוע',
+      two_weeks: 'שבועיים',
+      four_weeks: 'ארבעה שבועות',
       month: 'חודש',
     },
     rotations: 'סבב שלם',

@@ -27,6 +27,8 @@ const LABEL = 'text-label font-semibold text-text-muted'
 const RANGE_LABELS: Record<RangeKind, I18nKey> = {
   day: 'workspace.ranges.day',
   week: 'workspace.ranges.week',
+  two_weeks: 'workspace.ranges.two_weeks',
+  four_weeks: 'workspace.ranges.four_weeks',
   month: 'workspace.ranges.month',
   rotation: 'workspace.rotations',
 }

@@ -220,7 +220,7 @@ am = amends, ref = refines, ext = extends.
 | D-190 | A phone on its side keeps the phone's bars, and a wide phone folds the context row into the top | config, ui, tooling | sup D-252 (folded top row) |
 | D-191 | Edge to edge: the canvas under the cutouts, what can be pressed inside the safe area | ui, tooling | ref D-252 |
 | D-192 | The board's corner and name column are one opaque surface | ui | |
-| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217, D-220, D-256, D-257; ref D-339 |
+| D-211 | The range picker: day, week, month or a whole rotation | config, logic, ui | ref D-217, D-220, D-256, D-257; ref D-339; ext D-383 |
 | D-212 | "סבב" in the interface; `deployment` in code | config, i18n, ui | ref D-219, D-250, D-257 |
 | D-213 | "Only who is missing" is a filter condition | logic, ui | ref D-312 |
 | D-214 | The board's sort | config, logic, ui | sup D-313 (one key) |
@@ -333,6 +333,7 @@ am = amends, ref = refines, ext = extends.
 | D-357 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-359 |
 | D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
+| D-383 | The range picker offers two and four weeks | config, logic, ui | |
 | D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | |
 | D-385 | Applying a saved view replaces the board's state; what no longer parses is dropped and reported | logic, ui | |
 | D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
@@ -4901,6 +4902,16 @@ at once, on every device.
   its own, and the i18n check refuses keys that nothing reads.
 **Why:** the notification must say what happened without opening the app, in the app's language, and the worker
 is the only code running when it arrives.
+
+## D-383 — The range picker offers two and four weeks
+2026-11-13 · accepted · extends D-211 · OI-111 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- `range` gains `two_weeks` and `four_weeks`, between the week and the month. Like a week, each starts on the week of
+  its anchor (`FIRST_DAY_OF_WEEK`) and holds whole weeks: `WEEK_SPANS` in config gives 1, 2 and 4 weeks of
+  `DATE_WINDOW.days`. The arrows step by the span's own length; "Today" and a change of kind behave as for a week.
+- The picker lists them as "שבועיים" and "ארבעה שבועות"; the arrows say "השבועיים הבאים", "ארבעת השבועות הבאים" and
+  their past forms. Nothing else in the picker changes: its redesign stays with the design rounds (R4).
+**Why:** OI-111 asked for two and four weeks for the list and the table. Whole weeks keep every span aligned with the
+week the board already shows, and one table of spans keeps the step and the span the same number.
 
 ## D-384 — Saved views: personal, in the preferences, each kept param as the URL holds it
 2026-11-13 · accepted · refines D-023, D-041 · docs/specs/saved-views.md P-1, P-2, P-5 · approved by the owner on 2026-11-13; details decided under D-170
