@@ -298,7 +298,7 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Range, sort and a calm screen (V19, D-211 … D-215)
 
-- **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / חודש, then "סבב שלם" with the
+- **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / שבועיים / ארבעה שבועות / חודש (D-383), then "סבב שלם" with the
   scope's running and coming rotations and their dates, the latest first; with none, the item is absent (D-218). Last,
   "טווח אחר" opens a small dialog with "מתאריך" and "עד תאריך", at most 186 days (D-339). The arrows'
   names follow the kind ("שבוע הבא", "חודש הבא", "סבב הבא"). The timeline narrows its days for a long range and drops
