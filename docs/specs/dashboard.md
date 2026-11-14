@@ -1,7 +1,7 @@
 # Spec: Dashboard ("דשבורד")
 
-Status: built for 1.0 (D-360 … D-362, OI-222 closed). Where this spec and D-361 or D-362 differ, the decisions win:
-the span query below was not built; the plan reads its leaves' events through D-373's `LeaveEventsQuery`.
+Status: built for 1.0 (D-360 … D-362, OI-222 closed); updated to the build under A9a (D-361, D-403 … D-405). Where
+this spec and a decision differ, the decision wins.
 Context: both (rotation and routine). On 2026-11-13 the owner renamed it from "situation picture" ("תמונת מצב") and
 asked for charts and key figures, not a single number (D-338). The same day the owner set its shape: command boards
 built from a fixed catalogue of modules, two or three templates or a board of one's own, and a small fixed personal
@@ -24,17 +24,18 @@ Every figure is derived from leaves, leave events, memberships (D-336), rules an
 Nothing derived is stored.
 - **contracts:** vocabularies `DASHBOARD_MODULE_IDS`, `DASHBOARD_METRIC_IDS`, `DASHBOARD_TEMPLATE_IDS`;
   `DashboardModule` (one module on a board) and `DashboardLayout` (P-6); `SoldierPreferences` gains `dashboard`;
-  `PANEL_IDS.dashboard`; query `LeaveEventSpanQuery` (P-9).
+  `PANEL_IDS.dashboard`. The plan reads its leaves' events with D-373's `LeaveEventsQuery` (P-9, D-361).
 - **config:** `DASHBOARD_TEMPLATES` (each template's ordered modules, P-5); `DASHBOARD` thresholds
   (`fairGapDays`, `heatSteps`, `upcomingDays`, `outstandingDays`, `distributionBins`, `outstandingLimit`);
   `WORK_SECTIONS.presence` gains `dashboard`.
 - **domain:** in `src/domain/availability/`: `daysTally`, `spreadOf`, `weeksOf`; in a new `src/domain/dashboard/`:
   `leaveAsOf` (replay of `leave_events`), `defaultTemplate`, `layoutModules` (template or custom → modules), and
   `myRotationFigures` (the personal board).
-- **data:** `leave_events.list` accepts `LeaveEventSpanQuery { deployment_id, soldier_ids }` besides the per-leave
-  thread query, in both adapters, under the same read policy as the thread. No table, no column, no function.
-- **logic:** `useDashboardScope()` (URL state), `useDashboardLayout()` (stored choice, edits, reset),
-  `useDashboard(scope, modules)` (one tally, each visible module's rows), `useMyRotation()` (the personal board).
+- **data:** nothing new: `leave_events.list` with `LeaveEventsQuery { leave_ids, after_seq: 0 }` (D-361), under the
+  read policy of every event read. No table, no column, no function.
+- **logic:** `useDashboard()` (the scope from the URL, the stored layout through an internal `useDashboardLayout`,
+  one tally and each visible module's rows), `useChangeDashboardScope()`, `useOpenRotationDashboard()`, and
+  `useMyRotation()` (the personal board).
 - **ui + i18n:** the module with its pickers, the board, the eleven module cards, the edit mode, the "הסבב שלי"
   section; chart primitives on CSS and inline SVG (P-11).
 - **Open items:** OI-222.
@@ -293,12 +294,11 @@ Fixed, not composable, the same for everyone; a soldier never configures it and 
 | query (existing) | memberships, deployment members, units, rules, leave types | existing | existing | through `useRotationMembership`, `useRuleData` |
 | query (existing) | inbox count / `usePendingRequests` | existing | existing | only with `leaves:approve` |
 | query (existing) | report confirmations | existing | existing | only for `report_status` / `unconfirmed_units` |
-| query (new mode) | `leave_events.list` | `LeaveEventSpanQuery { deployment_id, soldier_ids }` | `LeaveEvent[]` | the events of the rotation's leaves of those soldiers; same policy as the thread (an event is read when its leave is read). Loaded only while `plan_vs_actual` or `plan_drift` is on the board |
+| query (existing) | `leave_events.list` | `LeaveEventsQuery { leave_ids, after_seq: 0 }` (D-361) | `LeaveEvent[]` | the events of the span's leaves the board counts; an event is read when its leave is read. Loaded only while `plan_vs_actual` or `plan_drift` is on the board |
 | command (existing) | `accounts.updateMyPreferences` | carries `dashboard` | existing | own row only |
 
-- `leave_events.list` takes `LeaveThreadQuery | LeaveEventSpanQuery` (a union of strict objects), resolved in one
-  read in each adapter, with the server's read policy applied to the leaves first. It is the same query the
-  notifications spec's feed would generalize; whichever slice comes second reuses the first's seam.
+- `leave_events.list` takes D-373's `LeaveEventsQuery`, with the server's read policy applied to the leaves first;
+  the board passes the ids of the leaves it counts (D-361).
 - No server command, no function, no scheduled job, no cache table.
 
 ### `leaveAsOf(leave, events, instant)` (domain, pure)
@@ -377,8 +377,11 @@ Fixed, not composable, the same for everyone; a soldier never configures it and 
 
 ## Edge cases
 
-- The rotation has not started: past-day modules show the empty span notice; `upcoming`, `outstanding` and "כולל
-  מתוכנן" still work; `plan_vs_actual` is not drawn.
+- The rotation has not started: past-day modules are hidden and the board shows the empty span notice once, above
+  the rest; `upcoming`, `outstanding` and "כולל מתוכנן" still work; `plan_vs_actual` is not drawn (D-404).
+- No module applies to the unit and span: the notice offers the way back to the template when the list differs from
+  it (D-404).
+- The unit picker offers a unit only when the actor reads its leaves whole (`whole_unit`, D-403).
 - A soldier who joined late or left early has outside days (hatched cells), is out of the median, the spread and the
   distribution, and is still in present-today and the heat map.
 - An `available` leave type counts as a base day and is not in `home_by_type`.
@@ -414,8 +417,8 @@ Unit (domain):
 
 Contracts:
 - `SoldierPreferences` parses `{}` with `dashboard: null`; drops an unknown module and a repeated module on read;
-  refuses them on write; refuses more than `DASHBOARD_MAX_MODULES`; schema-drift test unchanged (JSONB).
-- `LeaveEventSpanQuery` is strict.
+  refuses them on write; refuses more than `DASHBOARD_MAX_MODULES`, the catalogue's size (D-405); schema-drift test
+  unchanged (JSONB).
 
 Logic:
 - One fixture, every module's rows: totals agree across modules; heat steps fall on their boundaries; a module with
@@ -425,7 +428,7 @@ Logic:
 - Editing: add, remove, move, reset, picking the default template stores `null`; an unchanged edit writes nothing.
 
 Data (shared contract suite, both adapters):
-- `leave_events.list` with `LeaveEventSpanQuery` returns only events of leaves the actor reads; a denied soldier's
+- `leave_events.list` with `leave_ids: null` returns only events of leaves the actor reads; a denied soldier's
   events are absent.
 
 e2e (desktop, mobile, RTL, axe):
@@ -459,7 +462,7 @@ e2e (desktop, mobile, RTL, axe):
 - **P-8** Fully derived on the client over existing queries; nothing stored, scheduled or run on the server beyond
   one read of events, loaded only for the plan modules (free tier).
 - **P-9** Plan is the leaves as they stood at the span's start, rebuilt from `leave_events` (`leaveAsOf`); actual is
-  the leaves now. `leave_events.list` gains `LeaveEventSpanQuery` under the thread's read policy.
+  the leaves now, their events read with `LeaveEventsQuery` (D-361).
 - **P-10** "הסבב שלי" on top of "שלי": base days and home days so far against planned with completion rates, open
   requests with the approval rate, the next leave, and the days left; fixed, never stored.
 - **P-11** Charts are CSS and inline SVG on theme tokens, with no chart library (no new dependency); a 12-column grid on
@@ -470,14 +473,13 @@ e2e (desktop, mobile, RTL, axe):
 **Where it lives.**
 - contracts: the vocabularies and `DashboardModule` / `DashboardLayout` in a new `src/contracts/settings/dashboard.ts`,
   joined into `SoldierPreferences` (`src/contracts/settings/index.ts:18`, defaulted, so stored rows stay valid);
-  `PANEL_IDS.dashboard`; `LeaveEventSpanQuery` beside `LeaveThreadQuery` (`src/contracts/repositories/index.ts:124`)
-  and the `leave_events` repository's query type (`:227`).
+  `PANEL_IDS.dashboard`.
 - config: `DASHBOARD_TEMPLATES` and `DASHBOARD` in a new `src/config/dashboard/`; `WORK_SECTIONS`
   (`src/config/panels/index.ts:78`) presence gains `dashboard`.
 - domain: `daysTally`, `spreadOf`, `weeksOf` in `src/domain/availability/`; `leaveAsOf`, `defaultTemplate`,
   `layoutModules`, `myRotationFigures` in a new `src/domain/dashboard/`.
-- data: the span mode of `leave_events.list` in the local adapter and the remote allow-list, plus the server read.
-- logic: a new `src/logic/dashboard/` (`useDashboardScope`, `useDashboardLayout`, `useDashboard`); `useMyRotation`
+- data: nothing new (D-361).
+- logic: a new `src/logic/dashboard/` (`useDashboard`, `useChangeDashboardScope`, `useOpenRotationDashboard`); `useMyRotation`
   beside `useMyNextDays` (`src/logic/leaves/workflowHooks.ts:351`).
 - ui: `src/ui/modules/presence/` for the board and its cards, beside דוח 1; the chart primitives (heat grid, bar
   series, range bar, histogram, progress bar) in `src/ui/primitives/` so a later report can reuse them; the personal

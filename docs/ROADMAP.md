@@ -10,7 +10,7 @@ description replaces the handoff note, merged with CI green (D-110, D-126, D-128
 Status: ☐ pending · ◐ in progress · ☑ done. A row's ☑ reaches `main` only through a merge with CI
 green, so on `main` it means merged and green (D-126).
 
-Rows `A1` … `A8` are **audits** (D-051, D-078): read-only, run with the `/audit` skill's steps. Since D-170 the
+Rows `A1` … `A9a` are **audits** (D-051, D-078): read-only, run with the `/audit` skill's steps. Since D-170 the
 session that reaches an audit row runs it through a fresh subagent and records the findings itself, without waiting
 for the owner. Audit reports A1 … A4 and the old session
 handoffs are archived in `.claude/archive/docs/` (D-154).
@@ -160,7 +160,10 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 | R3 | Closing the gaps | The Must items closed (OI-117 on an iPhone, OI-293, OI-295 with D-345), then the Should items | ☐ |
 | R3·N | Notifications | "עדכונים" on שלי with a count, and phone notifications chosen per device and per kind in the profile (D-351 … D-359) | ☑ |
 | R3·D | Dashboards | The command board "דשבורד" with its modules, templates and own list, and "הסבב שלי" on top of "שלי" (OI-222, D-349, D-350, D-360 … D-362) | ☑ |
-| R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker (OI-111 closed by D-383; the redesign stays) | ☐ |
+| R3·C | The Could items (D-370, D-400) | Restoring an archived row from its archive (D-371); "changed since" by a commit-ordered change number (D-373); typed filter conditions, a unit property read on the day, leave property conditions (D-380 … D-382); the range picker's two and four weeks (OI-111, D-383); saved views (D-384 … D-388) | ☑ |
+| A9a | audit | The R3 merges (#83 … #89) on main at 6c726e6 | ☑ |
+| A9a fixes | A9a's findings | The confirmation's `seen_seq` read before the report (D-402); the dashboard's unit picker offers only units read whole (D-403); a board before the first counted day (D-404); one module key (D-405); a refused restore explained in its dialog; the updates' seen time; D-400, D-401 | ◐ |
+| R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker's redesign (its two and four weeks are built in R3·C) | ☐ |
 | R5 | Building the design | The approved concept in the product | ☐ |
 | R6 | Acceptance testing | The journeys walked on the real product; the decision point on who maintains the system after handover (D-342) | ☐ |
 | R7 | Release decision | A go / no-go: deploy as it is, or wait for one more update; production only on the owner's word (D-340) | ☐ |
@@ -168,4 +171,4 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 ## Later (no schema change required)
 
 Attached memberships, missions (משימות/מבצעים), simulations, rotation templates
-for leave batches, hour-level leaves (additive columns). Saved views are built (D-384..D-388).
+for leave batches, hour-level leaves (additive columns). Saved views moved to R3·C as built (D-400).

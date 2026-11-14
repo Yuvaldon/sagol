@@ -317,28 +317,28 @@ am = amends, ref = refines, ext = extends.
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 | D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | am D-360 |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
-| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360; ref D-370 |
+| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360; ref D-370; ref D-400 |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
-| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361; ref D-362 |
-| D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
+| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361; ref D-362; ref D-404 |
+| D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | ref D-362 |
 | D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | |
 | D-352 | In-app updates on "שלי" are derived from the events and the shared comments; only the seen time is stored | contracts, domain, data, logic, ui | |
 | D-353 | The service worker is built with `injectManifest` in `app`, and holds the push handlers | app, tooling | |
 | D-354 | Push dispatch runs after the commit, best effort, from the gateway only | data, config, backend | |
-| D-355 | Who gets a push: one push per recipient per command, decided by the policy at send time | domain, data | |
+| D-355 | Who gets a push: one push per recipient per command, decided by the policy at send time | domain, data | sup D-401 |
 | D-356 | The screens: "עדכונים" on שלי with its badge, and the "התראות" group in the profile | logic, ui | ext D-359 |
 | D-357 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-359 |
 | D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
 | D-360 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
 | D-361 | The stored board reads leniently and writes strictly; the plan reads its own leaves' events | contracts | |
-| D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | |
-| D-370 | The 1.0 Could items are built while the owner is away | docs | |
+| D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | ref D-403; ref D-404; ref D-405 |
+| D-370 | The 1.0 Could items are built while the owner is away | docs | ref D-400 |
 | D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | |
-| D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | |
+| D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | ref D-402 |
 | D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | |
 | D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
 | D-382 | Leave property conditions are leave conditions | logic, ui | |
@@ -348,6 +348,12 @@ am = amends, ref = refines, ext = extends.
 | D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
 | D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | |
 | D-388 | A preference change from a function of the stored row, retried once over another device's save | logic | |
+| D-400 | What was built under D-370 is recorded in the roadmap, as row R3·C | docs | |
+| D-401 | Access managers stay permanent and organization-wide | domain, docs | |
+| D-402 | A confirmation's `seen_seq` is read before the report's leaves, in the same query | logic | |
+| D-403 | The dashboard offers a unit only when the actor reads that unit's leaves whole: the `whole_unit` target | contracts, domain, logic | |
+| D-404 | A board before the first counted day: only the past-day cards wait; "no units" offers the template back | logic, ui | |
+| D-405 | One module key, in contracts; the board's module limit is the catalogue's size | contracts, domain, logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5168,3 +5174,58 @@ week the board already shows, and one table of spans keeps the step and the span
   the save fails; the failure is shown as every
   preference failure is (D-187).
 **Why:** a list edited from two devices must merge; a single choice is better made again.
+
+## D-400 — What was built under D-370 is recorded in the roadmap, as row R3·C
+2026-11-14 · accepted · ref D-344, D-370 · decided under D-170
+- D-370 built the Could items while the owner was away, but the roadmap still listed some as R4 or "Later". The
+  roadmap gains row R3·C, done, naming what was built: restore (D-371), the change number (D-373), typed filter
+  conditions (D-380 … D-382), the range picker's two and four weeks (OI-111, D-383) and saved views (D-384 … D-388).
+- R4 keeps only the range picker's redesign; "Later" no longer lists saved views.
+- D-344's body is not edited: the sort stands as it was made, and the roadmap records what changed since.
+**Why:** audit A9a found the roadmap disagreeing with main; the roadmap is where the owner reads the state.
+
+## D-401 — Access managers stay permanent and organization-wide
+2026-11-14 · accepted · supersedes D-355 (the line on `accessManagers`) · decided under D-170
+- D-355 said `accessManagers` moves to `holdersOf`. It did not, and it stays as it is: an access manager is a
+  soldier holding the access-management permissions at organization scope, with no expiry and no rank constraint,
+  read by `isAccessManager` (`src/domain/policy/invariants.ts`, D-059, D-158). The last-manager guard depends on
+  exactly that reading.
+- `holdersOf` serves the push recipients only. No code change.
+**Why:** the guard that keeps one access manager must not depend on spans or units; two models, each for its use.
+
+## D-402 — A confirmation's `seen_seq` is read before the report's leaves, in the same query
+2026-11-14 · accepted · refines D-373 · decided under D-170
+- The report reads the organization's change number first and its leaves second, in one query (`useCountedLeaves`),
+  and a confirmation sends the number read with the report shown, not one read later.
+- A change committed between the two reads is in the leaves but above the number, so it shows as changed until the
+  next read; it is never taken as seen. A change after both reads is missed by both. A test proves the order.
+- Memberships are read in their own query, not ordered with the number: OI-342.
+**Why:** a number read after the leaves could cover a change the commander never saw.
+
+## D-403 — The dashboard offers a unit only when the actor reads that unit's leaves whole: the `whole_unit` target
+2026-11-14 · accepted · refines D-362 · decided under D-170
+- D-362 offered a unit when no soldier known to the actor in the span was unreadable. Soldiers the actor cannot see
+  are not known at all, so a company holding unseen soldiers passed, and the board showed a platoon's figures under
+  the company's name.
+- The policy gains a target `whole_unit` (`{ kind: 'whole_unit', unit_id }`): an organization scope covers it, and a
+  unit scope covering that unit; a soldier scope never does. Leaves accept it. The picker offers a unit only when the
+  actor holds `leaves:view` on its `whole_unit`, and keeps D-362's check of the known soldiers.
+**Why:** a figure under a unit's name must count the whole unit; only the policy knows what the actor cannot see.
+
+## D-404 — A board before the first counted day: only the past-day cards wait; "no units" offers the template back
+2026-11-14 · accepted · refines D-349, D-362 · decided under D-170
+- Before the span's first counted day (a rotation not begun yet), the cards that count past days (the heat map, the
+  trends, plan against actual, fairness, the home figures and the past-day metrics) are hidden, and the board says
+  so once above the rest. The upcoming leaves, the outstanding requests and "כולל מתוכנן" still work
+  (`docs/specs/dashboard.md`).
+- When no card applies to the unit and span, the notice offers the way back to the template when the actor's list
+  differs from it, asking first as leaving a custom list always does.
+**Why:** a rotation about to begin is when the commander plans; the board must not go blank then.
+
+## D-405 — One module key, in contracts; the board's module limit is the catalogue's size
+2026-11-14 · accepted · refines D-361, D-362 · decided under D-170
+- A module's identity (its kind, and its metric for a statistic) is defined once, `dashboardModuleKey` in contracts,
+  and the domain, logic and ui use it.
+- `DASHBOARD_MAX_MODULES` was 20 while the catalogue holds 19 distinct modules, so the limit was never reached. The
+  limit is the catalogue's size, and a test writes the full catalogue strictly.
+**Why:** three definitions of one identity drift; a limit no list can reach checks nothing.
