@@ -1,4 +1,4 @@
-import { fromAbsolute, parseAbsolute, parseDate, toCalendarDate, toZoned } from '@internationalized/date'
+import { fromAbsolute, parseAbsolute, parseDate, toCalendarDate, toCalendarDateTime, toZoned } from '@internationalized/date'
 import { IssueCode, type CalendarDate, type Issue, type Timestamp } from '@contracts'
 
 // Calendar and instant arithmetic shared by every domain module (D-035, D-042).
@@ -110,6 +110,14 @@ export function millisecondsUntil(now: Timestamp, then: Timestamp): number {
  */
 export function startOfDay(date: CalendarDate, timezone: string): Timestamp {
   return toZoned(parseDate(date), timezone).toAbsoluteString()
+}
+
+/**
+ * The instant the clock shows `hour` o'clock on `date` in `timezone` (D-443). An hour a clock change skips falls on the
+ * instant after the jump, as the time zone says.
+ */
+export function startOfHour(date: CalendarDate, hour: number, timezone: string): Timestamp {
+  return toZoned(toCalendarDateTime(parseDate(date)).set({ hour }), timezone).toAbsoluteString()
 }
 
 /** Inclusive calendar range; NULL `valid_to` is open-ended. */
