@@ -39,8 +39,6 @@ export const DASHBOARD_TEMPLATE_IDS = ['leaves', 'control', 'report'] as const
 export const DashboardTemplateId = z.enum(DASHBOARD_TEMPLATE_IDS)
 export type DashboardTemplateId = z.infer<typeof DashboardTemplateId>
 
-/** The most modules one board holds. */
-export const DASHBOARD_MAX_MODULES = 20
 
 /** One module on a board: a big number names its metric; any other module is just its id. */
 export const DashboardModule = z.discriminatedUnion('module', [
@@ -49,14 +47,17 @@ export const DashboardModule = z.discriminatedUnion('module', [
 ])
 export type DashboardModule = z.infer<typeof DashboardModule>
 
-/** What makes two modules the same on one board: the module, and a big number's metric. */
-const sameModuleKey = (item: DashboardModule): string => (item.module === 'stat' ? `stat:${item.metric}` : item.module)
+/** What makes two modules the same on one board: the module, and a big number's metric (D-405). */
+export const dashboardModuleKey = (item: DashboardModule): string => (item.module === 'stat' ? `stat:${item.metric}` : item.module)
+
+/** The most modules one board holds: the whole catalogue, every module once and every big number once (D-405). */
+export const DASHBOARD_MAX_MODULES = DASHBOARD_MODULE_IDS.length - 1 + DASHBOARD_METRIC_IDS.length
 
 /** A board's modules as written: known ids only, no repeat, at most `DASHBOARD_MAX_MODULES` (D-349). */
 export const StrictDashboardModules = z
   .array(DashboardModule)
   .max(DASHBOARD_MAX_MODULES)
-  .refine((items) => new Set(items.map(sameModuleKey)).size === items.length, { message: 'repeated module' })
+  .refine((items) => new Set(items.map(dashboardModuleKey)).size === items.length, { message: 'repeated module' })
 
 /**
  * A board's modules as read: an item no longer in the vocabulary is dropped and a repeat keeps the first, so a
@@ -69,7 +70,7 @@ export const DashboardModules = z.preprocess((raw) => {
   for (const candidate of raw) {
     const parsed = DashboardModule.safeParse(candidate)
     if (!parsed.success) continue
-    const key = sameModuleKey(parsed.data)
+    const key = dashboardModuleKey(parsed.data)
     if (seen.has(key)) continue
     seen.add(key)
     kept.push(parsed.data)
