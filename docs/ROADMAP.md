@@ -162,7 +162,7 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 | R3·D | Dashboards | The command board "דשבורד" with its modules, templates and own list, and "הסבב שלי" on top of "שלי" (OI-222, D-349, D-350, D-360 … D-362) | ☑ |
 | R3·C | The Could items (D-370, D-400) | Restoring an archived row from its archive (D-371); "changed since" by a commit-ordered change number (D-373); typed filter conditions, a unit property read on the day, leave property conditions (D-380 … D-382); the range picker's two and four weeks (OI-111, D-383); saved views (D-384 … D-388) | ☑ |
 | A9a | audit | The R3 merges (#83 … #89) on main at 6c726e6 | ☑ |
-| A9a fixes | A9a's findings | The confirmation's `seen_seq` read before the report (D-402); the dashboard's unit picker offers only units read whole (D-403); a board before the first counted day (D-404); one module key (D-405); a refused restore explained in its dialog; the updates' seen time; D-400, D-401 | ◐ |
+| A9a fixes | A9a's findings | The confirmation's `seen_seq` read before the report (D-402); the dashboard's unit picker offers only units read whole (D-403); a board before the first counted day (D-404); one module key (D-405); a refused restore explained in its dialog; the updates' seen time; D-400, D-401 | ☑ |
 | R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker's redesign (its two and four weeks are built in R3·C) | ☐ |
 | R5 | Building the design | The approved concept in the product | ☐ |
 | R6 | Acceptance testing | The journeys walked on the real product; the decision point on who maintains the system after handover (D-342) | ☐ |

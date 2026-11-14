@@ -365,7 +365,9 @@ independent. Only the timeline has a core and a view; the list, the table and th
   window, so every card reads the same numbers, and reads what some cards need (rules, the plan's events through the
   `leave_events` of the rotation's leaves, the inbox, the report) as `Loaded` values of their own, so one failed read fails one card.
 - The layout is `soldier_preferences.preferences.dashboard`, read leniently and written strictly (D-361). The board
-  opens by the `some_unit` policy target (D-362). `ui/modules/presence/DashboardModule.tsx` draws it with CSS charts
+  opens by the `some_unit` policy target (D-362); `logic/dashboard/scope.ts` picks its units (only those the actor
+  reads whole, the `whole_unit` target, D-403) and its rows. Before the span's first counted day, the past-day cards
+  wait and the rest still show (D-404). A module's identity is `dashboardModuleKey` in `contracts` (D-405). `ui/modules/presence/DashboardModule.tsx` draws it with CSS charts
   from `ui/primitives/charts.tsx`; `ui/modules/leaves/MyRotationSection.tsx` draws "הסבב שלי".
 
 ## Design system
