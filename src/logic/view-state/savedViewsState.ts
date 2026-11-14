@@ -103,15 +103,17 @@ export function useSavedViews(view: ViewId): SavedViewsState {
   )
 
   const save = useCallback(
-    (name: string, start: boolean) => {
+    async (name: string, start: boolean) => {
       const id = SavedViewId.parse(crypto.randomUUID())
       const query = captureView(search, view)
-      // The board now shows the new view, so a later change is saved over it (D-442).
-      changeSearch({ saved: id })
-      return change((list) => ({
+      const saved = await change((list) => ({
         saved_views: [...list.saved_views, { id, name: name.trim(), query }],
         start_view_id: start ? id : list.start_view_id,
       }))
+      // The board now shows the new view, so a later change is saved over it (D-442); a save that failed leaves the
+      // board on the view it came from.
+      if (saved.ok) changeSearch({ saved: id })
+      return saved
     },
     [change, changeSearch, search, view],
   )

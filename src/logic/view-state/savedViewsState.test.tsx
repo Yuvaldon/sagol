@@ -176,6 +176,28 @@ describe('saved views (D-384, D-388)', () => {
     expect(shown().missing).toBe(true)
   })
 
+  it('keeps the view the board left when saving it as a new view fails (D-442)', async () => {
+    const store = storeOf()
+    const { views, change, shown } = await renderAt('/?view=list', store.ports)
+    await act(async () => {
+      await views().save('בוקר', false)
+    })
+    act(() => {
+      change()({ missing: true })
+    })
+    await waitFor(() => {
+      expect(views().left?.name).toBe('בוקר')
+    })
+    store.updateMyPreferences.mockResolvedValueOnce({ ok: false, error: { code: 'unavailable' } })
+    let saved: Awaited<ReturnType<SavedViewsState['save']>> | undefined
+    await act(async () => {
+      saved = await views().save('ערב', false)
+    })
+    expect(saved?.ok).toBe(false)
+    expect(shown().saved).toBe(views().left?.id)
+    expect(views().left?.name).toBe('בוקר')
+  })
+
   it('leaves nothing to save over once the view the board left is deleted (D-442)', async () => {
     const store = storeOf()
     const { views, change } = await renderAt('/?view=list', store.ports)
