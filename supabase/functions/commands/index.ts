@@ -14,7 +14,6 @@ import {
   type StoreCatalog,
 } from '@data/server'
 import postgres from 'postgres'
-import { createWebPushSender } from './webpush.ts'
 
 function required(name: string): string {
   const value = Deno.env.get(name)
@@ -54,7 +53,7 @@ const vapidSubject = Deno.env.get('PUSH_VAPID_SUBJECT') ?? ''
 const pushEnabled = vapidPrivateKey !== '' && vapidSubject !== ''
 if (!pushEnabled) log(JSON.stringify({ push: { code: 'push_not_configured' } }))
 const dispatchOnce: () => Promise<(call: CommittedCall) => Promise<void>> = onceRetrying(() =>
-  Promise.all([catalogOnce(), createWebPushSender(vapidPrivateKey, vapidSubject)]).then(([loaded, sender]) =>
+  Promise.all([catalogOnce(), createWebPushSender({ privateJwk: vapidPrivateKey, subject: vapidSubject, fetch, time })]).then(([loaded, sender]) =>
     createPushDispatch({ transact, catalog: loaded, time, sender, log }),
   ),
 )
