@@ -12,7 +12,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
 import { useSavedViews, useStartView, type SavedViewsState, type StartView } from './savedViewsState'
-import { WorkspaceSearch, useWorkspaceSearch } from './search'
+import { WorkspaceSearch, useChangeSearch, useWorkspaceSearch } from './search'
 
 // Sample values, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -57,13 +57,14 @@ function storeOf() {
 interface Handles {
   views: SavedViewsState
   start: StartView
+  change: ReturnType<typeof useChangeSearch>
 }
 
 async function renderAt(entry: string, ports: ReturnType<typeof storeOf>['ports']) {
   const handles: Partial<Handles> = {}
   function Probe() {
     const search = useWorkspaceSearch()
-    Object.assign(handles, { views: useSavedViews(search.view ?? 'timeline'), start: useStartView() })
+    Object.assign(handles, { views: useSavedViews(search.view ?? 'timeline'), start: useStartView(), change: useChangeSearch() })
     return <div data-testid="search">{JSON.stringify(search)}</div>
   }
   const rootRoute = createRootRoute()
@@ -81,7 +82,7 @@ async function renderAt(entry: string, ports: ReturnType<typeof storeOf>['ports'
   await waitFor(() => {
     expect(views().available).toBe(true)
   })
-  return { views, start: () => handles.start as StartView, shown: () => WorkspaceSearch.parse(JSON.parse(screen.getByTestId('search').textContent)) }
+  return { views, start: () => handles.start as StartView, change: () => handles.change as Handles['change'], shown: () => WorkspaceSearch.parse(JSON.parse(screen.getByTestId('search').textContent)) }
 }
 
 describe('saved views (D-384, D-388)', () => {
@@ -141,6 +142,58 @@ describe('saved views (D-384, D-388)', () => {
     expect(saved?.ok).toBe(true)
     expect(store.stored()).toMatchObject({ appearance: 'dark' })
     expect(store.stored()?.saved_views.map((view) => view.name)).toEqual(['א', 'ב'])
+  })
+
+  it('keeps the view the board left, and saves the changes over it under the same name (D-442)', async () => {
+    const store = storeOf()
+    const { views, change, shown } = await renderAt('/?view=list', store.ports)
+    await act(async () => {
+      await views().save('בוקר', false)
+      await views().save('ערב', false)
+    })
+    const [morning] = views().views
+    if (morning === undefined) throw new Error('no view')
+    act(() => {
+      views().apply(morning)
+    })
+    await waitFor(() => {
+      expect(views().current?.id).toBe(morning.id)
+    })
+    expect(views().left).toBeNull()
+    act(() => {
+      change()({ missing: true })
+    })
+    await waitFor(() => {
+      expect(views().left?.id).toBe(morning.id)
+    })
+    expect(views().current).toBeNull()
+    await act(async () => {
+      await views().overwrite(morning.id)
+    })
+    expect(store.stored()?.saved_views.map((view) => view.name)).toEqual(['בוקר', 'ערב'])
+    expect(views().current?.id).toBe(morning.id)
+    expect(views().left).toBeNull()
+    expect(shown().missing).toBe(true)
+  })
+
+  it('leaves nothing to save over once the view the board left is deleted (D-442)', async () => {
+    const store = storeOf()
+    const { views, change } = await renderAt('/?view=list', store.ports)
+    await act(async () => {
+      await views().save('בוקר', false)
+    })
+    act(() => {
+      change()({ missing: true })
+    })
+    await waitFor(() => {
+      expect(views().left?.name).toBe('בוקר')
+    })
+    const [morning] = views().views
+    if (morning === undefined) throw new Error('no view')
+    await act(async () => {
+      await views().remove(morning.id)
+    })
+    expect(views().left).toBeNull()
   })
 })
 

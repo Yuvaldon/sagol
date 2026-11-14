@@ -24,10 +24,17 @@ export interface SavedViewsState {
   readonly startViewId: SavedViewId | null
   /** The saved view the board shows now (D-385). */
   readonly current: SavedView | null
+  /**
+   * The saved view the board was put in and has since drifted from by a change, while it still exists; NULL while the
+   * board shows a saved view, or came from none (D-442).
+   */
+  readonly left: SavedView | null
   /** TRUE at the limit: no view is saved until one is deleted (D-387). */
   readonly full: boolean
   /** Saves the board as it is now, as a new view; `start` makes it the start view. */
   save(name: string, start: boolean): Promise<PreferenceSaved>
+  /** Saves the board as it is now over the view it drifted from, under the same name (D-442). */
+  overwrite(id: SavedViewId): Promise<PreferenceSaved>
   /** Puts the board in the view's state, in the current history entry (D-385). */
   apply(view: SavedView): AppliedView
   /** Stores a view's query anew: the cleaned one after a part was dropped (D-385). */
@@ -76,6 +83,10 @@ export function useSavedViews(view: ViewId): SavedViewsState {
   )
   const views = useMemo(() => shown?.saved_views ?? [], [shown])
   const current = useMemo(() => matchingView(views, search, view), [views, search, view])
+  const left = useMemo(
+    () => (current === null ? (views.find((saved) => saved.id === search.saved) ?? null) : null),
+    [current, views, search.saved],
+  )
 
   const { run } = update
   const change = useCallback(
@@ -95,17 +106,19 @@ export function useSavedViews(view: ViewId): SavedViewsState {
     (name: string, start: boolean) => {
       const id = SavedViewId.parse(crypto.randomUUID())
       const query = captureView(search, view)
+      // The board now shows the new view, so a later change is saved over it (D-442).
+      changeSearch({ saved: id })
       return change((list) => ({
         saved_views: [...list.saved_views, { id, name: name.trim(), query }],
         start_view_id: start ? id : list.start_view_id,
       }))
     },
-    [change, search, view],
+    [change, changeSearch, search, view],
   )
   const apply = useCallback(
     (saved: SavedView) => {
       const applied = applyView(saved.query)
-      changeSearch(applied.search)
+      changeSearch({ ...applied.search, saved: saved.id })
       return applied
     },
     [changeSearch],
@@ -116,6 +129,7 @@ export function useSavedViews(view: ViewId): SavedViewsState {
     [change],
   )
   const setQuery = useCallback((id: SavedViewId, query: SavedViewQuery) => edit(id, (saved) => ({ ...saved, query })), [edit])
+  const overwrite = useCallback((id: SavedViewId) => setQuery(id, captureView(search, view)), [setQuery, search, view])
   const rename = useCallback((id: SavedViewId, name: string) => edit(id, (saved) => ({ ...saved, name: name.trim() })), [edit])
   const move = useCallback(
     (id: SavedViewId, delta: -1 | 1) => change((list) => listOf(list, moved(list.saved_views, id, delta))),
@@ -135,9 +149,11 @@ export function useSavedViews(view: ViewId): SavedViewsState {
     views,
     startViewId: shown?.start_view_id ?? null,
     current,
+    left,
     full: views.length >= SAVED_VIEW_LIMITS.max,
     save,
     apply,
+    overwrite,
     setQuery,
     rename,
     move,
@@ -161,7 +177,7 @@ export function useStartView(): StartView {
   const start = stored?.saved_views.find((saved) => saved.id === stored.start_view_id) ?? null
   const open = useCallback(() => {
     if (start === null) return false
-    changeSearch(applyView(start.query).search)
+    changeSearch({ ...applyView(start.query).search, saved: start.id })
     return true
   }, [start, changeSearch])
   return { settled: preferences.status !== 'loading', open }

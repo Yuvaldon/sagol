@@ -1,5 +1,5 @@
 import { BarColorMode, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PanelId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TableSortKey, ViewId } from '@config'
-import { CalendarDate, DeploymentId, FilterExpression, UnitId } from '@contracts'
+import { CalendarDate, DeploymentId, FilterExpression, SavedViewId, UnitId } from '@contracts'
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
 import { z } from 'zod'
@@ -9,7 +9,7 @@ import { isOverlayEntry, overlayState } from './overlay'
 import { SortRules, isDefaultSort } from './sort-rules'
 
 // All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the
-// filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193), a new leave's draft (D-143) and the dashboard's unit and planned days (D-349). A
+// filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193), a new leave's draft (D-143), the dashboard's unit and planned days (D-349) and the saved view the board came from (D-442). A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
 
@@ -39,6 +39,8 @@ const WorkspaceSearchFields = z.object({
   // The dashboard's unit and "כולל מתוכנן" (D-349); its span is the window above.
   [SEARCH_PARAMS.unit]: UnitId.optional().catch(undefined),
   [SEARCH_PARAMS.planned]: z.literal(true).optional().catch(undefined),
+  // The saved view the board was last put in (D-442); one the soldier does not hold is ignored where it is read.
+  [SEARCH_PARAMS.saved]: SavedViewId.optional().catch(undefined),
 })
 type WorkspaceSearchFields = z.infer<typeof WorkspaceSearchFields>
 
