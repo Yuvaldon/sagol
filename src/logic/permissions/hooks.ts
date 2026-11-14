@@ -61,7 +61,7 @@ const MODULE_CHECKS = {
   roles: { permission: { resource: 'roles', action: 'view' }, target: { kind: 'organization' } },
   /** A deployment is a target of its unit; any scope of `view` opens the module (D-179). */
   deployments: { permission: { resource: 'deployments', action: 'view' }, target: { kind: 'organization' } },
-  /** The dashboard is a commander's: a unit scope of leaves `view` opens it, and its rows are what that scope reads (D-349, D-359). */
+  /** The dashboard is a commander's: a unit scope of leaves `view` opens it, and its rows are what that scope reads (D-349, D-362). */
   dashboard: { permission: { resource: 'leaves', action: 'view' }, target: { kind: 'some_unit' } },
 } as const satisfies Record<string, PermissionCheck>
 
