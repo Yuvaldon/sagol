@@ -70,14 +70,18 @@ export const PUSH_SERVICE_HOSTS = {
 } as const
 
 function onPushService(url: string): boolean {
-  const { hostname } = new URL(url)
+  // Zod runs a refine after a failed format check too: a non-URL must fail here, not throw (OI-350).
+  if (!URL.canParse(url)) return false
+  const { hostname, port, username, password } = new URL(url)
+  // The default https port only, and no credentials: the server posts to the service itself, nowhere else (D-411).
+  if (port !== '' || username !== '' || password !== '') return false
   return (
     PUSH_SERVICE_HOSTS.exact.some((host) => hostname === host) ||
     PUSH_SERVICE_HOSTS.parents.some((parent) => hostname.endsWith(`.${parent}`))
   )
 }
 
-/** The push service URL of one browser install: https only, on a known push service (D-351). */
+/** The push service URL of one browser install: https on its default port, no credentials, on a known push service (D-351, D-411). */
 export const PushEndpoint = z
   .url({ protocol: /^https$/ })
   .max(2048)

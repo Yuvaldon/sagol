@@ -203,9 +203,9 @@ am = amends, ref = refines, ext = extends.
 | D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-274; ref D-356 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
-| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188; ref D-354 |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188; ref D-354; ref D-410 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
-| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-348; ref D-351 |
+| D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-348; ref D-351; ref D-412 |
 | D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207; ref D-348 |
 | D-205 | The inbox's closed section reads a span of dates around today | config, logic | |
 | D-206 | A local export loads into the backend once, through a SQL function | backend, data | |
@@ -324,7 +324,7 @@ am = amends, ref = refines, ext = extends.
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
 | D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361; ref D-362 |
 | D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
-| D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | |
+| D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | ref D-411 |
 | D-352 | In-app updates on "שלי" are derived from the events and the shared comments; only the seen time is stored | contracts, domain, data, logic, ui | |
 | D-353 | The service worker is built with `injectManifest` in `app`, and holds the push handlers | app, tooling | |
 | D-354 | Push dispatch runs after the commit, best effort, from the gateway only | data, config, backend | |
@@ -348,6 +348,9 @@ am = amends, ref = refines, ext = extends.
 | D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
 | D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | |
 | D-388 | A preference change from a function of the stored row, retried once over another device's save | logic | |
+| D-410 | Schema and function compatibility during a deploy: the server store writes only the row's columns | data, backend, tooling | |
+| D-411 | A push endpoint is https on its default port with no credentials; push TTL and urgency are config | contracts, config, backend | |
+| D-412 | Audit A9a: route targets, the owner's reach and the export loader need no change | backend, data, logic, docs | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5168,3 +5171,56 @@ week the board already shows, and one table of spans keeps the step and the span
   the save fails; the failure is shown as every
   preference failure is (D-187).
 **Why:** a list edited from two devices must merge; a single choice is better made again.
+
+## D-410 — Schema and function compatibility during a deploy: the server store writes only the row's columns
+2026-11-14 · accepted · refines D-201 · audit A9b (F2)
+- The server `Store` (`postgresStore`) inserts and upserts with an explicit column list: the row's own keys that the
+  table has in the catalog, in the table's order. A column the row leaves out gets its `DEFAULT`, not NULL; an upsert
+  updates only the columns the row carries. Rows of different shapes in one batch are written one shape at a time.
+- So a function built before a column was added keeps writing after the migration that adds it, as long as the new
+  column is `NOT NULL DEFAULT …` or nullable. Until now `jsonb_populate_recordset` turned every missing key into NULL,
+  and a `NOT NULL DEFAULT` column (`change_seq`, D-373) refused the write with 23502.
+- Not chosen: (b) nullable-first migrations (add the column nullable, make it `NOT NULL` in a later release). It cannot
+  apply to `change_seq`: `20261114001500_change_seq.sql` already ran on staging, and a migration that ran is never edited.
+- What remains: the production workflow (`.github/workflows/production.yml`) runs `supabase db push` before
+  `supabase functions deploy`, so for a few minutes the old function runs on the new schema. With this store that is
+  safe for an added defaulted column; the release that first ships this store still runs the old one in that window,
+  which writes NULL into `change_seq` and is refused. Release that one at a quiet hour.
+**Why:** the pattern is fixed in the layer that owns it (rule 7), once for every future column, instead of a rule
+every migration must remember.
+- Locks of `20261114001500_change_seq.sql` (assessed in audit A9a; the migration is not edited): `ADD COLUMN … DEFAULT 0`
+  takes ACCESS EXCLUSIVE on `leave_events`, `unit_memberships` and `report_confirmations` (a constant default, so no
+  rewrite); the plain `CREATE INDEX` takes SHARE; `DISABLE`/`ENABLE TRIGGER leave_events_append_only` takes SHARE ROW
+  EXCLUSIVE. The Supabase CLI applies a migration file in one transaction, so every lock is held until commit and no
+  other session ever sees the append-only trigger disabled: DDL is transactional, and they wait on the ACCESS EXCLUSIVE
+  lock anyway. The cost is that reads and writes of those three tables wait for the migration (small tables, seconds).
+  Run statement by statement outside a transaction, a window would open with the trigger off; only the gateway writes
+  and it never updates an event, and a rerun is idempotent and enables the trigger again. A later migration that
+  disables a guard trigger keeps it in the same transaction as the enable.
+
+## D-411 — A push endpoint is https on its default port with no credentials; push TTL and urgency are config
+2026-11-14 · accepted · refines D-351 · audit A9a
+- `PushEndpoint` (contracts) accepts only an `https:` URL on its default port, with no user name or password, on a
+  known push service host. A port of its own or credentials in the URL are refused at the boundary, so the server
+  posts to the push service itself and nowhere else.
+- The time a push service keeps an undelivered push (`NOTIFICATIONS.pushTtlSeconds`, one day) and its RFC 8030 urgency
+  (`NOTIFICATIONS.pushUrgency`, `high`) come from `config`, not from the library's defaults (four weeks, `normal`): a
+  day-old update is already in the app, and a leave update is shown to the soldier, so the phone wakes for it.
+- Redirects: `@negrel/webpush` posts with the global `fetch` and its default `redirect: 'follow'`, and keeps its
+  encryption helpers private, so not following redirects means owning the request (OI-354). Until then the risk is
+  bounded: the endpoint is on a known push host, Deno drops `Authorization` on a redirect to another origin, and the
+  body is encrypted to the browser's key.
+**Why:** a stored URL the server posts to is checked as narrowly as its purpose, and every tuning value is config (rule 2).
+
+## D-412 — Audit A9a: route targets, the owner's reach and the export loader need no change
+2026-11-14 · accepted · refines D-203 · audit A9a
+- `some_unit` has no counterpart in Postgres and needs none: there is no `has_permission()` and no row policy (D-203).
+  It is a route gate only (`dashboard` in `src/logic/permissions/hooks.ts`), deciding whether a screen is shown. Every
+  row still reaches the client through the gateway, which runs the domain policy per row. The comment in
+  `20261111000000_schema.sql` that promises `has_permission()` predates D-203; a migration that ran is never edited.
+- The gateway connects as the role that ran the migrations, which owns every table; row level security is on with no
+  policy and never forced, so the owner passes it, `change_counters` included. A database test holds both (no table
+  forced, every table owned by the connecting role).
+- `load_organization_export` is called only by the owner from the SQL editor (D-206) and by the database tests; the
+  API roles hold no execute on it (`load.dbtest.ts`).
+**Why:** an audit finding that turns out safe is recorded with its reason, so the next audit does not reopen it.
