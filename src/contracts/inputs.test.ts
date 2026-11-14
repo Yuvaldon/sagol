@@ -80,7 +80,6 @@ const COMMAND_FIELDS = new Set([
   'organization',
   'soldier',
   'leave_id',
-  'seen_at',
 ])
 
 type Target = { table: TableName; nested?: Record<string, TableName> }
@@ -451,10 +450,10 @@ describe('import and export (D-050)', () => {
     expect(ImportCommand.options).toHaveLength(ImportOperation.options.length)
   })
 
-  it('exports every table but the devices, which belong to the browsers (D-351)', () => {
+  it('exports every table but the devices, which belong to the browsers (D-351), and the derived counter (D-373)', () => {
     expect(Object.keys(OrganizationExport.shape.tables.shape).sort()).toEqual(
       Object.keys(TABLE_SCHEMAS)
-        .filter((table) => table !== 'push_subscriptions')
+        .filter((table) => table !== 'push_subscriptions' && table !== 'change_counters')
         .sort(),
     )
   })

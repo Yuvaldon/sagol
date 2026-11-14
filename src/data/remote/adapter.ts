@@ -92,6 +92,7 @@ const REPOSITORY_METHODS = {
   deployments: REFERENCE,
   deployment_members: LIST,
   report_confirmations: { ...LIST, confirmable: true, sections: true },
+  change_counters: { current: true },
 } as const satisfies MethodTable<RemoteDataAdapter['repositories']>
 
 const COMMAND_METHODS = {

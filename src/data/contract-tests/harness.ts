@@ -44,6 +44,7 @@ export interface ContractAdapter {
     | 'deployments'
     | 'deployment_members'
     | 'report_confirmations'
+    | 'change_counters'
   >
   readonly commands: {
     readonly organizations: DataCommands['organizations']

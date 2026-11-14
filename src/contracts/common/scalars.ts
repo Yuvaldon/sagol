@@ -13,6 +13,10 @@ export type Timestamp = z.infer<typeof Timestamp>
 /** SQL `INTEGER`. */
 export const Integer = z.int()
 
+/** A commit-ordered change number in an organization (D-373). 0 = before any counted change. */
+export const ChangeSeq = z.int().min(0)
+export type ChangeSeq = z.infer<typeof ChangeSeq>
+
 /** Optimistic-concurrency counter (D-012), starts at 1. */
 export const Version = z.int().min(1)
 

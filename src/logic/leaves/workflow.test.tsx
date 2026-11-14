@@ -172,6 +172,7 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
     to_status: 'pending',
     changes: {},
     acknowledged_rule_ids: [],
+    change_seq: n,
     created_at,
   })
   const comment = (n: number, created_at: string): LeaveComment => ({
@@ -218,6 +219,7 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
   it('reads the closed leaves over a bounded span around today (D-205)', () => {
     const today = CalendarDate.parse('2026-11-10')
     expect(closedQuery(today)).toEqual({
+      ids: null,
       window: { start_date: addDays(today, -INBOX.closedPastDays), end_date: addDays(today, INBOX.closedFutureDays) },
       soldier_ids: null,
       statuses: ['rejected', 'cancelled'],
