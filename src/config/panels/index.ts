@@ -80,7 +80,7 @@ export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
  */
 export const WORK_SECTIONS = [
   { id: 'people', modules: ['soldiers', 'account_links', 'access_grants'] },
-  { id: 'presence', modules: ['deployments', 'rules'] },
+  { id: 'presence', modules: ['dashboard', 'deployments', 'rules'] },
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly PanelId[] }[]
 export type WorkSectionId = (typeof WORK_SECTIONS)[number]['id']
 export type WorkModule = (typeof WORK_SECTIONS)[number]['modules'][number]

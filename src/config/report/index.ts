@@ -42,6 +42,8 @@ export const DAY_REPORT = {
     maxHeightPx: 16000,
     pixelRatio: 2,
     fileStem: 'sagol-day-report',
+    /** The dashboard's heat map, copied the same way (D-349). */
+    heatFileStem: 'sagol-heat-map',
     mimeType: 'image/png',
     /** How long a downloaded image's address stays alive, so the browser has started the download first. */
     revokeAfterMs: 60000,
