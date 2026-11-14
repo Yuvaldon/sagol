@@ -396,6 +396,19 @@ export function describeLeaveContract(
         expect(valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, type.id, { reason: 'Wedding' }))).reason).toBe('Wedding')
       })
 
+      it('refuses a reason on a leave of the built-in group, created or edited (D-347, D-430)', async () => {
+        const yael = await soldier(null)
+        expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, rotationType, { reason: 'Wedding' })))).toEqual([
+          { path: ['reason'], code: 'fixed_by_group' },
+        ])
+        const loose = await createType()
+        const leave = valueOf(await adapter().commands.leaves.create(leaveInput(yael.id, loose.id, { reason: 'Wedding' })))
+        const moved = { id: leave.id, expected_version: 1, changes: { leave_type_id: rotationType }, acknowledged_rule_ids: [] }
+        expect(issuesOf(await adapter().commands.leaves.update(moved))).toEqual([{ path: ['changes', 'reason'], code: 'fixed_by_group' }])
+        const cleared = valueOf(await adapter().commands.leaves.update({ ...moved, changes: { leave_type_id: rotationType, reason: null } }))
+        expect(cleared).toMatchObject({ leave_type_id: rotationType, reason: null })
+      })
+
       it('refuses a type that is unknown or archived, and an archived soldier', async () => {
         const yael = await soldier(null)
         expect(issuesOf(await adapter().commands.leaves.create(leaveInput(yael.id, newTypeId())))).toEqual([

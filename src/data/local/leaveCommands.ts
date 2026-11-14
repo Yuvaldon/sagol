@@ -23,7 +23,6 @@ import {
   issuesFromSchema,
   leaveEditKind,
   leaveChangeViolations,
-  leaveReasonIssues,
   optionalText,
   planLeaveCreation,
   planLeaveEdit,
@@ -41,7 +40,7 @@ import { tableOf } from './store'
 import { counterChange, nextChangeSeq } from './changeCounters'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
-import { LEAVE_TABLES, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } from './leaves'
+import { LEAVE_TABLES, leaveReasonCheck, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } from './leaves'
 
 // The leave commands (D-063, D-064, D-114, D-117, D-123, D-124). Each plans its step with the state machine, checks
 // every permission the plan names on the leave's soldier, and passes the availability rules' gate (D-047, D-073), all
@@ -220,7 +219,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
       if (typeChanged) issues.push(...(await leaveTypeOf(database, scope, after.leave_type_id)).issues)
       if (issues.length === 0 && (typeChanged || after.reason !== before.reason)) {
         const type = await tableOf(database, 'leave_types').get(after.leave_type_id)
-        if (type !== undefined) issues.push(...leaveReasonIssues(type, after.reason))
+        if (type !== undefined) issues.push(...(await leaveReasonCheck(database, type, after.reason)))
       }
       if (!sameValue(after.properties, before.properties)) {
         issues.push(...(await propertiesIssues(database, scope, 'leave', before.properties, after.properties)))
@@ -268,7 +267,7 @@ export function createLeaveCommands(dependencies: LocalDependencies): LocalLeave
           const { type, issues: typeIssues } = await leaveTypeOf(database, scope, input.leave_type_id)
           const issues: Issue[] = [
             ...typeIssues,
-            ...(type === null ? [] : leaveReasonIssues(type, reason)),
+            ...(type === null ? [] : await leaveReasonCheck(database, type, reason)),
             ...(await propertiesIssues(database, scope, 'leave', null, input.properties)),
             ...(await commentIdIssues(database, comment)),
             ...(await leaveRotationCheck(database, scope, { ...input, soldier_id: soldier.id }, true)),
