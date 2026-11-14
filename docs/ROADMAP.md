@@ -161,7 +161,7 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 | R3·N | Notifications | "עדכונים" on שלי with a count, and phone notifications chosen per device and per kind in the profile (D-351 … D-359) | ☑ |
 | R3·D | Dashboards | The command board "דשבורד" with its modules, templates and own list, and "הסבב שלי" on top of "שלי" (OI-222, D-349, D-350, D-360 … D-362) | ☑ |
 | A9b | audit | Security and readiness before 1.0: input refusals, the server store and the function across a deploy (D-410) | ☑ |
-| A9b fixes | A9b's findings | A push address that is not a URL refused as invalid (OI-350); the server store writes only the row's columns (OI-351, D-410); the function loads its catalog again after a failure (OI-352); OI-353 recorded for after 1.0 | ☐ |
+| A9b fixes | A9b's findings | A push address that is not a URL refused as invalid (OI-350); the server store writes only the row's columns (OI-351, D-410); the function loads its catalog again after a failure (OI-352); OI-353 recorded for after 1.0 | ☑ |
 | R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker (OI-111 closed by D-383; the redesign stays) | ☐ |
 | R5 | Building the design | The approved concept in the product | ☐ |
 | R6 | Acceptance testing | The journeys walked on the real product; the decision point on who maintains the system after handover (D-342) | ☐ |
