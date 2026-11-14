@@ -1,6 +1,6 @@
 import {
+  CalendarDate,
   CommandRankId,
-  PropertyOptionId,
   SoldierStatus,
   TagId,
   type CommandRank,
@@ -11,6 +11,7 @@ import {
 import { t, type I18nKey } from '@i18n'
 import {
   definitionsOf,
+  fullName,
   liveCategories,
   liveRanks,
   optionsOf,
@@ -20,16 +21,36 @@ import {
   usePropertyDefinitions,
   useTagCategories,
   useTags,
+  useSoldiers,
+  useUnits,
+  type CompareOperator,
   type FilterRule,
 } from '@logic'
 import { useMemo } from 'react'
 import { toneOf } from '../theme/palette'
 import type { Choice } from '../primitives/ChoiceList'
+import { formatDate } from '../patterns/dates'
 
 // The soldier fields of the rule builder (D-312): what a rule may filter by, its operators and its values, and the way
 // between a rule of the URL and a row of the builder. Every field reads its values from the data, never a list here.
 
-export const OPERATORS = ['anyOf', 'noneOf', 'is', 'isNot', 'isEmpty', 'isNotEmpty'] as const
+export const OPERATORS = [
+  'anyOf',
+  'noneOf',
+  'is',
+  'isNot',
+  'contains',
+  'greaterThan',
+  'greaterOrEqual',
+  'lessThan',
+  'lessOrEqual',
+  'before',
+  'onOrBefore',
+  'after',
+  'onOrAfter',
+  'isEmpty',
+  'isNotEmpty',
+] as const
 export type Operator = (typeof OPERATORS)[number]
 
 export const OPERATOR_LABELS: Record<Operator, I18nKey> = {
@@ -37,8 +58,32 @@ export const OPERATOR_LABELS: Record<Operator, I18nKey> = {
   noneOf: 'filters.operators.noneOf',
   is: 'filters.operators.is',
   isNot: 'filters.operators.isNot',
+  contains: 'filters.operators.contains',
+  greaterThan: 'filters.operators.greaterThan',
+  greaterOrEqual: 'filters.operators.greaterOrEqual',
+  lessThan: 'filters.operators.lessThan',
+  lessOrEqual: 'filters.operators.lessOrEqual',
+  before: 'filters.operators.before',
+  onOrBefore: 'filters.operators.onOrBefore',
+  after: 'filters.operators.after',
+  onOrAfter: 'filters.operators.onOrAfter',
   isEmpty: 'filters.operators.isEmpty',
   isNotEmpty: 'filters.operators.isNotEmpty',
+}
+
+/** The operator a compared value is written with (D-380); a date's "before" is "less than". */
+const COMPARE_OF: Partial<Record<Operator, CompareOperator>> = {
+  is: 'equals',
+  isNot: 'not_equals',
+  contains: 'contains',
+  greaterThan: 'greater_than',
+  greaterOrEqual: 'greater_or_equal',
+  lessThan: 'less_than',
+  lessOrEqual: 'less_or_equal',
+  before: 'less_than',
+  onOrBefore: 'less_or_equal',
+  after: 'greater_than',
+  onOrAfter: 'greater_or_equal',
 }
 
 /** The operators that need no value. */
@@ -53,9 +98,15 @@ export interface Draft {
   readonly values: readonly string[]
 }
 
+/** How a row takes its value: chosen from a list, or typed (D-380). */
+export type FieldInput = 'choices' | 'text' | 'number' | 'date'
+
 export interface FilterField {
   readonly key: string
   readonly name: string
+  /** Where its row lives: a soldier rule, or a leave condition (D-382). */
+  readonly entity: FieldEntity
+  readonly input: FieldInput
   readonly operators: readonly Operator[]
   /** The live values, and any chosen one no longer live after them. */
   choicesOf(values: readonly string[]): Choice[]
@@ -110,6 +161,8 @@ function tagField(category: TagCategory, categories: readonly TagCategory[], tag
   return {
     key: `tag:${category.id}`,
     name: category.name,
+    entity: 'soldier',
+    input: 'choices',
     operators: ['anyOf', 'noneOf'],
     single: false,
     choicesOf: (values) =>
@@ -137,6 +190,8 @@ function rankField(ranks: readonly CommandRank[]): FilterField {
   return {
     key: 'rank',
     name: t('filters.rank'),
+    entity: 'soldier',
+    input: 'choices',
     operators: ['anyOf', 'noneOf'],
     single: false,
     choicesOf: (values) =>
@@ -154,6 +209,8 @@ function statusField(): FilterField {
   return {
   key: 'status',
   name: t('filters.status'),
+  entity: 'soldier',
+  input: 'choices',
   operators: ['is', 'isNot'],
   single: false,
   choicesOf: (values) =>
@@ -171,22 +228,62 @@ function statusField(): FilterField {
   }
 }
 
+/** The live soldiers or units a reference property chooses from (D-380). */
+export interface RefChoices {
+  readonly soldiers: readonly Choice[]
+  readonly units: readonly Choice[]
+}
+
+/** What a filter row filters: the soldiers, or their leaves (D-382). */
+export type FieldEntity = 'soldier' | 'leave'
+
+const DECIMAL = /^-?\d+(\.\d+)?$/u
+
+/** A plain decimal, so `1e3` or `0x1A` is not read as a number the field does not show (D-380). */
+export function decimalOf(raw: string): number | null {
+  return DECIMAL.test(raw.trim()) ? Number(raw) : null
+}
+
+/** The typed value a compared rule writes: NULL while it is not one, so the row lives only in the builder (D-380). */
+function typedValue(input: FieldInput, raw: string | undefined): string | number | null {
+  if (raw === undefined || raw.trim() === '') return null
+  if (input === 'number') return decimalOf(raw)
+  if (input === 'date') return safe(CalendarDate)(raw)
+  return raw
+}
+
+/** A value written with its keys in order, so two rules compare by what they hold. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, held: unknown) =>
+    held !== null && typeof held === 'object' && !Array.isArray(held)
+      ? Object.fromEntries(Object.entries(held).sort(([a], [b]) => a.localeCompare(b)))
+      : held,
+  )
+}
+
+const INPUT_OF: Partial<Record<PropertyDefinition['data_type'], FieldInput>> = { text: 'text', number: 'number', date: 'date' }
+
 /**
- * A soldier property the builder filters by (D-312): select and multi-select by their options, yes / no by its answer
- * or by having none (D-322).
+ * A property the builder filters by (D-312, D-380): select, multi-select, soldier and unit by their choices, yes / no by
+ * its answer or by having none (D-322), text, number and date by a typed value. A unit property reads the soldier's
+ * primary unit (D-381) and names its entity; a leave property is a leave condition (D-382).
  */
-function propertyField(definition: PropertyDefinition): FilterField | null {
+function propertyField(definition: PropertyDefinition, refs: RefChoices): FilterField | null {
   const key = `property:${definition.id}`
   const definitionId = definition.id
+  const entity = definition.entity_type === 'leave' ? 'leave' : 'soldier'
+  const name = definition.entity_type === 'unit' ? `${definition.label} (${t('filters.ofUnit')})` : definition.label
+  const base = { key, name, entity } as const
+  const emptyRule = (operator: Operator): FilterRule => ({ kind: 'empty', definitionId, empty: operator === 'isEmpty' })
   if (definition.data_type === 'boolean') {
     return {
-      key,
-      name: definition.label,
+      ...base,
+      input: 'choices',
       operators: ['is', 'isEmpty', 'isNotEmpty'],
       single: true,
       choicesOf: () => [...BOOLEAN_CHOICES],
       ruleOf: (operator, values) => {
-        if (!takesValues(operator)) return { kind: 'empty', definitionId, empty: operator === 'isEmpty' }
+        if (!takesValues(operator)) return emptyRule(operator)
         const [value] = values
         return value === undefined ? null : { kind: 'boolean', definitionId, value: value === BOOLEAN_KEYS.true }
       },
@@ -194,25 +291,58 @@ function propertyField(definition: PropertyDefinition): FilterField | null {
       inert: () => false,
     }
   }
-  if (definition.data_type !== 'select' && definition.data_type !== 'multi_select') return null
-  const options = optionsOf(definition)
-  const live: Choice[] = options.map((option) => ({
-    key: option.id,
-    label: { text: option.label },
-    ...(option.color_key === null ? {} : { dot: toneOf(option.color_key).fill }),
-  }))
+  const input = INPUT_OF[definition.data_type]
+  if (input !== undefined) {
+    const operators: readonly Operator[] =
+      input === 'text'
+        ? ['contains', 'is', 'isNot', 'isEmpty', 'isNotEmpty']
+        : input === 'number'
+          ? ['is', 'isNot', 'greaterThan', 'greaterOrEqual', 'lessThan', 'lessOrEqual', 'isEmpty', 'isNotEmpty']
+          : ['is', 'isNot', 'before', 'onOrBefore', 'after', 'onOrAfter', 'isEmpty', 'isNotEmpty']
+    return {
+      ...base,
+      input,
+      operators,
+      single: true,
+      choicesOf: () => [],
+      ruleOf: (operator, values) => {
+        const compare = COMPARE_OF[operator]
+        if (!takesValues(operator) || compare === undefined) return emptyRule(operator)
+        return { kind: 'compare', definitionId, operator: compare, value: typedValue(input, values[0]) }
+      },
+      labelOf: (value) => {
+        const date = input === 'date' ? safe(CalendarDate)(value) : null
+        return date === null ? value : formatDate(date)
+      },
+      inert: () => false,
+    }
+  }
+  const isReference = definition.data_type === 'soldier_ref' || definition.data_type === 'unit_ref'
+  const live: Choice[] =
+    definition.data_type === 'soldier_ref'
+      ? [...refs.soldiers]
+      : definition.data_type === 'unit_ref'
+        ? [...refs.units]
+        : optionsOf(definition).map((option) => ({
+            key: option.id,
+            label: { text: option.label },
+            ...(option.color_key === null ? {} : { dot: toneOf(option.color_key).fill }),
+          }))
+  const textOf = (value: string) => {
+    const label = live.find((choice) => choice.key === value)?.label
+    return label === undefined || !('text' in label) ? null : label.text
+  }
   return {
-    key,
-    name: definition.label,
+    ...base,
+    input: 'choices',
     operators: ['anyOf', 'noneOf', 'isEmpty', 'isNotEmpty'],
     single: false,
     choicesOf: (values) => withExtras(live, values, unknownChoice),
     ruleOf: (operator, values) =>
-      takesValues(operator)
-        ? { kind: 'options', definitionId, negate: negated(operator), optionIds: parsed(values, safe(PropertyOptionId)) }
-        : { kind: 'empty', definitionId, empty: operator === 'isEmpty' },
-    labelOf: (value) => options.find((option) => option.id === value)?.label ?? t('filters.unavailable'),
-    inert: (value) => !options.some((option) => option.id === value),
+      takesValues(operator) ? { kind: 'options', definitionId, negate: negated(operator), ids: [...values] } : emptyRule(operator),
+    labelOf: (value) => textOf(value) ?? t('filters.unavailable'),
+    // A soldier or unit outside the live lists is still a value a property holds, so it is never inert (D-380).
+    inert: (value) => !isReference && textOf(value) === null,
   }
 }
 
@@ -220,10 +350,15 @@ export interface FilterFields {
   /** Whether the tags, ranks and properties have loaded: before, a rule's field is not known yet (OI-261). */
   readonly ready: boolean
   readonly byKey: ReadonlyMap<string, FilterField>
-  /** The fields a new row may pick: the live ones that hold a value to choose. */
+  /** The fields a new row may pick: the live ones that hold a value to choose or take a typed one. */
   readonly offered: readonly FilterField[]
-  /** The row of a rule; NULL when its field is not one the builder knows, so the row can only be removed. */
-  draftOf(rule: FilterRule): Draft | null
+  /** The leave properties a leave condition may pick (D-382). */
+  readonly leaveOffered: readonly FilterField[]
+  /**
+   * The row of a rule; NULL when its field is not one the builder knows, belongs to the other entity, or would not
+   * write the same rule back, so the row is kept as it is and can only be removed.
+   */
+  draftOf(rule: FilterRule, entity: FieldEntity): Draft | null
 }
 
 export function useFilterFields(): FilterFields {
@@ -231,18 +366,27 @@ export function useFilterFields(): FilterFields {
   const tags = useTags()
   const ranks = useCommandRanks()
   const properties = usePropertyDefinitions()
+  const soldiers = useSoldiers()
+  const units = useUnits()
+  const allSoldiers = soldiers.status === 'ready' ? soldiers.value : null
+  const allUnits = units.status === 'ready' ? units.value : null
   const allCategories = categories.status === 'ready' ? categories.value : null
   const allTags = tags.status === 'ready' ? tags.value : null
   const allRanks = ranks.status === 'ready' ? ranks.value : null
   const allDefinitions = properties.status === 'ready' ? properties.value : null
-  const ready = [categories, tags, ranks, properties].every((query) => query.status !== 'loading')
+  const ready = [categories, tags, ranks, properties, soldiers, units].every((query) => query.status !== 'loading')
   return useMemo(() => {
     const categoryList = allCategories ?? []
     const tagList = allTags ?? []
     const rankList = allRanks ?? []
-    const soldierDefinitions = definitionsOf(allDefinitions ?? [], 'soldier')
+    const definitions = allDefinitions ?? []
+    const refs: RefChoices = {
+      soldiers: (allSoldiers ?? []).map((soldier) => ({ key: soldier.id, label: { text: fullName(soldier) } })),
+      units: (allUnits ?? []).map((unit) => ({ key: unit.id, label: { text: unit.name } })),
+    }
     const byKey = new Map<string, FilterField>()
     const offered: FilterField[] = []
+    const leaveOffered: FilterField[] = []
     // Archived categories still name a rule that holds their tags.
     for (const category of categoryList) byKey.set(`tag:${category.id}`, tagField(category, categoryList, tagList))
     for (const category of liveCategories(categoryList)) {
@@ -255,18 +399,23 @@ export function useFilterFields(): FilterFields {
     const status = statusField()
     byKey.set(status.key, status)
     offered.push(status)
-    for (const definition of soldierDefinitions) {
-      const field = propertyField(definition)
+    const entities = ['soldier', 'unit', 'leave'] as const
+    for (const definition of entities.flatMap((entity) => definitionsOf(definitions, entity))) {
+      const field = propertyField(definition, refs)
       if (field === null) continue
       byKey.set(field.key, field)
-      if (field.choicesOf([]).length > 0) offered.push(field)
+      if (field.input === 'choices' && field.choicesOf([]).length === 0) continue
+      ;(field.entity === 'leave' ? leaveOffered : offered).push(field)
     }
     const categoryOf = (tagId: TagId) => tagList.find((tag) => tag.id === tagId)?.category_id
-    const known = (draft: Draft): Draft | null => {
-      const field = byKey.get(draft.field)
-      return field !== undefined && field.operators.includes(draft.operator) ? draft : null
+    const draftOf = (rule: FilterRule, entity: FieldEntity): Draft | null => {
+      const draft = readDraft(rule)
+      const field = draft === null ? undefined : byKey.get(draft.field)
+      if (draft === null || field === undefined || field.entity !== entity || !field.operators.includes(draft.operator)) return null
+      return canonical(field.ruleOf(draft.operator, draft.values)) === canonical(rule) ? draft : null
     }
-    const draftOf = (rule: FilterRule): Draft | null => {
+    const known = (draft: Draft): Draft => draft
+    const readDraft = (rule: FilterRule): Draft | null => {
       switch (rule.kind) {
         case 'tag': {
           const [first] = rule.tagIds
@@ -279,7 +428,7 @@ export function useFilterFields(): FilterFields {
         case 'status':
           return known({ field: 'status', operator: rule.negate ? 'isNot' : 'is', values: rule.statuses })
         case 'options':
-          return known({ field: `property:${rule.definitionId}`, operator: rule.negate ? 'noneOf' : 'anyOf', values: rule.optionIds })
+          return known({ field: `property:${rule.definitionId}`, operator: rule.negate ? 'noneOf' : 'anyOf', values: rule.ids })
         case 'empty':
           return known({ field: `property:${rule.definitionId}`, operator: rule.empty ? 'isEmpty' : 'isNotEmpty', values: [] })
         case 'boolean':
@@ -288,8 +437,14 @@ export function useFilterFields(): FilterFields {
             operator: 'is',
             values: [rule.value ? BOOLEAN_KEYS.true : BOOLEAN_KEYS.false],
           })
+        case 'compare': {
+          const field = `property:${rule.definitionId}`
+          const operator = byKey.get(field)?.operators.find((candidate) => COMPARE_OF[candidate] === rule.operator)
+          if (operator === undefined) return null
+          return known({ field, operator, values: rule.value === null ? [] : [String(rule.value)] })
+        }
       }
     }
-    return { ready, byKey, offered, draftOf }
-  }, [ready, allCategories, allTags, allRanks, allDefinitions])
+    return { ready, byKey, offered, leaveOffered, draftOf }
+  }, [ready, allCategories, allTags, allRanks, allDefinitions, allSoldiers, allUnits])
 }

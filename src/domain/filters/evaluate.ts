@@ -10,6 +10,7 @@ import {
   type SoldierId,
   type SoldierTag,
   type TagId,
+  type Unit,
   type UnitId,
 } from '@contracts'
 import { buildUnitTree, isAncestorOrSelf, primaryUnitOn, type MembershipSpan, type UnitNode } from '../hierarchy'
@@ -20,11 +21,15 @@ import type { FilterDefinitionShape } from './validate'
 // The filter evaluator (ARCHITECTURE "Filters", D-067): one meaning for view filters,
 // saved views and availability-rule populations. Time-bound conditions are evaluated on
 // a given day: the unit is the primary membership that day (D-054), the seniority the
-// effective seniority that day (D-029). Rank, status, tags and properties are current.
+// effective seniority that day (D-029). Rank, status, tags and properties are current. A unit property reads the
+// soldier's primary unit that day (D-381).
+
+/** What filters read of a unit: its place in the tree and its property values (D-381). */
+export type FilterUnit = UnitNode & Pick<Unit, 'properties'>
 
 /** What filters read. Full contract rows fit every field. */
 export interface FilterData {
-  readonly units: Iterable<UnitNode>
+  readonly units: Iterable<FilterUnit>
   readonly soldiers: Iterable<Pick<Soldier, 'id' | 'command_rank_id' | 'status' | 'properties'>>
   readonly soldier_tags: Iterable<Pick<SoldierTag, 'soldier_id' | 'tag_id'>>
   readonly command_ranks: Iterable<Pick<CommandRank, 'id' | 'seniority'>>
@@ -63,7 +68,11 @@ function groupBy<K, V>(items: Iterable<V>, keyOf: (item: V) => K): Map<K, V[]> {
 }
 
 export function createFilterContext(data: FilterData): FilterContext {
-  const tree = buildUnitTree(data.units)
+  const units = [...data.units]
+  const tree = buildUnitTree(units)
+  const unitProperties = new Map<UnitId, ReadonlyMap<string, JsonValue>>(
+    units.map((unit) => [unit.id, new Map(Object.entries(unit.properties))]),
+  )
   const rankSeniority = new Map<CommandRankId, number>([...data.command_ranks].map((rank) => [rank.id, rank.seniority]))
   const membershipsBySoldier = groupBy(data.unit_memberships, (row) => row.soldier_id)
   const overridesBySoldier = groupBy(data.seniority_overrides, (row) => row.soldier_id)
@@ -129,10 +138,17 @@ export function createFilterContext(data: FilterData): FilterContext {
       case 'soldier':
         return node.soldier_ids.includes(soldier.id)
       case 'property': {
-        // A missing definition, or one of another entity, matches nobody (D-067).
+        // A soldier property reads the soldier; a unit property the soldier's primary unit that day, and a soldier
+        // with no unit that day has no value (D-381). A missing definition, or a leave's, matches nobody (D-067).
         const definition = definitions.get(node.property_definition_id)
-        if (definition === undefined || definition.entity_type !== PropertyEntityType.enum.soldier) return false
-        return propertyMatches(definition, node.operator, node.value, soldier.properties.get(definition.id))
+        if (definition === undefined) return false
+        if (definition.entity_type === PropertyEntityType.enum.soldier) {
+          return propertyMatches(definition, node.operator, node.value, soldier.properties.get(definition.id))
+        }
+        if (definition.entity_type !== PropertyEntityType.enum.unit) return false
+        const unitId = unitOn(soldier.id, date)
+        const stored = unitId === null ? undefined : unitProperties.get(unitId)?.get(definition.id)
+        return propertyMatches(definition, node.operator, node.value, stored)
       }
     }
   }

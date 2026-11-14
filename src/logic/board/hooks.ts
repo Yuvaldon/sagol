@@ -66,8 +66,9 @@ export function useBoard(
     // What a row says about its unit waits for the hints (D-122).
     if (!placements.settled) return { status: 'loading' }
     const unit = filterUnitOf(filter)
+    const definitions = new Map(source.value.propertyDefinitions.map((definition) => [definition.id, definition]))
     const drawn = boardLeaves(
-      leaves.value.filter((leave) => leaveMatches(leaveConditions, leave)),
+      leaves.value.filter((leave) => leaveMatches(leaveConditions, definitions, leave)),
       leaveTypes.value,
     )
     // Availability counts every leave, whatever the leave conditions draw (D-133).

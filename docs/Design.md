@@ -306,6 +306,11 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Sort (D-313)**: rows in "סינון ומיון": by name, rank, seniority, unit, days absent or a sortable soldier property;
   ascending or descending; the first row leads and the next break its ties. The table's leave headers keep their own.
 - **"Only who is missing"** is a suggestion in the builder and a chip while on (D-213, D-312).
+- **Property conditions (D-380, D-382)**: every soldier, unit and leave property is a field of the builder; a unit
+  property's name ends in "(של היחידה)". Operators follow the type: text "מכיל", "הוא", "אינו"; numbers add the
+  orderings; dates "לפני", "עד", "אחרי", "החל מ"; lists and references any of or none of; all add empty and not empty.
+  Text and numbers are typed and written on leaving the field or Enter; a date in a date field. Leave property rows
+  come after the leave status and type rows, joined by "וגם", and each is a chip.
 - **Calm**: no explanatory hints (presence and seniority keep theirs); empty states are a title and an action; icon
   buttons have a tooltip with their name (D-215). The interface says סבב for a deployment (D-212).
 

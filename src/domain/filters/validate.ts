@@ -33,7 +33,8 @@ function nodeIssues(
       return nodeIssues(node.node, [...path, 'node'], definitions)
     case 'property': {
       const definition = definitions.get(node.property_definition_id)
-      if (definition === undefined || definition.entity_type !== PropertyEntityType.enum.soldier) {
+      // A soldier's or a unit's property (D-381); a leave's selects no soldier.
+      if (definition === undefined || definition.entity_type === PropertyEntityType.enum.leave) {
         return [{ path: [...path, 'property_definition_id'], code: IssueCode.enum.property_unknown }]
       }
       if (!operatorFits(definition, node.operator)) {
@@ -50,7 +51,7 @@ function nodeIssues(
 }
 
 /**
- * Issues of a filter against the soldier property definitions: an unknown definition
+ * Issues of a filter against the soldier and unit property definitions (D-381): an unknown definition
  * (`property_unknown`), an operator outside the data type (`filter_operator_invalid`) or an
  * operand that does not fit (`invalid_value`). Paths start at `where`.
  */

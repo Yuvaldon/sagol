@@ -5,6 +5,7 @@ import {
   DeploymentId,
   LeaveId,
   LeaveTypeId,
+  PropertyDefinitionId,
   SoldierId,
   TagCategoryId,
   TagId,
@@ -95,6 +96,7 @@ function world(leaves: AvailabilityLeave[] = []): World {
     archived_at: archived ? ARCHIVED_AT : null,
     valid_from: null,
     valid_to: null,
+    properties: id === UNIT.P1 ? { [GATE]: 'north' } : {},
   })
   const placements: [SoldierName, UnitId, CalendarDate, CalendarDate | null][] = [
     ['a1', UNIT.P1, '2026-01-01', null],
@@ -162,7 +164,7 @@ function world(leaves: AvailabilityLeave[] = []): World {
       valid_from: from,
       valid_to: to,
     })),
-    property_definitions: [],
+    property_definitions: [{ id: GATE, entity_type: 'unit', data_type: 'text', options: [] }],
     deployments: [
       { id: DEPLOYMENT.alert, unit_id: UNIT.COMP, start_date: D[1], end_date: D[3], archived_at: null },
       { id: DEPLOYMENT.archived, unit_id: UNIT.COMP, start_date: D[0], end_date: null, archived_at: ARCHIVED_AT },
@@ -221,6 +223,9 @@ function leave(name: SoldierName, start: CalendarDate, end: CalendarDate, extra:
     ...extra,
   }
 }
+
+/** A unit property: P1's gate (D-381). */
+const GATE = PropertyDefinitionId.parse(uuid(90))
 
 const tagFilter = (...tagIds: TagId[]): FilterExpression => ({ where: { kind: 'tag', match: 'any', tag_ids: tagIds } })
 
@@ -348,6 +353,16 @@ describe('rule targets and populations (D-071)', () => {
 
   it('combines the scope with the population filter on the same day', () => {
     const { targets } = evaluate([rule({ scope_unit_id: UNIT.P1, population_filter: tagFilter(TAG.medic) })])
+    expect(members(onDay(targets, D[0])[0])).toEqual(ids('a1', 'a2'))
+    expect(members(onDay(targets, D[2])[0])).toEqual(ids('a1', 'a2', 'm'))
+  })
+
+  it("reads a unit property of each soldier's own primary unit on the day (D-381)", () => {
+    const gate: FilterExpression = {
+      where: { kind: 'property', property_definition_id: GATE, operator: 'equals', value: 'north' },
+    }
+    const { targets } = evaluate([rule({ scope_unit_id: UNIT.COMP, population_filter: gate })])
+    // a3 sits in S11, under P1, which has no gate of its own; m joins P1 on D3.
     expect(members(onDay(targets, D[0])[0])).toEqual(ids('a1', 'a2'))
     expect(members(onDay(targets, D[2])[0])).toEqual(ids('a1', 'a2', 'm'))
   })

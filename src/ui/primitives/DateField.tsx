@@ -31,9 +31,11 @@ export interface DateFieldProps {
   readonly value: CalendarDate | ''
   readonly onChange: (value: CalendarDate | '') => void
   readonly error: I18nKey | null
+  /** The name is read aloud only, where a row already shows what the date is of. */
+  readonly hideLabel?: boolean
 }
 
-export function DateField({ labelKey, name, value, onChange, error }: DateFieldProps) {
+export function DateField({ labelKey, name, value, onChange, error, hideLabel = false }: DateFieldProps) {
   return (
     <DatePicker
       name={name}
@@ -45,7 +47,7 @@ export function DateField({ labelKey, name, value, onChange, error }: DateFieldP
       validationBehavior="aria"
       className="flex flex-col gap-xs"
     >
-      <Label className="text-label font-semibold text-text-muted">{fieldLabel(labelKey)}</Label>
+      <Label className={hideLabel ? 'sr-only' : 'text-label font-semibold text-text-muted'}>{fieldLabel(labelKey)}</Label>
       <Group className="flex min-h-touch w-full items-center justify-between gap-sm rounded-control border border-line bg-surface ps-md text-input text-text outline-focus outline-offset-1 md:min-h-control md:text-control data-focus-within:outline-2 data-invalid:border-status-rejected">
         <DateInput dir="ltr" className="flex">
           {(segment) => (
