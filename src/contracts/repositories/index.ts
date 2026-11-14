@@ -125,7 +125,7 @@ export const LeaveThreadQuery = z.strictObject({ leave_id: LeaveId })
 export type LeaveThreadQuery = z.infer<typeof LeaveThreadQuery>
 
 /**
- * The events of one rotation's leaves of these soldiers (D-349, D-358), oldest first: what the plan modules replay.
+ * The events of one rotation's leaves of these soldiers (D-349, D-361), oldest first: what the plan modules replay.
  * An event is read when its leave is read, as in the thread.
  */
 export const LeaveEventSpanQuery = z.strictObject({

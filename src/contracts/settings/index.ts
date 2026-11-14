@@ -26,7 +26,7 @@ const preferenceFields = {
 
 /**
  * `soldier_preferences.preferences`. A stored key no longer named here (`pinned_modules`, D-221, D-291;
- * `rules_row_placement`, D-310) is dropped on read, and a board that no longer parses reads as none (D-349, D-358).
+ * `rules_row_placement`, D-310) is dropped on read, and a board that no longer parses reads as none (D-349, D-361).
  */
 export const SoldierPreferences = z
   .object({
@@ -37,7 +37,7 @@ export const SoldierPreferences = z
   .prefault({})
 export type SoldierPreferences = z.infer<typeof SoldierPreferences>
 
-/** `soldier_preferences.preferences` as written: the board is checked whole, never repaired (D-358). */
+/** `soldier_preferences.preferences` as written: the board is checked whole, never repaired (D-361). */
 export const StrictSoldierPreferences = z
   .object({
     ...preferenceFields,

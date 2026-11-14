@@ -141,7 +141,7 @@ describe('settings defaults (D-041)', () => {
   })
 })
 
-describe('the stored dashboard (D-349, D-358)', () => {
+describe('the stored dashboard (D-349, D-361)', () => {
   const custom = (modules: unknown[]) => ({ dashboard: { kind: 'custom', modules } })
 
   it('reads a template and a custom list', () => {
@@ -203,7 +203,7 @@ describe('the stored dashboard (D-349, D-358)', () => {
   })
 })
 
-describe('leave event queries (D-358)', () => {
+describe('leave event queries (D-361)', () => {
   it('takes a thread or a span, never both', () => {
     expect(LeaveEventQuery.safeParse({ leave_id: ID.a }).success).toBe(true)
     expect(LeaveEventQuery.safeParse({ deployment_id: ID.a, soldier_ids: [ID.b] }).success).toBe(true)
@@ -226,7 +226,7 @@ describe('permission checks (D-053, D-091)', () => {
     expect(PolicyTarget.safeParse({ kind: 'unit' }).success).toBe(false)
   })
 
-  it('names "some unit" without an id (D-359)', () => {
+  it('names "some unit" without an id (D-362)', () => {
     expect(PolicyTarget.safeParse({ kind: 'some_unit' }).success).toBe(true)
   })
 })
