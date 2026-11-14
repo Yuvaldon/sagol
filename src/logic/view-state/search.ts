@@ -67,22 +67,29 @@ export function useWorkspaceSearch(): WorkspaceSearch {
   return useMemo(() => WorkspaceSearch.parse(raw), [raw])
 }
 
+/** A change of the search: the params to set, or a function of the search as it is when the change is written. */
+export type SearchChange = Partial<WorkspaceSearch> | ((current: WorkspaceSearch) => Partial<WorkspaceSearch>)
+
 /**
  * Changes some params and keeps the others, in place of the current history entry: the back button leaves the
  * screen, it does not replay its view changes (D-332). Opening a panel where none is open is the one change that adds
  * an entry, the overlay's, which the back button consumes by closing it; an overlay's entry keeps its mark through the
  * changes made on it. A key set to `undefined` is removed.
+ *
+ * Each change is written over the router's search as it is when the change is made, never over the search this
+ * render read: two changes in one gesture both land (OI-330, D-440).
  */
-export function useChangeSearch(): (changes: Partial<WorkspaceSearch>) => void {
-  const current = useWorkspaceSearch()
+export function useChangeSearch(): (change: SearchChange) => void {
   const navigate = useNavigate()
   const router = useRouter()
   return useCallback(
-    (changes) => {
+    (change) => {
+      const current = WorkspaceSearch.parse(router.latestLocation.search)
+      const changes = typeof change === 'function' ? change(current) : change
       const next: WorkspaceSearch = { ...current, ...changes }
       const opens = current.panel === undefined && next.panel !== undefined && !isOverlayEntry(router.history.location)
       void navigate({ to: ROUTES.workspace, search: next, replace: !opens, state: opens ? overlayState() : true })
     },
-    [current, navigate, router],
+    [navigate, router],
   )
 }
