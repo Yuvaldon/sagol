@@ -203,7 +203,7 @@ am = amends, ref = refines, ext = extends.
 | D-184 | The install offer in the user menu, and sign-in in the installed app | logic, ui, app | ref D-253, D-274; ref D-356 |
 | D-185 | Offline: the shell opens, a remote build waits for the network | ui, app | |
 | D-200 | Backend: Supabase and Vercel, free plans | backend, app | ext D-209 |
-| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188; ref D-354 |
+| D-201 | One command gateway runs the adapter's own code on Postgres | data, backend, tooling | ref D-203; ref D-204; ref D-208, D-209; ref D-188; ref D-354; ref D-410 |
 | D-202 | The database's own guarantees: triggers | backend | am D-203 |
 | D-203 | No client reaches a table: the policy stays in the domain | backend, data, tooling | ref D-188; ref D-348; ref D-351 |
 | D-204 | The remote adapter: one POST per call to the command gateway | data, config, app | ref D-207; ref D-348 |
@@ -348,6 +348,7 @@ am = amends, ref = refines, ext = extends.
 | D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
 | D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | |
 | D-388 | A preference change from a function of the stored row, retried once over another device's save | logic | |
+| D-410 | Schema and function compatibility during a deploy: the server store writes only the row's columns | data, backend, tooling | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5168,3 +5169,20 @@ week the board already shows, and one table of spans keeps the step and the span
   the save fails; the failure is shown as every
   preference failure is (D-187).
 **Why:** a list edited from two devices must merge; a single choice is better made again.
+
+## D-410 — Schema and function compatibility during a deploy: the server store writes only the row's columns
+2026-11-14 · accepted · refines D-201 · audit A9b (F2)
+- The server `Store` (`postgresStore`) inserts and upserts with an explicit column list: the row's own keys that the
+  table has in the catalog, in the table's order. A column the row leaves out gets its `DEFAULT`, not NULL; an upsert
+  updates only the columns the row carries. Rows of different shapes in one batch are written one shape at a time.
+- So a function built before a column was added keeps writing after the migration that adds it, as long as the new
+  column is `NOT NULL DEFAULT …` or nullable. Until now `jsonb_populate_recordset` turned every missing key into NULL,
+  and a `NOT NULL DEFAULT` column (`change_seq`, D-373) refused the write with 23502.
+- Not chosen: (b) nullable-first migrations (add the column nullable, make it `NOT NULL` in a later release). It cannot
+  apply to `change_seq`: `20261114001500_change_seq.sql` already ran on staging, and a migration that ran is never edited.
+- What remains: the production workflow (`.github/workflows/production.yml`) runs `supabase db push` before
+  `supabase functions deploy`, so for a few minutes the old function runs on the new schema. With this store that is
+  safe for an added defaulted column; the release that first ships this store still runs the old one in that window,
+  which writes NULL into `change_seq` and is refused. Release that one at a quiet hour.
+**Why:** the pattern is fixed in the layer that owns it (rule 7), once for every future column, instead of a rule
+every migration must remember.
