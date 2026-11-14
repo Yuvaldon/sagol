@@ -218,6 +218,8 @@ function TypedText({
       onBlur={commit}
       onKeyDown={(event) => {
         if (event.key === 'Enter') commit()
+        // React Aria stops a handled key; every other key, Escape above all, still reaches the builder (D-380).
+        else event.continuePropagation()
       }}
       className="min-w-none flex-1"
     >
