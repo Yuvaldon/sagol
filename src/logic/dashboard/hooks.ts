@@ -43,7 +43,7 @@ import {
 } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { useDeployments, useRotationMembership } from '../deployments/hooks'
+import { useDeployments, useLoadedRotationMembership } from '../deployments/hooks'
 import { useFilterSource } from '../filters/source'
 import { useLeaveTypeGroups, useLeaveTypes, useLeaves, useLeavesOfAnyStatus } from '../leaves/hooks'
 import { usePendingRequests } from '../leaves/workflowHooks'
@@ -88,6 +88,8 @@ export interface DashboardPlan extends PlanTally {
   readonly added: number
   readonly cancelled: number
   readonly moved: number
+  /** Leaves with no recorded history, taken as they are now (D-349): the module's note counts them. */
+  readonly unrecorded: number
 }
 
 /** The unit's rules over the counted days and the days ahead; per sub-unit, today's day. */
@@ -211,21 +213,28 @@ function rowsOf(input: RowsInput & { readonly readable: readonly Soldier[] }): D
   })
 }
 
-/** The live units that hold, or are above, a membership of a readable soldier in the span; in tree order. */
+/**
+ * The live units the actor reads whole in the span, in tree order: a unit, or one above it, holds a membership of a
+ * readable soldier, and none of a soldier the actor sees but may not read, so a platoon's commander cannot pick the company and
+ * see the platoon's figures under its name (D-349).
+ */
 function pickableUnits(
   units: readonly Unit[],
   tree: UnitTree,
+  known: ReadonlySet<SoldierId>,
   readable: ReadonlySet<SoldierId>,
   memberships: readonly UnitMembership[],
   window: DateWindow,
 ): Unit[] {
   const span = { valid_from: window.from, valid_to: window.to }
   const held = new Set<UnitId>()
+  const partial = new Set<UnitId>()
   for (const membership of memberships) {
-    if (!readable.has(membership.soldier_id) || !spansOverlap(membership, span)) continue
-    for (const unitId of [membership.unit_id, ...ancestorsOf(tree, membership.unit_id)]) held.add(unitId)
+    if (!known.has(membership.soldier_id) || !spansOverlap(membership, span)) continue
+    const into = readable.has(membership.soldier_id) ? held : partial
+    for (const unitId of [membership.unit_id, ...ancestorsOf(tree, membership.unit_id)]) into.add(unitId)
   }
-  return units.filter((unit) => held.has(unit.id))
+  return units.filter((unit) => held.has(unit.id) && !partial.has(unit.id))
 }
 
 /** The board's unit: the URL's when it may be picked, else the actor's own unit today, else the first. */
@@ -267,7 +276,8 @@ export function useDashboard(): Loaded<DashboardBoard> | null {
   const timezone = useTimezone()
   const { window, today } = useDateWindow()
   const deployments = useDeployments()
-  const membership = useRotationMembership()
+  const members = useLoadedRotationMembership()
+  const membership = members.status === 'ready' ? members.value : null
   const rotation = useMemo((): Deployment | null => {
     if (window?.kind !== 'rotation' || deployments.status !== 'ready') return null
     return deployments.value.find((deployment) => deployment.id === window.rotationId) ?? null
@@ -288,13 +298,14 @@ export function useDashboard(): Loaded<DashboardBoard> | null {
     if (window === null || today === null) return { status: 'loading' }
     if (source.status !== 'ready') return source
     if (deployments.status !== 'ready') return deployments
+    if (window.kind === 'rotation' && members.status === 'failed') return members
     if (window.kind === 'rotation' && (rotation === null || membership === null)) return { status: 'loading' }
     if (!checks.every((check) => answers.known(check))) return { status: 'loading' }
     const { units, unitTree, memberships } = source.value
     const tree = buildUnitTree(unitTree)
     const readableSoldiers = source.value.soldiers.filter((soldier) => answers.can(checkOn(LEAVE_PERMISSIONS.view, soldier.id)))
     const readable = new Set(readableSoldiers.map((soldier) => soldier.id))
-    const pickable = pickableUnits(units, tree, readable, memberships, window)
+    const pickable = pickableUnits(units, tree, new Set(source.value.soldiers.map((soldier) => soldier.id)), readable, memberships, window)
     const own = actorId === null ? null : primaryUnitOn(memberships, actorId, today)
     const unitId = chosenUnit(pickable, search.unit, own)
     if (unitId === null) return null
@@ -311,7 +322,7 @@ export function useDashboard(): Loaded<DashboardBoard> | null {
       status: 'ready',
       value: { units: pickable, unitId, subUnitIds, window, rotation, today, planned: search.planned === true, rows },
     }
-  }, [window, today, source, deployments, rotation, membership, checks, answers, actorId, search.unit, search.planned])
+  }, [window, today, source, deployments, rotation, members, membership, checks, answers, actorId, search.unit, search.planned])
 
   const ready = scope?.status === 'ready' ? scope.value : null
   const leaves = useLeaves(ready === null ? null : leaveSpanOf(ready.window, ready.today))
@@ -412,7 +423,7 @@ function usePlan(
       actual: own,
       types: types.value,
     })
-    return { status: 'ready', value: { ...tally, added: plan.added, cancelled: plan.cancelled, moved: plan.moved } }
+    return { status: 'ready', value: { ...tally, added: plan.added, cancelled: plan.cancelled, moved: plan.moved, unrecorded: plan.unrecorded } }
   }, [active, rotation, scope, timezone, events, leaves, types, counted])
 }
 

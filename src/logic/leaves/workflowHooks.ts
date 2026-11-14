@@ -41,7 +41,7 @@ import { useSoldiersWithArchived } from '../roster/hooks'
 import { useCurrentOrganization, useSession } from '../session/hooks'
 import { useToday } from '../session/today'
 import { useLeaveTypeGroups, useLeaveTypes } from './hooks'
-import { useDeployments, useRotationMembership } from '../deployments/hooks'
+import { useDeployments, useLoadedRotationMembership } from '../deployments/hooks'
 import { cachedLeaves, leaveKey, leaveListKey, restoreLeaves, showLeave } from './cache'
 import {
   EDIT_PERMISSION,
@@ -422,16 +422,18 @@ export function useMyRotation(): Loaded<MyRotation> | null {
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
   const deployments = useDeployments()
-  const membership = useRotationMembership()
+  const membership = useLoadedRotationMembership()
   const soldierId = actor?.soldier_id ?? null
   return useMemo((): Loaded<MyRotation> | null => {
     if (soldierId === null) return null
-    if (deployments.status === 'failed') return null
+    // A failed read shows as one, never as serving in no rotation.
+    if (deployments.status === 'failed') return deployments
+    if (membership.status === 'failed') return membership
     if (leaves.status !== 'ready') return leaves
     if (types.status !== 'ready') return types
     if (groups.status !== 'ready') return groups
-    if (deployments.status !== 'ready' || membership === null || today === null) return { status: 'loading' }
-    const chosen = myRotationOf(deployments.value, membership, soldierId, today)
+    if (deployments.status !== 'ready' || membership.status !== 'ready' || today === null) return { status: 'loading' }
+    const chosen = myRotationOf(deployments.value, membership.value, soldierId, today)
     if (chosen === null) return null
     const { rotation, served } = chosen
     const typeOf = new Map(types.value.map((type) => [type.id, type]))
