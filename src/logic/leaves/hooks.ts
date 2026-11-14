@@ -1,5 +1,6 @@
 import {
   type AvailabilityRuleId,
+  type ChangeSeq,
   type CreateLeavesInput,
   type DeploymentId,
   type Leave,
@@ -117,6 +118,36 @@ export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly 
     }),
   )
 }
+
+/** Leaves as read at a change number (D-373): every change numbered at or below `seq` is in `leaves`. */
+export interface CountedLeaves {
+  readonly seq: ChangeSeq
+  readonly leaves: readonly Leave[]
+}
+
+/**
+ * The leaves `useLeaves` reads, with the organization's change number read first, in the same query (D-402): a change
+ * committed between the two reads is in the list but above the number, so it shows as changed, never as covered. Kept
+ * under the leaves' key, so a leave write refreshes it, but out of the optimistic lists: its number is a read, not a
+ * guess. Loading while there is no window.
+ */
+export function useCountedLeaves(window: LeaveSpan | null): Loaded<CountedLeaves> {
+  const { data } = usePorts()
+  const query = useMemo(() => (window === null ? null : leaveQueryOf(window)), [window])
+  return loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.leaves, COUNTED, query],
+      queryFn: async (): Promise<CountedLeaves> => {
+        const seq = await unwrap(data.repositories.change_counters.current())
+        const leaves = query === null ? [] : await unwrap(data.repositories.leaves.list(query))
+        return { seq, leaves }
+      },
+      enabled: query !== null,
+    }),
+  )
+}
+
+const COUNTED = 'counted'
 
 /** Never asked: the key of a list that waits for its window. */
 const NO_WINDOW_QUERY: LeaveQuery = { ids: null, window: null, soldier_ids: [], statuses: DRAWN_STATUSES }

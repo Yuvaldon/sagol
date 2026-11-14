@@ -19,7 +19,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { useRotationScope } from '../view-state/rotation'
 import { useFilterSource } from '../filters/source'
-import { useLeaves, useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
+import { useCountedLeaves, useLeaves, useLeaveTypeGroups, useLeaveTypes } from '../leaves/hooks'
 import { checkOf, checkOn } from '../permissions/checks'
 import { useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
@@ -70,15 +70,21 @@ function leavesCheckOf(soldier: Soldier): PermissionCheck {
 
 const NO_SOLDIERS: readonly Soldier[] = []
 
+/** A report with the change number read before its leaves (D-402): what a confirmation of it covers. */
+export interface ReadDayReport extends DayReport {
+  readonly seenSeq: ChangeSeq
+}
+
 /**
  * The report of `days` (D-193): the leaves of the day before the first through the day after the last, so the first
- * and the last day know who leaves and who returns. Loading while the days are unknown.
+ * and the last day know who leaves and who returns, and the change number read before them (D-402). Loading while the
+ * days are unknown.
  */
 export function useDayReport(
   days: readonly CalendarDate[],
   filter: FilterExpression | null,
   rotations: readonly Deployment[],
-): Loaded<DayReport> {
+): Loaded<ReadDayReport> {
   const first = days[0]
   const last = days.at(-1)
   const span = useMemo(
@@ -86,14 +92,14 @@ export function useDayReport(
     [first, last],
   )
   const source = useFilterSource(useRotationScope().rotation?.id ?? null)
-  const leaves = useLeaves(span)
+  const leaves = useCountedLeaves(span)
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
   const soldiers = source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS
   const checks = useMemo((): readonly PermissionCheck[] => soldiers.map(leavesCheckOf), [soldiers])
   const answers = useCanAnswers(checks)
   const placements = usePlacementHints(soldiers)
-  return useMemo((): Loaded<DayReport> => {
+  return useMemo((): Loaded<ReadDayReport> => {
     if (span === null) return { status: 'loading' }
     if (source.status !== 'ready') return source
     if (leaves.status !== 'ready') return leaves
@@ -104,33 +110,35 @@ export function useDayReport(
     const unit = filterUnitOf(filter)
     return {
       status: 'ready',
-      value: dayReport({
-        source: source.value,
-        filter,
-        leaves: leaves.value,
-        types: types.value,
-        groups: groups.value,
-        days,
-        scopeUnitId: unit.kind === 'unit' ? unit.unitId : null,
-        rotations,
-        readsLeavesOf: (soldier) => answers.can(leavesCheckOf(soldier)),
-        readsPlacements: placements.readsOrPending,
-      }),
+      value: {
+        ...dayReport({
+          source: source.value,
+          filter,
+          leaves: leaves.value.leaves,
+          types: types.value,
+          groups: groups.value,
+          days,
+          scopeUnitId: unit.kind === 'unit' ? unit.unitId : null,
+          rotations,
+          readsLeavesOf: (soldier) => answers.can(leavesCheckOf(soldier)),
+          readsPlacements: placements.readsOrPending,
+        }),
+        seenSeq: leaves.value.seq,
+      },
     }
   }, [span, source, leaves, types, groups, checks, answers, placements, filter, days, rotations])
 }
 
 interface ConfirmationReads {
-  readonly seenSeq: ChangeSeq
   readonly confirmations: readonly ReportConfirmation[]
   readonly changes: ReadChanges
 }
 
 /**
- * The confirmations the actor reads of `days` (D-293), and what was written after the smallest `seen_seq` among them,
- * read in the order D-373 needs: the change counter first, then the confirmations, the leave events after that number,
- * the leaves of those events, and the memberships in `units`. A change committed between the reads shows as one until
- * the next read; none is ever missed. Loading while the days are unknown.
+ * The confirmations the actor reads of `days` (D-293), and what was written after the smallest `seen_seq` among them:
+ * the confirmations first, then the leave events after that number, the leaves of those events, and the memberships in
+ * `units` (D-373). A change committed between the reads shows as one until the next read; none is ever missed. The
+ * number a new confirmation covers is the report's own (D-402), not read here. Loading while the days are unknown.
  */
 function useConfirmationReads(
   days: readonly CalendarDate[],
@@ -151,10 +159,9 @@ function useConfirmationReads(
     useQuery({
       queryKey: [...QUERY_KEYS.reportConfirmations, CHANGES, query, units],
       queryFn: async (): Promise<ConfirmationReads> => {
-        const seenSeq = await unwrap(repositories.change_counters.current())
-        if (query === null || units === null) return { seenSeq, confirmations: [], changes: NO_CHANGES }
+        if (query === null || units === null) return { confirmations: [], changes: NO_CHANGES }
         const confirmations = await unwrap(repositories.report_confirmations.list(query))
-        if (confirmations.length === 0) return { seenSeq, confirmations, changes: NO_CHANGES }
+        if (confirmations.length === 0) return { confirmations, changes: NO_CHANGES }
         const after = Math.min(...confirmations.map((row) => row.seen_seq))
         const events = await unwrap(repositories.leave_events.list({ leave_ids: null, after_seq: after }))
         const ids = [...new Set(events.map((event) => event.leave_id))].sort(compareCodeUnits)
@@ -169,7 +176,6 @@ function useConfirmationReads(
                 repositories.unit_memberships.list({ soldier_ids: null, unit_ids: [...units], window: null }),
               )
         return {
-          seenSeq,
           confirmations,
           changes: { leaves, events, memberships: memberships.filter((row) => row.change_seq > after) },
         }
@@ -236,12 +242,13 @@ const NO_UNITS: readonly UnitId[] = []
 /**
  * Where each unit's section of the report's days stands (D-269, D-293), by date. Read on the whole report, with no
  * view filter, from what was written after each confirmation's change number (D-373), so a leave or a placement written
- * after it shows at once as a change; `shown` is the report as the view filter shows it. Loading until both reports, the
- * confirmations, the confirmable answer and the permission answers are in.
+ * after it shows at once as a change; `shown` is the report as the view filter shows it, whose change number a
+ * confirmation sends (D-402). Loading until both reports, the confirmations, the confirmable answer and the permission
+ * answers are in.
  */
 export function useReportConfirmations(
   days: readonly CalendarDate[],
-  shown: Loaded<DayReport>,
+  shown: Loaded<ReadDayReport>,
   rotations: readonly Deployment[],
 ): Loaded<ReadonlyMap<CalendarDate, DayConfirmations>> {
   const report = useDayReport(days, null, rotations)
@@ -292,7 +299,7 @@ export function useReportConfirmations(
             mayConfirm,
             tree,
             actorId,
-            seenSeq: reads.value.seenSeq,
+            seenSeq: shown.value.seenSeq,
             unseen: counts.get(day.date) ?? 0,
           }),
         ]),
