@@ -4,6 +4,7 @@ import type {
   DataRepositories,
   DataTransfer,
   AuthProvider,
+  SubscribePushInput,
   SessionPermissions,
   SessionService,
   TimeSource,
@@ -68,6 +69,7 @@ export interface DataPort {
     readonly access_grants: DataCommands['access_grants']
     readonly deployments: DataCommands['deployments']
     readonly seniority_overrides: DataCommands['seniority_overrides']
+    readonly notifications: DataCommands['notifications']
   }
   /** Import and export (D-171). */
   readonly transfer: DataTransfer
@@ -99,6 +101,23 @@ export interface ShellPort {
   readonly install: () => Promise<void>
 }
 
+/**
+ * Phone notifications on this browser install (D-356), as the browser answers them. `unsupported`: no `PushManager` or
+ * no public key in the build, so nothing is offered (D-076). `ios_install`: iOS outside the installed app, where push
+ * exists only once installed (D-184). `checking` until the browser answered. Never stored: asked of
+ * `PushManager.getSubscription()` each time.
+ */
+export type PushAvailability = 'unsupported' | 'checking' | 'ios_install' | 'denied' | 'off' | 'on'
+
+export interface PushPort {
+  readonly subscribe: (listener: () => void) => () => void
+  readonly current: () => PushAvailability
+  /** Asks the browser's permission, then subscribes it: the install's keys, or NULL when the permission was not given. */
+  readonly enable: () => Promise<SubscribePushInput | null>
+  /** Unsubscribes the browser: the endpoint it had, or NULL when it had none. */
+  readonly disable: () => Promise<string | null>
+}
+
 /** One kind of web storage for the conveniences of one screen (D-197): never data, never a permission. */
 export interface DeviceStore {
   /** The value under `key` for `scope`, the signed-in soldier; NULL when none or when storage is unavailable. */
@@ -119,5 +138,6 @@ export interface LogicPorts {
   /** The same source the adapter gets (D-083). */
   readonly time: TimeSource
   readonly shell: ShellPort
+  readonly push: PushPort
   readonly device: DevicePort
 }

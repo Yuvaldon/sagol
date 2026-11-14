@@ -1,6 +1,6 @@
 // Bundles the `commands` server function for deploy (D-209, OI-150). The function reaches `src`
 // through the aliases in its `deno.json`, which a deploy that uploads only the function's folder
-// cannot follow. This inlines the layers' code and leaves each npm package as the exact `npm:`
+// cannot follow. This inlines the layers' code and leaves each package as the exact `npm:` or `jsr:`
 // specifier `deno.json` pins, so Deno fetches the same versions the tests ran.
 //
 //   node scripts/build-function.ts   →   dist/functions/commands/index.ts
@@ -20,7 +20,7 @@ const { imports } = DenoConfig.parse(JSON.parse(readFileSync(resolve(functionDir
 const aliases: Record<string, string> = {}
 const packages = new Map<string, string>()
 for (const [name, target] of Object.entries(imports)) {
-  if (target.startsWith('npm:')) packages.set(name, target)
+  if (target.startsWith('npm:') || target.startsWith('jsr:')) packages.set(name, target)
   else aliases[name] = resolve(functionDir, target)
 }
 
@@ -32,7 +32,7 @@ await build({
     {
       name: 'deno-npm-specifiers',
       resolveId(source) {
-        if (source.startsWith('node:') || source.startsWith('npm:')) return { id: source, external: true }
+        if (source.startsWith('node:') || source.startsWith('npm:') || source.startsWith('jsr:')) return { id: source, external: true }
         const bare = source.startsWith('@') ? source.split('/').slice(0, 2).join('/') : source.split('/')[0]
         const pinned = packages.get(bare)
         if (pinned !== undefined) return { id: pinned + source.slice(bare.length), external: true }

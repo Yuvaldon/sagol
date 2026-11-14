@@ -5,6 +5,7 @@ import {
   useLinkReviewAccess,
   useModuleAccess,
   useMyLeavesAccess,
+  useMyUpdates,
   usePanel,
   usePendingRequests,
   usePresenceDay,
@@ -171,6 +172,7 @@ export function useDailyEntries(): ModuleEntry[] {
   const inbox = useInboxAccess()
   const pending = usePendingRequests()
   const mine = useMyLeavesAccess()
+  const updates = useMyUpdates()
   const entries: (ModuleEntry | false)[] = [
     requests &&
       mine?.view === true && {
@@ -182,7 +184,7 @@ export function useDailyEntries(): ModuleEntry[] {
         choose(true)
       },
       current: panel.panel === PANEL_IDS.myLeaves,
-      count: null,
+      count: { value: updates?.status === 'ready' ? updates.value.unread : 0, labelKey: 'myLeaves.updatesUnread' },
     },
     requests &&
       inbox && {

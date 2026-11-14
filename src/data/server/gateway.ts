@@ -48,6 +48,11 @@ export interface GatewayDependencies {
   readonly time: TimeSource
   /** The server secret `BOOTSTRAP_OWNER_EMAIL`: the one identity that may claim an empty organization (D-005). */
   readonly bootstrapOwnerEmail: string
+  /**
+   * Runs after a call that answered ok has committed, outside the retry loop, with who made it and what it changed
+   * (D-354). The function hands it to `waitUntil`; it must not throw, and nothing it does reaches the answer.
+   */
+  readonly afterCommit?: (call: { readonly identity: AuthIdentity; readonly changes: readonly DataChange[] }) => void
 }
 
 /** Tries of one request that keeps losing serialization races before it answers `unavailable`. */
@@ -83,7 +88,7 @@ function methodOf(adapter: LocalDataAdapter, request: GatewayRequest): Method | 
   return typeof method === 'function' ? (method as Method) : null
 }
 
-export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEmail }: GatewayDependencies) {
+export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEmail, afterCommit }: GatewayDependencies) {
   const claimant = ownerEmailClaimant(bootstrapOwnerEmail)
   /**
    * `identity` comes from the verified token, never from the request body. `origin` names the calling adapter
@@ -99,8 +104,9 @@ export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEm
     const actor = verified === null ? null : verified.data
     const source = { current: () => actor, subscribe: (): Unsubscribe => () => undefined }
     for (let attempt = 1; attempt <= MAX_TRIES; attempt += 1) {
+      let response: GatewayResponse
       try {
-        return await transact(async (client) => {
+        response = await transact(async (client): Promise<GatewayResponse> => {
           const store = createPostgresStore(client, catalog)
           const changes = collectingFeed()
           const adapter = createAdapterCore({ database: store, identity: source, time, changes, claimant })
@@ -120,7 +126,17 @@ export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEm
         if (!(error instanceof RetryRequest) && !isSerializationFailure(error)) {
           return { result: { ok: false, error: { code: 'unavailable' } }, changes: [] }
         }
+        continue
       }
+      // Committed: a push about it never delays or changes the answer (D-354).
+      if (afterCommit !== undefined && actor !== null && response.result.ok && response.changes.length > 0) {
+        try {
+          afterCommit({ identity: actor, changes: response.changes })
+        } catch {
+          // Best effort only.
+        }
+      }
+      return response
     }
     return { result: { ok: false, error: { code: 'unavailable' } }, changes: [] }
   }

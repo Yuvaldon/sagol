@@ -3,6 +3,7 @@ import {
   AccountLinkRequestId,
   AuthUserId,
   OrganizationId,
+  PushSubscriptionId,
   SoldierAccountId,
   SoldierId,
 } from '../common/ids'
@@ -53,3 +54,47 @@ export const SoldierPreferencesRecord = z.object({
   version: Version,
 })
 export type SoldierPreferencesRecord = z.infer<typeof SoldierPreferencesRecord>
+
+/** A push key of the browser (base64url): `p256dh` is its public key, `auth` its secret. */
+export function pushKey(max: number) {
+  return varchar(max).regex(/^[A-Za-z0-9_-]+=*$/)
+}
+
+/**
+ * The push services the browsers use (D-351): exact hosts, and parent domains whose every host is the service's.
+ * The server posts to an endpoint, so one elsewhere is refused.
+ */
+export const PUSH_SERVICE_HOSTS = {
+  exact: ['fcm.googleapis.com', 'updates.push.services.mozilla.com'],
+  parents: ['push.apple.com', 'notify.windows.com'],
+} as const
+
+function onPushService(url: string): boolean {
+  const { hostname } = new URL(url)
+  return (
+    PUSH_SERVICE_HOSTS.exact.some((host) => hostname === host) ||
+    PUSH_SERVICE_HOSTS.parents.some((parent) => hostname.endsWith(`.${parent}`))
+  )
+}
+
+/** The push service URL of one browser install: https only, on a known push service (D-351). */
+export const PushEndpoint = z
+  .url({ protocol: /^https$/ })
+  .max(2048)
+  .refine(onPushService, { message: 'not a browser push service' })
+export type PushEndpoint = z.infer<typeof PushEndpoint>
+
+/**
+ * `push_subscriptions`: one browser install of a soldier that agreed to phone notifications (D-351). Device data:
+ * never exported, deleted with the soldier's link or archive (D-358), and by a push service that no longer knows it.
+ */
+export const PushSubscriptionRecord = z.object({
+  id: PushSubscriptionId,
+  organization_id: OrganizationId,
+  soldier_id: SoldierId,
+  endpoint: PushEndpoint,
+  p256dh: pushKey(200),
+  auth: pushKey(100),
+  created_at: Timestamp,
+})
+export type PushSubscriptionRecord = z.infer<typeof PushSubscriptionRecord>

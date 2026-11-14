@@ -1,6 +1,7 @@
 import type { Store } from './store'
 import {
   IssueCode,
+  LeaveFeedQuery,
   LeaveQuery,
   LeaveThreadQuery,
   type DataRepositories,
@@ -12,8 +13,9 @@ import {
   type Soldier,
   type SoldierId,
   type TableName,
+  type TableRow,
 } from '@contracts'
-import { LEAVE_PERMISSIONS, effectiveSoldierTags, soldierTarget, type RuleData } from '@domain'
+import { LEAVE_PERMISSIONS, compareInstants, effectiveSoldierTags, soldierTarget, type RuleData } from '@domain'
 import { holds, loadActorScope, type ActorScope } from './actor'
 import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
@@ -178,6 +180,40 @@ export function createLeaveEventRepository(dependencies: LocalDependencies): Dat
             .map((row) => parsedRow('leave_events', row))
         })
       }),
+    feed: (raw) =>
+      asResult(() => {
+        const query = parseInput(LeaveFeedQuery, raw)
+        return database.transaction('r', READ_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          const leaves = await feedLeaves(database, scope, query)
+          const rows = await threadRows(database, 'leave_events', leaves)
+          return rows
+            .filter((row) => compareInstants(row.created_at, query.since) >= 0)
+            .sort(newestFirst)
+            .map((row) => parsedRow('leave_events', row))
+        })
+      }),
   }
+}
+
+/** The soldier's leaves the actor can see, the subjects of a feed (D-352). */
+export async function feedLeaves(database: Store, scope: ActorScope, query: LeaveFeedQuery): Promise<Leave[]> {
+  const rows = await tableOf(database, 'leaves').where('soldier_id').equals(query.soldier_id).toArray()
+  return rows.filter((row) => row.organization_id === scope.organization_id && canView(scope, row))
+}
+
+/** The events or comments of these leaves, one lookup per leave by its index. */
+export async function threadRows<T extends 'leave_events' | 'leave_comments'>(
+  database: Store,
+  table: T,
+  leaves: readonly Leave[],
+): Promise<TableRow<T>[]> {
+  const lists = await Promise.all(leaves.map((leave) => tableOf(database, table).where('leave_id').equals(leave.id).toArray()))
+  return lists.flat()
+}
+
+/** Newest first; the id breaks ties so the order is stable. */
+export function newestFirst(a: { created_at: string; id: string }, b: { created_at: string; id: string }): number {
+  return b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id)
 }
 

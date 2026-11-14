@@ -66,6 +66,7 @@ export interface ContractAdapter {
     readonly seniority_overrides: DataCommands['seniority_overrides']
     readonly deployments: DataCommands['deployments']
     readonly day_reports: DataCommands['day_reports']
+    readonly notifications: DataCommands['notifications']
   }
   readonly transfer: DataTransfer
   readonly changes: ChangeFeed

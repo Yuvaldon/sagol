@@ -158,6 +158,7 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 | R1 | Defining 1.0 | The definition, the target user and the stages (D-342, D-343) | ☑ |
 | R2 | Sorting the rest | Every open item and Later feature as Must, Should, Could or Won't for 1.0 (D-344) | ☑ |
 | R3 | Closing the gaps | The Must items closed (OI-117 on an iPhone, OI-293, OI-295 with D-345), then the Should items | ☐ |
+| R3·N | Notifications | "עדכונים" on שלי with a count, and phone notifications chosen per device and per kind in the profile (D-351 … D-359) | ☑ |
 | R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker (OI-111 closed by D-383; the redesign stays) | ☐ |
 | R5 | Building the design | The approved concept in the product | ☐ |
 | R6 | Acceptance testing | The journeys walked on the real product; the decision point on who maintains the system after handover (D-342) | ☐ |
@@ -166,4 +167,4 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 ## Later (no schema change required)
 
 Attached memberships, missions (משימות/מבצעים), simulations, saved views, rotation templates
-for leave batches, hour-level leaves (additive columns), notifications.
+for leave batches, hour-level leaves (additive columns).
