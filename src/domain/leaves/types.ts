@@ -63,3 +63,13 @@ export function rotationLeaveTypeIssues(
   }
   return issues
 }
+
+/**
+ * A leave of a type in the built-in group carries no reason (D-347, D-430): a reason that is not blank is refused
+ * with `fixed_by_group`, in the command core, so no form or mode is the only guard. `group` is the type's group, NULL
+ * when it has none.
+ */
+export function rotationLeaveReasonIssues(group: Pick<LeaveTypeGroup, 'is_rotation_leave'> | null, reason: string | null): Issue[] {
+  if (group?.is_rotation_leave !== true || reason === null || reason.trim() === '') return []
+  return [{ path: ['reason'], code: IssueCode.enum.fixed_by_group }]
+}

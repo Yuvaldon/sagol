@@ -14,6 +14,7 @@ import {
   archiveLeaveTypeGroupIssues,
   archiveLeaveTypeIssues,
   isRotationLeaveType,
+  rotationLeaveReasonIssues,
   rotationLeaveTypeIssues,
   archivedSoldierIssues,
   LEAVE_PERMISSIONS,
@@ -294,6 +295,14 @@ describe('the built-in group (D-347)', () => {
     expect(isRotationLeaveType({ group_id: ordinary.id }, [builtIn, ordinary])).toBe(false)
     expect(isRotationLeaveType({ group_id: null }, [builtIn])).toBe(false)
     expect(isRotationLeaveType(undefined, [builtIn])).toBe(false)
+  })
+
+  it('refuses a reason on a leave of its types (D-430)', () => {
+    expect(rotationLeaveReasonIssues(builtIn, 'family event')).toEqual([fixed('reason')])
+    expect(rotationLeaveReasonIssues(builtIn, null)).toEqual([])
+    expect(rotationLeaveReasonIssues(builtIn, '  ')).toEqual([])
+    expect(rotationLeaveReasonIssues(ordinary, 'family event')).toEqual([])
+    expect(rotationLeaveReasonIssues(null, 'family event')).toEqual([])
   })
 
   it('fixes its types as absences that ask no reason', () => {

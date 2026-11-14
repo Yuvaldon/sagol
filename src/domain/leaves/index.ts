@@ -25,6 +25,7 @@ export {
   archiveLeaveTypeGroupIssues,
   archiveLeaveTypeIssues,
   isRotationLeaveType,
+  rotationLeaveReasonIssues,
   rotationLeaveTypeIssues,
 } from './types'
 export { duplicatedLeaveColumns, type DuplicatedLeaveColumns } from './duplicate'
