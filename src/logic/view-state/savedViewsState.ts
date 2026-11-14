@@ -6,10 +6,16 @@ import { applyView, captureView, matchingView, type AppliedView } from './savedV
 import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // The soldier's saved views (D-384 … D-388). Each change is a function of the stored list, so a save that meets a
-// change from another device is computed again over it (D-388); the list shows the change at once and drops it when
-// the save answers, the stored row then saying what is true.
+// change from another device is computed again over it (D-388); the list shows the change at once, over the row it was
+// made on only, so once the stored row moves on (the save landed, or another device saved) that row says what is true.
 
 type ListChange = (stored: SoldierPreferences) => Pick<SoldierPreferences, 'saved_views' | 'start_view_id'>
+
+/** A change still saving, and the stored row it was made on. */
+interface Pending {
+  readonly change: ListChange
+  readonly over: SoldierPreferences | null
+}
 
 export interface SavedViewsState {
   /** FALSE until the preferences are read: nothing of saved views is offered before (D-076). */
@@ -57,10 +63,15 @@ export function useSavedViews(view: ViewId): SavedViewsState {
   const update = useUpdateMyPreferences()
   const search = useWorkspaceSearch()
   const changeSearch = useChangeSearch()
-  const [pending, setPending] = useState<readonly ListChange[]>([])
+  const [pending, setPending] = useState<readonly Pending[]>([])
   const stored = preferences.status === 'ready' ? preferences.value : null
   const shown = useMemo(
-    () => (stored === null ? null : pending.reduce<SoldierPreferences>((list, change) => ({ ...list, ...change(list) }), stored)),
+    () =>
+      stored === null
+        ? null
+        : pending
+            .filter((item) => item.over === stored)
+            .reduce<SoldierPreferences>((list, item) => ({ ...list, ...item.change(list) }), stored),
     [stored, pending],
   )
   const views = useMemo(() => shown?.saved_views ?? [], [shown])
@@ -69,14 +80,15 @@ export function useSavedViews(view: ViewId): SavedViewsState {
   const { run } = update
   const change = useCallback(
     async (next: ListChange): Promise<PreferenceSaved> => {
-      setPending((list) => [...list, next])
+      const item: Pending = { change: next, over: stored }
+      setPending((list) => [...list, item])
       try {
         return await run(next)
       } finally {
-        setPending((list) => list.filter((item) => item !== next))
+        setPending((list) => list.filter((other) => other !== item))
       }
     },
-    [run],
+    [run, stored],
   )
 
   const save = useCallback(
