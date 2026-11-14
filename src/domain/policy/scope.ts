@@ -117,7 +117,7 @@ export function scopeCovers(
     }
     case 'every_soldier':
       return false
-    // A commander's module opens for a unit scope; one soldier, the holder or a named one, is not a unit (D-359).
+    // A commander's module opens for a unit scope; one soldier, the holder or a named one, is not a unit (D-362).
     case 'some_unit':
       return scope.kind === 'unit'
     default:

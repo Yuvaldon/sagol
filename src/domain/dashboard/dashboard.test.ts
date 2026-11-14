@@ -42,7 +42,7 @@ function event(n: number, at: string, patch: Partial<PlanEvent>): PlanEvent {
 
 const PLAN_AT = '2026-12-01T00:00:00Z'
 
-describe('leaveAsOf (D-358)', () => {
+describe('leaveAsOf (D-361)', () => {
   const now = leave(1, 'approved', '2026-12-10', '2026-12-12')
   const events = [
     event(1, '2026-11-20T08:00:00Z', { event_type: 'created', to_status: 'pending' }),

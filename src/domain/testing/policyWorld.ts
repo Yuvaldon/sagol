@@ -320,7 +320,7 @@ export const MATRIX: MatrixRow[] = [
   ['organization scope with any covers every soldier', 'admin', 'access_grants', 'create', EVERY_SOLDIER, true],
   ['a unit scope does not cover every soldier', 'pc1', 'access_grants', 'create', EVERY_SOLDIER, false],
   ['tags do not accept every soldier', 'admin', 'tags', 'view', EVERY_SOLDIER, false],
-  // Some unit (D-359)
+  // Some unit (D-362)
   ['organization scope covers some unit', 'norank', 'leaves', 'view', SOME_UNIT, true],
   ['a unit scope covers some unit', 'f21', 'leaves', 'view', SOME_UNIT, true],
   ['a self scope does not cover some unit', 'f11', 'leaves', 'view', SOME_UNIT, false],

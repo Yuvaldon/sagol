@@ -10,7 +10,7 @@ import {
 } from '@contracts'
 import { compareInstants } from '../time'
 
-// The plan of a span (D-349, D-358): the leaves as they stood at an instant, replayed from `leave_events`.
+// The plan of a span (D-349, D-361): the leaves as they stood at an instant, replayed from `leave_events`.
 
 /** The columns a replay reads and rolls back. Full `Leave` rows fit. */
 export type PlanLeave = Pick<
@@ -40,7 +40,7 @@ export function hasHistory(events: readonly PlanEvent[]): boolean {
 }
 
 /**
- * The leave as it stood at `instant` (D-358): null when it did not exist yet. The status is the last one an event up
+ * The leave as it stood at `instant` (D-361): null when it did not exist yet. The status is the last one an event up
  * to the instant set; the dates, the type and the effect override are rolled back through each later event's
  * `changes.before`, newest first. A leave with no `created` event is taken as it is now.
  */
