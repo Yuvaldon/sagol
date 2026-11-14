@@ -1,5 +1,6 @@
 import type { TimeSource } from '@contracts'
 import { NOTIFICATIONS } from '@config'
+import { instantAt, millisecondsUntil } from '@domain'
 import type { PushDevice, PushSender } from './push'
 
 // The `PushSender` port over the Web Push protocol (D-354, D-435), owned end to end: the payload is encrypted for the
@@ -113,7 +114,7 @@ export async function createWebPushSender(dependencies: WebPushDependencies): Pr
   return {
     async send(device, payload) {
       const body = await encryptPush(device, encoder.encode(JSON.stringify(payload)))
-      const nowSeconds = Math.floor(Date.parse(dependencies.time.now()) / 1000)
+      const nowSeconds = Math.floor(millisecondsUntil(instantAt(0), dependencies.time.now()) / 1000)
       const token = await vapidToken(signingKey, new URL(device.endpoint).origin, dependencies.subject, nowSeconds)
       const response = await dependencies.fetch(device.endpoint, {
         method: 'POST',

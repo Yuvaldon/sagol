@@ -1,5 +1,6 @@
 import { NOTIFICATIONS } from '@config'
 import { PushPayload } from '@contracts'
+import { instantAt, millisecondsUntil } from '@domain'
 import { describe, expect, it } from 'vitest'
 import { PushDeliveryError, createWebPushSender, decodeBase64Url, encodeBase64Url } from './webPush'
 
@@ -160,7 +161,7 @@ describe('the owned web push request (D-435)', () => {
     expect(valid).toBe(true)
     expect(JSON.parse(new TextDecoder().decode(decodeBase64Url(claims)))).toEqual({
       aud: 'https://fcm.googleapis.com',
-      exp: Date.parse(NOW) / 1000 + NOTIFICATIONS.pushVapidTokenSeconds,
+      exp: millisecondsUntil(instantAt(0), NOW) / 1000 + NOTIFICATIONS.pushVapidTokenSeconds,
       sub: 'mailto:operator@example.org',
     })
   })
