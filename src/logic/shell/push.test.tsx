@@ -1,3 +1,4 @@
+import { NOTIFICATIONS } from '@config'
 import { OrganizationId, SoldierId, SoldierPreferences, type Result, type SoldierPreferencesRecord, type SubscribePushInput, type UpdateMyPreferencesInput } from '@contracts'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
@@ -157,6 +158,27 @@ describe('sign-out (D-358)', () => {
       await result.current.signOut()
     })
     expect(signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('signs out when the push service never answers, after the limit (D-433)', async () => {
+    vi.useFakeTimers()
+    try {
+      const push = { ...browserOf('on'), disable: () => new Promise<string | null>(() => undefined) }
+      const signOut = vi.fn(() => Promise.resolve({ ok: true, value: null }))
+      const ports = fakePorts({ push, auth: { signOut } })
+      const { result } = renderHook(() => useSignOut(), { wrapper: wrapperOf(ports) })
+      let done: Promise<unknown> = Promise.resolve()
+      act(() => {
+        done = result.current.signOut()
+      })
+      await act(() => vi.advanceTimersByTimeAsync(NOTIFICATIONS.signOutUnsubscribeTimeoutMs - 1))
+      expect(signOut).not.toHaveBeenCalled()
+      await act(() => vi.advanceTimersByTimeAsync(1))
+      await act(() => done)
+      expect(signOut).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

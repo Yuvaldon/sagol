@@ -1,3 +1,4 @@
+import { NOTIFICATIONS } from '@config'
 import { type NotificationKind, type Result } from '@contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useSyncExternalStore } from 'react'
@@ -54,12 +55,22 @@ export function useDeviceNotifications(): DeviceNotifications {
   }
 }
 
-/** Sign-out's first step (D-358): best effort, so a failure here never keeps the soldier signed in. */
+/**
+ * Sign-out's first step (D-358): best effort, so a failure here never keeps the soldier signed in, and bounded, so a
+ * push service that hangs never does either (D-433). What is left unsent ends on the server at the next 404 or 410.
+ */
 export function forgetThisDevice(push: PushPort, data: DataPort): Promise<void> {
-  return forgetDevice(push, data).then(
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const limit = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, NOTIFICATIONS.signOutUnsubscribeTimeoutMs)
+  })
+  const forgotten = forgetDevice(push, data).then(
     () => undefined,
     () => undefined,
   )
+  return Promise.race([forgotten, limit]).finally(() => {
+    clearTimeout(timer)
+  })
 }
 
 export interface NotificationKinds {
