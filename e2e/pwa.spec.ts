@@ -97,13 +97,12 @@ test('the production build is an installable app', async ({ page, request, brows
       await page.evaluate(() => {
         Object.assign(window, { beforeUpdate: true })
       })
+      // The update is started, not awaited in the page: the new worker takes over and the page reloads, which ends
+      // this page's context, so nothing is read back from it until the reload.
       const reloaded = page.waitForEvent('load')
-      const found = await page.evaluate(async () => {
-        const registration = await navigator.serviceWorker.ready
-        await registration.update()
-        return registration.installing !== null || registration.waiting !== null
+      await page.evaluate(() => {
+        void navigator.serviceWorker.ready.then((registration) => registration.update())
       })
-      expect(found).toBe(true)
       await reloaded
       expect(await page.evaluate(() => 'beforeUpdate' in window)).toBe(false)
       const after = await page.evaluate(async () => {
