@@ -145,7 +145,7 @@ export interface Dashboard {
   readonly report: Loaded<DashboardReport | null>
 }
 
-export type ModuleState = 'hidden' | 'loading' | 'ready'
+export type ModuleState = 'hidden' | 'loading' | 'ready' | 'failed'
 
 const NO_ROTATIONS: readonly Deployment[] = []
 const NO_DAYS: readonly CalendarDate[] = []
@@ -498,8 +498,9 @@ export function outstandingOf(dashboard: Dashboard): Loaded<DashboardOutstanding
 }
 
 function stateOf<T>(value: Loaded<T> | null, shown: (value: T) => boolean): ModuleState {
-  if (value === null || value.status === 'failed') return 'hidden'
-  if (value.status === 'loading') return 'loading'
+  if (value === null) return 'hidden'
+  // A module whose data failed keeps its frame and shows the failure there; the others still draw (D-349).
+  if (value.status !== 'ready') return value.status
   return shown(value.value) ? 'ready' : 'hidden'
 }
 
@@ -573,7 +574,8 @@ export function addableModules(modules: readonly DashboardModule[], dashboard: D
     if (on.has(moduleKey(module))) return false
     if (PLAN_MODULES(module) && dashboard.plan === null) return mayPlan
     if (REPORT_MODULES(module) && dashboard.report.status === 'ready' && dashboard.report.value === null && !modules.some(REPORT_MODULES)) return mayReport
-    return moduleState(module, dashboard) !== 'hidden'
+    const state = moduleState(module, dashboard)
+    return state === 'ready' || state === 'loading'
   })
 }
 

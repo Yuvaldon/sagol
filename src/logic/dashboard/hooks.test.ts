@@ -46,6 +46,11 @@ describe('moduleState (D-349)', () => {
     expect(moduleState({ module: 'stat', metric: 'below_minimum_days' }, dashboard({ rules: { status: 'loading' } }))).toBe('loading')
   })
 
+  it('keeps a module whose data failed, to show the failure in its frame', () => {
+    const rules = { status: 'failed' as const, error: { code: 'unavailable' as const } }
+    expect(moduleState({ module: 'stat', metric: 'below_minimum_days' }, dashboard({ rules }))).toBe('failed')
+  })
+
   it('lists every module and every metric once', () => {
     expect(DASHBOARD_CATALOGUE).toHaveLength(10 + 9)
   })
