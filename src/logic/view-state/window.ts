@@ -1,4 +1,4 @@
-import { DATE_WINDOW, DEFAULT_RANGE_KIND, FIRST_DAY_OF_WEEK, type RangeKind } from '@config'
+import { DATE_WINDOW, DEFAULT_RANGE_KIND, FIRST_DAY_OF_WEEK, WEEK_SPANS, type RangeKind } from '@config'
 import type { CalendarDate, Deployment, DeploymentId, Unit, UnitId } from '@contracts'
 import {
   addDays,
@@ -74,9 +74,12 @@ function spanOf(kind: Exclude<RangeKind, 'rotation'>, anchor: CalendarDate): { f
   switch (kind) {
     case 'day':
       return { from: anchor, to: anchor }
-    case 'week': {
+    case 'week':
+    case 'two_weeks':
+    case 'four_weeks': {
+      // A span of weeks starts on the anchor's week, as a week does (D-383).
       const from = startOfWeek(anchor, FIRST_DAY_OF_WEEK)
-      return { from, to: addDays(from, DATE_WINDOW.days - 1) }
+      return { from, to: addDays(from, WEEK_SPANS[kind] * DATE_WINDOW.days - 1) }
     }
     case 'month':
       return { from: startOfMonth(anchor), to: endOfMonth(anchor) }
@@ -160,13 +163,15 @@ export function shiftedWindow(window: Pick<DateWindow, 'from' | 'to'>, step: -1 
   return { from: addDays(window.from, length), to: addDays(window.to, length) }
 }
 
-/** The anchor one step away for a day, a week or a month (D-211). */
+/** The anchor one step away for a day, a span of weeks or a month (D-211, D-383). */
 export function shiftedAnchor(kind: Exclude<RangeKind, 'rotation'>, from: CalendarDate, step: -1 | 1): CalendarDate {
   switch (kind) {
     case 'day':
       return addDays(from, step)
     case 'week':
-      return addDays(from, DATE_WINDOW.days * step)
+    case 'two_weeks':
+    case 'four_weeks':
+      return addDays(from, WEEK_SPANS[kind] * DATE_WINDOW.days * step)
     case 'month':
       return addMonths(startOfMonth(from), step)
   }

@@ -13,6 +13,7 @@ import { QUERY_KEYS } from '../queries/client'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
+import { forgetThisDevice } from '../shell/push'
 
 // Hooks the UI reads the session through.
 
@@ -95,9 +96,15 @@ export function useGoogleSignIn() {
   return { signIn: mutation.mutateAsync, isPending: mutation.isPending }
 }
 
+/** Unsubscribes this device first, best effort, then signs out (D-358). */
 export function useSignOut() {
-  const { auth } = usePorts()
-  const mutation = useMutation({ mutationFn: (): Promise<Result<null>> => auth.signOut() })
+  const { auth, push, data } = usePorts()
+  const mutation = useMutation({
+    mutationFn: async (): Promise<Result<null>> => {
+      await forgetThisDevice(push, data)
+      return auth.signOut()
+    },
+  })
   return { signOut: mutation.mutateAsync, isPending: mutation.isPending }
 }
 

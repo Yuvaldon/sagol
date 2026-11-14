@@ -10,9 +10,11 @@ import { VirtualList } from '../../patterns/VirtualList'
 import { StatusChip, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, typeNameOf } from './leaveText'
 import { MyRotationSection } from './MyRotationSection'
+import { MyUpdates } from './MyUpdates'
 
 // "Mine" (D-265, D-167): the actor's next days, in or out, then their own leaves, the open ones and the history. A row
-// opens the leave's details, where its steps and comments are (D-119). A new request is the strip's quick action.
+// opens the leave's details, where its steps and comments are (D-119). Above the requests, what others did on them
+// ("עדכונים", D-356). A new request is the strip's quick action.
 
 const LINE_SEPARATOR = ' · '
 const NO_TYPES: readonly never[] = []
@@ -107,6 +109,7 @@ export function MyLeavesModule() {
     return (
       <div className="flex flex-col gap-md">
         {top}
+        <MyUpdates />
         <EmptyNotice titleKey="myLeaves.emptyTitle" bodyKey={access?.create === true ? 'myLeaves.emptyCreate' : 'myLeaves.emptyReadOnly'} />
       </div>
     )
@@ -115,6 +118,7 @@ export function MyLeavesModule() {
   return (
     <div className="flex flex-col gap-md">
       {top}
+      <MyUpdates />
       <section ref={openRef} tabIndex={-1} className="flex flex-col gap-xs outline-none">
         <h3 className="text-label font-semibold text-text-muted">{t('myLeaves.openTitle')}</h3>
         {open.length === 0 ? (

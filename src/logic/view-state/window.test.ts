@@ -84,6 +84,24 @@ describe('the range kinds (D-211)', () => {
   })
 })
 
+describe('the spans of weeks (D-383)', () => {
+  it('start on the week of the anchor, and hold two or four whole weeks', () => {
+    const two = dateWindowOf({ range: 'two_weeks' }, TODAY)
+    expect(two).toMatchObject({ kind: 'two_weeks', from: '2026-11-08', to: '2026-11-21', holdsToday: true })
+    expect(two.days).toHaveLength(14)
+    const four = dateWindowOf({ range: 'four_weeks', from: '2026-12-02' }, TODAY)
+    expect(four).toMatchObject({ kind: 'four_weeks', from: '2026-11-29', to: '2026-12-26', holdsToday: false })
+    expect(four.days).toHaveLength(28)
+  })
+
+  it('step by their own length', () => {
+    expect(shiftedAnchor('two_weeks', '2026-11-08', 1)).toBe('2026-11-22')
+    expect(shiftedAnchor('two_weeks', '2026-11-08', -1)).toBe('2026-10-25')
+    expect(shiftedAnchor('four_weeks', '2026-11-08', 1)).toBe('2026-12-06')
+    expect(shiftedAnchor('four_weeks', '2026-11-08', -1)).toBe('2026-10-11')
+  })
+})
+
 describe('the rotations in scope (D-211)', () => {
   const company = rotation(1, { unit_id: COMPANY, start_date: '2026-12-01' })
   const battalion = rotation(2, { unit_id: BATTALION, start_date: '2026-10-01', end_date: '2026-11-01' })

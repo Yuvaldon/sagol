@@ -10,7 +10,7 @@ import { STORES, type Store } from './store'
 // names are schema.sql names (D-038). Primary keys and uniques mirror it where IndexedDB can: a
 // compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL".
 
-const DATABASE_VERSION = 9
+const DATABASE_VERSION = 10
 
 /** Versions 1 and 2 keyed a soldier's tags by the pair; format 3 gives each row an id and a scope (D-221). */
 const VERSION_2_SOLDIER_TAGS = '[soldier_id+tag_id], organization_id, tag_id'
@@ -164,7 +164,7 @@ export interface LocalStore extends Store {
 export function openDatabase(name: string, time: TimeSource, names: RotationLeaveNames): LocalStore {
   const database = new Dexie(name)
   // Tables added after version 6 are declared at their own version, so an older store creates them on upgrade.
-  const { report_confirmations: confirmations, ...earlier } = STORES
+  const { report_confirmations: confirmations, push_subscriptions: subscriptions, ...earlier } = STORES
   const before = { ...earlier, soldier_tags: VERSION_2_SOLDIER_TAGS }
   database.version(1).stores({ ...before, soldier_accounts: VERSION_1_ACCOUNTS })
   database.version(2).stores(before)
@@ -200,7 +200,9 @@ export function openDatabase(name: string, time: TimeSource, names: RotationLeav
       await permissions.bulkPut(approving.map((row) => ({ ...row, resource: 'day_reports', action: 'confirm' })))
     })
   database.version(8).upgrade((transaction) => oneRoot(transaction, time))
-  database.version(DATABASE_VERSION).upgrade((transaction) => rotationLeave(transaction, time, names))
+  database.version(9).upgrade((transaction) => rotationLeave(transaction, time, names))
+  // Phone notifications of this browser's soldiers (D-351).
+  database.version(DATABASE_VERSION).stores({ push_subscriptions: subscriptions })
   return {
     transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),
     table: (name) => database.table(name),

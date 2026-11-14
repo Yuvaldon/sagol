@@ -24,7 +24,7 @@ import {
 } from '../common/ids'
 import { checkDateRange } from '../common/refinements'
 import type { AsyncResult, Unsubscribe } from '../common/result'
-import { CalendarDate } from '../common/scalars'
+import { CalendarDate, Timestamp } from '../common/scalars'
 import type {
   AccountLinkRequest,
   SoldierAccount,
@@ -138,6 +138,13 @@ export type LeaveEventSpanQuery = z.infer<typeof LeaveEventSpanQuery>
 export const LeaveEventQuery = z.union([LeaveThreadQuery, LeaveEventSpanQuery])
 export type LeaveEventQuery = z.infer<typeof LeaveEventQuery>
 
+/**
+ * The updates on one soldier's own leaves since a time (D-352): the events and the comments, newest first. The policy
+ * filters them as any read; a soldier asks for their own.
+ */
+export const LeaveFeedQuery = z.strictObject({ soldier_id: SoldierId, since: Timestamp })
+export type LeaveFeedQuery = z.infer<typeof LeaveFeedQuery>
+
 export const DeploymentMemberQuery = z.strictObject({
   deployment_ids: z.array(DeploymentId).nullable(),
 })
@@ -238,9 +245,11 @@ export interface DataRepositories {
   leave_types: EntityRepository<LeaveType, LeaveTypeId, ReferenceQuery>
   leave_batches: EntityRepository<LeaveBatch, LeaveBatchId, EmptyQuery>
   leaves: EntityRepository<Leave, LeaveId, LeaveQuery>
-  leave_events: ListRepository<LeaveEvent, LeaveEventQuery>
+  leave_events: ListRepository<LeaveEvent, LeaveEventQuery> & { feed(query: LeaveFeedQuery): AsyncResult<LeaveEvent[]> }
   /** Internal comments only with `internal_comments:view`. */
-  leave_comments: EntityRepository<LeaveComment, LeaveCommentId, LeaveThreadQuery>
+  leave_comments: EntityRepository<LeaveComment, LeaveCommentId, LeaveThreadQuery> & {
+    feed(query: LeaveFeedQuery): AsyncResult<LeaveComment[]>
+  }
   deployments: EntityRepository<Deployment, DeploymentId, ReferenceQuery>
   deployment_members: ListRepository<DeploymentMember, DeploymentMemberQuery>
   availability_rules: EntityRepository<AvailabilityRule, AvailabilityRuleId, ReferenceQuery>

@@ -72,7 +72,7 @@ describe('env', () => {
   it('parses the local development environment', () => {
     expect(parseEnv(LOCAL, DEV)).toEqual({
       ok: true,
-      value: { authMode: 'local', dataAdapter: 'local', remote: null },
+      value: { authMode: 'local', dataAdapter: 'local', remote: null, pushPublicKey: null },
     })
   })
 
@@ -83,6 +83,7 @@ describe('env', () => {
         authMode: 'google',
         dataAdapter: 'remote',
         remote: { url: 'https://example.test', anonKey: 'anon' },
+        pushPublicKey: null,
       },
     })
   })
@@ -94,7 +95,7 @@ describe('env', () => {
     )
     expect(result).toEqual({
       ok: true,
-      value: { authMode: 'local', dataAdapter: 'local', remote: null },
+      value: { authMode: 'local', dataAdapter: 'local', remote: null, pushPublicKey: null },
     })
   })
 
@@ -125,6 +126,16 @@ describe('env', () => {
         { variable: 'VITE_REMOTE_URL', code: 'required_for_remote' },
         { variable: 'VITE_REMOTE_ANON_KEY', code: 'required_for_remote' },
       ],
+    })
+  })
+
+  it('reads the push public key when it is one, and nothing when blank (D-351)', () => {
+    const key = `B${'a'.repeat(86)}`
+    expect(parseEnv({ ...REMOTE, VITE_PUSH_PUBLIC_KEY: key }, PROD)).toMatchObject({ ok: true, value: { pushPublicKey: key } })
+    expect(parseEnv({ ...LOCAL, VITE_PUSH_PUBLIC_KEY: ' ' }, DEV)).toMatchObject({ ok: true, value: { pushPublicKey: null } })
+    expect(parseEnv({ ...REMOTE, VITE_PUSH_PUBLIC_KEY: 'short' }, PROD)).toEqual({
+      ok: false,
+      issues: [{ variable: 'VITE_PUSH_PUBLIC_KEY', code: 'invalid' }],
     })
   })
 

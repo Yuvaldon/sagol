@@ -1,6 +1,6 @@
 import { REMOTE } from '@config'
 import { AuthUserId, TABLE_SCHEMAS, type AuthIdentity, type DataChange, type Unsubscribe } from '@contracts'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createRemoteDataAdapter } from './adapter'
 import type { LiveListener } from './live'
 
@@ -218,13 +218,15 @@ describe('live changes (D-348)', () => {
     entry?.message({ origin: null, tables: ['not_a_table'] })
     entry?.message('units')
     entry?.message({ origin: crypto.randomUUID(), tables: ['units', 'soldiers'] })
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(heard).toEqual([
-      [
-        { table: 'units', ids: [] },
-        { table: 'soldiers', ids: [] },
-      ],
-    ])
+    // A BroadcastChannel delivers in a later task, at no set time: wait for the one change heard.
+    await vi.waitFor(() => {
+      expect(heard).toEqual([
+        [
+          { table: 'units', ids: [] },
+          { table: 'soldiers', ids: [] },
+        ],
+      ])
+    })
   })
 
   it('reads every table again after the channel joins again, since announcements may have been missed', async () => {
@@ -232,7 +234,8 @@ describe('live changes (D-348)', () => {
     await adapter.session.current()
     const heard = heardBy(adapter)
     realtime.topics[0]?.resume()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(heard[0]?.map((change) => change.table).sort()).toEqual(Object.keys(TABLE_SCHEMAS).sort())
+    await vi.waitFor(() => {
+      expect(heard[0]?.map((change) => change.table).sort()).toEqual(Object.keys(TABLE_SCHEMAS).sort())
+    })
   })
 })

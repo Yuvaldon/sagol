@@ -8,6 +8,7 @@ import {
   OrganizationSettings,
   PERMISSION_ACTIONS_BY_RESOURCE,
   Permission,
+  PushEndpoint,
   PermissionAction,
   PermissionCheck,
   PermissionResource,
@@ -116,6 +117,8 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: false,
       appearance: 'light',
       dashboard: null,
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
     })
   })
 
@@ -124,6 +127,8 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: true,
       appearance: 'light',
       dashboard: null,
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
     })
   })
 
@@ -137,7 +142,16 @@ describe('settings defaults (D-041)', () => {
       create_leaves_as_approved: false,
       appearance: 'dark',
       dashboard: null,
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
     })
+  })
+
+  it('reads the notification choices, each kind defaulting to on (D-352, D-358)', () => {
+    const seen = '2026-11-13T08:00:00.000Z'
+    const read = SoldierPreferences.parse({ updates_seen_at: seen, notifications: { awaiting_me: false } })
+    expect(read.updates_seen_at).toBe(seen)
+    expect(read.notifications).toEqual({ my_request: true, awaiting_me: false })
   })
 })
 
@@ -186,6 +200,8 @@ describe('the stored dashboard (D-349, D-361)', () => {
       create_leaves_as_approved: false,
       appearance: 'dark',
       dashboard: null,
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
     })
   })
 
@@ -365,6 +381,31 @@ describe('FilterExpression', () => {
     ]
     for (const where of invalid) {
       expect(FilterExpression.safeParse({ where }).success).toBe(false)
+    }
+  })
+})
+
+describe('PushEndpoint (D-351)', () => {
+  it('accepts the browsers push services', () => {
+    for (const url of [
+      'https://fcm.googleapis.com/fcm/send/abc',
+      'https://updates.push.services.mozilla.com/wpush/v2/abc',
+      'https://web.push.apple.com/abc',
+      'https://wns2-db5p.notify.windows.com/w/?token=abc',
+    ]) {
+      expect(PushEndpoint.safeParse(url).success).toBe(true)
+    }
+  })
+
+  it('refuses any other host, a look-alike, and plain http', () => {
+    for (const url of [
+      'https://internal.example.test/hook',
+      'https://evilpush.apple.com/abc',
+      'https://fcm.googleapis.com.example.test/abc',
+      'https://push.apple.com.example.test/abc',
+      'http://fcm.googleapis.com/fcm/send/abc',
+    ]) {
+      expect(PushEndpoint.safeParse(url).success).toBe(false)
     }
   })
 })

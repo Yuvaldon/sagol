@@ -289,12 +289,16 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   and the menu or panel shows the stored choice.
 - **Install**: "התקנת האפליקציה" in the user menu, above sign-out, only when the browser offers it; on an iPhone,
   a dialog explains Share → "הוספה למסך הבית". Nothing shows once installed.
+- **Notifications** (D-356, D-357): the profile's "התראות" group shows only where the browser can push and the
+  build has the public key: a switch for this device, then a check per kind (my requests, waiting for me); a blocked
+  permission says so, and an iPhone outside the installed app is asked to install it first. The phone
+  notification names the app, says what happened and the days, and opens the leave or the inbox.
 - **Offline**: a centered sheet "אין חיבור לרשת" with "ניסיון חוזר"; the app opens by itself when the network
   returns.
 
 ## Range, sort and a calm screen (V19, D-211 … D-215)
 
-- **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / חודש, then "סבב שלם" with the
+- **Range picker**: the window label in the bar is a menu button. It lists יום / שבוע / שבועיים / ארבעה שבועות / חודש (D-383), then "סבב שלם" with the
   scope's running and coming rotations and their dates, the latest first; with none, the item is absent (D-218). Last,
   "טווח אחר" opens a small dialog with "מתאריך" and "עד תאריך", at most 186 days (D-339). The arrows'
   names follow the kind ("שבוע הבא", "חודש הבא", "סבב הבא"). The timeline narrows its days for a long range and drops
@@ -394,7 +398,7 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
   סבב" in routine for who may create one, otherwise none (D-266). A floating pill that hugs its content, centered at the
   bottom. The same two pills on a phone, a phone on its side, a tablet and a desktop.
 - **The rule (D-256):** one entry per destination, plus one primary quick action per role.
-- **Profile (avatar):** name · appearance (light or dark) · install · identity switch (local) ·
+- **Profile (avatar):** name · appearance (light or dark) · install · "התראות" (D-356) · identity switch (local) ·
   sign-out.
 - **ניהול יחידה (work, from V32, D-285):** the setup's progress (while unfinished) · אנשים: חיילים, בקשות הצטרפות, הרשאות
   אישיות · נוכחות: סבבים, כללי נוכחות · then "הגדרות היחידה". No pins. Setup is laid out in "Work and unit setup"
@@ -403,6 +407,8 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
   "שלי". One press apart; the last choice is remembered on the device; a link that names a panel or view wins.
 - **שלי:** my next days, in or out · my requests, open and history, with their status. A new request starts from the
   strip's quick action.
+- **עדכונים (D-356):** on שלי, what happened to my requests since I last looked, newest first; the count shows on
+  "שלי" until the list is opened.
 - **בקשות (the inbox, who approves):** the approve-now switch in its header (who may approve their own) · ממתינות
   לאישורי · closed.
 - **Gone:** the separate floating "+" (its action is now in the strip), the "הבקשות שלי" tab, pins, the presence count in the bar, the empty board's second

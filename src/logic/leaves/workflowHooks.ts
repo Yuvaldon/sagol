@@ -67,7 +67,7 @@ import {
 
 // Reading and changing one leave, and the lists of the inbox (D-117 … D-120).
 
-function useActor() {
+export function useActor() {
   const session = useSession()
   return session.status === 'ready' && session.value.status === 'linked' ? session.value : null
 }
@@ -338,8 +338,8 @@ export function useMyLeavesAccess(): { readonly view: boolean; readonly create: 
   return { view: can(view), create: can(create), approve: can(approve) }
 }
 
-/** Every leave of the actor's own soldier; one list behind "my requests" and "my next days". */
-function useMyLeaveRows(): Loaded<readonly Leave[]> {
+/** Every leave of the actor's own soldier; one list behind "my requests", "my next days" and the updates. */
+export function useMyLeaveRows(): Loaded<readonly Leave[]> {
   const { data } = usePorts()
   const actor = useActor()
   const query = actor === null ? null : myLeavesQuery(actor.soldier_id)

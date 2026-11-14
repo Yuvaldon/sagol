@@ -14,7 +14,7 @@ import { Button, IconButton } from '../primitives/Button'
 import { MenuChoice } from './menu'
 import { MENU_HEADER, MENU_LIST, MENU_POPOVER, onlyKey } from './menuStyles'
 
-// The date window and its range picker (D-103, D-211). The label opens the picker: a day, a week, a month, a whole
+// The date window and its range picker (D-103, D-211). The label opens the picker: a day, a week, two or four weeks (D-383), a month, a whole
 // rotation of the scope, past ones too, newest first: the only way to them, with no rotation control or label in the bar
 // (D-217, D-339); or another range, any two dates up to the window's cap (D-339). The arrows step by the chosen unit;
 // the product is RTL only, so "back" points to the right.
@@ -28,11 +28,15 @@ const CUSTOM_KEY = 'custom'
 const RANGE_LABELS: Record<StepKind, I18nKey> = {
   day: 'workspace.ranges.day',
   week: 'workspace.ranges.week',
+  two_weeks: 'workspace.ranges.two_weeks',
+  four_weeks: 'workspace.ranges.four_weeks',
   month: 'workspace.ranges.month',
 }
 const PREVIOUS_LABELS: Record<WindowKind, I18nKey> = {
   day: 'workspace.previousWindow.day',
   week: 'workspace.previousWindow.week',
+  two_weeks: 'workspace.previousWindow.two_weeks',
+  four_weeks: 'workspace.previousWindow.four_weeks',
   month: 'workspace.previousWindow.month',
   rotation: 'workspace.previousWindow.rotation',
   custom: 'workspace.previousWindow.custom',
@@ -40,6 +44,8 @@ const PREVIOUS_LABELS: Record<WindowKind, I18nKey> = {
 const NEXT_LABELS: Record<WindowKind, I18nKey> = {
   day: 'workspace.nextWindow.day',
   week: 'workspace.nextWindow.week',
+  two_weeks: 'workspace.nextWindow.two_weeks',
+  four_weeks: 'workspace.nextWindow.four_weeks',
   month: 'workspace.nextWindow.month',
   rotation: 'workspace.nextWindow.rotation',
   custom: 'workspace.nextWindow.custom',

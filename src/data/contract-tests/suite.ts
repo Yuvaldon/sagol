@@ -25,6 +25,7 @@ import type { ContractAdapter, ContractHarness } from './harness'
 import { describeAccountContract } from './accounts'
 import { describeDeploymentContract } from './deployments'
 import { describeLeaveContract } from './leaves'
+import { describeNotificationContract } from './notifications'
 import { describePermissionContract } from './permissions'
 import { describePropertyContract } from './properties'
 import { describeReportContract } from './reports'
@@ -420,5 +421,6 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
     describePropertyContract(() => harness, () => claim())
     describeDeploymentContract(() => harness, () => claim())
     describeReportContract(() => harness, () => claim())
+    describeNotificationContract(() => harness, () => claim())
   })
 }
