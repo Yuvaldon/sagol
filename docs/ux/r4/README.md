@@ -1,12 +1,32 @@
 # Sagol R4: interface redesign (proposal)
 
 Status: proposal. Nothing here is accepted until the owner approves it. No `src/` change (UI freeze, D-333).
-Mockup: see the PR description for the link. The mockup's `#rationale` tab is the Hebrew version of this page.
+Mockup: see the PR description for the links (round 1 and round 2). The mockup's `#rationale` tab is the Hebrew version of this page.
 
 ## Problem
 
 Each screen said too much: badges, counters, status icons, colored chips and helper text nobody asked for.
 That held in the current UI and in the PR #91 concept. Capabilities were never the problem. Noise was.
+
+## Round 2: "who is with me?"
+
+Owner feedback on the first round:
+- "10 out of 14 present" reads both ways: is it who is here, or who is missing?
+- The first thing a commander needs is who is here. The visual weight worked against that, worst on the board.
+
+The design is kept. What changed is the numbers and the weight.
+- **No fractions.** Every count carries its word, "כאן" (here) or "לא כאן" (not here). That holds on Today, the unit rows, the board, the day sheet and the request sheet ("on those days in platoon 2: 9–10 here").
+  - On Today the hero is one big "here" number.
+  - Beside it is a smaller "not here" number.
+- **The faces of who is here.** Under the number, a platoon commander sees an initials avatar and first name for each person who is here.
+  - "Who is with me?" is answered at a glance, without counting.
+  - A company sees one row per unit instead.
+- **On the board, who is here is the subject.**
+  - The "here" row moved to the top, beside the dates.
+  - Absence marks are thin, quiet lines.
+  - The name of anyone away today is muted.
+  - Tapping a day opens that day's faces, grouped by unit, and then who is not here.
+- The rule sentence uses the same words, with correct singular forms ("one medic would remain…").
 
 ## Approach
 
@@ -28,20 +48,21 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
   - a dashed bar for a pending leave, with a day-totals row on the board only;
   - a personal month calendar for the soldier.
 
-## Five hard rules
+## Six hard rules
 
 1. No helper text that was not asked for: a title, a value, an action. An explanation appears only when something breaks a rule.
 2. No double indicator. A state shows once, in one place.
 3. No badge without an action. A count appears only on something you can tap and resolve, and disappears at zero.
 4. What you may not do does not exist (D-076): it is not disabled and not greyed out.
 5. One big number per screen. Everything else is regular text.
+6. No fractions. Every count carries its word (here / not here) so it cannot be misread.
 
 ## Navigation per role
 
 | Role | Destinations | Home |
 |---|---|---|
 | Soldier | none (single screen) | next leave, my requests, month calendar, "new request" |
-| Platoon commander | Today · Board | present count, pending, out, report 1 |
+| Platoon commander | Today · Board | here (number and faces), pending, not here, report 1 |
 | Company commander / sergeant | Today · Board · Manage | as above, plus one row per unit |
 | Admin | Today · Board · Manage (all settings) | as above |
 | New user | none | Google sign-in, then join or set up a unit |
@@ -99,19 +120,24 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
 | Company commander home | ~45 | 9 |
 | Request approval sheet | ~18 | 3 |
 | Soldier home | 7 | 2 |
-| Board, two weeks | ~60 | ~30 (bars plus totals row) |
+| Board, two weeks | ~60 | ~30 (thin marks plus the "here" row) |
 
 ## Proposed decisions (not yet in DECISIONS.md)
 
-- **D-460:** Home for commanders is "Today": the present count, pending requests, who is out, who returns, and report 1. The dashboard is retired; its fairness view moves to Manage → Round.
-- **D-461:** Five overload rules (above) are binding on every screen; a review counts indicators per screen before merge.
+- **D-460:** Home for commanders is "Today":
+  - the "here" count, with "not here" beside it;
+  - the faces of who is here (for a company, one row per unit);
+  - pending requests;
+  - who is not here and who returns;
+  - report 1. The dashboard is retired; its fairness view moves to Manage → Round.
+- **D-461:** Six overload rules (above), including no fractions, are binding on every screen; a review counts indicators per screen before merge.
 - **D-462:** Navigation is by role:
   - a soldier gets one screen and no nav;
   - a platoon commander gets Today · Board;
   - managers get Today · Board · Manage.
   - The profile holds personal settings and the commander's own requests.
 - **D-463:** Approval by swipe, with a 5-second undo toast. A hard rule breach never approves by swipe; it opens the sheet.
-- **D-464:** A rule breach is one sentence under the "same days" line, in amber for a soft breach and red for a hard one, with no banner or icon. It shows only in the request sheet and on the board's totals row.
+- **D-464:** A rule breach is one sentence under the "same days" line, in amber for a soft breach and red for a hard one, with no banner or icon. It shows only in the request sheet and on the board's "here" row. The "same days" line reads "on those days in <unit>: N here".
 - **D-465:** Palette, type and icons (a people-management tool, not a military app):
   - a warm paper ground with one violet action color;
   - IBM Plex Sans Hebrew;
@@ -120,17 +146,20 @@ Chosen: **A "Today"**, plus three ideas from C and three from B.
   - This replaces the previous palette and icon family.
 - **D-466:** Glass only on floating surfaces (nav, sheets, menus, toast), with an opaque fallback. Content surfaces are opaque.
 - **D-467:** Board has one view control (timeline, calendar, list, table). Filters live in a sheet; active filters show as chips. Pending leaves are dashed bars.
+  - The "here" row sits at the top, beside the dates; each day opens that day's faces.
+  - Absence marks are thin and light.
+  - The name of anyone away today is muted.
 - **D-468:** Report 1 is one action at the end of Today. The report is a list of names grouped as present, home, coming in and going out, with one total, and is copied as the same text. On a multi-day leave the departure day counts as present. A change after confirming asks for reconfirmation.
 - **D-469:** Desktop is the same IA with a right-hand rail and two columns. It is not a separate product.
 
 ## Proposed open items (not yet in OPEN_ITEMS.md)
 
 - **OI-400:** Theme tokens for the R4 palette in `theme`, light and dark, with contrast checks. Target: the slice after the UI freeze lifts.
-- **OI-401:** Today screen (D-460, D-468) replaces the dashboard and the separate report page.
+- **OI-401:** Today screen (D-460, D-468), with the here / not-here split and the faces of who is here, replaces the dashboard and the separate report page.
 - **OI-402:** Swipe to approve with undo (D-463), including keyboard and screen-reader equivalents.
 - **OI-403:** Request sheet: facts, the reason, the "same days" row, the one-sentence rule, and folded history and notes.
 - **OI-404:** Role-based navigation and a profile hub (D-462); move personal settings out of Manage.
-- **OI-405:** Board: one view control, a filter sheet with chips, dashed pending bars and a totals row (D-467).
+- **OI-405:** Board: one view control, a filter sheet with chips, dashed pending bars, thin absence marks, and a "here" row on top that opens a day's faces (D-467).
 - **OI-406:** Soldier home: the headline, requests, the month calendar and new-request sheet.
 - **OI-407:** Manage regrouped:
   - soldiers, round and rules at the top;
