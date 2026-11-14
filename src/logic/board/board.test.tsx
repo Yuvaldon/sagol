@@ -105,6 +105,7 @@ function membership(n: number, soldierN: number, unitN: number, valid_from: stri
     updated_at: AT,
     updated_by: null,
     version: 1,
+    change_seq: 0,
   }
 }
 

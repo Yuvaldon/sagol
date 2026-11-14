@@ -75,7 +75,12 @@ export function useLeaveTypes(): Loaded<readonly LeaveType[]> {
 type LeaveSpan = Pick<DateWindow, 'from' | 'to'>
 
 function leaveQueryOf(window: LeaveSpan): LeaveQuery {
-  return { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: DRAWN_STATUSES }
+  return {
+    ids: null,
+    window: { start_date: window.from, end_date: window.to },
+    soldier_ids: null,
+    statuses: DRAWN_STATUSES,
+  }
 }
 
 /** The pending and approved leaves the actor may see that overlap the window. Loading while there is no window. */
@@ -99,7 +104,9 @@ export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly 
   const { data } = usePorts()
   const query = useMemo(
     (): LeaveQuery | null =>
-      window === null ? null : { window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: null },
+      window === null
+        ? null
+        : { ids: null, window: { start_date: window.from, end_date: window.to }, soldier_ids: null, statuses: null },
     [window],
   )
   return loaded(
@@ -112,7 +119,7 @@ export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly 
 }
 
 /** Never asked: the key of a list that waits for its window. */
-const NO_WINDOW_QUERY: LeaveQuery = { window: null, soldier_ids: [], statuses: DRAWN_STATUSES }
+const NO_WINDOW_QUERY: LeaveQuery = { ids: null, window: null, soldier_ids: [], statuses: DRAWN_STATUSES }
 
 /**
  * The request sheet (`leaves.createMany`, D-275) with an optimistic update: every leave joins the cached windows it

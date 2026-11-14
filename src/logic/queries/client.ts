@@ -63,8 +63,11 @@ const LINK_REQUEST_TABLES: ReadonlySet<TableName> = new Set<TableName>([
   'access_grants',
 ])
 
-/** Tables, beside the policy's, the answer of which daily reports the actor may confirm is read from (D-293). */
-const CONFIRMABLE_TABLES: ReadonlySet<TableName> = new Set<TableName>(['deployments'])
+/**
+ * Tables, beside the policy's, the daily reports' confirmations are read with: which the actor may confirm (D-293), and
+ * what changed since each (D-373).
+ */
+const CONFIRMABLE_TABLES: ReadonlySet<TableName> = new Set<TableName>(['deployments', 'leaves', 'leave_events'])
 
 /**
  * Tables the policy is computed from (D-053 … D-058). Every list the adapter answers is filtered by the policy, so a change
