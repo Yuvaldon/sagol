@@ -9,7 +9,7 @@ and, in the app, a count on "שלי" with an "עדכונים" list. A commander 
 waits for them; tapping it opens that request. Each person turns phone notifications on per device, in the
 profile, and chooses which kinds they want.
 - **tooling:** the service worker moves from `generateSW` to `injectManifest` (P-3) with the same precache
-  list and update flow (D-183); `@negrel/webpush` (JSR, WebCrypto only) in the `commands` function (P-4).
+  list and update flow (D-183); an owned Web Push sender (Web Crypto only, `src/data/server/webPush.ts`) in the `commands` function (P-4, D-435).
 - **contracts:** table `push_subscriptions`; `SoldierPreferences` gains `updates_seen_at` and
   `notifications`; inputs `SubscribePushInput`, `UnsubscribePushInput`; enum `NotificationKind`;
   `PushPayload` schema (shared by the server and the worker).
@@ -253,7 +253,7 @@ e2e (desktop, mobile, RTL, axe):
   (`updates_seen_at`) and the two kind switches are stored, in `soldier_preferences`.
 - **P-3** The service worker is built with `injectManifest`, in the `app` layer, so its push texts come from
   `@i18n`; precache and the update flow of D-183 stay as they are.
-- **P-4** The server encrypts with a WebCrypto-only library (`@negrel/webpush`), no Node polyfills.
+- **P-4** The server encrypts and signs with Web Crypto only, in its own module (`src/data/server/webPush.ts`, D-435), no Node polyfills and no library.
 - **P-5** Dispatch is after commit, best effort, inside `waitUntil`; no outbox table and no retry. A missed
   push is covered by the in-app count.
 - **P-6** Recipients: `my_request` to the leave's soldier, `awaiting_me` to everyone whose policy approves

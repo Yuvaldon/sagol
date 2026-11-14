@@ -21,7 +21,6 @@ import {
 } from '@contracts'
 import {
   duplicatedLeaveColumns,
-  leaveReasonIssues,
   optionalText,
   planLeaveCreation,
   soldierTarget,
@@ -35,7 +34,7 @@ import { tableOf } from './store'
 import { createdBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { passRuleGate, writeLeave } from './leaveCommands'
-import { LEAVE_TABLES, canView, leaveTypeOf, visibleLeave, visibleSoldier } from './leaves'
+import { LEAVE_TABLES, canView, leaveReasonCheck, leaveTypeOf, visibleLeave, visibleSoldier } from './leaves'
 import { POLICY_TABLES } from './snapshot'
 
 // Leaves created together (D-012, D-049, D-179, D-275): a batch for several soldiers, several leaves of one soldier,
@@ -75,7 +74,7 @@ async function detailIssues(database: Store, scope: ActorScope, draft: LeaveDraf
   const { type, issues } = await leaveTypeOf(database, scope, draft.leave_type_id)
   return [
     ...issues,
-    ...(type === null ? [] : leaveReasonIssues(type, draft.reason)),
+    ...(type === null ? [] : await leaveReasonCheck(database, type, draft.reason)),
     ...(await propertiesIssues(database, scope, 'leave', null, draft.properties)),
   ]
 }

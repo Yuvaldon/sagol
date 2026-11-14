@@ -19,6 +19,7 @@ import {
 import { FIRST_ROTATION_LEAVE_COLOR } from '@config'
 import { can, timeZoneIssues, todayIn, withPathPrefix } from '@domain'
 import { tableOf } from './store'
+import { changeCounterStart } from './changeCounters'
 import { createdBy, type LocalDependencies } from './dependencies'
 import { holds, loadActorScope, requirePermission } from './actor'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
@@ -162,10 +163,7 @@ async function writeBootstrap(
       await tableOf(database, 'soldiers').add(soldier)
       await tableOf(database, 'units').add(rootUnit)
       await tableOf(database, 'unit_memberships').add(membership)
-      await tableOf(database, 'change_counters').add({
-        organization_id: organizationId,
-        last_seq: membership.change_seq,
-      })
+      await tableOf(database, 'change_counters').add(changeCounterStart(organizationId, membership.change_seq))
       await tableOf(database, 'soldier_accounts').add(account)
       await tableOf(database, 'roles').add(role)
       await tableOf(database, 'role_permissions').bulkAdd(permissions)

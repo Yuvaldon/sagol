@@ -93,7 +93,7 @@ async function ownerPorts(): Promise<LogicPorts> {
   const shell = { subscribe: () => () => undefined, current: () => QUIET_SHELL, applyUpdate: () => undefined, install: () => Promise.resolve() }
   // The agreement reads no convenience of the device (D-197).
   const nothingKept = { read: () => null, write: () => undefined }
-  const push = { subscribe: () => () => undefined, current: () => 'unsupported' as const, enable: () => Promise.resolve(null), disable: () => Promise.resolve(null) }
+  const push = { subscribe: () => () => undefined, current: () => 'unsupported' as const, enable: () => Promise.resolve(null), disable: () => Promise.resolve(null), installed: () => Promise.resolve(null) }
   return { auth, data, time, shell, push, device: { local: nothingKept, session: nothingKept } }
 }
 

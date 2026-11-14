@@ -40,7 +40,8 @@ import {
 
 const LIVE = { include_archived: false }
 const WITH_ARCHIVED = { include_archived: true }
-const EVERY_MEMBERSHIP = { soldier_ids: null, unit_ids: null, window: null }
+/** Every membership the actor sees, of any date. */
+export const EVERY_MEMBERSHIP = { soldier_ids: null, unit_ids: null, window: null }
 
 /** Every rank, archived ones too: a soldier keeps showing the rank they hold. */
 export function useCommandRanks(): Loaded<readonly CommandRank[]> {

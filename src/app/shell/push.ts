@@ -11,6 +11,7 @@ const UNSUPPORTED: PushPort = {
   current: () => 'unsupported',
   enable: () => Promise.resolve(null),
   disable: () => Promise.resolve(null),
+  installed: () => Promise.resolve(null),
 }
 
 /** The unpadded base64url key of the env as the bytes the push service wants. */
@@ -102,6 +103,14 @@ export function createBrowserPush(publicKey: string | null): PushPort {
       await subscription.unsubscribe()
       change(Notification.permission === 'denied' ? 'denied' : 'off')
       return subscription.endpoint
+    },
+    async installed() {
+      // Asks nothing: a page whose worker never registered, or without the permission, holds no install (D-434).
+      if (Notification.permission !== 'granted') return null
+      const current = await navigator.serviceWorker.getRegistration()
+      if (current === undefined) return null
+      const subscription = await current.pushManager.getSubscription()
+      return subscription === null ? null : installOf(subscription)
     },
   }
 }

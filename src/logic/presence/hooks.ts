@@ -77,7 +77,7 @@ export interface ReadDayReport extends DayReport {
 
 /**
  * The report of `days` (D-193): the leaves of the day before the first through the day after the last, so the first
- * and the last day know who leaves and who returns, and the change number read before them (D-402). Loading while the
+ * and the last day know who leaves and who returns, and the change number read before them and the memberships (D-402, D-432). Loading while the
  * days are unknown.
  */
 export function useDayReport(
@@ -112,7 +112,8 @@ export function useDayReport(
       status: 'ready',
       value: {
         ...dayReport({
-          source: source.value,
+          // The memberships read with the change number, so the number never covers one the report did not show (D-432).
+          source: { ...source.value, memberships: leaves.value.memberships },
           filter,
           leaves: leaves.value.leaves,
           types: types.value,

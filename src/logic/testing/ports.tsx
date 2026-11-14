@@ -64,7 +64,13 @@ export function fakePorts(parts: FakePortParts = {}): LogicPorts {
     auth: { ...parts.auth },
     time: { now },
     shell: { ...NO_SUBSCRIPTION, current: () => QUIET_SHELL_STATE, ...parts.shell },
-    push: { ...NO_SUBSCRIPTION, current: () => 'unsupported', disable: () => Promise.resolve(null), ...parts.push },
+    push: {
+      ...NO_SUBSCRIPTION,
+      current: () => 'unsupported',
+      disable: () => Promise.resolve(null),
+      installed: () => Promise.resolve(null),
+      ...parts.push,
+    },
     device: { local: memoryDeviceStore(), session: memoryDeviceStore(), ...parts.device },
   } as unknown as LogicPorts
 }

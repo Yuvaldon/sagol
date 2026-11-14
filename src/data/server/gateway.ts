@@ -119,7 +119,12 @@ export function createCommandGateway({ transact, catalog, time, bootstrapOwnerEm
             const rejection = rowRejectionOf(result.error)
             return rejection === undefined ? { result, changes: [] } : { result, changes: [], rejection }
           }
-          await announceChanges(client, store.writtenOrganizations(), changes.collected, origin)
+          await announceChanges(
+            client,
+            { organizations: store.writtenOrganizations(), identities: store.writtenIdentities() },
+            changes.collected,
+            origin,
+          )
           return { result, changes: changes.collected }
         })
       } catch (error) {

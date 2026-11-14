@@ -15,7 +15,15 @@ import {
   type TableName,
   type TableRow,
 } from '@contracts'
-import { LEAVE_PERMISSIONS, compareInstants, effectiveSoldierTags, soldierTarget, type RuleData } from '@domain'
+import {
+  LEAVE_PERMISSIONS,
+  compareInstants,
+  effectiveSoldierTags,
+  leaveReasonIssues,
+  rotationLeaveReasonIssues,
+  soldierTarget,
+  type RuleData,
+} from '@domain'
 import { holds, loadActorScope, type ActorScope } from './actor'
 import { tableOf } from './store'
 import type { LocalDependencies } from './dependencies'
@@ -41,7 +49,7 @@ const RULE_TABLES = [
 
 /** Every table a leave command reads or writes. */
 export const LEAVE_TABLES: readonly TableName[] = [
-  ...new Set<TableName>([...POLICY_TABLES, ...RULE_TABLES, 'leave_events', 'leave_comments', 'change_counters']),
+  ...new Set<TableName>([...POLICY_TABLES, ...RULE_TABLES, 'leave_type_groups', 'leave_events', 'leave_comments', 'change_counters']),
 ]
 
 const READ_TABLES: readonly TableName[] = [...POLICY_TABLES, 'leaves', 'leave_events']
@@ -130,6 +138,19 @@ export async function leaveTypeOf(
     return { type: null, issues: [{ path: ['leave_type_id'], code: IssueCode.enum.reference_archived }] }
   }
   return { type, issues: [] }
+}
+
+/**
+ * The reason a leave of this type takes: the one the type asks for (D-117), and none on a type of the built-in group
+ * (D-347, D-430).
+ */
+export async function leaveReasonCheck(
+  database: Store,
+  type: Pick<LeaveType, 'requires_reason' | 'group_id'>,
+  reason: string | null,
+): Promise<Issue[]> {
+  const group = type.group_id === null ? undefined : await tableOf(database, 'leave_type_groups').get(type.group_id)
+  return [...leaveReasonIssues(type, reason), ...rotationLeaveReasonIssues(group ?? null, reason)]
 }
 
 // --------------------------------------------------------------------- reads

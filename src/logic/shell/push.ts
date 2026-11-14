@@ -1,3 +1,4 @@
+import { NOTIFICATIONS } from '@config'
 import { type NotificationKind, type Result } from '@contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useSyncExternalStore } from 'react'
@@ -54,12 +55,45 @@ export function useDeviceNotifications(): DeviceNotifications {
   }
 }
 
-/** Sign-out's first step (D-358): best effort, so a failure here never keeps the soldier signed in. */
-export function forgetThisDevice(push: PushPort, data: DataPort): Promise<void> {
-  return forgetDevice(push, data).then(
-    () => undefined,
-    () => undefined,
-  )
+/**
+ * Sign-out's first step (D-358): best effort, so a failure here never keeps the soldier signed in, and bounded, so a
+ * push service that hangs never does either (D-433). Both requests leave at once, while the session still holds
+ * (D-438): the server forgets the endpoint the browser holds even when the browser's own unsubscribe never answers,
+ * and nothing is sent after the limit, when the session may be gone.
+ */
+export async function forgetThisDevice(push: PushPort, data: DataPort): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const limit = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, NOTIFICATIONS.signOutUnsubscribeTimeoutMs)
+  })
+  const forgotten = push
+    .installed()
+    .then((install) =>
+      Promise.allSettled([
+        (async () => push.disable())(),
+        (async () => (install === null ? null : data.commands.notifications.unsubscribe({ endpoint: install.endpoint })))(),
+      ]),
+    )
+    .then(
+      () => undefined,
+      () => undefined,
+    )
+  return Promise.race([forgotten, limit]).finally(() => {
+    clearTimeout(timer)
+  })
+}
+
+/**
+ * Sends the browser's current install again, so the server holds the endpoint the browser renewed on its own (D-434).
+ * Best effort: the switch still reads the browser's answer, and a dead endpoint ends on its next 404 or 410 (D-358).
+ */
+export async function resendThisDevice(push: PushPort, data: DataPort): Promise<void> {
+  try {
+    const install = await push.installed()
+    if (install !== null) await data.commands.notifications.subscribe(install)
+  } catch {
+    // Nothing to do: the next start sends it again.
+  }
 }
 
 export interface NotificationKinds {

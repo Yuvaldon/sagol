@@ -12,7 +12,7 @@ import {
 import { z } from 'zod'
 import { createChangeFeed } from '../local/changes'
 import type { LocalDataAdapter } from '../local/core'
-import { LiveMessage } from '../server/live'
+import { LiveMessage, identityTopic } from '../server/live'
 import { realtimeListener, type LiveListener } from './live'
 
 // The remote adapter (D-204): every call is one POST to the command gateway (D-201), which runs
@@ -142,11 +142,17 @@ export function createRemoteDataAdapter(
   const origin = crypto.randomUUID()
   const publishTables = (tables: readonly TableName[]) => changes.publish(tables.map((table) => ({ table, ids: [] })))
 
-  // The live topic follows the latest session answer: the linked organization's, or none.
+  // The live topic follows the latest session answer: the linked organization's; a signed-in identity with no live
+  // account hears its own topic, where the answer to its link request arrives (D-437); signed out, none.
   let topic: string | null = null
   let stopListening: Unsubscribe = () => undefined
   function follow(session: Session): void {
-    const next = session.status === 'linked' ? session.organization_id : null
+    const next =
+      session.status === 'linked'
+        ? session.organization_id
+        : session.status === 'unlinked'
+          ? identityTopic(session.identity.auth_user_id)
+          : null
     if (next === topic) return
     stopListening()
     stopListening = () => undefined

@@ -1,8 +1,9 @@
+import { NOTIFICATIONS } from '@config'
 import { OrganizationId, SoldierId, SoldierPreferences, type Result, type SoldierPreferencesRecord, type SubscribePushInput, type UpdateMyPreferencesInput } from '@contracts'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { PushAvailability, PushPort } from '../ports'
-import { useSignOut } from '../session/hooks'
+import { useSession, useSignOut } from '../session/hooks'
 import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
 import { useDeviceNotifications, useNotificationKinds } from './push'
 
@@ -49,6 +50,7 @@ function browserOf(initial: PushAvailability, answer: SubscribePushInput | null 
     current: () => state,
     enable,
     disable,
+    installed: () => Promise.resolve(endpoint === null ? null : { ...INSTALL, endpoint }),
   }
 }
 
@@ -158,6 +160,51 @@ describe('sign-out (D-358)', () => {
     })
     expect(signOut).toHaveBeenCalledTimes(1)
   })
+
+  it('signs out when the push service never answers, after the limit (D-433)', async () => {
+    vi.useFakeTimers()
+    try {
+      const hangs = () => new Promise<never>(() => undefined)
+      const push = { ...browserOf('on'), disable: hangs }
+      const signOut = vi.fn(() => Promise.resolve({ ok: true, value: null }))
+      const ports = fakePorts({ push, commands: { notifications: { unsubscribe: hangs } }, auth: { signOut } })
+      const { result } = renderHook(() => useSignOut(), { wrapper: wrapperOf(ports) })
+      let done: Promise<unknown> = Promise.resolve()
+      act(() => {
+        done = result.current.signOut()
+      })
+      await act(() => vi.advanceTimersByTimeAsync(NOTIFICATIONS.signOutUnsubscribeTimeoutMs - 1))
+      expect(signOut).not.toHaveBeenCalled()
+      await act(() => vi.advanceTimersByTimeAsync(1))
+      await act(() => done)
+      expect(signOut).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('sign-out when the browser never answers (D-438)', () => {
+  it('still forgets the install on the server, before signing out', async () => {
+    vi.useFakeTimers()
+    try {
+      const push = { ...browserOf('on'), disable: () => new Promise<string | null>(() => undefined) }
+      const unsubscribe = vi.fn(() => Promise.resolve({ ok: true, value: { subscribed: false } }))
+      const signOut = vi.fn(() => Promise.resolve({ ok: true, value: null }))
+      const ports = fakePorts({ push, commands: { notifications: { unsubscribe } }, auth: { signOut } })
+      const { result } = renderHook(() => useSignOut(), { wrapper: wrapperOf(ports) })
+      let done: Promise<unknown> = Promise.resolve()
+      act(() => {
+        done = result.current.signOut()
+      })
+      await act(() => vi.advanceTimersByTimeAsync(NOTIFICATIONS.signOutUnsubscribeTimeoutMs))
+      await act(() => done)
+      expect(unsubscribe).toHaveBeenCalledWith({ endpoint: INSTALL.endpoint })
+      expect(signOut).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('the kinds (D-358)', () => {
@@ -186,5 +233,65 @@ describe('the kinds (D-358)', () => {
       await Promise.all([result.current.setKind('my_request', false), result.current.setKind('awaiting_me', false)])
     })
     expect(row.preferences.notifications).toMatchObject({ my_request: false, awaiting_me: false })
+  })
+})
+
+describe('the install on start (D-434)', () => {
+  const linked = {
+    status: 'linked',
+    identity: { auth_user_id: uuid(902), email: null, display_name: null },
+    soldier_id: ACTOR,
+    organization_id: ORGANIZATION,
+  }
+
+  function start(push: PushPort, session: unknown) {
+    const subscribe = vi.fn(() => Promise.resolve(SUBSCRIBED))
+    const ports = fakePorts({
+      push,
+      session: { current: () => Promise.resolve({ ok: true, value: session }) },
+      commands: { notifications: { subscribe } },
+    })
+    const view = renderHook(() => useSession(), { wrapper: wrapperOf(ports) })
+    return { subscribe, view }
+  }
+
+  it("sends the browser's current install again once a linked session is read", async () => {
+    const renewed = { ...INSTALL, endpoint: 'https://fcm.googleapis.com/fcm/send/renewed-device' }
+    const { subscribe, view } = start({ ...browserOf('on'), installed: () => Promise.resolve(renewed) }, linked)
+    await waitFor(() => expect(subscribe).toHaveBeenCalledWith(renewed))
+    view.rerender()
+    expect(subscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it('sends again after a sign-out and the next linked sign-in, and for another linked user', async () => {
+    let announce: (session: unknown) => void = () => undefined
+    const subscribe = vi.fn(() => Promise.resolve(SUBSCRIBED))
+    const ports = fakePorts({
+      push: browserOf('on'),
+      session: {
+        current: () => Promise.resolve({ ok: true, value: linked }),
+        subscribe: (listener: (session: unknown) => void) => {
+          announce = listener
+          return () => undefined
+        },
+      },
+      commands: { notifications: { subscribe } },
+    })
+    renderHook(() => useSession(), { wrapper: wrapperOf(ports) })
+    await waitFor(() => expect(subscribe).toHaveBeenCalledTimes(1))
+    act(() => announce({ status: 'signed_out' }))
+    act(() => announce(linked))
+    await waitFor(() => expect(subscribe).toHaveBeenCalledTimes(2))
+    act(() => announce({ ...linked, identity: { ...linked.identity, auth_user_id: uuid(903) } }))
+    await waitFor(() => expect(subscribe).toHaveBeenCalledTimes(3))
+  })
+
+  it('sends nothing for a browser with no install, or a session not linked', async () => {
+    const none = start(browserOf('off'), linked)
+    await waitFor(() => expect(none.view.result.current.status).toBe('ready'))
+    const unlinked = start(browserOf('on'), { status: 'signed_out' })
+    await waitFor(() => expect(unlinked.view.result.current.status).toBe('ready'))
+    expect(none.subscribe).not.toHaveBeenCalled()
+    expect(unlinked.subscribe).not.toHaveBeenCalled()
   })
 })

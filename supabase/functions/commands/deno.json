@@ -5,7 +5,6 @@
     "@data/server": "../../../src/data/server/index.ts",
     "@domain": "../../../src/domain/index.ts",
     "@internationalized/date": "npm:@internationalized/date@3.12.4",
-    "@negrel/webpush": "jsr:@negrel/webpush@0.5.0",
     "postgres": "npm:postgres@3.4.9",
     "zod": "npm:zod@4.6.7"
   },

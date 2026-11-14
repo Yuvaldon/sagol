@@ -12,6 +12,7 @@ import {
   type Result,
   type Soldier,
   type SoldierId,
+  type UnitMembership,
 } from '@contracts'
 import { LEAVE_PERMISSIONS } from '@domain'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -19,6 +20,7 @@ import { useMemo } from 'react'
 import { checkOn } from '../permissions/checks'
 import { useCan } from '../permissions/hooks'
 import { cachedLeaves, leaveListKey, restoreLeaves, showLeave } from './cache'
+import { EVERY_MEMBERSHIP } from '../roster/hooks'
 import { byName } from '../roster/roster'
 import { QUERY_KEYS } from '../queries/client'
 import { steppedItems } from '../forms/order'
@@ -119,17 +121,22 @@ export function useLeavesOfAnyStatus(window: LeaveSpan | null): Loaded<readonly 
   )
 }
 
-/** Leaves as read at a change number (D-373): every change numbered at or below `seq` is in `leaves`. */
+/**
+ * Leaves and memberships as read at a change number (D-373): every change numbered at or below `seq` is in `leaves`
+ * and `memberships`.
+ */
 export interface CountedLeaves {
   readonly seq: ChangeSeq
   readonly leaves: readonly Leave[]
+  readonly memberships: readonly UnitMembership[]
 }
 
 /**
- * The leaves `useLeaves` reads, with the organization's change number read first, in the same query (D-402): a change
- * committed between the two reads is in the list but above the number, so it shows as changed, never as covered. Kept
- * under the leaves' key, so a leave write refreshes it, but out of the optimistic lists: its number is a read, not a
- * guess. Loading while there is no window.
+ * The leaves `useLeaves` reads and every membership the actor sees, with the organization's change number read first,
+ * in the same query (D-402, D-432): a change committed between the reads is in the lists but above the number, so it
+ * shows as changed, never as covered. Kept under the leaves' key, so a leave write refreshes it, and a membership write
+ * refreshes every table read (a policy table); out of the optimistic lists: its number is a read, not a guess. Loading
+ * while there is no window.
  */
 export function useCountedLeaves(window: LeaveSpan | null): Loaded<CountedLeaves> {
   const { data } = usePorts()
@@ -139,8 +146,10 @@ export function useCountedLeaves(window: LeaveSpan | null): Loaded<CountedLeaves
       queryKey: [...QUERY_KEYS.leaves, COUNTED, query],
       queryFn: async (): Promise<CountedLeaves> => {
         const seq = await unwrap(data.repositories.change_counters.current())
-        const leaves = query === null ? [] : await unwrap(data.repositories.leaves.list(query))
-        return { seq, leaves }
+        if (query === null) return { seq, leaves: [], memberships: [] }
+        const leaves = await unwrap(data.repositories.leaves.list(query))
+        const memberships = await unwrap(data.repositories.unit_memberships.list(EVERY_MEMBERSHIP))
+        return { seq, leaves, memberships }
       },
       enabled: query !== null,
     }),

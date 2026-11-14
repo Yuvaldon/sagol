@@ -78,17 +78,20 @@ The data layer is written as if it were the server:
 - Repositories expose change subscriptions, so the UI has one live source of truth
   across tabs and views. Remotely, other devices' writes arrive too: the gateway broadcasts a committed write's
   table names on the organization's private Realtime topic, and the remote adapter listens while linked (D-348).
+  The rows that carry an identity are also announced on that identity's own topic, where an unlinked requester listens
+  for the answer to their link request (D-437).
 - On the server (D-201) one function, the command gateway, runs the same command core over a
   Postgres `Store`, in one SERIALIZABLE transaction per request, as the identity of the verified
   token. `src/data/server/index.ts` is its entry; the app imports only `src/data/index.ts`.
   `supabase/migrations` builds the database from `schema.sql`, plus triggers (D-202). The API
   roles hold no privilege and RLS has no policy, so no client reaches a table (D-203); the one client policy is on
-  `realtime.messages`, for hearing an organization's topic (D-348).
+  `realtime.messages`, for hearing an organization's topic or one's own identity topic (D-348, D-437). The database
+  tests also run every migration over a database that already holds rows (`history.dbtest.ts`, D-436).
   Each call logs one line, its name and answer code (D-335); when a stored row failed the contracts, also its table
   and issue paths, never values (D-346).
 - After a call commits, the gateway hands who called and what it wrote to the push dispatch (`data/server/push.ts`,
   D-354): one read of the committed rows, the domain picks the recipients (D-355), and the `commands` function sends
-  Web Push with VAPID (D-351). Best effort, outside the transaction; it logs counts only. `push_subscriptions` is
+  Web Push with VAPID (D-351), through its own Web Crypto sender that never follows a redirect (`webPush.ts`, D-435). Best effort, outside the transaction; it logs counts only. `push_subscriptions` is
   reached only through the gateway, like every table; without the VAPID secrets the function sends nothing.
 
 ## Identity and access (D-001 … D-006)
