@@ -9,7 +9,13 @@ import { addDays, compareDates, daysBetween } from '@domain'
 import { isReportable, reportDays, steppedReportDay } from '../presence/report'
 import { useCallback, useMemo } from 'react'
 import { useToday } from '../session/today'
-import { NO_LEAVE_CONDITIONS, hasLeaveConditions, type BoardLeaveStatus, type LeaveConditions } from './conditions'
+import {
+  NO_LEAVE_CONDITIONS,
+  hasLeaveConditions,
+  type BoardLeaveStatus,
+  type LeaveConditions,
+  type LeavePropertyNode,
+} from './conditions'
 import { NO_RULES, readRules, writeRules } from './filter'
 import { useChangeSearch, useWorkspaceSearch } from './search'
 import { DEFAULT_SORT_RULES, defaultOrderOf as defaultRuleOrder, isDefaultSort, sameTarget, type SortRule, type SortTarget } from './sort-rules'
@@ -22,6 +28,8 @@ export interface LeaveConditionsState {
   readonly conditions: LeaveConditions
   setStatuses(statuses: readonly BoardLeaveStatus[]): void
   setTypes(typeIds: readonly LeaveTypeId[]): void
+  /** The leave property conditions (D-382), each a property node or `not` over one; an empty list removes them. */
+  setProperties(nodes: readonly LeavePropertyNode[]): void
 }
 
 export function useLeaveConditions(): LeaveConditionsState {
@@ -46,7 +54,13 @@ export function useLeaveConditions(): LeaveConditionsState {
     },
     [conditions, write],
   )
-  return { conditions, setStatuses, setTypes }
+  const setProperties = useCallback(
+    (nodes: readonly LeavePropertyNode[]) => {
+      write({ ...conditions, properties: nodes.length === 0 ? undefined : [...nodes] })
+    },
+    [conditions, write],
+  )
+  return { conditions, setStatuses, setTypes, setProperties }
 }
 
 export interface OnlyMissingState {

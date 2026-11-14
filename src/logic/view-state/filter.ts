@@ -1,24 +1,44 @@
 import {
-  PropertyOptionId,
   type CommandRankId,
   type FilterExpression,
   type FilterNode,
   type JsonValue,
   type PropertyDefinitionId,
+  type PropertyOperator,
   type SoldierStatus,
   type TagId,
   type UnitId,
 } from '@contracts'
 import { useCallback, useMemo } from 'react'
+import { z } from 'zod'
 import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // The view filter in the URL (D-104, D-312). It is one `FilterExpression` (D-067): the unit selector writes the
 // unit, and the rule builder its rules, as one top-level `and`. Anything else is a filter the builder does not read.
 
-function optionIdsOf(value: JsonValue): PropertyOptionId[] | null {
+const Id = z.uuid()
+
+/** The ids of an `any_of`: options, soldiers or units, by the property's data type (D-312, D-380). */
+function idsOf(value: JsonValue): string[] | null {
   if (!Array.isArray(value) || value.length === 0) return null
-  const ids = value.map((item) => PropertyOptionId.safeParse(item))
+  const ids = value.map((item) => Id.safeParse(item))
   return ids.every((id) => id.success) ? ids.map((id) => id.data) : null
+}
+
+/** The operators a typed value is compared by (D-380): text, number and date properties. */
+export const COMPARE_OPERATORS = [
+  'equals',
+  'not_equals',
+  'contains',
+  'greater_than',
+  'greater_or_equal',
+  'less_than',
+  'less_or_equal',
+] as const satisfies readonly PropertyOperator[]
+export type CompareOperator = (typeof COMPARE_OPERATORS)[number]
+
+function compareOperatorOf(operator: PropertyOperator): CompareOperator | null {
+  return COMPARE_OPERATORS.find((item) => item === operator) ?? null
 }
 
 function nodesOf(filter: FilterExpression | null): readonly FilterNode[] {
@@ -28,8 +48,9 @@ function nodesOf(filter: FilterExpression | null): readonly FilterNode[] {
 
 /**
  * One soldier rule of the builder (D-312): a tag category's or the command rank's "any of" or "none of", the status's
- * "is" or "is not", a select or multi-select property's "any of", "none of", "is empty" or "is not empty", or a yes / no
- * property's answer. "None of" and "is not" are `not` over "any of" and "is".
+ * "is" or "is not", a select, multi-select, soldier or unit property's "any of", "none of", "is empty" or "is not
+ * empty", a yes / no property's answer, or a text, number or date property compared with a value (D-380). "None of" and
+ * "is not" over a list are `not` over "any of" and "is"; a compared value says "is not" with `not_equals`.
  */
 export type FilterRule =
   | { readonly kind: 'tag'; readonly negate: boolean; readonly tagIds: readonly TagId[] }
@@ -39,10 +60,21 @@ export type FilterRule =
       readonly kind: 'options'
       readonly definitionId: PropertyDefinitionId
       readonly negate: boolean
-      readonly optionIds: readonly PropertyOptionId[]
+      /** Option, soldier or unit ids, by the property's data type (D-380). */
+      readonly ids: readonly string[]
     }
   | { readonly kind: 'empty'; readonly definitionId: PropertyDefinitionId; readonly empty: boolean }
   | { readonly kind: 'boolean'; readonly definitionId: PropertyDefinitionId; readonly value: boolean }
+  | {
+      readonly kind: 'compare'
+      readonly definitionId: PropertyDefinitionId
+      readonly operator: CompareOperator
+      /** Text and dates as strings, numbers as numbers; NULL until a value is typed, so it lives only in the builder. */
+      readonly value: string | number | null
+    }
+
+/** A rule over one property: what a leave property condition holds too (D-382). */
+export type PropertyRule = Extract<FilterRule, { readonly definitionId: PropertyDefinitionId }>
 
 /** Whether every soldier rule holds (וגם) or any one does (או), D-312. */
 export type RuleMatch = 'all' | 'any'
@@ -72,22 +104,26 @@ function positiveRuleOf(node: FilterNode, negate: boolean): FilterRule | null {
     case 'property': {
       const definitionId = node.property_definition_id
       if (node.operator === 'any_of') {
-        const optionIds = optionIdsOf(node.value)
-        return optionIds === null ? null : { kind: 'options', definitionId, negate, optionIds }
+        const ids = idsOf(node.value)
+        return ids === null ? null : { kind: 'options', definitionId, negate, ids }
       }
       if (negate) return null
       if (node.operator === 'equals' && typeof node.value === 'boolean') return { kind: 'boolean', definitionId, value: node.value }
       if (node.operator === 'is_empty' || node.operator === 'is_not_empty') {
         return node.value === null ? { kind: 'empty', definitionId, empty: node.operator === 'is_empty' } : null
       }
-      return null
+      const operator = compareOperatorOf(node.operator)
+      const { value } = node
+      if (operator === null || (typeof value !== 'string' && typeof value !== 'number')) return null
+      return { kind: 'compare', definitionId, operator, value }
     }
     default:
       return null
   }
 }
 
-function ruleOf(node: FilterNode): FilterRule | null {
+/** The rule a node reads as; NULL for a node the builder does not read (D-312). */
+export function ruleOfNode(node: FilterNode): FilterRule | null {
   return node.kind === 'not' ? positiveRuleOf(node.node, true) : positiveRuleOf(node, false)
 }
 
@@ -100,9 +136,9 @@ function positiveNodeOf(rule: FilterRule): FilterNode | null {
     case 'status':
       return rule.statuses.length === 0 ? null : { kind: 'soldier_status', statuses: [...rule.statuses] }
     case 'options':
-      return rule.optionIds.length === 0
+      return rule.ids.length === 0
         ? null
-        : { kind: 'property', property_definition_id: rule.definitionId, operator: 'any_of', value: [...rule.optionIds] }
+        : { kind: 'property', property_definition_id: rule.definitionId, operator: 'any_of', value: [...rule.ids] }
     case 'empty':
       return {
         kind: 'property',
@@ -112,11 +148,15 @@ function positiveNodeOf(rule: FilterRule): FilterNode | null {
       }
     case 'boolean':
       return { kind: 'property', property_definition_id: rule.definitionId, operator: 'equals', value: rule.value }
+    case 'compare':
+      return rule.value === null || (typeof rule.value === 'string' && rule.value.trim() === '')
+        ? null
+        : { kind: 'property', property_definition_id: rule.definitionId, operator: rule.operator, value: rule.value }
   }
 }
 
 /** The node a rule writes; NULL for a rule still without a value, which lives only in the open builder (D-312). */
-function nodeOf(rule: FilterRule): FilterNode | null {
+export function nodeOfRule(rule: FilterRule): FilterNode | null {
   const node = positiveNodeOf(rule)
   if (node === null) return null
   return 'negate' in rule && rule.negate ? { kind: 'not', node } : node
@@ -138,7 +178,7 @@ export function readRules(filter: FilterExpression | null): ReadRules {
   const nodes = match === 'any' && only?.kind === 'or' ? only.nodes : rest
   const rules: FilterRule[] = []
   for (const node of nodes) {
-    const rule = ruleOf(node)
+    const rule = ruleOfNode(node)
     if (rule === null) return { kind: 'other' }
     rules.push(rule)
   }
@@ -150,7 +190,7 @@ export function readRules(filter: FilterExpression | null): ReadRules {
  * With או the rules go in an `or`, even a single one, so the toggle reads back.
  */
 export function writeRules(filter: SoldierFilter): FilterExpression | undefined {
-  const ruleNodes = filter.rules.flatMap((rule) => nodeOf(rule) ?? [])
+  const ruleNodes = filter.rules.flatMap((rule) => nodeOfRule(rule) ?? [])
   const nodes: FilterNode[] = [
     ...(filter.unitId === null ? [] : [{ kind: 'unit' as const, unit_ids: [filter.unitId], include_descendants: true }]),
     ...(filter.match === 'all' ? ruleNodes : ruleNodes.length === 0 ? [] : [{ kind: 'or' as const, nodes: ruleNodes }]),
