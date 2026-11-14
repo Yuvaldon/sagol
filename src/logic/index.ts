@@ -116,8 +116,11 @@ export {
   useMyPreferences,
   useUpdateMyPreferences,
   type AppearancePreference,
+  type PreferenceChange,
   type PreferenceSaved,
 } from './session/preferences'
+export { applyView, captureView, matchingView, savedViewNameIssue, savedViewSummary, type AppliedView } from './view-state/savedViews'
+export { useSavedViews, useStartView, type SavedViewsState, type StartView } from './view-state/savedViewsState'
 export {
   boardItems,
   type BoardGroupItem,

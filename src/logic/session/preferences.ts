@@ -41,16 +41,22 @@ export function useMyPreferences(): Loaded<SoldierPreferences> {
 const saving = new WeakMap<QueryClient, Promise<unknown>>()
 
 /**
+ * A change to the preferences: the fields to set, or a function of the stored preferences that answers them. A function
+ * is a change to a list (D-388): on `stale_version` it is computed again, once, over the row read afresh.
+ */
+export type PreferenceChange = Partial<SoldierPreferences> | ((stored: SoldierPreferences) => Partial<SoldierPreferences>)
+
+/**
  * Saves a change over what is stored, at the stored version. Saves run in turn, each over the latest stored row, so a
- * change made while another is saving builds on it; a save that missed a change elsewhere answers `stale_version`.
+ * change made while another is saving builds on it; a plain change that missed one made elsewhere answers
+ * `stale_version` (D-187), and the soldier chooses again over the row as stored.
  */
 export function useUpdateMyPreferences() {
   const { data } = usePorts()
   const client = useQueryClient()
-  return useCommand([QUERY_KEYS.soldierPreferences], (changes: Partial<SoldierPreferences>): Promise<Result<SoldierPreferencesRecord>> => {
-    const save = async (): Promise<Result<SoldierPreferencesRecord>> => {
-      const stored = client.getQueryData<MyPreferences>(QUERY_KEYS.soldierPreferences)
-      if (stored === undefined) return { ok: false, error: { code: 'unavailable' } }
+  return useCommand([QUERY_KEYS.soldierPreferences], (change: PreferenceChange): Promise<Result<SoldierPreferencesRecord>> => {
+    const attempt = async (stored: MyPreferences): Promise<Result<SoldierPreferencesRecord>> => {
+      const changes = typeof change === 'function' ? change(stored.preferences) : change
       const result = await data.commands.accounts.updateMyPreferences({
         expected_version: stored.version,
         preferences: { ...stored.preferences, ...changes },
@@ -60,10 +66,20 @@ export function useUpdateMyPreferences() {
           preferences: result.value.preferences,
           version: result.value.version,
         })
-      } else {
-        // The screen shows the row as stored again, and the soldier chooses over it (D-187).
-        await client.invalidateQueries({ queryKey: QUERY_KEYS.soldierPreferences })
       }
+      return result
+    }
+    const save = async (): Promise<Result<SoldierPreferencesRecord>> => {
+      const stored = client.getQueryData<MyPreferences>(QUERY_KEYS.soldierPreferences)
+      if (stored === undefined) return { ok: false, error: { code: 'unavailable' } }
+      let result = await attempt(stored)
+      if (!result.ok && result.error.code === 'stale_version' && typeof change === 'function') {
+        await client.refetchQueries({ queryKey: QUERY_KEYS.soldierPreferences, type: 'all' })
+        const fresh = client.getQueryData<MyPreferences>(QUERY_KEYS.soldierPreferences)
+        if (fresh !== undefined) result = await attempt(fresh)
+      }
+      // The screen shows the row as stored again, and the soldier chooses over it (D-187).
+      if (!result.ok) await client.invalidateQueries({ queryKey: QUERY_KEYS.soldierPreferences })
       return result
     }
     const next = (saving.get(client) ?? Promise.resolve()).then(save, save)
