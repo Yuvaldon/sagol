@@ -24,6 +24,8 @@ function rankAllows(
   if (constraint === SubjectRankConstraint.enum.any) return true
   // Every soldier includes seniors and soldiers without a rank (D-162).
   if (target.kind === 'every_soldier') return false
+  // So does a whole unit: its seniors too (D-403).
+  if (target.kind === 'whole_unit') return false
   if (target.kind !== 'soldier') return true
   // A holder without seniority gets only `any`, their own record included (D-057, D-157).
   const holder = context.seniorityOf(holderId)
