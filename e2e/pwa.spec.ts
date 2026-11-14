@@ -73,9 +73,12 @@ test('the production build is an installable app', async ({ page, request, brows
     expect(cached.length).toBeGreaterThan(0)
     for (const path of PWA.networkOnlyPaths) expect(cached.filter((url) => url.includes(path))).toEqual([])
     await page.context().setOffline(false)
-    // The worker has one route, the navigation fallback, and it skips the gateway and Auth.
+    // The navigation fallback skips the gateway and Auth, the worker takes the update the app asks for (D-183), and it
+    // shows the notifications (D-356).
     const worker = await (await page.request.get(PWA.serviceWorkerPath)).text()
-    expect(worker.match(/registerRoute/g)).toHaveLength(1)
-    for (const path of PWA.networkOnlyPaths) expect(worker).toContain(path.replaceAll('/', '\\/'))
+    for (const path of PWA.networkOnlyPaths) expect(worker).toContain(path)
+    const QUOTE = '[`"\']'
+    for (const event of ['message', 'push', 'notificationclick']) expect(worker).toMatch(new RegExp(`addEventListener\\(${QUOTE}${event}${QUOTE}`))
+    expect(worker).toContain('SKIP_WAITING')
   })
 })

@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import { AccountLinkRequest, SoldierAccount, SoldierPreferencesRecord } from './entities/accounts'
+import { AccountLinkRequest, PushSubscriptionRecord, SoldierAccount, SoldierPreferencesRecord } from './entities/accounts'
 import { Deployment, DeploymentMember } from './entities/deployments'
 import { Unit, UnitLevel } from './entities/hierarchy'
 import { Leave, LeaveBatch, LeaveComment, LeaveEvent, LeaveType, LeaveTypeGroup } from './entities/leaves'
@@ -52,6 +52,7 @@ export const TABLE_SCHEMAS = {
   availability_rules: AvailabilityRule,
   property_definitions: PropertyDefinition,
   report_confirmations: ReportConfirmation,
+  push_subscriptions: PushSubscriptionRecord,
 } as const satisfies Record<string, z.ZodObject>
 
 export type TableName = keyof typeof TABLE_SCHEMAS

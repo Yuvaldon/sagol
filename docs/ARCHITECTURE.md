@@ -83,6 +83,10 @@ The data layer is written as if it were the server:
   `realtime.messages`, for hearing an organization's topic (D-348).
   Each call logs one line, its name and answer code (D-335); when a stored row failed the contracts, also its table
   and issue paths, never values (D-346).
+- After a call commits, the gateway hands who called and what it wrote to the push dispatch (`data/server/push.ts`,
+  D-354): one read of the committed rows, the domain picks the recipients (D-355), and the `commands` function sends
+  Web Push with VAPID (D-351). Best effort, outside the transaction; it logs counts only. `push_subscriptions` is
+  reached only through the gateway, like every table; without the VAPID secrets the function sends nothing.
 
 ## Identity and access (D-001 … D-006)
 
@@ -371,8 +375,10 @@ never reach the client bundle.
 
 - The build makes the manifest, the icons (from `ui/theme/app-icon.svg`, drawn in the marker color) and the head
   tags from the light theme's tokens and the i18n name (`vite.config.ts`, `vite-plugin-pwa`).
-- The service worker exists only in a production build. It precaches the app shell, falls back to the cached page
-  for navigations, and caches no data: the command gateway and auth always go to the network (`config/pwa`).
+- The service worker exists only in a production build, built from the app's own source (`app/worker`, injectManifest,
+  D-359). It precaches the app shell, falls back to the cached page for navigations, and caches no data: the command
+  gateway and auth always go to the network (`config/pwa`). It also shows push notifications from the `PushPayload`
+  contract and opens the leave or the inbox on a tap (D-357).
 - `app/shell` owns the browser APIs (registration through `workbox-window`, the update check, `beforeinstallprompt`)
   behind the `shell` port of `logic`; `useAppUpdate` and `useInstallOffer` read it, and `ui` shows the update
   toast and the install item. `useInstallInvitation` adds the one-time card after sign-in, answered once per device
@@ -396,6 +402,7 @@ src/
   ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)
+               worker/ (the service worker: precache, push, notification taps, D-359)
 supabase/      migrations/ functions/commands/ (D-201)
 e2e/           Playwright specs
 docs/          ARCHITECTURE.md schema.sql DECISIONS.md ROADMAP.md FEATURE_MAP.md Design.md OPEN_ITEMS.md

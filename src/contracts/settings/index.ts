@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { PropertyOptionId, SavedViewId } from '../common/ids'
-import { ColorKey, Integer, label } from '../common/scalars'
+import { ColorKey, Integer, Timestamp, label } from '../common/scalars'
 import { Appearance, ReschedulePolicy } from '../enums'
 import { IssueCode } from '../errors'
 
@@ -72,6 +72,12 @@ export const SoldierPreferences = z
     saved_views: SavedViews.default([]),
     /** The saved view a bare open of the board starts on (D-386); one no longer saved reads as NULL. */
     start_view_id: SavedViewId.nullable().catch(null).default(null),
+    /** The newest update the soldier has seen on "שלי"; NULL until the first look: everything in the window is unread (D-352). */
+    updates_seen_at: Timestamp.nullable().default(null),
+    /** Which phone notifications the soldier wants, on every device they turned them on (D-358). */
+    notifications: z
+      .object({ my_request: z.boolean().default(true), awaiting_me: z.boolean().default(true) })
+      .prefault({}),
   })
   // `overwrite`, not `transform`: the value is checked in place and the schema stays an object (D-039).
   .overwrite((preferences) =>

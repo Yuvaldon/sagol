@@ -42,7 +42,8 @@ const saving = new WeakMap<QueryClient, Promise<unknown>>()
 
 /**
  * A change to the preferences: the fields to set, or a function of the stored preferences that answers them. A function
- * is a change to a list (D-388): on `stale_version` it is computed again, once, over the row read afresh.
+ * is worked out from the row as stored when its turn comes, so it never undoes an earlier save, and is how a list
+ * changes (D-388): on `stale_version` it is computed again, once, over the row read afresh.
  */
 export type PreferenceChange = Partial<SoldierPreferences> | ((stored: SoldierPreferences) => Partial<SoldierPreferences>)
 

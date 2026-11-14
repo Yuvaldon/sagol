@@ -6,3 +6,4 @@ export { CATALOG_QUERY, catalogOf, type SqlClient, type SqlParameter, type Store
 export { createCommandGateway, GatewayRequest, type GatewayDependencies, type GatewayResponse, type Transact } from './gateway'
 export { createCommandHandler, type CommandHandlerDependencies } from './http'
 export { AuthServerUnavailable, supabaseTokenVerifier, type SupabaseAuthServer } from './supabaseIdentity'
+export { createPushDispatch, type CommittedCall, type PushDevice, type PushDispatchDependencies, type PushSender } from './push'
