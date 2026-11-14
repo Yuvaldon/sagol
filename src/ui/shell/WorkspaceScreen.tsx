@@ -20,6 +20,8 @@ import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenc
 import { NavigationPanelContext, useNavigationPanelScope } from './navigationPanelState'
 import { InstallInvitation } from './InstallInvitation'
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
+import { SavedViewDroppedNotice } from './SavedViewDroppedNotice'
+import { SavedViewNoticeContext, useSavedViewNoticeScope } from './savedViewNotice'
 import { Viewport } from './Viewport'
 import { WindowNavigator } from './WindowNavigator'
 import { FocusModeContext, useFocusModeScope } from './focusMode'
@@ -99,6 +101,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const boardShown = useBoardShown()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
+  const savedViewNotice = useSavedViewNoticeScope()
   const noBoard = useNoBoard()
   const focusMode = useFocusModeScope(boardShown && !noBoard)
   // What of "filter and sort" is open (D-312); the builder exists only with the board.
@@ -116,6 +119,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
     <FilterFocusContext value={focus}>
       <BuilderOpenContext value={builder}>
       <PreferenceFailureContext value={preferenceFailure}>
+      <SavedViewNoticeContext value={savedViewNotice}>
       <NavigationPanelContext value={navigation}>
       <FocusModeContext value={focusMode}>
       <div
@@ -144,6 +148,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
         <ModuleDrawer />
         <DayReportDialog />
         <PreferenceFailureNotice />
+        {boardShown ? <SavedViewDroppedNotice /> : null}
         <InstallInvitation />
         {boardShown && building !== null ? (
           <RuleBuilder
@@ -156,6 +161,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
       </div>
       </FocusModeContext>
       </NavigationPanelContext>
+      </SavedViewNoticeContext>
       </PreferenceFailureContext>
       </BuilderOpenContext>
     </FilterFocusContext>

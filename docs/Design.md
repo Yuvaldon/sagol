@@ -167,6 +167,12 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
   board; on the board it opens a `Drawer` titled "תצוגה": a card per view the device offers (two columns, an icon over
   the name, the current one with an `action-solid` edge), then "צבעים", a segmented "לפי סוג" / "צבע אחיד". Pressing a
   card, the current one too, closes the sheet; the colors stay open to compare. The top strip holds no view control.
+- **Saved views (D-387):** inside the view sheet only. Beside focus mode, "שמירת התצוגה הנוכחית" while the board
+  matches no saved view (at 12, a hint and the manage list); it opens a small dialog, the name (suggested "view ·
+  range") and "לפתוח את האפליקציה בתצוגה הזאת". Once one exists, the first row "התצוגות שלי": two-column cards (icon, name,
+  "פתיחה" on the start view, the range kind and the condition count), the current one selected; then "ניהול התצוגות",
+  which replaces the sheet's body: per row, up, down, rename in place and delete (confirmed), then the start view as a
+  radio list with "ללא" first. Nothing else on the board changes.
 - **"סינון ומיון" (D-312, D-313):** one control in the top strip, an icon with its name from `md` and the icon alone
   below. It opens the rule builder, a `Drawer` of two sections. "סינון": a row per rule, the property, its operator and
   its values (a button that opens a list of them), with "הסרת סינון"; "+ הוספת סינון"; "וגם" / "או" once there are two
