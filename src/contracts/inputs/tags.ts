@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { TagCategoryId, TagId } from '../common/ids'
 import { Tag, TagCategory } from '../entities/tags'
-import { archiveInput, reorderInput, updateInput } from './common'
+import { archiveInput, restoreInput, reorderInput, updateInput } from './common'
 
 const categoryContent = TagCategory.pick({
   name: true,
@@ -23,6 +23,8 @@ export type UpdateTagCategoryInput = z.infer<typeof UpdateTagCategoryInput>
 
 export const ArchiveTagCategoryInput = archiveInput(TagCategoryId)
 export type ArchiveTagCategoryInput = z.infer<typeof ArchiveTagCategoryInput>
+export const RestoreTagCategoryInput = restoreInput(TagCategoryId)
+export type RestoreTagCategoryInput = z.infer<typeof RestoreTagCategoryInput>
 
 export const ReorderTagCategoriesInput = reorderInput(TagCategoryId)
 export type ReorderTagCategoriesInput = z.infer<typeof ReorderTagCategoriesInput>
@@ -42,6 +44,8 @@ export type UpdateTagInput = z.infer<typeof UpdateTagInput>
 
 export const ArchiveTagInput = archiveInput(TagId)
 export type ArchiveTagInput = z.infer<typeof ArchiveTagInput>
+export const RestoreTagInput = restoreInput(TagId)
+export type RestoreTagInput = z.infer<typeof RestoreTagInput>
 
 /** Orders the tags of one category. */
 export const ReorderTagsInput = reorderInput(TagId)

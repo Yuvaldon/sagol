@@ -91,6 +91,9 @@ export function useTagCategoryCommands() {
   const archive = useCommand(keys, (category: TagCategory) =>
     categories.archive({ id: category.id, expected_version: category.version }),
   )
+  const restore = useCommand(keys, (category: TagCategory) =>
+    categories.restore({ id: category.id, expected_version: category.version }),
+  )
   const step = useCommand(
     keys,
     async ({ category, direction, all }: { category: TagCategory; direction: -1 | 1; all: readonly TagCategory[] }) => {
@@ -99,7 +102,7 @@ export function useTagCategoryCommands() {
       return items === null ? unchanged : categories.reorder({ items })
     },
   )
-  return { create, update, archive, step }
+  return { create, update, archive, restore, step }
 }
 
 export function useTagCommands() {
@@ -119,13 +122,14 @@ export function useTagCommands() {
     },
   )
   const archive = useCommand(keys, (tag: Tag) => tags.archive({ id: tag.id, expected_version: tag.version }))
+  const restore = useCommand(keys, (tag: Tag) => tags.restore({ id: tag.id, expected_version: tag.version }))
   /** Up or down inside its category (D-130). */
   const step = useCommand(keys, async ({ tag, direction, all }: { tag: Tag; direction: -1 | 1; all: readonly Tag[] }) => {
     const items = steppedItems(tagsOfCategory(all, tag.category_id), tag, direction)
     const unchanged: Result<Tag[]> = { ok: true, value: [] }
     return items === null ? unchanged : tags.reorder({ items })
   })
-  return { create, update, archive, step }
+  return { create, update, archive, restore, step }
 }
 
 export interface SetScopedTagsRequest {

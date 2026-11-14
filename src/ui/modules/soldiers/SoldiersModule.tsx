@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS, QUICK_ENTRY } from '@config'
 import type { AppError, CalendarDate, CommandRank, Soldier, Unit, UnitId, UnitMembership } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   fullName,
   matchesName,
   soldierRows,
@@ -11,6 +12,7 @@ import {
   useRosterPermissions,
   useSoldierCommands,
   useSoldiers,
+  useSoldiersWithArchived,
   useToday,
   useUnitsWithArchived,
   type SoldierRow,
@@ -19,6 +21,7 @@ import { Archive, Plus, Rows3 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { unitStateLabel } from '../../patterns/units'
@@ -58,12 +61,14 @@ function SoldierRowView({ row, actions }: { readonly row: SoldierRow; readonly a
 
 function SoldiersContent({
   soldiers,
+  archivedSoldiers,
   ranks,
   units,
   memberships,
   today,
 }: {
   readonly soldiers: readonly Soldier[]
+  readonly archivedSoldiers: readonly Soldier[]
   readonly ranks: readonly CommandRank[]
   readonly units: readonly Unit[]
   readonly memberships: readonly UnitMembership[]
@@ -71,8 +76,18 @@ function SoldiersContent({
 }) {
   const panel = usePanel()
   const liveUnits = useMemo(() => units.filter((unit) => unit.archived_at === null), [units])
-  const permissions = useRosterPermissions(soldiers, liveUnits)
+  const everyone = useMemo(() => [...soldiers, ...archivedSoldiers], [soldiers, archivedSoldiers])
+  const permissions = useRosterPermissions(everyone, liveUnits)
   const commands = useSoldierCommands()
+  // Archived soldiers come back from a quiet section under the list, for whoever may archive them (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={archivedSoldiers.filter((soldier) => permissions.archive(soldier))}
+      nameOf={fullName}
+      restore={commands.restore}
+      bodyKey="archived.restoreSoldierBody"
+    />
+  )
   const [query, setQuery] = useState('')
   const [failure, setFailure] = useState<AppError | null>(null)
   const [archiving, setArchiving] = useState<Soldier | null>(null)
@@ -138,15 +153,18 @@ function SoldiersContent({
 
   if (rows.length === 0) {
     return (
-      <EmptyNotice titleKey="soldiers.emptyTitle" bodyKey={permissions.create ? undefined : 'soldiers.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newSoldier}>
-            <Plus aria-hidden size={14} />
-            {t('soldiers.new')}
-          </Button>
-        ) : null}
-        {quickButton}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        <EmptyNotice titleKey="soldiers.emptyTitle" bodyKey={permissions.create ? undefined : 'soldiers.emptyReadOnly'}>
+          {permissions.create ? (
+            <Button variant="primary" onPress={newSoldier}>
+              <Plus aria-hidden size={14} />
+              {t('soldiers.new')}
+            </Button>
+          ) : null}
+          {quickButton}
+        </EmptyNotice>
+        {archived}
+      </div>
     )
   }
 
@@ -192,6 +210,7 @@ function SoldiersContent({
           renderRow={(row) => <SoldierRowView row={row} actions={actionsOf(row.soldier)} />}
         />
       )}
+      {archived}
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"
@@ -216,19 +235,21 @@ function SoldiersContent({
 
 export function SoldiersModule() {
   const soldiers = useSoldiers()
+  const withArchived = useSoldiersWithArchived()
   const ranks = useCommandRanks()
   const units = useUnitsWithArchived()
   const memberships = useMemberships()
   const today = useToday()
-  const reads = [soldiers, ranks, units, memberships]
+  const reads = [soldiers, withArchived, ranks, units, memberships]
   const failed = reads.find((read) => read.status === 'failed')
   if (failed?.status === 'failed') return <FailureNotice error={failed.error} />
-  if (soldiers.status !== 'ready' || ranks.status !== 'ready' || units.status !== 'ready' || memberships.status !== 'ready') {
+  if (soldiers.status !== 'ready' || withArchived.status !== 'ready' || ranks.status !== 'ready' || units.status !== 'ready' || memberships.status !== 'ready') {
     return <LoadingNotice />
   }
   return (
     <SoldiersContent
       soldiers={soldiers.value}
+      archivedSoldiers={archivedRows(withArchived.value)}
       ranks={ranks.value}
       units={units.value}
       memberships={memberships.value}

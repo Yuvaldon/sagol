@@ -2,6 +2,7 @@ import { NEW_ENTITY, PANEL_IDS } from '@config'
 import type { AppError, CommandRank } from '@contracts'
 import { t } from '@i18n'
 import {
+  archivedRows,
   liveRanks,
   nextSeniority,
   rankFormIssues,
@@ -15,6 +16,7 @@ import { Archive, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
+import { ArchivedSection } from '../../patterns/ArchivedSection'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
@@ -198,6 +200,14 @@ export function CommandRanksModule() {
 
   const live = liveRanks(ranks.value)
   const firstSeniority = nextSeniority(live)
+  // Restoring is the reverse of archiving, under the same permission (D-371).
+  const archived = (
+    <ArchivedSection
+      rows={permissions.archive ? archivedRows(ranks.value) : []}
+      nameOf={(rank) => rank.title}
+      restore={commands.restore}
+    />
+  )
   const newRank = () => {
     setFailure(null)
     panel.open(PANEL_IDS.commandRanks, { entity: NEW_ENTITY })
@@ -226,14 +236,17 @@ export function CommandRanksModule() {
 
   if (live.length === 0) {
     return (
-      <EmptyNotice titleKey="commandRanks.emptyTitle" bodyKey={permissions.create ? undefined : 'commandRanks.emptyReadOnly'}>
-        {permissions.create ? (
-          <Button variant="primary" onPress={newRank}>
-            <Plus aria-hidden size={14} />
-            {t('commandRanks.new')}
-          </Button>
-        ) : null}
-      </EmptyNotice>
+      <div className="flex flex-col gap-md">
+        <EmptyNotice titleKey="commandRanks.emptyTitle" bodyKey={permissions.create ? undefined : 'commandRanks.emptyReadOnly'}>
+          {permissions.create ? (
+            <Button variant="primary" onPress={newRank}>
+              <Plus aria-hidden size={14} />
+              {t('commandRanks.new')}
+            </Button>
+          ) : null}
+        </EmptyNotice>
+        {archived}
+      </div>
     )
   }
 
@@ -268,6 +281,7 @@ export function CommandRanksModule() {
           </Button>
         </div>
       ) : null}
+      {archived}
       {archiving === null ? null : (
         <SmallDialog
           role="alertdialog"

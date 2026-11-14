@@ -10,7 +10,7 @@ import {
   UnitMembershipColumns,
 } from '../entities/soldiers'
 import { IssueCode } from '../errors'
-import { ExpectedVersion, archiveInput, changesOf, distinctIds, updateInput } from './common'
+import { ExpectedVersion, archiveInput, restoreInput, changesOf, distinctIds, updateInput } from './common'
 
 // ------------------------------------------------------------------ command ranks
 
@@ -30,6 +30,8 @@ export type UpdateCommandRankInput = z.infer<typeof UpdateCommandRankInput>
 
 export const ArchiveCommandRankInput = archiveInput(CommandRankId)
 export type ArchiveCommandRankInput = z.infer<typeof ArchiveCommandRankInput>
+export const RestoreCommandRankInput = restoreInput(CommandRankId)
+export type RestoreCommandRankInput = z.infer<typeof RestoreCommandRankInput>
 
 // ---------------------------------------------------------------------- soldiers
 
@@ -68,6 +70,8 @@ export type UpdateSoldierInput = z.infer<typeof UpdateSoldierInput>
 
 export const ArchiveSoldierInput = archiveInput(SoldierId)
 export type ArchiveSoldierInput = z.infer<typeof ArchiveSoldierInput>
+export const RestoreSoldierInput = restoreInput(SoldierId)
+export type RestoreSoldierInput = z.infer<typeof RestoreSoldierInput>
 
 /** Private fields (resource `soldier_private`, D-018). `expected_version` is NULL while no row exists. */
 export const UpdateSoldierPrivateInput = z.strictObject({
