@@ -11,6 +11,11 @@ export const REMOTE = {
   realtimePath: '/realtime/v1',
   /** The broadcast event a committed write is announced under, on its organization's private topic. */
   liveEvent: 'changes',
+  /**
+   * Prefix of an identity's own private topic, followed by its auth user id (D-437): a signed-in identity with no live
+   * account hears there the answer to its own link request. Repeated in the migration that admits it.
+   */
+  identityTopicPrefix: 'identity:',
   /** Request header carrying the calling adapter's origin id, so it ignores the announcement of its own write. */
   originHeader: 'x-sagol-origin',
 } as const
