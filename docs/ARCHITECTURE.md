@@ -222,17 +222,20 @@ The current state (D-128):
   `ui` draws the image on a canvas (`modules/presence/reportImage.ts`).
 - **Report confirmations** (D-293): `report_confirmations` holds one row per unit and date, moved by
   `day_reports.confirm` and never deleted; `deployments.report_owner_id` names who reads the summary. `domain/reports`
-  holds the confirm rule (an open, live rotation over the unit on the date) and `confirmationStatus`; "changed since" is
-  derived in `logic/presence/confirmations.ts` from the section's soldiers' leaves of any status touching the day ±1,
-  written after the confirmation, on the report with no view filter. Which unit and date the actor may confirm is
+  holds the confirm rule (an open, live rotation over the unit on the date) and `confirmationStatus`, which reads
+  "changed since" from the change numbers (D-373): a leave event after the confirmation's `seen_seq` for a leave of the
+  section's soldiers that touched the day ±1 in any state since, or a membership in the unit written after it.
+  `logic/presence/confirmations.ts` gathers each section's changes on the report with no view filter. Which unit and date the actor may confirm is
   `report_confirmations.confirmable`, answered on the whole tree, so a hidden middle level does not hide the button.
   `report_confirmations.sections` counts the rotations' sections on the whole tree for who reads the summary, a count
   only, and how many of them the actor's report cannot head (the unit, or every soldier of it, is outside the actor's view), so the summary shows how many units lie
   outside the view (D-303). Both refuse a window past
   `DAY_REPORT.maxSpanDays`, and `createBatch` and the copies refuse more than `LEAVE_BATCH.maxLeaves`, checked in the
   command (D-302). A
-  confirmation holds from the client's read of the leaves (`seen_at`, `confirmedAtOf`). `useReportConfirmations` reads
-  them with those leaves; leave writes refresh it, and rotation writes refresh the confirmable answer.
+  confirmation holds from the organization's change counter (`change_counters`, D-373), read before the report: every
+  leave and membership write takes the next number in its serializable transaction, so numbers follow commit order.
+  `useConfirmationReads` reads the counter, the confirmations, the events after the smallest `seen_seq`, those leaves
+  and the units' memberships; leave and rotation writes refresh it, and membership writes refresh everything.
 - **Screens:** the rules drawer (list, conflicts, a day's broken rules, the form, D-140); the heat row under the days
   (D-141), and the same breaches beside a calendar day, as a phone day's tone, in the day report and above the list (`ui/board/breaches.ts`, D-290, D-339); one acknowledgment dialog for every leave command on screen, which resends with the soft rules' ids (D-142).
 
