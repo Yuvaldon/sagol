@@ -1,4 +1,4 @@
-import { DASHBOARD, DASHBOARD_TEMPLATES, PANEL_IDS } from '@config'
+import { DASHBOARD, DASHBOARD_TEMPLATES, DAY_REPORT, PANEL_IDS } from '@config'
 import {
   DASHBOARD_METRIC_IDS,
   DASHBOARD_MODULE_IDS,
@@ -44,6 +44,7 @@ import { checkOf, checkOn } from '../permissions/checks'
 import { useCanAnswers } from '../permissions/hooks'
 import { type BoardGroupLabel } from '../board/rows'
 import { useDayReport, useReportConfirmations } from '../presence/hooks'
+import { isReportable } from '../presence/report'
 import { QUERY_KEYS } from '../queries/client'
 import { loaded, type Loaded } from '../queries/loaded'
 import { unwrap } from '../queries/results'
@@ -51,7 +52,7 @@ import { useRuleDays, type RuleDay } from '../rules/hooks'
 import { usePorts } from '../runtime/context'
 import { useSession } from '../session/hooks'
 import { useMyPreferences, useUpdateMyPreferences } from '../session/preferences'
-import { useTimezone } from '../session/today'
+import { usePastHour, useTimezone } from '../session/today'
 import { bySortOrder } from '../units/tree'
 import { unitFilterOf } from '../view-state/filter'
 import { useChangeSearch, useWorkspaceSearch } from '../view-state/search'
@@ -117,13 +118,19 @@ export interface ReportSectionStatus {
   readonly status: 'confirmed' | 'not_yet' | 'changed_since'
 }
 
-/** Today's report of the unit (D-293). */
-export interface DashboardReport {
+/** A day's report of the unit (D-293). */
+export interface DashboardReportDay {
   readonly date: CalendarDate
   readonly sections: readonly ReportSectionStatus[]
   readonly unconfirmed: number
   readonly present: number
   readonly absent: number
+}
+
+/** Today's report of the unit (D-293), and tomorrow's from the cut-over hour on (D-443). */
+export interface DashboardReport extends DashboardReportDay {
+  /** Tomorrow's report, from `DAY_REPORT.nextDayFromHour` on, where tomorrow is reportable; NULL otherwise. */
+  readonly next: DashboardReportDay | null
 }
 
 export interface Dashboard {
@@ -392,20 +399,28 @@ function useRules(scope: DashboardScope | null, counted: readonly CalendarDate[]
   }, [scope, before, next])
 }
 
-/** Today's report of the unit, where the span is a rotation that holds today (D-293). */
+/**
+ * Today's report of the unit, where the span is a rotation that holds today (D-293); from the cut-over hour on, also
+ * tomorrow's where tomorrow is reportable (D-443).
+ */
 function useReport(
   scope: DashboardScope | null,
   deployments: readonly Deployment[],
   wanted: boolean,
 ): Loaded<DashboardReport | null> {
   const source = useFilterSource(scope?.rotation?.id ?? null)
+  const evening = usePastHour(DAY_REPORT.nextDayFromHour) === true
   const active = wanted && scope !== null && scope.rotation !== null && scope.window.holdsToday
-  const days = useMemo(() => (active && scope !== null ? [scope.today] : NO_DAYS), [active, scope])
   const unitId = scope?.unitId ?? null
   const rotations = useMemo(
     () => (active && source.status === 'ready' ? scopeRotations(deployments, source.value.units, unitId) : NO_ROTATIONS),
     [active, source, deployments, unitId],
   )
+  const days = useMemo(() => {
+    if (!active || scope === null) return NO_DAYS
+    const tomorrow = addDays(scope.today, 1)
+    return evening && isReportable(rotations, tomorrow) ? [scope.today, tomorrow] : [scope.today]
+  }, [active, scope, evening, rotations])
   const filter = useMemo(() => unitFilterOf(unitId) ?? null, [unitId])
   const shown = useDayReport(days, filter, rotations)
   const confirmations = useReportConfirmations(days, shown, rotations)
@@ -413,25 +428,26 @@ function useReport(
     if (!active || scope === null) return { status: 'ready', value: null }
     if (shown.status !== 'ready') return shown
     if (confirmations.status !== 'ready') return confirmations
-    const day = shown.value.days[0]
-    const states = confirmations.value.get(scope.today)
-    if (day === undefined || states === undefined) return { status: 'ready', value: null }
-    const sections = day.units.flatMap((section): ReportSectionStatus[] => {
-      const state = states.sections.get(section.key)
-      return state === undefined ? [] : [{ key: section.key, unitId: section.unitId, label: section.label, status: state.status }]
-    })
-    if (sections.length === 0) return { status: 'ready', value: null }
-    return {
-      status: 'ready',
-      value: {
-        date: scope.today,
+    const dayOf = (date: CalendarDate | undefined): DashboardReportDay | null => {
+      const day = shown.value.days.find((candidate) => candidate.date === date)
+      const states = date === undefined ? undefined : confirmations.value.get(date)
+      if (date === undefined || day === undefined || states === undefined) return null
+      const sections = day.units.flatMap((section): ReportSectionStatus[] => {
+        const state = states.sections.get(section.key)
+        return state === undefined ? [] : [{ key: section.key, unitId: section.unitId, label: section.label, status: state.status }]
+      })
+      if (sections.length === 0) return null
+      return {
+        date,
         sections,
         unconfirmed: sections.filter((section) => section.status !== 'confirmed').length,
         present: day.counts.present,
         absent: day.counts.absent,
-      },
+      }
     }
-  }, [active, scope, shown, confirmations])
+    const today = dayOf(scope.today)
+    return { status: 'ready', value: today === null ? null : { ...today, next: dayOf(days[1]) } }
+  }, [active, scope, shown, confirmations, days])
 }
 
 /** The rows' requests and the days ahead that break a rule, as one list (D-349). */

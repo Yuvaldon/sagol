@@ -397,6 +397,7 @@ export {
   type DashboardOutstanding,
   type DashboardPlan,
   type DashboardReport,
+  type DashboardReportDay,
   type DashboardRules,
   type DashboardScope,
   type ModuleState,

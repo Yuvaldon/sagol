@@ -31,7 +31,7 @@ import { usePlacementHints } from '../roster/hooks'
 import { soldierRows, unitStateOn } from '../roster/roster'
 import { LogicProvider } from '../runtime/LogicProvider'
 import { allowEverything, fakePorts, organizationIn, wrapperOf } from '../testing/ports'
-import { useToday } from '../session/today'
+import { usePastHour, useToday } from '../session/today'
 import { filterUnitOf, unitFilterOf, useViewFilter } from '../view-state/filter'
 import { usePanel } from '../view-state/panel'
 import { WorkspaceSearch, useWorkspaceSearch } from '../view-state/search'
@@ -544,6 +544,40 @@ describe('today turns at midnight (D-107, OI-057)', () => {
     await waitFor(() => {
       expect(vi.mocked(ports.data.session.can).mock.calls.length).toBeGreaterThan(asked)
     })
+  })
+})
+
+describe('the cut-over hour turns with the screen open (D-443)', () => {
+  it('is past from the hour on', async () => {
+    // 17:59:59.7 in Jerusalem.
+    const clock = { now: '2026-11-11T15:59:59.700Z' }
+    const { result } = renderHook(() => usePastHour(18), { wrapper: wrapperOf(portsAt(clock)) })
+    await waitFor(() => {
+      expect(result.current).toBe(false)
+    })
+    clock.now = '2026-11-11T16:00:00.100Z'
+    await waitFor(
+      () => {
+        expect(result.current).toBe(true)
+      },
+      { timeout: 3000 },
+    )
+  })
+
+  it('turns back at midnight', async () => {
+    // 23:59:59.7 in Jerusalem.
+    const clock = { now: '2026-11-11T21:59:59.700Z' }
+    const { result } = renderHook(() => usePastHour(18), { wrapper: wrapperOf(portsAt(clock)) })
+    await waitFor(() => {
+      expect(result.current).toBe(true)
+    })
+    clock.now = '2026-11-11T22:00:00.100Z'
+    await waitFor(
+      () => {
+        expect(result.current).toBe(false)
+      },
+      { timeout: 3000 },
+    )
   })
 })
 
