@@ -360,11 +360,12 @@ am = amends, ref = refines, ext = extends.
 | D-430 | A built-in group leave's reason is refused in the command core | domain, data | |
 | D-431 | The local adapter starts an organization's change counter in one function | data | |
 | D-432 | The report's memberships are read in the counted query, after the change number | logic | |
-| D-433 | Sign-out waits a bounded time for the device's unsubscribe | config, logic | |
+| D-433 | Sign-out waits a bounded time for the device's unsubscribe | config, logic | ref D-438 |
 | D-434 | The app sends the browser's current push install again once per linked sign-in | logic, app | |
 | D-435 | The Web Push request is owned: Web Crypto encryption and VAPID, never a followed redirect | data, config, backend | |
 | D-436 | Every migration is tested over a database that already holds rows | tooling, backend | |
 | D-437 | An identity's own live topic: a pending requester hears their request's answer | data, config, backend | |
+| D-438 | Sign-out sends the server's and the browser's unsubscribe together | logic, data | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5375,3 +5376,16 @@ every migration must remember.
   approval or a rejection shows at once. A db test covers the request, its review and the policy; an adapter test the
   switch of topics.
 **Why:** a requester has no organization to hear, and their own rows are the only thing their answer changes.
+
+## D-438 — Sign-out sends the server's and the browser's unsubscribe together
+2026-11-14 · accepted · refines D-433, D-435 · review of fix/r3-rest-a · decided under D-170
+- On sign-out the endpoint is read from the browser's install (`PushPort.installed`), then the browser's unsubscribe
+  and the server's (`notifications.unsubscribe`) leave at once, while the session still holds; the bounded wait (D-433)
+  covers both. A browser that never answers no longer keeps the server's row, which would go on delivering the
+  signed-out soldier's notifications to a shared device: that endpoint stays valid, so no 404 or 410 would end it.
+  Nothing is sent after the limit, when the session may be gone. The switch "התראות במכשיר הזה" keeps its order:
+  browser first, then the server (D-356).
+- The resend on start (D-434) is not serialised with the switch: a resend that lands after a switch-off re-records an
+  endpoint the browser has already dropped, and the push service's next 410 ends it (D-358). Accepted.
+- The push encryption is pinned to RFC 8291 Appendix A: the test sets the RFC's keys and salt and expects its exact body.
+**Why:** a review found that the bounded wait let a hung browser leave a live subscription behind a sign-out.
