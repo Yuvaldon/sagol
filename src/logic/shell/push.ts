@@ -66,8 +66,10 @@ export async function forgetThisDevice(push: PushPort, data: DataPort): Promise<
   const limit = new Promise<void>((resolve) => {
     timer = setTimeout(resolve, NOTIFICATIONS.signOutUnsubscribeTimeoutMs)
   })
+  // A browser that cannot say what it holds still unsubscribes: only the server's half needs the endpoint.
   const forgotten = push
     .installed()
+    .catch(() => null)
     .then((install) =>
       Promise.allSettled([
         (async () => push.disable())(),
