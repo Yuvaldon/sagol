@@ -55,14 +55,17 @@ describe('ArchivedSection', () => {
     const run = await restoreWith({ ok: true, value: ROW })
     expect(run).toHaveBeenCalledWith(ROW)
     expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('dialog', { name: he.archived.restoreTitle })).toBeNull()
   })
 
   it.each([
     ['reference_archived', 'parent_id', he.archived.blockedArchived],
     ['already_exists', 'personal_id', he.archived.blockedTaken],
     ['required', 'parent_id', he.archived.blockedRoot],
-  ] as const)('says why a %s refusal kept the row archived', async (code, path, text) => {
+  ] as const)('says why a %s refusal kept the row archived, inside the dialog it leaves open', async (code, path, text) => {
     await restoreWith(refused(code, path))
-    expect((await screen.findByRole('alert')).textContent).toBe(text)
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toBe(text)
+    expect(screen.getByRole('dialog', { name: he.archived.restoreTitle }).contains(alert)).toBe(true)
   })
 })

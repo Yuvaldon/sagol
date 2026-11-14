@@ -141,18 +141,34 @@ function Board({ dashboard, layout }: { readonly dashboard: Dashboard; readonly 
         </EmptyNotice>
       )
     }
-    if (dashboard.tally.counted.length === 0 && !editing) return <EmptyNotice titleKey="dashboard.emptySpan" />
-    if (drawn.length === 0 && !editing) return <EmptyNotice titleKey="dashboard.emptyScope" />
+    // Before the first counted day the cards about past days stay hidden; the rest still show, under the reason (D-404).
+    const notCounted = dashboard.tally.counted.length === 0 && !editing
+    if (notCounted && drawn.length === 0) return <EmptyNotice titleKey="dashboard.emptySpan" />
+    if (drawn.length === 0 && !editing) {
+      return (
+        <EmptyNotice titleKey="dashboard.emptyScope">
+          {layout.isDefault ? null : (
+            <Button onPress={() => guarded(layout.reset)}>
+              <RotateCcw aria-hidden size={ICON} />
+              {t('dashboard.reset')}
+            </Button>
+          )}
+        </EmptyNotice>
+      )
+    }
     return (
-      <BoardCards
-        modules={modules}
-        dashboard={dashboard}
-        types={types.status === 'ready' ? types.value : []}
-        onUnit={setUnit}
-        editing={editing}
-        onMove={layout.move}
-        onRemove={layout.remove}
-      />
+      <>
+        {notCounted ? <p className="text-name text-text-muted">{t('dashboard.emptySpan')}</p> : null}
+        <BoardCards
+          modules={modules}
+          dashboard={dashboard}
+          types={types.status === 'ready' ? types.value : []}
+          onUnit={setUnit}
+          editing={editing}
+          onMove={layout.move}
+          onRemove={layout.remove}
+        />
+      </>
     )
   })()
   return (

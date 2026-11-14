@@ -1,11 +1,11 @@
-import type { DashboardMetricId, DashboardModule, LeaveType, UnitId } from '@contracts'
+import { dashboardModuleKey, type DashboardMetricId, type DashboardModule, type LeaveType, type UnitId } from '@contracts'
 import { moduleState, outstandingOf, type Dashboard, type Loaded } from '@logic'
 import { Card, type CardEdit } from './Card'
 import { FairnessSpread, HomeByTypeChart, HomeDistribution, PlanVsActual, PresenceByUnit, PresenceTrend } from './Charts'
 import { countedNote, moduleError, statFigure, unitNameOf } from './figures'
 import { HeatMap } from './HeatMap'
 import { OutstandingList, ReportStatusList, UpcomingList } from './Lists'
-import { moduleKeyOf, moduleTitleKey } from './moduleWords'
+import { moduleTitleKey } from './moduleWords'
 
 // The board's cards in order (D-349): each module's width on the grid and its body.
 
@@ -108,7 +108,7 @@ export function BoardCards({ modules, dashboard, types, onUnit, editing, onMove,
           : null
         return (
           <Card
-            key={moduleKeyOf(module)}
+            key={dashboardModuleKey(module)}
             titleKey={moduleTitleKey(module)}
             note={state === 'ready' ? noteOf(module, dashboard) : null}
             state={state}

@@ -68,11 +68,6 @@ export function ArchivedSection<Row extends Restorable>({
         </AriaButton>
       </Heading>
       <DisclosurePanel className="flex flex-col gap-sm">
-        {failure === null ? null : (
-          <p role="alert" className="px-xs text-name text-status-rejected">
-            {t(restoreFailureKey(failure))}
-          </p>
-        )}
         <ul aria-label={t('archived.listLabel')} className="flex flex-col">
           {rows.map((row) => (
             <li key={row.id} className="flex items-center gap-2xs border-b border-line">
@@ -99,16 +94,23 @@ export function ArchivedSection<Row extends Restorable>({
           confirmKey="common.restore"
           isPending={restore.isPending}
           onCancel={() => {
+            setFailure(null)
             setRestoring(null)
           }}
           onConfirm={() => {
+            // A refused restore keeps the dialog open and says why inside it, where the actor is looking (D-371).
             void restore.run(restoring).then((result) => {
-              setRestoring(null)
-              if (!result.ok) setFailure(result.error)
+              if (result.ok) setRestoring(null)
+              else setFailure(result.error)
             })
           }}
         >
           <p className="text-name font-semibold">{nameOf(restoring)}</p>
+          {failure === null ? null : (
+            <p role="alert" className="text-name text-status-rejected">
+              {t(restoreFailureKey(failure))}
+            </p>
+          )}
         </SmallDialog>
       )}
     </Disclosure>
