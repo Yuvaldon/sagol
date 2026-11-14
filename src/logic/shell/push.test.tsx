@@ -3,7 +3,7 @@ import { OrganizationId, SoldierId, SoldierPreferences, type Result, type Soldie
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { PushAvailability, PushPort } from '../ports'
-import { useSignOut } from '../session/hooks'
+import { useSession, useSignOut } from '../session/hooks'
 import { allowEverything, fakePorts, wrapperOf } from '../testing/ports'
 import { useDeviceNotifications, useNotificationKinds } from './push'
 
@@ -50,6 +50,7 @@ function browserOf(initial: PushAvailability, answer: SubscribePushInput | null 
     current: () => state,
     enable,
     disable,
+    installed: () => Promise.resolve(endpoint === null ? null : { ...INSTALL, endpoint }),
   }
 }
 
@@ -208,5 +209,42 @@ describe('the kinds (D-358)', () => {
       await Promise.all([result.current.setKind('my_request', false), result.current.setKind('awaiting_me', false)])
     })
     expect(row.preferences.notifications).toMatchObject({ my_request: false, awaiting_me: false })
+  })
+})
+
+describe('the install on start (D-434)', () => {
+  const linked = {
+    status: 'linked',
+    identity: { auth_user_id: uuid(902), email: null, display_name: null },
+    soldier_id: ACTOR,
+    organization_id: ORGANIZATION,
+  }
+
+  function start(push: PushPort, session: unknown) {
+    const subscribe = vi.fn(() => Promise.resolve(SUBSCRIBED))
+    const ports = fakePorts({
+      push,
+      session: { current: () => Promise.resolve({ ok: true, value: session }) },
+      commands: { notifications: { subscribe } },
+    })
+    const view = renderHook(() => useSession(), { wrapper: wrapperOf(ports) })
+    return { subscribe, view }
+  }
+
+  it("sends the browser's current install again once a linked session is read", async () => {
+    const renewed = { ...INSTALL, endpoint: 'https://fcm.googleapis.com/fcm/send/renewed-device' }
+    const { subscribe, view } = start({ ...browserOf('on'), installed: () => Promise.resolve(renewed) }, linked)
+    await waitFor(() => expect(subscribe).toHaveBeenCalledWith(renewed))
+    view.rerender()
+    expect(subscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it('sends nothing for a browser with no install, or a session not linked', async () => {
+    const none = start(browserOf('off'), linked)
+    await waitFor(() => expect(none.view.result.current.status).toBe('ready'))
+    const unlinked = start(browserOf('on'), { status: 'signed_out' })
+    await waitFor(() => expect(unlinked.view.result.current.status).toBe('ready'))
+    expect(none.subscribe).not.toHaveBeenCalled()
+    expect(unlinked.subscribe).not.toHaveBeenCalled()
   })
 })

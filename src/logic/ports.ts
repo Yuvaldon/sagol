@@ -117,6 +117,11 @@ export interface PushPort {
   readonly enable: () => Promise<SubscribePushInput | null>
   /** Unsubscribes the browser: the endpoint it had, or NULL when it had none. */
   readonly disable: () => Promise<string | null>
+  /**
+   * The install the browser holds now, asking nothing: NULL without a subscription or a granted permission. The
+   * browser may have renewed it on its own (`pushsubscriptionchange`), so the app sends it again on start (D-434).
+   */
+  readonly installed: () => Promise<SubscribePushInput | null>
 }
 
 /** One kind of web storage for the conveniences of one screen (D-197): never data, never a permission. */

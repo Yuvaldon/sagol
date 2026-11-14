@@ -73,6 +73,19 @@ export function forgetThisDevice(push: PushPort, data: DataPort): Promise<void> 
   })
 }
 
+/**
+ * Sends the browser's current install again, so the server holds the endpoint the browser renewed on its own (D-434).
+ * Best effort: the switch still reads the browser's answer, and a dead endpoint ends on its next 404 or 410 (D-358).
+ */
+export async function resendThisDevice(push: PushPort, data: DataPort): Promise<void> {
+  try {
+    const install = await push.installed()
+    if (install !== null) await data.commands.notifications.subscribe(install)
+  } catch {
+    // Nothing to do: the next start sends it again.
+  }
+}
+
 export interface NotificationKinds {
   /** NULL while the preferences cannot be read, so the choice is not offered (D-076). */
   readonly kinds: Readonly<Record<NotificationKind, boolean>> | null
