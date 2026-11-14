@@ -7,6 +7,7 @@ import {
   createCommandGateway,
   createCommandHandler,
   createPushDispatch,
+  onceRetrying,
   supabaseTokenVerifier,
   type CommittedCall,
   type SqlClient,
@@ -38,8 +39,8 @@ async function transact<T>(work: (client: SqlClient) => Promise<T>): Promise<T> 
   return value
 }
 
-let catalog: Promise<StoreCatalog> | undefined
-const catalogOnce = () => (catalog ??= sql.unsafe(CATALOG_QUERY).then(catalogOf))
+// Loaded on first use; a failed load is tried again on the next request (OI-352).
+const catalogOnce: () => Promise<StoreCatalog> = onceRetrying(() => sql.unsafe(CATALOG_QUERY).then(catalogOf))
 
 const log = (line: string) => {
   console.info(line)
@@ -52,11 +53,11 @@ const vapidPrivateKey = Deno.env.get('PUSH_VAPID_PRIVATE_KEY') ?? ''
 const vapidSubject = Deno.env.get('PUSH_VAPID_SUBJECT') ?? ''
 const pushEnabled = vapidPrivateKey !== '' && vapidSubject !== ''
 if (!pushEnabled) log(JSON.stringify({ push: { code: 'push_not_configured' } }))
-let dispatch: Promise<(call: CommittedCall) => Promise<void>> | undefined
-const dispatchOnce = () =>
-  (dispatch ??= Promise.all([catalogOnce(), createWebPushSender(vapidPrivateKey, vapidSubject)]).then(([loaded, sender]) =>
+const dispatchOnce: () => Promise<(call: CommittedCall) => Promise<void>> = onceRetrying(() =>
+  Promise.all([catalogOnce(), createWebPushSender(vapidPrivateKey, vapidSubject)]).then(([loaded, sender]) =>
     createPushDispatch({ transact, catalog: loaded, time, sender, log }),
-  ))
+  ),
+)
 
 /** The push runs after the answer is sent; the runtime keeps the worker alive until it settles. */
 const runtime: { waitUntil(work: Promise<unknown>): void } | undefined = Reflect.get(globalThis, 'EdgeRuntime')

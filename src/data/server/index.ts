@@ -4,6 +4,7 @@
 // import the data layer through `src/data/index.ts`, never through this file.
 export { CATALOG_QUERY, catalogOf, type SqlClient, type SqlParameter, type StoreCatalog } from './postgresStore'
 export { createCommandGateway, GatewayRequest, type GatewayDependencies, type GatewayResponse, type Transact } from './gateway'
+export { onceRetrying } from './once'
 export { createCommandHandler, type CommandHandlerDependencies } from './http'
 export { AuthServerUnavailable, supabaseTokenVerifier, type SupabaseAuthServer } from './supabaseIdentity'
 export { createPushDispatch, type CommittedCall, type PushDevice, type PushDispatchDependencies, type PushSender } from './push'

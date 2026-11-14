@@ -1,7 +1,13 @@
 // The `PushSender` port over the Web Push protocol (D-354): VAPID-signed, payload encrypted for the install's keys.
 // Only wiring: who gets what is decided in the data layer.
+import { NOTIFICATIONS } from '@config'
 import type { PushDevice, PushSender } from '@data/server'
-import { ApplicationServer, importVapidKeys, PushMessageError } from '@negrel/webpush'
+import { ApplicationServer, importVapidKeys, PushMessageError, Urgency } from '@negrel/webpush'
+
+/** How long the service keeps an undelivered push, and how soon it wakes the phone for it (D-411). */
+const urgency = Object.values(Urgency).find((value) => value === NOTIFICATIONS.pushUrgency)
+if (urgency === undefined) throw new Error(`webpush: unknown urgency ${NOTIFICATIONS.pushUrgency}`)
+const OPTIONS = { ttl: NOTIFICATIONS.pushTtlSeconds, urgency }
 
 /** Statuses by which a push service says the install no longer exists. */
 const GONE = new Set([404, 410])
@@ -19,7 +25,7 @@ export async function createWebPushSender(privateJwk: string, subject: string): 
   return {
     async send(device: PushDevice, payload) {
       try {
-        await server.subscribe({ endpoint: device.endpoint, keys: { auth: device.auth, p256dh: device.p256dh } }).pushTextMessage(JSON.stringify(payload), {})
+        await server.subscribe({ endpoint: device.endpoint, keys: { auth: device.auth, p256dh: device.p256dh } }).pushTextMessage(JSON.stringify(payload), OPTIONS)
         return 'sent'
       } catch (error) {
         if (error instanceof PushMessageError && GONE.has(error.response.status)) return 'gone'
