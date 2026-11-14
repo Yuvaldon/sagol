@@ -89,6 +89,7 @@ const BOOTSTRAP_WRITES = [
   'organizations',
   'units',
   'unit_memberships',
+  'change_counters',
   'soldiers',
   'soldier_accounts',
   'roles',

@@ -72,6 +72,7 @@ export const STORES = {
   availability_rules: 'id, organization_id, scope_unit_id',
   property_definitions: 'id, organization_id',
   report_confirmations: 'id, organization_id, [unit_id+report_date]',
+  change_counters: 'organization_id',
   push_subscriptions: 'id, organization_id, soldier_id, &endpoint',
 } as const satisfies Record<TableName, string>
 

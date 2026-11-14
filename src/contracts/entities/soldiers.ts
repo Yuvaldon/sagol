@@ -9,16 +9,7 @@ import {
   UnitMembershipId,
 } from '../common/ids'
 import { checkDateRange } from '../common/refinements'
-import {
-  CalendarDate,
-  ColorKey,
-  Email,
-  Integer,
-  Text,
-  Timestamp,
-  label,
-  varchar,
-} from '../common/scalars'
+import { CalendarDate, ChangeSeq, ColorKey, Email, Integer, Text, Timestamp, label, varchar } from '../common/scalars'
 import { MembershipType, SoldierStatus } from '../enums'
 import { PropertyValues } from './hierarchy'
 
@@ -91,6 +82,8 @@ export const UnitMembershipColumns = z.object({
   valid_from: CalendarDate,
   /** NULL = open. */
   valid_to: CalendarDate.nullable(),
+  /** The change number of the row's last write (D-373). */
+  change_seq: ChangeSeq,
   ...createdColumns,
   ...updatedColumns,
 })

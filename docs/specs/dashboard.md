@@ -1,7 +1,7 @@
 # Spec: Dashboard ("דשבורד")
 
-Status: spec-complete (D-349, D-350), not scheduled. The slice gets its V-number, and its P-n get D-numbers, when it
-starts. It is excluded from the current autonomous build: the owner decides when it is built (OI-222).
+Status: built for 1.0 (D-360 … D-362, OI-222 closed). Where this spec and D-361 or D-362 differ, the decisions win:
+the span query below was not built; the plan reads its leaves' events through D-373's `LeaveEventsQuery`.
 Context: both (rotation and routine). On 2026-11-13 the owner renamed it from "situation picture" ("תמונת מצב") and
 asked for charts and key figures, not a single number (D-338). The same day the owner set its shape: command boards
 built from a fixed catalogue of modules, two or three templates or a board of one's own, and a small fixed personal

@@ -231,11 +231,17 @@ export function leaveThread(events: readonly LeaveEvent[], comments: readonly Le
 // ----------------------------------------------------------------------- inbox
 
 /** Any dates (D-120): a pending leave leaves the list once it is answered. */
-export const PENDING_QUERY: LeaveQuery = { window: null, soldier_ids: null, statuses: [LeaveStatus.enum.pending] }
+export const PENDING_QUERY: LeaveQuery = {
+  ids: null,
+  window: null,
+  soldier_ids: null,
+  statuses: [LeaveStatus.enum.pending],
+}
 
 /** The closed leaves near today (D-205): the list only grows, so it reads a bounded span of dates. */
 export function closedQuery(today: CalendarDate): LeaveQuery {
   return {
+    ids: null,
     window: { start_date: addDays(today, -INBOX.closedPastDays), end_date: addDays(today, INBOX.closedFutureDays) },
     soldier_ids: null,
     statuses: [LeaveStatus.enum.rejected, LeaveStatus.enum.cancelled],
@@ -260,7 +266,7 @@ export function closedLeaves(leaves: readonly Leave[]): Leave[] {
 
 /** Every leave of one soldier, any dates and any status (D-167). */
 export function myLeavesQuery(soldierId: SoldierId): LeaveQuery {
-  return { window: null, soldier_ids: [soldierId], statuses: null }
+  return { ids: null, window: null, soldier_ids: [soldierId], statuses: null }
 }
 
 export interface MyLeaves {

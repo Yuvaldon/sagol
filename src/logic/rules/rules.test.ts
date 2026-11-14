@@ -96,6 +96,7 @@ function membership(n: number, soldierN: number, unitId: UnitId): UnitMembership
     updated_at: AT,
     updated_by: null,
     version: 1,
+    change_seq: 0,
   }
 }
 

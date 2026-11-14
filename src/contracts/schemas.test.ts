@@ -18,7 +18,6 @@ import {
   SchemaIssue,
   SoldierPreferences,
   StrictSoldierPreferences,
-  LeaveEventQuery,
   DASHBOARD_MAX_MODULES,
   DASHBOARD_METRIC_IDS,
   DASHBOARD_MODULE_IDS,
@@ -219,14 +218,6 @@ describe('the stored dashboard (D-349, D-361)', () => {
   })
 })
 
-describe('leave event queries (D-361)', () => {
-  it('takes a thread or a span, never both', () => {
-    expect(LeaveEventQuery.safeParse({ leave_id: ID.a }).success).toBe(true)
-    expect(LeaveEventQuery.safeParse({ deployment_id: ID.a, soldier_ids: [ID.b] }).success).toBe(true)
-    expect(LeaveEventQuery.safeParse({ leave_id: ID.a, deployment_id: ID.a, soldier_ids: [] }).success).toBe(false)
-    expect(LeaveEventQuery.safeParse({ deployment_id: ID.a }).success).toBe(false)
-  })
-})
 
 describe('permission checks (D-053, D-091)', () => {
   it('accepts a valid pair against each target kind', () => {

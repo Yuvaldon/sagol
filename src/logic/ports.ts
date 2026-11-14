@@ -39,6 +39,7 @@ export interface DataPort {
     | 'availability_rules'
     | 'property_definitions'
     | 'report_confirmations'
+    | 'change_counters'
     | 'soldier_accounts'
     | 'roles'
     | 'role_permissions'

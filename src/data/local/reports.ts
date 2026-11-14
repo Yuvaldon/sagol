@@ -25,7 +25,6 @@ import {
   compareCodeUnits,
   compareDates,
   CONFIRM_DAY_REPORT,
-  confirmedAtOf,
   confirmReportIssues,
   daysBetween,
   dayReportTarget,
@@ -43,9 +42,9 @@ import { POLICY_TABLES } from './snapshot'
 import { tableOf, type Store } from './store'
 
 // The daily report workflow (D-269, D-293): one confirmation per unit and date, kept and moved on each confirm, never
-// deleted. Whether the report changed since is derived from the leaves by who reads it, never stored here.
+// deleted. Whether the report changed since is derived by who reads it from the changes numbered after `seen_seq` (D-373).
 
-const TABLES: readonly TableName[] = [...POLICY_TABLES, 'deployments', 'report_confirmations']
+const TABLES: readonly TableName[] = [...POLICY_TABLES, 'deployments', 'report_confirmations', 'change_counters']
 
 async function rotationsOf(database: Store, scope: ActorScope): Promise<Deployment[]> {
   const rows = await tableOf(database, 'deployments').where('organization_id').equals(scope.organization_id).toArray()
@@ -226,6 +225,11 @@ export function createDayReportCommands(dependencies: LocalDependencies): DataCo
           const rotation = reportRotationOf(await rotationsOf(database, scope), buildUnitTree(units), unit.id, input.report_date)
           const issues = confirmReportIssues(rotation)
           if (issues.length > 0) return failValidation(issues)
+          // A confirmation holds from a number the counter already handed out (D-373): none from the future.
+          const counter = await tableOf(database, 'change_counters').get(scope.organization_id)
+          if (input.seen_seq > (counter?.last_seq ?? 0)) {
+            return failValidation([{ path: ['seen_seq'], code: IssueCode.enum.too_big }])
+          }
 
           const table = tableOf(database, 'report_confirmations')
           const stored = await table.where('[unit_id+report_date]').equals([unit.id, input.report_date]).first()
@@ -240,7 +244,8 @@ export function createDayReportCommands(dependencies: LocalDependencies): DataCo
             unit_id: unit.id,
             report_date: input.report_date,
             confirmed_by: scope.soldier_id,
-            confirmed_at: confirmedAtOf(scope.now, input.seen_at),
+            confirmed_at: scope.now,
+            seen_seq: input.seen_seq,
           })
           await table.put(confirmed)
           return confirmed

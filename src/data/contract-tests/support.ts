@@ -91,6 +91,7 @@ export async function placeSoldier(
       updated_at: NOW,
       updated_by: null,
       version: 1,
+      change_seq: 0,
     },
   ])
   return id

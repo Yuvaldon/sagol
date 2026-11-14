@@ -94,7 +94,7 @@ export const SOLDIER_CSV_COLUMNS = ['first_name', 'last_name', 'nickname', 'pers
 export type SoldierCsvColumn = (typeof SOLDIER_CSV_COLUMNS)[number]
 
 /** Version of the export file format. Bumped on any incompatible change. */
-export const EXPORT_FORMAT_VERSION = 5
+export const EXPORT_FORMAT_VERSION = 6
 
 /**
  * Full organization export (`data_transfer:export`): every table's rows, as stored.

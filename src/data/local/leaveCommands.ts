@@ -38,6 +38,7 @@ import { holds, loadActorScope, requirePermission, type ActorScope } from './act
 import { propertiesIssues } from './checks'
 import { closedRotationOf, isLiveLeave, leaveRotationCheck } from './leaveRotation'
 import { tableOf } from './store'
+import { counterChange, nextChangeSeq } from './changeCounters'
 import { createdBy, updatedBy, type LocalDependencies } from './dependencies'
 import { asResult, fail, failValidation, parseInput, parsedRow } from './failure'
 import { LEAVE_TABLES, leaveTypeOf, ruleData, visibleLeave, visibleSoldier } from './leaves'
@@ -93,7 +94,10 @@ export interface LeaveWrite {
   readonly comment: CommentDraft | null
 }
 
-/** The leave, its event and its comment, inside the caller's transaction. Returns what the feed is told. */
+/**
+ * The leave, its event and its comment, inside the caller's transaction, which lists `change_counters`: the event takes
+ * the organization's next change number (D-373). Returns what the feed is told.
+ */
 export async function writeLeave(database: Store, scope: ActorScope, write: LeaveWrite): Promise<DataChange[]> {
   const { leave, comment } = write
   const eventId = LeaveEventId.parse(crypto.randomUUID())
@@ -108,12 +112,14 @@ export async function writeLeave(database: Store, scope: ActorScope, write: Leav
       ...write.event,
       changes: write.changes,
       acknowledged_rule_ids: write.acknowledged,
+      change_seq: await nextChangeSeq(database, scope.organization_id),
       created_at: scope.now,
     }),
   )
   const written: DataChange[] = [
     { table: 'leaves', ids: [leave.id] },
     { table: 'leave_events', ids: [eventId] },
+    counterChange(scope.organization_id),
   ]
   if (comment !== null) {
     await tableOf(database, 'leave_comments').add(

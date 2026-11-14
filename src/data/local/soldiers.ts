@@ -12,6 +12,7 @@ import {
   SoldierScopedQuery,
   UpdateSoldierInput,
   UpdateSoldierPrivateInput,
+  type ChangeSeq,
   type DataCommands,
   type DataRepositories,
   type Issue,
@@ -58,6 +59,7 @@ import { grantActive, rolePairs, requireHeld } from './permissions'
 import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 import { SOLDIER_TAG_TABLES, soldierTagIssues, tagScopeIssues } from './tags'
 import { membershipsHoldLeaves } from './leaveRotation'
+import { counterChange, nextChangeSeq } from './changeCounters'
 import { deleteSubscriptionsOf } from './notifications'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
@@ -114,7 +116,8 @@ const SPEC: ReferenceSpec<Soldier> = {
   ],
 }
 
-export const ROSTER_TABLES: readonly TableName[] = [...tablesOf(SPEC), 'soldier_private']
+/** A placement takes a change number (D-373). */
+export const ROSTER_TABLES: readonly TableName[] = [...tablesOf(SPEC), 'soldier_private', 'change_counters']
 /** A membership change reads the soldier's requests and their rotations (D-221). */
 const MEMBERSHIP_TABLES: readonly TableName[] = [
   ...new Set<TableName>([...ROSTER_TABLES, 'leaves', 'deployments', 'deployment_members', 'units']),
@@ -175,6 +178,7 @@ export function placedRow(
   soldierId: SoldierId,
   unitId: UnitId,
   validFrom: UnitMembership['valid_from'],
+  changeSeq: ChangeSeq,
 ): UnitMembership {
   return parsedRow('unit_memberships', {
     id,
@@ -184,6 +188,7 @@ export function placedRow(
     membership_type: MembershipType.enum.primary,
     valid_from: validFrom,
     valid_to: null,
+    change_seq: changeSeq,
     ...createdBy(scope.soldier_id, scope.now),
   })
 }
@@ -237,7 +242,10 @@ export async function insertSoldier(
 
   await tableOf(database, 'soldiers').add(soldier)
   if (membership !== null) {
-    await tableOf(database, 'unit_memberships').add(placedRow(scope, membership.id, soldier.id, membership.unit_id, membership.valid_from))
+    const changeSeq = await nextChangeSeq(database, scope.organization_id)
+    await tableOf(database, 'unit_memberships').add(
+      placedRow(scope, membership.id, soldier.id, membership.unit_id, membership.valid_from, changeSeq),
+    )
   }
   const hasPrivate = privateFields !== null && (personalId !== null || privateFields.invite_email !== null || privateFields.phone !== null)
   if (hasPrivate) {
@@ -462,7 +470,12 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
         })
         changes.publish([
           { table: 'soldiers', ids: [written.soldier.id] },
-          ...(membership === null ? [] : [{ table: 'unit_memberships' as const, ids: [membership.id] }]),
+          ...(membership === null
+            ? []
+            : [
+                { table: 'unit_memberships' as const, ids: [membership.id] },
+                counterChange(written.soldier.organization_id),
+              ]),
           ...(written.hasPrivate ? [{ table: 'soldier_private' as const, ids: [written.soldier.id] }] : []),
         ])
         return written.soldier
@@ -545,6 +558,7 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
             const corrected = parsedRow('unit_memberships', {
               ...current,
               unit_id: plan.unit_id,
+              change_seq: await nextChangeSeq(database, scope.organization_id),
               ...updatedBy(scope.soldier_id, scope.now, current.version),
             })
             await table.put(corrected)
@@ -554,13 +568,22 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
               const closed = parsedRow('unit_memberships', {
                 ...current,
                 valid_to: plan.close_on,
+                change_seq: await nextChangeSeq(database, scope.organization_id),
                 ...updatedBy(scope.soldier_id, scope.now, current.version),
               })
               await table.put(closed)
               answer.push(closed)
             }
             if (plan.open_unit_id !== null && input.new_membership !== null) {
-              const opened = placedRow(scope, input.new_membership.id, soldier.id, plan.open_unit_id, input.effective_date)
+              const changeSeq = await nextChangeSeq(database, scope.organization_id)
+              const opened = placedRow(
+                scope,
+                input.new_membership.id,
+                soldier.id,
+                plan.open_unit_id,
+                input.effective_date,
+                changeSeq,
+              )
               const others = [...rows.filter((row) => row.id !== current?.id), ...answer]
               const overlap = membershipOverlapIssues(others, opened)
               if (overlap.length > 0) {
@@ -579,7 +602,10 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
           await requireAccessManager(database, scope.organization_id, scope.now)
           return answer
         })
-        changes.publish([{ table: 'unit_memberships', ids: written.map((row) => row.id) }])
+        changes.publish([
+          { table: 'unit_memberships', ids: written.map((row) => row.id) },
+          ...written.slice(0, 1).map((row) => counterChange(row.organization_id)),
+        ])
         return written
       }),
   }

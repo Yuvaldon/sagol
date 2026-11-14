@@ -199,14 +199,21 @@ async function localExport(): Promise<OrganizationExport> {
 
 const load = (payload: unknown) => sql`SELECT load_organization_export(${JSON.stringify(payload)}::text::jsonb) AS id`
 
-async function serverExport(): Promise<OrganizationExport> {
-  const gateway = createCommandGateway({
+const gatewayOf = () =>
+  createCommandGateway({
     transact: (work) => sql.begin('isolation level serializable', (tx) => work(clientOf(tx))) as never,
     catalog,
     time: { now: () => NOW },
     bootstrapOwnerEmail: owner.email,
   })
-  const answer = await gateway(owner, { kind: 'transfer', group: 'transfer', method: 'exportOrganization', args: [] })
+
+async function serverExport(): Promise<OrganizationExport> {
+  const answer = await gatewayOf()(owner, {
+    kind: 'transfer',
+    group: 'transfer',
+    method: 'exportOrganization',
+    args: [],
+  })
   return valueOf(answer.result as Result<OrganizationExport>)
 }
 
@@ -266,9 +273,19 @@ describe('loading a local export into the backend (OI-109)', () => {
 
   it('refuses another format, an unknown table and the derived closure', async () => {
     const exported = await localExport()
-    await expect(load({ ...exported, format_version: EXPORT_FORMAT_VERSION + 1 })).rejects.toMatchObject({ code: '22023' })
-    await expect(load({ ...exported, tables: { ...exported.tables, unit_closure: [] } })).rejects.toMatchObject({ code: '22023' })
-    await expect(load({ ...exported, tables: { ...exported.tables, sessions: [] } })).rejects.toMatchObject({ code: '22023' })
+    await expect(load({ ...exported, format_version: EXPORT_FORMAT_VERSION + 1 })).rejects.toMatchObject({
+      code: '22023',
+    })
+    await expect(load({ ...exported, tables: { ...exported.tables, unit_closure: [] } })).rejects.toMatchObject({
+      code: '22023',
+    })
+    await expect(load({ ...exported, tables: { ...exported.tables, sessions: [] } })).rejects.toMatchObject({
+      code: '22023',
+    })
+    // The counter is derived from the rows (D-373).
+    await expect(load({ ...exported, tables: { ...exported.tables, change_counters: [] } })).rejects.toMatchObject({
+      code: '22023',
+    })
   })
 
   it('is not open to the Data API roles (D-203)', async () => {
@@ -277,5 +294,123 @@ describe('loading a local export into the backend (OI-109)', () => {
       WHERE r.rolname IN ('anon', 'authenticated', 'public')
         AND has_function_privilege(r.oid, 'load_organization_export(jsonb)', 'EXECUTE')`
     expect(roles).toEqual([])
+  })
+})
+
+describe('change numbers across a load (D-373)', () => {
+  const counter = async () => (await sql`SELECT last_seq FROM change_counters`).map((row) => row.last_seq)
+  const seqs = async (table: 'leave_events' | 'unit_memberships') =>
+    Object.fromEntries(
+      (await sql.unsafe(`SELECT id, change_seq FROM "${table}"`)).map((row) => [row.id, row.change_seq]),
+    )
+
+  it('starts the counter at the last number the export holds', async () => {
+    const exported = await localExport()
+    await load(exported)
+    const numbers = [...exported.tables.leave_events, ...exported.tables.unit_memberships].map((row) => row.change_seq)
+    expect(await counter()).toEqual([Math.max(...numbers)])
+    expect(await seqs('leave_events')).toEqual(
+      Object.fromEntries(exported.tables.leave_events.map((event) => [event.id, event.change_seq])),
+    )
+  })
+
+  it('still takes the format before: numbers its events by time and id, and each confirmation from its time', async () => {
+    const exported = await localExport()
+    const events = exported.tables.leave_events
+    const latest =
+      events
+        .map((event) => event.created_at)
+        .sort()
+        .at(-1) ?? NOW
+    const [confirmer] = exported.tables.soldiers
+    const [unit] = exported.tables.units
+    const confirmation = (reportDate: string, confirmedAt: string) => ({
+      id: crypto.randomUUID(),
+      organization_id: unit?.organization_id,
+      unit_id: unit?.id,
+      report_date: reportDate,
+      confirmed_by: confirmer?.id,
+      confirmed_at: confirmedAt,
+    })
+    const strip = <T extends object>(rows: readonly T[], column: string) =>
+      rows.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => key !== column)))
+    const before = {
+      ...exported,
+      format_version: EXPORT_FORMAT_VERSION - 1,
+      tables: {
+        ...exported.tables,
+        leave_events: strip(events, 'change_seq'),
+        unit_memberships: strip(exported.tables.unit_memberships, 'change_seq'),
+        report_confirmations: [confirmation(TODAY, latest), confirmation(TOMORROW, '2026-01-01T00:00:00.000Z')],
+      },
+    }
+
+    await load(before)
+
+    const order = [...events].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+    expect(await seqs('leave_events')).toEqual(Object.fromEntries(order.map((event, index) => [event.id, index + 1])))
+    expect(Object.values(await seqs('unit_memberships')).every((seq) => seq === 0)).toBe(true)
+    expect(
+      (await sql`SELECT seen_seq FROM report_confirmations ORDER BY report_date`).map((row) => row.seen_seq),
+    ).toEqual([events.length, 0])
+    expect(await counter()).toEqual([events.length])
+  })
+
+  it('gives two writers that meet distinct, consecutive numbers', async () => {
+    const exported = await localExport()
+    await load(exported)
+    const [leave] = exported.tables.leaves
+    if (leave === undefined) throw new Error('the export holds a leave')
+    const [start] = await counter()
+    const create = (startDate: string, endDate: string) =>
+      gatewayOf()(owner, {
+        kind: 'commands',
+        group: 'leaves',
+        method: 'create',
+        args: [
+          {
+            id: LeaveId.parse(crypto.randomUUID()),
+            soldier_id: leave.soldier_id,
+            leave_type_id: leave.leave_type_id,
+            deployment_id: leave.deployment_id,
+            start_date: startDate,
+            end_date: endDate,
+            availability_effect_override: null,
+            reason: null,
+            properties: {},
+            as_approved: false,
+            acknowledged_rule_ids: [],
+            comment: null,
+          },
+        ],
+      })
+
+    const answers = await Promise.all([create('2026-11-20', '2026-11-21'), create('2026-11-25', '2026-11-26')])
+
+    for (const answer of answers) valueOf(answer.result as Result<unknown>)
+    const written =
+      await sql`SELECT change_seq FROM leave_events WHERE change_seq > ${Number(start)} ORDER BY change_seq`
+    expect(written.map((row) => row.change_seq)).toEqual([Number(start) + 1, Number(start) + 2])
+    expect(await counter()).toEqual([Number(start) + 2])
+  })
+
+  it('refuses the second of two writers of one counter, which the gateway then retries', async () => {
+    const exported = await localExport()
+    await load(exported)
+    const [first, second] = await Promise.all([sql.reserve(), sql.reserve()])
+    try {
+      await first`BEGIN ISOLATION LEVEL SERIALIZABLE`
+      await second`BEGIN ISOLATION LEVEL SERIALIZABLE`
+      await first`SELECT last_seq FROM change_counters`
+      await second`SELECT last_seq FROM change_counters`
+      await first`UPDATE change_counters SET last_seq = last_seq + 1`
+      const waiting = second`UPDATE change_counters SET last_seq = last_seq + 1`
+      await first`COMMIT`
+      await expect(waiting).rejects.toMatchObject({ code: '40001' })
+      await second`ROLLBACK`
+    } finally {
+      first.release()
+      second.release()
+    }
   })
 })

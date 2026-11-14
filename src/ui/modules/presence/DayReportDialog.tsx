@@ -1,5 +1,5 @@
 import { DAY_REPORT, DAY_REPORT_CATEGORIES, DEVICE_KEYS, PANEL_IDS } from '@config'
-import type { AppError, CalendarDate, Timestamp, UnitId } from '@contracts'
+import type { AppError, CalendarDate, ChangeSeq, UnitId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
   filterUnitOf,
@@ -99,12 +99,12 @@ const STATUS = {
 function Confirmation({
   confirmation,
   date,
-  seenAt,
+  seenSeq,
   confirm,
 }: {
   readonly confirmation: SectionConfirmation
   readonly date: CalendarDate
-  readonly seenAt: Timestamp
+  readonly seenSeq: ChangeSeq
   readonly confirm: Confirm
 }) {
   const status = STATUS[confirmation.status]
@@ -119,7 +119,7 @@ function Confirmation({
         <Button
           isDisabled={confirm.isPending}
           onPress={() => {
-            void confirm.run(confirmation.unitId, date, seenAt)
+            void confirm.run(confirmation.unitId, date, seenSeq)
           }}
         >
           <CheckCheck aria-hidden size={14} />
@@ -136,7 +136,7 @@ function UnitSection({
   level,
   date,
   confirmation,
-  seenAt,
+  seenSeq,
   confirm,
 }: {
   readonly section: ReportSection
@@ -144,7 +144,7 @@ function UnitSection({
   readonly level: 3 | 4
   readonly date: CalendarDate
   readonly confirmation: SectionConfirmation | undefined
-  readonly seenAt: Timestamp | undefined
+  readonly seenSeq: ChangeSeq | undefined
   readonly confirm: Confirm
 }) {
   const ListHeading = level === 3 ? 'h4' : 'h5'
@@ -173,8 +173,8 @@ function UnitSection({
           </section>
         ))}
       </DisclosurePanel>
-      {confirmation === undefined || seenAt === undefined ? null : (
-        <Confirmation confirmation={confirmation} date={date} seenAt={seenAt} confirm={confirm} />
+      {confirmation === undefined || seenSeq === undefined ? null : (
+        <Confirmation confirmation={confirmation} date={date} seenSeq={seenSeq} confirm={confirm} />
       )}
     </Disclosure>
   )
@@ -205,7 +205,7 @@ function Summary({ summary }: { readonly summary: ConfirmationSummary }) {
 }
 
 interface Confirm {
-  readonly run: (unitId: UnitId, date: CalendarDate, seenAt: Timestamp) => Promise<unknown>
+  readonly run: (unitId: UnitId, date: CalendarDate, seenSeq: ChangeSeq) => Promise<unknown>
   readonly isPending: boolean
 }
 
@@ -260,7 +260,7 @@ function Day({
             level={span ? 4 : 3}
             date={day.date}
             confirmation={confirmations?.sections.get(section.key)}
-            seenAt={confirmations?.seenAt}
+            seenSeq={confirmations?.seenSeq}
             confirm={confirm}
           />
         ))}
@@ -348,9 +348,9 @@ function DayReportBody() {
   const confirm = useMemo(
     (): Confirm => ({
       isPending: confirmCommand.isPending,
-      run: async (unitId, date, seenAt) => {
+      run: async (unitId, date, seenSeq) => {
         setRefusal(null)
-        const result = await confirmCommand.run(unitId, date, seenAt)
+        const result = await confirmCommand.run(unitId, date, seenSeq)
         if (!result.ok) setRefusal({ date, error: result.error })
       },
     }),

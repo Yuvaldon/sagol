@@ -273,6 +273,7 @@ describe('present and absent lists (D-134, OI-090)', () => {
     updated_at: AT,
     updated_by: null,
     version: 1,
+    change_seq: 0,
   })
   const tagged: SoldierTag = { id: SoldierTagId.parse(uuid(701)), deployment_id: null, soldier_id: SoldierId.parse(uuid(2)), tag_id: MEDIC, organization_id: ORGANIZATION, created_at: AT, created_by: null }
   const source: FilterSource = {

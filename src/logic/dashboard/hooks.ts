@@ -389,12 +389,16 @@ function usePlan(
   const rotation = scope?.rotation ?? null
   const started = rotation !== null && scope !== null && compareDates(rotation.start_date, scope.today) <= 0
   const active = wanted && started && timezone !== null
+  const leaves = useLeavesOfAnyStatus(active && rotation !== null ? rotationDays(rotation) : null)
+  // The rotation's leaves of the rows that the actor reads; their events are what the plan replays (D-361, D-373).
+  const own = useMemo(() => {
+    if (!active || rotation === null || scope === null || leaves.status !== 'ready') return null
+    const ids = new Set(scope.rows.map((row) => row.soldier.id))
+    return leaves.value.filter((leave) => leave.deployment_id === rotation.id && ids.has(leave.soldier_id))
+  }, [active, rotation, scope, leaves])
   const query = useMemo(
-    () =>
-      !active || rotation === null || scope === null
-        ? null
-        : { deployment_id: rotation.id, soldier_ids: scope.rows.map((row) => row.soldier.id).sort() },
-    [active, rotation, scope],
+    () => (own === null || own.length === 0 ? null : { leave_ids: own.map((leave) => leave.id).sort(), after_seq: 0 }),
+    [own],
   )
   const events: Loaded<readonly LeaveEvent[]> = loaded(
     useQuery({
@@ -403,17 +407,17 @@ function usePlan(
       enabled: query !== null,
     }),
   )
-  const leaves = useLeavesOfAnyStatus(active && rotation !== null ? rotationDays(rotation) : null)
   const types = useLeaveTypes()
   return useMemo((): Loaded<DashboardPlan> | null => {
     if (!active || rotation === null || scope === null || timezone === null) return null
-    if (events.status !== 'ready') return events
     if (leaves.status !== 'ready') return leaves
+    if (own === null) return { status: 'loading' }
+    // No leaves, no query: the plan replays nothing.
+    if (query !== null && events.status !== 'ready') return events
+    const replayed = query === null || events.status !== 'ready' ? [] : events.value
     if (types.status !== 'ready') return types
-    const ids = new Set(scope.rows.map((row) => row.soldier.id))
-    const own = leaves.value.filter((leave) => leave.deployment_id === rotation.id && ids.has(leave.soldier_id))
     const byLeave = new Map<LeaveId, PlanEvent[]>()
-    for (const event of events.value) byLeave.set(event.leave_id, [...(byLeave.get(event.leave_id) ?? []), event])
+    for (const event of replayed) byLeave.set(event.leave_id, [...(byLeave.get(event.leave_id) ?? []), event])
     const plan = planOf(own, byLeave, startOfDay(rotation.start_date, timezone))
     const tally = planTally({
       counted,
@@ -424,7 +428,7 @@ function usePlan(
       types: types.value,
     })
     return { status: 'ready', value: { ...tally, added: plan.added, cancelled: plan.cancelled, moved: plan.moved, unrecorded: plan.unrecorded } }
-  }, [active, rotation, scope, timezone, events, leaves, types, counted])
+  }, [active, rotation, scope, timezone, query, events, leaves, own, types, counted])
 }
 
 /** The rule figures of the unit and its sub-units (D-141, D-173). */

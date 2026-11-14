@@ -1,9 +1,9 @@
 import type { Store } from './store'
 import {
   IssueCode,
-  LeaveEventQuery,
   LeaveFeedQuery,
   LeaveQuery,
+  LeaveEventsQuery,
   type DataRepositories,
   type DeploymentId,
   type Issue,
@@ -41,7 +41,7 @@ const RULE_TABLES = [
 
 /** Every table a leave command reads or writes. */
 export const LEAVE_TABLES: readonly TableName[] = [
-  ...new Set<TableName>([...POLICY_TABLES, ...RULE_TABLES, 'leave_events', 'leave_comments']),
+  ...new Set<TableName>([...POLICY_TABLES, ...RULE_TABLES, 'leave_events', 'leave_comments', 'change_counters']),
 ]
 
 const READ_TABLES: readonly TableName[] = [...POLICY_TABLES, 'leaves', 'leave_events']
@@ -153,7 +153,10 @@ export function createLeaveRepository(dependencies: LocalDependencies): DataRepo
           const scope = await loadActorScope(dependencies)
           const rows = await tableOf(database, 'leaves').where('organization_id').equals(scope.organization_id).toArray()
           return rows
-            .filter((row) => window === null || (row.start_date <= window.end_date && row.end_date >= window.start_date))
+            .filter((row) => query.ids === null || query.ids.includes(row.id))
+            .filter(
+              (row) => window === null || (row.start_date <= window.end_date && row.end_date >= window.start_date),
+            )
             .filter((row) => query.soldier_ids === null || query.soldier_ids.includes(row.soldier_id))
             .filter((row) => query.statuses === null || query.statuses.includes(row.status))
             .filter((row) => canView(scope, row))
@@ -165,36 +168,37 @@ export function createLeaveRepository(dependencies: LocalDependencies): DataRepo
 }
 
 /**
- * A leave's events, or a rotation's span of them (D-361), oldest first. An invisible leave answers `not_found`
- * (D-046); a span holds only the events of leaves the actor reads.
+ * The events numbered after `after_seq` of the visible leaves, of the listed ones or of every one, by number (D-373).
+ * A listed leave the actor may not see answers `not_found` (D-046).
  */
 export function createLeaveEventRepository(dependencies: LocalDependencies): DataRepositories['leave_events'] {
   const { database } = dependencies
   return {
     list: (raw) =>
       asResult(() => {
-        const query = parseInput(LeaveEventQuery, raw)
+        const query = parseInput(LeaveEventsQuery, raw)
         return database.transaction('r', READ_TABLES, async () => {
           const scope = await loadActorScope(dependencies)
-          let rows
-          if ('leave_id' in query) {
-            await visibleLeave(database, scope, query.leave_id)
-            rows = await tableOf(database, 'leave_events').where('leave_id').equals(query.leave_id).toArray()
+          let rows: TableRow<'leave_events'>[]
+          if (query.leave_ids === null) {
+            const leaves = await tableOf(database, 'leaves')
+              .where('organization_id')
+              .equals(scope.organization_id)
+              .toArray()
+            const visible = new Set(leaves.filter((leave) => canView(scope, leave)).map((leave) => leave.id))
+            const all = await tableOf(database, 'leave_events')
+              .where('organization_id')
+              .equals(scope.organization_id)
+              .toArray()
+            rows = all.filter((row) => visible.has(row.leave_id))
           } else {
-            // Two reads of the organization, not one per leave: a span holds many leaves.
-            const soldiers = new Set<string>(query.soldier_ids)
-            const leaves = await tableOf(database, 'leaves').where('organization_id').equals(scope.organization_id).toArray()
-            const ids = new Set(
-              leaves
-                .filter((leave) => leave.deployment_id === query.deployment_id && soldiers.has(leave.soldier_id))
-                .filter((leave) => canView(scope, leave))
-                .map((leave) => leave.id),
-            )
-            const events = ids.size === 0 ? [] : await tableOf(database, 'leave_events').where('organization_id').equals(scope.organization_id).toArray()
-            rows = events.filter((event) => ids.has(event.leave_id))
+            const leaves = []
+            for (const id of new Set(query.leave_ids)) leaves.push(await visibleLeave(database, scope, id))
+            rows = await threadRows(database, 'leave_events', leaves)
           }
           return rows
-            .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+            .filter((row) => row.change_seq > query.after_seq)
+            .sort((a, b) => a.change_seq - b.change_seq || a.id.localeCompare(b.id))
             .map((row) => parsedRow('leave_events', row))
         })
       }),

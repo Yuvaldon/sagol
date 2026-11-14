@@ -91,10 +91,12 @@ export function useLeave(id: string): Loaded<Leave> {
 export function useLeaveThread(leaveId: LeaveId): Loaded<readonly ThreadEntry[]> {
   const { data } = usePorts()
   const query = useMemo(() => ({ leave_id: leaveId }), [leaveId])
+  // Every event of the leave: numbered after 0 (D-373).
+  const eventQuery = useMemo(() => ({ leave_ids: [leaveId], after_seq: 0 }), [leaveId])
   const events: Loaded<readonly LeaveEvent[]> = loaded(
     useQuery({
-      queryKey: [...QUERY_KEYS.leaveEvents, query],
-      queryFn: () => unwrap(data.repositories.leave_events.list(query)),
+      queryKey: [...QUERY_KEYS.leaveEvents, eventQuery],
+      queryFn: () => unwrap(data.repositories.leave_events.list(eventQuery)),
     }),
   )
   const comments: Loaded<readonly LeaveComment[]> = loaded(
