@@ -205,6 +205,7 @@ CREATE TABLE IF NOT EXISTS "unit_memberships" (
 	"membership_type" VARCHAR(20) NOT NULL DEFAULT 'primary',
 	"valid_from" DATE NOT NULL,
 	"valid_to" DATE,                                 -- NULL = open
+	"change_seq" INTEGER NOT NULL DEFAULT 0,         -- the organization's change counter at the last write (D-373)
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"created_by" UUID REFERENCES "soldiers"("id"),
 	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -611,6 +612,7 @@ CREATE TABLE IF NOT EXISTS "leave_events" (
 	"to_status" VARCHAR(20),
 	"changes" JSONB NOT NULL DEFAULT '{}',           -- before/after of changed fields
 	"acknowledged_rule_ids" UUID[] NOT NULL DEFAULT '{}',  -- soft rules knowingly overridden (D-014)
+	"change_seq" INTEGER NOT NULL DEFAULT 0,         -- the organization's change counter at this event, commit-ordered (D-373)
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id"),
 	CONSTRAINT "leave_events_type_check" CHECK ("event_type" IN (
@@ -711,7 +713,8 @@ CREATE TABLE IF NOT EXISTS "property_definitions" (
 -- -----------------------------------------------------------------------------
 
 -- A unit's daily report confirmed for one date. Confirming again moves the row to the new confirmer
--- and time; rows are never deleted. "Changed since" is derived from the leaves, never stored.
+-- and time; rows are never deleted. "Changed since" is derived from the leave events and memberships
+-- written after `seen_seq`, never stored (D-373).
 CREATE TABLE IF NOT EXISTS "report_confirmations" (
 	"id" UUID NOT NULL DEFAULT gen_random_uuid(),
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
@@ -719,8 +722,20 @@ CREATE TABLE IF NOT EXISTS "report_confirmations" (
 	"report_date" DATE NOT NULL,
 	"confirmed_by" UUID NOT NULL REFERENCES "soldiers"("id"),
 	"confirmed_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"seen_seq" INTEGER NOT NULL DEFAULT 0,           -- the change counter the confirmer read before the report (D-373)
 	PRIMARY KEY("id"),
-	CONSTRAINT "report_confirmations_unit_date_key" UNIQUE ("unit_id", "report_date")
+	CONSTRAINT "report_confirmations_unit_date_key" UNIQUE ("unit_id", "report_date"),
+	CONSTRAINT "report_confirmations_seen_seq_check" CHECK ("seen_seq" >= 0)
+);
+
+-- One row per organization: the last change number handed out (D-373). Every leave event and membership
+-- write takes the next number in its own transaction, so the row serializes those writers and the
+-- numbers follow commit order. A serialization point, not derived data: never exported.
+CREATE TABLE IF NOT EXISTS "change_counters" (
+	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
+	"last_seq" INTEGER NOT NULL DEFAULT 0,
+	PRIMARY KEY("organization_id"),
+	CONSTRAINT "change_counters_last_seq_check" CHECK ("last_seq" >= 0)
 );
 
 -- -----------------------------------------------------------------------------
@@ -753,6 +768,7 @@ CREATE INDEX IF NOT EXISTS "idx_leaves_org_dates"           ON "leaves"("organiz
 CREATE INDEX IF NOT EXISTS "idx_leaves_status"              ON "leaves"("organization_id", "status");
 CREATE INDEX IF NOT EXISTS "idx_leaves_deployment"          ON "leaves"("deployment_id", "soldier_id");
 CREATE INDEX IF NOT EXISTS "idx_leave_events_leave"         ON "leave_events"("leave_id", "created_at");
+CREATE INDEX IF NOT EXISTS "idx_leave_events_seq"           ON "leave_events"("organization_id", "change_seq");
 CREATE INDEX IF NOT EXISTS "idx_leave_comments_leave"       ON "leave_comments"("leave_id", "created_at");
 CREATE INDEX IF NOT EXISTS "idx_deployments_unit_id"        ON "deployments"("unit_id");
 CREATE INDEX IF NOT EXISTS "idx_report_confirmations_date" ON "report_confirmations"("organization_id", "report_date");

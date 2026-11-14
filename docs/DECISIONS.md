@@ -276,7 +276,7 @@ am = amends, ref = refines, ext = extends.
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
-| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303 |
+| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303, D-373 |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | am D-340 |
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | ref D-339 |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
@@ -333,6 +333,7 @@ am = amends, ref = refines, ext = extends.
 | D-357 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-359 |
 | D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
+| D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -4896,3 +4897,50 @@ at once, on every device.
   its own, and the i18n check refuses keys that nothing reads.
 **Why:** the notification must say what happened without opening the app, in the app's language, and the worker
 is the only code running when it arrives.
+
+## D-373 — "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq`
+
+2026-11-14 · accepted · refines D-293 · closes OI-254 and OI-255 · decided under the owner's autonomy instruction (D-170)
+
+- **The gaps.** D-293 compared `leaves.updated_at` with `confirmed_at`. It missed a leave moved wholly off the day ±1
+  (its current dates no longer touch the day), a soldier moved into or out of the unit (no leave changes), and a leave
+  transaction that began before the confirmer's read and committed after it (its `updated_at` is older than what the
+  client saw).
+- **A change number per organization.** `change_counters` holds one row per organization, `last_seq`, the last number
+  handed out. Every leave write (each `leave_events` row) and every membership write takes the next number inside its
+  own transaction, by reading and writing that row, and stamps it: `leave_events.change_seq`, and
+  `unit_memberships.change_seq` (the number of its last write). Writers of one organization all write that one row,
+  so under the gateway's SERIALIZABLE transaction (D-201) two of them never interleave: the later one waits or fails
+  with 40001 and is retried, as any conflict is. A number is therefore visible to a reader only once every smaller one
+  is: the order of the numbers is the order of the commits. IndexedDB serializes its `rw` transactions by itself.
+  A Postgres sequence was not used: it hands numbers out in start order, not commit order, which is OI-255 again.
+- **The counter is not data a reader derives.** It is a serialization point, so it is stored. It is not exported;
+  the loader sets it to the largest number it loads. Any member reads it (`change_counters.current`): it says how many
+  changes there were, nothing about them.
+- **A confirmation holds from a number.** The client reads the counter first, then the confirmations, the leave events
+  after the smallest `seen_seq` among them, the leaves of those events, and the memberships. The confirm command takes
+  `seen_seq`, the counter read before the report's leaves; `confirmed_at` is now. Every change numbered at or below it
+  had committed before that read, so the report shown already holds it. A change between the reads shows as changed
+  until the next read: a false positive, never a false negative. The command refuses a `seen_seq` above the
+  organization's counter (`seen_seq`, `too_big`): no read could have seen it.
+- **Changed since.** A confirmed section reads "changed since" when, after its `seen_seq`:
+  - a leave event of a soldier in the section was written, for a leave whose dates touched the day before through the
+    day after (D-193) in any state since: its current dates, and each earlier pair read back through the events'
+    `changes` before-values of `start_date` and `end_date`. A leave with writes newer than the events read counts as
+    changed until the next read; or
+  - a membership in the section's unit was written that starts on or before the day. A membership corrected in the
+    past also counts: the rule leans to a false positive.
+- **Existing rows.** The migration and the local upgrade number the existing events per organization by
+  (`created_at`, `id`) from 1, with the append-only trigger (D-202) set aside for that one update; events have no
+  `version`, so D-012 does not apply. Memberships start at 0 by the column default, with no write and no `version`
+  bump: D-293 never caught a membership change, so none is lost. A confirmation's `seen_seq` is the largest event
+  number of its organization created at or before its `confirmed_at`, which is the D-293 answer, as a leave's
+  `updated_at` is the time of its last event. The counter starts at the largest event number, or 0.
+- **The reads.** `leave_events.list` takes `LeaveEventsQuery` `{ leave_ids, after_seq }`: the events numbered after
+  `after_seq` of the visible leaves, of the listed ones or (NULL) of every one, ordered by number. A listed leave the
+  actor may not see answers `not_found` (D-046), as the thread did; the thread reads `{ leave_ids: [id], after_seq: 0 }`.
+  `LeaveQuery` takes `ids` (NULL = any), so the client reads the current state of the changed leaves.
+- **Export format 6.** Events and memberships carry `change_seq`, confirmations `seen_seq`. The loader takes format 5
+  too, and numbers its rows as the migration does.
+**Why:** a number the database orders by commit is the only stamp a reader can compare with what it read; times
+cannot be, and a leave's current dates cannot say where it was.
