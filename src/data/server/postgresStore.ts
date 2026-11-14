@@ -5,6 +5,7 @@ import { STORE_UNAVAILABLE, STORES, type Store, type StoreCollection, type Store
 // server unchanged. One store serves one request, inside the request's transaction, on one
 // connection. Rows travel as JSON (`to_jsonb`, `jsonb_populate_record`), so a column needs no
 // per-type code; only instants are written out, in SQL, in the one form the TimeSource writes.
+// A write names only the columns the row carries, so the others get their DEFAULT (D-410).
 // Keys and indexes are the local ones (`STORES`), so both stores answer the same lookups.
 
 /** A statement parameter: key values and JSON documents (as text) are all the store binds. */
@@ -138,15 +139,41 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
       }
     }
 
-    const upsert = `ON CONFLICT (${key.map(quoted).join(', ')}) DO UPDATE SET (${columns.map(quoted).join(', ')}) = (${columns.map((column) => `EXCLUDED.${quoted(column)}`).join(', ')})`
+    const conflictKey = key.map(quoted).join(', ')
 
-    async function insert(rows: readonly Row[], conflict: string): Promise<void> {
-      if (rows.length === 0) return
+    /**
+     * The row's own columns that the table has, in the table's order (D-410): a column the row leaves out
+     * gets its DEFAULT, not NULL, so a function built before a column was added keeps writing.
+     */
+    function columnsOf(row: Row): string[] {
+      const own = row !== null && typeof row === 'object' ? row : {}
+      return columns.filter((column) => Object.hasOwn(own, column))
+    }
+
+    /** Inserts rows of one shape; an upsert updates only the columns the rows carry. */
+    async function insertShaped(rows: readonly Row[], present: readonly string[], upsert: boolean): Promise<void> {
+      const list = present.map(quoted).join(', ')
+      const conflict = upsert
+        ? ` ON CONFLICT (${conflictKey}) DO UPDATE SET ${present.map((column) => `${quoted(column)} = EXCLUDED.${quoted(column)}`).join(', ')}`
+        : ''
       wrote(
-        await run(`INSERT INTO ${table} SELECT * FROM jsonb_populate_recordset(NULL::${table}, $1::text::jsonb) ${conflict}${returning}`, [
-          JSON.stringify(rows),
-        ]),
+        await run(
+          `INSERT INTO ${table} (${list}) SELECT ${list} FROM jsonb_populate_recordset(NULL::${table}, $1::text::jsonb)${conflict}${returning}`,
+          [JSON.stringify(rows)],
+        ),
       )
+    }
+
+    async function insert(rows: readonly Row[], upsert: boolean): Promise<void> {
+      const shapes = new Map<string, { present: string[]; rows: Row[] }>()
+      for (const row of rows) {
+        const present = columnsOf(row)
+        const shape = present.join(',')
+        const group = shapes.get(shape) ?? { present, rows: [] }
+        group.rows.push(row)
+        shapes.set(shape, group)
+      }
+      for (const { present, rows: shaped } of shapes.values()) await insertShaped(shaped, present, upsert)
     }
 
     return {
@@ -154,10 +181,10 @@ export function createPostgresStore(client: SqlClient, catalog: StoreCatalog): P
       where: (index) => ({ equals: (value) => collection(indexColumns(index), value) }),
       toArray: () => collection([], null).toArray(),
       count: async () => Number((await run(`SELECT count(*) AS count FROM ${table}`, []))[0]?.count ?? 0),
-      add: (row) => insert([row], ''),
-      put: (row) => insert([row], upsert),
-      bulkAdd: (rows) => insert(rows, ''),
-      bulkPut: (rows) => insert(rows, upsert),
+      add: (row) => insert([row], false),
+      put: (row) => insert([row], true),
+      bulkAdd: (rows) => insert(rows, false),
+      bulkPut: (rows) => insert(rows, true),
       async bulkDelete(keys) {
         if (keys.length === 0) return
         const rows = keys.map((value) => {
