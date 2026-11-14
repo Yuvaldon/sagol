@@ -5315,7 +5315,8 @@ reaching up a layer.
 ## D-442 — "שמירת השינויים": the board keeps the saved view it was put in, and saves a change over it
 2026-11-14 · accepted · extends D-384, D-387 · R3 · OI-331
 - **The param.** `saved` (`SEARCH_PARAMS.saved`) holds the id of the saved view the board was last put in. It is
-  written when a view is saved, applied from its card, or opened as the start view. It travels with the rest of the
+  written when a view's save lands (a failed save leaves the view the board left), applied from its card, or opened
+  as the start view. It travels with the rest of the
   view state, and a value that is not one of the soldier's views is ignored. A board matched by hand, without the
   sheet, is not recorded: there was no "put in", and writing it from an effect would add params to a bare link and
   undo the start view's bare-open check (D-386).
