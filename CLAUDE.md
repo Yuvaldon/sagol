@@ -7,7 +7,7 @@ The owner writes in Hebrew: answer in Hebrew. Code, identifiers and docs are in 
 
 - `npm run check`: typecheck, lint, layers, raw values, i18n, unit tests (about 2 min). Must pass for every commit.
 - `npm run build` · `npm run e2e` (two workers; desktop, mobile, RTL, axe) · `npm run dev` (port 5173)
-- Commits are Conventional Commits. lefthook enforces one `src` layer per commit (`i18n` + `ui` may pair), types, lint and boundaries.
+- Commits are Conventional Commits. lefthook enforces one `src` layer per commit (`i18n` + `ui`, and `app` + `i18n`, may pair), types, lint and boundaries.
 
 ## Where things are (read only what the task needs)
 

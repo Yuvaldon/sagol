@@ -58,6 +58,7 @@ import { grantActive, rolePairs, requireHeld } from './permissions'
 import { POLICY_TABLES, loadPolicySnapshot, requireAccessManager } from './snapshot'
 import { SOLDIER_TAG_TABLES, soldierTagIssues, tagScopeIssues } from './tags'
 import { membershipsHoldLeaves } from './leaveRotation'
+import { deleteSubscriptionsOf } from './notifications'
 
 // The roster: `soldiers`, `soldier_private` (its own permission resource, D-018) and `unit_memberships`
 // (time-bounded rows, D-010). The permissions are D-096 and the membership rules are D-097. A soldier's tags
@@ -104,7 +105,7 @@ const SPEC: ReferenceSpec<Soldier> = {
   table: 'soldiers',
   resource: 'soldiers',
   schema: Soldier,
-  checkTables: ['property_definitions'],
+  checkTables: ['property_definitions', 'push_subscriptions'],
   optionalText: ['nickname'],
   targetOf: (row) => soldierTarget(row.id),
   rowIssues: async (check) => [
@@ -379,6 +380,8 @@ export function createSoldierCommands(dependencies: LocalDependencies): DataComm
         row.archived_at !== before.archived_at
       if (changed) await requireAccessManager(store, scope.organization_id, scope.now)
       if (row.command_rank_id !== before?.command_rank_id) await requireAfterRankWrite(store, scope, 'update', row.id)
+      // An archived soldier's devices stop getting pushes (D-351).
+      if (before !== null && before.archived_at === null && row.archived_at !== null) await deleteSubscriptionsOf(store, row.id)
     },
   })
 

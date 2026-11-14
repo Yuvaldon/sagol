@@ -14,6 +14,7 @@ const EnvVariableName = z.enum([
   ENV_VARIABLES.remoteUrl,
   ENV_VARIABLES.remoteAnonKey,
   ENV_VARIABLES.appStage,
+  ENV_VARIABLES.pushPublicKey,
 ])
 
 /** The deploy's own marking (D-300): one of `APP_STAGES`, or unset for production. */
@@ -27,22 +28,30 @@ function optional<T extends z.ZodType>(schema: T) {
   )
 }
 
+/**
+ * The VAPID public key (D-351): an uncompressed P-256 point, 65 bytes in unpadded base64url. Unset, the app offers no
+ * phone notifications (D-076).
+ */
+export const PushPublicKey = z.string().trim().regex(/^[A-Za-z0-9_-]{87}$/)
+
 export const EnvSchema = z.object({
   [ENV_VARIABLES.authMode]: AuthMode,
   [ENV_VARIABLES.dataAdapter]: DataAdapterMode,
   [ENV_VARIABLES.remoteUrl]: optional(z.url()),
   [ENV_VARIABLES.remoteAnonKey]: optional(z.string().trim().min(1)),
   [ENV_VARIABLES.appStage]: optional(AppStage),
+  [ENV_VARIABLES.pushPublicKey]: optional(PushPublicKey),
 })
 
-/** The parsed environment, in the shape the app uses: one of the two pairs (D-207). */
-export type Env =
+/** The parsed environment, in the shape the app uses: one of the two pairs (D-207), and the push key (D-351). */
+export type Env = (
   | { readonly authMode: 'local'; readonly dataAdapter: 'local'; readonly remote: null }
   | {
       readonly authMode: 'google'
       readonly dataAdapter: 'remote'
       readonly remote: { readonly url: string; readonly anonKey: string }
     }
+) & { readonly pushPublicKey: string | null }
 
 export type EnvIssueCode =
   /** The variable is not set. */
@@ -103,6 +112,7 @@ export function parseEnv(raw: RawEnv, options: EnvOptions): EnvResult {
   const dataAdapter = data[ENV_VARIABLES.dataAdapter]
   const url = data[ENV_VARIABLES.remoteUrl]
   const anonKey = data[ENV_VARIABLES.remoteAnonKey]
+  const pushPublicKey = data[ENV_VARIABLES.pushPublicKey] ?? null
   const issues: EnvIssue[] = []
   if (options.production && isDevelopmentOnly(authMode)) {
     issues.push({ variable: ENV_VARIABLES.authMode, code: 'development_only' })
@@ -117,9 +127,9 @@ export function parseEnv(raw: RawEnv, options: EnvOptions): EnvResult {
     }
   }
   if (issues.length > 0) return { ok: false, issues }
-  if (authMode === 'local') return { ok: true, value: { authMode, dataAdapter: 'local', remote: null } }
+  if (authMode === 'local') return { ok: true, value: { authMode, dataAdapter: 'local', remote: null, pushPublicKey } }
   if (url === undefined || anonKey === undefined) return { ok: false, issues }
-  return { ok: true, value: { authMode, dataAdapter: 'remote', remote: { url, anonKey } } }
+  return { ok: true, value: { authMode, dataAdapter: 'remote', remote: { url, anonKey }, pushPublicKey } }
 }
 
 /**

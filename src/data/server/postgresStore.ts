@@ -55,7 +55,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const INSTANT_FORMAT = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
 
 function quoted(name: string): string {
-  if (!/^[a-z_]+$/.test(name)) throw new Error(`Invalid identifier: ${name}`)
+  if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`Invalid identifier: ${name}`)
   return `"${name}"`
 }
 

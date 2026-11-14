@@ -83,8 +83,8 @@ const REPOSITORY_METHODS = {
   leave_type_groups: REFERENCE,
   leave_types: REFERENCE,
   leaves: REFERENCE,
-  leave_events: LIST,
-  leave_comments: REFERENCE,
+  leave_events: { ...LIST, feed: true },
+  leave_comments: { ...REFERENCE, feed: true },
   availability_rules: REFERENCE,
   property_definitions: REFERENCE,
   seniority_overrides: REFERENCE,
@@ -115,6 +115,7 @@ const COMMAND_METHODS = {
   seniority_overrides: { create: true, revoke: true },
   deployments: { ...EDIT, setMembers: true, close: true, reopen: true },
   day_reports: { confirm: true },
+  notifications: { subscribe: true, unsubscribe: true },
 } as const satisfies MethodTable<RemoteDataAdapter['commands']>
 
 type Call = (kind: string, group: string, method: string, args: readonly unknown[]) => Promise<Result<unknown>>
