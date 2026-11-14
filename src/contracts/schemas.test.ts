@@ -459,4 +459,9 @@ describe('PushEndpoint (D-351)', () => {
       expect(PushEndpoint.safeParse(url).success).toBe(false)
     }
   })
+
+  it('refuses a value that is not a URL without throwing (OI-350)', () => {
+    expect(() => PushEndpoint.safeParse('not a url')).not.toThrow()
+    expect(PushEndpoint.safeParse('not a url').success).toBe(false)
+  })
 })

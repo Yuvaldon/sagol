@@ -70,6 +70,8 @@ export const PUSH_SERVICE_HOSTS = {
 } as const
 
 function onPushService(url: string): boolean {
+  // Zod runs a refine after a failed format check too: a non-URL must fail here, not throw (OI-350).
+  if (!URL.canParse(url)) return false
   const { hostname } = new URL(url)
   return (
     PUSH_SERVICE_HOSTS.exact.some((host) => hostname === host) ||
