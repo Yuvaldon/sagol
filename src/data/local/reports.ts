@@ -40,6 +40,7 @@ import { asResult, failValidation, parseInput, parsedRow } from './failure'
 import { permissionOf } from './reference'
 import { POLICY_TABLES } from './snapshot'
 import { tableOf, type Store } from './store'
+import { changeCounterStart } from './changeCounters'
 
 // The daily report workflow (D-269, D-293): one confirmation per unit and date, kept and moved on each confirm, never
 // deleted. Whether the report changed since is derived by who reads it from the changes numbered after `seen_seq` (D-373).
@@ -226,8 +227,8 @@ export function createDayReportCommands(dependencies: LocalDependencies): DataCo
           const issues = confirmReportIssues(rotation)
           if (issues.length > 0) return failValidation(issues)
           // A confirmation holds from a number the counter already handed out (D-373): none from the future.
-          const counter = await tableOf(database, 'change_counters').get(scope.organization_id)
-          if (input.seen_seq > (counter?.last_seq ?? 0)) {
+          const counter = (await tableOf(database, 'change_counters').get(scope.organization_id)) ?? changeCounterStart(scope.organization_id)
+          if (input.seen_seq > counter.last_seq) {
             return failValidation([{ path: ['seen_seq'], code: IssueCode.enum.too_big }])
           }
 

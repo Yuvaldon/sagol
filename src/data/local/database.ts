@@ -2,6 +2,7 @@ import { FIRST_ROTATION_LEAVE_COLOR } from '@config'
 import { AvailabilityEffect, MembershipType, UnitKind, type TableRow, type TimeSource } from '@contracts'
 import { compareInstants, dayBefore, todayIn } from '@domain'
 import Dexie, { type Transaction } from 'dexie'
+import { changeCounterStart } from './changeCounters'
 import { parsedRow } from './failure'
 import { STORES, type Store } from './store'
 
@@ -195,7 +196,7 @@ async function changeNumbers(transaction: Transaction): Promise<void> {
   const organizations = await transaction.table<Pick<Organization, 'id'>>('organizations').toArray()
   await transaction
     .table('change_counters')
-    .bulkPut(organizations.map((row) => ({ organization_id: row.id, last_seq: last.get(row.id) ?? 0 })))
+    .bulkPut(organizations.map((row) => changeCounterStart(row.id, last.get(row.id))))
 }
 
 /** The IndexedDB store, which a test closes when it is done. */
