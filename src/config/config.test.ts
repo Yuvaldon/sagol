@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { AuthMode, ColorKey, DataAdapterMode, IconKey } from '@contracts'
+import { AuthMode, ColorKey, DASHBOARD_TEMPLATE_IDS, DataAdapterMode, IconKey, StrictDashboardModules } from '@contracts'
 import {
   ADAPTER_OF_AUTH_MODE,
   BAR_COLOR_MODES,
   BREAKPOINTS_PX,
+  DASHBOARD,
+  DASHBOARD_TEMPLATES,
   BarColorMode,
   DATE_FORMATS,
   DATE_LOCALE,
@@ -316,5 +318,18 @@ describe('panels (D-092)', () => {
     expect(PWA.networkOnlyPaths).toEqual(['/functions/v1/commands', '/auth/v1'])
     expect(PWA.iosUserAgent.test('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')).toBe(true)
     expect(PWA.iosUserAgent.test('Mozilla/5.0 (Linux; Android 15; Pixel 7)')).toBe(false)
+  })
+})
+
+describe('dashboard (D-349)', () => {
+  it('gives every template a valid, unique set of modules', () => {
+    expect(Object.keys(DASHBOARD_TEMPLATES).sort()).toEqual([...DASHBOARD_TEMPLATE_IDS].sort())
+    for (const modules of Object.values(DASHBOARD_TEMPLATES)) {
+      expect(StrictDashboardModules.safeParse(modules).success).toBe(true)
+    }
+  })
+
+  it('keeps the thresholds positive', () => {
+    for (const value of Object.values(DASHBOARD)) expect(value).toBeGreaterThan(0)
   })
 })

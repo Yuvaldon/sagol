@@ -315,14 +315,14 @@ am = amends, ref = refines, ext = extends.
 | D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | ref D-345 |
 | D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
-| D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | |
+| D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | am D-360 |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
-| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | ref D-370 |
+| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360; ref D-370 |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | |
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | |
-| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | |
+| D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361; ref D-362 |
 | D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | |
 | D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | |
 | D-352 | In-app updates on "שלי" are derived from the events and the shared comments; only the seen time is stored | contracts, domain, data, logic, ui | |
@@ -333,6 +333,9 @@ am = amends, ref = refines, ext = extends.
 | D-357 | A push payload carries facts only: no leave type, reason, comment or personal id | contracts, app | ext D-359 |
 | D-358 | Notifications are on per device and chosen per person; sign-out, revoke and archive end them | contracts, data, logic, app | |
 | D-359 | The app's own service worker shows the notifications, and `app` and `i18n` may share a commit | app, i18n, tooling | |
+| D-360 | The dashboard is built now, for 1.0, as an R3 item under OI-222 | docs | |
+| D-361 | The stored board reads leniently and writes strictly; the plan reads its own leaves' events | contracts | |
+| D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | |
 | D-370 | The 1.0 Could items are built while the owner is away | docs | |
 | D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | |
 | D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | |
@@ -4908,6 +4911,57 @@ at once, on every device.
   its own, and the i18n check refuses keys that nothing reads.
 **Why:** the notification must say what happened without opening the app, in the app's language, and the worker
 is the only code running when it arrives.
+
+## D-360 — The dashboard is built now, for 1.0, as an R3 item under OI-222
+2026-11-13 · accepted · amends D-344, D-342 · ref D-338, D-349, D-350 · OI-222 · the owner's approval of 2026-11-13 ("מבחינתי לגמרי ללכת על זה")
+- D-344 sorted the dashboard (OI-222) as a Should for 1.0 and left when to build it to the owner; the owner approved
+  building it now. It is built in stage R3 ("Closing the gaps"), as the other Should items are, under OI-222, with no
+  V-number of its own, from `docs/specs/dashboard.md` (D-349, D-350).
+- D-342 leaves the dashboard's place in the new interface to the design rounds (R4). It is built where the spec puts
+  it, a work module in the presence group and "הסבב שלי" on top of "שלי"; R4 may still move it, and the move is a
+  design-round change, not a rebuild.
+**Why:** the owner asked for it before the design rounds, and the spec is complete, so nothing waits for R4 but the
+dashboard's place on screen.
+
+## D-361 — The stored board reads leniently and writes strictly; the plan reads its own leaves' events
+2026-11-13 · accepted · refines D-349 · ref D-041, D-076, D-373 · OI-222 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- `SoldierPreferences.dashboard` has two schemas. The read one drops a custom list's unknown and repeated items and
+  keeps the first 20; a layout that no longer parses at all (a removed template) reads as `null`, so the default
+  applies and the rest of the preferences still parse. The write one, `StrictSoldierPreferences`, which
+  `updateMyPreferences` takes, refuses the same items instead of repairing them.
+- The plan modules replay the events of the rotation's leaves of the board's rows that the actor reads, through
+  D-373's `LeaveEventsQuery { leave_ids, after_seq: 0 }`, listing those leaves' ids; no rotation-specific query.
+  With no such leaves there is no read and nothing to replay.
+**Why:** a vocabulary change must never lock a person out of their preferences (D-041), while a write that names
+what does not exist is a client bug to refuse. The board already holds the leaves it counts, so listing their ids
+reuses the one event query and its read policy instead of adding a second shape.
+
+## D-362 — The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits
+2026-11-14 · accepted · refines D-349, D-350 · ref D-076, D-195, D-196, D-360, D-361 · OI-222 · decided under the owner's autonomy instruction of 2026-11-11 (D-170)
+- **Charts.** No chart library: the bars, the histogram and the trend are CSS on theme tokens (`ui/primitives/charts.tsx`),
+  and each chart carries its figures as a visually hidden table, so a screen reader and axe read numbers, not shapes.
+  The heat map's steps are one blue, light to dark, by the share of a week at home, and each step also has a dotted
+  pattern, sparse to dense, so the steps read without color. The histogram's bins are whole days, so a narrow spread
+  draws fewer than six bins.
+- **Who opens it.** The dashboard opens for whoever holds `leaves:view` over at least one unit, at unit or organization
+  scope (the new `some_unit` policy target); a scope of one soldier, the holder or a named one, is not a unit. Any unit
+  scope opens it, as the spec says. The unit picker shows only with more than one unit, and lists only units the actor
+  reads whole: a unit is offered when no soldier of it in the span is known to the actor but unreadable.
+- **The screen.** It is the first item of the presence group in "ניהול יחידה", and a rotation's row in "סבבים" has
+  "דשבורד" in its actions, which opens it on that rotation. The span picker is the board's `WindowNavigator`. The span
+  line names the rotation and its dates, or the routine range. In edit mode, modules that the scope hides still show,
+  marked, so they can be removed. Leaving the actor's own list, by a template or by "חזרה לתבנית", asks first.
+- **What the cards do.** The heat map copies as text and as an image with the day report's `CopyActions`; the image
+  takes its file name from `DAY_REPORT.image`. A trend bar opens דוח 1 on its day only where that day can be reported.
+  "סטטוס דוח 1" is one button that opens the report, plus the list of units and their state. The stat card's metric is
+  chosen from a submenu of "הוספת רכיב". "תכנון מול ביצוע" counts the changes from the leaves' history and says how many
+  requests in the span have no history to compare ("בקשות ללא היסטוריה"), rather than guessing their plan.
+- **"הסבב שלי".** The requests card is pressable only while there are open requests, and brings them into view.
+- **What waits.** Reordering by dragging on a desktop (OI-310), opening a soldier or a week from the heat map (OI-311),
+  and the report status showing tomorrow after the cut-over hour (OI-312). The arrows keep the order changeable meanwhile.
+**Why:** CSS bars on the theme keep the charts in the design system, in both themes and in RTL, with no library to
+learn or ship; the hidden tables make them readable. Opening by unit scope keeps a commander's module from a soldier who
+reads only themself. A note on what cannot be counted is more honest than a figure that pretends.
 
 ## D-370 — The 1.0 Could items are built while the owner is away
 2026-11-13 · accepted · ref D-170, D-344 · the owner's instruction of 2026-11-13

@@ -44,7 +44,8 @@ export const TARGET_KINDS_BY_RESOURCE = {
   memberships: ['soldier', 'every_soldier', 'unit'],
   tags: ORGANIZATION,
   leave_types: ORGANIZATION,
-  leaves: SOLDIER,
+  /** A soldier; `some_unit` asks only whether the actor reads any unit's leaves, to open the dashboard (D-362). */
+  leaves: ['soldier', 'every_soldier', 'some_unit'],
   leave_comments: SOLDIER,
   internal_comments: SOLDIER,
   /** The deployment's unit; `organization` asks only whether the actor sees any deployment, to open the module (D-179). */

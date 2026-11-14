@@ -19,6 +19,10 @@ import {
   SAVED_VIEW_LIMITS,
   SchemaIssue,
   SoldierPreferences,
+  StrictSoldierPreferences,
+  DASHBOARD_MAX_MODULES,
+  DASHBOARD_METRIC_IDS,
+  DASHBOARD_MODULE_IDS,
 } from './index'
 
 // Fixed sample ids and timestamps, test data only.
@@ -113,6 +117,7 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({})).toEqual({
       create_leaves_as_approved: false,
       appearance: 'light',
+      dashboard: null,
       saved_views: [],
       start_view_id: null,
       updates_seen_at: null,
@@ -124,6 +129,7 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({ create_leaves_as_approved: true })).toEqual({
       create_leaves_as_approved: true,
       appearance: 'light',
+      dashboard: null,
       saved_views: [],
       start_view_id: null,
       updates_seen_at: null,
@@ -140,6 +146,7 @@ describe('settings defaults (D-041)', () => {
     expect(SoldierPreferences.parse({ pinned_modules: ['tags', 'roles'], rules_row_placement: 'above', appearance: 'dark' })).toEqual({
       create_leaves_as_approved: false,
       appearance: 'dark',
+      dashboard: null,
       saved_views: [],
       start_view_id: null,
       updates_seen_at: null,
@@ -197,6 +204,81 @@ describe('settings defaults (D-041)', () => {
   })
 })
 
+describe('the stored dashboard (D-349, D-361)', () => {
+  const custom = (modules: unknown[]) => ({ dashboard: { kind: 'custom', modules } })
+
+  it('reads a template and a custom list', () => {
+    expect(SoldierPreferences.parse({ dashboard: { kind: 'template', template: 'control' } }).dashboard).toEqual({
+      kind: 'template',
+      template: 'control',
+    })
+    expect(SoldierPreferences.parse(custom([{ module: 'heat_map' }, { module: 'stat', metric: 'home_today' }])).dashboard).toEqual({
+      kind: 'custom',
+      modules: [{ module: 'heat_map' }, { module: 'stat', metric: 'home_today' }],
+    })
+  })
+
+  it('drops unknown and repeated modules on read, the first kept', () => {
+    const read = SoldierPreferences.parse(
+      custom([
+        { module: 'stat', metric: 'present_today' },
+        { module: 'gone' },
+        { module: 'stat', metric: 'retired_metric' },
+        { module: 'heat_map' },
+        { module: 'stat', metric: 'present_today' },
+        { module: 'heat_map' },
+        { module: 'stat', metric: 'home_today' },
+      ]),
+    )
+    expect(read.dashboard).toEqual({
+      kind: 'custom',
+      modules: [{ module: 'stat', metric: 'present_today' }, { module: 'heat_map' }, { module: 'stat', metric: 'home_today' }],
+    })
+  })
+
+  it('reads the whole catalogue once, however often it is stored', () => {
+    const many = DASHBOARD_METRIC_IDS.map((metric) => ({ module: 'stat', metric }))
+    const others = DASHBOARD_MODULE_IDS.filter((id) => id !== 'stat').map((module) => ({ module }))
+    const read = SoldierPreferences.parse(custom([...many, ...others, ...others]))
+    expect(read.dashboard?.kind === 'custom' && read.dashboard.modules).toHaveLength(many.length + others.length)
+    expect(many.length + others.length).toBeLessThanOrEqual(DASHBOARD_MAX_MODULES)
+  })
+
+  it('reads a layout that no longer parses as the default, keeping the rest', () => {
+    expect(SoldierPreferences.parse({ appearance: 'dark', dashboard: { kind: 'template', template: 'retired' } })).toEqual({
+      create_leaves_as_approved: false,
+      appearance: 'dark',
+      dashboard: null,
+      saved_views: [],
+      start_view_id: null,
+      updates_seen_at: null,
+      notifications: { my_request: true, awaiting_me: true },
+    })
+  })
+
+  it('writes saved views strictly and a start view no longer saved as NULL (D-384, D-386)', () => {
+    const id = ID.a
+    const views = [{ id, name: 'בוקר', query: { view: 'month' } }]
+    expect(StrictSoldierPreferences.parse({ saved_views: views, start_view_id: id }).start_view_id).toBe(id)
+    expect(StrictSoldierPreferences.parse({ saved_views: [], start_view_id: id }).start_view_id).toBeNull()
+    expect(StrictSoldierPreferences.safeParse({ saved_views: [...views, { ...views[0], id: ID.b }] }).success).toBe(false)
+  })
+
+  it('refuses unknown and repeated modules on write, takes the whole catalogue', () => {
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'heat_map' }])).success).toBe(true)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'gone' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'stat' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'heat_map', metric: 'home_today' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse(custom([{ module: 'upcoming' }, { module: 'upcoming' }])).success).toBe(false)
+    const stats = DASHBOARD_METRIC_IDS.map((metric) => ({ module: 'stat', metric }))
+    const others = DASHBOARD_MODULE_IDS.filter((id) => id !== 'stat').map((module) => ({ module }))
+    expect(StrictSoldierPreferences.safeParse(custom([...stats, ...others])).success).toBe(true)
+    expect(StrictSoldierPreferences.safeParse(custom([...stats, ...others, { module: 'stat', metric: 'x' }])).success).toBe(false)
+    expect(StrictSoldierPreferences.safeParse({ dashboard: { kind: 'template', template: 'retired' } }).success).toBe(false)
+  })
+})
+
+
 describe('permission checks (D-053, D-091)', () => {
   it('accepts a valid pair against each target kind', () => {
     const permission = { resource: 'units', action: 'update' }
@@ -209,6 +291,10 @@ describe('permission checks (D-053, D-091)', () => {
     const target = { kind: 'organization' }
     expect(PermissionCheck.safeParse({ permission: { resource: 'units', action: 'approve' }, target }).success).toBe(false)
     expect(PolicyTarget.safeParse({ kind: 'unit' }).success).toBe(false)
+  })
+
+  it('names "some unit" without an id (D-362)', () => {
+    expect(PolicyTarget.safeParse({ kind: 'some_unit' }).success).toBe(true)
   })
 })
 

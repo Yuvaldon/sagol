@@ -658,6 +658,7 @@ export function describeLeaveContract(
           valueOf(await adapter().repositories.leave_events.list({ leave_ids: [seen.id], after_seq: 0 })),
         ).toHaveLength(1)
       })
+
     })
 
     describe('the rule gate (D-047, D-073, OI-027)', () => {

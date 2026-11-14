@@ -252,6 +252,9 @@ export {
   useMyLeavesAccess,
   useMyNextDays,
   usePendingRequests,
+  myRotationOf,
+  useMyRotation,
+  type MyRotation,
 } from './leaves/workflowHooks'
 export {
   dropZoneAt,
@@ -379,7 +382,43 @@ export {
   useRuleCommands,
   useRuleConflicts,
   useRulePermissions,
+  useRuleDays,
+  type RuleDay,
 } from './rules/hooks'
+export {
+  DASHBOARD_CATALOGUE,
+  addableModules,
+  moduleState,
+  outstandingOf,
+  useChangeDashboardScope,
+  useDashboard,
+  useOpenRotationDashboard,
+  type DashboardBoard,
+  type Dashboard,
+  type DashboardLayoutState,
+  type DashboardOutstanding,
+  type DashboardPlan,
+  type DashboardReport,
+  type DashboardRules,
+  type DashboardScope,
+  type ModuleState,
+  type OutstandingItem,
+  type ReportSectionStatus,
+} from './dashboard/hooks'
+export {
+  countedDays,
+  type DashboardFigures,
+  type DashboardRow,
+  type DashboardTally,
+  type DistributionBin,
+  type HomeByType,
+  type PlanGroup,
+  type PlanTally,
+  type SubUnitTally,
+  type TrendDay,
+  type UpcomingDay,
+  type UpcomingLeave,
+} from './dashboard/tally'
 export {
   useCommandRankCommands,
   useCommandRankPermissions,

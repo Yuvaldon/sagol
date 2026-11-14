@@ -120,6 +120,55 @@ export function heatRow(input: RuleWindowInput): HeatDay[] | null {
   })
 }
 
+/** A day of a unit's rule figures (D-349): the heat row's day, and the minimums the unit's own rules require. */
+export interface RuleDay extends HeatDay {
+  /** The lowest minimum an effective rule scoped in the unit's tree requires that day; NULL when none does. */
+  readonly lowestMin: number | null
+  /** The strictest such minimum; NULL when none does. */
+  readonly highestMin: number | null
+}
+
+/**
+ * The rule figures of several units over the same days, from one evaluation (D-349): per unit the heat row's days with
+ * their minimums, or NULL when no rule concerns the unit, as the heat row (D-173).
+ */
+export function ruleDaysByUnit(
+  { data, rules, days }: Omit<RuleWindowInput, 'unitId'>,
+  unitIds: readonly UnitId[],
+): ReadonlyMap<UnitId, readonly RuleDay[] | null> {
+  const { targets } = createRuleContext(data).evaluate(rules, { dates: days })
+  const tree = buildUnitTree(data.units)
+  const result = new Map<UnitId, readonly RuleDay[] | null>()
+  for (const unitId of unitIds) {
+    const concerning = targets.filter(concernsUnit(data, unitId))
+    if (concerning.length === 0) {
+      result.set(unitId, null)
+      continue
+    }
+    const subtree = new Set<UnitId>([unitId, ...descendantsOf(tree, unitId)])
+    result.set(
+      unitId,
+      days.map((date) => {
+        const ofDay = concerning.filter((target) => target.date === date)
+        const broken = ofDay.filter(isBroken)
+        const hard = broken.some((target) => target.enforcement === RuleEnforcement.enum.hard)
+        const minimums = ofDay
+          .filter((target) => target.overridden_by.length === 0 && target.scope_unit_id !== null && subtree.has(target.scope_unit_id))
+          .map((target) => target.required_min)
+          .filter((min): min is number => min !== null && min > 0)
+        return {
+          date,
+          broken: broken.length,
+          worst: broken.length === 0 ? null : hard ? RuleEnforcement.enum.hard : RuleEnforcement.enum.soft,
+          lowestMin: minimums.length === 0 ? null : Math.min(...minimums),
+          highestMin: minimums.length === 0 ? null : Math.max(...minimums),
+        }
+      }),
+    )
+  }
+  return result
+}
+
 /** The broken rules of one day, each with who is unavailable (D-138, D-141). */
 export function dayViolations(input: Omit<RuleWindowInput, 'days'> & { readonly day: CalendarDate }): RuleViolation[] {
   const broken = brokenTargets({ ...input, days: [input.day] })

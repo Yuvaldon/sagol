@@ -3,6 +3,9 @@ import { PropertyOptionId, SavedViewId } from '../common/ids'
 import { ColorKey, Integer, Timestamp, label } from '../common/scalars'
 import { Appearance, ReschedulePolicy } from '../enums'
 import { IssueCode } from '../errors'
+import { DashboardLayout, StrictDashboardLayout } from './dashboard'
+
+export * from './dashboard'
 
 // Contracts of JSONB columns. Each parses `{}` (the column default) into a complete
 // value, so defaults live here and nowhere else (D-041).
@@ -61,32 +64,52 @@ const SavedViews = z
     })
   })
 
-/** `soldier_preferences.preferences`. A stored key no longer named here (`pinned_modules`, D-221, D-291; `rules_row_placement`, D-310) is dropped on read. */
+const preferenceFields = {
+  /** Pre-selects "create as approved" for actors who hold leaves:approve (D-013). */
+  create_leaves_as_approved: z.boolean().default(false),
+  /** The color scheme (D-181); light until chosen. */
+  appearance: Appearance.default('light'),
+  /** The soldier's saved views, in their order (D-384). */
+  saved_views: SavedViews.default([]),
+  /** The saved view a bare open of the board starts on (D-386); one no longer saved reads as NULL. */
+  start_view_id: SavedViewId.nullable().catch(null).default(null),
+  /** The newest update the soldier has seen on "שלי"; NULL until the first look: everything in the window is unread (D-352). */
+  updates_seen_at: Timestamp.nullable().default(null),
+  /** Which phone notifications the soldier wants, on every device they turned them on (D-358). */
+  notifications: z
+    .object({ my_request: z.boolean().default(true), awaiting_me: z.boolean().default(true) })
+    .prefault({}),
+}
+
+/** A start view no longer saved reads as NULL (D-386). */
+function withSavedStart<T extends { saved_views: readonly SavedView[]; start_view_id: SavedViewId | null }>(preferences: T): T {
+  return preferences.saved_views.some((view) => view.id === preferences.start_view_id) ? preferences : { ...preferences, start_view_id: null }
+}
+
+/**
+ * `soldier_preferences.preferences`. A stored key no longer named here (`pinned_modules`, D-221, D-291;
+ * `rules_row_placement`, D-310) is dropped on read, and a board that no longer parses reads as none (D-349, D-361).
+ */
 export const SoldierPreferences = z
   .object({
-    /** Pre-selects "create as approved" for actors who hold leaves:approve (D-013). */
-    create_leaves_as_approved: z.boolean().default(false),
-    /** The color scheme (D-181); light until chosen. */
-    appearance: Appearance.default('light'),
-    /** The soldier's saved views, in their order (D-384). */
-    saved_views: SavedViews.default([]),
-    /** The saved view a bare open of the board starts on (D-386); one no longer saved reads as NULL. */
-    start_view_id: SavedViewId.nullable().catch(null).default(null),
-    /** The newest update the soldier has seen on "שלי"; NULL until the first look: everything in the window is unread (D-352). */
-    updates_seen_at: Timestamp.nullable().default(null),
-    /** Which phone notifications the soldier wants, on every device they turned them on (D-358). */
-    notifications: z
-      .object({ my_request: z.boolean().default(true), awaiting_me: z.boolean().default(true) })
-      .prefault({}),
+    ...preferenceFields,
+    /** The command dashboard's board (D-349); none until edited, so the default template applies. */
+    dashboard: DashboardLayout.nullable().catch(null).default(null),
   })
   // `overwrite`, not `transform`: the value is checked in place and the schema stays an object (D-039).
-  .overwrite((preferences) =>
-    preferences.saved_views.some((view) => view.id === preferences.start_view_id)
-      ? preferences
-      : { ...preferences, start_view_id: null },
-  )
+  .overwrite(withSavedStart)
   .prefault({})
 export type SoldierPreferences = z.infer<typeof SoldierPreferences>
+
+/** `soldier_preferences.preferences` as written: the board is checked whole, never repaired (D-361). */
+export const StrictSoldierPreferences = z
+  .object({
+    ...preferenceFields,
+    dashboard: StrictDashboardLayout.nullable().default(null),
+  })
+  .overwrite(withSavedStart)
+  .prefault({})
+export type StrictSoldierPreferences = z.infer<typeof StrictSoldierPreferences>
 
 /** One option of a select / multi_select property (`property_definitions.options`). */
 export const PropertyOption = z.object({

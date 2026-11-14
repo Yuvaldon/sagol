@@ -358,6 +358,16 @@ The current state (D-174): `logic/board` is the one model of every engine (rows,
 failed and empty states, the scroller region, the leave chip and the labels), outside `ui/engines`, so engines stay
 independent. Only the timeline has a core and a view; the list, the table and the calendar are adapters alone.
 
+## Dashboards (D-349, D-350, D-360 … D-362)
+
+- `domain/dashboard` holds the pure parts: the stored layout (templates, add, remove, move, reset), the plan against
+  the leaves' history, and "הסבב שלי"'s figures. `logic/dashboard` counts one tally per board from the board's rows and
+  window, so every card reads the same numbers, and reads what some cards need (rules, the plan's events through the
+  `leave_events` of the rotation's leaves, the inbox, the report) as `Loaded` values of their own, so one failed read fails one card.
+- The layout is `soldier_preferences.preferences.dashboard`, read leniently and written strictly (D-361). The board
+  opens by the `some_unit` policy target (D-362). `ui/modules/presence/DashboardModule.tsx` draws it with CSS charts
+  from `ui/primitives/charts.tsx`; `ui/modules/leaves/MyRotationSection.tsx` draws "הסבב שלי".
+
 ## Design system
 
 - Tailwind's default palette and spacing scale are reset. Only semantic tokens exist

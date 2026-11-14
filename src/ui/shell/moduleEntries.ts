@@ -21,6 +21,7 @@ import {
   FileText,
   Inbox,
   KeyRound,
+  LayoutDashboard,
   ListPlus,
   Network,
   Scale,
@@ -60,6 +61,13 @@ export function useNavigationEntries(): ReadonlyMap<WorkModule, ModuleEntry> {
   }
   // Checked by assignment below: every work module needs an entry (D-178).
   const entries = {
+    dashboard: access.dashboard && {
+      id: 'dashboard',
+      Icon: LayoutDashboard,
+      labelKey: 'dashboard.open',
+      onPress: opener(PANEL_IDS.dashboard),
+      count: null,
+    },
     soldiers: access.soldiers && { id: 'soldiers', Icon: Users, labelKey: 'soldiers.open', onPress: opener(PANEL_IDS.soldiers), count: null },
     rules: access.rules && { id: 'rules', Icon: Scale, labelKey: 'rules.open', onPress: rules.open, count: null },
     deployments: access.deployments && {

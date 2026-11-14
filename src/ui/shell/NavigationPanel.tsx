@@ -33,6 +33,7 @@ const SETUP_KEYS: Record<SetupSectionId, I18nKey> = {
 }
 
 const WORK_LINE_KEYS: Record<WorkModule, I18nKey> = {
+  dashboard: 'navigation.lines.dashboard',
   soldiers: 'navigation.lines.soldiers',
   account_links: 'navigation.lines.account_links',
   access_grants: 'navigation.lines.access_grants',

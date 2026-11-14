@@ -239,6 +239,7 @@ export function world(): World {
 export const soldierTarget = (name: SoldierName): PolicyTarget => ({ kind: 'soldier', soldier_id: S[name] })
 export const unitTarget = (unitId: UnitId): PolicyTarget => ({ kind: 'unit', unit_id: unitId })
 export const ORG: PolicyTarget = { kind: 'organization' }
+export const SOME_UNIT: PolicyTarget = { kind: 'some_unit' }
 
 // ================================================================================ matrix
 // actor × permission × target → allowed. One row per rule it proves.
@@ -319,4 +320,9 @@ export const MATRIX: MatrixRow[] = [
   ['organization scope with any covers every soldier', 'admin', 'access_grants', 'create', EVERY_SOLDIER, true],
   ['a unit scope does not cover every soldier', 'pc1', 'access_grants', 'create', EVERY_SOLDIER, false],
   ['tags do not accept every soldier', 'admin', 'tags', 'view', EVERY_SOLDIER, false],
+  // Some unit (D-362)
+  ['organization scope covers some unit', 'norank', 'leaves', 'view', SOME_UNIT, true],
+  ['a unit scope covers some unit', 'f21', 'leaves', 'view', SOME_UNIT, true],
+  ['a self scope does not cover some unit', 'f11', 'leaves', 'view', SOME_UNIT, false],
+  ['tags do not accept some unit', 'admin', 'tags', 'view', SOME_UNIT, false],
 ]

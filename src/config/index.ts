@@ -24,6 +24,7 @@ export {
 } from './env'
 export { CHANGE_FEED_CHANNEL, DEVICE_KEYS, INDEXED_DB_NAME, STORAGE_KEYS, type DeviceKey, type StorageKey } from './storage'
 export { INBOX, MINE } from './inbox'
+export { DASHBOARD, DASHBOARD_TEMPLATES } from './dashboard'
 export { NOTIFICATIONS } from './notifications'
 export { DAY_REPORT, DAY_REPORT_CATEGORIES, type DayReportCategory } from './report'
 export { LEAVE_BATCH, LEAVE_ROUNDS, LEAVE_SHEET } from './leaves'

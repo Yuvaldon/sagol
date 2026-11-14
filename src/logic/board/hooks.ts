@@ -1,5 +1,5 @@
 import type { CalendarDate, FilterExpression, SoldierId } from '@contracts'
-import { APPROVED_ONLY, createAvailabilityContext } from '@domain'
+import { APPROVED_ONLY, createAvailabilityContext, daysTally } from '@domain'
 import { useMemo } from 'react'
 import { useRotationScope } from '../view-state/rotation'
 import { useFilterSource } from '../filters/source'
@@ -79,8 +79,9 @@ export function useBoard(
     const countsAway = sorts.some((rule) => 'key' in rule && rule.key === 'absent')
     const availability =
       onlyMissing || countsAway ? createAvailabilityContext({ leaves: leaves.value, leave_types: leaveTypes.value }) : null
-    const awayDays = (soldierId: SoldierId) =>
-      window.days.map((day) => availability?.isAvailable(soldierId, day, APPROVED_ONLY) === false)
+    const isAway = (soldierId: SoldierId) => (day: CalendarDate) =>
+      availability?.isAvailable(soldierId, day, APPROVED_ONLY) === false
+    const awayDays = (soldierId: SoldierId) => window.days.map(isAway(soldierId))
     const items = boardItems({
       ...source.value,
       days: window.days,
@@ -91,7 +92,7 @@ export function useBoard(
       marked: hasLeaveConditions(leaveConditions) ? (soldierId) => drawn.has(soldierId) : null,
       absent: onlyMissing ? awayDays : null,
       sorts,
-      daysAway: countsAway ? (soldierId) => awayDays(soldierId).filter(Boolean).length : null,
+      daysAway: countsAway ? (soldierId) => daysTally(window.days, everyDay, isAway(soldierId)).home : null,
     })
     const soldierCount = items.filter((item) => item.kind === 'soldier').length
     const rosterCount = source.value.soldiers.length
@@ -100,3 +101,5 @@ export function useBoard(
 }
 
 const NO_SOLDIERS: readonly never[] = []
+// The board counts every day of its window: a row is a soldier in view, whatever they serve (D-349).
+const everyDay = () => true

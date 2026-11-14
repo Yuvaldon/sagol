@@ -38,6 +38,8 @@ export const PANEL_IDS = {
   accessGrants: 'access_grants',
   /** Import from a file, with its dry-run preview, and the organization's export (D-171). */
   dataTransfer: 'data_transfer',
+  /** The command dashboard (D-349). */
+  dashboard: 'dashboard',
   /** The organization's setup steps, each opening its own module (D-033, D-180). */
   setup: 'setup',
 } as const
@@ -65,6 +67,7 @@ export const PanelId = z.enum([
   PANEL_IDS.accessGrants,
   PANEL_IDS.dataTransfer,
   PANEL_IDS.setup,
+  PANEL_IDS.dashboard,
 ])
 export type PanelId = z.infer<typeof PanelId>
 
@@ -77,7 +80,7 @@ export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
  */
 export const WORK_SECTIONS = [
   { id: 'people', modules: ['soldiers', 'account_links', 'access_grants'] },
-  { id: 'presence', modules: ['deployments', 'rules'] },
+  { id: 'presence', modules: ['dashboard', 'deployments', 'rules'] },
 ] as const satisfies readonly { readonly id: string; readonly modules: readonly PanelId[] }[]
 export type WorkSectionId = (typeof WORK_SECTIONS)[number]['id']
 export type WorkModule = (typeof WORK_SECTIONS)[number]['modules'][number]

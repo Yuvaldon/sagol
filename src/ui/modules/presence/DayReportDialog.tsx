@@ -24,8 +24,8 @@ import {
   type ReportSection,
   type SectionConfirmation,
 } from '@logic'
-import { CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Share2, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CheckCheck, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Button as AriaButton, Dialog, Disclosure, DisclosurePanel, Heading, Modal } from 'react-aria-components'
 import { ModalOverlay } from '../../primitives/overlays'
 import { groupLabel } from '../../board/labels'
@@ -35,17 +35,13 @@ import { formatDate, formatDateRange } from '../../patterns/dates'
 import { Button, IconButton } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
 import { SwitchField } from '../../primitives/SwitchField'
-import { canShareFiles, downloadFile, imageLines, reportFile, reportImage } from './reportImage'
+import { CopyActions } from './CopyActions'
+import { imageLines } from './reportImage'
 import { CATEGORY_KEYS, entryDetails, entryName, reportWords } from './reportWords'
 
 // The day report (D-193 … D-196): a centered dialog over the board, on the URL's day or span. The counts, then one
 // section per unit with its names; the reasons behind a switch kept on the device; a text copy and an image to send.
 // Each unit's section is confirmed by who may, and shows when it changed since; the owner reads the tally (D-293).
-
-const NOTICES = { copied: 'presence.copied', copyFailed: 'presence.copyFailed', imageFailed: 'presence.imageFailed' } as const satisfies Record<string, I18nKey>
-
-/** A notice and its count, so the same notice twice in a row shows its full time again. */
-type Notice = { readonly kind: keyof typeof NOTICES; readonly seq: number } | null
 
 /** The selected scope's name: the unit, the single root in sight, or the whole organization. */
 function useScopeName(): string {
@@ -274,81 +270,18 @@ function Day({
 }
 
 function Actions({ report, scope, withReasons }: { readonly report: DayReport; readonly scope: string; readonly withReasons: boolean }) {
-  const [notice, setNotice] = useState<Notice>(null)
-  const notify = useCallback((kind: keyof typeof NOTICES) => {
-    setNotice((previous) => ({ kind, seq: (previous?.seq ?? 0) + 1 }))
-  }, [])
-  const [busy, setBusy] = useState(false)
-  const shares = useMemo(() => canShareFiles(), [])
   const first = report.days[0]?.date
-  useEffect(() => {
-    if (notice === null) return undefined
-    const timer = setTimeout(() => {
-      setNotice(null)
-    }, DAY_REPORT.noticeMs)
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [notice])
   if (first === undefined) return null
   const words = reportWords(scope)
-
-  const copy = () => {
-    // An insecure page or an old browser has no clipboard at all.
-    if (typeof navigator.clipboard?.writeText !== 'function') {
-      notify('copyFailed')
-      return
-    }
-    navigator.clipboard.writeText(reportText(report, words, withReasons)).then(
-      () => {
-        notify('copied')
-      },
-      () => {
-        notify('copyFailed')
-      },
-    )
-  }
-  const sendImage = async () => {
-    setBusy(true)
-    let file: File | null = null
-    try {
-      file = reportFile(await reportImage(imageLines(report, words, withReasons)), first)
-      if (shares) await navigator.share({ files: [file], title: t('presence.title') })
-      else downloadFile(file)
-    } catch (error) {
-      const name = error instanceof Error ? error.name : ''
-      // Closing the share sheet is not a failure; a share the browser refuses falls back to a download.
-      if (name === 'AbortError') return
-      if (file !== null && shares && (name === 'NotAllowedError' || name === 'TypeError')) downloadFile(file)
-      else notify('imageFailed')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
-    <>
-      <div className="flex flex-wrap gap-sm">
-        <Button variant="primary" onPress={copy}>
-          <Copy aria-hidden size={14} />
-          {t('presence.copy')}
-        </Button>
-        <Button
-          isDisabled={busy}
-          onPress={() => {
-            void sendImage()
-          }}
-        >
-          {shares ? <Share2 aria-hidden size={14} /> : <Download aria-hidden size={14} />}
-          {t(shares ? 'presence.share' : 'presence.download')}
-        </Button>
-      </div>
-      <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-lg top-safe z-10 flex justify-center">
-        {notice === null ? null : (
-          <div className="glass-card rounded-pill px-lg py-xs text-name font-semibold">{t(NOTICES[notice.kind])}</div>
-        )}
-      </div>
-    </>
+    <CopyActions
+      text={() => reportText(report, words, withReasons)}
+      lines={() => imageLines(report, words, withReasons)}
+      firstDay={first}
+      title={t('presence.title')}
+      copyKey="presence.copy"
+      imageKey={null}
+    />
   )
 }
 

@@ -37,19 +37,27 @@ export function useDeployments(): Loaded<readonly Deployment[]> {
 
 /**
  * Who serves in each rotation the actor reads, and on which days: the domain's one membership test (D-336), fed with
- * the member rows, the units (archived ones too, as the command reads them) and the memberships. NULL while they load.
+ * the member rows, the units (archived ones too, as the command reads them) and the memberships; a failed read says so.
  */
-export function useRotationMembership(): RotationMembership | null {
+export function useLoadedRotationMembership(): Loaded<RotationMembership> {
   const members = useDeploymentMembers()
   const units = useUnitsWithArchived()
   const memberships = useMemberships()
-  return useMemo(
-    () =>
-      members.status === 'ready' && units.status === 'ready' && memberships.status === 'ready'
-        ? createRotationMembership({ units: units.value, unit_memberships: memberships.value, deployment_members: members.value })
-        : null,
-    [members, units, memberships],
-  )
+  return useMemo((): Loaded<RotationMembership> => {
+    if (members.status !== 'ready') return members
+    if (units.status !== 'ready') return units
+    if (memberships.status !== 'ready') return memberships
+    return {
+      status: 'ready',
+      value: createRotationMembership({ units: units.value, unit_memberships: memberships.value, deployment_members: members.value }),
+    }
+  }, [members, units, memberships])
+}
+
+/** The same test, NULL until it is ready. */
+export function useRotationMembership(): RotationMembership | null {
+  const membership = useLoadedRotationMembership()
+  return membership.status === 'ready' ? membership.value : null
 }
 
 /** The members of every deployment the actor sees, of the soldiers the actor sees. */
