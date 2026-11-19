@@ -454,7 +454,7 @@ export {
   type NewSoldierFromRequestValues,
 } from './accounts/forms'
 export { candidateRows, type CandidateRow } from './accounts/review'
-export { certainCandidate, useBulkLinkApproval, type BulkLinkAnswer, type BulkLinkAnswers } from './accounts/bulk'
+export { readyCandidate, useBulkLinkApproval, type BulkLinkAnswer, type BulkLinkAnswers } from './accounts/bulk'
 export {
   useCancelLinkRequest,
   useLinkCandidates,
