@@ -251,6 +251,8 @@ export interface DataRepositories {
   > & {
     /** Candidate soldiers for a request (D-030). Reviewers only; never the requester. */
     candidates(id: AccountLinkRequestId): AsyncResult<LinkCandidate[]>
+    /** The candidates with the request's readiness (D-447). Reviewers only; never the requester. */
+    assessment(id: AccountLinkRequestId): AsyncResult<LinkAssessment>
   }
   /** The signed-in soldier's own row; NULL until first saved. */
   soldier_preferences: { mine(): AsyncResult<SoldierPreferencesRecord | null> }
