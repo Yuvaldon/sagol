@@ -16,20 +16,24 @@ import {
   type AuthIdentity,
   type DataChange,
   type DataCommands,
+  type AsyncResult,
   type DataRepositories,
+  type LinkAssessment,
   type LinkCandidate,
   type OrganizationId,
   type SoldierId,
   type TableName,
   type TableRow,
 } from '@contracts'
+import { NAME_MATCH } from '@config'
 import {
   ACCOUNT_REVIEW_PERMISSION,
-  autoLinkSoldier,
+  approvalEnrichment,
+  assessLink,
+  autoLinkTarget,
   canReviewLinkRequest,
-  linkCandidates,
-  linkEnrichment,
   linkRequestTransitionIssues,
+  normalizeEmail,
   normalizePersonalId,
   placementTarget,
   reviewableCandidates,
@@ -90,9 +94,14 @@ interface ReadableRequest {
   readonly request: AccountLinkRequest
   /** Only the candidates the reviewer holds `accounts:approve` over (D-149). */
   readonly candidates: LinkCandidate[]
+  /** The readiness judged over every linkable soldier, with the candidates above (D-447). */
+  readonly assessment: LinkAssessment
 }
 
-/** The request as the actor may read it, or NULL: not theirs to review answers as if it did not exist (D-046). */
+/**
+ * The request as the actor may read it, or NULL: not theirs to review answers as if it did not exist (D-046). Its
+ * reviewer approves over the best candidate (D-450).
+ */
 function readableRequest(
   scope: ActorScope,
   data: LinkMatchData,
@@ -100,14 +109,18 @@ function readableRequest(
 ): ReadableRequest | null {
   if (stored === undefined || stored.organization_id !== scope.organization_id) return null
   const request = parsedRow('account_link_requests', stored)
-  const candidates = linkCandidates(request, data)
-  if (!canReviewLinkRequest(scope.context, scope.soldier_id, candidates)) return null
-  return { request, candidates: reviewableCandidates(scope.context, scope.soldier_id, candidates) }
+  const judged = assessLink(request, data, NAME_MATCH)
+  if (!canReviewLinkRequest(scope.context, scope.soldier_id, judged.candidates)) return null
+  const candidates = reviewableCandidates(scope.context, scope.soldier_id, judged.candidates)
+  return { request, candidates, assessment: { ...judged, candidates } }
 }
 
-export function createAccountLinkRequestRepository(
-  dependencies: LocalDependencies,
-): DataRepositories['account_link_requests'] {
+/** Until the contracts declare `assessment` (D-127). */
+type LinkRequestRepository = DataRepositories['account_link_requests'] & {
+  assessment(id: AccountLinkRequestId): AsyncResult<LinkAssessment>
+}
+
+export function createAccountLinkRequestRepository(dependencies: LocalDependencies): LinkRequestRepository {
   const { database } = dependencies
 
   async function readOne(id: AccountLinkRequestId): Promise<ReadableRequest> {
@@ -121,6 +134,8 @@ export function createAccountLinkRequestRepository(
     get: (id) => asResult(() => database.transaction('r', LINK_TABLES, async () => (await readOne(id)).request)),
 
     candidates: (id) => asResult(() => database.transaction('r', LINK_TABLES, async () => (await readOne(id)).candidates)),
+
+    assessment: (id) => asResult(() => database.transaction('r', LINK_TABLES, async () => (await readOne(id)).assessment)),
 
     list: (raw) =>
       asResult(() => {
@@ -222,7 +237,39 @@ function accountRow(
   })
 }
 
-/** Approval fills a missing personal number of the soldier from the request; one another soldier holds is skipped (D-149). */
+/** Another soldier of the organization already invites this email (D-449). Emails compare normalized (D-066). */
+async function inviteEmailTaken(database: Store, scope: ActorScope, soldierId: SoldierId, email: string): Promise<boolean> {
+  const rows = await tableOf(database, 'soldier_private').where('organization_id').equals(scope.organization_id).toArray()
+  return rows.some(
+    (row) => row.soldier_id !== soldierId && row.invite_email !== null && normalizeEmail(row.invite_email) === email,
+  )
+}
+
+/**
+ * What approval fills on a soldier (D-149, D-449): the request's personal number and email where the soldier has none.
+ * A value another soldier holds is skipped, each field on its own. NULL when nothing is left to fill.
+ */
+async function enrichmentFor(
+  database: Store,
+  scope: ActorScope,
+  request: AccountLinkRequest,
+  soldierId: SoldierId,
+  stored: Pick<TableRow<'soldier_private'>, 'personal_id' | 'invite_email'> | null,
+): Promise<{ personal_id: string | null; invite_email: string | null } | null> {
+  const fill = approvalEnrichment(request, stored)
+  if (fill === null) return null
+  const personalId =
+    fill.personal_id === undefined || (await personalIdIssues(database, scope, soldierId, fill.personal_id, [])).length > 0
+      ? null
+      : fill.personal_id
+  const inviteEmail =
+    fill.invite_email === undefined || (await inviteEmailTaken(database, scope, soldierId, fill.invite_email))
+      ? null
+      : fill.invite_email
+  return personalId === null && inviteEmail === null ? null : { personal_id: personalId, invite_email: inviteEmail }
+}
+
+/** Approval fills the linked soldier's missing personal number and invite email from the request (D-149, D-449). */
 async function enrichSoldier(
   database: Store,
   scope: ActorScope,
@@ -230,15 +277,14 @@ async function enrichSoldier(
   soldierId: SoldierId,
 ): Promise<boolean> {
   const stored = await tableOf(database, 'soldier_private').get(soldierId)
-  const fill = linkEnrichment(request, stored ?? null)
+  const fill = await enrichmentFor(database, scope, request, soldierId, stored ?? null)
   if (fill === null) return false
-  if ((await personalIdIssues(database, scope, soldierId, fill.personal_id, [])).length > 0) return false
   await tableOf(database, 'soldier_private').put(
     parsedRow('soldier_private', {
       soldier_id: soldierId,
       organization_id: scope.organization_id,
-      personal_id: fill.personal_id,
-      invite_email: stored?.invite_email ?? null,
+      personal_id: fill.personal_id ?? stored?.personal_id ?? null,
+      invite_email: fill.invite_email ?? stored?.invite_email ?? null,
       phone: stored?.phone ?? null,
       ...updatedBy(scope.soldier_id, scope.now, stored?.version ?? 0),
     }),
@@ -280,6 +326,8 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
         const written = await database.transaction('rw', LINK_TABLES, async () => {
           const session = await resolveSession(database, identity)
           if (session.status === 'linked') return fail({ code: 'forbidden' })
+          // Matching and approval trust the request's email, so only a verified one is recorded (D-005, D-451).
+          if (!identity.email_verified) return fail({ code: 'forbidden' })
           const [organization] = await tableOf(database, 'organizations').toArray()
           if (organization === undefined) return fail({ code: 'not_found' })
 
@@ -294,10 +342,18 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
 
           const claimedId = input.claimed_personal_id === null ? null : normalizePersonalId(input.claimed_personal_id)
           const data = await matchDataOf(database, organization.id)
-          // Only an email the provider verified links without a person (D-005).
-          const soldierId = identity.email_verified
-            ? autoLinkSoldier({ personal_id: claimedId, verified_email: identity.email }, data)
-            : null
+          // Either detail links without a person (D-445); the email is verified, checked above (D-451).
+          const soldierId = autoLinkTarget(
+                {
+                  auth_user_id: identity.auth_user_id,
+                  personal_id: claimedId,
+                  verified_email: identity.email,
+                  first_name: input.first_name,
+                  last_name: input.last_name,
+                },
+                data,
+                NAME_MATCH,
+              )
           const now = time.now()
           const base = {
             id: input.id,
@@ -416,9 +472,8 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
 
           if (resolution.kind === 'create_soldier') {
             const membership = resolution.membership
-            // A number another soldier holds is skipped, not refused (D-149).
-            const claimed = request.claimed_personal_id === null ? null : normalizePersonalId(request.claimed_personal_id)
-            const taken = claimed === null || (await personalIdIssues(database, scope, resolution.soldier_id, claimed, [])).length > 0
+            // A number or an email another soldier holds is skipped, not refused (D-149, D-449).
+            const fill = await enrichmentFor(database, scope, request, resolution.soldier_id, null)
             const created = await insertSoldier(
               database,
               scope,
@@ -433,7 +488,7 @@ export function createAccountCommands(dependencies: LocalDependencies): LocalAcc
                   properties: {},
                 },
                 membership,
-                private: taken ? null : { personal_id: claimed, invite_email: null, phone: null },
+                private: fill === null ? null : { ...fill, phone: null },
               },
               ['resolution'],
             )
