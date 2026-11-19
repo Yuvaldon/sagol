@@ -144,7 +144,7 @@ const COMPANY_COMMAND = {
   accounts: ['view', 'approve'],
 } as const satisfies TemplatePermissions
 
-/** A platoon's commanders: their platoon's soldiers and requests, approval included (D-265). */
+/** A platoon's commanders: their platoon's soldiers and requests, approval included (D-265), and its join requests (D-450). */
 const PLATOON_COMMAND = {
   ...SETUP_READ,
   soldiers: ['view', 'update'],
@@ -153,6 +153,7 @@ const PLATOON_COMMAND = {
   day_reports: DAY_REPORTS,
   leave_comments: TALK,
   internal_comments: TALK,
+  accounts: ['view', 'approve'],
 } as const satisfies TemplatePermissions
 
 /** A squad's commander: sees the squad and asks for its soldiers, without approving (D-265). */

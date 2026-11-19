@@ -108,16 +108,19 @@ The data layer is written as if it were the server:
   black and that name. Production has no such variable and stays unmarked.
 - **Accounts:** `soldier_accounts` links a provider identity to a soldier. Commanders may
   create soldiers with names only (personal ID and email optional). Linking is automatic
-  only on personal ID + verified invite email match. Anything else becomes an
-  `account_link_requests` row. Domain proposes candidate matches (personal ID, then
-  normalized names, in either order) to the reviewer only, and approval fills a missing
-  personal ID (D-030, D-066). Personal IDs are stored normalized. Unlinked accounts see
+  on a verified invite email, or on the personal ID with a close name (D-445). Anything else becomes an
+  `account_link_requests` row. Domain proposes candidate matches (personal ID with a close name, invite email,
+  personal ID alone, close name; names leniently, D-446) to the reviewer only, with a derived readiness (D-447), and
+  approval fills a missing personal ID and invite email (D-030, D-449). Personal IDs are stored normalized. Unlinked accounts see
   nothing, and requesters never learn whether a match exists.
-- **Linking, as built (V9, D-148 to D-151):** `accounts.requestLink` (an identity with no account; auto-link on a verified
-  email, the personal number and the invite email, else a pending request; both answer `{ outcome }`),
+- **Linking, as built (V9, D-148 to D-151; R3·J, D-445 … D-451):** `accounts.requestLink` (an identity with no account;
+  auto-link on a verified email when `assessLink` finds the request `ready` by invite email or by personal number with a
+  close name, else a pending request; both answer `{ outcome }`),
   `cancelLinkRequest` (the asker), `reviewLink` (link to a candidate, create a soldier, reject). A reviewer reads, and may
-  name, only the candidates over which they hold `accounts:approve` (`reviewableCandidates`); approval fills a missing
-  personal number. Candidates are computed on each read. Screens: the request form and waiting notice of onboarding, and
+  name, only the candidates over which they hold `accounts:approve` (`reviewableCandidates`), and reads only requests
+  whose best candidate they approve over (D-450); approval fills a missing personal number and invite email, skipping
+  one another soldier holds. Candidates and the readiness (`account_link_requests.assessment`) are computed on each
+  read. The name-typo threshold is `config` `NAME_MATCH`. Screens: the request form and waiting notice of onboarding, and
   the account-links module in the bar. Not built: invite links (D-152).
 - **Access, as built (V10, D-156 to D-166):** `roles` (with their permission set), `rank_role_bindings`, `access_grants`
   (grant and revoke) and `organizations.baseline_role_id`. Every way of giving a role is guarded: the writer must hold
@@ -166,8 +169,8 @@ descendants and depth, and rejects cycles. Postgres keeps a trigger-maintained
 change. The claim creates the organization and its root unit from one name (V27, D-251); templates (`config/templates`)
 are applied by `logic/organization/template` as a sequence of the ordinary commands that stops at the first refusal (D-261).
 Quick entry of several soldiers (`logic/roster/quickEntry`, D-282) runs `soldiers.create` once per grid row, saved row by
-row; approving several join requests (`logic/accounts/bulk`, D-283) links each one through its own review, and only a
-single match by personal number.
+row; approving several join requests (`logic/accounts/bulk`, D-283, D-448) links each `ready` one through its own review,
+and answers the others with the reason.
 
 ## Availability (D-012, D-014, D-070 … D-073)
 

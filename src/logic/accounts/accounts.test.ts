@@ -8,7 +8,7 @@ import {
   toReviewLinkInput,
 } from './forms'
 import { candidateRows } from './review'
-import { certainCandidate } from './bulk'
+import { readyCandidate } from './bulk'
 import type { SoldierRow } from '../roster/roster'
 
 // Test data only (iron rule 4).
@@ -90,14 +90,17 @@ describe('candidateRows', () => {
   })
 })
 
-describe('approving in bulk (D-283)', () => {
-  it('links only the one candidate matched by personal number', () => {
+describe('approving in bulk (D-448)', () => {
+  it('links the best candidate of a ready request, name-only included, and nothing else', () => {
     const one = SoldierId.parse(uuid(30))
     const two = SoldierId.parse(uuid(31))
-    const byId: LinkCandidate = { soldier_id: one, match: 'personal_id' }
-    expect(certainCandidate([byId])).toBe(one)
-    expect(certainCandidate([])).toBeNull()
-    expect(certainCandidate([{ soldier_id: one, match: 'name' }])).toBeNull()
-    expect(certainCandidate([byId, { soldier_id: two, match: 'name' }])).toBeNull()
+    const byName: LinkCandidate = { soldier_id: one, match: 'name' }
+    const other: LinkCandidate = { soldier_id: two, match: 'name' }
+    expect(readyCandidate({ readiness: 'ready', candidates: [byName, other] })).toBe(one)
+    expect(readyCandidate({ readiness: 'no_match', candidates: [] })).toBeNull()
+    expect(readyCandidate({ readiness: 'ready', candidates: [] })).toBeNull()
+    expect(
+      readyCandidate({ readiness: 'needs_review', reason: 'several_candidates', candidates: [byName, other] }),
+    ).toBeNull()
   })
 })

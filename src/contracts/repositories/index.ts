@@ -181,12 +181,42 @@ export const ReportSectionCount = z.object({
 })
 export type ReportSectionCount = z.infer<typeof ReportSectionCount>
 
-/** Why a soldier is proposed for a link request (D-030). Shown to the reviewer only. */
-export const LinkCandidateMatch = z.enum(['personal_id', 'name'])
+/** Why a soldier is proposed for a link request (D-030, D-447). Shown to the reviewer only. */
+export const LinkCandidateMatch = z.enum(['personal_id', 'email', 'name'])
 export type LinkCandidateMatch = z.infer<typeof LinkCandidateMatch>
 
 export const LinkCandidate = z.object({ soldier_id: SoldierId, match: LinkCandidateMatch })
 export type LinkCandidate = z.infer<typeof LinkCandidate>
+
+/** How ready a pending join request is for approval (D-447). Derived on every read, never stored (D-019). */
+export const LinkReadiness = z.enum(['ready', 'needs_review', 'no_match'])
+export type LinkReadiness = z.infer<typeof LinkReadiness>
+
+/** Why a join request needs its own review (D-447). */
+export const LinkReviewReason = z.enum([
+  'personal_id_differs',
+  'several_candidates',
+  'email_and_id_differ',
+  'invite_email_differs',
+  'name_differs',
+  'previously_unlinked',
+])
+export type LinkReviewReason = z.infer<typeof LinkReviewReason>
+
+/**
+ * A join request as its reviewer sees it (D-447): the candidates they may name, best first, and the readiness, judged
+ * over every linkable soldier. Reviewers only; never the requester.
+ */
+export const LinkAssessment = z.discriminatedUnion('readiness', [
+  z.object({ readiness: z.literal(LinkReadiness.enum.ready), candidates: z.array(LinkCandidate) }),
+  z.object({
+    readiness: z.literal(LinkReadiness.enum.needs_review),
+    reason: LinkReviewReason,
+    candidates: z.array(LinkCandidate),
+  }),
+  z.object({ readiness: z.literal(LinkReadiness.enum.no_match), candidates: z.array(LinkCandidate) }),
+])
+export type LinkAssessment = z.infer<typeof LinkAssessment>
 
 // -------------------------------------------------------------- repositories
 
@@ -221,6 +251,8 @@ export interface DataRepositories {
   > & {
     /** Candidate soldiers for a request (D-030). Reviewers only; never the requester. */
     candidates(id: AccountLinkRequestId): AsyncResult<LinkCandidate[]>
+    /** The candidates with the request's readiness (D-447). Reviewers only; never the requester. */
+    assessment(id: AccountLinkRequestId): AsyncResult<LinkAssessment>
   }
   /** The signed-in soldier's own row; NULL until first saved. */
   soldier_preferences: { mine(): AsyncResult<SoldierPreferencesRecord | null> }

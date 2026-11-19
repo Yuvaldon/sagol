@@ -21,7 +21,7 @@ am = amends, ref = refines, ext = extends.
 | D-002 | Command rank is the single user-defined level | contracts, domain, ui | ext D-029; ref D-095 |
 | D-003 | Permissions are data: roles, rank bindings, grants | contracts, domain, data, logic, backend | sup D-028 (scope); ref D-040, D-053, D-056, D-060 |
 | D-004 | System administrator is a grant, not a flag | domain, data, backend | ref D-059, D-079 |
-| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149; ref D-207, D-208; ref D-251 |
+| D-005 | Production bootstrap and account linking | contracts, domain, data, app, backend, ui | ref D-030; ref D-148, D-149; ref D-207, D-208; ref D-251; sup D-445 |
 | D-006 | Development mode is the real system with a local identity | app, data, tooling | ref D-086 |
 | D-007 | Pure layer `domain` | domain, data, logic, tooling | am D-035; ref D-203 |
 | D-008 | Server-authoritative data layer | data, backend | ref D-090; ref D-201 |
@@ -46,7 +46,7 @@ am = amends, ref = refines, ext = extends.
 | D-027 | Backend target (superseded) | backend | sup D-200 |
 | D-028 | Unified scope model with relative anchors | contracts, domain, data, backend | ref D-053, D-054, D-055 |
 | D-029 | Effective seniority with personal overrides | contracts, domain, backend | ref D-057 |
-| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149; ref D-163 |
+| D-030 | Account linking without email | contracts, domain, data, ui, backend | ref D-066, D-069; ref D-148, D-149; ref D-163; sup D-445; ref D-447 |
 | D-031 | Availability rules: grouping, global scope, priority | contracts, domain, ui | ref D-067 (canonical population), D-071, D-072; ref D-139, D-140 |
 | D-032 | User-managed leave types; availability is a partition | contracts, domain, ui | ref D-070; ref D-111, D-113; ref D-134; ref D-347 |
 | D-033 | Simple first-run setup wizard | ui | ref D-180; ref D-261, D-262 |
@@ -82,7 +82,7 @@ am = amends, ref = refines, ext = extends.
 | D-063 | Leave state machine and its permissions | domain, data, logic, ui, backend | ref D-114; ref D-117, D-118; ref D-124 |
 | D-064 | Editing a leave and its approval | domain, data, logic, ui, backend | ref D-117, D-119; ref D-123 |
 | D-065 | Property values, options and tag selection | domain, data, logic, ui, backend | ref D-130; ref D-176; ref D-186 |
-| D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-149 |
+| D-066 | Account-link matching and personal ids | domain, data, ui, backend | ref D-069; ref D-149; sup D-445; ref D-446 |
 | D-067 | Filter semantics and canonical form | domain, data, logic, ui, backend | ref D-104, D-105; ref D-131; ref D-147; ref D-381 |
 | D-068 | Schema issue mapping | domain, data, logic | |
 | D-069 | `personal_id` is the military personal number | contracts, domain, data, ui, backend | |
@@ -164,8 +164,8 @@ am = amends, ref = refines, ext = extends.
 | D-145 | Approving shows the rules' answer, not a live warning | logic, ui | ref D-255 |
 | D-146 | A live warning lists hard and soft rules together | logic, ui | |
 | D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | ref D-174 |
-| D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | |
-| D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | ref D-163, D-164 |
+| D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | sup D-445; ref D-451 |
+| D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | ref D-163, D-164; ref D-447; ext D-449; ref D-450 |
 | D-150 | The account-links module | config, logic, ui | |
 | D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168; ref D-330 |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
@@ -269,7 +269,7 @@ am = amends, ref = refines, ext = extends.
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | am D-340 |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | ref D-341 |
 | D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
-| D-283 | Approving several join requests: each one linked by its own review | logic, ui | |
+| D-283 | Approving several join requests: each one linked by its own review | logic, ui | sup D-448 |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297 |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
@@ -371,6 +371,13 @@ am = amends, ref = refines, ext = extends.
 | D-442 | "שמירת השינויים": the board keeps the saved view it was put in, and saves a change over it | config, logic, i18n, ui | |
 | D-443 | "סטטוס דוח 1" adds tomorrow's report from a config cut-over hour in the organization's time zone | domain, config, logic, ui | |
 | D-444 | The D-183 update flow is walked in a browser by changing the built worker on disk | tooling | |
+| D-445 | Join linking auto-links on either detail: the invite email, or the personal id with a close name | contracts, domain, data, backend || ref D-451 |
+| D-446 | Names compare leniently: light typos per name part | domain, config, data | |
+| D-447 | Every pending join request carries a derived readiness and, when it needs review, the reason | contracts, domain, data, logic || ref D-451 |
+| D-448 | Bulk approval links every `ready` request | logic | |
+| D-449 | Approval fills the soldier's missing invite email too | domain, data || ref D-451 |
+| D-450 | The reviewer of a join request is who approves over its best candidate; platoon commanders review | domain, config, data | ref D-451 |
+| D-451 | Join linking hardened: a verified email to ask, no automatic return to an unlinked soldier, details held elsewhere | contracts, domain, data | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5462,3 +5469,93 @@ should show it then. A fixed hour is the smallest honest rule; a per-organizatio
 **Why:** Playwright cannot route a worker script's update fetch, but it does not need to: the preview serves the file
 from disk, so changing the file is a real new version. Everything up to the toast runs for real; the toast itself is
 the one part that needs a workspace, and a test would need a bypass of D-006 to reach it.
+
+## D-445 — Join linking auto-links on either detail: the invite email, or the personal id with a close name
+2026-11-19 · accepted · supersedes the "both" rule of D-005, D-030, D-066, D-148 · R3·J · `docs/specs/join-linking.md`
+- A sign-in with a verified email links without review when the request's assessment (D-447) is `ready` and its one
+  candidate was found by a **strong** detail: the soldier's `invite_email` equals the verified email, or the soldier's
+  `personal_id` equals the claimed one and the name is close (D-446). A `ready` request found by name only never
+  links by itself. An email the provider did not verify never links (D-005).
+- Every contradiction D-447 names keeps the request pending: email and personal id on different soldiers, the
+  personal-id soldier's invite email differing from the verified one, the email soldier holding another personal id,
+  more than one soldier either way, a personal id whose soldier's name is not close.
+- Auto-link and the reviewer's readiness are one domain function, so what links by itself and what a commander sees
+  as `ready` cannot drift.
+- **Accepted risk (the owner's explicit choice):** a personal id plus a close name links with no human in the loop,
+  which is weaker than a verified email. The name guards against a mistyped personal id; a wrong link is undone by
+  unlinking (D-163).
+**Why:** the commander should need only the soldier's name; every extra detail they enter saves a manual approval.
+
+## D-446 — Names compare leniently: light typos per name part
+2026-11-19 · accepted · refines D-066 · R3·J
+- Two names are close when, after `normalizeName` (D-066), the first and last names match in order or swapped, each
+  part equal or within `NAME_MATCH.max_edits` edits (Levenshtein) of the other. A part shorter than
+  `NAME_MATCH.min_typo_length` letters must be equal, so short names that differ by a letter ("דן", "רן") stay
+  different people. Both constants live in `config`; `domain` takes them as an argument (rule 2; domain imports
+  contracts only).
+- The same comparison feeds auto-link (D-445), the reviewer's candidates and the readiness (D-447).
+**Why:** a commander typing a name from memory makes typos; a typo is a normal match, not a contradiction.
+
+## D-447 — Every pending join request carries a derived readiness and, when it needs review, the reason
+2026-11-19 · accepted · refines D-030, D-149 · R3·J
+- **Candidates**, each linkable soldier (D-163) once under its strongest match, best first: personal id with a close
+  name, then invite email (`match: 'email'`, new), then a personal id whose name is not close, then close name only.
+  Ties follow `data.soldiers`.
+- **Readiness**, judged over every linkable soldier, in this order:
+  1. more than one soldier by invite email or by personal id → `needs_review`, `several_candidates`;
+  2. one by email and another by personal id → `needs_review`, `email_and_id_differ`;
+  3. one soldier by email or personal id: its invite email differs from the request's email →
+     `invite_email_differs`; it holds a personal id other than the claimed one → `personal_id_differs`; found by
+     personal id with a name that is not close → `name_differs` (added by the builder: a mistyped personal id
+     must not pass as `ready`); otherwise `ready`. Soldiers matching by name only are not counted beside it, the
+     same as auto-link (D-445);
+  4. otherwise by name only: none → `no_match`; more than one → `several_candidates`; one → the same invite-email
+     and personal-id checks, otherwise `ready`.
+- Read through `account_link_requests.assessment(id)`: the candidates the reviewer may name (D-149) with the
+  readiness. Vocabularies `LinkReadiness`, `LinkReviewReason` in `contracts`. No column (D-019).
+**Why:** the new join-requests screen sorts requests into "מוכנה", "דורשת בדיקה" and "אין התאמה"; the reason tells
+the commander what to check.
+
+## D-448 — Bulk approval links every `ready` request
+2026-11-19 · accepted · supersedes D-283's "single personal-id match only" · R3·J
+- `useBulkLinkApproval` reads each chosen request's assessment at the run and links every `ready` one, name-only
+  included, each through its own `accounts.reviewLink` kind `link` (permissions and validation stay, rule 4). Any
+  other request is not run; its answer is `{ kind: 'needs_review', reason }`, with `reason` NULL for `no_match`.
+- The current screen keeps its generic "needs its own review" text; the reason is there for the new screen.
+**Why:** the readiness already says which requests are safe; bulk approval follows it.
+
+## D-449 — Approval fills the soldier's missing invite email too
+2026-11-19 · accepted · extends D-149 · R3·J
+- `linkEnrichment` fills what the linked soldier lacks: the claimed `personal_id` (as before) and the requester's
+  email, normalized, as `invite_email`. A soldier created from the request gets both the same way. A value is never overwritten, and names never change. A value another soldier of the
+  organization already holds is skipped, not refused, for each field on its own (D-149's duplicate rule).
+**Why:** the next sign-in of that person, on a new device, links at once by email (D-445).
+
+## D-450 — The reviewer of a join request is who approves over its best candidate; platoon commanders review
+2026-11-19 · accepted · refines D-149 · R3·J
+- A request is read and reviewed by who holds `accounts:approve` over its **best** candidate (D-447's order); a
+  request with no candidate goes to organization scope. Before, any candidate sufficed. The data layer still shows
+  only the candidates the reviewer approves over.
+- The `platoon_command` template gains `accounts: ['view', 'approve']`, anchored on its home unit with its
+  descendants (D-265). This reaches organizations created from now on; an existing organization, production
+  included, grants it in its permissions screen. Creating a new soldier from a request still needs `soldiers:create`,
+  which a platoon commander lacks: they link, they do not create.
+**Why:** the platoon commander knows their soldiers by name; the company commander gets the requests nobody matches.
+
+## D-451 — Join linking hardened: a verified email to ask, no automatic return to an unlinked soldier, details held elsewhere
+2026-11-19 · accepted · refines D-148, D-445, D-447, D-449, D-450 · R3·J · from the slice's own review
+- **Asking needs a verified email.** `requestLink` refuses an identity whose email the provider did not verify
+  (`forbidden`, nothing written). A request's email feeds the readiness, bulk approval and the invite email filled on
+  approval, so only a verified one is recorded. Google always verifies, so production sign-ins are unchanged.
+- **No automatic return.** A soldier this identity was unlinked from (a revoked account, D-163) is `needs_review`,
+  reason `previously_unlinked` (added to `LinkReviewReason`): it never links by itself or in bulk again, even though
+  approval had filled that soldier's invite email or personal id. A person decides.
+- **Details held elsewhere.** The claimed personal id, or the request's email, held by another soldier who cannot be
+  linked (archived, or with a live link) contradicts a candidate: `personal_id_differs` or `invite_email_differs`.
+- **Accepted, recorded:** the readiness is judged over every linkable soldier (D-447) while a reviewer sees only the
+  candidates they approve over, so a reason can tell a platoon commander that some soldier beyond their scope holds
+  the claimed id or email, never which one. A platoon commander also learns that their own candidate's personal id or
+  invite email matches the request (`match`), without `soldier_private:view`. With `accounts:approve`
+  (D-450) a platoon commander may also unlink their soldiers (D-163).
+**Why:** the review of R3·J: an unverified email was trusted at review time, and a wrong approval followed by an unlink
+would link the same person back with no one in the loop.

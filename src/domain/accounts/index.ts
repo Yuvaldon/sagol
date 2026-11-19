@@ -1,12 +1,16 @@
 export { normalizeEmail, normalizeName, normalizePersonalId } from './normalize'
 export {
   ACCOUNT_REVIEW_PERMISSION,
-  autoLinkSoldier,
+  assessLink,
+  approvalEnrichment,
+  autoLinkTarget,
   canReviewLinkRequest,
-  linkCandidates,
-  linkEnrichment,
   linkRequestTransitionIssues,
+  namesClose,
   reviewableCandidates,
-  type AutoLinkClaim,
+  type AutoLinkTargetClaim,
+  type LinkClaim,
+  type LinkEnrichment,
   type LinkMatchData,
+  type NameMatchOptions,
 } from './matching'

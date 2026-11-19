@@ -71,7 +71,7 @@ const REPOSITORY_METHODS = {
   soldier_private: REFERENCE,
   unit_memberships: REFERENCE,
   soldier_preferences: { mine: true },
-  account_link_requests: { ...REFERENCE, candidates: true },
+  account_link_requests: { ...REFERENCE, candidates: true, assessment: true },
   soldier_accounts: REFERENCE,
   roles: REFERENCE,
   role_permissions: LIST,

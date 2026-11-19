@@ -199,13 +199,13 @@ test.describe('account linking', () => {
     })
   })
 
-  test('approving several requests at once links only a certain match (D-283)', async ({ page }) => {
+  test('approving several requests at once links every ready one (D-448)', async ({ page }) => {
     await enterAsOwner(page)
     await createUnit(page, UNIT)
-    // The personal number alone, with no invite email, so the request waits for a reviewer.
-    await addSoldier(page, ROTEM.first, ROTEM.last, { personalId: ROTEM.personalId, email: '' })
+    // The name alone: the request is ready, yet waits for a reviewer, since a name never links by itself (D-445).
+    await addSoldier(page, ROTEM.first, ROTEM.last)
 
-    await test.step('two identities ask, one with the number of a soldier', async () => {
+    await test.step('two identities ask, one with the name of a soldier', async () => {
       await signOut(page)
       await ask(page, ROTEM)
       await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
@@ -216,7 +216,7 @@ test.describe('account linking', () => {
       await expect(menuButton(page)).toContainText('2')
     })
 
-    await test.step('both are chosen and approved; the match is linked, the other is left for review', async () => {
+    await test.step('both are chosen and approved; the ready one is linked, the other is left for review', async () => {
       await openAccountLinks(page)
       await drawer(page).getByRole('button', { name: he.accountLinks.bulk.open }).click()
       const chooser = drawer(page).getByRole('group', { name: he.accountLinks.bulk.choose })
