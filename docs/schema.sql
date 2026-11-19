@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS "soldier_private" (
 	"soldier_id" UUID NOT NULL REFERENCES "soldiers"("id"),
 	"organization_id" UUID NOT NULL REFERENCES "organizations"("id"),
 	"personal_id" VARCHAR(50),                       -- optional; military personal number, not national id (D-069); filled by commander or by approved link (D-030)
-	"invite_email" VARCHAR(255),                     -- optional; enables verified auto-link (D-005)
+	"invite_email" VARCHAR(255),                     -- optional; a verified sign-in with it auto-links (D-445); filled by approved link (D-449)
 	"phone" VARCHAR(30),
 	"updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"updated_by" UUID REFERENCES "soldiers"("id"),
