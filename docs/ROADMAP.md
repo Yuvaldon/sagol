@@ -166,7 +166,7 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 | A9b | audit | Security and readiness before 1.0: input refusals, the server store and the function across a deploy (D-410) | ☑ |
 | A9b fixes | A9b's findings | A push address that is not a URL refused as invalid (OI-350); the server store writes only the row's columns (OI-351, D-410); the function loads its catalog again after a failure (OI-352); OI-353 recorded for after 1.0 | ☑ |
 | A9c | audit | The R3-rest merges (#93, #94) on main at 3d65ba4; its one finding fixed: sign-out unsubscribes the browser even when it cannot read its install | ☑ |
-| R3·J | Join linking | The commander needs only the name: auto-link on email or on personal id with a close name, a derived readiness per request, bulk approve of every ready one, approval fills the missing personal id and invite email, the platoon commander reviews (`docs/specs/join-linking.md`). No `ui` change | ☐ |
+| R3·J | Join linking | The commander needs only the name: auto-link on email or on personal id with a close name, a derived readiness per request, bulk approve of every ready one, approval fills the missing personal id and invite email, the platoon commander reviews (`docs/specs/join-linking.md`, D-445 … D-451). No `ui` change | ☑ |
 | R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker's redesign (its two and four weeks are built in R3·C) | ☐ |
 | R5 | Building the design | The approved concept in the product | ☐ |
 | R6 | Acceptance testing | The journeys walked on the real product; the decision point on who maintains the system after handover (D-342) | ☐ |

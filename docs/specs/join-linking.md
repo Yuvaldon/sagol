@@ -1,5 +1,7 @@
 # Join linking: the commander needs only the name (R3·J)
 
+**Built** in R3·J (D-445 … D-451). Open items: OI-382 (the new screen's wiring), OI-383 (the grant in existing organizations).
+
 Approved by the owner on 2026-11-19 (D-170: what is not written here is decided by the builder and recorded).
 Built in the contracts, config, domain, data and logic layers only. **No `ui` change in this slice**: the owner is
 designing the join-requests screen separately and will hand it over later for wiring. The current interface
