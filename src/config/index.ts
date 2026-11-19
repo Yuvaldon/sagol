@@ -4,6 +4,7 @@
 export { DOM } from './dom'
 export { TOOLTIP } from './tooltip'
 export { FOCUS_MODE } from './focus'
+export { NAME_MATCH } from './accounts'
 export {
   ADAPTER_OF_AUTH_MODE,
   APP_STAGES,
