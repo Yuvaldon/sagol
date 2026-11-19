@@ -62,9 +62,6 @@ const SORTED_EDIT = { ...EDIT, reorder: true } as const
 const RESTORABLE = { ...EDIT, restore: true } as const
 const SORTED_RESTORABLE = { ...SORTED_EDIT, restore: true } as const
 
-/** Until the contracts declare `assessment`, a named table skips the excess check (D-127). */
-const LINK_REQUEST_METHODS = { ...REFERENCE, candidates: true, assessment: true } as const
-
 const REPOSITORY_METHODS = {
   organizations: { current: true },
   unit_levels: REFERENCE,
@@ -74,7 +71,7 @@ const REPOSITORY_METHODS = {
   soldier_private: REFERENCE,
   unit_memberships: REFERENCE,
   soldier_preferences: { mine: true },
-  account_link_requests: LINK_REQUEST_METHODS,
+  account_link_requests: { ...REFERENCE, candidates: true, assessment: true },
   soldier_accounts: REFERENCE,
   roles: REFERENCE,
   role_permissions: LIST,

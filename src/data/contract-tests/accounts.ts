@@ -205,16 +205,61 @@ export function describeAccountContract(
           })
         })
 
-        it('answers the same without a match, with a wrong email or with an unverified one', async () => {
+        it('links on the verified invite email alone (D-445)', async () => {
+          const soldier = await addSoldier('Dana', 'Levi', { personal_id: null, invite_email: 'dana@example.test' })
+          const { result } = await ask(stranger('DANA@example.test'), { first_name: 'Someone', last_name: 'Else' })
+          expect(valueOf(result)).toEqual({ outcome: 'linked' })
+          expect((await harness().rows('soldier_accounts')).some((row) => row.soldier_id === soldier)).toBe(true)
+        })
+
+        it('links on the personal number with a close name, a typo included (D-445, D-446)', async () => {
+          const soldier = await addSoldier('Daniel', 'Levinson', { personal_id: '12345', invite_email: null })
+          const { result } = await ask(stranger('dan@example.test'), {
+            claimed_personal_id: '012345',
+            first_name: 'Daniel',
+            last_name: 'Levinsom',
+          })
+          expect(valueOf(result)).toEqual({ outcome: 'linked' })
+          expect((await harness().rows('soldier_accounts')).some((row) => row.soldier_id === soldier)).toBe(true)
+        })
+
+        it('refuses an identity whose email the provider did not verify, and writes nothing (D-451)', async () => {
           await addSoldier('Dana', 'Levi', { personal_id: '12345', invite_email: 'dana@example.test' })
-          const cases: [AuthIdentity, string | null][] = [
-            [stranger('dana@example.test', { email_verified: false }), '12345'],
-            [stranger('other@example.test'), '12345'],
-            [stranger('dana@example.test'), '99999'],
-            [stranger('dana@example.test'), null],
+          const { result } = await ask(stranger('dana@example.test', { email_verified: false }), { claimed_personal_id: '12345' })
+          expect(errorOf(result).code).toBe('forbidden')
+          expect(await harness().rows('account_link_requests')).toEqual([])
+        })
+
+        it('never links again by itself to a soldier the identity was unlinked from (D-451)', async () => {
+          const soldier = await addSoldier('Dana', 'Levi', { personal_id: null, invite_email: 'dana@example.test' })
+          const dana = stranger('dana@example.test')
+          expect(valueOf((await ask(dana)).result)).toEqual({ outcome: 'linked' })
+          harness().signIn(owner)
+          const account = (await harness().rows('soldier_accounts')).find((row) => row.soldier_id === soldier)
+          if (account === undefined) throw new Error('the link was not written')
+          valueOf(await adapter().commands.accounts.revokeLink({ id: account.id }))
+          const { input, result } = await ask(dana)
+          expect(valueOf(result)).toEqual({ outcome: 'pending_review' })
+          harness().signIn(owner)
+          expect(valueOf(await adapter().repositories.account_link_requests.assessment(input.id))).toMatchObject({
+            readiness: 'needs_review',
+            reason: 'previously_unlinked',
+          })
+        })
+
+        it('answers the same without a match or on a contradiction (D-445)', async () => {
+          await addSoldier('Dana', 'Levi', { personal_id: '12345', invite_email: 'dana@example.test' })
+          const cases: [AuthIdentity, Partial<RequestAccountLinkInput>][] = [
+            // The personal number, with a name that is not close.
+            [stranger('other@example.test'), { claimed_personal_id: '12345' }],
+            // The email, with another personal number.
+            [stranger('dana@example.test'), { claimed_personal_id: '99999' }],
+            // The personal number and the name, with another invite email.
+            [stranger('other@example.test'), { claimed_personal_id: '12345', first_name: 'Dana', last_name: 'Levi' }],
+            [stranger('nobody@example.test'), { claimed_personal_id: null, first_name: 'No', last_name: 'One' }],
           ]
-          for (const [identity, claimed] of cases) {
-            const { result } = await ask(identity, { claimed_personal_id: claimed })
+          for (const [identity, claim] of cases) {
+            const { result } = await ask(identity, claim)
             expect(valueOf(result)).toEqual({ outcome: 'pending_review' })
           }
           expect(await harness().rows('soldier_accounts')).toHaveLength(1)
@@ -252,17 +297,45 @@ export function describeAccountContract(
           ])
         })
 
-        it('shows a unit reviewer only requests with a candidate they approve, and only those candidates (D-149)', async () => {
-          const inside = await addSoldier('Asher', 'Peretz')
-          await addSoldier('Asher', 'Peretz', null, false)
-          const { input: matching } = await ask(stranger('a@example.test'))
+        it('shows a unit reviewer only requests whose best candidate they approve, and only those candidates (D-149, D-450)', async () => {
+          // Each soldier invites another email, so neither request links by itself (D-445).
+          const inside = await addSoldier('Asher', 'Peretz', { personal_id: '444', invite_email: 'inside@example.test' })
+          const outside = await addSoldier('Asher', 'Peretz', { personal_id: '555', invite_email: 'outside@example.test' }, false)
+          const { input: matching } = await ask(stranger('a@example.test'), { claimed_personal_id: '444' })
+          const { input: elsewhere } = await ask(stranger('c@example.test'), { claimed_personal_id: '555' })
           await ask(stranger('b@example.test'), { first_name: 'Nobody', last_name: 'Known' })
           const { identity } = await unitReviewer()
           harness().signIn(identity)
           expect((await pendingOf(identity)).map((row) => row.id)).toEqual([matching.id])
           expect(valueOf(await adapter().repositories.account_link_requests.candidates(matching.id))).toEqual([
+            { soldier_id: inside, match: 'personal_id' },
+          ])
+          expect(errorOf(await adapter().repositories.account_link_requests.get(elsewhere.id)).code).toBe('not_found')
+          harness().signIn(owner)
+          expect(valueOf(await adapter().repositories.account_link_requests.candidates(elsewhere.id))).toEqual([
+            { soldier_id: outside, match: 'personal_id' },
             { soldier_id: inside, match: 'name' },
           ])
+        })
+
+        it('reads the readiness of each request with the candidates the reviewer may name (D-447)', async () => {
+          const ready = await addSoldier('Daniel', 'Levinson', { personal_id: '777', invite_email: null })
+          // A close name alone is ready, and never links by itself (D-445).
+          const { input: typo } = await ask(stranger('a@example.test'), { first_name: 'Daniel', last_name: 'Levinsom' })
+          const { input: differs } = await ask(stranger('b@example.test'), { claimed_personal_id: '888', first_name: 'Daniel', last_name: 'Levinson' })
+          const { input: none } = await ask(stranger('c@example.test'), { first_name: 'Nobody', last_name: 'Known' })
+          harness().signIn(owner)
+          const read = async (id: AccountLinkRequest['id']) => valueOf(await adapter().repositories.account_link_requests.assessment(id))
+          expect(await read(typo.id)).toEqual({ readiness: 'ready', candidates: [{ soldier_id: ready, match: 'name' }] })
+          expect(await read(differs.id)).toEqual({
+            readiness: 'needs_review',
+            reason: 'personal_id_differs',
+            candidates: [{ soldier_id: ready, match: 'name' }],
+          })
+          expect(await read(none.id)).toEqual({ readiness: 'no_match', candidates: [] })
+          const nobody = await seedActor(harness(), organization, [VIEW_SOLDIERS], { anchor_type: 'organization' })
+          harness().signIn(nobody.identity)
+          expect(errorOf(await adapter().repositories.account_link_requests.assessment(typo.id)).code).toBe('not_found')
         })
 
         it('shows nothing to an identity without the permission, and a request it may not read is not_found (D-046)', async () => {
@@ -321,14 +394,48 @@ export function describeAccountContract(
           const candidates = valueOf(await adapter().repositories.account_link_requests.candidates(second.id))
           expect(candidates.map((candidate) => candidate.soldier_id)).toEqual([holder, free])
           valueOf(await review(owner, second.id, { kind: 'link', account_id: newAccountId(), soldier_id: free }))
-          expect((await harness().rows('soldier_private')).find((row) => row.soldier_id === free)).toBeUndefined()
+          expect((await harness().rows('soldier_private')).find((row) => row.soldier_id === free)).toMatchObject({
+            personal_id: null,
+            invite_email: 'b@example.test',
+          })
+        })
+
+        it('fills a missing invite email, keeps one the soldier has, and skips one another soldier invites (D-449)', async () => {
+          const bare = await addSoldier('Asher', 'Peretz', { personal_id: '111', invite_email: null })
+          const { input } = await ask(stranger('Fill@Example.test'))
+          valueOf(await review(owner, input.id, { kind: 'link', account_id: newAccountId(), soldier_id: bare }))
+          expect((await harness().rows('soldier_private')).find((row) => row.soldier_id === bare)?.invite_email).toBe(
+            'fill@example.test',
+          )
+
+          const kept = await addSoldier('Kept', 'Email', { personal_id: '222', invite_email: 'kept@example.test' })
+          const { input: second } = await ask(stranger('new@example.test'), { claimed_personal_id: '222', first_name: 'Kept', last_name: 'Email' })
+          valueOf(await review(owner, second.id, { kind: 'link', account_id: newAccountId(), soldier_id: kept }))
+          expect((await harness().rows('soldier_private')).find((row) => row.soldier_id === kept)?.invite_email).toBe(
+            'kept@example.test',
+          )
+
+          // The email soldier holds another number, so the request waits (D-447).
+          await addSoldier('Holds', 'Invite', { personal_id: '999', invite_email: 'taken@example.test' })
+          const free = await addSoldier('Free', 'Soldier')
+          const { input: third } = await ask(stranger('taken@example.test'), {
+            claimed_personal_id: '998',
+            first_name: 'Free',
+            last_name: 'Soldier',
+          })
+          valueOf(await review(owner, third.id, { kind: 'link', account_id: newAccountId(), soldier_id: free }))
+          expect((await harness().rows('soldier_private')).find((row) => row.soldier_id === free)).toMatchObject({
+            personal_id: '998',
+            invite_email: null,
+          })
         })
 
         it('refuses a soldier that is not a candidate, one outside the reviewer, and writes nothing (OI-034)', async () => {
-          const inside = await addSoldier('Asher', 'Peretz')
+          // The personal number makes the soldier inside the best candidate, so the unit reviewer reads the request (D-450).
+          const inside = await addSoldier('Asher', 'Peretz', { personal_id: '444', invite_email: 'inside@example.test' })
           const outside = await addSoldier('Asher', 'Peretz', null, false)
           const unrelated = await addSoldier('Dan', 'Zohar')
-          const { input } = await ask(stranger('a@example.test'))
+          const { input } = await ask(stranger('a@example.test'), { claimed_personal_id: '444' })
           const { identity } = await unitReviewer()
           const accounts = (await harness().rows('soldier_accounts')).length
           for (const [reviewer, target] of [

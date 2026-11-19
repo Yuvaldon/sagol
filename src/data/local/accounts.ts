@@ -16,7 +16,6 @@ import {
   type AuthIdentity,
   type DataChange,
   type DataCommands,
-  type AsyncResult,
   type DataRepositories,
   type LinkAssessment,
   type LinkCandidate,
@@ -115,12 +114,9 @@ function readableRequest(
   return { request, candidates, assessment: { ...judged, candidates } }
 }
 
-/** Until the contracts declare `assessment` (D-127). */
-type LinkRequestRepository = DataRepositories['account_link_requests'] & {
-  assessment(id: AccountLinkRequestId): AsyncResult<LinkAssessment>
-}
-
-export function createAccountLinkRequestRepository(dependencies: LocalDependencies): LinkRequestRepository {
+export function createAccountLinkRequestRepository(
+  dependencies: LocalDependencies,
+): DataRepositories['account_link_requests'] {
   const { database } = dependencies
 
   async function readOne(id: AccountLinkRequestId): Promise<ReadableRequest> {
