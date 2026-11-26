@@ -16,7 +16,6 @@ export type {
 export { useAppUpdate, useInstallInvitation, useInstallOffer } from './shell/hooks'
 export { useDeviceNotifications, useNotificationKinds, type DeviceNotifications, type NotificationKinds } from './shell/push'
 export { useMarkUpdatesSeen, useMyUpdates, type MyUpdateLine, type MyUpdates } from './leaves/updatesHooks'
-export { useHome, type Home } from './home/hooks'
 export {
   daysFrom,
   isBeforeDay,
