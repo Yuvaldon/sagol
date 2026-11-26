@@ -72,9 +72,16 @@ name and takes the new value, so untouched screens move with the theme.
 | pending request | `time-pending` (fill), `status-pending-line` (border) | `#F6E4C2` |
 | label on a bar | `time-label` | `#3A3940` |
 
-- **Dark (D-181 stays).** The package is light only. The dark set is derived by the same roles: a near-black canvas,
-  a surface one step lighter, ink inverted, night blue lifted until it passes 4.5:1 on the surface, amber, green and
-  red as tinted dark fills with light text. Its values are recorded here when the foundation batch sets them.
+- **Dark (D-181 stays).** The package is light only. The dark set is derived by the same roles: `canvas` `#121214`,
+  `surface` `#1C1C20`, `surface-subtle` `#222227`, `inner` `#2A2A30`; `text` `#EDEDF0`, `text-muted` `#A9A7B0`,
+  `text-faint` `#7F7C88`, `past` `#77747F`; `line` `#3A3A41`, `divider` `#26262B`, `divider-strong` `#303036`;
+  night blue lifted to `#9FB4DC` under `on-action` `#131A28`, `action-soft` `#263147` under `#D5DEF0`; pending
+  `#3A2E14` / `#F0C670` (line `#D39A2C`, cell `#2A2313`), ok `#15332A` / `#7FD0B0`, rejected `#3D1D1A` / `#F0958B`;
+  time: base `#CFCCD8`, approved `#5A5861`, pending `#5A4520`, label `#EDEDF0`.
+- **Names in transit (D-464).** `status-approved`, `status-pending`, `status-rejected`, `marker`, `today`,
+  `absence`, `palette-*`, the `text-name` to `text-micro` steps, the `bar`, `panel`, `pill` and `sheet` radii, the
+  `rim`, `float` and `action` shadows and the `glass-bar`, `-card`, `-menu`, `-action` utilities serve only the
+  screens not yet rebuilt. Each is removed with the last screen that uses it.
 - **Type.** Heebo, self-hosted (unchanged). `text-display` 48 (the open block's figure), `text-title` 28,
   `text-heading` 17, `text-body` 15, `text-small` 13, `text-caption` 12 (chips, badges, captions: the mockups' 14,
   12 and 11 map to 15, 13 or 12). `text-input` stays 16, so iOS does not zoom a focused field. Weights 400, 500,
