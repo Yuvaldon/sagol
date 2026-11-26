@@ -100,9 +100,9 @@ describe('the destinations follow the permissions (D-455)', () => {
     expect((await access(FIGHTER)).last?.board).toBe(false)
   })
 
-  it('opens "לוח" to who reads the leaves of the whole organization, before another soldier exists', async () => {
-    const everyone: Allows = (check) => leaves(check) && check.permission.action === 'view'
-    expect((await access(everyone, [], [ME])).last?.board).toBe(true)
+  it('opens "לוח" to who reads the leaves of a unit, before another soldier exists', async () => {
+    const overUnit: Allows = (check) => leaves(check) && check.permission.action === 'view' && check.target.kind === 'some_unit'
+    expect((await access(overUnit, [], [ME])).last?.board).toBe(true)
     expect((await access(FIGHTER, [], [ME])).last?.board).toBe(false)
   })
 
@@ -156,6 +156,16 @@ describe('the destination and its page live in the URL (D-455, D-459)', () => {
     expect(known.shown()).toBe('manage/-')
     known.unmount()
     expect((await placeAt('/?tab=nowhere')).shown()).toBe('today/-')
+  })
+
+  it('opens the board on an address that names a view of it, and still reaches "היום" from there', async () => {
+    const { shown, history, press } = await placeAt('/?view=table')
+    expect(shown()).toBe('board/-')
+    await press('today')
+    await waitFor(() => expect(shown()).toBe('today/-'))
+    expect(history.location.search).toBe('?view=table&tab=today')
+    await press('page')
+    await waitFor(() => expect(shown()).toBe('today/requests'))
   })
 
   it('shows a page only on the destination it belongs to', async () => {

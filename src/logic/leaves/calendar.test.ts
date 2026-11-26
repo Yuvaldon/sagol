@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { daysFrom, isBeforeDay, monthSpan, selectDay, selectionCovers, selectionDays, weeksOf } from './calendar'
+import { daysFrom, isBeforeDay, monthSpan, selectDay, selectionCovers, weeksOf } from './calendar'
 
 describe('the day math of Today', () => {
   it('lists the days from a day on, across a month end', () => {
@@ -30,12 +30,11 @@ describe('the day math of Today', () => {
     expect(selectDay({ start: '2026-11-18', end: '2026-11-20' }, '2026-11-25')).toEqual({ start: '2026-11-25', end: '2026-11-25' })
   })
 
-  it('knows the days a selection covers and counts them', () => {
+  it('knows the days a selection covers', () => {
     const selection = { start: '2026-11-29', end: '2026-12-02' }
     expect(selectionCovers(selection, '2026-11-30')).toBe(true)
     expect(selectionCovers(selection, '2026-12-03')).toBe(false)
     expect(selectionCovers(null, '2026-11-30')).toBe(false)
-    expect(selectionDays(selection)).toBe(4)
   })
 
   it('tells a day that has passed', () => {

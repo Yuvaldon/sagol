@@ -23,7 +23,6 @@ export {
   monthSpan,
   selectDay,
   selectionCovers,
-  selectionDays,
   weeksOf,
   type DaySelection,
   type MonthSpan,

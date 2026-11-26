@@ -54,11 +54,6 @@ export function selectionCovers(selection: DaySelection | null, day: CalendarDat
   return selection !== null && compareDates(selection.start, day) <= 0 && compareDates(day, selection.end) <= 0
 }
 
-/** How many days are marked. */
-export function selectionDays(selection: DaySelection): number {
-  return daysBetween(selection.start, selection.end) + 1
-}
-
 /** Whether a day is before another: a day that has passed takes no new request. */
 export function isBeforeDay(day: CalendarDate, other: CalendarDate): boolean {
   return compareDates(day, other) < 0
