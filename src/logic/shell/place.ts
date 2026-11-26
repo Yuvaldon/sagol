@@ -54,13 +54,16 @@ export function useShellPlace(): ShellPlace {
 export interface ShellAccess {
   /** Whether every answer has arrived; until then no optional destination shows. */
   readonly ready: boolean
-  /** "לוח": the actor reads the leaves of at least one soldier other than themself. */
+  /** "לוח": the actor reads the leaves of a soldier other than themself, or of the whole organization. */
   readonly board: boolean
   /** The action circle: the actor may request a leave for themself, and a rotation takes requests. */
   readonly requestsForSelf: boolean
 }
 
 const NO_CHECKS: readonly PermissionCheck[] = []
+
+/** Reading leaves across the organization: who holds it reads the leaves of others, also before another soldier exists. */
+const EVERYONE: PermissionCheck = { permission: LEAVE_PERMISSIONS.view, target: { kind: 'organization' } }
 
 export function useShellAccess(): ShellAccess {
   const session = useSession()
@@ -71,7 +74,7 @@ export function useShellAccess(): ShellAccess {
     () =>
       seen === null
         ? NO_CHECKS
-        : seen.filter((soldier) => soldier.id !== own).map((soldier) => checkOn(LEAVE_PERMISSIONS.view, soldier.id)),
+        : [EVERYONE, ...seen.filter((soldier) => soldier.id !== own).map((soldier) => checkOn(LEAVE_PERMISSIONS.view, soldier.id))],
     [seen, own],
   )
   const { can, known } = useCanAnswers(checks)

@@ -61,7 +61,7 @@ const COMMANDER: Allows = (check) => FIGHTER(check) || (leaves(check) && check.p
 /** Who approves others without reading their own. */
 const APPROVER: Allows = (check) => leaves(check) && !own(check)
 
-async function access(allows: Allows, deployments: readonly Deployment[] = []) {
+async function access(allows: Allows, deployments: readonly Deployment[] = [], soldiers: readonly Soldier[] = [ME, OTHER]) {
   const ports = fakePorts({
     session: {
       current: () =>
@@ -70,7 +70,7 @@ async function access(allows: Allows, deployments: readonly Deployment[] = []) {
     },
     repositories: {
       organizations: organizationIn(),
-      soldiers: { list: () => Promise.resolve<Result<Soldier[]>>({ ok: true, value: [ME, OTHER] }) },
+      soldiers: { list: () => Promise.resolve<Result<Soldier[]>>({ ok: true, value: [...soldiers] }) },
       units: { list: () => Promise.resolve<Result<Unit[]>>({ ok: true, value: UNITS }) },
       deployments: { list: () => Promise.resolve<Result<Deployment[]>>({ ok: true, value: [...deployments] }) },
     },
@@ -98,6 +98,12 @@ describe('the destinations follow the permissions (D-455)', () => {
   it('opens "לוח" to who reads the leaves of someone else, and to nobody else', async () => {
     expect((await access(COMMANDER)).last?.board).toBe(true)
     expect((await access(FIGHTER)).last?.board).toBe(false)
+  })
+
+  it('opens "לוח" to who reads the leaves of the whole organization, before another soldier exists', async () => {
+    const everyone: Allows = (check) => leaves(check) && check.permission.action === 'view'
+    expect((await access(everyone, [], [ME])).last?.board).toBe(true)
+    expect((await access(FIGHTER, [], [ME])).last?.board).toBe(false)
   })
 
   it('shows nothing optional before the answers arrive', async () => {
