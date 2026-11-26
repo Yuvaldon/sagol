@@ -46,6 +46,10 @@ export const SEARCH_PARAMS = {
   draft: 'draft',
   /** The saved view the board was last put in, kept while the board drifts from it, to save the changes over (D-442). */
   saved: 'saved',
+  /** The destination of the tab bar (`TabId`, D-455). Absent: "היום". */
+  tab: 'tab',
+  /** A page the destination opened over itself (`PageId`, D-459). */
+  page: 'page',
 } as const
 
 export type SearchParamName = (typeof SEARCH_PARAMS)[keyof typeof SEARCH_PARAMS]
