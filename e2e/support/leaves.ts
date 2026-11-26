@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
-import { addUnit, OWNER, openModule } from './workspace.ts'
+import { addUnit, backToBoard, OWNER, openModule, openTab } from './workspace.ts'
 
 // What the leave demos share: the board, the drawer, the fields of a form, a type and a new leave. Sample data,
 // tests only.
@@ -24,8 +24,10 @@ export function drawer(page: Page) {
   return page.getByRole('dialog').last()
 }
 
+/** Closes the open drawer, and returns to the board when nothing else is open over it. */
 export async function closeDrawer(page: Page) {
   await page.getByRole('button', { name: he.common.close }).click()
+  if ((await page.getByRole('dialog').count()) <= 1) await backToBoard(page)
 }
 
 /** Picks from a select inside the drawer. What a modal makes inert is still found by role. */
@@ -78,10 +80,20 @@ export interface LeaveSpec {
   readonly soldier?: readonly [string, string]
 }
 
-/** From the floating "+", for the owner, who is the only soldier of these demos, unless `soldier` names another. */
-export async function requestLeave(page: Page, spec: LeaveSpec) {
-  await page.getByRole('button', { name: he.leaves.new }).click()
+/** The new-leave form, from the action circle of "היום" (D-455). */
+export async function openNewLeave(page: Page) {
+  await openTab(page, 'today')
+  await page.getByRole('button', { name: he.leaves.new, exact: true }).click()
   await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
+}
+
+/**
+ * From the action circle of "היום", for the owner, who is the only soldier of these demos, unless `soldier` names
+ * another. A request that went through closes its form, and the demo is back on the board; one that was stopped
+ * stays in its form.
+ */
+export async function requestLeave(page: Page, spec: LeaveSpec) {
+  await openNewLeave(page)
   const [search, name] = spec.soldier ?? ['דנה', OWNER.name]
   await drawer(page).getByRole('combobox', { name: he.leaves.soldier }).fill(search)
   await page.getByRole('option', { name, exact: true }).click()
@@ -91,6 +103,12 @@ export async function requestLeave(page: Page, spec: LeaveSpec) {
   if (spec.reason !== undefined) await drawer(page).getByRole('textbox', { name: new RegExp(he.leaves.reason) }).fill(spec.reason)
   if (spec.approveNow === true) await press(page, 'switch', he.leaves.approveNow)
   await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
+  const form = page.getByRole('heading', { name: he.leaves.newTitle })
+  const closed = await form.waitFor({ state: 'hidden', timeout: 3_000 }).then(
+    () => true,
+    () => false,
+  )
+  if (closed && (await page.getByRole('dialog').count()) === 0) await backToBoard(page)
 }
 
 /** The rotation of these demos: November 2026, around NOW, so every request of a demo falls in it (D-216). */

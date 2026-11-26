@@ -1,90 +1,104 @@
-import { t } from '@i18n'
-import { useActiveView, useHome, usePanel } from '@logic'
-import { useState } from 'react'
+import { NEW_ENTITY, PANEL_IDS, SHELL, type TabId } from '@config'
+import { t, type I18nKey } from '@i18n'
+import { useDateWindow, useLinkReviewAccess, usePanel, useShellPlace } from '@logic'
+import { ChartNoAxesGantt, ClipboardCheck, House, Plus, User, type LucideIcon } from 'lucide-react'
 import { Button as AriaButton } from 'react-aria-components'
-import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
-import { useViewDevice } from '../patterns/media'
-import { useBoardShown } from './boardShown'
-import { useFocusMode } from './focusMode'
-import { EntryCount } from './EntryCount'
-import { useDailyEntries, type ModuleEntry } from './moduleEntries'
-import { NavigationPanel } from './NavigationPanel'
-import { TAB, TAB_COLOR } from './tabStyle'
-import { ViewSheet } from './ViewSheet'
+import { GlassCapsule } from '../kit/Glass'
+import { useShellChrome } from './chrome'
 
-// The bottom strip's destinations (D-252), on every screen. The board first, then "mine" and the inbox, then
-// "ניהול" (D-254). Each tab is an icon over a short name; nothing toggles here, and the only number is what waits on
-// a destination.
+// The tab bar (D-455): the destinations as icons on one floating glass capsule, each with its name read aloud. The one
+// in sight sits in a lighter capsule with a night-blue icon. The bar slides away while a page scrolls down and returns
+// when it scrolls up, or as soon as the keyboard reaches it. On "היום" the action circle stands at the bar's end.
 
-function Tab({ entry }: { readonly entry: ModuleEntry }) {
+const TABS: Readonly<Record<TabId, { readonly Icon: LucideIcon; readonly labelKey: I18nKey }>> = {
+  today: { Icon: House, labelKey: 'shell.tabToday' },
+  board: { Icon: ChartNoAxesGantt, labelKey: 'workspace.board' },
+  manage: { Icon: ClipboardCheck, labelKey: 'navigation.tab' },
+  me: { Icon: User, labelKey: 'shell.tabMe' },
+}
+
+const WORD = ' '
+const FOCUS = 'outline-focus outline-offset-2 data-focus-visible:outline-2'
+
+/** What waits behind "ניהול": the join requests the actor reviews (D-150), so none hides behind the tab (D-254). */
+function Waiting() {
+  const { allowed, pending } = useLinkReviewAccess()
+  if (!allowed || pending === 0) return null
   return (
-    <AriaButton
-      aria-current={entry.current ? 'page' : false}
-      onPress={entry.onPress}
-      className={`${TAB} ${entry.current ? TAB_COLOR.current : TAB_COLOR.other}`}
-    >
-      <entry.Icon aria-hidden size={18} />
-      <span className="max-w-full truncate">{t(entry.labelKey)}</span>
-      <EntryCount entry={entry} floating />
-    </AriaButton>
+    <>
+      <span aria-hidden className="absolute end-sm top-sm size-dot rounded-full border border-surface bg-status-pending-line" />
+      {/* The leading space keeps the number apart from the tab's name when both are read as one. */}
+      <span className="sr-only">{['', String(pending), t('navigation.waiting')].join(WORD)}</span>
+    </>
   )
 }
 
-/**
- * The board, with the icon of its current view (D-311). From another destination a press closes what is open, keeps
- * the range, and makes it home (D-265); on the board itself it opens the view picker.
- */
-function BoardTab() {
+export interface TabBarProps {
+  /** The destinations this actor has, in the bar's order (D-455). */
+  readonly tabs: readonly TabId[]
+  /** The destination in sight. */
+  readonly current: TabId
+  /** Whether the actor may request a leave for themself now: the action circle. */
+  readonly action: boolean
+}
+
+export function TabBar({ tabs, current, action }: TabBarProps) {
+  const place = useShellPlace()
   const panel = usePanel()
-  const { choose } = useHome()
-  const { view } = useActiveView(AVAILABLE_VIEWS, useViewDevice())
-  const boardShown = useBoardShown()
-  const [picking, setPicking] = useState(false)
-  const focusMode = useFocusMode()
-  const current = panel.panel === null
-  const { Icon } = engineOf(view)
+  const chrome = useShellChrome()
+  const { goToToday } = useDateWindow()
+  if (chrome.covered) return null
+  const press = (tab: TabId) => {
+    if (tab !== current) {
+      place.openTab(tab)
+      return
+    }
+    // The tab in sight leads back to where the destination starts: its first screen at its top, the board on today.
+    place.closePage()
+    chrome.toTop()
+    if (tab === 'board') goToToday()
+  }
   return (
-    <>
-      {/* Focus returns here when focus mode ends (D-301): the view sheet it was entered from opens from this tab. */}
-      <AriaButton
-        ref={focusMode.bind('control')}
-        aria-current={current ? 'page' : false}
-        onPress={() => {
-          if (current && boardShown) {
-            setPicking(true)
-            return
-          }
-          panel.close()
-          choose(false)
-        }}
-        className={`${TAB} ${current ? TAB_COLOR.current : TAB_COLOR.other}`}
-      >
-        <Icon aria-hidden size={18} />
-        <span className="max-w-full truncate">{t('workspace.board')}</span>
-      </AriaButton>
-      {picking ? (
-        <ViewSheet
-          onClose={() => {
-            setPicking(false)
+    <nav
+      aria-label={t('workspace.navigation')}
+      onFocus={chrome.showBar}
+      className={`pointer-events-none absolute inset-x-lg bottom-lg flex items-center justify-center gap-sm transition duration-drawer ease-standard motion-reduce:transition-none ${
+        chrome.barHidden ? 'translate-y-page-end opacity-0' : ''
+      }`}
+    >
+      <GlassCapsule>
+        {tabs.map((tab) => {
+          const { Icon, labelKey } = TABS[tab]
+          const active = tab === current
+          return (
+            <AriaButton
+              key={tab}
+              aria-current={active ? 'page' : false}
+              onPress={() => {
+                press(tab)
+              }}
+              className={`relative inline-flex size-tab cursor-pointer items-center justify-center rounded-full ${FOCUS} ${
+                active ? 'bg-surface text-action-solid shadow-rim' : 'text-text-muted data-hovered:bg-inner'
+              }`}
+            >
+              <Icon aria-hidden size={SHELL.tabIconPx} strokeWidth={active ? 2.2 : 1.8} />
+              <span className="sr-only">{t(labelKey)}</span>
+              {tab === 'manage' ? <Waiting /> : null}
+            </AriaButton>
+          )
+        })}
+      </GlassCapsule>
+      {action && current === 'today' ? (
+        <AriaButton
+          aria-label={t('leaves.new')}
+          onPress={() => {
+            panel.open(PANEL_IDS.leaves, { entity: NEW_ENTITY })
           }}
-        />
+          className={`pointer-events-auto inline-flex size-action shrink-0 cursor-pointer items-center justify-center rounded-full bg-action-solid text-on-action shadow-primary ${FOCUS}`}
+        >
+          <Plus aria-hidden size={SHELL.tabIconPx} strokeWidth={2.4} />
+        </AriaButton>
       ) : null}
-    </>
-  )
-}
-
-export function TabBar() {
-  const daily = useDailyEntries()
-  return (
-    <>
-      {/* A narrow screen scrolls the tabs sideways rather than widen the page (D-155); "ניהול" stays in place. */}
-      <div className="-m-xs flex min-w-none items-center gap-2xs overflow-x-auto p-xs">
-        <BoardTab />
-        {daily.map((entry) => (
-          <Tab key={entry.id} entry={entry} />
-        ))}
-      </div>
-      <NavigationPanel />
-    </>
+    </nav>
   )
 }

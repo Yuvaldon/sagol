@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, press, requestLeave } from './support/leaves.ts'
 import { addFilter, builder, chooseValues, closeBuilder, openBuilder, pick, setOnlyMissing } from './support/board.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, openTab } from './support/workspace.ts'
 
 // V6's demo: tag categories and tags, a soldier's tags, filter chips, leave conditions, "only who is missing" and
 // the present and absent lists, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -221,9 +221,9 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   })
 
   await test.step('who is missing today, and who is present', async () => {
-    // The report is a destination, as the board is (D-252): no count in the bar.
-    const button = page.getByRole('button', { name: he.presence.title, exact: true })
-    await button.click()
+    // Today's report opens from the commander's block of "היום" (D-454).
+    await openTab(page, 'today')
+    await page.getByRole('button', { name: he.presence.title, exact: true }).click()
     const report = page.getByRole('dialog', { name: he.presence.title })
     await expectUnitsOpen(report)
     await expect(report.getByRole('heading', { name: `${he.presence.absent} 1`, exact: true })).toBeVisible()
@@ -248,7 +248,7 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await expect(page).toHaveURL(/day=/)
     await report.getByRole('button', { name: he.common.close }).click()
     await expect(report).toBeHidden()
-    await button.click()
+    await page.getByRole('button', { name: he.presence.title, exact: true }).click()
     await expect(page).not.toHaveURL(/day=/)
     await expect(report.getByText(he.presence.noneAbsent)).toBeHidden()
     await page.keyboard.press('Escape')

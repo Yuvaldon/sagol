@@ -1,166 +1,114 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { DEFAULT_TAB, TAB_IDS, type TabId } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useBoardFilters, useCurrentOrganization, useOverlayHistory } from '@logic'
-import { useBoardShown, useNoBoard } from './boardShown'
-import { useAppliedAppearance } from './appearance'
-import { ModuleDrawer } from './ModuleDrawer'
+import { useBoardFilters, useCurrentOrganization, useOverlayHistory, useShellAccess, useShellPlace } from '@logic'
+import { useCallback, useMemo, useState } from 'react'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
-import { QuickActionButton } from './QuickActionButton'
-import { FilterBar, FilterButton } from './FilterBar'
+import { useAppliedAppearance } from './appearance'
+import { BoardPlace } from './BoardPlace'
+import { useBoardShown, useNoBoard } from './boardShown'
 import { BuilderOpenContext, type BuilderOpen, type BuilderTarget } from './builderOpen'
-import { RuleBuilder } from './RuleBuilder'
-import { FailureScreen, LoadingScreen } from './states'
-import { UnitSelector } from './UnitSelector'
-import { UserMenu } from './UserMenu'
+import { ShellChromeContext, useShellChromeScope } from './chrome'
 import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
-import { TabBar } from './TabBar'
-import { HomeLanding } from './HomeLanding'
-import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
-import { NavigationPanelContext, useNavigationPanelScope } from './navigationPanelState'
-import { InstallInvitation } from './InstallInvitation'
-import { PreferenceFailureNotice } from './PreferenceFailureNotice'
-import { SavedViewDroppedNotice } from './SavedViewDroppedNotice'
-import { SavedViewNoticeContext, useSavedViewNoticeScope } from './savedViewNotice'
-import { Viewport } from './Viewport'
-import { WindowNavigator } from './WindowNavigator'
 import { FocusModeContext, useFocusModeScope } from './focusMode'
-import { FocusModeRestore } from './FocusModeRestore'
+import { InstallInvitation } from './InstallInvitation'
+import { ManagePage } from './manage/ManagePage'
+import { useManageAccess } from './manage/rows'
+import { MePage } from './me/MePage'
+import { ModuleDrawer } from './ModuleDrawer'
+import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
+import { PreferenceFailureNotice } from './PreferenceFailureNotice'
+import { SavedViewNoticeContext, useSavedViewNoticeScope } from './savedViewNotice'
+import { FailureScreen, LoadingScreen } from './states'
+import { TabBar } from './TabBar'
+import { TodayPage } from './today/TodayPage'
 
 /**
- * The workspace (D-023, D-108, D-252): the viewport fills the screen, and two glass pills float over it, the same on
- * every screen size and orientation. The top strip is context: the unit in scope, the range, "filter and sort", and
- * the account at its inline end; the view is picked from the board's tab (D-311). The bottom strip holds the destinations and the role's quick action. Each hugs its content and
- * centers on its edge, and scrolls sideways inside itself only when its content cannot fit. Everything sits inside the
- * safe area; the canvas paints under the cutout (D-191).
+ * The workspace (D-455): four destinations behind one floating tab bar, "היום", "לוח", "ניהול" and "אני", each for who
+ * its permissions open it to. The destination lives in the URL; an address that names none, or one the actor does not
+ * have, shows "היום". A module opens over any of them as a drawer. Everything sits inside the safe area; the canvas
+ * paints under the cutout (D-191).
  */
-
-const BAR = 'glass-bar pointer-events-auto flex max-w-full min-w-none items-center gap-xs overflow-x-auto rounded-pill p-xs'
-
-/** The page's heading, for readers: the strip shows the unit in scope instead, so two names never compete (D-175). */
-function OrganizationName({ name }: { readonly name: string }) {
-  return <h1 className="sr-only">{name}</h1>
-}
-
-/** "Filter and sort" (D-312), a control of the board: it exists only with it (D-218). */
-function FilterControls() {
-  if (!useBoardShown()) return null
-  return <FilterButton />
-}
-
-/** The dates: a control of the board, so it exists only with it (D-218). */
-function BoardControl({ children }: { readonly children: ReactNode }) {
-  return useBoardShown() ? children : null
-}
-
-/** The row of set conditions under the top strip (D-131, D-213): there only while a condition is set. */
-function FilterRow() {
-  if (!useBoardShown()) return null
-  return (
-    <div className="pointer-events-none absolute inset-x-lg top-filter-row flex justify-center md:top-filter-row-md">
-      <FilterBar />
-    </div>
-  )
-}
-
-/** The top strip: context, never a destination (D-252). */
-function ContextStrip({ name, identity }: { readonly name: string; readonly identity: AuthIdentity }) {
-  return (
-    <div className="pointer-events-none absolute inset-x-lg top-lg flex justify-center">
-      <nav aria-label={t('workspace.viewBar')} className={BAR}>
-        <OrganizationName name={name} />
-        {/* The unit's name gives way first, down to a floor; the rest keeps its size, and the strip scrolls after. */}
-        <UnitSelector />
-        <div className="flex shrink-0 items-center gap-xs">
-          <BoardControl>
-            <WindowNavigator />
-          </BoardControl>
-          <FilterControls />
-          <UserMenu identity={identity} />
-        </div>
-      </nav>
-    </div>
-  )
-}
-
-/** The bottom strip: the daily destinations, then "ניהול", then the role's quick action (D-252, D-254, D-266). */
-function DestinationStrip() {
-  return (
-    <div className="pointer-events-none absolute inset-x-lg bottom-lg flex justify-center">
-      <nav aria-label={t('workspace.navigation')} className={BAR}>
-        <TabBar />
-        <QuickActionButton />
-      </nav>
-    </div>
-  )
-}
-
 export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity }) {
   const organization = useCurrentOrganization()
   const { active } = useBoardFilters()
+  const place = useShellPlace()
+  const answered = useShellAccess()
+  // The answers are asked again whenever the soldiers in sight change. Until the new ones arrive the last ones stand,
+  // so the screen and what is open over it never give way to a loading screen in the middle of work.
+  const [settled, setSettled] = useState(answered)
+  if (answered.ready && (!settled.ready || answered.board !== settled.board || answered.requestsForSelf !== settled.requestsForSelf)) {
+    setSettled(answered)
+  }
+  const access = answered.ready ? answered : settled
+  const manages = useManageAccess()
   const boardShown = useBoardShown()
+  const noBoard = useNoBoard()
   const focus = useFilterFocusScope()
   const preferenceFailure = usePreferenceFailureScope()
   const savedViewNotice = useSavedViewNoticeScope()
-  const noBoard = useNoBoard()
-  const focusMode = useFocusModeScope(boardShown && !noBoard)
+  const chrome = useShellChromeScope()
   // What of "filter and sort" is open (D-312); the builder exists only with the board.
   const [building, setBuilding] = useState<BuilderTarget | null>(null)
   const builder = useMemo<BuilderOpen>(() => ({ open: setBuilding }), [])
-  const navigation = useNavigationPanelScope()
+  const [boardStarted, setBoardStarted] = useState(false)
+  const startBoard = useCallback(() => {
+    setBoardStarted(true)
+  }, [])
+  const tabs = useMemo(
+    () => TAB_IDS.filter((tab) => (tab === 'board' ? access.board : tab === 'manage' ? manages : true)),
+    [access.board, manages],
+  )
+  const tab: TabId = tabs.includes(place.tab) ? place.tab : DEFAULT_TAB
+  const onBoard = tab === 'board'
+  const focusMode = useFocusModeScope(onBoard && boardShown && !noBoard)
   useOverlayHistory()
   useAppliedAppearance()
-  if (organization.status === 'loading') return <LoadingScreen />
+  if (organization.status === 'loading' || !access.ready) return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
   const name = organization.value?.name ?? t('app.name')
+  const bar = <TabBar tabs={tabs} current={tab} action={access.requestsForSelf} />
 
   return (
-    // The row under the top strip pushes the board's first row down while a condition is set (D-173, D-252).
     <FilterFocusContext value={focus}>
       <BuilderOpenContext value={builder}>
       <PreferenceFailureContext value={preferenceFailure}>
       <SavedViewNoticeContext value={savedViewNotice}>
-      <NavigationPanelContext value={navigation}>
       <FocusModeContext value={focusMode}>
+      <ShellChromeContext value={chrome}>
       <div
-        data-filter-row={boardShown && active && !focusMode.on ? 'shown' : undefined}
+        // The row under the board's strip pushes its first row down while a condition is set (D-173, D-252).
+        data-filter-row={onBoard && boardShown && active && !focusMode.on ? 'shown' : undefined}
         data-focus-mode={focusMode.on ? 'on' : undefined}
         className="relative h-dvh bg-canvas"
       >
-        <div className="absolute inset-safe p-sm">
-          <main className="isolate h-full overflow-hidden rounded-panel border border-line bg-surface">
-            <Viewport />
-          </main>
-          {focusMode.on ? (
-            // Focus mode leaves one button; the page's heading stays for readers, in its landmark (D-301).
-            <FocusModeRestore>
-              <OrganizationName name={name} />
-            </FocusModeRestore>
-          ) : (
-            <>
-              <ContextStrip name={name} identity={identity} />
-              <FilterRow />
-              <DestinationStrip />
-            </>
-          )}
-        </div>
-        <HomeLanding />
+        {onBoard ? (
+          <BoardPlace
+            name={name}
+            started={boardStarted}
+            onStarted={startBoard}
+            building={building}
+            onBuilt={() => {
+              setBuilding(null)
+            }}
+          >
+            {bar}
+          </BoardPlace>
+        ) : (
+          <>
+            {tab === 'today' ? <TodayPage name={name} commands={access.board} requests={access.requestsForSelf} /> : null}
+            {tab === 'manage' ? <ManagePage name={name} /> : null}
+            {tab === 'me' ? <MePage identity={identity} /> : null}
+            <div className="pointer-events-none absolute inset-safe">{bar}</div>
+          </>
+        )}
         <ModuleDrawer />
         <DayReportDialog />
         <PreferenceFailureNotice />
-        {boardShown ? <SavedViewDroppedNotice /> : null}
         <InstallInvitation />
-        {boardShown && building !== null ? (
-          <RuleBuilder
-            target={building}
-            onClose={() => {
-              setBuilding(null)
-            }}
-          />
-        ) : null}
       </div>
+      </ShellChromeContext>
       </FocusModeContext>
-      </NavigationPanelContext>
       </SavedViewNoticeContext>
       </PreferenceFailureContext>
       </BuilderOpenContext>

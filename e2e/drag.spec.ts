@@ -34,8 +34,6 @@ async function setUp(page: Page) {
   // The points below are measured on the week's board, so a drag waits until it has loaded and come to rest.
   await expect(page.getByRole('button', { name: `${he.workspace.window} 8–14 בנוב׳` })).toBeVisible()
   await expect(board(page).getByRole('button', { name: SOLDIER })).toBeVisible()
-  // The quick action is in once the mode and the actor's own request are known (D-296).
-  await expect(page.getByRole('button', { name: he.leaves.new, exact: true })).toBeVisible()
   await waitForSettledScreen(page)
 }
 

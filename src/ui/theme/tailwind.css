@@ -134,6 +134,7 @@
   /* The new interface's steps (D-454): the open block's figure, a screen's title, a card's title, and the two below
      the body. The four after them belong to the screens not yet rebuilt (D-464). */
   --text-display: 48px;
+  --text-display--line-height: 1.1;
   --text-title: 28px;
   --text-heading: 17px;
   --text-body: 15px;
@@ -179,6 +180,13 @@
   --spacing-under-bars-filtered-md: 90px;
   /* The remove button of a filter chip, from Stone 3. */
   --spacing-chip-close: 22px;
+  /* The new shell (D-455): the blur band over a scrolled page, a tab of the bar, the action circle, a badge, the room a page leaves under itself for the floating bar, and a drawer's half stop. */
+  --spacing-band: 70px;
+  --spacing-tab: 52px;
+  --spacing-action: 56px;
+  --spacing-badge: 26px;
+  --spacing-page-end: 120px;
+  --spacing-stop-half: 56dvh;
   /* Room for the bottom bar on mobile, so the last row can scroll above it. */
   --spacing-above-bottom-bar: 80px;
   /* The units chart (D-319): a node, the gaps between nodes and between rows, and the canvas's height. */
@@ -500,6 +508,19 @@
 }
 
 /* Content already below the bars, such as the board under routine's band (D-222), needs no room for them again. */
+/* The band at the top of a scrolled page (D-455): the content blurs out under the status bar and the corner circle. */
+@utility blur-band {
+  backdrop-filter: blur(14px);
+  background: linear-gradient(to bottom, var(--color-canvas), transparent);
+  mask-image: linear-gradient(to bottom, #000 45%, transparent);
+
+  @media (prefers-reduced-transparency: reduce) {
+    backdrop-filter: none;
+    background: var(--color-canvas);
+    mask-image: none;
+  }
+}
+
 @utility below-bars {
   --spacing-under-bars: 0px;
   --spacing-under-bars-md: 0px;

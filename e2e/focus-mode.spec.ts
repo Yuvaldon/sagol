@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
-import { boardTab, openViewSheet, viewSheet } from './support/board.ts'
+import { openViewSheet, viewSheet } from './support/board.ts'
 import {
   enterAsOwner,
   expectNoAxeViolations,
@@ -96,10 +96,10 @@ test('focus mode: in and out by the view sheet, the key and Escape', async ({ pa
     await expectFocusMode(page)
   })
 
-  await test.step("the restore button brings the strips back, and focus returns to the board's tab", async () => {
+  await test.step("the restore button brings the strips back, and focus returns to the view picker", async () => {
     await restoreButton(page).click()
     await expectStrips(page)
-    await expect(boardTab(page)).toBeFocused()
+    await expect(page.getByRole('button', { name: he.workspace.view, exact: true })).toBeFocused()
   })
 
   await test.step('the key enters, and Escape restores', async () => {

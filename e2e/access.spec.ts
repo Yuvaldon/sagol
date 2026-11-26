@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, signIn } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, signIn, signOut, openTab, waitForSettledScreen } from './support/workspace.ts'
 
 // V10's demo: the owner builds a role, gives it to a soldier for a while with a personal grant, the soldier sees the
 // board through it, and the board closes again when the grant is revoked (D-165, D-166). On desktop and mobile, RTL,
@@ -17,12 +17,6 @@ const VIEWS = [
   he.permissionLabels.resources.memberships,
   he.permissionLabels.resources.leaves,
 ]
-
-async function signOut(page: Page) {
-  await page.getByRole('button', { name: he.account.menu }).click()
-  await page.getByRole('menuitem', { name: he.account.signOut }).click()
-  await expect(page).toHaveURL(/\/sign-in(\?view=\w+)?$/)
-}
 
 async function createUnit(page: Page) {
   await openModule(page, he.units.open)
@@ -47,7 +41,7 @@ async function addYael(page: Page) {
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */
 async function enterAsYael(page: Page) {
   await signIn(page, YAEL.email)
-  await expect(page).toHaveURL(/\/onboarding(\?view=\w+)?$/)
+  await expect(page).toHaveURL(/\/onboarding(\?view=\w+(&tab=today)?)?$/)
   await page.getByLabel(he.linkRequest.firstName).fill(YAEL.first)
   await page.getByLabel(he.linkRequest.lastName).fill(YAEL.last)
   await page.getByLabel(he.linkRequest.personalId).fill(YAEL.personalId)
@@ -90,6 +84,8 @@ test.describe('roles and access', () => {
       await openModule(page, he.grants.open)
       await drawer(page).getByRole('button', { name: he.grants.new }).first().click()
       await drawer(page).getByRole('combobox', { name: he.grants.grantee }).fill(YAEL.first)
+      // The list prepares to enter for a moment, still unseen: a press in that moment lands on the form under it.
+      await waitForSettledScreen(page)
       await page.getByRole('option', { name: `${YAEL.first} ${YAEL.last}` }).click()
       await choose(page, he.grants.role, ROLE)
       await choose(page, he.scope.anchor, he.scope.anchors.organization)
@@ -105,6 +101,8 @@ test.describe('roles and access', () => {
     await test.step('Yael links on her own and sees the board through the grant', async () => {
       await signOut(page)
       await enterAsYael(page)
+      // The grant lets her read the unit's leaves, so she has the board (D-455).
+      await openTab(page, 'board')
       await expect(board(page).getByText(`${YAEL.first} ${YAEL.last}`).first()).toBeVisible()
       await expect(page.getByText(he.timeline.noDayBody)).toHaveCount(0)
       await expectNoAxeViolations(page)

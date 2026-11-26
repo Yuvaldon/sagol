@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, drawer, leavesOf, press, typeDate } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
+import { NOW, closeDrawer, createType, drawer, leavesOf, press, typeDate, openNewLeave } from './support/leaves.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, backToBoard } from './support/workspace.ts'
 
 // V15's demo: deployments and who serves in them (D-019), a collective leave and a copy of a leave (D-012, D-049),
 // and a soldier's personal seniority (D-029), on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -64,7 +64,7 @@ test('deployments, a collective leave, a copy and personal seniority', async ({ 
   })
 
   await test.step('a collective leave for several soldiers at once', async () => {
-    await page.getByRole('button', { name: he.leaves.new }).click()
+    await openNewLeave(page)
     await drawer(page).getByRole('button', { name: he.leaves.collective }).click()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.batchTitle })).toBeVisible()
     await page.getByLabel(he.leaves.batchName).fill('שבת גיבוש')
@@ -77,6 +77,7 @@ test('deployments, a collective leave, a copy and personal seniority', async ({ 
     await expectNoAxeViolations(page)
     await drawer(page).getByRole('button', { name: he.leaves.batchSubmit }).click()
     await expect(drawer(page)).toHaveCount(0)
+    await backToBoard(page)
     await expect(leavesOf(page)).toHaveCount(2)
   })
 

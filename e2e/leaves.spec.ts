@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { MARK_NAME, NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
+import { MARK_NAME, NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, requestLeave, openNewLeave } from './support/leaves.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, openTab, tab, backToBoard } from './support/workspace.ts'
 import { selectColors } from './support/board.ts'
 
 // V4's demo: leave types and their groups, a new leave from the floating "+", bars, lanes and a marker on the
@@ -38,7 +38,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
   })
 
   await test.step('a rotation leave never asks for a reason', async () => {
-    await page.getByRole('button', { name: he.leaves.new }).click()
+    await openNewLeave(page)
     await choose(page, he.leaves.type, `${he.onboarding.rotationGroupName} · ${he.leaveTypes.rotationTypeName}`)
     await expect(drawer(page).getByRole('textbox', { name: new RegExp(he.leaves.reason) })).toHaveCount(0)
     await closeDrawer(page)
@@ -59,6 +59,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
   await test.step('a pending leave is on the board at once', async () => {
     await requestLeave(page, { type: 'חופשות · רגילה', from: ['09', '11', '2026'], to: ['10', '11', '2026'] })
     await expect(drawer(page)).toHaveCount(0)
+    await backToBoard(page)
     await expect(leavesOf(page)).toHaveCount(1)
     await expect(leavesOf(page).first()).toHaveAccessibleName(`רגילה, ${he.leaves.statusPending}, 9–10 בנוב׳`)
     await expectNoAxeViolations(page)
@@ -72,6 +73,7 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
     await drawer(page).getByRole('textbox', { name: new RegExp(he.leaves.reason) }).fill('שפעת')
     await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
     await expect(drawer(page)).toHaveCount(0)
+    await backToBoard(page)
     await expect(leavesOf(page)).toHaveCount(2)
     await expect(leavesOf(page).nth(1)).toHaveAccessibleName(`מחלה, ${he.leaves.statusApproved}, 10–12 בנוב׳`)
     const after = await row.boundingBox()
@@ -97,13 +99,14 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
 
   await test.step('on a phone the bar\'s controls and the menu are icons of a touch size, and the "+" too', async () => {
     if (testInfo.project.name !== 'mobile') return
-    for (const name of [he.myLeaves.open, he.filters.builder, he.navigation.open]) {
-      const box = await page.getByRole('button', { name, exact: true }).boundingBox()
-      if (box === null) throw new Error(`no ${name}`)
+    for (const control of [page.getByRole('button', { name: he.filters.builder, exact: true }), tab(page, 'today'), tab(page, 'manage'), tab(page, 'me')]) {
+      const box = await control.boundingBox()
+      if (box === null) throw new Error('a control of the bars is missing')
       expect(box.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
       expect(box.width).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
     }
-    const plus = await page.getByRole('button', { name: he.leaves.new }).boundingBox()
+    await openTab(page, 'today')
+    const plus = await page.getByRole('button', { name: he.leaves.new, exact: true }).boundingBox()
     if (plus === null) throw new Error('no +')
     expect(plus.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
   })

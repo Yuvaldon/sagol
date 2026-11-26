@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, openRotationInNewUnit } from './support/leaves.ts'
 import { openViewSheet, selectView, setOnlyMissing, viewSheet } from './support/board.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openTab } from './support/workspace.ts'
 
 // Saved views (D-384..D-388): saved from the view sheet, applied by a card, marked current while the board matches,
 // renamed, moved and deleted in "ניהול התצוגות", the start view opens a bare link, and "שמירת השינויים" saves a
@@ -112,7 +112,9 @@ test('saved views: save, apply, manage, and the start view', async ({ page }) =>
   })
 
   await test.step('a bare link opens on the start view, and keeps it after a reload', async () => {
+    // A bare link opens "היום"; the board, opened from there with nothing of it in the address, starts on the start view.
     await page.goto('/')
+    await openTab(page, 'board')
     await expectMissingList(page)
     await page.reload()
     await expectMissingList(page)
@@ -131,6 +133,7 @@ test('saved views: save, apply, manage, and the start view', async ({ page }) =>
     await expectNoAxeViolations(page)
     await page.keyboard.press('Escape')
     await page.goto('/')
+    await openTab(page, 'board')
     await expect(page).toHaveURL(/missing=true/)
     await expect(page).toHaveURL(/view=table/)
   })

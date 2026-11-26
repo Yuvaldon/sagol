@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { choose, closeDrawer, drawer } from './support/leaves.ts'
-import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn, waitForSettledScreen } from './support/workspace.ts'
+import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn, waitForSettledScreen, signOut, tab } from './support/workspace.ts'
 
 // V9's demo: a second identity asks to link and the owner reviews. Auto-link on the personal number and the invite
 // email, a link to a candidate, a new soldier from the request, a rejection, and the identity that waits. On desktop
@@ -13,16 +13,6 @@ const ASHER = { email: 'asher@example.test', first: 'אשר', last: 'פרץ' }
 const GIL = { email: 'gil@example.test', first: 'גיל', last: 'חדש', personalId: '7770001' }
 const DANA = { email: 'dana.k@example.test', first: 'דנה', last: 'כהן' }
 const ROTEM = { email: 'rotem@example.test', first: 'רותם', last: 'בר', personalId: '5566778' }
-
-async function userMenu(page: Page, item: string | RegExp) {
-  await page.getByRole('button', { name: he.account.menu }).click()
-  await page.getByRole('menuitem', { name: item }).click()
-}
-
-async function signOut(page: Page) {
-  await userMenu(page, he.account.signOut)
-  await expect(page).toHaveURL(/\/sign-in$/)
-}
 
 async function createUnit(page: Page, name: string) {
   await openModule(page, he.units.open)
@@ -55,9 +45,9 @@ async function ask(page: Page, who: { email: string; first: string; last: string
   await page.getByRole('button', { name: he.linkRequest.submit }).click()
 }
 
-/** The menu button carries what waits in the panel, the requests to link among it (D-173). */
+/** The "ניהול" tab carries what waits behind it, the requests to link (D-173, D-455). */
 function menuButton(page: Page) {
-  return page.getByRole('button', { name: new RegExp(`^${he.navigation.open}`) })
+  return tab(page, 'manage')
 }
 
 async function openAccountLinks(page: Page) {
@@ -139,7 +129,7 @@ test.describe('account linking', () => {
       await page.getByRole('dialog').last().getByRole('button', { name: he.accountLinks.linkConfirm }).click()
       await expect(page.getByText(he.accountLinks.emptyTitle)).toBeVisible()
       await closeDrawer(page)
-      await userMenu(page, he.account.signOut)
+      await signOut(page)
       await signIn(page, ASHER.email)
       await expect(page.getByText(he.timeline.noDayBody)).toBeVisible()
     })
@@ -189,7 +179,7 @@ test.describe('account linking', () => {
       await page.getByRole('alertdialog').getByRole('button', { name: he.accountLinks.rejectConfirm }).click()
       await expect(page.getByText(he.accountLinks.emptyTitle)).toBeVisible()
       await closeDrawer(page)
-      await userMenu(page, he.account.signOut)
+      await signOut(page)
       await signIn(page, DANA.email)
       await expect(page.getByLabel(he.linkRequest.firstName)).toBeVisible()
       await expect(page.getByText(he.linkRequest.waitingTitle)).toHaveCount(0)

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
+import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate, openNewLeave } from './support/leaves.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, INBOX, backToBoard } from './support/workspace.ts'
 
 // The rest of the rule paths on screen (OI-107): the warning on the edit form, and the acknowledgment dialog on the
 // details' approve step, the inbox's approve and the close dialog. Desktop and mobile, RTL, with axe. Sample data,
@@ -50,13 +50,14 @@ async function setUp(page: Page) {
 
 /** A request of today, left pending: a pending leave does not count yet, so it breaks nothing. */
 async function requestToday(page: Page, soldier: string) {
-  await page.getByRole('button', { name: he.leaves.new }).click()
+  await openNewLeave(page)
   await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
   await drawer(page).getByRole('combobox', { name: he.leaves.soldier }).fill(soldier.split(' ')[0] ?? soldier)
   await page.getByRole('option', { name: soldier, exact: true }).click()
   await choose(page, he.leaves.type, TYPE)
   await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
   await expect(drawer(page)).toHaveCount(0)
+  await backToBoard(page)
 }
 
 function ackDialog(page: Page) {
@@ -101,7 +102,7 @@ test('the edit form warns, and approving or closing asks before a soft rule is b
 
   await test.step('approving in the inbox asks too', async () => {
     await requestToday(page, 'נועם בר')
-    await openModule(page, new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`))
+    await openModule(page, INBOX)
     const list = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
     await expect(list.getByText('נועם בר')).toBeVisible()
     await list.getByRole('button', { name: he.leaves.approve }).click()

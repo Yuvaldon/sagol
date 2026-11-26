@@ -1,18 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, requestLeave, openRotationInNewUnit } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, appearanceChoice, chooseAppearance, openTab, signOut } from './support/workspace.ts'
 
 // V17's demo: the soldier's appearance (D-181). Light by default, dark on request, the device's on request, kept with
 // the soldier's preferences, and every surface passes axe in the dark set. Desktop and mobile, RTL. Sample data, tests only.
 
 function root(page: Page) {
   return page.locator('html')
-}
-
-async function chooseAppearance(page: Page, name: string) {
-  await page.getByRole('button', { name: he.account.menu }).click()
-  await page.getByRole('menuitemradio', { name }).click()
 }
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
@@ -27,9 +22,8 @@ test('light by default, dark on request, the device’s on request, and readable
 
   await test.step('light until chosen', async () => {
     await expect(root(page)).not.toHaveAttribute('data-appearance')
-    await page.getByRole('button', { name: he.account.menu }).click()
-    await expect(page.getByRole('menuitemradio', { name: he.account.appearanceLight })).toHaveAttribute('aria-checked', 'true')
-    await page.keyboard.press('Escape')
+    await openTab(page, 'me')
+    await expect(appearanceChoice(page, he.account.appearanceLight)).toBeChecked()
   })
 
   await test.step('dark, kept after a reload', async () => {
@@ -37,6 +31,10 @@ test('light by default, dark on request, the device’s on request, and readable
     await expect(root(page)).toHaveAttribute('data-appearance', 'dark')
     await page.reload()
     await expect(root(page)).toHaveAttribute('data-appearance', 'dark')
+    // "אני" itself, in the dark set.
+    await expectNoAxeViolations(page)
+    await openTab(page, 'today')
+    await expectNoAxeViolations(page)
   })
 
   await test.step('the board, a drawer and the bars pass axe in the dark set', async () => {
@@ -71,8 +69,7 @@ test('light by default, dark on request, the device’s on request, and readable
     await chooseAppearance(page, he.account.appearanceLight)
     await expect(root(page)).not.toHaveAttribute('data-appearance')
     await chooseAppearance(page, he.account.appearanceDark)
-    await page.getByRole('button', { name: he.account.menu }).click()
-    await page.getByRole('menuitem', { name: he.account.signOut }).click()
+    await signOut(page)
     await expect(root(page)).not.toHaveAttribute('data-appearance')
   })
 })

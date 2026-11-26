@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
+import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, openNewLeave } from './support/leaves.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, backToBoard } from './support/workspace.ts'
 
 // V31's demo: the leave-round planner (D-270, D-316). Two groups of the rotation's soldiers take turns on the routine
 // rhythm (8 days in, 6 home) from their own first day home; one send puts every round on the board. Desktop and
@@ -38,7 +38,7 @@ test('two groups take turns going home, sent as one collective leave', async ({ 
   await closeDrawer(page)
 
   await test.step('a plan of two groups, each with its rounds', async () => {
-    await page.getByRole('button', { name: he.leaves.new }).click()
+    await openNewLeave(page)
     await drawer(page).getByRole('button', { name: he.leaves.rounds }).click()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.roundsTitle })).toBeVisible()
     await page.getByLabel(he.leaves.roundsName).fill('סבבי נובמבר')
@@ -58,6 +58,7 @@ test('two groups take turns going home, sent as one collective leave', async ({ 
     await expectNoAxeViolations(page)
     await drawer(page).getByRole('button', { name: he.leaves.roundsSubmit }).click()
     await expect(drawer(page)).toHaveCount(0)
+    await backToBoard(page)
   })
 
   await test.step('every round is on the board', async () => {

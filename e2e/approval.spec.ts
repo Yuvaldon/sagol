@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press, requestLeave, typeDate, openRotationInNewUnit } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, navigation, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, INBOX, expectWaitingRequests, managePage, openTab } from './support/workspace.ts'
 
 // V5's demo: a bar opens its leave; approve, edit, comment, reject and reopen; the inbox with its pending and closed
 // lists; the "approve now" default; and an edit that another tab made stale. Desktop and mobile, RTL, with axe.
@@ -9,10 +9,6 @@ import { enterAsOwner, expectNoAxeViolations, navigation, openBoardOnTimeline, o
 
 const TOUCH_TARGET_PX = 44
 const PENDING_BAR = `רגילה, ${he.leaves.statusPending}, 9–10 בנוב׳`
-
-function inboxButton(page: Page) {
-  return navigation(page).getByRole('button', { name: new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`) })
-}
 
 function thread(page: Page) {
   return drawer(page).getByRole('list', { name: he.leaves.threadTitle })
@@ -57,9 +53,10 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
   await setUp(page)
 
   await test.step('the inbox counts the request, and the bar opens its details', async () => {
-    await expect(inboxButton(page)).toHaveAccessibleName(`${he.inbox.open} 1 ${he.inbox.pendingCount}`)
+    await expectWaitingRequests(page, 1)
+    await openTab(page, 'board')
     await leavesOf(page).first().click()
-    await expect(page).toHaveURL(/panel=leaves&entity=[0-9a-f-]{36}/)
+    await expect(page).toHaveURL(/panel=leaves&(tab=\w+&)?entity=[0-9a-f-]{36}/)
     const details = drawer(page).getByRole('region', { name: he.leaves.detailsLabel })
     await expect(details.getByRole('heading', { name: 'רגילה' })).toBeVisible()
     await expect(details.getByText(he.leaves.statusPending, { exact: true })).toBeVisible()
@@ -145,7 +142,7 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
   })
 
   await test.step('the closed list is the way back: the leave is reopened from there', async () => {
-    await inboxButton(page).click()
+    await openModule(page, INBOX)
     await expect(drawer(page).getByRole('heading', { name: he.inbox.emptyPendingTitle })).toBeVisible()
     await drawer(page).getByRole('button', { name: he.inbox.tabClosed }).click()
     await expect(page).toHaveURL(/panel=leave_closed/)
@@ -161,7 +158,7 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
   })
 
   await test.step('the inbox approves from the row, and then has nothing waiting', async () => {
-    await inboxButton(page).click()
+    await openModule(page, INBOX)
     const pending = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
     await expect(pending.getByRole('listitem')).toHaveCount(1)
     await expectNoAxeViolations(page)
@@ -170,13 +167,13 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
     await expect(drawer(page).getByRole('heading', { name: he.inbox.emptyPendingTitle })).toBeVisible()
     await closeDrawer(page)
     await expect(leavesOf(page).first()).toHaveAccessibleName(`מחלה, ${he.leaves.statusApproved}, 9–12 בנוב׳`)
-    await expect(inboxButton(page)).toHaveAccessibleName(he.inbox.open)
     await shot(page, project, '4-board')
+    await expectWaitingRequests(page, 0)
   })
 
-  await test.step('on a phone the inbox is a touch target', async () => {
+  await test.step('on a phone the requests row is a touch target', async () => {
     if (project !== 'mobile') return
-    const box = await inboxButton(page).boundingBox()
+    const box = await managePage(page).getByRole('button', { name: INBOX, exact: true }).boundingBox()
     if (box === null) throw new Error('no inbox button')
     expect(box.height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
     expect(box.width).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
@@ -215,7 +212,7 @@ test('the "approve now" default, and a link to a leave that is not there', async
   await expect(leavesOf(page).first()).toHaveAccessibleName(PENDING_BAR)
 
   await test.step('the inbox holds the default, and the new-leave form starts from it', async () => {
-    await openModule(page, new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`))
+    await openModule(page, INBOX)
     const item = drawer(page).getByRole('switch', { name: he.account.approveNowDefault })
     await expect(item).not.toBeChecked()
     await expectNoAxeViolations(page)
@@ -229,7 +226,7 @@ test('the "approve now" default, and a link to a leave that is not there', async
     await expect(leavesOf(page)).toHaveCount(2)
     await expect(leavesOf(page).nth(1)).toHaveAccessibleName(`רגילה, ${he.leaves.statusApproved}, 13 בנוב׳`)
     await page.reload()
-    await openModule(page, new RegExp(`^${he.inbox.open}( \\d+ ${he.inbox.pendingCount})?$`))
+    await openModule(page, INBOX)
     await expect(drawer(page).getByRole('switch', { name: he.account.approveNowDefault })).toBeChecked()
     await closeDrawer(page)
   })
