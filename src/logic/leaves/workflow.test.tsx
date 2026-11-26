@@ -41,8 +41,10 @@ import {
   leaveEditValues,
   leaveSteps,
   leaveThread,
+  myDays,
   myLeaveGroups,
   myNextDays,
+  myStanding,
   pendingRequests,
   toTransitionInput,
 } from './workflow'
@@ -249,6 +251,26 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
     expect(days).toHaveLength(MINE.nextDays)
     expect(days[0]?.date).toBe(today)
     expect(days.map((day) => day.status).slice(0, 5)).toEqual(['available', 'unavailable', 'unavailable', 'available', 'available'])
+  })
+
+  it('tells each of my days on base, away or waiting, an approved absence first (D-454)', () => {
+    const today = CalendarDate.parse('2026-11-10')
+    const rows = [
+      leave(1, { status: 'approved', start_date: '2026-11-11', end_date: '2026-11-12' }),
+      leave(2, { start_date: '2026-11-12', end_date: '2026-11-13' }),
+      leave(3, { status: 'rejected', start_date: '2026-11-10', end_date: '2026-11-10' }),
+    ].map((row) => ({ ...row, soldier_id: ACTOR }))
+    const days = myDays(ACTOR, rows, [], today, 5)
+    expect(days.map((day) => day.state)).toEqual(['base', 'away', 'away', 'pending', 'base'])
+    expect(days.map((day) => day.leave_id)).toEqual([null, rows[0]?.id, rows[0]?.id, rows[1]?.id, null])
+  })
+
+  it('tells where I am today and the day that changes it', () => {
+    const today = CalendarDate.parse('2026-11-10')
+    const away = [leave(1, { status: 'approved', soldier_id: ACTOR, start_date: '2026-11-10', end_date: '2026-11-11' })]
+    expect(myStanding(myDays(ACTOR, away, [], today, 5))).toEqual({ away: true, changes: '2026-11-12' })
+    expect(myStanding(myDays(ACTOR, [], [], today, 5))).toEqual({ away: false, changes: null })
+    expect(myStanding([])).toBeNull()
   })
 
   it('counts both ends of a leave', () => {
