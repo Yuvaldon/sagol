@@ -17,6 +17,17 @@ export { useAppUpdate, useInstallInvitation, useInstallOffer } from './shell/hoo
 export { useDeviceNotifications, useNotificationKinds, type DeviceNotifications, type NotificationKinds } from './shell/push'
 export { useMarkUpdatesSeen, useMyUpdates, type MyUpdateLine, type MyUpdates } from './leaves/updatesHooks'
 export { useHome, type Home } from './home/hooks'
+export {
+  daysFrom,
+  isBeforeDay,
+  monthSpan,
+  selectDay,
+  selectionCovers,
+  selectionDays,
+  weeksOf,
+  type DaySelection,
+  type MonthSpan,
+} from './leaves/calendar'
 export { useShellAccess, useShellPlace, type ShellAccess, type ShellPlace } from './shell/place'
 export { useQuickAction, type QuickAction } from './home/quickAction'
 export { LogicProvider } from './runtime/LogicProvider'
