@@ -35,7 +35,7 @@ export const DEFAULT_RANGE_KIND = 'week' satisfies RangeKind
 
 /**
  * What the board's rows can be sorted by (D-214): the name, the command rank, the seniority on the window's first day,
- * the unit, and the approved days away in the window. The rows stay grouped by unit (D-105).
+ * the unit, and the approved days away in the window. The grouping is its own option (D-452).
  */
 export const BOARD_SORT_KEYS = ['name', 'rank', 'seniority', 'unit', 'absent'] as const
 export const BoardSortKey = z.enum(BOARD_SORT_KEYS)
@@ -43,6 +43,13 @@ export type BoardSortKey = z.infer<typeof BoardSortKey>
 
 /** The board's order when the URL names none: seniority, then name, as before D-214. */
 export const DEFAULT_BOARD_SORT_KEY: BoardSortKey = 'seniority'
+
+/**
+ * What the board can group its rows by besides a tag category (D-452): nothing, the unit (D-105), or the command rank.
+ */
+export const BOARD_GROUP_KEYS = ['none', 'unit', 'rank'] as const
+export const BoardGroupKey = z.enum(BOARD_GROUP_KEYS)
+export type BoardGroupKey = z.infer<typeof BoardGroupKey>
 
 /**
  * The table's own columns (D-214): its rows are leaves, so it can also sort by them, in the URL's `sort` and `order`.

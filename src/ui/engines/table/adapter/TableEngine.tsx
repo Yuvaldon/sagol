@@ -28,7 +28,7 @@ const column = createColumnHelper<typeof features, BoardEntry>()
 
 const COLUMNS = column.columns([
   column.accessor((entry) => fullName(entry.soldier), { id: 'soldier', sortFn: 'text' }),
-  column.accessor((entry) => (entry.group === null ? '' : groupLabel(entry.group)), { id: 'unit', sortFn: 'text' }),
+  column.accessor((entry) => groupLabel(entry.unit), { id: 'unit', sortFn: 'text' }),
   column.accessor((entry) => typeName(entry.leave), { id: 'type', sortFn: 'text' }),
   column.accessor((entry) => entry.leave.start_date, { id: 'from', sortFn: 'text' }),
   column.accessor((entry) => entry.leave.end_date, { id: 'to', sortFn: 'text' }),
@@ -103,7 +103,7 @@ function Cell({ id, entry, frame }: { readonly id: ColumnId; readonly entry: Boa
       )
     }
     case 'unit':
-      return <span className="text-text-muted">{entry.group === null ? '' : groupLabel(entry.group)}</span>
+      return <span className="text-text-muted">{groupLabel(entry.unit)}</span>
     case 'type':
       return (
         <AriaButton

@@ -14,6 +14,8 @@ export const SEARCH_PARAMS = {
   rotation: 'rotation',
   /** The board's sort rules, in order: a key or a soldier property, each with its direction (D-313). */
   sorts: 'sorts',
+  /** How the board groups its rows (D-452): by no key, the unit, the command rank or a tag category. Absent: the default. */
+  group: 'group',
   /** A column of the table's leaves it is sorted by (`TableSortKey`, D-214, D-313). */
   sort: 'sort',
   /** The direction of that column's sort (`SortOrder`, D-214). */

@@ -194,6 +194,15 @@ export const dictionary = {
     noRotationBody: 'המפקד פותח את הסבב, ואז אפשר להגיש בקשות.',
     routineOpenBody: 'בקשות יציאה ודוח 1 נפתחים עם הסבב. בלי סבב אין דוח 1.',
     openRotation: 'פתיחת סבב',
+    group: 'קיבוץ',
+    groupBy: 'קיבוץ לפי',
+    groupKeys: {
+      none: 'בלי קיבוץ',
+      unit: 'יחידה',
+      rank: 'דרג פיקודי',
+    },
+    groupNoRank: 'ללא דרג פיקודי',
+    groupWithout: 'ללא',
     sort: 'מיון',
     sortBy: 'מיון לפי',
     sortKeys: {

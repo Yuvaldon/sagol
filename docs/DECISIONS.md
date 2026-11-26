@@ -121,7 +121,7 @@ am = amends, ref = refines, ext = extends.
 | D-102 | Reading private fields and placements needs only their own `view` | data, logic, ui, backend | ref D-347 |
 | D-103 | The date window in the URL | logic, ui | ref D-129; ref D-211 |
 | D-104 | The unit selector writes the filter | config, logic, ui | ref D-131; ref D-173; ref D-251 |
-| D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133; ref D-214 |
+| D-105 | The rows of the timeline | logic, ui | ref D-109; ref D-131, D-133; ref D-214; ref D-452 |
 | D-106 | What a row knows about its unit | logic, ui | ref D-122 |
 | D-107 | Today follows the organization's day | domain, logic | ref D-160 |
 | D-108 | The workspace bars and the timeline surface | config, ui | ref D-116; ref D-120; ref D-131; ref D-154; ref D-165; ref D-173; ref D-174; ref D-189; ref D-252; ref D-268 |
@@ -289,7 +289,7 @@ am = amends, ref = refines, ext = extends.
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301; ext D-387 |
 | D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326; ext D-380, D-382; ref D-441 |
-| D-313 | Several sorts, in order | config, logic, i18n, ui | ext D-324 |
+| D-313 | Several sorts, in order | config, logic, i18n, ui | ext D-324; ref D-452 |
 | D-314 | A filter chip's remove is a plain × | ui | |
 | D-315 | Every organization has a root unit; no "ללא יחידה" under it | data (migration), logic | ref D-321; ref D-323 |
 | D-316 | The leave-round planner as built: groups take turns, one collective leave, bounded by config | config, domain, logic, i18n, ui | D-302 |
@@ -343,7 +343,7 @@ am = amends, ref = refines, ext = extends.
 | D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
 | D-382 | Leave property conditions are leave conditions | logic, ui | |
 | D-383 | The range picker offers two and four weeks | config, logic, ui | |
-| D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | ext D-442 |
+| D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | ext D-442; ref D-452 |
 | D-385 | Applying a saved view replaces the board's state; what no longer parses is dropped and reported | logic, ui | |
 | D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
 | D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | ext D-442 |
@@ -378,6 +378,7 @@ am = amends, ref = refines, ext = extends.
 | D-449 | Approval fills the soldier's missing invite email too | domain, data || ref D-451 |
 | D-450 | The reviewer of a join request is who approves over its best candidate; platoon commanders review | domain, config, data | ref D-451 |
 | D-451 | Join linking hardened: a verified email to ask, no automatic return to an unlinked soldier, details held elsewhere | contracts, domain, data | |
+| D-452 | The board's grouping is a view option: none, unit, command rank or a single-selection tag category | contracts, config, logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5559,3 +5560,28 @@ the commander what to check.
   (D-450) a platoon commander may also unlink their soldiers (D-163).
 **Why:** the review of R3·J: an unverified email was trusted at review time, and a wrong approval followed by an unlink
 would link the same person back with no one in the loop.
+
+## D-452 — The board's grouping is a view option: none, unit, command rank or a single-selection tag category
+2026-11-26 · accepted · refines D-105, D-313, D-384 · requested by the owner; details decided under D-170
+- **A view option.** The URL's `group` holds the board's grouping, as `sorts` holds its sort (D-023): `{key: none}`,
+  `{key: unit}`, `{key: rank}` or `{category: <tag category id>}`. A saved view keeps it (`group`, D-384). Absent, the
+  default holds; a value the URL parser does not read counts as absent.
+- **The default** is no grouping when the board covers one unit, and by unit when it covers several. The board
+  covers one unit when its scope holds a single live unit the actor sees: the filter's unit has no live sub-unit, or,
+  with no unit in the filter, the actor sees one live unit. The structure decides, not who happens to be in view, so
+  the default does not change while the window moves.
+- **By unit** is D-105 unchanged: a row's unit on the reference day, the headers in tree order, then the states of
+  D-106, the `unit` sort rule ordering the groups (D-313).
+- **By command rank:** one group per rank (an archived rank a soldier holds included), the most senior first, then
+  "ללא דרג פיקודי". A `rank` sort rule orders the groups, as the `unit` rule orders units.
+- **By tag category:** only a live category of `single` selection, so a soldier sits in one group. The board reads
+  the tags of its rotation, where a rotation's tag of a `single` category replaces the persistent one (D-221), so the
+  two scopes never place a soldier twice. A group per tag in the category's order, then "ללא <category>". A
+  category that is archived, no longer `single` or unknown is held but not applied: the board groups by the default
+  and the selector names the held value "לא זמין", as a sort target does (D-326).
+- **The `unit` sort rule without unit grouping** sorts the rows by their unit's place in the tree on the reference
+  day; no unit, another unit and unknown come after, in D-106's order.
+- **The table's unit column** reads the row's own unit, never the header above it, so it says the same in every
+  grouping.
+**Why:** the owner: grouping by unit was fixed, and a board of one unit gained nothing from it. Tag grouping is
+limited to `single` categories so the count of each group adds up to the rows.

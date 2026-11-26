@@ -14,6 +14,7 @@ const PARAM_OF = {
   sorts: SEARCH_PARAMS.sorts,
   sort: SEARCH_PARAMS.sort,
   order: SEARCH_PARAMS.order,
+  group: SEARCH_PARAMS.group,
   leaves: SEARCH_PARAMS.leaves,
   missing: SEARCH_PARAMS.missing,
   colors: SEARCH_PARAMS.colors,

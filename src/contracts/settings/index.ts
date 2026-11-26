@@ -19,7 +19,7 @@ export const OrganizationSettings = z
 export type OrganizationSettings = z.infer<typeof OrganizationSettings>
 
 /** The search params a saved view keeps (D-384): never a date, a rotation, a panel or a draft. */
-export const SavedViewParam = z.enum(['view', 'filter', 'sorts', 'sort', 'order', 'leaves', 'missing', 'colors', 'range'])
+export const SavedViewParam = z.enum(['view', 'filter', 'sorts', 'sort', 'order', 'group', 'leaves', 'missing', 'colors', 'range'])
 export type SavedViewParam = z.infer<typeof SavedViewParam>
 
 /** The limits of saved views (D-384): part of the stored row's contract, so they live beside it. */

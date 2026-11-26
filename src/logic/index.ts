@@ -148,11 +148,13 @@ export {
   boardItems,
   type BoardGroupItem,
   type BoardGroupLabel,
+  type BoardHeading,
   type BoardInput,
   type BoardItem,
   type BoardSoldierItem,
 } from './board/rows'
-export { useBoard, type BoardConditions, type BoardModel } from './board/hooks'
+export { useBoard, useBoardGrouping, type BoardConditions, type BoardGroupingState, type BoardModel } from './board/hooks'
+export { type BoardGrouping } from './view-state/grouping'
 export { boardLeaves, layerOf, type BoardLeave, type LeaveLayer } from './board/leaves'
 export { boardDays, boardEntries, calendarWeeks, type BoardDay, type BoardEntry } from './board/views'
 export {

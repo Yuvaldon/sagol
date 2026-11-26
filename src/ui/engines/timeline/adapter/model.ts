@@ -6,7 +6,7 @@ import { formatDate } from '../../../patterns/dates'
 import { ICON_GLYPHS, iconOf } from '../../../theme/icons'
 import { leaveTypeToneOf } from '../../../theme/palette'
 import { breachLabel } from '../../../board/breaches'
-import { TEXT_SEPARATOR, groupLabel, leaveText, leaveTone, rangeText, typeName } from '../../../board/labels'
+import { TEXT_SEPARATOR, headingLabel, leaveText, leaveTone, rangeText, typeName } from '../../../board/labels'
 import { assignLanes } from '../core/lanes'
 import { spansOf } from '../core/layout'
 import type { TimelineDayCell, TimelineHeatCell, TimelineMark, TimelineRowModel } from '../view/model'
@@ -149,7 +149,7 @@ export function timelineRows(
   options: TimelineMarkOptions,
 ): TimelineRowModel[] {
   return items.map((item): TimelineRowModel => {
-    if (item.kind === 'group') return { kind: 'group', key: item.key, label: groupLabel(item.label), count: item.size }
+    if (item.kind === 'group') return { kind: 'group', key: item.key, label: headingLabel(item.label), count: item.size }
     const outOfScope = item.inScope.map((inScope) => !inScope)
     const present = item.inScope.map((_, index) => item.present?.[index] === true)
     const offDays = outOfScope.map((off, index) => off || present[index] === true)

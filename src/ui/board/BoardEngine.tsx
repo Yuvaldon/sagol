@@ -13,6 +13,7 @@ import {
   usePresenceDay,
   useSetupUnfinished,
   useSortRules,
+  useWorkspaceSearch,
   useViewFilter,
   type BoardConditions,
   type BoardModel,
@@ -148,9 +149,10 @@ function BoardData({
   const { conditions } = useLeaveConditions()
   const missing = useOnlyMissing()
   const { rules: sorts } = useSortRules()
+  const { group: grouping } = useWorkspaceSearch()
   const board = useMemo(
-    (): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on, sorts }),
-    [conditions, missing.on, sorts],
+    (): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on, sorts, grouping }),
+    [conditions, missing.on, sorts, grouping],
   )
   const model = useBoard(window, today, filter, board)
   if (model.status === 'loading') {

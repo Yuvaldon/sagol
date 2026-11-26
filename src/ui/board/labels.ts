@@ -1,7 +1,7 @@
 import type { BarColorMode } from '@config'
 import type { CalendarDate } from '@contracts'
 import { t } from '@i18n'
-import { dayRangeOf, type BoardGroupLabel, type BoardLeave } from '@logic'
+import { dayRangeOf, type BoardGroupLabel, type BoardHeading, type BoardLeave } from '@logic'
 import { formatDate, formatDateRange } from '../patterns/dates'
 import { UNIT_STATE_KEYS } from '../patterns/units'
 import { MARKER_TONE, UNIFORM_TONE, leaveTypeToneOf, type PaletteTone } from '../theme/palette'
@@ -15,6 +15,22 @@ export const TEXT_SEPARATOR = ', '
 
 export function groupLabel(label: BoardGroupLabel): string {
   return label.kind === 'unit' ? label.path.join(PATH_SEPARATOR) : t(UNIT_STATE_KEYS[label.kind])
+}
+
+/** A group header of the board, whatever groups it (D-452): a unit, a rank or a tag, or what holds none. */
+export function headingLabel(label: BoardHeading): string {
+  switch (label.kind) {
+    case 'rank':
+      return label.title
+    case 'noRank':
+      return t('workspace.groupNoRank')
+    case 'tag':
+      return label.name
+    case 'noTag':
+      return `${t('workspace.groupWithout')} ${label.category}`
+    default:
+      return groupLabel(label)
+  }
 }
 
 /** One day, or a range of days, the way the locale writes it. */

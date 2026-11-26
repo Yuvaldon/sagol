@@ -36,7 +36,9 @@ export { STARTUP_ERROR_CODES } from './startup'
 export {
   BAR_COLOR_MODES,
   BarColorMode,
+  BOARD_GROUP_KEYS,
   BOARD_SORT_KEYS,
+  BoardGroupKey,
   BoardSortKey,
   DATE_WINDOW,
   DEFAULT_BAR_COLOR_MODE,

@@ -99,10 +99,11 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   await test.step('a unit narrows the board to who served in it this week, and mutes the other days', async () => {
     await pickUnit(page, 'מחלקה א')
     await expect(page).toHaveURL(/filter=/)
-    await expect(groupHeading(page, 'מחלקה א')).toBeVisible()
-    await expect(boardRows(page)).toHaveCount(2)
-    await expect(boardRows(page).nth(1)).toContainText('יעל שחר')
-    await expect(boardRows(page).nth(1)).toContainText(`${he.timeline.outOfScope}: 11–14 בנוב׳`)
+    // One unit with no sub-units: no grouping by default, so no header (D-452).
+    await expect(groupHeading(page, 'מחלקה א')).toHaveCount(0)
+    await expect(boardRows(page)).toHaveCount(1)
+    await expect(boardRows(page).nth(0)).toContainText('יעל שחר')
+    await expect(boardRows(page).nth(0)).toContainText(`${he.timeline.outOfScope}: 11–14 בנוב׳`)
     await expectNoAxeViolations(page)
   })
 
@@ -117,7 +118,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
 
     await page.getByRole('button', { name: he.workspace.today, exact: true }).click()
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
-    await expect(boardRows(page)).toHaveCount(2)
+    await expect(boardRows(page)).toHaveCount(1)
     await expect(page).not.toHaveURL(/from=/)
     await expect(page).toHaveURL(/filter=/)
   })
