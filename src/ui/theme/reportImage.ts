@@ -2,10 +2,10 @@
 // screen. These mirror the light values of tailwind.css; the canvas cannot read CSS variables of a theme not applied.
 
 export const REPORT_IMAGE_TONES = {
-  background: '#faf9f6',
-  text: '#1a1a18',
-  muted: '#5f5d57',
-  line: '#e7e5df',
+  background: '#ffffff',
+  text: '#1b1a1f',
+  muted: '#5c5a63',
+  line: '#d9d6cf',
 } as const
 
 export const REPORT_IMAGE_FONT = '"Heebo Variable", system-ui, sans-serif'
