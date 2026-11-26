@@ -20,6 +20,10 @@ export const DATE_FORMATS = {
   weekdayShort: { weekday: 'short' },
   /** The shortest weekday name, a letter in Hebrew (א׳), for the days header of the timeline. */
   weekdayNarrow: { weekday: 'narrow' },
+  /** Long weekday name, for the date line of "היום" (D-454). */
+  weekdayLong: { weekday: 'long' },
+  /** Day and month in digits, "18.11" (D-454). */
+  dayMonthDigits: { day: 'numeric', month: 'numeric' },
   /** Day and short month name. */
   dayMonth: { day: 'numeric', month: 'short' },
   /** Long month name and year. */

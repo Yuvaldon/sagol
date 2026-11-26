@@ -11,13 +11,13 @@ export type TabId = z.infer<typeof TabId>
 /** Where a bare address lands (D-455). */
 export const DEFAULT_TAB: TabId = 'today'
 
-/** A page a destination opens over itself: "בקשות לאישור" of "היום" (D-459). */
-export const PAGE_IDS = ['requests'] as const
+/** A page a destination opens over itself: "בקשות לאישור" of "היום" (D-459), "הגדרות" of "ניהול" (D-456). */
+export const PAGE_IDS = ['requests', 'settings'] as const
 export const PageId = z.enum(PAGE_IDS)
 export type PageId = z.infer<typeof PageId>
 
 /** The tab each page belongs to; a page shows only on its tab. */
-export const PAGE_TABS = { requests: 'today' } as const satisfies Record<PageId, TabId>
+export const PAGE_TABS = { requests: 'today', settings: 'manage' } as const satisfies Record<PageId, TabId>
 
 export const TODAY = {
   /** The days of a soldier's strip, today first (D-454). */
@@ -35,4 +35,6 @@ export const SHELL = {
   bandFromPx: 4,
   /** How long a toast stays, in milliseconds; an action in it lives as long. */
   toastMs: 6000,
+  /** The side of a tab's icon, in pixels (D-454). */
+  tabIconPx: 26,
 } as const
