@@ -10,28 +10,21 @@ import type { BoardGroupLabel } from './rows'
 
 const DAYS_IN_WEEK = 7
 
-/** A leave with its soldier and the group the soldier's row sits in. */
+/** A leave with its soldier and the soldier's unit on the reference day (D-105, D-452). */
 export interface BoardEntry {
   readonly leave: BoardLeave
   readonly soldier: Soldier
   readonly rank: CommandRank | null
-  readonly group: BoardGroupLabel | null
+  readonly unit: BoardGroupLabel
 }
 
 /** Every leave of the soldiers in view, in the order of their rows, each soldier's by first day (the table). */
 export function boardEntries(model: BoardModel): BoardEntry[] {
-  let group: BoardGroupLabel | null = null
-  const entries: BoardEntry[] = []
-  for (const item of model.items) {
-    if (item.kind === 'group') {
-      group = item.label
-      continue
-    }
-    for (const leave of model.leaves.get(item.soldier.id) ?? []) {
-      entries.push({ leave, soldier: item.soldier, rank: item.rank, group })
-    }
-  }
-  return entries
+  return model.items.flatMap((item) =>
+    item.kind === 'group'
+      ? []
+      : (model.leaves.get(item.soldier.id) ?? []).map((leave) => ({ leave, soldier: item.soldier, rank: item.rank, unit: item.unit })),
+  )
 }
 
 /** One day of the calendar. */

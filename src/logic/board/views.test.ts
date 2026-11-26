@@ -40,10 +40,10 @@ function model(): BoardModel {
     today: '2026-11-11',
     items: [
       { kind: 'group', key: 'g1', label: { kind: 'unit', path: ['A'] }, size: 1 },
-      { kind: 'soldier', key: one.id, soldier: one, rank: null, inScope: ALL_WEEK },
+      { kind: 'soldier', key: one.id, soldier: one, rank: null, unit: { kind: 'unit', path: ['A'] }, inScope: ALL_WEEK },
       { kind: 'group', key: 'g2', label: { kind: 'none' }, size: 1 },
       // Out of the unit from Thursday on.
-      { kind: 'soldier', key: two.id, soldier: two, rank: null, inScope: WEEK.map((day) => day < '2026-11-12') },
+      { kind: 'soldier', key: two.id, soldier: two, rank: null, unit: { kind: 'none' }, inScope: WEEK.map((day) => day < '2026-11-12') },
     ],
     leaves: new Map([
       [one.id, [leave(50, '2026-11-01', '2026-11-09'), leave(51, '2026-11-09', '2026-11-09', { effect: 'available' })]],
@@ -60,8 +60,8 @@ function model(): BoardModel {
 }
 
 describe('the list, the table and the calendar read the board (D-174)', () => {
-  it('lists every leave of the soldiers in view with its row group, in row order', () => {
-    expect(boardEntries(model()).map((entry) => [entry.leave.id, entry.soldier.first_name, entry.group?.kind])).toEqual([
+  it('lists every leave of the soldiers in view with the unit of its row, in row order', () => {
+    expect(boardEntries(model()).map((entry) => [entry.leave.id, entry.soldier.first_name, entry.unit.kind])).toEqual([
       [uuid(50), 'F1', 'unit'],
       [uuid(51), 'F1', 'unit'],
       [uuid(52), 'F2', 'none'],

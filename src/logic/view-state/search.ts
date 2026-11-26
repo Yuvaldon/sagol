@@ -6,9 +6,10 @@ import { z } from 'zod'
 import { LeaveConditions } from './conditions'
 import { NewLeaveDraft } from './draft'
 import { isOverlayEntry, overlayState } from './overlay'
+import { BoardGrouping } from './grouping'
 import { SortRules, isDefaultSort } from './sort-rules'
 
-// All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the
+// All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the board's grouping (D-452), the
 // filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193), a new leave's draft (D-143), the dashboard's unit and planned days (D-349) and the saved view the board came from (D-442). A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
@@ -23,6 +24,7 @@ const WorkspaceSearchFields = z.object({
   // A board key here is a link from before D-313; it is read as the sort rules below (OI-264).
   [SEARCH_PARAMS.sort]: z.union([TableSortKey, BoardSortKey]).optional().catch(undefined),
   [SEARCH_PARAMS.order]: SortOrder.optional().catch(undefined),
+  [SEARCH_PARAMS.group]: BoardGrouping.optional().catch(undefined),
   [SEARCH_PARAMS.filter]: FilterExpression.optional().catch(undefined),
   [SEARCH_PARAMS.panel]: PanelId.optional().catch(undefined),
   [SEARCH_PARAMS.entity]: z

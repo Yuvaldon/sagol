@@ -6,6 +6,7 @@ import {
   PropertyOptionId,
   SoldierId,
   SoldierTagId,
+  TagCategoryId,
   TagId,
   UnitId,
   UnitMembershipId,
@@ -14,6 +15,8 @@ import {
   type PropertyDefinition,
   type Result,
   type Soldier,
+  type Tag,
+  type TagCategory,
   type Unit,
   type UnitMembership,
 } from '@contracts'
@@ -34,6 +37,7 @@ import { allowEverything, fakePorts, organizationIn, wrapperOf } from '../testin
 import { usePastHour, useToday } from '../session/today'
 import { filterUnitOf, unitFilterOf, useViewFilter } from '../view-state/filter'
 import { usePanel } from '../view-state/panel'
+import { NO_GROUPING, UNIT_GROUPING, appliedGrouping, defaultGrouping } from '../view-state/grouping'
 import { WorkspaceSearch, useWorkspaceSearch } from '../view-state/search'
 import { usePresenceDay, useTableSort } from '../view-state/board'
 import { useActiveView } from '../view-state/view'
@@ -210,6 +214,9 @@ describe('the rows of the board (D-105)', () => {
     absent: null,
     sorts: [{ key: 'seniority', order: 'desc' }],
     daysAway: null,
+    grouping: UNIT_GROUPING,
+    tags: [],
+    tagCategories: [],
     ...overrides,
   })
 
@@ -457,6 +464,135 @@ describe('the rows of the board (D-105)', () => {
       base({ soldiers: three, memberships: everyoneInA, filter: { where: { kind: 'soldier_status', statuses: ['inactive'] } } }),
     )
     expect(names(inactive)).toEqual(['בני'])
+  })
+
+  describe('grouped by a view option (D-452)', () => {
+    const fighter = CommandRankId.parse(uuid(20))
+    const commander = CommandRankId.parse(uuid(21))
+    // אבי in מחלקה א, a fighter; בני in כיתה 1, with no rank; גיל in מחלקה ב, a commander.
+    const people = [
+      soldier(1, 'אבי', 'כהן', { command_rank_id: fighter }),
+      soldier(2, 'בני', 'כהן'),
+      soldier(3, 'גיל', 'כהן', { command_rank_id: commander }),
+    ]
+    const placed = [
+      membership(70, 1, 11, '2026-01-01', null),
+      membership(71, 2, 13, '2026-01-01', null),
+      membership(72, 3, 12, '2026-01-01', null),
+    ]
+    const ROLE = TagCategoryId.parse(uuid(30))
+    const role = (n: number, selection_mode: 'single' | 'multiple'): TagCategory => ({
+      id: TagCategoryId.parse(uuid(n)),
+      organization_id: ORGANIZATION,
+      name: 'תפקיד',
+      selection_mode,
+      default_lifetime: 'persistent',
+      color_key: 'blue',
+      sort_order: 0,
+      ...audit,
+    })
+    const tag = (n: number, name: string, sort_order: number): Tag => ({
+      id: TagId.parse(uuid(n)),
+      organization_id: ORGANIZATION,
+      category_id: ROLE,
+      name,
+      color_key: null,
+      sort_order,
+      ...audit,
+    })
+    const holds = (n: number, soldierN: number, tagN: number) => ({
+      id: SoldierTagId.parse(uuid(n)),
+      deployment_id: null,
+      soldier_id: SoldierId.parse(uuid(soldierN)),
+      tag_id: TagId.parse(uuid(tagN)),
+      organization_id: ORGANIZATION,
+      created_at: AT,
+      created_by: null,
+    })
+    const heading = (item: BoardItem) => (item.kind === 'group' ? item.label : null)
+
+    it('lists the rows with no header when nothing groups them, sorted as asked', () => {
+      const items = boardItems(
+        base({ soldiers: people, memberships: placed, grouping: NO_GROUPING, sorts: [{ key: 'name', order: 'asc' }] }),
+      )
+      expect(items.every((item) => item.kind === 'soldier')).toBe(true)
+      expect(names(items)).toEqual(['אבי', 'בני', 'גיל'])
+    })
+
+    it('sorts the rows by the tree of units when the unit rule sorts and nothing groups', () => {
+      const items = boardItems(
+        base({ soldiers: people, memberships: placed, grouping: NO_GROUPING, sorts: [{ key: 'unit', order: 'asc' }] }),
+      )
+      // מחלקה א, then its כיתה 1, then מחלקה ב.
+      expect(names(items)).toEqual(['אבי', 'בני', 'גיל'])
+      const reversed = boardItems(
+        base({ soldiers: people, memberships: placed, grouping: NO_GROUPING, sorts: [{ key: 'unit', order: 'desc' }] }),
+      )
+      expect(names(reversed)).toEqual(['גיל', 'בני', 'אבי'])
+    })
+
+    it('groups by rank, the most senior first, then who holds none', () => {
+      const items = boardItems(base({ soldiers: people, memberships: placed, grouping: { key: 'rank' } }))
+      expect(
+        items.flatMap((item) => {
+          const label = heading(item)
+          return label === null ? [] : [label]
+        }),
+      ).toEqual([{ kind: 'rank', title: 'R21' }, { kind: 'rank', title: 'R20' }, { kind: 'noRank' }])
+      expect(names(items)).toEqual(['גיל', 'אבי', 'בני'])
+    })
+
+    it('groups by a single category in the order of its tags, then who holds none', () => {
+      const items = boardItems(
+        base({
+          soldiers: people,
+          memberships: placed,
+          grouping: { category: ROLE },
+          tagCategories: [role(30, 'single')],
+          tags: [tag(41, 'נהג', 1), tag(40, 'חובש', 0)],
+          soldierTags: [holds(801, 1, 41), holds(802, 3, 40)],
+        }),
+      )
+      expect(
+        items.flatMap((item) => {
+          const label = heading(item)
+          return label === null ? [] : [label]
+        }),
+      ).toEqual([
+        { kind: 'tag', name: 'חובש' },
+        { kind: 'tag', name: 'נהג' },
+        { kind: 'noTag', category: 'תפקיד' },
+      ])
+      expect(names(items)).toEqual(['גיל', 'אבי', 'בני'])
+    })
+
+    it('keeps each row unit for the table, whatever groups it', () => {
+      const items = boardItems(
+        base({ soldiers: people, memberships: placed, grouping: NO_GROUPING, sorts: [{ key: 'name', order: 'asc' }] }),
+      )
+      expect(items.flatMap((item) => (item.kind === 'soldier' ? [item.unit] : []))).toEqual([
+        { kind: 'unit', path: ['פלוגה', 'מחלקה א'] },
+        { kind: 'unit', path: ['פלוגה', 'מחלקה א', 'כיתה 1'] },
+        { kind: 'unit', path: ['פלוגה', 'מחלקה ב'] },
+      ])
+    })
+
+    it('defaults to no grouping over one unit, and to units over several', () => {
+      expect(defaultGrouping(units, UnitId.parse(uuid(13)))).toEqual(NO_GROUPING)
+      expect(defaultGrouping(units, PLATOON_A)).toEqual(UNIT_GROUPING)
+      expect(defaultGrouping(units, null)).toEqual(UNIT_GROUPING)
+      expect(defaultGrouping([unit(13, 'כיתה 1', 11)], null)).toEqual(NO_GROUPING)
+    })
+
+    it('holds a category it cannot group by, and applies the default instead', () => {
+      const held = { category: ROLE }
+      expect(appliedGrouping(held, [role(30, 'single')], UNIT_GROUPING)).toEqual(held)
+      expect(appliedGrouping(held, [role(30, 'multiple')], UNIT_GROUPING)).toEqual(UNIT_GROUPING)
+      expect(appliedGrouping(held, [{ ...role(30, 'single'), archived_at: AT }], NO_GROUPING)).toEqual(NO_GROUPING)
+      expect(appliedGrouping(held, [], UNIT_GROUPING)).toEqual(UNIT_GROUPING)
+      expect(appliedGrouping(undefined, [], NO_GROUPING)).toEqual(NO_GROUPING)
+      expect(appliedGrouping({ key: 'rank' }, [], NO_GROUPING)).toEqual({ key: 'rank' })
+    })
   })
 
   it('keeps only rows with a matching mark under a leave condition (D-132)', () => {

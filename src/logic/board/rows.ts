@@ -8,6 +8,9 @@ import type {
   PropertyDefinitionId,
   Soldier,
   SoldierId,
+  Tag,
+  TagCategory,
+  TagId,
   Unit,
   UnitId,
 } from '@contracts'
@@ -15,11 +18,13 @@ import { effectiveSeniority } from '@domain'
 import { filterContextOf, populationOf, type FilterSource } from '../filters/source'
 import { byName, compareText, membershipsBySoldier, unitStateOn, type UnitState } from '../roster/roster'
 import { DEFAULT_SORT_RULES, type SortRule } from '../view-state/sort-rules'
+import type { BoardGrouping } from '../view-state/grouping'
 import { unitTreeRows } from '../units/tree'
 
-// The rows of the board (D-105, D-174): who served in the selected unit during the window, grouped by
-// unit like the tree, in the order of the sort rules (D-214, D-313), most senior first by default. The bar's leave
-// conditions and "only who is missing" narrow them (D-132, D-133). Pure; the hook feeds it.
+// The rows of the board (D-105, D-174): who served in the selected unit during the window, grouped as the view asks
+// (D-452) — by unit like the tree, by command rank, by a tag category, or not at all — in the order of the sort rules
+// (D-214, D-313), most senior first by default. The bar's leave conditions and "only who is missing" narrow them
+// (D-132, D-133). Pure; the hook feeds it.
 
 /** The filter source, and the window and conditions the board shows it for. */
 export interface BoardInput extends FilterSource {
@@ -42,6 +47,11 @@ export interface BoardInput extends FilterSource {
   readonly sorts: readonly SortRule[]
   /** With the `absent` sort key: the soldier's approved days away in the window (D-214). NULL otherwise. */
   readonly daysAway: ((soldierId: SoldierId) => number) | null
+  /** The grouping the board applies (D-452): the URL's, or the default. */
+  readonly grouping: BoardGrouping
+  /** Every tag and category, archived ones too: a held tag keeps its group (D-130). */
+  readonly tags: readonly Tag[]
+  readonly tagCategories: readonly TagCategory[]
 }
 
 /** What a group header says: a unit by its path, or one of the states of D-106. */
@@ -51,10 +61,18 @@ export type BoardGroupLabel =
   | { readonly kind: 'other' }
   | { readonly kind: 'unknown' }
 
+/** What a header of the board says (D-452): a unit or a state of D-106, a command rank, or a tag of the category. */
+export type BoardHeading =
+  | BoardGroupLabel
+  | { readonly kind: 'rank'; readonly title: string }
+  | { readonly kind: 'noRank' }
+  | { readonly kind: 'tag'; readonly name: string }
+  | { readonly kind: 'noTag'; readonly category: string }
+
 export interface BoardGroupItem {
   readonly kind: 'group'
   readonly key: string
-  readonly label: BoardGroupLabel
+  readonly label: BoardHeading
   /** How many soldiers the group holds. */
   readonly size: number
 }
@@ -64,6 +82,8 @@ export interface BoardSoldierItem {
   readonly key: SoldierId
   readonly soldier: Soldier
   readonly rank: CommandRank | null
+  /** The soldier's unit on the reference day (D-105), whatever the grouping: the table's unit column reads it. */
+  readonly unit: BoardGroupLabel
   /** One flag per day of the window: false where the soldier does not match the filter that day. */
   readonly inScope: readonly boolean[]
   /** With "only who is missing", one flag per day: true where it mutes a day the soldier is present (D-133). */
@@ -81,6 +101,8 @@ interface SortValues {
   readonly rank: number | null
   readonly seniority: number | null
   readonly daysAway: number
+  /** The place of the soldier's unit in the tree, then the states of D-106 after every unit. */
+  readonly unit: { readonly state: number; readonly place: number }
 }
 
 type Comparable = number | string | null
@@ -113,13 +135,15 @@ type Compare = (a: BoardSoldierItem, b: BoardSoldierItem) => number
 
 /**
  * Orders rows by each rule in turn (D-214, D-313): a row with no value for a rule comes after the others either way,
- * and the name breaks the last ties. The unit key orders the groups (see `boardItems`), so inside one it is skipped;
- * when it is the only rule, the rows inside a group keep the default order, most senior first (D-214).
+ * and the name breaks the last ties. The key the rows are grouped by orders the groups (see `boardItems`), so inside one
+ * it is skipped; when it is the only rule, the rows inside a group keep the default order, most senior first (D-214).
+ * Without unit grouping, the unit key sorts the rows by their unit's place in the tree, the states of D-106 after (D-452).
  */
 function rowOrder(
   sorts: readonly SortRule[],
   values: ReadonlyMap<SoldierId, SortValues>,
   definitions: ReadonlyMap<PropertyDefinitionId, PropertyDefinition>,
+  groupKey: 'unit' | 'rank' | null,
 ): Compare {
   const byRule = (rule: SortRule): Compare | null => {
     const sign = rule.order === 'asc' ? 1 : -1
@@ -139,6 +163,7 @@ function rowOrder(
       const definition = definitions.get(rule.property)
       return byValue((row) => propertyValueOf(definition, row.soldier.properties[rule.property]))
     }
+    if (rule.key === groupKey) return null
     switch (rule.key) {
       case 'name':
         return (a, b) => byName(a.soldier, b.soldier) * sign
@@ -149,7 +174,13 @@ function rowOrder(
       case 'absent':
         return stored((row) => row.daysAway)
       case 'unit':
-        return null
+        return (a, b) => {
+          const x = values.get(a.key)?.unit
+          const y = values.get(b.key)?.unit
+          if (x === undefined || y === undefined) return 0
+          // The states keep D-106's order after the units, whichever way the units go.
+          return x.state !== y.state ? x.state - y.state : (x.place - y.place) * sign
+        }
     }
   }
   const own = sorts.flatMap((rule) => byRule(rule) ?? [])
@@ -182,14 +213,67 @@ export function groupKeyOf(state: UnitState): string {
   return state.kind === 'unit' ? state.unit.id : state.kind
 }
 
+interface Group {
+  readonly label: BoardHeading
+  readonly rows: BoardSoldierItem[]
+}
+
+const NO_RANK = 'noRank'
+const NO_TAG = 'noTag'
+const UNGROUPED = 'all'
+
+/** Where a soldier's row goes under a rank or tag grouping, and the order of those groups (D-452). */
+interface Grouper {
+  readonly keyOf: (soldier: Soldier, rank: CommandRank | null) => { readonly key: string; readonly label: BoardHeading }
+  readonly order: readonly string[]
+}
+
+function rankGrouper(input: BoardInput): Grouper {
+  const rule = input.sorts.find((held) => 'key' in held && held.key === 'rank')
+  // The most senior first, as the rank key sorts by default (D-214); a `rank` rule's direction orders them.
+  const sign = rule?.order === 'asc' ? 1 : -1
+  const ranks = [...input.ranks].sort((a, b) => (a.seniority - b.seniority) * sign || compareText(a.title, b.title))
+  return {
+    keyOf: (_soldier, rank) =>
+      rank === null ? { key: NO_RANK, label: { kind: 'noRank' } } : { key: `rank:${rank.id}`, label: { kind: 'rank', title: rank.title } },
+    order: [...ranks.map((rank) => `rank:${rank.id}`), NO_RANK],
+  }
+}
+
+function tagGrouper(input: BoardInput, category: TagCategory): Grouper {
+  const inCategory = input.tags
+    .filter((tag) => tag.category_id === category.id)
+    .sort((a, b) => a.sort_order - b.sort_order || compareText(a.name, b.name))
+  const placed = new Map<TagId, { readonly tag: Tag; readonly at: number }>(inCategory.map((tag, at) => [tag.id, { tag, at }]))
+  const held = new Map<SoldierId, { readonly tag: Tag; readonly at: number }>()
+  for (const row of input.soldierTags) {
+    const found = placed.get(row.tag_id)
+    if (found === undefined) continue
+    const current = held.get(row.soldier_id)
+    // `single` holds one per soldier in the board's rotation (D-221); were there two, the first in order decides.
+    if (current === undefined || found.at < current.at) held.set(row.soldier_id, found)
+  }
+  return {
+    keyOf: (soldier) => {
+      const tag = held.get(soldier.id)?.tag
+      return tag === undefined
+        ? { key: NO_TAG, label: { kind: 'noTag', category: category.name } }
+        : { key: `tag:${tag.id}`, label: { kind: 'tag', name: tag.name } }
+    },
+    order: [...inCategory.map((tag) => `tag:${tag.id}`), NO_TAG],
+  }
+}
+
 export function boardItems(input: BoardInput): BoardItem[] {
-  const { days, today } = input
+  const { days, today, grouping } = input
   const filter = input.filter ?? EVERYONE
   const context = filterContextOf(input)
   const inPopulation = populationOf(input.filter)
   const rankById = new Map<CommandRankId, CommandRank>(input.ranks.map((rank) => [rank.id, rank]))
   // The tree holds archived units too, so a soldier in an archived sub-unit keeps its heading (D-147).
   const unitById = new Map<UnitId, Unit>(input.unitTree.map((unit) => [unit.id, unit]))
+  const treeOrder = unitTreeRows(input.unitTree).map((row) => row.unit.id)
+  const treePlace = new Map<string, number>(treeOrder.map((unitId, index) => [unitId, index]))
   const bySoldier = membershipsBySoldier(input.memberships)
   const todayIndex = days.indexOf(today)
   const values = new Map<SoldierId, SortValues>()
@@ -197,8 +281,12 @@ export function boardItems(input: BoardInput): BoardItem[] {
   // live top-level unit (D-321), so a top-level unit the actor sees is that root; no wider tree is needed (D-323).
   const roots = input.units.filter((unit) => unit.parent_id === null)
   const root = roots.length === 1 ? (roots[0] ?? null) : null
+  const category = 'category' in grouping ? (input.tagCategories.find((held) => held.id === grouping.category) ?? null) : null
+  const grouper: Grouper | null =
+    category !== null ? tagGrouper(input, category) : 'key' in grouping && grouping.key === 'rank' ? rankGrouper(input) : null
+  const byUnit = 'key' in grouping && grouping.key === 'unit'
 
-  const groups = new Map<string, { label: BoardGroupLabel; rows: BoardSoldierItem[] }>()
+  const groups = new Map<string, Group>()
   for (const soldier of input.soldiers) {
     if (!inPopulation(soldier)) continue
     if (input.marked !== null && !input.marked(soldier.id)) continue
@@ -215,8 +303,8 @@ export function boardItems(input: BoardInput): BoardItem[] {
     if (reads === null && own.length === 0) continue
     const placed = unitStateOn(own, unitById, soldier.id, referenceDay, reads === true)
     const state: UnitState = placed.kind === 'none' && root !== null ? { kind: 'unit', unit: root } : placed
-    const key = groupKeyOf(state)
-    const label: BoardGroupLabel =
+    const unitKey = groupKeyOf(state)
+    const unit: BoardGroupLabel =
       state.kind === 'unit' ? { kind: 'unit', path: unitPathOf(state.unit.id, unitById, input.scopeUnitId) } : { kind: state.kind }
     const rank = soldier.command_rank_id === null ? null : (rankById.get(soldier.command_rank_id) ?? null)
     const seniorityDay = referenceDay ?? days[0]
@@ -227,18 +315,26 @@ export function boardItems(input: BoardInput): BoardItem[] {
           ? (rank?.seniority ?? null)
           : effectiveSeniority(rank?.seniority ?? null, input.seniorityOverrides, soldier.id, seniorityDay),
       daysAway: input.daysAway === null ? 0 : input.daysAway(soldier.id),
+      unit:
+        state.kind === 'unit'
+          ? { state: 0, place: treePlace.get(unitKey) ?? treeOrder.length }
+          : { state: 1 + STATE_GROUPS.indexOf(state.kind), place: 0 },
     })
+    const { key, label } =
+      grouper !== null ? grouper.keyOf(soldier, rank) : byUnit ? { key: unitKey, label: unit } : { key: UNGROUPED, label: unit }
     const group = groups.get(key) ?? { label, rows: [] }
-    group.rows.push({ kind: 'soldier', key: soldier.id, soldier, rank, inScope, ...(present === null ? {} : { present }) })
+    group.rows.push({ kind: 'soldier', key: soldier.id, soldier, rank, unit, inScope, ...(present === null ? {} : { present }) })
     groups.set(key, group)
   }
 
-  const unitOrder = unitTreeRows(input.unitTree).map((row) => row.unit.id)
-  const unitRule = input.sorts.find((rule) => 'key' in rule && rule.key === 'unit')
-  if (unitRule?.order === 'desc') unitOrder.reverse()
-  const order: string[] = [...unitOrder, ...STATE_GROUPS]
   const definitions = new Map(input.propertyDefinitions.map((definition) => [definition.id, definition]))
-  const compare = rowOrder(input.sorts, values, definitions)
+  const groupKey = byUnit ? 'unit' : grouper !== null && category === null ? 'rank' : null
+  const compare = rowOrder(input.sorts, values, definitions, groupKey)
+  // No grouping: one run of rows, no header (D-452).
+  if (grouper === null && !byUnit) return groups.get(UNGROUPED)?.rows.sort(compare) ?? []
+  const unitRule = input.sorts.find((rule) => 'key' in rule && rule.key === 'unit')
+  const unitOrder = unitRule?.order === 'desc' ? [...treeOrder].reverse() : treeOrder
+  const order: readonly string[] = grouper?.order ?? [...unitOrder, ...STATE_GROUPS]
   return order.flatMap((key) => {
     const group = groups.get(key)
     if (group === undefined) return []
