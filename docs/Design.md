@@ -1,9 +1,9 @@
 # Sagol — Design language
 
-Derived from what is built (D-024), from the Stone 3 direction (D-077). It binds all later UI work.
-**Settled in V1,** with the workspace frame, the drawer and sheet, the form pattern and the palette. Later
-slices extend it, and a change to what is here needs a decision. Values live in `src/ui/theme/tailwind.css`,
-and this file says how to use them.
+Two languages live here while R5 runs (D-453, D-464). **"The new interface" below is the target** and binds all new
+UI work. The sections after it were derived from what was built (D-024) in the Stone 3 direction (D-077) and
+describe the screens not yet rebuilt. Values live in `src/ui/theme/tailwind.css`, and this file says how to use
+them. The rules bind both.
 
 ## Rules
 
@@ -18,6 +18,214 @@ and this file says how to use them.
   use it (`useCan`, D-091). A row with no permitted action shows no menu at all.
 - **Status is carried by form as well as color** (solid, dashed, badge), so color is never the only
   signal (D-111).
+
+## The new interface (R5, D-453 … D-464)
+
+The owner's concept, adopted in D-453. **Its source is `design/handoff/`:** `03-board-spec.md`, then
+`02-design-decisions.md`, then `01-handoff-package.md`, then the images; text wins over an image. This section says
+how the package lands in the product: token names, what each screen replaces, what the package leaves to us (states,
+desktop, tap paths), and every decision of our own. It does not repeat the package. **The sections after this one
+describe the interface being replaced.** Each stays true for a screen until that screen's batch lands (D-464), and
+is then removed or rewritten here.
+
+### Principles (short; the package holds the full text)
+
+- **Four places.** "היום" (what needs me now), "לוח" (the force over time), "ניהול" (the unit's tools), "אני"
+  (my own details, rotation and requests). Tabs follow permissions, never a role name (D-455).
+- **Color is meaning.** Night blue is the one action color. Amber is "below the threshold" or "waiting". Green and
+  red are only a closed status. A leave type has no color; its icon and name carry it (D-454).
+- **One fact, one indicator, and every indicator is a door.** A number, a cell or a badge opens the thing it counts.
+- **Open block and card.** A screen's main fact sits open on the background (a figure at 48); everything else is a
+  white card. Compact first; a block expands in place.
+- **A floating layer.** Top corners hold glass circles and a capsule; a 70 px blur band lets content scroll under
+  them; the tab bar floats at the bottom and collapses on scroll down.
+- **Minimal copy.** No explanation text where the layout says it. Present tense ("חוזר היום", "יוצא היום").
+- **Three layers per feature:** seen at a glance, one tap (a drawer), full page. Nothing is built deeper.
+
+### Tokens
+
+Values live in `src/ui/theme/tailwind.css`; the package's token is on the left. A name that exists today keeps its
+name and takes the new value, so untouched screens move with the theme.
+
+| Package | Token | Light |
+|---|---|---|
+| `color-primary` | `action-solid` | `#2B3A55` |
+| on primary | `on-action` | `#FFFFFF` |
+| `color-primary-soft` / on it | `action-soft` / `on-action-soft` | `#E3E8F0` / `#1E2A40` |
+| `color-bg` | `canvas` | `#F2F1EE` |
+| `color-surface` | `surface` | `#FFFFFF` |
+| `color-surface-subtle` | `surface-subtle` | `#F7F6F3` |
+| `color-fill-muted` | `inner` | `#ECEAE5` |
+| `ink`, `ink-2`, `ink-3` | `text`, `text-muted`, `text-faint` | `#1B1A1F`, `#5C5A63`, `#8E8A97` |
+| past days | `past` | `#9A97A0` |
+| divider, divider strong | `divider`, `divider-strong` | `#F0EEEA`, `#E4E2DD` |
+| border | `line` | `#D9D6CF` |
+| toggle off, dashed outline | `toggle-off`, `line-dashed` | `#C9C6BF`, `#D3D0C9` |
+| pending | `status-pending-bg`, `-text`, `-line` | `#F8EDD5`, `#7A4F0B`, `#D39A2C` |
+| threshold cell | `status-pending-cell` | `#FBF4E4` |
+| ok | `status-ok-bg`, `-text` | `#E1F0EA`, `#1E6B52` |
+| rejected | `status-rejected-bg`, `-text` | `#F7E3E0`, `#9B2C24` |
+| error text | `status-error` | `#8E2C22` |
+| on base | `time-base` | `#3A3743` |
+| leave round | `time-round` | `rgba(139,136,146,.28)` |
+| approved request | `time-approved` | `#C9C5BC` |
+| pending request | `time-pending` (fill), `status-pending-line` (border) | `#F6E4C2` |
+| label on a bar | `time-label` | `#3A3940` |
+
+- **Dark (D-181 stays).** The package is light only. The dark set is derived by the same roles: `canvas` `#121214`,
+  `surface` `#1C1C20`, `surface-subtle` `#222227`, `inner` `#2A2A30`; `text` `#EDEDF0`, `text-muted` `#A9A7B0`,
+  `text-faint` `#7F7C88`, `past` `#77747F`; `line` `#3A3A41`, `divider` `#26262B`, `divider-strong` `#303036`;
+  night blue lifted to `#9FB4DC` under `on-action` `#131A28`, `action-soft` `#263147` under `#D5DEF0`; pending
+  `#3A2E14` / `#F0C670` (line `#D39A2C`, cell `#2A2313`), ok `#15332A` / `#7FD0B0`, rejected `#3D1D1A` / `#F0958B`;
+  time: base `#CFCCD8`, approved `#5A5861`, pending `#5A4520`, label `#EDEDF0`.
+- **Names in transit (D-464).** `status-approved`, `status-pending`, `status-rejected`, `marker`, `today`,
+  `absence`, `palette-*`, the `text-name` to `text-micro` steps, the `bar`, `panel`, `pill` and `sheet` radii, the
+  `rim`, `float` and `action` shadows and the `glass-bar`, `-card`, `-menu`, `-action` utilities serve only the
+  screens not yet rebuilt. Each is removed with the last screen that uses it.
+- **Type.** Heebo, self-hosted (unchanged). `text-display` 48 (the open block's figure), `text-title` 28,
+  `text-heading` 17, `text-body` 15, `text-small` 13, `text-caption` 12 (chips, badges, captions: the mockups' 14,
+  12 and 11 map to 15, 13 or 12). `text-input` stays 16, so iOS does not zoom a focused field. Weights 400, 500,
+  600, 700.
+- **Radius.** `card` 20 (cards, a drawer's top corners), `control` 16, `chip` 12, `small` 4 (bars and cells of time
+  components), `full` (glass circles, capsules, the tab bar, badges).
+- **Spacing.** 2, 4, 6, 8, 10, 12, 16; side margin 16; card padding 16; a row is 44 high, which is also the minimum
+  hit area (`touch`).
+- **Shadow.** `shadow-glass`, `shadow-bar`, `shadow-drawer`, `shadow-menu`, `shadow-primary`, with the package's
+  values.
+- **Glass.** `glass-clear` (floating circles, capsules, the tab bar), `glass-drawer` (over a dim layer),
+  `glass-regular` (menus, trays). With "reduce transparency", or where `backdrop-filter` is missing, each becomes
+  the opaque `surface` or `canvas`.
+- **Motion.** `duration-tap` 120 ms, `duration-ui` 200 ms, `duration-drawer` 280 ms, `ease-standard`
+  `cubic-bezier(.2,.8,.2,1)`. With "reduce motion" a slide becomes a crossfade and nothing springs. Loading shows
+  skeletons in the content's shape, never a spinner.
+
+### Shared components
+
+| Component | What it is | Used by |
+|---|---|---|
+| Tab bar | A floating glass bar of icons, no labels (house, timeline, clipboard-check, person; 26). The active tab is a glass capsule behind a night-blue icon. Collapses on scroll down, returns on scroll up. Tapping the active tab returns to the top and to today | every main screen |
+| Action circle | A separate night-blue glass circle at the bar's end, on "היום" only: a leave request for me | היום |
+| Corner circle, capsule | Glass circle (bell, back, close) and a capsule of two or three icons (search, options, add). 44, shrinking to 36 with the header on scroll. A night-blue dot on the options icon when a value is not the default | every screen |
+| "Where am I" capsule | Centered at the top once the title scrolls away; tapping it returns to the top | long pages |
+| Options menu | One floating glass menu of rows with the current value ("מיון · ותק ›"); choices open inside it with a back arrow. Replaces chip rows for sort, group, filter, range and saved views | לוח, חיילים, pages with a list |
+| Drawer | Glass over a dim layer, with stops (edge, middle, full), a handle, ✕; dragging changes the stop and "כרטיס מלא" reaches full without a drag. A side panel on a desktop | all shared drawers |
+| Tray | Replaces the tab bar while something is selected ("N נבחרו" and its actions) | day selection, multi-select |
+| Fraction | `{n}/{total}`: the numerator big and bold, the denominator small and gray; both amber below the threshold | commander block, calendar, drawers |
+| Person row | 44 high: name, a small line (role, tags), seven dots (filled on base, hollow away; today first and larger) | חיילים, drawers |
+| 14-day strip | Bars with day numbers, today first; days are picked on it | היום (soldier), person card, "הסבב שלי" |
+| Month | A month grid with request bars, amber cells below the threshold, a selected outline; arrows beside the month's name | לוח, "הסבב שלי", the soldier's expanded block |
+| Badge | 26 high, `full` radius: "ממתינה" (pending), "אושרה" (ok), "נדחתה" (rejected) | requests everywhere |
+| Toast | One line at the bottom with "ביטול" where the action can be undone (D-461) | after an action |
+| Card | White, `card` radius, 16 padding, a `text-heading` title, the whole card or its title row a door | היום, אני |
+
+### Screens: what each image shows and what it replaces
+
+"Current" = the image is the target as drawn. "Shared parts outdated" = the screen's own content is the target, but
+the tab bar, the commander block, "X מתוך Y", past tense, the amber dot, chip groups, the person card's
+"יציאה עבורו" button and the soldier's calendar follow the text (the list is in `01` §4).
+
+| Image (`design/handoff/screens/`) | Screen | Replaces today | Image status |
+|---|---|---|---|
+| `היום – טלפון – לוחם`, `– מורחב`, `– בחירת ימים` | היום, without a force | `HomeLanding`, "הסבב שלי" on "שלי" (D-360) | shared parts outdated |
+| (text only: `02` "Today — open block", `design-language/07`) | היום, with a force | `HomeLanding`, the dashboard's status cards (D-362) | text |
+| `לוח – טלפון – לוח שנה`, `– מגירה באמצע` | לוח · לוח שנה | the calendar engine, the day report's entry (D-339) | current |
+| `לוח – טלפון – ציר זמן` | לוח · ציר זמן | the timeline and list engines on a phone | current |
+| `לוח – טלפון – תנועות` | לוח · תנועות | (new: who leaves and returns, by day) | current |
+| `ניהול – טלפון – מ״פ`, `– מ״מ` | ניהול | "ניהול יחידה" and "עבודה" (D-254, D-285), `NavigationPanel` | shared parts outdated |
+| `חיילים – טלפון – מ״פ`, `– מ״מ`, `– בחירה מרובה` | ניהול → חיילים | the soldiers module's list | shared parts outdated |
+| `חיילים – טלפון – כרטיס אדם` | Person card (drawer) | the soldier page | shared parts outdated |
+| `הוספת חיילים – טלפון – רגיל` | הוספת חיילים | quick entry and import (D-171) | current but for the frame |
+| `הצטרפות – טלפון – *` (five) | ניהול → בקשות הצטרפות and its drawers | `AccountLinksModule` (OI-382) | shared parts outdated |
+| `כללי נוכחות – טלפון – *` (five) | ניהול → כללי נוכחות, rule details, form, archive | the rules module | shared parts outdated; the form is revisited at the end (OI-385) |
+| `אני – טלפון – רגיל`, `– לוחם`, `– מורחב`, `– עריכת פרטים` | אני | "שלי", the profile | shared parts outdated |
+| `אני – טלפון – הסבב שלי` | אני → הסבב שלי | "הסבב שלי" (D-360) | shared parts outdated |
+| `אני – טלפון – כל הבקשות` | אני → כל הבקשות | the requests hub's "mine" (D-255) | shared parts outdated |
+| `אני – טלפון – העדפות` | אני → העדפות | the profile's appearance, notifications, account | shared parts outdated |
+| `יציאה חדשה – טלפון – רגיל` | New leave (drawer) | the leave form | shared parts outdated |
+| `כרטיס יציאה – טלפון – בקשה ממתינה` | Leave card (drawer) | the leave drawer | shared parts outdated |
+| `דוח 1 – טלפון – מגירה` | דוח 1 (drawer) | `DayReportDialog` | shared parts outdated |
+| `מגירת יחידה – טלפון – מ״פ` | Unit drawer | (new: who is and is not on base on a day) | shared parts outdated |
+| (text only) | Notifications drawer, pending-requests page | "עדכונים" (D-351), "awaiting me" (D-255) | text |
+
+`design-language/01` … `06` are the language, the block template, the toolbox, gestures, the three layers and the
+placement map; `07` is current and wins over them for the tab bar, numbers and time components.
+
+### Navigation
+
+- One route, state in the URL, as today (D-023). A main screen is the `tab` param (`today`, `board`, `manage`,
+  `me`); an inner page is `page`; a drawer keeps `panel` and `entity` (D-104), so a link opens the same thing and
+  "back" closes the top layer first.
+- **Who sees what (D-455).** "היום" and "אני": everyone. "לוח": who reads leaves of soldiers other than themself.
+  "ניהול": who is permitted at least one of its rows. The action circle: who may request a leave for themself. A
+  row, a card or an icon the actor cannot use is absent (D-076).
+- **ניהול's rows.** The designed tools first (חיילים, בקשות הצטרפות, כללי נוכחות), then, after a gap, the tools
+  that exist and are not yet designed, each opening its current screen inside the new frame (D-456): the unit tree,
+  leave-round planning and collective leave, deployments and rotations, the dashboard, and "הגדרות" (roles, leave
+  types, tags, properties, command ranks, unit levels, organization).
+- **Creation is in context.** No global "+". Days picked on a strip, a month or a timeline row open a tray, and the
+  tray opens "יציאה חדשה". A soldier and a rule are added from the add icon in their page's capsule.
+
+### A tap path for every gesture (D-458)
+
+| Gesture | Tap path |
+|---|---|
+| Swipe a request row (✓ ✗) | Tap the row: the request opens with the same actions |
+| Long-press a row (multi-select) | "בחירה" in the page's options menu |
+| Long-press a button (saved views) | The same choices in the options menu |
+| Swipe between days or months | Arrows beside the date or the month's name |
+| Pinch on the timeline | "טווח" in the options menu, which also holds a custom range |
+| Long-press a day (range) | "בחירת טווח" in the day's tray, then a second day |
+| Drag a drawer | "כרטיס מלא"; ✕ or a tap outside closes |
+| Drag in the unit tree | "⋯" → "העברה" (pick a parent), "הזזה למעלה", "הזזה למטה" |
+| Drag a bar on the timeline | Phone: none; a bar opens its leave card, where dates are edited. Desktop: drag stays (D-143), with the same card |
+
+### States the package leaves to us
+
+- **Loading:** skeletons shaped as the content (a 48 figure block, card outlines, 44 rows). The frame (tab bar,
+  corners) is there from the first paint.
+- **Empty:** a card with nothing to show is absent; "הסטטוס שלי" always shows (D-459). A list page with no rows
+  shows one `text-muted` line and, where the actor may add, the add action. A filter that hides everything says so
+  and offers "ניקוי".
+- **Error:** a failed read shows a card in place with "ניסיון נוסף"; a failed action keeps the form or drawer open
+  with the reason beside the control, in `status-error`. Offline changes queue as today (D-184) and say so in a toast.
+- **Signed out, not linked, no organization:** the current sign-in, join and setup flows, in the new tokens and
+  type, each as one centered column with one primary action.
+
+### Desktop (D-460)
+
+The phone is the design; the desktop is derived. From the `desktop` breakpoint: the tab bar is a side rail on the
+inline start (icons with labels, the action as its first item); a drawer is a side panel on the inline end, not a
+centered dialog; "היום" and "אני" are one centered column (the feed's width, not stretched); "ניהול" is its list
+beside the open page; lists of people are tables where a row has more than three facts; the unit tree is a
+hierarchy diagram. "לוח" is the exception: a wide timeline with the calendar and movements beside it in the panel,
+and dragging a bar stays.
+
+### Accessibility and RTL
+
+RTL throughout, logical properties only; technical values `ltr`. Text contrast 4.5:1 on its surface in both sets
+(amber text is `status-pending-text`, never the border color). Every icon-only control has a label from `@i18n`.
+Hit areas 44. Focus is visible (`focus`), drawers trap focus and return it. Color is never the only signal: a
+status has a word, a bar below the threshold has its number. Every gesture has a tap path (above). "Reduce motion"
+and "reduce transparency" are honored. The e2e suite's axe pass covers each rebuilt screen on phone and desktop.
+
+### Own decisions and deviations (for the owner's review)
+
+Each is ours (D-170), not the package's. A row is added whenever a batch decides something the package did not.
+
+| # | What | Why | Decision |
+|---|---|---|---|
+| 1 | The undesigned tools (leave-round planning, temporary units, rotations, routine switch, settings, the dashboard) stay as their current screens under "ניהול" | Removing them would lose capabilities units use; the package marked this open | D-456 |
+| 2 | "איתך היום" shows only to who already reads their unit's leaves; no new permission | A presence-only permission is a model change the package lists as "not now" | D-457, OI-384 |
+| 3 | Tap paths for the gestures marked "Open" follow the package's recommendations; a phone timeline bar is not dragged | A drag on a scrolling phone timeline fights the scroll | D-458 |
+| 4 | היום's cards: fixed order, an empty card is absent (but "הסטטוס שלי"), no maximum; "בקשות לאישור" opens a pending-requests page | The package left order, empty and maximum open | D-459 |
+| 5 | Desktop layout as above | The package gives rules, not screens | D-460 |
+| 6 | A 12 px caption step; one value per radius (20, 16, 12, 4) | The package gives ranges and asks for a proposal | D-454 |
+| 7 | A dark set, derived | The package is light only; the appearance choice exists (D-181) | D-454 |
+| 8 | Leave-type colors and the "uniform color" mode leave the time components | "Color is meaning": a type is an icon and a name | D-454 |
+| 9 | A soldier with no permission to edit a soldier has no pencil on "אני" | Nobody edits their own record today; granting it is a permissions choice, not UI | D-463 |
+| 10 | Archive sits behind "⋯", confirms by name, and offers "ביטול" in a toast; a rule's priority is a number under "עוד", with no "move to top" | OI-297; no reorder command exists | D-461 |
+| 11 | Saving a view equal to an existing one is refused and names it | OI-381 | D-462 |
+| 12 | "Only missing" is removed; a phone's default board view is the calendar; the day report's cut-over hour stays one config value | `03` §5; OI-380 | D-463 |
 
 ## Color (Light)
 

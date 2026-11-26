@@ -151,7 +151,7 @@ then A7 on main once V27 and V28 are in. V29 is done. Before launch: "A7 fixes" 
 
 Version 1.0 is the first version technically ready for real use in place of the spreadsheet. Deploying it as it is,
 or holding it for one more update, is the owner's decision once it is ready (D-342). Who operates it: D-343. What it
-holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds until the design rounds approve a concept.
+holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze ended when the owner's concept was adopted (D-453); R5 builds it in batches (D-464).
 
 | # | Stage | The owner sees | Status |
 |---|-------|----------------|--------|
@@ -167,8 +167,13 @@ holds: the sort in D-344. The UI update is part of 1.0; D-333's freeze holds unt
 | A9b fixes | A9b's findings | A push address that is not a URL refused as invalid (OI-350); the server store writes only the row's columns (OI-351, D-410); the function loads its catalog again after a failure (OI-352); OI-353 recorded for after 1.0 | ☑ |
 | A9c | audit | The R3-rest merges (#93, #94) on main at 3d65ba4; its one finding fixed: sign-out unsubscribes the browser even when it cannot read its install | ☑ |
 | R3·J | Join linking | The commander needs only the name: auto-link on email or on personal id with a close name, a derived readiness per request, bulk approve of every ready one, approval fills the missing personal id and invite email, the platoon commander reviews (`docs/specs/join-linking.md`, D-445 … D-451). No `ui` change | ☑ |
-| R4 | Design rounds | A new interface concept, approved by the owner: whether the board stays the main screen, the dashboard's place, archiving without accidents (OI-297), the range picker's redesign (its two and four weeks are built in R3·C) | ☐ |
-| R5 | Building the design | The approved concept in the product | ☐ |
+| R4 | Design rounds | The owner's concept, handed over in `design/handoff/` and adopted (D-453): היום, לוח, ניהול, אני. The guide is in `docs/Design.md`; the open questions are decided (D-454 … D-463), archiving (D-461) and the range (the board's options menu) included | ☑ |
+| R5·1 | Foundation and shell | The new tokens with a dark set, glass, the tab bar by permission with the action circle, the drawer with stops, the options menu, the fraction, the 14-day strip, the month, the toast; every current module reachable from the new shell (D-454, D-455, D-464) | ☐ |
+| R5·2 | היום | The open block for a soldier and for a commander, the cards in their order, the pending-requests page, "דוח 1" and the unit drawer, new leave and the leave card (D-457, D-459) | ☐ |
+| R5·3 | לוח | Calendar, timeline and movements in one frame; the options menu; "only missing" removed, the phone opens on the calendar, equal saved views refused (D-458, D-462, D-463, OI-381) | ☐ |
+| R5·4 | ניהול | The tab and its rows; חיילים with the person card and multi-select, הוספת חיילים, בקשות הצטרפות (OI-382), כללי נוכחות with its archive (D-456, D-461, OI-297, OI-385) | ☐ |
+| R5·5 | אני | The profile, הסבב שלי, כל הבקשות, העדפות, the notifications drawer | ☐ |
+| R5·6 | Desktop pass | The side rail, the side panel, the centered column, tables and the wide board (D-460); the old shell and the replaced engines removed | ☐ |
 | R6 | Acceptance testing | The journeys walked on the real product; the decision point on who maintains the system after handover (D-342) | ☐ |
 | R7 | Release decision | A go / no-go: deploy as it is, or wait for one more update; production only on the owner's word (D-340) | ☐ |
 
