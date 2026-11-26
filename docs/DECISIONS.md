@@ -90,10 +90,10 @@ am = amends, ref = refines, ext = extends.
 | D-071 | Rule targets, populations and thresholds | domain, data, logic, ui, backend | |
 | D-072 | Rule groups, priority and conflicts | domain, data, logic, ui, backend | |
 | D-073 | Leave changes and rule enforcement | domain, data, logic, ui, backend | ref D-137, D-142; ref D-146 |
-| D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132; ref D-185 |
+| D-074 | Config vocabularies (env, palette, breakpoints, views, URL, storage, dates) | config, data, logic, ui, app, tooling | ref D-092, D-103, D-104; ref D-112; ref D-132; ref D-185; am D-463 |
 | D-075 | Vertical slices: one session = one slice, one commit = one layer | all, tooling, docs | ref D-093, D-100; ref D-126; sup D-127 (layer order); ref D-154; ext D-359 |
 | D-076 | The adapter grows by slice; no stubs, no dead controls | contracts, data, logic, ui, app, backend | ref D-085; ref D-152; ref D-215; ref D-351, D-356 |
-| D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111 |
+| D-077 | Visual direction: Stone 3, self-hosted Heebo | ui, tooling | ref D-108; ref D-111; sup D-453, D-454 |
 | D-078 | Audits follow milestones | docs | am D-284 |
 | D-079 | The bootstrap owner role holds every valid permission pair | data, backend | |
 | D-080 | `fake-indexeddb` for data tests | data, tooling | |
@@ -128,7 +128,7 @@ am = amends, ref = refines, ext = extends.
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
-| D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | ref D-174 |
+| D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | ref D-174; sup D-454 |
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | ref D-347 |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143; sup D-255 (floating "+"); ref D-267 |
@@ -149,7 +149,7 @@ am = amends, ref = refines, ext = extends.
 | D-130 | Tags: categories, tags and a soldier's tags | domain, data, logic, ui, backend | ref D-260; ref D-285 |
 | D-131 | The filter bar: soldier conditions | config, logic, ui | ref D-147; ref D-173; ref D-177; sup D-326 |
 | D-132 | Leave conditions on the board | config, logic, ui | ext D-382 |
-| D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213 |
+| D-133 | "Only who is missing" | config, logic, ui | ref D-161; ref D-213; am D-463 |
 | D-134 | Present and absent lists of a day | config, logic, ui | ref D-141; ref D-147; ref D-161; sup D-193 (panel) |
 | D-135 | Shared test helpers live in a layer's `testing/` folder | tooling, logic | |
 | D-136 | The new-leave form stays with active soldiers | logic, ui | |
@@ -159,7 +159,7 @@ am = amends, ref = refines, ext = extends.
 | D-140 | The rules module | config, logic, ui | |
 | D-141 | The heat row | config, logic, ui | ref D-173 |
 | D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143; ref D-145, D-146; ref D-162 |
-| D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144 |
+| D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144; am D-458 |
 | D-144 | The touch path of the timeline, and its lanes on a phone | config, ui | |
 | D-145 | Approving shows the rules' answer, not a live warning | logic, ui | ref D-255 |
 | D-146 | A live warning lists hard and soft rules together | logic, ui | |
@@ -170,7 +170,7 @@ am = amends, ref = refines, ext = extends.
 | D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168; ref D-330 |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
-| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-170; ref D-172; ref D-263, D-264 |
+| D-154 | The Claude Code harness replaces the session rituals | docs, tooling | ref D-170; ref D-172; ref D-263, D-264; ref D-464 |
 | D-155 | The phone's module buttons scroll inside the bottom bar | ui | ref D-165; ref D-189; ref D-252 |
 | D-156 | Every way of giving a role is guarded; a grant stays within the granter's reach | domain, data, backend | |
 | D-157 | A holder without seniority gets only `any`; a rank write is checked before and after | domain, data, backend | |
@@ -240,10 +240,10 @@ am = amends, ref = refines, ext = extends.
 | D-223 | The first sign-in in practice: the root from the claim, the setup it opens, quick entry and bulk approval | logic, ui, e2e | |
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | ref D-347 |
-| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266, D-301; ref D-352 |
+| D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266, D-301; ref D-352; sup D-453 |
 | D-253 | The profile is personal only | ui | sup D-310 (rules row); ref D-311; ref D-356 |
-| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285 |
-| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266; ref D-299 |
+| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285; am D-456 |
+| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266; ref D-299; am D-459 |
 | D-256 | One path for each action | ui | ref D-285 |
 | D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221, D-222 |
 | D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
@@ -253,8 +253,8 @@ am = amends, ref = refines, ext = extends.
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285; ref D-347 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
-| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343; ref D-350; ref D-386 |
-| D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296 |
+| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343; ref D-350; ref D-386; ref D-455 |
+| D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296; ref D-455 |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290; ref D-339 |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
@@ -271,7 +271,7 @@ am = amends, ref = refines, ext = extends.
 | D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | sup D-448 |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
-| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297 |
+| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297; am D-456 |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
@@ -306,7 +306,7 @@ am = amends, ref = refines, ext = extends.
 | D-330 | A board that loads says it loads; "no board" is only for who has none | ui | |
 | D-331 | Each remote call names itself in its URL, for the request logs | config, data | sup D-335 |
 | D-332 | The back button leaves the current state; only an open overlay adds a history entry | config, logic, ui | am D-337; ref D-385; ref D-440 |
-| D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | ref D-342 |
+| D-333 | UI freeze: no visual or UI change unless a fix strictly needs it (amended: features may add UI) | ui, docs | ref D-342; sup D-453 |
 | D-334 | A refused read is not asked again because another view of it mounts | logic | |
 | D-335 | The server logs each call's name and answer code; the URL tag goes | config, data, backend | ext D-346 |
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
@@ -317,7 +317,7 @@ am = amends, ref = refines, ext = extends.
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 | D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | am D-360 |
 | D-343 | Who operates 1.0: the platoon commanders run it, the company commander plans and controls | docs | |
-| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360; ref D-370; ref D-400 |
+| D-344 | The 1.0 sort: what 1.0 must, should and could have, and what waits | docs | am D-360; ref D-370; ref D-400; ref D-461 |
 | D-345 | "יציאת סבב": a rotation's routine home leave, and the built-in "סבב יציאות" group | docs | ref D-347 |
 | D-346 | A row the contracts reject: the call's log line names its table and issue paths | data | |
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | ref D-430 |
@@ -337,13 +337,13 @@ am = amends, ref = refines, ext = extends.
 | D-361 | The stored board reads leniently and writes strictly; the plan reads its own leaves' events | contracts | |
 | D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | ref D-403; ref D-404; ref D-405; ref D-443 |
 | D-370 | The 1.0 Could items are built while the owner is away | docs | ref D-400 |
-| D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | |
+| D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | ref D-461 |
 | D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | ref D-402; ref D-431 |
 | D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | ref D-441 |
 | D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
 | D-382 | Leave property conditions are leave conditions | logic, ui | |
 | D-383 | The range picker offers two and four weeks | config, logic, ui | |
-| D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | ext D-442; ref D-452 |
+| D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | ext D-442; ref D-452; am D-462 |
 | D-385 | Applying a saved view replaces the board's state; what no longer parses is dropped and reported | logic, ui | |
 | D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
 | D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | ext D-442 |
@@ -368,8 +368,8 @@ am = amends, ref = refines, ext = extends.
 | D-438 | Sign-out sends the server's and the browser's unsubscribe together | logic, data | |
 | D-440 | A URL write goes over the search as the router holds it when it is written | logic | |
 | D-441 | The filter builder's operator vocabulary lives in contracts | contracts, logic, ui | |
-| D-442 | "שמירת השינויים": the board keeps the saved view it was put in, and saves a change over it | config, logic, i18n, ui | |
-| D-443 | "סטטוס דוח 1" adds tomorrow's report from a config cut-over hour in the organization's time zone | domain, config, logic, ui | |
+| D-442 | "שמירת השינויים": the board keeps the saved view it was put in, and saves a change over it | config, logic, i18n, ui | am D-462 |
+| D-443 | "סטטוס דוח 1" adds tomorrow's report from a config cut-over hour in the organization's time zone | domain, config, logic, ui | am D-463 |
 | D-444 | The D-183 update flow is walked in a browser by changing the built worker on disk | tooling | |
 | D-445 | Join linking auto-links on either detail: the invite email, or the personal id with a close name | contracts, domain, data, backend || ref D-451 |
 | D-446 | Names compare leniently: light typos per name part | domain, config, data | |
@@ -379,6 +379,18 @@ am = amends, ref = refines, ext = extends.
 | D-450 | The reviewer of a join request is who approves over its best candidate; platoon commanders review | domain, config, data | ref D-451 |
 | D-451 | Join linking hardened: a verified email to ask, no automatic return to an unlinked soldier, details held elsewhere | contracts, domain, data | |
 | D-452 | The board's grouping is a view option: none, unit, command rank or a single-selection tag category | contracts, config, logic, ui | |
+| D-453 | The new interface is adopted: היום, לוח, ניהול, אני; the UI freeze ends | ui, docs | |
+| D-454 | The new language's tokens: one value per step, a caption step, a derived dark set, no leave-type color | ui, config | |
+| D-455 | Tabs, the action circle and every door follow permissions | logic, ui | |
+| D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | |
+| D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | |
+| D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | |
+| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | |
+| D-460 | The desktop is derived from the phone | ui | |
+| D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | |
+| D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | |
+| D-463 | Small product choices of the new interface | contracts, config, logic, ui | |
+| D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5585,3 +5597,142 @@ would link the same person back with no one in the loop.
   grouping.
 **Why:** the owner: grouping by unit was fixed, and a board of one unit gained nothing from it. Tag grouping is
 limited to `single` categories so the count of each group adds up to the rows.
+
+## D-453 — The new interface is adopted: היום, לוח, ניהול, אני; the UI freeze ends
+2026-11-26 · accepted · supersedes D-333, D-077, D-252 as each screen is rebuilt (D-464) · the owner's concept
+- **The concept.** The owner's handoff package in `design/handoff/` is the approved design of roadmap row R4. The
+  product has four main screens: "היום" (what needs me now), "לוח" (the force over time: calendar, timeline,
+  movements), "ניהול" (the unit's tools) and "אני" (my details, rotation and requests). The board is no longer the
+  first screen; "היום" is.
+- **Authority inside the package:** `03-board-spec.md`, then `02-design-decisions.md`, then
+  `01-handoff-package.md`, then the images. Text wins over an image. `docs/Design.md` ("The new interface") says how
+  the package lands in the product and holds what the package leaves to us.
+- **The freeze of D-333 ends** for the screens R5 rebuilds. The visual direction of D-077 (Stone 3) and the two
+  strips of D-252 are replaced by the package's language and its tab bar, screen by screen.
+- **What does not change:** the layers, the model, permissions, the URL as the home of view state (D-023), Heebo
+  self-hosted, RTL, the appearance choice (D-181), the installed app (D-182 … D-185). Hour-level leave stays out.
+**Why:** the owner designed and handed over the concept; R4 was the wait for it.
+
+## D-454 — The new language's tokens: one value per step, a caption step, a derived dark set, no leave-type color
+2026-11-26 · accepted · supersedes D-077's palette and D-112 · decided under D-170
+- **Names.** A token that exists keeps its name and takes the package's value (`canvas`, `surface`, `line`, `text`,
+  `text-muted`, `inner`, `action-solid`, `on-action`); new roles get new tokens (`surface-subtle`, `text-faint`,
+  `past`, `divider`, `divider-strong`, `action-soft`, `on-action-soft`, `toggle-off`, `line-dashed`, the
+  `status-pending/ok/rejected/error` set, the `time-*` set). The table is in `docs/Design.md`.
+- **Type:** 48 / 28 / 17 / 15 / 13 and a 12 caption step, which the package invites; the mockups' 14 and 11 map to
+  the nearest step. Inputs stay 16.
+- **One value per range:** radius card 20, control 16, chip 12, small 4; glass shapes are full.
+- **Dark.** The package is light only and the soldier's appearance choice exists (D-181), so a dark set is derived
+  by role and recorded in `docs/Design.md` when the foundation batch sets it.
+- **No leave-type color on time components.** A bar is on base, leave round, approved request or pending request;
+  the type is an icon and a name in the leave card. The palette of leave types (D-074) stays in the model and in
+  the leave-type settings, and the timeline's "uniform color" mode (D-112, `colors` in the URL) is removed with
+  the old timeline.
+**Why:** the package's rule "color is meaning": amber already means waiting or below the threshold, and a second
+color code on the same bars would compete with it.
+
+## D-455 — Tabs, the action circle and every door follow permissions
+2026-11-26 · accepted · refines D-265, D-266 · decided under D-170
+- "היום" and "אני": every signed-in, linked soldier.
+- "לוח": who reads leaves of soldiers other than themself (the test of "manages someone else", D-265).
+- "ניהול": who is permitted at least one of its rows; a row appears by its own module access (D-091).
+- The action circle on "היום": who may create a leave for themself. It replaces the quick action of D-266.
+- No screen reads a role's name. The package's "soldier", "platoon commander" and "company commander" are
+  shorthand for permission sets.
+**Why:** project rule; roles are editable per organization (D-165).
+
+## D-456 — Tools the package does not design keep their current screens, under "ניהול"
+2026-11-26 · accepted · amends D-254, D-285 · decided under D-170 (the package's open question 1)
+- "ניהול" lists the designed tools first (חיילים, בקשות הצטרפות, כללי נוכחות). After a gap come the tools that exist
+  and have no new design: the unit tree, leave-round planning and collective leave, deployments and rotations, the
+  dashboard "דשבורד", and "הגדרות" (roles and access, leave types, tags, properties, command ranks, unit levels,
+  the organization).
+- Each opens its current module inside the new frame, in the new tokens and type. Its layout is not redesigned in
+  R5; that waits for the owner's design of it.
+- The dashboard is no longer a main screen: "היום" carries what a commander needs at a glance. Its modules and
+  templates stay as built (D-362).
+**Why:** dropping them would remove capabilities units use daily (planning a leave round, opening a rotation).
+Rule 6 forbids dead controls, not working ones.
+
+## D-457 — "איתך היום" shows to who already reads their unit's leaves and has no "לוח"
+2026-11-26 · accepted · decided under D-170 (the package's open question 2)
+- The card lists who of the actor's unit is on base today. It appears when the actor may read the leaves of their
+  own unit and does not have the "לוח" tab (who has it sees the same in the commander block).
+- No permission is added for it. An organization whose soldiers do not read their unit's leaves does not show the
+  card. A presence-only permission is recorded as OI-384 for the owner.
+**Why:** presence is derived from leaves (rule 3), so showing it to someone who may not read them would bypass a
+permission (rule 4).
+
+## D-458 — Every gesture has a tap path; a phone's timeline bar is not dragged
+2026-11-26 · accepted · amends D-143 · decided under D-170 (the package's "Open" rows and open question 3)
+- Multi-select: "בחירה" in the page's options menu. Saved views: in the options menu. Days and months: arrows
+  beside the date or the month's name. Range on the timeline: "טווח" in the options menu. A day range on the
+  calendar: "בחירת טווח" in the day's tray. The unit tree: "⋯" → "העברה", "הזזה למעלה", "הזזה למטה". A drawer:
+  "כרטיס מלא", ✕.
+- On a phone a timeline bar is not dragged: it opens its leave card, where the dates are edited. On a desktop
+  dragging stays as D-143 built it, with the card as the other path.
+**Why:** the project's accessibility rule, and a horizontal drag on a phone timeline competes with its scroll.
+
+## D-459 — "היום"'s cards: a fixed order, an empty card is absent, no maximum
+2026-11-26 · accepted · decided under D-170 (the package's three card decisions)
+- **Order**, after the open block: "בקשות לאישור", "בקשות הצטרפות", "הבקשה שלי", "דוח 1 · פלוגה", "איתך היום",
+  "הסטטוס שלי", "סבב יציאות · תכנון". What waits for the actor's action comes first.
+- **Empty:** a card with nothing to show is absent. "הסטטוס שלי" always shows for who has no open block of their
+  own status.
+- **No maximum:** permissions already bound the list; a card shows at most three rows and a door to the rest.
+- "בקשות לאישור" approves in place (✓ ✗ on a row, or the row's card) and its title opens a page of all pending
+  requests, which replaces "awaiting me" of D-255.
+**Why:** a fixed order is learnable; an empty card is noise.
+
+## D-460 — The desktop is derived from the phone
+2026-11-26 · accepted · decided under D-170 (the package's desktop rules and its open row)
+From the `desktop` breakpoint: a side rail instead of the tab bar; a side panel instead of a drawer; "היום" and
+"אני" as one centered column; "ניהול" as a list beside the open page; people lists as tables; the unit tree as a
+hierarchy diagram; "לוח" as a wide timeline with a side panel.
+**Why:** the package's own rules, with its recommendation for the open row.
+
+## D-461 — Archiving: behind "⋯", confirmed by name, undoable from the toast
+2026-11-26 · accepted · refines D-344, D-371 · closes the decision of OI-297; built in R5
+- Archive is never a visible button. It sits in a row's or a card's "⋯" menu, last, in `status-error` text.
+- The confirmation names the thing and says what archiving hides ("לארכב את <name>? …"). Its confirm button is not
+  the primary color.
+- After it, a toast says what was archived and offers "ביטול", which restores (D-371). The archive of each tool
+  stays reachable from its page's options menu.
+- Availability rules: archive and restore exist in code and the designed archive page is built. No reorder
+  command exists, so a rule's priority stays a number in the form's "עוד" section and there is no "move to top".
+**Why:** OI-297: an archive must not happen by accident, and an accident must be one tap to undo.
+
+## D-462 — A saved view equal to an existing one is refused, naming it
+2026-11-26 · accepted · amends D-384, D-442 · closes the decision of OI-381; built in R5
+Saving a new view, or saving changes over a view, whose kept params equal another saved view's is refused: the
+form names the existing view and offers to open it. Two saved views are never equal, so the board always knows
+which one it is in.
+**Why:** a merge would silently delete a name the soldier chose; allowing both leaves the mark ambiguous.
+
+## D-463 — Small product choices of the new interface
+2026-11-26 · accepted · amends D-133, D-074 (the default view), D-443 · decided under D-170
+- **"Only missing" is removed** (`missing` in the URL, in saved views and in the filter): the calendar's amber
+  cells and the unit drawer answer the same question. A saved view that kept it loses that param.
+- **A phone's default board view is the calendar** (`DEFAULT_VIEW_BY_DEVICE`). "תנועות" is a third view of the
+  board. The list and the table stay for the desktop.
+- **Editing my own record.** The pencil on "אני" appears only for who may update a soldier that is themself. No
+  template grants that today, so a soldier sees their details and asks a commander to change them.
+- **The unit drawer on any day,** future included: presence is computed for any date.
+- **The rules warning.** A commander whose scope is a platoon sees threshold cells and day breaches computed over
+  what they read. The live warning in the leave form stays for who reads the whole organization (D-162); for
+  others the server's answer on send says it.
+- **The day report's cut-over hour stays one config value** (`DAY_REPORT.nextDayFromHour`), not an organization
+  setting (OI-380).
+- The package's "possible code changes" are not part of R5.
+**Why:** each follows the package's text or closes one of its open questions with the smallest change.
+
+## D-464 — R5 is built in place, in batches that each reach staging
+2026-11-26 · accepted · refines D-154 · decided under D-170
+- One pull request per batch, merged to main on green CI, which moves staging: the foundation and the shell;
+  "היום"; "לוח"; "ניהול" and its pages; "אני" and its pages; the desktop pass. A shared drawer is built with the
+  first screen that opens it.
+- The new shell opens every module not yet rebuilt as it is, so nothing is unreachable between batches. Old and
+  new components do not coexist on one screen.
+- Each batch updates the e2e specs of the screens it replaces, removes the code it replaces, and rewrites that
+  screen's section in `docs/Design.md`.
+**Why:** the owner tests on staging; small batches keep main shippable.

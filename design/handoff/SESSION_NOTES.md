@@ -11,9 +11,14 @@ staging deploy so the owner can test. Some component images are older than other
 
 ## Status
 
-- Done: every file of the package was read and every image viewed; the current UI, config and deploy were surveyed.
-- Not started: the docs (design guide, image-to-screen table, decisions from D-453, open items), and all code.
-- Branch: `claude/zen-carson-x2fg4a`, from main at `7e1b7cc` (D-452 is the last decision).
+- Done: the docs batch. The guide is "The new interface" in `docs/Design.md` (tokens, components, the image table,
+  navigation, tap paths, states, desktop, accessibility, the list of own decisions). Decisions D-453 … D-464.
+  Roadmap rows R5·1 … R5·6. Open items re-targeted; OI-384 and OI-385 opened.
+- Next: R5·1, the foundation and the shell. Then one roadmap row per pull request (D-464).
+- Code facts checked: rule archive and restore exist, no reorder; nobody edits their own soldier record; presence
+  and the day report take any date; the leave form's live rule warning needs organization-wide reads (D-162);
+  `missing` is used in `config/url`, `contracts/settings`, `logic/view-state`, `logic/board`, `ui/board`,
+  `ui/shell` (FilterBar, RuleBuilder, builderOpen) and the dictionary.
 
 ## How the package is read
 
