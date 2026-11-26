@@ -1,4 +1,12 @@
-import { BOARD_SORT_KEYS, SORT_ORDERS, SORTABLE_PROPERTY_TYPES, type BoardSortKey, type SortOrder } from '@config'
+import {
+  BOARD_GROUP_KEYS,
+  BOARD_SORT_KEYS,
+  SORT_ORDERS,
+  SORTABLE_PROPERTY_TYPES,
+  type BoardGroupKey,
+  type BoardSortKey,
+  type SortOrder,
+} from '@config'
 import { CalendarDate, LeaveTypeId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
@@ -10,6 +18,7 @@ import {
   useLeaveTypes,
   useOnlyMissing,
   usePropertyDefinitions,
+  useBoardGrouping,
   useSortRules,
   useViewFilter,
   LeavePropertyNode,
@@ -18,6 +27,7 @@ import {
   readRules,
   ruleOfNode,
   writeRules,
+  type BoardGrouping,
   type FilterRule,
   type SoldierFilter,
   type ReadRules,
@@ -746,6 +756,54 @@ function ruleWith(target: SortTarget, order: SortOrder): SortRule {
   return 'key' in target ? { key: target.key, order } : { property: target.property, order }
 }
 
+const GROUP_KEY_LABELS: Record<BoardGroupKey, I18nKey> = {
+  none: 'workspace.groupKeys.none',
+  unit: 'workspace.groupKeys.unit',
+  rank: 'workspace.groupKeys.rank',
+}
+
+const CATEGORY_OPTION = 'category:'
+
+function groupingOptionKey(grouping: BoardGrouping): string {
+  return 'key' in grouping ? grouping.key : `${CATEGORY_OPTION}${grouping.category}`
+}
+
+/** How the rows are grouped (D-452): none, by unit, by rank, or by a category of one tag each. */
+function GroupSection() {
+  const grouping = useBoardGrouping()
+  if (grouping.grouping === null) return null
+  const shown = grouping.unavailable ?? grouping.grouping
+  const options: Option<string>[] = [
+    ...(grouping.unavailable === null ? [] : [{ key: groupingOptionKey(grouping.unavailable), label: t('filters.unavailable') }]),
+    ...BOARD_GROUP_KEYS.map((key) => ({ key: groupingOptionKey({ key }), label: t(GROUP_KEY_LABELS[key]) })),
+    ...grouping.categories.map((category) => ({ key: groupingOptionKey({ category: category.id }), label: category.name })),
+  ]
+  return (
+    <section aria-labelledby="builder-group" className="flex flex-col gap-sm">
+      <h3 id="builder-group" className="text-label font-semibold text-text-muted">
+        {t('workspace.group')}
+      </h3>
+      <div className={`${ROW} flex-row flex-wrap items-center`}>
+        <Pick
+          grow
+          label={t('workspace.groupBy')}
+          value={groupingOptionKey(shown)}
+          options={options}
+          onChange={(key) => {
+            const picked = BOARD_GROUP_KEYS.find((candidate) => candidate === key)
+            if (picked !== undefined) {
+              grouping.set({ key: picked })
+              return
+            }
+            const category = grouping.categories.find((candidate) => groupingOptionKey({ category: candidate.id }) === key)
+            if (category !== undefined) grouping.set({ category: category.id })
+          }}
+        />
+      </div>
+    </section>
+  )
+}
+
 function SortSection() {
   const sort = useSortRules()
   const targets = useSortTargets()
@@ -870,6 +928,7 @@ export function RuleBuilder({ target, onClose }: { readonly target: BuilderTarge
     <Drawer titleKey="filters.builder" onClose={onClose}>
       <div className="flex flex-col gap-xl">
         <FilterSection target={target} />
+        <GroupSection />
         <SortSection />
       </div>
     </Drawer>

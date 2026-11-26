@@ -8,7 +8,7 @@ import { BoardEngine, type BoardFrame } from '../../../board/BoardEngine'
 import { BreachSummary } from '../../../board/BreachMark'
 import { useBreaches } from '../../../board/breaches'
 import { EngineScroller } from '../../../board/EngineScroller'
-import { groupLabel } from '../../../board/labels'
+import { headingLabel } from '../../../board/labels'
 import { LeaveChip } from '../../../board/LeaveChip'
 
 // The list view (D-174): the timeline's rows, soldiers under their groups, each with its leaves in the window as chips
@@ -18,7 +18,7 @@ function ListRow({ item, frame }: { readonly item: BoardItem; readonly frame: Bo
   if (item.kind === 'group') {
     return (
       <h2 className="flex items-baseline gap-sm px-lg pt-lg pb-xs text-name font-bold text-text">
-        <span className="truncate">{groupLabel(item.label)}</span>
+        <span className="truncate">{headingLabel(item.label)}</span>
         <span className="text-label font-normal text-text-muted tabular-nums">{item.size}</span>
       </h2>
     )

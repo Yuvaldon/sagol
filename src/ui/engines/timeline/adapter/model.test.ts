@@ -52,7 +52,7 @@ describe('the timeline adapter', () => {
   it('names groups by path or by state, and reads muted days aloud', () => {
     const items: BoardItem[] = [
       { kind: 'group', key: 'group:a', label: { kind: 'unit', path: ['מחלקה א', 'כיתה 1'] }, size: 1 },
-      { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [false, true, false] },
+      { kind: 'soldier', key: dana.id, soldier: dana, rank: null, unit: { kind: 'none' }, inScope: [false, true, false] },
       { kind: 'group', key: 'group:unknown', label: { kind: 'unknown' }, size: 0 },
     ]
     const rows = timelineRows(items, DAYS, null, NO_LEAVES)
@@ -64,7 +64,15 @@ describe('the timeline adapter', () => {
 
   it('mutes and reads aloud the days "only who is missing" finds present (D-133)', () => {
     const items: BoardItem[] = [
-      { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [false, true, true], present: [false, true, false] },
+      {
+        kind: 'soldier',
+        key: dana.id,
+        soldier: dana,
+        rank: null,
+        unit: { kind: 'none' },
+        inScope: [false, true, true],
+        present: [false, true, false],
+      },
     ]
     const [row] = timelineRows(items, DAYS, null, NO_LEAVES)
     expect(row).toMatchObject({ offDays: [true, true, false] })
@@ -73,7 +81,15 @@ describe('the timeline adapter', () => {
 
   it('opens a soldier only when the actor may (D-076)', () => {
     const open = vi.fn()
-    const [row] = timelineRows([{ kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [true, true, true] }], DAYS, open, NO_LEAVES)
+    const soldierItem = {
+      kind: 'soldier',
+      key: dana.id,
+      soldier: dana,
+      rank: null,
+      unit: { kind: 'none' },
+      inScope: [true, true, true],
+    } as const
+    const [row] = timelineRows([soldierItem], DAYS, open, NO_LEAVES)
     if (row?.kind !== 'resource' || row.onOpen === null) throw new Error('no way to open')
     expect(row.offText).toBeNull()
     row.onOpen()
@@ -109,7 +125,7 @@ describe('leaves on a row (D-111, D-112)', () => {
     layer: 'request',
     ...overrides,
   })
-  const item: BoardItem = { kind: 'soldier', key: dana.id, soldier: dana, rank: null, inScope: [true, true, true] }
+  const item: BoardItem = { kind: 'soldier', key: dana.id, soldier: dana, rank: null, unit: { kind: 'none' }, inScope: [true, true, true] }
   const opened: string[] = []
   const openLeave = (leaveId: string) => {
     opened.push(leaveId)
