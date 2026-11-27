@@ -99,13 +99,16 @@ const DAYS = [
   { date: '2026-11-18', state: 'base' },
   { date: '2026-11-19', state: 'away' },
   { date: '2026-11-20', state: 'pending' },
+  { date: '2026-11-21', state: 'round' },
 ] as const
 
 describe('the day strip', () => {
   it('reads each day with its state, in order', () => {
     render(<DayStrip days={DAYS} today="2026-11-18" labelKey="myLeaves.nextDaysTitle" />)
     const items = within(screen.getByRole('list', { name: he.myLeaves.nextDaysTitle })).getAllByRole('listitem')
-    expect(items).toHaveLength(3)
+    expect(items).toHaveLength(4)
+    // The leave round reads apart from another absence.
+    expect(items[3]?.textContent).toContain(he.kit.dayRound)
     expect(items[0]?.textContent).toContain(he.kit.dayBase)
     expect(items[1]?.textContent).toContain(he.kit.dayAway)
     expect(items[2]?.textContent).toContain(he.kit.dayPending)

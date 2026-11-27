@@ -4,10 +4,12 @@ import { formatDate } from '../patterns/dates'
 import { DAY_STATE_KEYS, type DayState, type StripDay } from './dayState'
 
 // The 14-day strip (D-454): one segment a day, today first as a night-blue circle. A day on base is a full segment, a
-// day at home a quiet one, a request that waits an amber outline; the words are read aloud, so color never stands alone.
+// day at home by the leave round a quiet one, another absence a filled one, a request that waits an amber outline; the words are read aloud, so color never stands alone.
 
 const SEGMENTS: Readonly<Record<DayState, string>> = {
   base: 'bg-time-base',
+  // The leave round is quiet: it is the regular state. Another absence is an exception, and stands out.
+  round: 'border border-line bg-time-round',
   away: 'border border-absence-edge bg-time-approved',
   pending: 'border border-dashed border-status-pending-line bg-time-pending',
 }

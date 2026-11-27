@@ -20,6 +20,8 @@ const DAY_FOCUS = 'outline-focus outline-offset-2 focus-visible:outline-2'
 
 const STATES = {
   base: '',
+  // The leave round is not drawn in the month: it is the regular state (the handoff's board spec, 1.10).
+  round: '',
   away: 'bg-time-approved',
   pending: 'border border-dashed border-status-pending-line bg-time-pending',
 } as const
