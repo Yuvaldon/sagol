@@ -251,6 +251,10 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await page.getByRole('button', { name: he.presence.title, exact: true }).click()
     await expect(page).not.toHaveURL(/day=/)
     await expect(report.getByText(he.presence.noneAbsent)).toBeHidden()
+    // The pointer rests where the button was, now over a control of the report: its tooltip would take the first
+    // Escape, as a tooltip does. The pointer moves away and the tooltip goes, so Escape reaches the report.
+    await page.mouse.move(0, 0)
+    await expect(page.getByRole('tooltip')).toHaveCount(0)
     await page.keyboard.press('Escape')
     await expect(report).toBeHidden()
   })
