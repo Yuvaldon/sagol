@@ -278,6 +278,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 22 | What waits for approval is listed once, on the page of requests; the row "בקשות" of "ניהול" opens it | Two lists of the same thing drift | D-474 |
 | 23 | "דוח 1" keeps every part it had, in the new drawer; its words are "שליחה" and "נשלח"; the button reads "✓ HH:MM" once every section the actor sees is sent | The package draws one named list; the product has a section per unit, a span and an image to share | D-475 |
 | 24 | New leave keeps the request sheet (rows, repeat, collective, planning) behind the package's face: type chips, days on a month beside the typed dates | The package draws one request; units send several at once | D-476 |
+| 25 | The form's month builds its own range and follows the typed dates; a link to the old pending tab opens the page of requests; "sent" waits for units out of view for who answers for the whole report | Found in review | D-477 |
 
 ## Color (Light)
 

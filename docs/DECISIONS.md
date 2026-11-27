@@ -391,7 +391,7 @@ am = amends, ref = refines, ext = extends.
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | |
 | D-463 | Small product choices of the new interface | contracts, config, logic, ui | |
 | D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
-| D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473 |
+| D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473; ref D-477 |
 | D-466 | "לוח" is for who reads another soldier's leaves, or holds that over a unit | logic | |
 | D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | ref D-473; am D-474 |
 | D-468 | "ניהול" is a page of rows, and "הגדרות" a page behind its last row | i18n, ui | |
@@ -399,10 +399,11 @@ am = amends, ref = refines, ext = extends.
 | D-470 | "אני" holds what the user menu held, until its own batch | i18n, ui | |
 | D-471 | What the shell and "היום" batch left for the next batches | docs, ui | ref D-472; ref D-474; ref D-475; ref D-476 |
 | D-472 | "דוח 1" keeps its reach: a card on "היום" for who has no unit block | i18n, ui | ref D-475 |
-| D-473 | The keyboard and the toast in the new shell | config, ui | |
-| D-474 | What waits for approval is listed once, on the page of requests | config, i18n, ui, app | |
-| D-475 | "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button | config, logic, i18n, ui | |
-| D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | |
+| D-473 | The keyboard and the toast in the new shell | config, ui | ref D-477 |
+| D-474 | What waits for approval is listed once, on the page of requests | config, i18n, ui, app | am D-477 |
+| D-475 | "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button | config, logic, i18n, ui | am D-477 |
+| D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477 |
+| D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5917,4 +5918,23 @@ soldiers' leaves. Rule 6: nothing a role could do becomes unreachable.
 - Not built here: the move out of the leave round (OI-394), and the type's name on a waiting request's segment
   (OI-395).
 **Why:** the package's "New leave" and "Leave card", without losing what units use.
+
+## D-477 — Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard
+2026-11-27 · accepted · amends D-474, D-475, D-476 · refines D-465, D-473 · decided under D-170
+- **Old links (amends D-474).** A link to `panel=leave_inbox` is read as `page=requests`: it opens the page of
+  requests for who the page is for, and "היום" for anyone else. It no longer just names nothing.
+- **A page names its destination (refines D-465).** An address with `page` and no `tab` opens the page's own
+  destination, also when it names a view of the board.
+- **Sent (amends D-475).** For who reads the report's summary (its owner, or a confirmer where no owner is named), a
+  report is not sent while a unit outside their view is not confirmed (D-303). Anyone else answers for the sections
+  they see.
+- **The dates month (amends D-476).** The range being built is the month's own: a first tap is always one day,
+  whatever the two dates held, and the second tap makes the range. The month opens on the month of the first date
+  and follows it when it is typed. Its days are read as dates only; it says nothing of where anyone is.
+- **The drawer with stops (refines D-473).** It recovers the keyboard when the control that held it is gone, as the
+  modules' drawer does, so Escape still closes it after an answer. Its title is a level-2 heading. A form (edit,
+  copy) and the comment field ask it for its full stop.
+- **The dashboard's "עוד N".** It shows to who the page of requests is for, by the same answer; pressing it names
+  the page and closes the dashboard's drawer the regular way, so Back does not return to the dashboard.
+**Why:** the review of the batch.
 
