@@ -181,7 +181,8 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   the unit's soldiers while a rotation runs, and seven day columns, today first in night blue, amber where a rule
   is broken. A column opens the unit's drawer on its day: who is away, then who is on base.
 - **Cards**, in D-459's order, each absent when empty: "בקשות לאישור" (three rows with ✗ ✓, a count, a door),
-  "בקשות הצטרפות", "הבקשה שלי" (type, dates, badge), "הסטטוס שלי" (for who sees the unit's block). In routine a
+  "בקשות הצטרפות", "הבקשה שלי" (type, dates, badge), "דוח 1" (a door, for who has no unit block, D-472), "הסטטוס
+  שלי" (for who sees the unit's block). In routine a
   notice comes first (D-469).
 - **The pending-requests page** (`page=requests`): back, the title, the "approve now" default, every waiting
   request, a door to the closed ones. A toast follows a step.
@@ -263,6 +264,8 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 17 | In routine, "היום" opens with a notice that names the mode, with "פתיחת סבב" for who may | The package has no routine state; the quick action of the old strip is gone | D-469 |
 | 18 | "אני" holds what the user menu held; the corner circle opens the "שלי" drawer | Its own batch (R5·5) replaces both | D-470 |
 | 19 | The options menu, "דוח 1" in the new drawer, new leave and the leave card in the new drawer, "סבב יציאות · תכנון" and "איתך היום" are not in this batch | Each is an open item with its batch | D-471 |
+| 20 | "דוח 1" is a card on "היום" for who reads the unit's soldiers and has no unit block | It was a destination of the old strip for all of them | D-472 |
+| 21 | The toast waits while it is hovered, focused or asking, and starts over at a key press; a page takes the keyboard on its heading and gives it back to its opener; the month is a keyboard grid | The package draws no keyboard or time behaviour | D-473 |
 
 ## Color (Light)
 

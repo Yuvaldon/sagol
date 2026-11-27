@@ -385,19 +385,21 @@ am = amends, ref = refines, ext = extends.
 | D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | ref D-468 |
 | D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | |
 | D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | |
-| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471 |
+| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471; ref D-472 |
 | D-460 | The desktop is derived from the phone | ui | |
 | D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | |
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | |
 | D-463 | Small product choices of the new interface | contracts, config, logic, ui | |
 | D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
-| D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | |
+| D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473 |
 | D-466 | "לוח" is for who reads another soldier's leaves, or holds that over a unit | logic | |
-| D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | |
+| D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | ref D-473 |
 | D-468 | "ניהול" is a page of rows, and "הגדרות" a page behind its last row | i18n, ui | |
 | D-469 | Routine's "פתיחת סבב" sits in the routine notice, on "היום" and on the board | logic, ui | |
 | D-470 | "אני" holds what the user menu held, until its own batch | i18n, ui | |
-| D-471 | What the shell and "היום" batch left for the next batches | docs, ui | |
+| D-471 | What the shell and "היום" batch left for the next batches | docs, ui | ref D-472 |
+| D-472 | "דוח 1" keeps its reach: a card on "היום" for who has no unit block | i18n, ui | |
+| D-473 | The keyboard and the toast in the new shell | config, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5833,4 +5835,39 @@ commander the direct path D-296 gave.
   (OI-391); the requests drawer's pending list (OI-392); "איתך היום" (OI-393).
 - A component with no user is not built ahead (rule 6).
 **Why:** one batch, honest about its edge.
+
+## D-472 — "דוח 1" keeps its reach: a card on "היום" for who has no unit block
+2026-11-27 · accepted · refines D-459, D-471 · decided under D-170
+- "דוח 1" is offered to who reads the unit's soldiers while a rotation is in scope (D-222), as before the tabs,
+  when it was a destination of the bottom strip for all of them.
+- Who has the unit's block opens it from the block's button, which shows with the block and does not wait for the
+  counts. Anyone else with that reach gets the card "דוח 1" on "היום", in D-459's place for it (after "הבקשה
+  שלי"): the rotation's name, the day, and "לדוח של היום".
+- The card is the door only. The report's own drawer, its sent state on the button and the card's content are
+  OI-387.
+**Why:** the first build tied the report to the unit's block, which took it from who reads soldiers but not other
+soldiers' leaves. Rule 6: nothing a role could do becomes unreachable.
+
+## D-473 — The keyboard and the toast in the new shell
+2026-11-27 · accepted · refines D-465, D-467 · decided under D-170
+- A page that opens over a destination (`page`) takes the keyboard on its heading. When it closes, the control
+  that opened it takes the keyboard back; if that control is gone, the screen's heading does.
+- After a request is answered its row is gone: the row now in its place takes the keyboard, else the one before
+  it, else the page's heading. The keyboard is never left on nothing, and no control is disabled while it holds
+  the keyboard (the month's "previous" arrow and a day that cannot be chosen say they are unavailable and stay in
+  reach).
+- Answering a request belongs to the screen, not to the row: the rule question, the rejection's note, a refusal
+  and the toast live above the lists, so they show also when the answered request was the last one.
+- The toast region is always in the page (a live region), inside the safe area, and before the page in the
+  document, so its action is one step back from the heading. A toast's time stops while the pointer or the
+  keyboard is on it and while its own question is open, and starts over at every key press. A refusal has no
+  time: it stays until "סגירה".
+- The month is a grid where days are chosen: one day takes Tab, the arrows move by a day and a week and on to the
+  next month, Home and End reach the week's ends, Page Up and Page Down change the month, Enter and Space mark
+  the day. Where days are not chosen it is a table.
+- The tab bar's icons, the action circle and the corner circle show their names as tooltips (D-215).
+- `page=requests` shows only to who the card is for; for anyone else the address is put right. The shell waits
+  for the answers behind the rows of "ניהול" before it shows a destination, so a reload on one never shows another
+  first.
+**Why:** the review of the batch (accessibility and lost state).
 
