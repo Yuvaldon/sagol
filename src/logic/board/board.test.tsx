@@ -211,7 +211,6 @@ describe('the rows of the board (D-105)', () => {
     scopeUnitId: null,
     readsPlacements: () => true,
     marked: null,
-    absent: null,
     sorts: [{ key: 'seniority', order: 'desc' }],
     daysAway: null,
     grouping: UNIT_GROUPING,
@@ -599,26 +598,6 @@ describe('the rows of the board (D-105)', () => {
     const marked = (id: SoldierId) => id === SoldierId.parse(uuid(1))
     expect(names(boardItems(base({ soldiers: three, memberships: everyoneInA, marked })))).toEqual(['אבי'])
   })
-
-  it('keeps who is absent on a day in the view, and mutes the days they are present (D-133)', () => {
-    // אבי is away on Monday and Tuesday; גיל is away on Saturday, after he left the platoon on Friday.
-    const absentOn = new Map([
-      [SoldierId.parse(uuid(1)), [false, true, true, false, false, false, false]],
-      [SoldierId.parse(uuid(3)), [false, false, false, false, false, false, true]],
-    ])
-    const memberships = [membership(70, 1, 11, '2026-01-01', null), membership(72, 3, 11, '2026-01-01', '2026-11-13')]
-    const items = boardItems(
-      base({
-        soldiers: three,
-        memberships,
-        filter: { where: { kind: 'unit', unit_ids: [PLATOON_A], include_descendants: true } },
-        absent: (id) => absentOn.get(id) ?? WEEK.map(() => false),
-      }),
-    )
-    expect(names(items)).toEqual(['אבי'])
-    const [row] = items.filter((item) => item.kind === 'soldier')
-    expect(row?.kind === 'soldier' ? row.present : null).toEqual([true, false, false, true, true, true, true])
-  })
 })
 
 describe('the board waits for the placement hints once (D-122, OI-082)', () => {
@@ -800,12 +779,12 @@ describe('view state in the URL (D-103, D-104)', () => {
     })
   })
 
-  it('keeps the leave conditions, "only who is missing" and the day when a panel opens (D-132 to D-134)', async () => {
+  it('keeps the leave conditions and the day when a panel opens, and reads "missing" no more (D-132, D-134, D-463)', async () => {
     const leaves = encodeURIComponent(JSON.stringify({ statuses: ['pending'] }))
     await renderAt(`/?leaves=${leaves}&missing=true&day=2026-11-12`)
     press('open')
     await waitFor(() => {
-      expect(read('search')).toEqual({ panel: 'soldiers', leaves: { statuses: ['pending'] }, missing: true, day: '2026-11-12' })
+      expect(read('search')).toEqual({ panel: 'soldiers', leaves: { statuses: ['pending'] }, day: '2026-11-12' })
     })
   })
 

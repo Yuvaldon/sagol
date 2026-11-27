@@ -37,8 +37,6 @@ export interface BoardModel {
 /** What the board shows beyond the soldier filter (D-132, D-133). */
 export interface BoardConditions {
   readonly leaves: LeaveConditions
-  /** "Only who is missing" (D-133), which the board no longer offers (D-463): absent is off. */
-  readonly onlyMissing?: boolean
   /** The sort rules of the rows, in order (D-313). */
   readonly sorts: readonly SortRule[]
   /** The URL's grouping (D-452); absent, the default for the board's scope. */
@@ -47,7 +45,6 @@ export interface BoardConditions {
 
 const NO_BOARD_CONDITIONS: BoardConditions = {
   leaves: {},
-  onlyMissing: false,
   sorts: DEFAULT_SORT_RULES,
 }
 
@@ -63,7 +60,6 @@ export function useBoard(
   const tags = useTags()
   const categories = useTagCategories()
   const placements = usePlacementHints(source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS)
-  const onlyMissing = board.onlyMissing === true
   const { sorts } = board
   const leaveConditions = board.leaves
   const held = board.grouping
@@ -90,10 +86,9 @@ export function useBoard(
     )
     const countsAway = sorts.some((rule) => 'key' in rule && rule.key === 'absent')
     const availability =
-      onlyMissing || countsAway ? createAvailabilityContext({ leaves: leaves.value, leave_types: leaveTypes.value }) : null
+      countsAway ? createAvailabilityContext({ leaves: leaves.value, leave_types: leaveTypes.value }) : null
     const isAway = (soldierId: SoldierId) => (day: CalendarDate) =>
       availability?.isAvailable(soldierId, day, APPROVED_ONLY) === false
-    const awayDays = (soldierId: SoldierId) => window.days.map(isAway(soldierId))
     const items = boardItems({
       ...source.value,
       days: window.days,
@@ -102,7 +97,6 @@ export function useBoard(
       scopeUnitId,
       readsPlacements: placements.readsOrPending,
       marked: hasLeaveConditions(leaveConditions) ? (soldierId) => drawn.has(soldierId) : null,
-      absent: onlyMissing ? awayDays : null,
       sorts,
       daysAway: countsAway ? (soldierId) => daysTally(window.days, everyDay, isAway(soldierId)).home : null,
       grouping: appliedGrouping(held, categories.value, defaultGrouping(source.value.units, scopeUnitId)),
@@ -112,7 +106,7 @@ export function useBoard(
     const soldierCount = items.filter((item) => item.kind === 'soldier').length
     const rosterCount = source.value.soldiers.length
     return { status: 'ready', value: { days: window.days, today, items, leaves: drawn, approved, soldierCount, rosterCount } }
-  }, [source, leaves, leaveTypes, tags, categories, window, today, filter, leaveConditions, onlyMissing, sorts, held, placements])
+  }, [source, leaves, leaveTypes, tags, categories, window, today, filter, leaveConditions, sorts, held, placements])
 }
 
 export interface BoardGroupingState {

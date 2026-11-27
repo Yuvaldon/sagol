@@ -41,8 +41,6 @@ export interface BoardInput extends FilterSource {
   readonly readsPlacements: (soldierId: SoldierId) => boolean | null
   /** With leave conditions: whether the soldier has a matching mark in the window (D-132). NULL without them. */
   readonly marked: ((soldierId: SoldierId) => boolean) | null
-  /** With "only who is missing": whether the soldier is unavailable, one flag per day (D-133). NULL when off. */
-  readonly absent: ((soldierId: SoldierId) => readonly boolean[]) | null
   /** The sort rules, in order (D-313). */
   readonly sorts: readonly SortRule[]
   /** With the `absent` sort key: the soldier's approved days away in the window (D-214). NULL otherwise. */
@@ -86,8 +84,6 @@ export interface BoardSoldierItem {
   readonly unit: BoardGroupLabel
   /** One flag per day of the window: false where the soldier does not match the filter that day. */
   readonly inScope: readonly boolean[]
-  /** With "only who is missing", one flag per day: true where it mutes a day the soldier is present (D-133). */
-  readonly present?: readonly boolean[]
 }
 
 export type BoardItem = BoardGroupItem | BoardSoldierItem
@@ -291,10 +287,7 @@ export function boardItems(input: BoardInput): BoardItem[] {
     if (!inPopulation(soldier)) continue
     if (input.marked !== null && !input.marked(soldier.id)) continue
     const inScope = days.map((day) => context.matches(filter, soldier.id, day))
-    const absentDays = input.absent === null ? null : input.absent(soldier.id)
-    const present = absentDays === null ? null : days.map((_, index) => inScope[index] === true && absentDays[index] !== true)
-    // With "only who is missing", a row needs a day on which it is in the view and absent (D-133).
-    if (!inScope.some((on, index) => on && present?.[index] !== true)) continue
+    if (!inScope.some((on) => on)) continue
     const firstMatch = inScope.indexOf(true)
     // Today when the soldier is in the view today, otherwise the first day they are (D-105).
     const referenceDay = todayIndex >= 0 && inScope[todayIndex] === true ? today : (days[firstMatch] ?? null)
@@ -323,7 +316,7 @@ export function boardItems(input: BoardInput): BoardItem[] {
     const { key, label } =
       grouper !== null ? grouper.keyOf(soldier, rank) : byUnit ? { key: unitKey, label: unit } : { key: UNGROUPED, label: unit }
     const group = groups.get(key) ?? { label, rows: [] }
-    group.rows.push({ kind: 'soldier', key: soldier.id, soldier, rank, unit, inScope, ...(present === null ? {} : { present }) })
+    group.rows.push({ kind: 'soldier', key: soldier.id, soldier, rank, unit, inScope })
     groups.set(key, group)
   }
 

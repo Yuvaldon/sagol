@@ -1,7 +1,7 @@
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { useLeaveConditions, useOnlyMissing, type LeaveConditionsState, type OnlyMissingState } from './board'
+import { useLeaveConditions, useSortRules, type LeaveConditionsState, type SortRulesState } from './board'
 import { WorkspaceSearch, useChangeSearch, useWorkspaceSearch } from './search'
 
 // Two URL writes in one gesture both land: each is written over the router's search as it is then (OI-330, D-440).
@@ -9,7 +9,7 @@ import { WorkspaceSearch, useChangeSearch, useWorkspaceSearch } from './search'
 interface Handles {
   change: ReturnType<typeof useChangeSearch>
   leaves: LeaveConditionsState
-  missing: OnlyMissingState
+  sorts: SortRulesState
 }
 
 async function renderAt(url: string) {
@@ -17,7 +17,7 @@ async function renderAt(url: string) {
   function Probe() {
     handles.change = useChangeSearch()
     handles.leaves = useLeaveConditions()
-    handles.missing = useOnlyMissing()
+    handles.sorts = useSortRules()
     return <div data-testid="search">{JSON.stringify(useWorkspaceSearch())}</div>
   }
   const rootRoute = createRootRoute()
@@ -32,14 +32,14 @@ async function renderAt(url: string) {
 const shown = () => JSON.parse(screen.getByTestId('search').textContent) as WorkspaceSearch
 
 describe('URL writes in one gesture (OI-330)', () => {
-  it('a leave condition and "only who is missing" set in one step both land', async () => {
+  it('a leave condition and a sort set in one step both land', async () => {
     const handles = await renderAt('/?view=table')
     await act(async () => {
       handles.leaves.setStatuses(['approved'])
-      handles.missing.set(true)
+      handles.sorts.set([{ key: 'name', order: 'asc' }])
       await Promise.resolve()
     })
-    expect(shown()).toMatchObject({ view: 'table', leaves: { statuses: ['approved'] }, missing: true })
+    expect(shown()).toMatchObject({ view: 'table', leaves: { statuses: ['approved'] }, sorts: [{ key: 'name', order: 'asc' }] })
   })
 
   it('two parts of the leave conditions set in one step keep each other', async () => {

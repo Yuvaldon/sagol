@@ -16,10 +16,16 @@ const PARAM_OF = {
   order: SEARCH_PARAMS.order,
   group: SEARCH_PARAMS.group,
   leaves: SEARCH_PARAMS.leaves,
-  missing: SEARCH_PARAMS.missing,
   colors: SEARCH_PARAMS.colors,
   range: SEARCH_PARAMS.range,
-} as const satisfies Record<SavedViewParam, SearchParamName>
+} as const satisfies Partial<Record<SavedViewParam, SearchParamName>>
+
+/** The search param a kept param is; a param the board no longer reads ("only who is missing", D-463) has none. */
+type KeptName = (typeof PARAM_OF)[keyof typeof PARAM_OF]
+function paramOf(param: SavedViewParam): KeptName | undefined {
+  const names: Partial<Record<SavedViewParam, KeptName>> = PARAM_OF
+  return names[param]
+}
 
 /** The table's own sort is kept only with the table (D-384). */
 const TABLE_ONLY: readonly SavedViewParam[] = [SavedViewParam.enum.sort, SavedViewParam.enum.order]
@@ -39,7 +45,9 @@ function kept(param: SavedViewParam, view: ViewId | undefined): boolean {
 export function captureView(search: WorkspaceSearch, view: ViewId): SavedViewQuery {
   const query: SavedViewQuery = {}
   for (const param of SavedViewParam.options) {
-    const value = param === SavedViewParam.enum.view ? view : search[PARAM_OF[param]]
+    const name = paramOf(param)
+    if (name === undefined) continue
+    const value = param === SavedViewParam.enum.view ? view : search[name]
     if (value !== undefined && kept(param, view)) query[param] = JSON.stringify(value)
   }
   return query
@@ -71,15 +79,16 @@ export function applyView(query: SavedViewQuery): AppliedView {
     const stored = query[param]
     if (stored === undefined) continue
     const parsed = parsedValue(stored)
-    if (parsed.ok) raw[PARAM_OF[param]] = parsed.value
+    const name = paramOf(param)
+    if (parsed.ok && name !== undefined) raw[name] = parsed.value
     else dropped = true
   }
   const read = WorkspaceSearch.parse(raw)
   const search: Partial<Record<SearchParamName, unknown>> = {}
   const cleaned: SavedViewQuery = {}
   for (const param of SavedViewParam.options) {
-    const name = PARAM_OF[param]
-    if (!(name in raw)) continue
+    const name = paramOf(param)
+    if (name === undefined || !(name in raw)) continue
     const value = read[name]
     if (value === undefined || !kept(param, read.view)) {
       dropped = true
@@ -125,7 +134,7 @@ export function savedViewSummary(query: SavedViewQuery): { readonly range: Works
   const rules = readRules(search.filter ?? null)
   const filterConditions = rules.kind === 'rules' ? rules.filter.rules.length : 1
   const leaveConditions = search.leaves === undefined || !hasLeaveConditions(search.leaves) ? 0 : 1
-  return { range: search.range, conditions: filterConditions + leaveConditions + (search.missing === true ? 1 : 0) }
+  return { range: search.range, conditions: filterConditions + leaveConditions }
 }
 
 /** What is wrong with a name for a saved view, or NULL (D-384): the codes the adapter answers, before it is asked. */

@@ -98,7 +98,6 @@ export {
 export {
   useBoardFilters,
   useLeaveConditions,
-  useOnlyMissing,
   usePresenceDay,
   useRulesDay,
   useSortRules,
@@ -107,7 +106,6 @@ export {
   type SortRulesState,
   type TableSortState,
   type LeaveConditionsState,
-  type OnlyMissingState,
   type PresenceDayState,
   type RulesDayState,
 } from './view-state/board'
