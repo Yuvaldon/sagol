@@ -246,7 +246,13 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     // Left on another day, the report opens again on today from its destination (D-134, D-252).
     await report.getByRole('button', { name: he.presence.nextDay }).click()
     await expect(page).toHaveURL(/day=/)
-    await report.getByRole('button', { name: he.common.close }).click()
+    // The ✕ shows its name where the pointer rests on it, and showing it moves nothing: the press still lands on ✕.
+    const close = report.getByRole('button', { name: he.common.close })
+    const closeBox = await close.boundingBox()
+    await close.hover()
+    await expect(page.getByRole('tooltip')).toHaveText(he.common.close)
+    expect(await close.boundingBox()).toEqual(closeBox)
+    await close.click()
     await expect(report).toBeHidden()
     await page.getByRole('button', { name: he.presence.title, exact: true }).click()
     await expect(page).not.toHaveURL(/day=/)

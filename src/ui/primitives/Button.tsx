@@ -1,6 +1,7 @@
 import { TOOLTIP } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { useCallback, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Button as AriaButton,
   Tooltip,
@@ -71,17 +72,22 @@ export function IconButton({ labelKey, variant = 'plain', children, ...props }: 
 /**
  * The tooltip that shows a control's name, on the menus' glass (D-215). It renders
  * inside the landmark or dialog that holds its trigger, found from a hidden anchor beside it, never loose in the body.
+ * There it sits in a host taken out of the flow: react-aria wraps the tooltip in a block of its own, which would
+ * otherwise join the landmark's layout and move the controls while the tooltip shows, the trigger among them, so the
+ * press that hides it would end beside the control.
  */
 export function NameTooltip({ children }: { readonly children: string }) {
   const [container, setContainer] = useState<Element | null>(null)
+  const [host, setHost] = useState<HTMLDivElement | null>(null)
   const anchor = useCallback((node: HTMLSpanElement | null) => {
     setContainer(node?.closest(TOOLTIP.containerSelector) ?? null)
   }, [])
   return (
     <>
       <span ref={anchor} hidden />
+      {container === null ? null : createPortal(<div ref={setHost} className="pointer-events-none absolute inset-none" />, container)}
       <Tooltip
-        {...(container === null ? {} : { UNSTABLE_portalContainer: container })}
+        {...(host === null ? {} : { UNSTABLE_portalContainer: host })}
         offset={TOOLTIP.offsetPx}
         className="glass-menu pointer-events-none rounded-control px-sm py-2xs text-micro font-semibold text-text"
       >
