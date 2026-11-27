@@ -1,6 +1,6 @@
 import { FIRST_DAY_OF_WEEK } from '@config'
 import type { CalendarDate, CommandRank, Soldier } from '@contracts'
-import { weekdayOf } from '@domain'
+import { compareDates, weekdayOf } from '@domain'
 import type { BoardModel } from './hooks'
 import type { BoardLeave } from './leaves'
 import type { BoardGroupLabel } from './rows'
@@ -34,6 +34,8 @@ export interface BoardDay {
   readonly entries: readonly BoardEntry[]
   /** How many of them are away: an approved absence, as the presence lists count it (D-134). */
   readonly away: number
+  /** How many soldiers in view the day counts: who is on base is `total - away` (the fraction, D-454). */
+  readonly total: number
 }
 
 /** The window's days, each with what falls on it. A muted day of a row (out of the unit, D-105) adds nothing to it. */
@@ -54,6 +56,7 @@ export function boardDays(model: BoardModel): BoardDay[] {
       day,
       entries: [...absences, ...onDay.filter((entry) => entry.leave.effect !== 'unavailable')],
       away: away.length,
+      total: inView.size,
     }
   })
 }
@@ -69,4 +72,113 @@ export function calendarWeeks<T extends { readonly day: CalendarDate }>(days: re
   const cells: (T | null)[] = [...Array.from({ length: lead }, () => null), ...days]
   while (cells.length % DAYS_IN_WEEK !== 0) cells.push(null)
   return Array.from({ length: cells.length / DAYS_IN_WEEK }, (_, week) => cells.slice(week * DAYS_IN_WEEK, (week + 1) * DAYS_IN_WEEK))
+}
+
+/** Whether a leave is on a day: its days are whole and both ends count (D-012). */
+function covers(entry: BoardEntry, day: CalendarDate): boolean {
+  return compareDates(entry.leave.start_date, day) <= 0 && compareDates(day, entry.leave.end_date) <= 0
+}
+
+/** An absence: a leave that takes its soldier off base, not a marker (D-032). */
+function away(entry: BoardEntry): boolean {
+  return entry.leave.effect === 'unavailable'
+}
+
+/** A request on a day, and whether the day starts or ends it (D-193: `end_date` is the day of the return). */
+export interface DayRequest {
+  readonly entry: BoardEntry
+  readonly leaving: boolean
+  readonly returning: boolean
+}
+
+/**
+ * Every leave on the selected day (the handoff's board spec, §3 and §1.15): the leave round's, cut by day into who leaves
+ * today, who is home and who returns today, never by its batch; and each request, with whether it starts or ends today.
+ */
+export interface DayLeaves {
+  readonly roundLeaving: readonly BoardEntry[]
+  readonly roundHome: readonly BoardEntry[]
+  readonly roundReturning: readonly BoardEntry[]
+  readonly requests: readonly DayRequest[]
+}
+
+export function dayLeaves(days: readonly BoardDay[], day: CalendarDate): DayLeaves {
+  const entries = days.find((candidate) => candidate.day === day)?.entries ?? []
+  const round = entries.filter((entry) => entry.leave.layer === 'round' && away(entry))
+  const leaving = round.filter((entry) => entry.leave.start_date === day)
+  const returning = round.filter((entry) => entry.leave.end_date === day && entry.leave.start_date !== day)
+  return {
+    roundLeaving: leaving,
+    roundHome: round.filter((entry) => !leaving.includes(entry) && !returning.includes(entry)),
+    roundReturning: returning,
+    requests: entries
+      .filter((entry) => entry.leave.layer === 'request')
+      .map((entry) => ({ entry, leaving: away(entry) && entry.leave.start_date === day, returning: away(entry) && entry.leave.end_date === day })),
+  }
+}
+
+/** The requests a month cell names (§1.10): the leave round is the regular state and is not drawn. */
+export function cellRequests(day: BoardDay): readonly BoardEntry[] {
+  return day.entries.filter((entry) => entry.leave.layer === 'request' && covers(entry, day.day))
+}
+
+/** One direction of a day's movements: the leave round's leaves of the day, and each request alone (§1.15). */
+export interface MovementSide {
+  readonly round: readonly BoardEntry[]
+  readonly requests: readonly BoardEntry[]
+}
+
+/** Who leaves and who returns on a day (§3, "Movements"): an absence leaves on its first day and returns on its last. */
+export interface MovementDay {
+  readonly day: CalendarDate
+  readonly leaving: MovementSide
+  readonly returning: MovementSide
+}
+
+function sideOf(entries: readonly BoardEntry[]): MovementSide {
+  return {
+    round: entries.filter((entry) => entry.leave.layer === 'round'),
+    requests: entries.filter((entry) => entry.leave.layer === 'request'),
+  }
+}
+
+function movedOn(side: MovementSide): boolean {
+  return side.round.length > 0 || side.requests.length > 0
+}
+
+/** The window's days, each with who leaves and who returns on it. A leave round's leave moved alone shows on its own day. */
+export function boardMovements(days: readonly BoardDay[]): MovementDay[] {
+  return days.map((day) => {
+    const absences = day.entries.filter(away)
+    return {
+      day: day.day,
+      leaving: sideOf(absences.filter((entry) => entry.leave.start_date === day.day)),
+      returning: sideOf(absences.filter((entry) => entry.leave.end_date === day.day)),
+    }
+  })
+}
+
+/** A day with movement, or a run of days without (§3: one dashed line for the run). Today always stands alone. */
+export type MovementRun =
+  | { readonly kind: 'day'; readonly day: MovementDay }
+  | { readonly kind: 'empty'; readonly from: CalendarDate; readonly to: CalendarDate }
+
+export function movementRuns(days: readonly MovementDay[], today: CalendarDate): MovementRun[] {
+  const runs: MovementRun[] = []
+  for (const day of days) {
+    const moves = movedOn(day.leaving) || movedOn(day.returning)
+    if (moves || day.day === today) {
+      runs.push({ kind: 'day', day })
+      continue
+    }
+    const last = runs.at(-1)
+    if (last?.kind === 'empty') runs[runs.length - 1] = { ...last, to: day.day }
+    else runs.push({ kind: 'empty', from: day.day, to: day.day })
+  }
+  return runs
+}
+
+/** Whether a day of the movements moves anyone. */
+export function hasMovement(day: MovementDay): boolean {
+  return movedOn(day.leaving) || movedOn(day.returning)
 }

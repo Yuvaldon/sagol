@@ -1,7 +1,7 @@
 import { SEARCH_PARAMS } from '@config'
 import { SavedView, type SavedViewQuery } from '@contracts'
 import { describe, expect, it } from 'vitest'
-import { applyView, captureView, matchingView, savedViewSummary } from './savedViews'
+import { applyView, captureView, equalView, matchingView, savedViewSummary } from './savedViews'
 import { WorkspaceSearch } from './search'
 
 // Sample values, test data only.
@@ -74,6 +74,17 @@ describe('matchingView (D-385)', () => {
     const search = board({ [SEARCH_PARAMS.range]: 'week', [SEARCH_PARAMS.filter]: TAG_FILTER })
     expect(matchingView([morning], { ...search, missing: true }, 'list')).toBeNull()
     expect(matchingView([morning], search, 'timeline')).toBeNull()
+  })
+})
+
+describe('equalView (D-462)', () => {
+  const morning = saved('morning', { view: '"list"', range: '"week"' })
+  const evening = saved('evening!', { view: '"list"', range: '"month"' })
+  it('names the other view that keeps what the board shows, never the one saved over', () => {
+    const search = board({ [SEARCH_PARAMS.range]: 'week' })
+    expect(equalView([morning, evening], search, 'list', null)).toBe(morning)
+    expect(equalView([morning, evening], search, 'list', morning.id)).toBeNull()
+    expect(equalView([evening], search, 'list', null)).toBeNull()
   })
 })
 

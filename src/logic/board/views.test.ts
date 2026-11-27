@@ -2,7 +2,9 @@ import { LeaveId, OrganizationId, SoldierId, type CalendarDate, type Soldier } f
 import { describe, expect, it } from 'vitest'
 import type { BoardModel } from './hooks'
 import type { BoardLeave } from './leaves'
-import { boardDays, boardEntries, calendarWeeks } from './views'
+import { boardDays, boardEntries, boardMovements, calendarWeeks, cellRequests, dayLeaves, movementRuns, type BoardDay } from './views'
+import { impactOf } from './impact'
+import { leaveMoveOf } from '../leaves/move'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -92,5 +94,77 @@ describe('the list, the table and the calendar read the board (D-174)', () => {
     const fortnight = [...WEEK, '2026-11-15'].map((day) => ({ day }))
     expect(calendarWeeks(fortnight).map((week) => week.filter((cell) => cell !== null).length)).toEqual([7, 1])
     expect(calendarWeeks([])).toEqual([])
+  })
+})
+
+describe('the board of the new interface (D-480)', () => {
+  const one = soldier(1)
+  const two = soldier(2)
+  const three = soldier(3)
+  const entry = (who: Soldier, drawn: BoardLeave) => ({ leave: drawn, soldier: who, rank: null, unit: { kind: 'none' as const } })
+  const roundOut = entry(one, leave(60, '2026-11-10', '2026-11-12', { layer: 'round' }))
+  const roundHome = entry(two, leave(61, '2026-11-09', '2026-11-13', { layer: 'round' }))
+  const roundBack = entry(three, leave(62, '2026-11-08', '2026-11-10', { layer: 'round' }))
+  const request = entry(two, leave(63, '2026-11-10', '2026-11-11', { status: 'pending' }))
+  const day: BoardDay = { day: '2026-11-10', entries: [roundOut, roundHome, roundBack, request], away: 3, total: 5 }
+
+  it('cuts the leave round of a day by day, never by batch, and marks a request that starts or ends on it', () => {
+    const leaves = dayLeaves([day], '2026-11-10')
+    expect(leaves.roundLeaving).toEqual([roundOut])
+    expect(leaves.roundHome).toEqual([roundHome])
+    expect(leaves.roundReturning).toEqual([roundBack])
+    expect(leaves.requests).toEqual([{ entry: request, leaving: true, returning: false }])
+    expect(cellRequests(day)).toEqual([request])
+  })
+
+  it('lists who leaves and who returns by day, and folds the days without movement into one run, today apart', () => {
+    const quiet = (date: CalendarDate): BoardDay => ({ day: date, entries: [], away: 0, total: 5 })
+    const days = [quiet('2026-11-08'), quiet('2026-11-09'), day, quiet('2026-11-11'), quiet('2026-11-12'), quiet('2026-11-13')]
+    const movements = boardMovements(days)
+    const tenth = movements[2]
+    expect(tenth?.leaving).toEqual({ round: [roundOut], requests: [request] })
+    expect(tenth?.returning).toEqual({ round: [roundBack], requests: [] })
+    expect(movementRuns(movements, '2026-11-12').map((run) => (run.kind === 'day' ? run.day.day : `${run.from}..${run.to}`))).toEqual([
+      '2026-11-08..2026-11-09',
+      '2026-11-10',
+      '2026-11-11..2026-11-11',
+      '2026-11-12',
+      '2026-11-13..2026-11-13',
+    ])
+  })
+
+  it('names the first day a step would break, with who would be left on base', () => {
+    const violation = {
+      rule_id: uuid(70),
+      enforcement: 'soft' as const,
+      scope_unit_id: null,
+      group: null,
+      bound: 'min' as const,
+      days: [{ date: '2026-11-10', required: 3, actual: 2, unavailable: [] }],
+    }
+    expect(impactOf([violation] as never, [day], new Map(), one.id)).toEqual({ day: '2026-11-10', present: 1, total: 5 })
+    // A soldier already away that day is not taken away twice.
+    expect(impactOf([violation] as never, [day], new Map([[one.id, [leave(64, '2026-11-10', '2026-11-10')]]]), one.id)).toEqual({
+      day: '2026-11-10',
+      present: 2,
+      total: 5,
+    })
+    expect(impactOf([], [day], new Map(), one.id)).toBeNull()
+  })
+
+  it('reads a moved leave of the round from its thread, and nothing for a request', () => {
+    const moved = { batch_id: uuid(80), start_date: '2026-11-23', end_date: '2026-11-25' }
+    const event = (seq: number, changes: Record<string, { before: unknown; after: unknown }>) =>
+      ({ change_seq: seq, changes }) as never
+    const events = [
+      event(2, { start_date: { before: '2026-11-24', after: '2026-11-23' } }),
+      event(1, { start_date: { before: '2026-11-26', after: '2026-11-24' }, end_date: { before: '2026-11-28', after: '2026-11-25' } }),
+    ]
+    expect(leaveMoveOf(moved as never, events)).toEqual({
+      from: { start_date: '2026-11-26', end_date: '2026-11-28' },
+      to: { start_date: '2026-11-23', end_date: '2026-11-25' },
+    })
+    expect(leaveMoveOf({ ...moved, batch_id: null } as never, events)).toBeNull()
+    expect(leaveMoveOf(moved as never, [])).toBeNull()
   })
 })
