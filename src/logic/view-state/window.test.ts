@@ -1,8 +1,9 @@
 import { DATE_WINDOW } from '@config'
 import { DeploymentId, OrganizationId, UnitId, UnitLevelId, type Deployment } from '@contracts'
-import { addDays } from '@domain'
+import { addDays, daysBetween } from '@domain'
 import { describe, expect, it } from 'vitest'
-import { customSpan, dateWindowOf, pickableRotations, rotationDays, scopeRotation, scopeRotations, shiftedAnchor } from './window'
+import { boardWindowOf, customSpan, dateWindowOf, monthGridSpan, movementsSpan, pickableRotations, rotationDays, scopeRotation, scopeRotations, shiftedAnchor } from './window'
+import { selectedDayChange, steppedDay, steppedMonthDay } from './boardDay'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -160,3 +161,38 @@ describe('a free range from the picker (D-339)', () => {
     expect(dateWindowOf({ from: '2026-11-03', to: '2026-12-20' }, TODAY)).toMatchObject({ kind: 'custom', from: '2026-11-03', to: '2026-12-20' })
   })
 })
+
+describe('the board selected day and the range of each view (D-480)', () => {
+  it('anchors a window on the selected day when the URL names no first day', () => {
+    expect(dateWindowOf({ range: 'week', day: '2026-11-26' }, TODAY)).toMatchObject({ from: '2026-11-22', to: '2026-11-28', followsToday: false })
+    expect(dateWindowOf({ range: 'week', day: '2026-11-26', from: '2026-12-02' }, TODAY)).toMatchObject({ from: '2026-11-29' })
+  })
+
+  it('shows the calendar in whole weeks of the month, the movements around the day, a phone timeline on its week', () => {
+    expect(monthGridSpan('2026-11-26')).toEqual({ from: '2026-11-01', to: '2026-12-05' })
+    expect(boardWindowOf('calendar', { day: '2026-11-26' }, TODAY, [], true)).toMatchObject({ kind: 'month', from: '2026-11-01', to: '2026-12-05' })
+    expect(movementsSpan(TODAY, 2, 3)).toEqual({ from: '2026-11-09', to: '2026-11-14' })
+    expect(daysOf(movementsSpan(TODAY, 500, 500))).toBe(DATE_WINDOW.maxDays)
+    const winter = rotation(1, { start_date: '2026-11-01', end_date: '2026-11-30' })
+    expect(boardWindowOf('timeline', {}, TODAY, [winter], true)).toMatchObject({ kind: 'week', from: '2026-11-08' })
+    expect(boardWindowOf('timeline', {}, TODAY, [winter], false)).toMatchObject({ kind: 'rotation' })
+  })
+
+  it('lets the window follow a chosen day, but not a rotation or a free range', () => {
+    expect(selectedDayChange({ range: 'week', from: '2026-11-01' }, '2026-11-20', TODAY)).toEqual({ day: '2026-11-20', from: undefined, to: undefined })
+    expect(selectedDayChange({ range: 'rotation' }, '2026-11-20', TODAY)).toEqual({ day: '2026-11-20' })
+    expect(selectedDayChange({ from: '2026-11-01', to: '2026-11-30' }, TODAY, TODAY)).toEqual({ day: undefined })
+  })
+
+  it('steps a week, a month, or to the next month with today when it holds today', () => {
+    expect(steppedDay('2026-11-26', 'week', 1)).toBe('2026-12-03')
+    expect(steppedDay('2026-01-31', 'month', 1)).toBe('2026-02-28')
+    expect(steppedDay('2026-11-26', 'rotation', 1)).toBeNull()
+    expect(steppedMonthDay('2026-10-14', 1, TODAY)).toBe(TODAY)
+    expect(steppedMonthDay('2026-11-26', 1, TODAY)).toBe('2026-12-01')
+  })
+})
+
+function daysOf(span: { from: string; to: string }): number {
+  return daysBetween(span.from, span.to) + 1
+}

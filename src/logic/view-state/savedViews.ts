@@ -110,6 +110,15 @@ export function matchingView(views: readonly SavedView[], search: WorkspaceSearc
   return views.find((saved) => keyOf(saved.query) === current) ?? null
 }
 
+/**
+ * The saved view, other than `except`, that keeps what the board shows now (D-462): saving the board as a new view, or
+ * over `except`, is refused while one does, so two saved views are never equal.
+ */
+export function equalView(views: readonly SavedView[], search: WorkspaceSearch, view: ViewId, except: SavedViewId | null): SavedView | null {
+  const current = keyOf(captureView(search, view))
+  return views.find((saved) => saved.id !== except && keyOf(saved.query) === current) ?? null
+}
+
 /** What a saved view's card says of it: its range kind and how many conditions it holds (D-387). */
 export function savedViewSummary(query: SavedViewQuery): { readonly range: WorkspaceSearch['range']; readonly conditions: number } {
   const { search } = applyView(query)
