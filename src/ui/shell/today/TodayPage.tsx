@@ -8,6 +8,7 @@ import { EmptyNotice } from '../../patterns/Notices'
 import { useNoBoard } from '../boardShown'
 import { PageFrame } from '../PageFrame'
 import { ApprovalsCard, JoinsCard, MyRequestCard, MyStatusCard, RoutineCard } from './cards'
+import { RequestDoneScope } from './RequestDoneScope'
 import { RequestsPage } from './RequestsPage'
 import { SoldierBlock } from './SoldierBlock'
 import { useStanding } from './standing'
@@ -77,5 +78,5 @@ export function TodayPage(props: TodayPageProps) {
   const place = useShellPlace()
   const noAccess = useNoBoard()
   if (noAccess) return <NoAccess name={props.name} />
-  return place.page === 'requests' ? <RequestsPage /> : <Today {...props} />
+  return <RequestDoneScope>{place.page === 'requests' ? <RequestsPage /> : <Today {...props} />}</RequestDoneScope>
 }

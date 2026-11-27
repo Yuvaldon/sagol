@@ -1,65 +1,25 @@
 import { PANEL_IDS } from '@config'
 import type { AppError, Leave } from '@contracts'
 import { t } from '@i18n'
-import { useLeaveActions, useLeaveTransition, useLeaveTypes, usePanel, useSoldiersWithArchived } from '@logic'
+import { useLeaveTransition, useLeaveTypes, usePanel, useSoldiersWithArchived } from '@logic'
 import { Check, X } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { PersonRow } from '../../kit/PersonRow'
-import { Toast } from '../../kit/Toast'
 import { LeaveStepDialog } from '../../modules/leaves/LeaveStepDialog'
 import { leaveDatesText, leaveDaysText, personNames, typeNameOf } from '../../modules/leaves/leaveText'
 import { FailureNotice } from '../../patterns/Notices'
 import { RuleGateDialog } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
+import { useReportRequestDone } from './requestDoneContext'
 
 // Requests that wait for the actor (D-459, D-120): each a row with ✓ and ✗, approved in place. The row itself opens
-// the request. After a step a toast says what happened, and carries "ביטול" where the actor may take the step back:
-// an approval by who approves, a rejection by who may reopen the request (D-063).
+// the request. After a step the screen's toast says what happened (`RequestDoneScope`).
 
 const SEPARATOR = ' · '
 const WORD = ' '
 const NO_ROWS: readonly never[] = []
 const STEP = 'inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full outline-focus outline-offset-2 data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
-
-interface Done {
-  readonly leave: Leave
-  readonly step: 'approve' | 'reject'
-}
-
-/** What just happened to a request, with the way back where there is one. */
-function DoneToast({ done, onClear, onFailure }: { readonly done: Done; readonly onClear: () => void; readonly onFailure: (error: AppError) => void }) {
-  const actions = useLeaveActions(done.leave)
-  const transition = useLeaveTransition()
-  const gate = useRuleGate()
-  const undo = async () => {
-    // Taking a step back can break a rule as the step itself can (D-073): the same dialog asks.
-    await gate.run(
-      (acknowledged) => transition.run(done.leave, 'reopen', '', acknowledged),
-      (result) => {
-        if (!result.ok) onFailure(result.error)
-        onClear()
-      },
-    )
-  }
-  return (
-    <>
-      <Toast
-        message={t(done.step === 'approve' ? 'today.approved' : 'today.rejected')}
-        {...(actions.reopen
-          ? {
-              actionKey: 'common.cancel' as const,
-              onAction: () => {
-                void undo()
-              },
-            }
-          : {})}
-        onDone={onClear}
-      />
-      <RuleGateDialog gate={gate} isPending={transition.isPending} />
-    </>
-  )
-}
 
 export function RequestRows({ leaves }: { readonly leaves: readonly Leave[] }) {
   const panel = usePanel()
@@ -69,10 +29,7 @@ export function RequestRows({ leaves }: { readonly leaves: readonly Leave[] }) {
   const gate = useRuleGate()
   const [rejecting, setRejecting] = useState<Leave | null>(null)
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [done, setDone] = useState<Done | null>(null)
-  const clear = useCallback(() => {
-    setDone(null)
-  }, [])
+  const reportDone = useReportRequestDone()
 
   const nameOf = personNames(soldiers.status === 'ready' ? soldiers.value : NO_ROWS)
   const typeList = types.status === 'ready' ? types.value : NO_ROWS
@@ -83,7 +40,7 @@ export function RequestRows({ leaves }: { readonly leaves: readonly Leave[] }) {
     await gate.run(
       (acknowledged) => transition.run(leave, 'approve', '', acknowledged),
       (result) => {
-        if (result.ok) setDone({ leave: result.value, step: 'approve' })
+        if (result.ok) reportDone({ leave: result.value, step: 'approve' })
         else setFailure(result.error)
       },
     )
@@ -138,14 +95,13 @@ export function RequestRows({ leaves }: { readonly leaves: readonly Leave[] }) {
           leave={rejecting}
           step="reject"
           onDone={(leave) => {
-            setDone({ leave, step: 'reject' })
+            reportDone({ leave, step: 'reject' })
           }}
           onClose={() => {
             setRejecting(null)
           }}
         />
       )}
-      {done === null ? null : <DoneToast done={done} onClear={clear} onFailure={setFailure} />}
     </div>
   )
 }
