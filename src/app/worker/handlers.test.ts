@@ -50,7 +50,7 @@ describe('a push (D-357)', () => {
     await onPush(awaiting, worker, false)
     await onPush({ ...awaiting, count: 2 }, worker, false)
     expect(worker.shown[0]?.options.body).toBe(`${he.notifications.push.awaitingOne}דן כהן · ${daysText('2026-11-09', '2026-11-09')}`)
-    expect(worker.shown[1]?.options).toMatchObject({ body: `2 ${he.notifications.push.awaitingMany}`, tag: 'awaiting_me', data: { url: '/?panel=leave_inbox' } })
+    expect(worker.shown[1]?.options).toMatchObject({ body: `2 ${he.notifications.push.awaitingMany}`, tag: 'awaiting_me', data: { url: '/?page=requests' } })
   })
 
   it('shows nothing for a payload the contract refuses', async () => {
@@ -90,8 +90,8 @@ describe('a tap on the notification (D-356)', () => {
 
   it('opens a window when the app is closed', async () => {
     const openWindow = vi.fn(() => Promise.resolve(null))
-    await onNotificationClick(tapped('/?panel=leave_inbox'), { matchAll: () => Promise.resolve([]), openWindow }, ORIGIN)
-    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/?panel=leave_inbox`)
+    await onNotificationClick(tapped('/?page=requests'), { matchAll: () => Promise.resolve([]), openWindow }, ORIGIN)
+    expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/?page=requests`)
   })
 
   it('only closes a notification without a place to open', async () => {
