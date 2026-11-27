@@ -30,20 +30,22 @@ test('the back button closes a menu and stays on the screen (OI-291)', async ({ 
   const app = await freshApp(page, page.url())
   const start = await entriesBehind(app)
   const url = app.url()
+  // The board's options menu (D-480).
+  const menu = app.getByRole('dialog', { name: he.board.options })
 
-  await app.getByRole('button', { name: new RegExp(`^${he.workspace.window}`) }).click()
-  await expect(app.getByRole('menu')).toBeVisible()
+  await app.getByRole('button', { name: new RegExp(`^${he.board.options}`) }).click()
+  await expect(menu).toBeVisible()
   await app.goBack()
-  await expect(app.getByRole('menu')).toBeHidden()
+  await expect(menu).toBeHidden()
   await expect(app).toHaveURL(url)
   await expect(organizationHeading(app)).toBeVisible()
   expect(await entriesBehind(app)).toBe(start)
 
   // Escape takes the menu's entry with it: the next back press leaves the app.
-  await app.getByRole('button', { name: new RegExp(`^${he.workspace.window}`) }).click()
-  await expect(app.getByRole('menu')).toBeVisible()
+  await app.getByRole('button', { name: new RegExp(`^${he.board.options}`) }).click()
+  await expect(menu).toBeVisible()
   await app.keyboard.press('Escape')
-  await expect(app.getByRole('menu')).toBeHidden()
+  await expect(menu).toBeHidden()
   await expect.poll(() => entriesBehind(app)).toBe(start)
   await app.goBack()
   await expect(app).toHaveURL('about:blank')

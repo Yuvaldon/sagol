@@ -16,7 +16,6 @@ import {
   useLeaveConditions,
   useLeaveTypeGroups,
   useLeaveTypes,
-  useOnlyMissing,
   usePropertyDefinitions,
   useBoardGrouping,
   useSortRules,
@@ -58,8 +57,8 @@ import type { BuilderTarget } from './builderOpen'
 import { OPERATOR_LABELS, decimalOf, takesValues, useFilterFields, type Draft, type FilterField, type FilterFields, type Operator } from './filterFields'
 
 // "Filter and sort" (D-312, D-313): the soldier rules as rows of field · operator · values joined by וגם or או, the
-// leave conditions and "only who is missing" after them, one of each, and the sort rules as rows of property ·
-// direction. Every change writes the URL at once; a row with no value yet lives only here until it has one.
+// leave conditions after them, one of each, and the sort rules as rows of property · direction. The board's options
+// menu opens it for what its rows do not hold (D-480). Every change writes the URL at once; a row with no value yet lives only here until it has one.
 
 const PRESS = 'cursor-pointer outline-focus outline-offset-2 data-focus-visible:outline-2'
 const CONTROL = `flex min-h-touch min-w-none cursor-pointer items-center justify-between gap-xs rounded-control border border-line bg-surface px-sm text-control text-text outline-focus outline-offset-1 md:min-h-control data-focus-visible:outline-2`
@@ -449,7 +448,6 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
   const filter = useViewFilter()
   const fields = useFilterFields()
   const leaves = useLeaveConditions()
-  const missing = useOnlyMissing()
   const types = useLeaveTypes()
   const groups = useLeaveTypeGroups()
   const unitId = filter.rules.kind === 'rules' ? filter.rules.filter.unitId : null
@@ -523,7 +521,6 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
     (acc, row) => (leaveNodesOfRow(row).length === 0 ? { at: [...acc.at, -1], next: acc.next } : { at: [...acc.at, acc.next], next: acc.next + 1 }),
     { at: [], next: 0 },
   ).at
-  const rowCount = leavePropertyStart + leaveState.rows.length
   const leaveFieldOptions = fields.leaveOffered.map((offered) => ({ key: offered.key, label: offered.name }))
 
   const addRow = () => {
@@ -683,38 +680,11 @@ function FilterSection({ target }: { readonly target: BuilderTarget }) {
           />
         )
       })}
-      {missing.on ? (
-        <div className={ROW}>
-          <div className="flex items-center gap-xs">
-            <Connector index={rowCount} match="all" onMatch={null} />
-            <span className="min-w-none flex-1 truncate text-control font-semibold">{t('filters.onlyMissing')}</span>
-            <RemoveButton
-              labelKey="filters.remove"
-              autoFocus={target.kind === 'missing'}
-              onPress={() => {
-                missing.set(false)
-              }}
-            />
-          </div>
-        </div>
-      ) : null}
       <div className="flex flex-wrap items-center gap-xs">
         {fields.offered.length === 0 && fields.leaveOffered.length === 0 ? null : (
           <AriaButton onPress={addRow} className={ADD}>
             <Plus aria-hidden size={14} />
             {t('filters.add')}
-          </AriaButton>
-        )}
-        {/* "Only who is missing" is a suggestion beside "add": one press sets it (D-312). */}
-        {missing.on ? null : (
-          <AriaButton
-            onPress={() => {
-              missing.set(true)
-            }}
-            className={`${ADD} text-text-muted`}
-          >
-            <Plus aria-hidden size={14} />
-            {t('filters.onlyMissing')}
           </AriaButton>
         )}
       </div>

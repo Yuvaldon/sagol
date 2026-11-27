@@ -1,9 +1,12 @@
 import type { AppError, Leave, LeaveTransition, LeaveType, LeaveTypeGroup, Soldier } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
+  movedLeaveValues,
+  useEditLeave,
   useTimezone,
   useLeave,
   useLeaveActions,
+  useLeaveMove,
   useLeaveCreation,
   useLeaveTransition,
   useLeaveTypeGroups,
@@ -11,7 +14,7 @@ import {
   usePanel,
   useSoldiersWithArchived,
 } from '@logic'
-import { Check, Copy, Pencil, RotateCcw, X } from 'lucide-react'
+import { ArrowLeftRight, Check, Copy, History, Pencil, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useFullStop } from '../../kit/drawerStop'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -27,7 +30,9 @@ import { LeaveBadge, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, personNames, typeNameOf } from './leaveText'
 
 // One leave (D-119): what it is, what the actor may do with it now, and its thread. A step shows at once and is
-// taken back when the command refuses; the refusal stays on screen, over the leave as it is stored.
+// taken back when the command refuses; the refusal stays on screen, over the leave as it is stored. A leave of the
+// round is moved by "בקשת הזזה"; once moved it says from where to where, and its approver approves the move or keeps
+// the original dates, never rejects it (the handoff's `02`, "Moving a leave out of the leave round"; OI-394).
 
 const DETAIL_SEPARATOR = ' · '
 
@@ -53,6 +58,10 @@ function LeaveView({
 }) {
   const actions = useLeaveActions(leave)
   const transition = useLeaveTransition()
+  const edit = useEditLeave()
+  const move = useLeaveMove(leave)
+  const moved = move.status === 'ready' ? move.value : null
+  const round = leave.batch_id !== null
   const gate = useRuleGate()
   const [editing, setEditing] = useState<number | null>(null)
   const [duplicating, setDuplicating] = useState(false)
@@ -71,6 +80,28 @@ function LeaveView({
       (acknowledged) => transition.run(leave, next, '', acknowledged),
       (result) => {
         if (!result.ok) setFailure(result.error)
+      },
+    )
+  }
+
+  /** The original dates back from the thread, then the approval: two steps the actor may take, in one press. */
+  async function keepOriginal() {
+    if (moved === null) return
+    setFailure(null)
+    await gate.run(
+      (acknowledged) => edit.run(leave, movedLeaveValues(leave, moved.from), acknowledged),
+      async (result) => {
+        if (!result.ok) {
+          setFailure(result.error)
+          return
+        }
+        if (result.value.status !== 'pending') return
+        await gate.run(
+          (acknowledged) => transition.run(result.value, 'approve', '', acknowledged),
+          (approved) => {
+            if (!approved.ok) setFailure(approved.error)
+          },
+        )
       },
     )
   }
@@ -127,6 +158,11 @@ function LeaveView({
             </div>
             <LeaveBadge status={leave.status} />
           </div>
+          {moved === null ? null : (
+            <p className="text-body font-semibold text-status-pending-text tabular-nums">
+              {[t('leaves.movedFrom'), leaveDatesText(moved.from), ' ', t('leaves.movedTo'), leaveDatesText(moved.to)].join('')}
+            </p>
+          )}
           <dl className="flex flex-col gap-md">
             <Detail labelKey="leaves.soldier">{nameOf(leave.soldier_id)}</Detail>
             {leave.reason === null ? null : <Detail labelKey="leaves.reason">{leave.reason}</Detail>}
@@ -145,10 +181,22 @@ function LeaveView({
               }}
             >
               <Check aria-hidden size={14} />
-              {t('leaves.approve')}
+              {t(moved === null ? 'leaves.approve' : 'leaves.approveMove')}
             </Button>
           ) : null}
-          {actions.reject ? (
+          {moved !== null && actions.approve ? (
+            <Button
+              variant="tile"
+              isDisabled={transition.isPending || edit.isPending}
+              onPress={() => {
+                void keepOriginal()
+              }}
+            >
+              <History aria-hidden size={14} />
+              {t('leaves.keepOriginal')}
+            </Button>
+          ) : null}
+          {actions.reject && moved === null ? (
             <Button
               variant="tile"
               onPress={() => {
@@ -180,8 +228,8 @@ function LeaveView({
                 setEditing(0)
               }}
             >
-              <Pencil aria-hidden size={14} />
-              {t('leaves.edit')}
+              {round ? <ArrowLeftRight aria-hidden size={14} /> : <Pencil aria-hidden size={14} />}
+              {t(round ? 'leaves.requestMove' : 'leaves.edit')}
             </Button>
           ) : null}
           {creation.duplicable.length > 0 ? (

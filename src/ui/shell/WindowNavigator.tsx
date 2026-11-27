@@ -1,6 +1,6 @@
 import { DATE_WINDOW, RANGE_KINDS, type RangeKind } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { customSpan, useDateWindow, type WindowKind } from '@logic'
+import { customSpan, useDateWindow } from '@logic'
 import type { CalendarDate, Deployment } from '@contracts'
 import { CalendarCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
@@ -12,6 +12,7 @@ import { useIsDesktop } from '../patterns/media'
 import { DateField } from '../primitives/DateField'
 import { Button, IconButton } from '../primitives/Button'
 import { MenuChoice } from './menu'
+import { NEXT_LABELS, PREVIOUS_LABELS } from './windowLabels'
 import { MENU_HEADER, MENU_LIST, MENU_POPOVER, onlyKey } from './menuStyles'
 
 // The date window and its range picker (D-103, D-211). The label opens the picker: a day, a week, two or four weeks (D-383), a month, a whole
@@ -31,24 +32,6 @@ const RANGE_LABELS: Record<StepKind, I18nKey> = {
   two_weeks: 'workspace.ranges.two_weeks',
   four_weeks: 'workspace.ranges.four_weeks',
   month: 'workspace.ranges.month',
-}
-const PREVIOUS_LABELS: Record<WindowKind, I18nKey> = {
-  day: 'workspace.previousWindow.day',
-  week: 'workspace.previousWindow.week',
-  two_weeks: 'workspace.previousWindow.two_weeks',
-  four_weeks: 'workspace.previousWindow.four_weeks',
-  month: 'workspace.previousWindow.month',
-  rotation: 'workspace.previousWindow.rotation',
-  custom: 'workspace.previousWindow.custom',
-}
-const NEXT_LABELS: Record<WindowKind, I18nKey> = {
-  day: 'workspace.nextWindow.day',
-  week: 'workspace.nextWindow.week',
-  two_weeks: 'workspace.nextWindow.two_weeks',
-  four_weeks: 'workspace.nextWindow.four_weeks',
-  month: 'workspace.nextWindow.month',
-  rotation: 'workspace.nextWindow.rotation',
-  custom: 'workspace.nextWindow.custom',
 }
 function rotationDates(rotation: Deployment): string {
   return rotation.end_date === null ? formatDate(rotation.start_date, 'dayMonth') : formatDateRange(rotation.start_date, rotation.end_date)
@@ -118,7 +101,7 @@ function RangeMenu({ onCustom }: { readonly onCustom: () => void }) {
 }
 
 /** Another range (D-339): two dates, both included, at most `DATE_WINDOW.maxDays` days, on the custom window of D-211. */
-function CustomRangeDialog({ from, to, onClose }: { readonly from: CalendarDate; readonly to: CalendarDate; readonly onClose: () => void }) {
+export function CustomRangeDialog({ from, to, onClose }: { readonly from: CalendarDate; readonly to: CalendarDate; readonly onClose: () => void }) {
   const { showCustom } = useDateWindow()
   const [draft, setDraft] = useState<{ readonly from: CalendarDate | ''; readonly to: CalendarDate | '' }>({ from, to })
   const [tried, setTried] = useState(false)

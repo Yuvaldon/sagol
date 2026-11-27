@@ -14,8 +14,9 @@ async function entriesBehind(page: Page) {
   })
 }
 
+/** The board's next step: a week on a desktop's timeline, a month on a phone's calendar (D-480). */
 async function nextWeek(page: Page) {
-  await page.getByRole('button', { name: he.workspace.nextWindow.week }).first().click()
+  await page.getByRole('button', { name: new RegExp(`^(${he.workspace.nextWindow.week}|${he.board.nextMonth})$`) }).first().click()
 }
 
 test('the back button closes what is open and then leaves the app, never replaying an action (D-332)', async ({ page, context }) => {

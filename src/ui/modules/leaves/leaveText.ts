@@ -1,6 +1,7 @@
 import type { Leave, LeaveEventType, LeaveType, Soldier, SoldierId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
-import { fullName, leaveDayCount, type MyUpdateLine } from '@logic'
+import { fullName, type MyUpdateLine } from '@logic'
+import { daysText } from '../../board/labels'
 import { formatDate, formatDateRange } from '../../patterns/dates'
 
 // How a leave is written wherever it is listed: its days, its type and the people around it (D-119, D-120). The
@@ -13,8 +14,7 @@ export function leaveDatesText(leave: Pick<Leave, 'start_date' | 'end_date'>): s
 }
 
 export function leaveDaysText(leave: Pick<Leave, 'start_date' | 'end_date'>): string {
-  const count = leaveDayCount(leave)
-  return count === 1 ? t('leaves.oneDay') : [String(count), t('leaves.days')].join(DAYS_SEPARATOR)
+  return daysText(leave)
 }
 
 /** Names by id. Whoever the actor cannot read has a neutral name (D-119). */

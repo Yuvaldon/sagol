@@ -28,6 +28,21 @@ function dayControl(page: Page, date: string) {
   return page.getByRole('button', { name: new RegExp(`^${he.presence.openDay}.*${date}`) })
 }
 
+/**
+ * The report of the 12th: from its day on a wide screen's timeline (D-193); on a phone the board's day header opens the
+ * unit's drawer instead (D-480), and "דוח 1" of "היום" steps a day forward from today, the 11th.
+ */
+async function openReportOnTwelfth(page: Page, isMobile: boolean) {
+  if (!isMobile) {
+    await dayControl(page, '12 בנוב').click()
+    return
+  }
+  await openTab(page, 'today')
+  await page.getByRole('button', { name: new RegExp(`^${he.presence.title}`) }).first().click()
+  await report(page).getByRole('button', { name: he.presence.nextDay }).click()
+  await expect(page).toHaveURL(/day=2026-11-12/)
+}
+
 async function openUnits(page: Page) {
   const closed = report(page).getByRole('heading').getByRole('button', { expanded: false })
   await expect(closed.first()).toBeVisible()
@@ -53,8 +68,8 @@ test('the day report: counts and names, reasons, a span, a text copy and an imag
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
-  await test.step('a day of the timeline opens its report', async () => {
-    await dayControl(page, '12 בנוב').click()
+  await test.step('a day of the timeline opens its report; on a phone, "דוח 1" of "היום" steps to it (D-480)', async () => {
+    await openReportOnTwelfth(page, testInfo.project.name === 'mobile')
     await expect(page).toHaveURL(/day=2026-11-12/)
     await expect(report(page).getByText('יום חמישי, 12 בנובמבר 2026')).toBeVisible()
     await openUnits(page)
@@ -101,14 +116,17 @@ test('the day report: counts and names, reasons, a span, a text copy and an imag
     await expect(report(page)).toBeHidden()
   })
 
-  await test.step('a day of the calendar opens its report', async () => {
+  await test.step("a day of the calendar is selected, and its drawer's fraction opens who is on base that day (D-480)", async () => {
     await selectView(page, he.workspace.views.calendar)
-    await dayControl(page, '13 בנוב').click()
+    await page.getByRole('region', { name: he.engines.calendarLabel }).getByRole('button', { name: /13 בנובמבר 2026/ }).click()
     await expect(page).toHaveURL(/day=2026-11-13/)
-    await expect(report(page).getByText('יום שישי, 13 בנובמבר 2026')).toBeVisible()
+    await page.getByRole('button', { name: new RegExp(`^${he.board.onBase} 0 ${he.kit.fractionOf} 1`) }).click()
+    const unit = page.getByRole('dialog').last()
+    await expect(unit).toContainText('יום שישי, 13 בנובמבר 2026')
+    await expect(unit).toContainText(OWNER.name)
     await expectNoAxeViolations(page)
     await page.keyboard.press('Escape')
-    await expect(report(page)).toBeHidden()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 })
 
@@ -136,7 +154,7 @@ async function soldierInRotation(page: Page) {
   await openRotation(page, [SOLDIER])
 }
 
-test('each unit confirms its report, a change shows, and it confirms again (D-293)', async ({ page }) => {
+test('each unit confirms its report, a change shows, and it confirms again (D-293)', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await soldierInRotation(page)
@@ -148,7 +166,7 @@ test('each unit confirms its report, a change shows, and it confirms again (D-29
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await test.step('the unit is not yet confirmed, and confirms', async () => {
-    await dayControl(page, '12 בנוב').click()
+    await openReportOnTwelfth(page, isMobile)
     await expect(section(page).getByText(he.presence.statusNotYet, { exact: true })).toBeVisible()
     await expect(report(page).getByText(he.presence.summaryConfirmed)).toBeVisible()
     await expectNoAxeViolations(page)
@@ -163,7 +181,7 @@ test('each unit confirms its report, a change shows, and it confirms again (D-29
     await page.clock.setFixedTime(NOW.getTime() + 60_000)
     await requestLeave(page, { ...leave, from: ['13', '11', '2026'], to: ['13', '11', '2026'] })
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await dayControl(page, '12 בנוב').click()
+    await openReportOnTwelfth(page, isMobile)
     await expect(section(page).getByText(he.presence.statusChanged, { exact: true })).toBeVisible()
     await expect(report(page).getByText(he.presence.summaryChanged)).toBeVisible()
     await expectNoAxeViolations(page)

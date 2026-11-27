@@ -10,7 +10,8 @@ import { LoadingNotice } from '../../patterns/Notices'
 import { REQUEST_ATTRIBUTE, useRequestActions } from './requestActions'
 
 // Requests that wait for the actor (D-459, D-120): each a row with ✗ and ✓, answered in place. The row itself opens
-// the request. The answer and everything it brings belong to the screen (`RequestsScope`).
+// the request. A leave of the round has no ✗ here: its card decides between the move and the original dates (OI-394).
+// The answer and everything it brings belong to the screen (`RequestsScope`).
 
 const SEPARATOR = ' · '
 const WORD = ' '
@@ -44,6 +45,7 @@ export function RequestRows({ leaves }: { readonly leaves: readonly Leave[] }) {
               }}
               trailing={
                 <>
+                  {leave.batch_id !== null ? null : (
                   <AriaButton
                     aria-label={[t('leaves.reject'), name].join(WORD)}
                     onPress={() => {
@@ -53,6 +55,7 @@ export function RequestRows({ leaves }: { readonly leaves: readonly Leave[] }) {
                   >
                     <X aria-hidden size={STEP_ICON} />
                   </AriaButton>
+                  )}
                   <AriaButton
                     {...{ [REQUEST_ATTRIBUTE]: leave.id }}
                     aria-label={[t('leaves.approve'), name].join(WORD)}

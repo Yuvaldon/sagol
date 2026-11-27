@@ -10,7 +10,6 @@ export type BuilderTarget =
   | { readonly kind: 'leaveType' }
   /** A leave property condition, by its place in the URL (D-382). */
   | { readonly kind: 'leaveProperty'; readonly index: number }
-  | { readonly kind: 'missing' }
 
 export interface BuilderOpen {
   open(target: BuilderTarget): void

@@ -41,11 +41,12 @@ function NewLeave() {
 
   const liveTypes = types.value.filter((type) => type.archived_at === null)
   if (!creation.any) return <EmptyNotice titleKey="leaves.noSoldiersTitle" bodyKey="leaves.noSoldiersBody" />
-  // A draft counts only for a soldier the form offers, who the actor may ask for (a link may name anyone).
+  // A draft counts only for a soldier the form offers, who the actor may ask for (a link may name anyone); days picked
+  // on the calendar name no soldier, and the form asks for one (D-480).
   const draft =
     panel.draft === null
       ? null
-      : creation.soldiers.some((soldier) => soldier.id === panel.draft?.soldier_id)
+      : panel.draft.soldier_id === undefined || creation.soldiers.some((soldier) => soldier.id === panel.draft?.soldier_id)
         ? panel.draft
         : null
 
@@ -94,7 +95,7 @@ function NewLeave() {
       ) : (
         <LeaveSheetForm
           // A new drag starts the form over from its own draft.
-          key={draft === null ? 'blank' : `${draft.soldier_id}:${draft.start_date}:${draft.end_date}`}
+          key={draft === null ? 'blank' : `${draft.soldier_id ?? ''}:${draft.start_date}:${draft.end_date}`}
           draft={draft}
           {...shared}
         />

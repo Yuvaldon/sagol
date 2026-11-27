@@ -6,7 +6,7 @@ import { formatDate } from '../../../patterns/dates'
 import { ICON_GLYPHS, iconOf } from '../../../theme/icons'
 import { leaveTypeToneOf } from '../../../theme/palette'
 import { breachLabel } from '../../../board/breaches'
-import { TEXT_SEPARATOR, headingLabel, leaveText, leaveTone, rangeText, typeName } from '../../../board/labels'
+import { headingLabel, leaveText, leaveTone, rangeText, typeName } from '../../../board/labels'
 import { assignLanes } from '../core/lanes'
 import { spansOf } from '../core/layout'
 import type { TimelineDayCell, TimelineHeatCell, TimelineMark, TimelineRowModel } from '../view/model'
@@ -41,12 +41,17 @@ function rangesText(days: readonly CalendarDate[], flags: readonly boolean[], me
   return ranges.length === 0 ? null : `${meaning}: ${ranges.join(', ')}`
 }
 
-/** The muted days of a row: out of the selected unit, and present under "only who is missing" (D-133). */
-function offTextOf(days: readonly CalendarDate[], outOfScope: readonly boolean[], present: readonly boolean[]): string | null {
-  const parts = [rangesText(days, outOfScope, t('timeline.outOfScope')), rangesText(days, present, t('timeline.present'))].filter(
-    (part) => part !== null,
+/** The muted days of a row: out of the selected unit (D-105). */
+function offTextOf(days: readonly CalendarDate[], outOfScope: readonly boolean[]): string | null {
+  return rangesText(days, outOfScope, t('timeline.outOfScope'))
+}
+
+/** What a row says of its muted days, read after its name; NULL when none is (D-105). */
+export function rowOffText(item: Extract<BoardItem, { kind: 'soldier' }>, days: readonly CalendarDate[]): string | null {
+  return offTextOf(
+    days,
+    item.inScope.map((inScope) => !inScope),
   )
-  return parts.length === 0 ? null : parts.join(TEXT_SEPARATOR)
 }
 
 /** What the view needs to know about the leaves (D-111, D-112). */
@@ -151,15 +156,14 @@ export function timelineRows(
   return items.map((item): TimelineRowModel => {
     if (item.kind === 'group') return { kind: 'group', key: item.key, label: headingLabel(item.label), count: item.size }
     const outOfScope = item.inScope.map((inScope) => !inScope)
-    const present = item.inScope.map((_, index) => item.present?.[index] === true)
-    const offDays = outOfScope.map((off, index) => off || present[index] === true)
+    const offDays = outOfScope
     return {
       kind: 'resource',
       key: item.key,
       name: fullName(item.soldier),
       detail: item.rank?.short_title ?? item.rank?.title ?? null,
       offDays,
-      offText: offTextOf(days, outOfScope, present),
+      offText: offTextOf(days, outOfScope),
       creatable: options.creatable(item.soldier.id),
       onOpen:
         open === null

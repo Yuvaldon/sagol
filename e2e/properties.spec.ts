@@ -2,14 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, drawer, openRotationInNewUnit } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
-import { addFilter } from './support/board.ts'
+import { addFilter, clearConditions } from './support/board.ts'
 
 // V14's demo: custom properties (D-016), their fields in a soldier's form, and their chips in the filter bar (D-177),
 // on desktop and mobile, RTL, with axe. Sample data, tests only.
 
-function filterBar(page: Page) {
-  return page.getByRole('search', { name: he.filters.bar })
-}
 
 function rowNames(page: Page) {
   return board(page).getByRole('list', { name: he.timeline.names }).getByRole('button', { name: /^[^,]+$/ })
@@ -81,11 +78,11 @@ test('custom properties: defined once, filled in a form, and filtered by', async
   await test.step('a property chip keeps who holds the answer', async () => {
     await addFilter(page, 'סוג דם', ['O'])
     await expect(rowNames(page)).toHaveText(['נועם לב'])
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} סוג דם` }).click()
+    await clearConditions(page)
     // A select with no answer is "empty" (D-312).
     await addFilter(page, 'סוג דם', [], he.filters.operators.isEmpty)
     await expect(rowNames(page)).toHaveText([OWNER.name])
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} סוג דם` }).click()
+    await clearConditions(page)
     await addFilter(page, 'רישיון נהיגה', [he.properties.yes])
     await expect(rowNames(page)).toHaveText(['יעל שחר'])
     await expect(page).toHaveURL(/filter=/)

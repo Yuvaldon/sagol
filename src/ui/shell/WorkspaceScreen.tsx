@@ -1,15 +1,15 @@
 import { DEFAULT_TAB, TAB_IDS, type TabId } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
-import { useBoardFilters, useCurrentOrganization, useOverlayHistory, useShellAccess, useShellPlace } from '@logic'
+import { useCurrentOrganization, useOverlayHistory, useShellAccess, useShellPlace } from '@logic'
 import { useCallback, useMemo, useState } from 'react'
+import { SheetIntentContext, useSheetIntentScope } from '../board/sheetIntent'
 import { DayReportDialog } from '../modules/presence/DayReportDialog'
 import { useAppliedAppearance } from './appearance'
 import { BoardPlace } from './BoardPlace'
 import { useBoardShown, useNoBoard } from './boardShown'
 import { BuilderOpenContext, type BuilderOpen, type BuilderTarget } from './builderOpen'
 import { ShellChromeContext, useShellChromeScope } from './chrome'
-import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { FocusModeContext, useFocusModeScope } from './focusMode'
 import { InstallInvitation } from './InstallInvitation'
 import { LeaveDrawer } from './LeaveDrawer'
@@ -32,7 +32,6 @@ import { TodayPage } from './today/TodayPage'
  */
 export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity }) {
   const organization = useCurrentOrganization()
-  const { active } = useBoardFilters()
   const place = useShellPlace()
   const answered = useShellAccess()
   // The answers are asked again whenever the soldiers in sight change. Until the new ones arrive the last ones stand,
@@ -46,7 +45,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const manages = useManageAccess()
   const boardShown = useBoardShown()
   const noBoard = useNoBoard()
-  const focus = useFilterFocusScope()
+  const sheetIntent = useSheetIntentScope()
   const preferenceFailure = usePreferenceFailureScope()
   const savedViewNotice = useSavedViewNoticeScope()
   const chrome = useShellChromeScope()
@@ -72,15 +71,13 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const bar = <TabBar tabs={tabs} current={tab} action={access.requestsForSelf} />
 
   return (
-    <FilterFocusContext value={focus}>
+    <SheetIntentContext value={sheetIntent}>
       <BuilderOpenContext value={builder}>
       <PreferenceFailureContext value={preferenceFailure}>
       <SavedViewNoticeContext value={savedViewNotice}>
       <FocusModeContext value={focusMode}>
       <ShellChromeContext value={chrome}>
       <div
-        // The row under the board's strip pushes its first row down while a condition is set (D-173, D-252).
-        data-filter-row={onBoard && boardShown && active && !focusMode.on ? 'shown' : undefined}
         data-focus-mode={focusMode.on ? 'on' : undefined}
         className="relative h-dvh bg-canvas"
       >
@@ -115,6 +112,6 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
       </SavedViewNoticeContext>
       </PreferenceFailureContext>
       </BuilderOpenContext>
-    </FilterFocusContext>
+    </SheetIntentContext>
   )
 }

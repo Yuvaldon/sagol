@@ -1,6 +1,6 @@
 import type { BoardSortKey, SortOrder, TableSortKey } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { boardEntries, defaultOrderOf, fullName, useSortRules, useTableSort, type BoardEntry } from '@logic'
+import { boardEntries, defaultOrderOf, fullName, useSortRules, useTableSort, useToday, type BoardEntry } from '@logic'
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -15,7 +15,9 @@ import { Button as AriaButton } from 'react-aria-components'
 import { formatDate } from '../../../patterns/dates'
 import { EmptyNotice } from '../../../patterns/Notices'
 import { BoardEngine, Centered, type BoardFrame } from '../../../board/BoardEngine'
+import { BoardScreen } from '../../../board/BoardScreen'
 import { EngineScroller } from '../../../board/EngineScroller'
+import { useRangeHead } from '../../../board/rangeHead'
 import { groupLabel, leaveDays, leaveTone, statusText, typeName } from '../../../board/labels'
 
 // The table view (D-174): one line per leave in the window, of the soldiers in view, sorted by any column. The soldier
@@ -204,7 +206,15 @@ function LeavesTable({ frame }: { readonly frame: BoardFrame }) {
   )
 }
 
-/** The table engine. */
+/** The table engine: a wide screen's (D-463). */
 export function TableEngine() {
-  return <BoardEngine>{(frame) => <LeavesTable frame={frame} />}</BoardEngine>
+  const { head, board } = useRangeHead('table', false)
+  const today = useToday()
+  return (
+    <BoardScreen head={head}>
+      <BoardEngine window={board.window} today={today}>
+        {(frame) => <LeavesTable frame={frame} />}
+      </BoardEngine>
+    </BoardScreen>
+  )
 }

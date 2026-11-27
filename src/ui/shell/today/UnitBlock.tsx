@@ -1,9 +1,10 @@
 import { TODAY } from '@config'
 import type { CalendarDate } from '@contracts'
 import { t } from '@i18n'
-import { daysFrom, unitTreeRows, useDayReport, useHeatRow, useModuleAccess, usePresenceDay, useRotationScope, useToday, useUnits } from '@logic'
+import { daysFrom, unitTreeRows, useDayReport, useHeatRow, useModuleAccess, usePresenceDay, useRotationScope, useShellPlace, useToday, useUnits } from '@logic'
 import { useMemo, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { useSheetIntent } from '../../board/sheetIntent'
 import { Fraction } from '../../kit/Fraction'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatDate } from '../../patterns/dates'
@@ -13,8 +14,9 @@ import { dayLine } from './standing'
 import { UnitDrawer } from './UnitDrawer'
 
 // The open block of a commander's "היום" (D-454): the unit's name, how many of it are on base today at display size,
-// and the seven days from today as columns. A day whose rule is broken is amber. A column opens the unit's drawer on
-// its day; "דוח 1" opens today's report, for who reads the unit's soldiers while a rotation runs (D-222).
+// and the seven days from today as columns. A day whose rule is broken is amber. The fraction opens the unit's drawer
+// on today; a column opens the board on its day, with the day's drawer at its middle stop (the handoff's board spec,
+// §1.13; D-480). "דוח 1" opens today's report, for who reads the unit's soldiers while a rotation runs (D-222).
 
 const WORD = ' '
 const SEPARATOR = ' · '
@@ -45,6 +47,8 @@ export function UnitBlock({ name }: { readonly name: string }) {
   }, [days])
   const heat = useHeatRow(window, null)
   const [open, setOpen] = useState<CalendarDate | null>(null)
+  const place = useShellPlace()
+  const intent = useSheetIntent()
 
   const reportButton = rotation !== null && access.soldiers ? <ReportButton labelKey="presence.title" /> : null
   const broken = new Set(heat.status === 'ready' && heat.value !== null ? heat.value.filter((day) => day.broken > 0).map((day) => day.date) : [])
@@ -59,10 +63,15 @@ export function UnitBlock({ name }: { readonly name: string }) {
         {first === undefined ? (
           <span />
         ) : (
-          <div className="flex flex-col">
+          <AriaButton
+            onPress={() => {
+              setOpen(first.date)
+            }}
+            className="flex cursor-pointer flex-col rounded-control text-start outline-focus outline-offset-2 data-focus-visible:outline-2"
+          >
             <Fraction value={first.counts.present} of={first.counts.total} low={broken.has(first.date)} />
-            <p className="text-body text-text-muted">{t('today.onBase')}</p>
-          </div>
+            <span className="text-body text-text-muted">{t('today.onBase')}</span>
+          </AriaButton>
         )}
         {reportButton}
       </div>
@@ -83,7 +92,8 @@ export function UnitBlock({ name }: { readonly name: string }) {
               <li key={day.date} className="min-w-none flex-1">
                 <AriaButton
                   onPress={() => {
-                    setOpen(day.date)
+                    intent.ask('middle')
+                    place.openBoardOn(day.date)
                   }}
                   className={`flex min-h-action w-full cursor-pointer flex-col items-center justify-center gap-2xs rounded-chip outline-focus outline-offset-2 data-focus-visible:outline-2 ${
                     day.date === today

@@ -9,6 +9,7 @@ import { DayStrip } from './DayStrip'
 import { Fraction } from './Fraction'
 import { GlassCircle } from './Glass'
 import { Month } from './Month'
+import { OptionsMenu } from './OptionsMenu'
 import { PersonRow } from './PersonRow'
 import { StopDrawer } from './StopDrawer'
 import { Toast, ToastRegion } from './Toast'
@@ -324,5 +325,43 @@ describe('the drawer with stops', () => {
     expect(onClose).toHaveBeenCalledOnce()
     fireEvent.click(within(dialog).getByRole('button', { name: he.common.close }))
     expect(onClose).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('the options menu (OI-386)', () => {
+  it('shows each row with its value, opens its choices in place, and marks a value other than the default', async () => {
+    const onChange = vi.fn()
+    const rootRoute = createRootRoute()
+    const route = createRoute({
+      getParentRoute: () => rootRoute,
+      path: '/',
+      component: () => (
+        <OptionsMenu
+          labelKey="board.options"
+          icon={null}
+          rows={[
+            {
+              key: 'sort',
+              labelKey: 'board.sort',
+              value: 'A',
+              changed: true,
+              choices: { selected: 'a', options: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }], onChange },
+            },
+          ]}
+          footer={[]}
+        />
+      ),
+    })
+    const router = createRouter({ routeTree: rootRoute.addChildren([route]), history: createMemoryHistory({ initialEntries: ['/'] }) })
+    render(<RouterProvider router={router as never} />)
+    const trigger = await screen.findByRole('button', { name: `${he.board.options} · ${he.kit.optionsChanged}` })
+    fireEvent.click(trigger)
+    const menu = await screen.findByRole('dialog', { name: he.board.options })
+    fireEvent.click(within(menu).getByRole('button', { name: `${he.board.sort} · A` }))
+    expect(within(menu).getByRole('radio', { name: 'A' })).toHaveProperty('checked', true)
+    fireEvent.click(within(menu).getByRole('radio', { name: 'B' }))
+    expect(onChange).toHaveBeenCalledWith('b')
+    // A pick returns to the rows.
+    expect(within(menu).getByRole('button', { name: `${he.board.sort} · A` })).toBeTruthy()
   })
 })

@@ -1,21 +1,30 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, press, requestLeave } from './support/leaves.ts'
-import { addFilter, builder, chooseValues, closeBuilder, openBuilder, pick, setOnlyMissing } from './support/board.ts'
+import { addFilter, builder, chooseValues, clearConditions, closeBuilder, conditions, openBuilder, optionsMenu, pick } from './support/board.ts'
 import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, openTab } from './support/workspace.ts'
 
-// V6's demo: tag categories and tags, a soldier's tags, filter chips, leave conditions, "only who is missing" and
-// the present and absent lists, on desktop and mobile, RTL, with axe. Sample data, tests only.
+// V6's demo: tag categories and tags, a soldier's tags, the set conditions under the options' "סינון" (D-480), leave
+// conditions, "only who is missing" gone (D-463), and the present and absent lists, on desktop and mobile, RTL, with
+// axe. Sample data, tests only.
 
 const TOUCH_TARGET_PX = 44
 
-function filterBar(page: Page) {
-  return page.getByRole('search', { name: he.filters.bar })
+/** A set condition, under the options' "סינון": named by its condition and values, as a person reads it. */
+function chip(page: Page, condition: string, values: string) {
+  return optionsMenu(page).getByRole('button', { name: new RegExp(`^${condition}\\s?:\\s?${values}$`) })
 }
 
-/** A chip is named by its condition and values, as a person reads it. */
-function chip(page: Page, condition: string, values: string) {
-  return filterBar(page).getByRole('button', { name: new RegExp(`^${condition}\\s?:\\s?${values}$`) })
+/** The options' icon says whether a value is not the default (D-480): no condition, no sort or grouping set. */
+function plainOptions(page: Page) {
+  return page.getByRole('button', { name: he.board.options, exact: true })
+}
+
+async function expectCondition(page: Page, condition: string, values: string) {
+  await conditions(page)
+  await expect(chip(page, condition, values)).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(optionsMenu(page)).toBeHidden()
 }
 
 /** Opens every unit's section of the day report. */
@@ -72,7 +81,7 @@ test.beforeEach(async ({ page, isMobile }) => {
   await openBoardOnTimeline(page, isMobile)
 })
 
-test('tags, filter chips, only who is missing, and who is present today', async ({ page }, testInfo) => {
+test('tags, the set conditions, no "only who is missing", and who is present today', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
@@ -133,22 +142,22 @@ test('tags, filter chips, only who is missing, and who is present today', async 
   await test.step('a tag chip keeps who holds the tag, in the URL', async () => {
     await expect(rowNames(page)).toHaveCount(3)
     await addFilter(page, 'תפקיד', ['חובש'])
-    await expect(chip(page, 'תפקיד', 'חובש')).toBeVisible()
+    await expectCondition(page, 'תפקיד', 'חובש')
     await expect(rowNames(page)).toHaveText(['יעל שחר'])
     await expect(page).toHaveURL(/filter=/)
     await expectNoAxeViolations(page)
     await page.reload()
     await expect(rowNames(page)).toHaveText(['יעל שחר'])
     await testInfo.attach('filter-row', { body: await page.screenshot(), contentType: 'image/png' })
-    // "Clear all" empties the row, and the row goes with it (D-173).
-    await filterBar(page).getByRole('button', { name: he.filters.clearAll }).click()
+    // "ניקוי הסינון" removes every condition, and the options' dot goes with them (D-480).
+    await clearConditions(page)
     await expect(rowNames(page)).toHaveCount(3)
-    await expect(filterBar(page)).toBeHidden()
+    await expect(plainOptions(page)).toBeVisible()
   })
 
   await test.step('the builder: "none of", a second rule joined by "or", and a chip that opens its rule (D-312)', async () => {
     await addFilter(page, 'תפקיד', ['חובש'], he.filters.operators.noneOf)
-    await expect(chip(page, `תפקיד ${he.filters.operators.noneOf}`, 'חובש')).toBeVisible()
+    await expectCondition(page, `תפקיד ${he.filters.operators.noneOf}`, 'חובש')
     await expect(rowNames(page)).toHaveText(['נועם לב', OWNER.name])
     await openBuilder(page)
     await builder(page).getByRole('button', { name: he.filters.add, exact: true }).click()
@@ -162,12 +171,14 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await expectNoAxeViolations(page)
     await testInfo.attach('builder', { body: await page.screenshot(), contentType: 'image/png' })
     await closeBuilder(page)
-    await expect(filterBar(page).getByText(he.filters.or, { exact: true })).toBeVisible()
+    // A condition under "סינון" opens its rule in the builder, which still joins the two by "או".
+    await conditions(page)
     await chip(page, 'מצב משפחתי', 'נשוי').click()
     await expect(builder(page).getByRole('button', { name: new RegExp(`^${he.filters.values} מצב משפחתי`) })).toBeFocused()
+    await expect(builder(page).getByRole('button', { name: new RegExp(he.filters.match) })).toContainText(he.filters.or)
     await closeBuilder(page)
-    await filterBar(page).getByRole('button', { name: he.filters.clearAll }).click()
-    await expect(filterBar(page)).toBeHidden()
+    await clearConditions(page)
+    await expect(plainOptions(page)).toBeVisible()
   })
 
   await test.step('sort rows: a key and its direction, then another to break ties (D-313)', async () => {
@@ -201,23 +212,20 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await addFilter(page, he.filters.leaveStatus, [he.leaves.statusPending])
     await expect(page.getByRole('heading', { level: 2, name: he.timeline.emptyFilterTitle })).toBeVisible()
     await expectNoAxeViolations(page)
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.leaveStatus}` }).click()
+    await clearConditions(page)
     await addFilter(page, he.filters.leaveStatus, [he.leaves.statusApproved])
     await expect(rowNames(page)).toHaveText([OWNER.name])
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.leaveStatus}` }).click()
+    await clearConditions(page)
   })
 
-  await test.step('only who is missing: the owner, with the days present muted', async () => {
-    await setOnlyMissing(page)
-    await expect(page).toHaveURL(/missing=true/)
-    await expect(filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.onlyMissing}` })).toBeVisible()
-    await expect(rowNames(page)).toHaveText([OWNER.name])
-    await expect(board(page).getByText(new RegExp(`${he.timeline.present}: `))).toHaveCount(1)
-    await expectNoAxeViolations(page)
-    await testInfo.attach('only-missing', { body: await page.screenshot(), contentType: 'image/png' })
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.onlyMissing}` }).click()
+  await test.step('"only who is missing" is gone (D-463): an old link to it opens the whole board', async () => {
+    await page.goto('/?tab=board&missing=true')
     await expect(rowNames(page)).toHaveCount(3)
-    await expect(filterBar(page)).toBeHidden()
+    await expect(plainOptions(page)).toBeVisible()
+    await conditions(page)
+    await expect(optionsMenu(page).getByRole('button', { name: he.board.clearConditions })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await expectNoAxeViolations(page)
   })
 
   await test.step('who is missing today, and who is present', async () => {
@@ -265,29 +273,36 @@ test('tags, filter chips, only who is missing, and who is present today', async 
     await expect(report).toBeHidden()
   })
 
-  await test.step('a filter the bar does not read keeps its leave chips beside it', async () => {
+  await test.step('a filter the builder does not read keeps its leave conditions beside it', async () => {
     const filter = encodeURIComponent(JSON.stringify({
       where: { kind: 'or', nodes: [{ kind: 'soldier_status', statuses: ['active'] }, { kind: 'seniority', min: 0, max: null }] },
     }))
     const leaves = encodeURIComponent(JSON.stringify({ statuses: ['approved'] }))
     await page.goto(`/?filter=${filter}&leaves=${leaves}`)
-    await expect(filterBar(page).getByText(he.filters.other)).toBeVisible()
+    await conditions(page)
+    await expect(optionsMenu(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.other}` })).toBeVisible()
     await expect(chip(page, he.filters.leaveStatus, he.leaves.statusApproved)).toBeVisible()
+    await page.keyboard.press('Escape')
     await expect(rowNames(page)).toHaveText([OWNER.name])
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.other}` }).click()
-    await expect(chip(page, he.filters.leaveStatus, he.leaves.statusApproved)).toBeVisible()
+    // The kept rule cannot be shown in the builder: the options remove it alone, and the leave condition stays.
+    await conditions(page)
+    await optionsMenu(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.other}` }).click()
+    await expect(optionsMenu(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.other}` })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await expectCondition(page, he.filters.leaveStatus, he.leaves.statusApproved)
     await expectNoAxeViolations(page)
-    await filterBar(page).getByRole('button', { name: `${he.filters.remove} ${he.filters.leaveStatus}` }).click()
+    await clearConditions(page)
   })
 
   if (testInfo.project.name === 'mobile') {
-    await test.step('on a phone, every control of the bar is a 44 px target', async () => {
+    await test.step('on a phone, every control of the options is a 44 px target', async () => {
       await addFilter(page, 'תפקיד', ['נהג'])
-      for (const control of await filterBar(page).getByRole('button').all()) {
+      await conditions(page)
+      for (const control of await optionsMenu(page).getByRole('button').all()) {
         const box = await control.boundingBox()
         expect(box?.height ?? 0).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
       }
-      await testInfo.attach('mobile-bar', { body: await page.screenshot(), contentType: 'image/png' })
+      await testInfo.attach('mobile-options', { body: await page.screenshot(), contentType: 'image/png' })
     })
   }
 })

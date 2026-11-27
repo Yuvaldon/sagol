@@ -178,10 +178,10 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await expectNoAxeViolations(page)
   })
 
-  await test.step('a day column opens the unit\'s drawer, which grows from its handle on a phone', async () => {
+  await test.step('the fraction opens the unit\'s drawer, which grows from its handle on a phone', async () => {
     const columns = page.getByRole('list', { name: he.today.unitDays }).getByRole('button')
     await expect(columns).toHaveCount(7)
-    await columns.first().click()
+    await page.getByRole('main').getByRole('button', { name: new RegExp(`^\\d+ ${he.kit.fractionOf} \\d+ ${he.today.onBase}$`) }).click()
     const unit = page.getByRole('dialog')
     await expect(unit.getByRole('heading', { name: new RegExp(`^${he.presence.present}`) })).toBeVisible()
     await expect(unit).toContainText(YAEL_NAME)
@@ -193,6 +193,18 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     }
     await unit.getByRole('button', { name: he.common.close }).click()
     await expect(unit).toHaveCount(0)
+  })
+
+  await test.step('a day column opens the board on its day, the day\'s drawer at its middle stop (D-480)', async () => {
+    const columns = page.getByRole('list', { name: he.today.unitDays }).getByRole('button')
+    await columns.nth(1).click()
+    await expect(tab(page, 'board')).toHaveAttribute('aria-current', 'page')
+    await expect(page).toHaveURL(/day=/)
+    if ((await page.getByRole('region', { name: he.engines.calendarLabel }).count()) > 0) {
+      await expect(page.getByRole('button', { name: he.board.sheetGrow })).toHaveAttribute('aria-expanded', 'true')
+    }
+    await expectNoAxeViolations(page)
+    await openTab(page, 'today')
   })
 
   await test.step('the tab in sight returns to the top, and the board keeps its place behind its tab', async () => {

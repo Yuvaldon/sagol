@@ -13,13 +13,24 @@ export interface TrayProps {
   readonly onAction: () => void
   readonly clearKey: I18nKey
   readonly onClear: () => void
+  /** The impact line (the handoff's board spec, §1.9): the day the action would take below a rule, above the tray. */
+  readonly note?: string | null
 }
 
 const FOCUS = 'outline-focus outline-offset-2 data-focus-visible:outline-2'
 
-export function Tray({ labelKey, action, onAction, clearKey, onClear }: TrayProps) {
+export function Tray({ labelKey, action, onAction, clearKey, onClear, note = null }: TrayProps) {
   return (
-    <div role="group" aria-label={t(labelKey)} className="glass-regular pointer-events-auto flex max-w-full items-center gap-xs rounded-full p-xs">
+    <div role="group" aria-label={t(labelKey)} className="pointer-events-none flex max-w-full flex-col items-center gap-xs">
+      {/* Read as it changes: the line is the step's cost, said before the step is taken. */}
+      <p role="status" className="empty:hidden">
+        {note === null ? null : (
+          <span className="glass-regular pointer-events-auto inline-flex min-h-badge items-center rounded-full px-md text-small font-semibold text-status-pending-text tabular-nums">
+            {note}
+          </span>
+        )}
+      </p>
+      <div className="glass-regular pointer-events-auto flex max-w-full items-center gap-xs rounded-full p-xs">
       <AriaButton
         onPress={onAction}
         className={`inline-flex min-h-tab min-w-none cursor-pointer items-center justify-center rounded-full bg-action-solid px-xl text-body font-bold text-on-action shadow-primary ${FOCUS}`}
@@ -33,6 +44,7 @@ export function Tray({ labelKey, action, onAction, clearKey, onClear }: TrayProp
       >
         <X aria-hidden size={18} />
       </AriaButton>
+      </div>
     </div>
   )
 }

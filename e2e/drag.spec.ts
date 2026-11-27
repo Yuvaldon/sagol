@@ -4,13 +4,12 @@ import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRota
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V8's demo: drag to create, move and resize leaves on the board, with the card that says what a drop would do and the
-// rule it would break; on a phone, the same by holding a finger first. Desktop and mobile, RTL, with axe. Sample data,
-// tests only.
+// rule it would break. On a phone a bar is not dragged (D-458, D-480): days tapped in a row create, through the tray,
+// and the leave's card moves it. Desktop and mobile, RTL, with axe. Sample data, tests only.
 
 const PLATOON = 'מחלקה א'
 const SOLDIER = 'יעל שחר'
 const NAMES_PX = 124
-const HOLD_MS = 650
 
 async function setUp(page: Page) {
   await openModule(page, he.units.open)
@@ -32,7 +31,7 @@ async function setUp(page: Page) {
   // The days below count from the week's first, so the board shows the week rather than the whole rotation (D-217).
   await page.goto('/?range=week')
   // The points below are measured on the week's board, so a drag waits until it has loaded and come to rest.
-  await expect(page.getByRole('button', { name: `${he.workspace.window} 8–14 בנוב׳` })).toBeVisible()
+  await expect(page.getByRole('button', { name: /8 בנובמבר 2026/ }).first()).toBeVisible()
   await expect(board(page).getByRole('button', { name: SOLDIER })).toBeVisible()
   await waitForSettledScreen(page)
 }
@@ -56,20 +55,6 @@ async function mouseDrag(page: Page, from: { x: number; y: number }, to: { x: nu
   await page.mouse.move(to.x, to.y, { steps: 8 })
   if (beforeDrop !== undefined) await beforeDrop()
   await page.mouse.up()
-}
-
-/** A finger held still, then moved: the touch path (D-144). Chromium's own touch events, so pointers are `touch`. */
-async function touchDrag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
-  const cdp = await page.context().newCDPSession(page)
-  const point = (x: number, y: number) => [{ x: Math.round(x), y: Math.round(y) }]
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: point(from.x, from.y) })
-  await page.waitForTimeout(HOLD_MS)
-  for (let step = 1; step <= 6; step += 1) {
-    const x = from.x + ((to.x - from.x) * step) / 6
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: point(x, to.y) })
-  }
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-  await cdp.detach()
 }
 
 /**
@@ -209,39 +194,48 @@ test('drag to create, move and resize, with what a drop would break', async ({ p
   })
 })
 
-test('on a phone, a held finger creates and moves, and a bar is a 44 px target', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'The touch path of a phone (D-144)')
+/** A day of the soldier's row on a phone: the days start at the row's bars, on the right, after the names (RTL). */
+async function phoneDay(page: Page, day: number) {
+  const bars = board(page).getByRole('group', { name: SOLDIER })
+  const box = await bars.boundingBox()
+  const header = await page.getByRole('group', { name: he.board.days }).getByRole('button').first().boundingBox()
+  if (box === null || header === null) throw new Error('no row')
+  return { x: header.x + header.width / 2 - header.width * day, y: box.y + box.height / 2 }
+}
+
+test('on a phone, tapped days create through the tray, the card moves a leave, and a bar is a 44 px target', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'The touch path of a phone (D-458)')
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await setUp(page)
 
-  await test.step('holding an empty day opens the new-leave form for that day', async () => {
+  await test.step('a tapped day in a row offers a leave for the soldier in the tray, which opens the form for that day', async () => {
     await startNewLeave(page, async () => {
-      await touchDrag(page, await dayPoint(page, 1), await dayPoint(page, 1))
+      const day = await phoneDay(page, 1)
+      await page.touchscreen.tap(day.x, day.y)
+      const tray = page.getByRole('group', { name: he.today.selection })
+      await expect(tray.getByRole('button', { name: new RegExp(`^${he.board.leaveFor} · ${SOLDIER} · ${he.leaves.oneDay}`) })).toBeVisible({ timeout: 2_000 })
+      await expectNoAxeViolations(page)
+      await tray.getByRole('button', { name: new RegExp(`^${he.board.leaveFor}`) }).click()
     })
     await finishNewLeave(page, '9', '9')
     await expect(bar(page)).toHaveAccessibleName(/9 בנוב׳/)
   })
 
-  await test.step('lanes are taller on a phone, so a bar and the gap around it make a 44 px target (OI-067)', async () => {
+  await test.step('a bar takes the row\'s height: a 44 px target', async () => {
     const box = await bar(page).boundingBox()
-    expect(box?.height).toBe(28)
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
     await expectNoAxeViolations(page)
   })
 
-  await test.step('holding a bar picks it up, and the finger moves it', async () => {
-    const box = await bar(page).boundingBox()
-    if (box === null) throw new Error('no bar')
-    const { dayPx } = await dayPoint(page, 0)
-    const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-    await touchDrag(page, from, { x: from.x - dayPx, y: from.y })
-    await expect(bar(page)).toHaveAccessibleName(/10 בנוב׳/)
-    await expect(drawer(page)).toHaveCount(0)
-  })
-
-  await test.step('a tap still opens the leave', async () => {
+  await test.step('a tap opens the leave, whose card moves it', async () => {
     await bar(page).tap()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.threadTitle })).toBeVisible()
+    await drawer(page).getByRole('button', { name: he.leaves.edit }).click()
+    await typeDate(page, he.leaves.from, '10', '11', '2026')
+    await typeDate(page, he.leaves.to, '10', '11', '2026')
+    await drawer(page).getByRole('button', { name: he.common.save }).click()
     await closeDrawer(page)
+    await expect(bar(page)).toHaveAccessibleName(/10 בנוב׳/)
   })
 })
