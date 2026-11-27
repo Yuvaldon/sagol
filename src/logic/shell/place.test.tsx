@@ -180,6 +180,10 @@ describe('the destination and its page live in the URL (D-455, D-459)', () => {
     await waitFor(() => expect(shown()).toBe('today/requests'))
   })
 
+  it('opens a page on its own destination, also when the address names a view of the board', async () => {
+    expect((await placeAt('/?view=table&page=requests')).shown()).toBe('today/requests')
+  })
+
   it('shows a page only on the destination it belongs to', async () => {
     const owned = await placeAt('/?page=requests')
     expect(owned.shown()).toBe('today/requests')

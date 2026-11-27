@@ -52,7 +52,8 @@ function tabParam(tab: TabId, search: WorkspaceSearch): TabId | undefined {
 export function useShellPlace(): ShellPlace {
   const search = useWorkspaceSearch()
   const change = useChangeSearch()
-  const tab = search.tab ?? (namesBoard(search) ? 'board' : DEFAULT_TAB)
+  // A page names its destination: a link to it opens there, whatever else the address holds.
+  const tab = search.tab ?? (search.page !== undefined ? PAGE_TABS[search.page] : namesBoard(search) ? 'board' : DEFAULT_TAB)
   const page = search.page !== undefined && PAGE_TABS[search.page] === tab ? search.page : null
   const openTab = useCallback(
     (next: TabId) => {
