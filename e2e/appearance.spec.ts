@@ -31,7 +31,8 @@ test('light by default, dark on request, the device’s on request, and readable
     await expect(root(page)).toHaveAttribute('data-appearance', 'dark')
     await page.reload()
     await expect(root(page)).toHaveAttribute('data-appearance', 'dark')
-    // "אני" itself, in the dark set.
+    // "אני" itself, in the dark set, once the reload has brought it back.
+    await expect(appearanceChoice(page, he.account.appearanceDark)).toBeChecked()
     await expectNoAxeViolations(page)
     await openTab(page, 'today')
     await expectNoAxeViolations(page)
