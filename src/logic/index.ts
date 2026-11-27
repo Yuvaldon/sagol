@@ -119,6 +119,7 @@ export {
 export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
 export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
 export { useConfirmDayReport, useDayReport, usePresence, useReportConfirmations, useReportSentAt } from './presence/hooks'
+export { presentByName, usePresentWithMe } from './presence/withMe'
 export {
   dayConfirmations,
   type ConfirmationSummary,

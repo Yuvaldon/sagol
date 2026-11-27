@@ -22,4 +22,14 @@ describe('invalidateChanged', () => {
     expect(stale(client, QUERY_KEYS.leaves)).toBe(false)
     expect(stale(client, QUERY_KEYS.tags)).toBe(true)
   })
+
+  it('asks again who is on base with the actor when a leave or a leave type changes (D-478)', () => {
+    const client = createQueryClient()
+    const key = [...QUERY_KEYS.presentWithMe, '2026-11-10']
+    client.setQueryData(key, null)
+    invalidateChanged(client, [{ table: 'tags', ids: [] }])
+    expect(stale(client, key)).toBe(false)
+    invalidateChanged(client, [{ table: 'leaves', ids: [] }])
+    expect(stale(client, key)).toBe(true)
+  })
 })

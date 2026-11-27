@@ -70,7 +70,7 @@ export function compareText(a: string, b: string): number {
 }
 
 /** Last name, then first name, in Hebrew order (D-094). */
-export function byName(a: Soldier, b: Soldier): number {
+export function byName(a: Pick<Soldier, 'id' | 'first_name' | 'last_name'>, b: Pick<Soldier, 'id' | 'first_name' | 'last_name'>): number {
   return collator.compare(a.last_name, b.last_name) || collator.compare(a.first_name, b.first_name) || a.id.localeCompare(b.id)
 }
 
