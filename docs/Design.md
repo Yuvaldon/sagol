@@ -227,7 +227,7 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   **הוספת חיילים:** a full screen with no tab bar; "ליחידה", "הדבקת רשימה", "ייבוא מקובץ", a white card per row (first
   and last name, personal number and email where allowed), "הוספת N חיילים" as the bottom bar, and a door to the full
   form of one soldier. **הצטרפות:** "מוכנות לאישור", "דורשות בדיקה" (an amber chip with the reason), "חיילים חדשים" (a
-  dashed "מחלקה" chip); "אישור N" in the capsule; a row opens "זה הוא?" (the candidate, an amber conflict block with
+  dashed "מחלקה" chip, with "ללא יחידה" for who may); "אישור N" in the capsule; a row opens "זה הוא?" (the candidate, an amber conflict block with
   both values, "כן, לקשר" and "לא"; "מי מהם?"; "ליחידה" and "יצירה וקישור"; "עוד" for "חייל אחר" and "דחיית הבקשה").
   **כללי נוכחות:** a card per unit, each row the name, the sentence and a switch, "לא חל" as a quiet pill that opens the
   winning rule; "+" and the options ("ארכיון · N") in the capsule; the rule's drawer shows chips, the pencil opens the
@@ -326,6 +326,10 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 41 | Join requests are grouped by readiness for everyone (the company commander sees one group when only new soldiers reach them); no swipe on a row; no "ביטול" after a link; a new soldier from a request has no rank and starts today | The assessment decides the groups; the drawer is the tap path (OI-402); unlinking does not bring a request back (D-451) | D-484 |
 | 42 | "לא חל" marks a rule replaced on every day it applies, read from the rules alone; the list never names soft, hard or priority | The handoff's "the system already computes this" is per day; the list needs one answer per rule | D-485 |
 | 43 | Planning the leave round leaves the new-leave form for its own row and card; the card shows while soldiers of the rotation have no round | OI-389; "at rotation start" read as "until everyone has a round" | D-486 |
+| 44 | A step on several ends in one toast: how many it did, how many were left for review, the first refusal; refused soldiers stay chosen; "אישור N" asks no confirmation and reads each request again | Partial results must be said; a question on every approval is skipped by habit | D-487 |
+| 45 | A new soldier from a request may go to no unit; private details are neither shown nor sent where the unit takes none | What the removed form offered; D-096 | D-487 |
+| 46 | Choosing on "חיילים" is a layer the back button ends; a drawer that opens another in its place replaces it | One back press per layer the actor sees (D-332) | D-487 |
+| 47 | Small pills and switches sit in 44 px targets; the strip of chosen days wraps into two weeks | 44 px targets everywhere (Accessibility) | D-487 |
 
 ## Color (Light)
 

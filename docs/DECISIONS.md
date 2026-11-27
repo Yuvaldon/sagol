@@ -408,11 +408,12 @@ am = amends, ref = refines, ext = extends.
 | D-479 | "איתך היום" after review: the own unit only, the rank constraint on oneself, a narrow read, export format 7 | contracts, domain, config, data, logic, ui, backend | |
 | D-480 | The board of the new interface: one frame, the selected day, a range per view, the options menu | contracts, config, logic, i18n, ui | |
 | D-481 | Moving a leave out of the leave round: "בקשת הזזה", "אישור ההזזה", "השארה במועד המקורי" | logic, i18n, ui | |
-| D-482 | "ניהול" builds its designed pages: חיילים, הוספת חיילים, הצטרפות, כללי נוכחות | config, logic, i18n, ui | |
-| D-483 | The person card and the multi-select of "חיילים" | logic, i18n, ui | |
-| D-484 | "הצטרפות": the queue by readiness, "זה הוא?", and "אישור N" | logic, i18n, ui | |
-| D-485 | "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive | domain, logic, i18n, ui | |
+| D-482 | "ניהול" builds its designed pages: חיילים, הוספת חיילים, הצטרפות, כללי נוכחות | config, logic, i18n, ui | am D-487 |
+| D-483 | The person card and the multi-select of "חיילים" | logic, i18n, ui | am D-487 |
+| D-484 | "הצטרפות": the queue by readiness, "זה הוא?", and "אישור N" | logic, i18n, ui | am D-487 |
+| D-485 | "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive | domain, logic, i18n, ui | am D-487 |
 | D-486 | Leave-round planning has its own entry: a row of "ניהול" and a card of "היום" | config, logic, i18n, ui | |
+| D-487 | "ניהול" after review: settled access, partial results, no unit, private details, targets and layers | logic, i18n, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -6218,3 +6219,44 @@ D-170
   rotation's name, and the title opens the planner. Once everyone has a round it is absent (D-459), which is the
   handoff's "at rotation start".
 **Why:** OI-389; most leaves of a rotation come from its leave round, so its planning cannot hide inside another form.
+
+## D-487 — "ניהול" after review: settled access, partial results, no unit, private details, targets and layers
+2026-11-27 · accepted · amends D-482, D-483, D-484, D-485 · decided under D-170 (the review of R5·4)
+- **A page waits for its answers** (amends D-482). A page of "ניהול" is closed as not the actor's only once the answers
+  behind it are in: "הצטרפות" waits for the review permission and for the list of pending requests (a unit-scoped
+  reviewer is allowed only by what they read), "הוספת חיילים" for where the actor may place a new soldier. Until then
+  the page shows that it loads. A page once allowed stays while it is open: approving the last request leaves
+  "הצטרפות" open and empty.
+- **The full form for who may place nowhere** (amends D-482). Who may create a soldier only with no unit gets "+" and,
+  on "הוספת חיילים", the door "חייל אחד בטופס המלא" beside the line that no unit takes rows.
+- **No unit from a request** (amends D-484). Who may create a soldier with no unit may make one so from a join request:
+  "ללא יחידה" is a choice of the drawer's "ליחידה" and of the row's "מחלקה" chip, as the removed form offered it.
+- **A step on several says what it did** (amends D-483, D-484). "העברה" and "אישור N" end in one toast: how many it did,
+  how many were left for their own review (a request whose assessment changed), and the first refusal, which keeps the
+  toast until it is put away. The soldiers a move refused stay chosen, so the step can be taken again for them.
+- **"אישור N" reads every request again at the run** (amends D-484): a placed new soldier's request too, so one that has a
+  candidate by now is left for review and no second soldier is created. It asks no confirmation: a ready request has one
+  candidate and no conflict, each is read again at the run, and the toast says what happened; a question on every
+  approval would be the one a commander learns to skip.
+- **Private details only where they may be set** (amends D-482). Where the chosen unit takes no private details, rows show
+  none and the save sends none (D-096); a list that holds them is refused there, as before. Repeats in the grid compare
+  personal numbers and invite emails in their normal forms (D-066), so a list pasted twice is marked.
+- **Moving reads first.** "העברה" is for soldiers whose placements the actor reads and may change, as the soldier's own
+  placement section was.
+- **Targets.** A pill drawn small (the "מחלקה" chip, "לא חל") sits inside a 44 px target, as does the rule's switch; the
+  14-day strip, where days are chosen, wraps into two weeks so each day is 44 px wide.
+- **The rules' drawers are the rules module's** (amends D-485): a link to a rule, the archive or a new rule opens only for
+  who may open that module, and a new rule only for who may create one somewhere.
+- **History.** Choosing on "חיילים" is a layer: the back button ends it. A drawer that opens another in its place (the card's
+  "יציאה עבור X", a rule's "לא חל" to the rule that wins, "פתח כרטיס" after a link) replaces it, as the old modules'
+  rows did: the stack is one layer and the back button closes it. The archive's opened row and "כרטיס מלא" are states of
+  one drawer, not layers; the archive's row has its own way back.
+- **The search narrows the choice**: the tray counts and acts on the chosen rows in sight.
+- **Linked accounts.** The list of every linked account is not carried over: unlinking is on the soldier's card. An
+  account whose soldier the actor does not see cannot be unlinked from the screen now (OI-404).
+- **The undo of an archive** says a refused restore in the restore's words. One toast shows at a time: a later one replaces
+  it and its "ביטול" with it; the archive drawer still restores.
+- **The dots wait** for the answers of whose leaves the actor reads, the first time the list shows.
+**Why:** the review of R5·4 found pages closed before their answers, lost paths (the full form, "no unit"), partial results
+said as all or nothing, a second soldier possible from a stale assessment, private details refused late, and targets under
+44 px.
