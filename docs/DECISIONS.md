@@ -6041,10 +6041,12 @@ calendar), D-301 (where focus mode is kept and what it hides) and the old strip 
   the tray "יציאה לחיילים · N ימים" opens the new-leave form on the days with no soldier named (a draft's soldier is
   now optional). A swipe sideways moves the month, up and down the drawer's stop; the handle moves one stop on, and from
   the full stop back to the edge. The drawer is part of the board, not a modal: the day, its fraction (which opens the
-  unit's drawer on it) and the day's leaves cut by day (§1.15). A request is drawn in each of its cells, not as one bar
+  unit's drawer on it), a band "מתחת לסף ביום הזה" on a day below a rule that opens the day's rules (D-141), and the
+  day's leaves cut by day (§1.15). A request is drawn in each of its cells, not as one bar
   across them. Past days take `text-muted`, not the package's `past` gray, which is below 4.5:1 on the canvas.
 - **Timeline on a phone.** A row is the person's name (the person card) and one bar of runs; a leave's run opens its
-  card and is a 44 px target; days on base tapped in a row make a range, and the tray "יציאה עבור X · N ימים" carries the
+  card and is a 44 px target; the bar draws the first lane of requests and of the round, and a leave over another, or a
+  marker, takes a lane below it (D-111); days on base tapped in a row make a range, and the tray "יציאה עבור X · N ימים" carries the
   impact line. A day's header selects it and opens the unit's drawer; on a phone the day report is reached from "דוח 1"
   of "היום". A month or a rotation scrolls sideways under the names.
 - **Movements.** A leave leaves on its first day and returns on its last (D-193's convention). The leave round of a day
