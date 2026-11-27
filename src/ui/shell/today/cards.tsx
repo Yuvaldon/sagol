@@ -163,12 +163,13 @@ export function ReportCard() {
 }
 
 /**
- * "איתך היום" (D-478): who of the actor's own unit is on base today, by name only, for who has no unit block. The
+ * "איתך היום" (D-478, D-479): who of the actor's own unit is on base today, by name only, for who has no board. The
  * server answers the names; the card opens nothing, as its holder reads no leave (rule 6). Absent when nobody is.
  */
-export function WithMeCard() {
+export function WithMeCard({ board }: { readonly board: boolean }) {
   const present = usePresentWithMe()
-  if (present.status !== 'ready' || present.value === null || present.value.length === 0) return null
+  // Who has "לוח" sees the same in the unit's block (D-466); a failed read shows nothing, as an empty one does.
+  if (board || present.status !== 'ready' || present.value === null || present.value.length === 0) return null
   return (
     <Card
       titleKey="today.withMe"

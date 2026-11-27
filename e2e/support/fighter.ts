@@ -26,12 +26,14 @@ export { signOut } from './workspace.ts'
 export interface FighterOptions {
   /** The fighter role also holds `presence:view` (D-478). */
   readonly presence?: boolean
+  /** The fighter role holds only `leaves:view`, beside the presence pair: a role the migration gave it to (D-479). */
+  readonly bare?: boolean
   /** Soldiers of the unit beside Yael: with any, she and they are placed in it, and they serve in the rotation too. */
   readonly unitmates?: readonly { readonly first: string; readonly last: string }[]
 }
 
 /** The owner's setup: a unit, a type, Yael with the fields auto-link reads, the fighter role as the baseline, a rotation. */
-export async function setUpFighter(page: Page, { presence = false, unitmates = [] }: FighterOptions = {}) {
+export async function setUpFighter(page: Page, { presence = false, bare = false, unitmates = [] }: FighterOptions = {}) {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
@@ -65,7 +67,8 @@ export async function setUpFighter(page: Page, { presence = false, unitmates = [
   await openModule(page, he.roles.open)
   await drawer(page).getByRole('button', { name: he.roles.new }).click()
   await page.getByLabel(he.roles.name).fill(ROLE)
-  for (const [resource, actions] of presence ? [...SELF_PERMISSIONS, PRESENCE_PERMISSION] : SELF_PERMISSIONS) {
+  const own = bare ? [[he.permissionLabels.resources.leaves, [he.permissionLabels.actions.view]] as const] : SELF_PERMISSIONS
+  for (const [resource, actions] of presence ? [...own, PRESENCE_PERMISSION] : own) {
     const group = drawer(page).getByRole('group', { name: resource, exact: true })
     for (const action of actions) {
       await group.locator('label').filter({ has: page.getByRole('checkbox', { name: action, exact: true }) }).click()

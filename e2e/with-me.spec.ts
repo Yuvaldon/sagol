@@ -44,3 +44,14 @@ test('a soldier sees who is on base with them today, by name only', async ({ pag
     await expectNoAxeViolations(page)
   })
 })
+
+test('a soldier who reads nothing else still has "היום", with who is on base with them (D-479)', async ({ page }) => {
+  await setUpFighter(page, { presence: true, bare: true, unitmates: [OMER] })
+  await signOut(page)
+  await enterAsYael(page)
+  const card = page.getByRole('region', { name: he.today.withMe })
+  await expect(card.getByRole('listitem')).toHaveText([OMER_NAME])
+  await expect(page.getByRole('heading', { name: he.timeline.noDayTitle })).toHaveCount(0)
+  await expectNoAxeViolations(page)
+})
+
