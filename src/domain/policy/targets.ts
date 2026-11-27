@@ -64,6 +64,8 @@ export const TARGET_KINDS_BY_RESOURCE = {
   data_transfer: ORGANIZATION,
   /** The unit whose report is confirmed (D-293). */
   day_reports: ['unit'],
+  /** The holder themself: who is with them today (D-478). */
+  presence: SOLDIER,
 } as const satisfies Record<PermissionResource, readonly PolicyTargetKind[]>
 
 /** True when `resource` accepts targets of `kind`. */
