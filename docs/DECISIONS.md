@@ -225,13 +225,13 @@ am = amends, ref = refines, ext = extends.
 | D-213 | "Only who is missing" is a filter condition | logic, ui | ref D-312 |
 | D-214 | The board's sort | config, logic, ui | sup D-313 (one key) |
 | D-215 | Data and controls, not prose | i18n, ui | ref D-250 |
-| D-193 | The day report (דוח 1): who is present, absent, leaving and returning | domain, config, logic, ui | ref D-339 |
+| D-193 | The day report (דוח 1): who is present, absent, leaving and returning | domain, config, logic, ui | ref D-339; am D-480 |
 | D-194 | Reasons in the day report: off by default, remembered per device, only what the viewer may read | config, data, logic, ui | ref D-339; ref D-347 |
 | D-195 | The day report as text for a messaging app | config, i18n, logic | |
 | D-196 | The day report as an image: drawn on a canvas in the light tokens | ui | |
 | D-197 | A device store for conveniences | config, data, logic, tooling | ref D-301 |
 | D-216 | Every request belongs to a rotation | contracts, data, logic, backend | |
-| D-217 | The workspace is scoped to the active or upcoming rotation, silently | logic, ui | |
+| D-217 | The workspace is scoped to the active or upcoming rotation, silently | logic, ui | am D-480 |
 | D-218 | No request surface without a rotation in scope; one empty state | logic, i18n, ui | |
 | D-219 | The setup wizard ends by opening the first rotation | logic, i18n, ui | |
 | D-220 | Rotation membership in practice: references, reads and the form | contracts, data, logic, backend, ui | |
@@ -283,7 +283,7 @@ am = amends, ref = refines, ext = extends.
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
 | D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
 | D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
-| D-301 | Focus mode | config, i18n, ui, e2e | |
+| D-301 | Focus mode | config, i18n, ui, e2e | am D-480 |
 | D-302 | A leave batch, a set of copies and a report's window are bounded by config, checked in the command | config, data, logic | |
 | D-303 | A rotation report's summary counts the sections outside the owner's view, without naming them | contracts, data, logic, i18n, ui | |
 | D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
@@ -312,7 +312,7 @@ am = amends, ref = refines, ext = extends.
 | D-336 | Who serves in a rotation, and on which days, is one domain function | domain, data, logic | |
 | D-337 | Local menus, pickers, sheets and dialogs hold a history entry; Back closes the top one | logic, ui | |
 | D-338 | The Later features: the owner's order and conditions | docs | ref D-344; ref D-349 |
-| D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | ref D-345 |
+| D-339 | The phone calendar is a month grid; another range from and to; the day report shows its breaches | logic, ui | ref D-345; sup D-480 |
 | D-340 | The production release is manual: the owner starts it after approving; Vercel builds `production` | backend, tooling, docs | |
 | D-341 | The staging seed writes RFC UUIDs, and a db test parses every seeded row | tooling, data | |
 | D-342 | Version 1.0: what it is, how it is reached, and who decides to deploy it | docs | am D-360 |
@@ -384,12 +384,12 @@ am = amends, ref = refines, ext = extends.
 | D-455 | Tabs, the action circle and every door follow permissions | logic, ui | ref D-465; ref D-466; ref D-469 |
 | D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | ref D-468 |
 | D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | sup D-478 |
-| D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | |
+| D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | ref D-480 |
 | D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471; ref D-472; ref D-478 |
 | D-460 | The desktop is derived from the phone | ui | |
 | D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | |
-| D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | |
-| D-463 | Small product choices of the new interface | contracts, config, logic, ui | |
+| D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | ref D-480 |
+| D-463 | Small product choices of the new interface | contracts, config, logic, ui | ref D-480 |
 | D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
 | D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473; ref D-477 |
 | D-466 | "לוח" is for who reads another soldier's leaves, or holds that over a unit | logic | |
@@ -406,6 +406,8 @@ am = amends, ref = refines, ext = extends.
 | D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
 | D-478 | "איתך היום": a presence-only permission, `presence:view`, answered by name on the server | contracts, domain, config, data, logic, i18n, ui, backend | sup D-479 (reach); ref D-479 |
 | D-479 | "איתך היום" after review: the own unit only, the rank constraint on oneself, a narrow read, export format 7 | contracts, domain, config, data, logic, ui, backend | |
+| D-480 | The board of the new interface: one frame, the selected day, a range per view, the options menu | contracts, config, logic, i18n, ui | |
+| D-481 | Moving a leave out of the leave round: "בקשת הזזה", "אישור ההזזה", "השארה במועד המקורי" | logic, i18n, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -6000,3 +6002,89 @@ batch)
 **Why:** the review found that D-478's reach followed the unit tree beyond what the decision meant, that a constrained
 source refused the holder their own answer, that the read cost the whole organization's leaves on each change, and that
 an older export would lose the pair.
+
+## D-480 — The board of the new interface: one frame, the selected day, a range per view, the options menu
+2026-11-27 · accepted · builds D-463 ("only missing", the phone's calendar) and D-462 · supersedes D-339 (the phone
+calendar), D-301 (where focus mode is kept and what it hides) and the old strip of D-456 for the board · amends D-193
+(the board's day headers on a phone), D-217 (a phone's timeline) · refines D-458 · decided under D-170 (R5·3)
+- **The frame.** Every view sits under one head in the flow: the month as the title (an `h2`; the organization stays the
+  page's `h1` for readers, D-175), two arrows beside it (the tap path of a swipe, D-458), "היום" once the view has left
+  today, and a glass capsule with the view switcher (the fan) and the options. The handoff's title that shrinks into a
+  centered capsule on scroll is not built: the head stays, and the content scrolls below it.
+- **The selected day** is the URL's `day`, the same param the day report and the rules panel read (D-134, D-141).
+  Choosing a day drops `from`, so a day, week or month window follows it (`dateWindowOf` anchors on `from`, then `day`,
+  then today); a rotation and a free range keep their own days. Today leaves `day` out.
+- **A range per view.** The calendar shows the weeks of the selected day's month. The movements read 14 days before
+  the selected day and 42 after, and 28 more at either end as the scroll nears it, up to `DATE_WINDOW.maxDays`; they open
+  on the selected day, which is today unless one was chosen (the handoff's "always opens on today" yields to §2's one
+  selected day). A phone's timeline shows the selected day's week until a range is chosen (D-217 stays on a wide
+  screen). "טווח" in the options offers week, month, each rotation and another range; two and four weeks are no longer
+  offered, and old links to them still read.
+- **The views.** `view=list` is the movements on every width; the old person list is removed, and the timeline sorted
+  by days away replaces it. The new calendar is every width's. A phone's timeline draws the person bars of the handoff;
+  a wide screen keeps the timeline grid that drags, with its leave colors and heat row, until R5·6 (OI-397). The table
+  is a wide screen's only (`DESKTOP_ONLY_VIEWS`).
+- **The options menu** (`kit/OptionsMenu`, OI-386): rows "יחידה" (only with more than one unit to choose), "טווח"
+  (timeline and table), "מיון" (seniority, name, days away, and "מיון מתקדם" into the builder for several rules or a
+  property), "קיבוץ" (D-452), "סינון" (the set conditions, each opening its rule in the builder, "הוספת תנאי" and
+  "ניקוי הסינון"), and "צבעים" where the old bars still draw; after the divider, "תצוגות שמורות" and "מיקוד". A sort,
+  grouping or filter other than the default puts the dot on its icon; the unit and the range are scope, not options.
+  The filter row under the strip is removed: a single condition is removed in the builder.
+- **Saved views** open from holding the view switcher, or from the options (D-458); the view sheet is removed. A save
+  equal to a saved view is refused in a dialog that names it and opens it (D-462).
+- **Focus mode** hides the head and the tab bar and leaves a centered capsule with the month or the range, which ends
+  it, as the key and Escape do. It is kept on the device, not the browser session; a phone turned on its side (a coarse
+  pointer in landscape) enters it.
+- **Calendar.** A cell names its requests (approved or pending, never the leave round), three and then "+N", and is soft
+  amber when the heat row breaks a rule that day (D-141). A tap selects; a second tap opens the drawer to the middle; a day
+  of another month moves the board there. Holding a day starts a range, and "בחירת טווח" in the drawer does it by tap;
+  the tray "יציאה לחיילים · N ימים" opens the new-leave form on the days with no soldier named (a draft's soldier is
+  now optional). A swipe sideways moves the month, up and down the drawer's stop; the handle moves one stop on, and from
+  the full stop back to the edge. The drawer is part of the board, not a modal: the day, its fraction (which opens the
+  unit's drawer on it), a band "מתחת לסף ביום הזה" on a day below a rule that opens the day's rules (D-141), and the
+  day's leaves cut by day (§1.15). A request is drawn in each of its cells, not as one bar
+  across them; a leave of the round that waits, as a move does, is named in its cells too (D-481). At the middle stop a
+  week is 44 px high, not the handoff's 40, so each day stays a 44 px target. The drawer's stops hold no history entry:
+  the drawer is part of the board, as a scroll is, and the back button leaves a screen and never replays a view change
+  (D-332); it never covers the board, so there is nothing for "back" to close. Past days take `text-muted`, not the
+  package's `past` gray, which is below 4.5:1 on the canvas.
+- **Timeline on a phone.** A row is the person's name (the person card) and one bar of runs; a leave's run opens its
+  card and is a 44 px target; the bar draws the first lane of requests and of the round, and a leave over another, or a
+  marker, takes a lane below it (D-111); days on base tapped in a row make a range, and the tray "יציאה עבור X · N ימים" carries the
+  impact line. Its rows and day headers are 44 px high; a day is as wide as the week's width allows (about 37 px on a
+  phone), since the handoff fits the week to the screen, and a month narrows a day to 24 px (WCAG 2.5.8's minimum) and
+  scrolls. Picking days in a row is the finger's path; the keyboard's and a reader's is the calendar's day and
+  "בחירת טווח", whose tray opens the form where the soldier is chosen. A day's header selects it and opens the unit's
+  drawer; on a phone the day report is reached from "דוח 1"
+  of "היום". A month or a rotation scrolls sideways under the names.
+- **Movements.** A leave leaves on its first day and returns on its last (D-193's convention); a leave of one day is
+  listed once, as leaving, in the movements and in the calendar's drawer alike. A tap on a day's header selects it
+  without moving the list. The leave round of a day
+  and a direction is one row that opens to its names, a plain row for one person; requests are rows of their own. A run
+  of days with no movement is one dashed line; today always shows.
+- **The impact line** appears only where the rules answer the actor (D-162, D-463): in the timeline's tray, from a
+  leave away on the days, and beside a pending request revealed by a swipe, from the request as approved. The calendar's
+  range tray has none, since no soldier is chosen yet.
+- **Answers on the board.** A swipe on a pending request reveals ✓ for who may approve and ✗ for who may reject;
+  a closed row of the leave round says "ממתינה" while a leave of it waits; the row opens the leave
+  card, which is the tap and keyboard path. The toast with "ביטול" follows as on "היום" (D-467).
+- **"היום"'s block.** The fraction opens the unit's drawer on today; a day column opens the board on its day with the
+  drawer at its middle stop (§1.13).
+- **"Only who is missing"** is gone from the URL, the builder and saved views; a saved view that kept it drops it on read,
+  as it drops any param no longer known (D-384).
+**Why:** the handoff's board spec (`03`), followed in its order over `02` and `01`; where it is silent or leaves a gap
+open, the smallest choice that keeps every capability reachable (D-464) and every gesture a tap path (D-458).
+
+## D-481 — Moving a leave out of the leave round: "בקשת הזזה", "אישור ההזזה", "השארה במועד המקורי"
+2026-11-27 · accepted · closes OI-394 · refines D-476 · decided under D-170
+- A leave of the round (a leave with a batch) offers "בקשת הזזה" where any other offers "עריכה"; it is the same edit
+  of its dates (D-123), so its status follows the reschedule policy (D-064).
+- Once its dates differ from where the round put it, its card says "הוזזה מ־X ל־Y". X is read from its thread: the
+  value before the first change of each date (`leaveMoveOf`); nothing is stored for it (D-019).
+- Its approver sees "אישור ההזזה" and "השארה במועד המקורי", never "דחייה": the second edits the dates back and, when
+  the leave still waits, approves it, each step through the rule gate.
+- In a list, a pending leave of the round has no quick ✗, on "היום" and on the board: a row cannot know cheaply whether
+  it was moved, and rejecting a round leave by a swipe would take the soldier's leave away. Its card decides.
+- Not built: the original place drawn as a dashed gap on the timeline while a move waits (OI-398).
+**Why:** the handoff's flow (`02`); the row's restraint protects the soldier's planned leave.
+

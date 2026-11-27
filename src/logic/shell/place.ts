@@ -1,5 +1,5 @@
 import { DEFAULT_TAB, PAGE_TABS, type PageId, type TabId } from '@config'
-import type { PermissionCheck, Soldier } from '@contracts'
+import type { CalendarDate, PermissionCheck, Soldier } from '@contracts'
 import { LEAVE_PERMISSIONS } from '@domain'
 import { useCallback, useMemo } from 'react'
 import { useQuickAction } from '../home/quickAction'
@@ -12,6 +12,7 @@ import { MODULE_CHECK_LIST, useCanAnswers } from '../permissions/hooks'
 import { TRANSFER_CHECK_LIST } from '../transfer/hooks'
 import { useSoldiers } from '../roster/hooks'
 import { useSession } from '../session/hooks'
+import { selectedDayChange } from '../view-state/boardDay'
 import { useRotationScope } from '../view-state/rotation'
 import { useChangeSearch, useWorkspaceSearch, type WorkspaceSearch } from '../view-state/search'
 
@@ -29,10 +30,12 @@ export interface ShellPlace {
   /** Opens a page, on the destination it belongs to. */
   openPage(page: PageId): void
   closePage(): void
+  /** Opens the board on a day, selected (the handoff's board spec, §1.13: a day column of the commander's block). */
+  openBoardOn(day: CalendarDate): void
 }
 
 /** What an address says of the board itself: its view, its dates, its order and its conditions. */
-const BOARD_PARAMS = ['view', 'from', 'to', 'range', 'rotation', 'sorts', 'sort', 'order', 'group', 'filter', 'colors', 'leaves', 'missing', 'saved'] as const satisfies readonly (keyof WorkspaceSearch)[]
+const BOARD_PARAMS = ['view', 'from', 'to', 'range', 'rotation', 'sorts', 'sort', 'order', 'group', 'filter', 'colors', 'leaves', 'saved'] as const satisfies readonly (keyof WorkspaceSearch)[]
 
 /** Whether the address names something of the board: a link to a view of it is a link to the board. */
 function namesBoard(search: WorkspaceSearch): boolean {
@@ -67,10 +70,16 @@ export function useShellPlace(): ShellPlace {
     },
     [change],
   )
+  const openBoardOn = useCallback(
+    (day: CalendarDate) => {
+      change((current) => ({ tab: 'board', page: undefined, ...selectedDayChange(current, day, null) }))
+    },
+    [change],
+  )
   const closePage = useCallback(() => {
     change({ page: undefined })
   }, [change])
-  return useMemo(() => ({ tab, page, openTab, openPage, closePage }), [tab, page, openTab, openPage, closePage])
+  return useMemo(() => ({ tab, page, openTab, openPage, closePage, openBoardOn }), [tab, page, openTab, openPage, closePage, openBoardOn])
 }
 
 export interface ShellAccess {

@@ -4,18 +4,19 @@ import { NOW, board, closeDrawer, createType, requestLeave, openRotationInNewUni
 import { OWNER, enterAsOwner, expectNoAxeViolations } from './support/workspace.ts'
 import { selectView } from './support/board.ts'
 
-// V13's demo: the list, the table and the calendar show the same soldiers and leaves as the timeline, from the
-// view menu, on desktop and mobile, RTL, with axe (D-174). Sample data, tests only.
+// V13's demo, the board's views (D-174, D-480): the movements, the table (a wide screen's) and the calendar show the
+// same soldiers and leaves as the timeline, from the view switcher, on desktop and mobile, RTL, with axe. Sample data,
+// tests only.
 
-// A chip's name is its text: what is seen, then the status a reader cannot see, then the days.
-const REGULAR = `רגילה ${he.leaves.statusPending}, 9–10 בנוב׳`
-const SICK = `מחלה ${he.leaves.statusApproved}, 12 בנוב׳`
+// A row of a day is named by the person, the type, whether it waits, and whether it starts or ends today.
+const REGULAR = `${OWNER.name} · רגילה · ${he.leaves.badgePending}`
+const SICK = `${OWNER.name} · מחלה`
 
 function region(page: Page, name: string) {
   return page.getByRole('region', { name })
 }
 
-test('the list, the table and the calendar show the board\'s leaves', async ({ page, isMobile }) => {
+test('the movements, the table and the calendar show the board\'s leaves', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
@@ -30,20 +31,38 @@ test('the list, the table and the calendar show the board\'s leaves', async ({ p
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
-  await test.step('the list: a row for the soldier, with their leaves and dates', async () => {
-    // A phone opens on the list and a desktop on the timeline, and the address names only a view chosen over it (D-290).
-    await expect(isMobile ? region(page, he.engines.listLabel) : board(page)).toBeVisible()
+  await test.step('the movements: who leaves and who returns, by day', async () => {
+    // A phone opens on the calendar and a desktop on the timeline (D-463).
+    await expect(isMobile ? region(page, he.engines.calendarLabel) : board(page)).toBeVisible()
     await selectView(page, he.workspace.views.list)
-    // Choosing the view already shown changes nothing, so a phone's link stays bare (D-290).
-    if (!isMobile) await expect(page).toHaveURL(/view=list/)
-    const list = region(page, he.engines.listLabel)
-    await expect(list.getByRole('button', { name: OWNER.name })).toBeVisible()
-    await expect(list.getByRole('button', { name: REGULAR })).toBeVisible()
-    await expect(list.getByRole('button', { name: SICK })).toBeVisible()
+    await expect(page).toHaveURL(/view=list/)
+    const movements = region(page, he.board.movements)
+    // The request leaves on the 9th and returns on the 10th; the one day of the sick leave is listed once, leaving.
+    await expect(movements.getByRole('button', { name: REGULAR })).toHaveCount(2)
+    await expect(movements.getByRole('button', { name: SICK })).toHaveCount(1)
+    await expect(movements.getByRole('heading', { name: new RegExp(he.board.todayTag) })).toBeVisible()
     await expectNoAxeViolations(page)
+    // A day's header opens the unit's drawer on it, and the list stays where its reader left it (D-480).
+    const twelfth = movements.getByRole('button', { name: /12 בנובמבר 2026/ })
+    const before = await twelfth.boundingBox()
+    await twelfth.click()
+    await expect(page).toHaveURL(/day=2026-11-12/)
+    await expect(page.getByRole('dialog').last()).toContainText('יום חמישי, 12 בנובמבר 2026')
+    await page.getByRole('dialog').last().getByRole('button', { name: he.common.close }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    const after = await twelfth.boundingBox()
+    expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(2)
   })
 
-  await test.step('the table: a row for each leave, sorted by a header', async () => {
+  await test.step('the table: a row for each leave, sorted by a header; a phone has no table', async () => {
+    if (isMobile) {
+      await page.getByRole('button', { name: he.workspace.view, exact: true }).click()
+      const fan = page.getByRole('group', { name: he.board.fan })
+      await expect(fan.getByRole('button', { name: he.workspace.views.calendar })).toBeVisible()
+      await expect(fan.getByRole('button', { name: he.workspace.views.table })).toHaveCount(0)
+      await page.keyboard.press('Escape')
+      return
+    }
     await selectView(page, he.workspace.views.table)
     await expect(page).toHaveURL(/view=table/)
     const table = region(page, he.engines.tableLabel)
@@ -60,29 +79,22 @@ test('the list, the table and the calendar show the board\'s leaves', async ({ p
     await expect(region(page, he.engines.tableLabel)).toBeVisible()
   })
 
-  await test.step('the calendar: a leave on each of its days, and who is out', async () => {
+  await test.step('the calendar: a request on each of its days, and who is on base', async () => {
     await selectView(page, he.workspace.views.calendar)
     await expect(page).toHaveURL(/view=calendar/)
     const calendar = region(page, he.engines.calendarLabel)
-    if (isMobile) {
-      // A phone's day shows its number and who is out, and opens its report; the chips are from md up (D-339).
-      await expect(calendar.getByText(new RegExp(`^${he.engines.away} 1$`))).toHaveCount(1)
-    } else {
-      await expect(calendar.getByRole('button', { name: `${OWNER.name} רגילה, ${he.leaves.statusPending}` })).toHaveCount(2)
-      await expect(calendar.getByRole('button', { name: `${OWNER.name} מחלה` })).toHaveCount(1)
-      // Only an approved leave takes a soldier out; a pending one is drawn but counts nobody (D-133).
-      await expect(calendar.getByRole('heading', { name: new RegExp(he.engines.away) })).toHaveCount(1)
-    }
+    // Only an approved leave takes a soldier off base; a pending one is named but counts nobody (D-133).
+    await expect(calendar.getByRole('button', { name: new RegExp(`9 בנובמבר 2026 · 1 ${he.kit.fractionOf} 1 ${he.board.onBase} · ${OWNER.name}`) })).toBeVisible()
+    await expect(calendar.getByRole('button', { name: new RegExp(`12 בנובמבר 2026 · 0 ${he.kit.fractionOf} 1 ${he.board.onBase} · ${OWNER.name}`) })).toBeVisible()
     await expectNoAxeViolations(page)
   })
 
-  await test.step('a leave opens from any view', async () => {
-    // On a phone the calendar has no chips (D-339): the table opens the leave there.
-    if (isMobile) await selectView(page, he.workspace.views.table)
-    const opener = isMobile
-      ? region(page, he.engines.tableLabel).getByRole('button', { name: 'מחלה' })
-      : region(page, he.engines.calendarLabel).getByRole('button', { name: `${OWNER.name} מחלה` })
-    await opener.click()
+  await test.step('a leave opens from the day it is on', async () => {
+    const day = region(page, he.engines.calendarLabel).getByRole('button', { name: /12 בנובמבר 2026/ })
+    await day.click()
+    // A second tap on the selected day opens its drawer to the middle.
+    await day.click()
+    await page.getByRole('button', { name: `${SICK} · ${he.board.leavingToday}` }).click()
     await expect(page).toHaveURL(/panel=leaves/)
     await expect(page.getByRole('dialog').last()).toContainText('מחלה')
   })

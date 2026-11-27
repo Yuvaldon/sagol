@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, openRotationInNewUnit } from './support/leaves.ts'
-import { openViewSheet, selectView, setOnlyMissing, viewSheet } from './support/board.ts'
+import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
+import { addFilter, openViewSheet, selectView, viewSheet } from './support/board.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openTab } from './support/workspace.ts'
 
-// Saved views (D-384..D-388): saved from the view sheet, applied by a card, marked current while the board matches,
+// Saved views (D-384..D-388): saved from their sheet behind the options (D-480), applied by a card, marked current while the board matches,
 // renamed, moved and deleted in "ניהול התצוגות", the start view opens a bare link, and "שמירת השינויים" saves a
 // changed board over the view it left (D-442). Desktop and mobile, RTL, with
 // axe. Sample data, tests only.
@@ -41,11 +41,12 @@ function row(page: Page, name: string) {
   return manageList(page).getByRole('listitem').filter({ hasText: name })
 }
 
-/** "Only who is missing" over the list: nobody is missing, so the list shows its empty state, and the table is gone. */
-async function expectMissingList(page: Page) {
-  await expect(page).toHaveURL(/missing=true/)
-  await expect(page.getByRole('heading', { name: he.timeline.emptyMissingTitle })).toBeVisible()
-  await expect(page.getByRole('region', { name: he.engines.tableLabel })).toHaveCount(0)
+/** The first view: the movements, with approved leaves only; nobody has one, so the board says so, and the timeline is gone. */
+async function expectApprovedMovements(page: Page) {
+  await expect(page).toHaveURL(/leaves=/)
+  await expect(page).toHaveURL(/view=list/)
+  await expect(page.getByRole('heading', { name: he.timeline.emptyFilterTitle })).toBeVisible()
+  await expect(board(page)).toHaveCount(0)
 }
 
 test('saved views: save, apply, manage, and the start view', async ({ page }) => {
@@ -61,10 +62,10 @@ test('saved views: save, apply, manage, and the start view', async ({ page }) =>
     await expect(viewSheet(page)).toBeHidden()
   })
 
-  await test.step('the list with only who is missing, saved as the start view', async () => {
+  await test.step('the movements with approved leaves only, saved as the start view', async () => {
     await selectView(page, he.workspace.views.list)
-    await setOnlyMissing(page)
-    await expect(page).toHaveURL(/missing=true/)
+    await addFilter(page, he.filters.leaveStatus, [he.leaves.statusApproved])
+    await expect(page).toHaveURL(/leaves=/)
     await saveCurrent(page, 'חסרים', true)
     await expect(cardLabel(page, 'חסרים')).toContainText(views.startMark)
     await expect(cardLabel(page, 'חסרים')).toContainText(views.oneCondition)
@@ -73,16 +74,16 @@ test('saved views: save, apply, manage, and the start view', async ({ page }) =>
   })
 
   await test.step('another board matches no card, and a card brings its view back', async () => {
-    await selectView(page, he.workspace.views.table)
+    await selectView(page, he.workspace.views.timeline)
     await openViewSheet(page)
     await expect(card(page, 'חסרים')).not.toBeChecked()
     await cardLabel(page, 'חסרים').click()
     await expect(viewSheet(page)).toBeHidden()
-    await expectMissingList(page)
+    await expectApprovedMovements(page)
   })
 
   await test.step('a second view, then rename, move and delete', async () => {
-    await selectView(page, he.workspace.views.table)
+    await selectView(page, he.workspace.views.timeline)
     await saveCurrent(page, 'יחידה')
     await viewSheet(page).getByRole('button', { name: views.manage }).click()
     await expect(manageList(page).getByRole('listitem')).toHaveCount(2)
@@ -115,13 +116,13 @@ test('saved views: save, apply, manage, and the start view', async ({ page }) =>
     // A bare link opens "היום"; the board, opened from there with nothing of it in the address, starts on the start view.
     await page.goto('/')
     await openTab(page, 'board')
-    await expectMissingList(page)
+    await expectApprovedMovements(page)
     await page.reload()
-    await expectMissingList(page)
+    await expectApprovedMovements(page)
   })
 
   await test.step('a change that leaves the start view is saved over it, under the same name (D-442)', async () => {
-    await selectView(page, he.workspace.views.table)
+    await selectView(page, he.workspace.views.timeline)
     await openViewSheet(page)
     await expect(card(page, 'חסרים')).not.toBeChecked()
     const overwrite = viewSheet(page).getByRole('button', { name: views.overwrite })
@@ -134,7 +135,7 @@ test('saved views: save, apply, manage, and the start view', async ({ page }) =>
     await page.keyboard.press('Escape')
     await page.goto('/')
     await openTab(page, 'board')
-    await expect(page).toHaveURL(/missing=true/)
-    await expect(page).toHaveURL(/view=table/)
+    await expect(page).toHaveURL(/leaves=/)
+    await expect(page).toHaveURL(/view=timeline/)
   })
 })

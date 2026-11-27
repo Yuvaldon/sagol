@@ -21,7 +21,7 @@ import { useChangeSearch, useWorkspaceSearch } from './search'
 import { DEFAULT_SORT_RULES, defaultOrderOf as defaultRuleOrder, isDefaultSort, sameTarget, type SortRule, type SortTarget } from './sort-rules'
 import { useDateWindow } from './window'
 
-// What the board shows beyond the soldier filter: its leave conditions (D-132), "only who is missing" (D-133)
+// What the board shows beyond the soldier filter: its leave conditions (D-132; "only who is missing" is gone, D-463)
 // and the day of the report (D-134, D-193). Each lives in the URL beside the filter.
 
 export interface LeaveConditionsState {
@@ -68,14 +68,9 @@ export function useLeaveConditions(): LeaveConditionsState {
   return { conditions, setStatuses, setTypes, setProperties }
 }
 
-export interface OnlyMissingState {
-  readonly on: boolean
-  set(on: boolean): void
-}
-
 export interface BoardFiltersState {
   /**
-   * A condition of the filter row is on: a soldier rule beside the unit, a leave condition, or "only who is missing"
+   * A condition is set: a soldier rule beside the unit, or a leave condition ("only who is missing" is gone, D-463)
    * (D-173, D-213, D-312).
    */
   readonly active: boolean
@@ -89,26 +84,13 @@ export function useBoardFilters(): BoardFiltersState {
   const filter = search.filter ?? null
   const read = useMemo(() => readRules(filter), [filter])
   const leaves = search.leaves ?? NO_LEAVE_CONDITIONS
-  const active = read.kind === 'other' || read.filter.rules.length > 0 || hasLeaveConditions(leaves) || search.missing === true
+  const active = read.kind === 'other' || read.filter.rules.length > 0 || hasLeaveConditions(leaves)
   const clearAll = useCallback(() => {
     // A filter the builder does not read has no unit it can keep (D-104).
     const unitId = read.kind === 'rules' ? read.filter.unitId : null
-    change({ filter: writeRules({ ...NO_RULES, unitId }), leaves: undefined, missing: undefined })
+    change({ filter: writeRules({ ...NO_RULES, unitId }), leaves: undefined })
   }, [read, change])
   return { active, clearAll }
-}
-
-/** "Only who is missing" (D-133), a condition of the filter row (D-213). Off leaves the param out. */
-export function useOnlyMissing(): OnlyMissingState {
-  const search = useWorkspaceSearch()
-  const change = useChangeSearch()
-  const set = useCallback(
-    (on: boolean) => {
-      change({ missing: on ? true : undefined })
-    },
-    [change],
-  )
-  return { on: search.missing === true, set }
 }
 
 export interface TableSortState {

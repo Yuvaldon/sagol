@@ -1,4 +1,4 @@
-import { DATE_WINDOW, DEFAULT_RANGE_KIND, FIRST_DAY_OF_WEEK, WEEK_SPANS, type RangeKind } from '@config'
+import { BOARD, DATE_WINDOW, DEFAULT_RANGE_KIND, FIRST_DAY_OF_WEEK, WEEK_SPANS, type RangeKind, type ViewId } from '@config'
 import type { CalendarDate, Deployment, DeploymentId, Unit, UnitId } from '@contracts'
 import {
   addDays,
@@ -22,10 +22,12 @@ import { filterUnitOf } from './filter'
 import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // The date window of the views (D-103, D-211, D-217). Its kind lives in the URL: a day, a week, a month or a whole
-// rotation, anchored on `from`; without `from` a day, a week or a month holds today and follows the clock. An older
-// link's `from`..`to` with no kind is a free window. A URL with none of them opens on the rotation of the mode (D-222):
-// the one that runs today, else the next one, else the latest ended one not closed yet; in routine, today's week.
-// Pure parts first, then the hook.
+// rotation, anchored on `from`; without `from` a day, a week or a month holds the board's selected day (`day`, D-480),
+// and without a selected day holds today and follows the clock. An older link's `from`..`to` with no kind is a free
+// window. A URL with none of them opens on the rotation of the mode (D-222): the one that runs today, else the next one,
+// else the latest ended one not closed yet; in routine, today's week. The board's views set their own range (D-480): the
+// calendar its month, the movements the days around their anchor, a phone's timeline a week until a range is chosen.
+// Pure parts first, then the hooks.
 
 /** A window's kind: one the range picker offers, or a free window from an older link. */
 export type WindowKind = RangeKind | 'custom'
@@ -38,7 +40,7 @@ export interface DateWindow {
   readonly days: readonly CalendarDate[]
   /** The rotation a `rotation` window shows. NULL otherwise. */
   readonly rotationId: DeploymentId | null
-  /** True when the URL holds no anchor, so the window moves with today. */
+  /** True when the URL holds no anchor and no selected day, so the window moves with today. */
   readonly followsToday: boolean
   readonly holdsToday: boolean
 }
@@ -47,6 +49,8 @@ export interface DateWindow {
 export type RotationSpan = Pick<Deployment, 'id' | 'start_date' | 'end_date' | 'closed_at'>
 
 export interface WindowParams {
+  /** The board's selected day (D-480): the anchor when `from` names none. */
+  readonly day?: CalendarDate | undefined
   readonly from?: CalendarDate | undefined
   readonly to?: CalendarDate | undefined
   readonly range?: RangeKind | undefined
@@ -154,7 +158,50 @@ export function dateWindowOf(params: WindowParams, today: CalendarDate, rotation
     if (linked !== null) return windowOf('custom', linked, today, false)
   }
   const kind = params.range === undefined || params.range === 'rotation' ? DEFAULT_RANGE_KIND : params.range
-  return windowOf(kind, spanOf(kind, params.from ?? today), today, params.from === undefined)
+  return windowOf(kind, spanOf(kind, params.from ?? params.day ?? today), today, params.from === undefined && params.day === undefined)
+}
+
+/** The weeks a month of the calendar shows: from the week of its first day to the week of its last (D-480). */
+export function monthGridSpan(anchor: CalendarDate): { from: CalendarDate; to: CalendarDate } {
+  const from = startOfWeek(startOfMonth(anchor), FIRST_DAY_OF_WEEK)
+  const to = addDays(startOfWeek(endOfMonth(anchor), FIRST_DAY_OF_WEEK), DATE_WINDOW.days - 1)
+  return { from, to }
+}
+
+/** The movements' days (D-480): `before` days before the anchor and `after` after it, within `DATE_WINDOW.maxDays`. */
+export function movementsSpan(anchor: CalendarDate, before: number, after: number): { from: CalendarDate; to: CalendarDate } {
+  const back = Math.min(before, DATE_WINDOW.maxDays - 1)
+  const ahead = Math.min(after, DATE_WINDOW.maxDays - 1 - back)
+  return { from: addDays(anchor, -back), to: addDays(anchor, ahead) }
+}
+
+/** How far the movements reach at first, before a scroll to either end adds more (D-480). */
+export const FIRST_MOVEMENTS = { before: BOARD.movements.before, after: BOARD.movements.after } as const
+
+/**
+ * The window a view of the board shows (D-480). The calendar shows the weeks of the selected day's month; the movements
+ * the days around the selected day, `reach` days each way; the timeline and the table the URL's window, except that a
+ * phone with no range named shows the selected day's week, not the rotation (the handoff's board spec, §3).
+ */
+export function boardWindowOf(
+  view: ViewId,
+  params: WindowParams,
+  today: CalendarDate,
+  rotations: readonly RotationSpan[],
+  phone: boolean,
+  reach: { readonly before: number; readonly after: number } = FIRST_MOVEMENTS,
+): DateWindow {
+  const anchor = params.day ?? today
+  const follows = params.day === undefined
+  switch (view) {
+    case 'calendar':
+      return windowOf('month', monthGridSpan(anchor), today, follows)
+    case 'list':
+      return windowOf('custom', movementsSpan(anchor, reach.before, reach.after), today, follows)
+    case 'timeline':
+    case 'table':
+      return phone && isBareWindow(params) ? windowOf('week', spanOf('week', anchor), today, follows) : dateWindowOf(params, today, rotations)
+  }
 }
 
 /** The window moved by its own length, back (-1) or forward (1). */
@@ -234,7 +281,7 @@ export function useDateWindow(): DateWindowState {
   const today = useToday()
   const deployments = useDeployments()
   const units = useUnits()
-  const { from, to, range, rotation, filter } = search
+  const { from, to, range, rotation, filter, day } = search
   const scope = filterUnitOf(filter ?? null)
   const scopeUnitId = scope.kind === 'unit' ? scope.unitId : null
   const rotations = useMemo(
@@ -248,8 +295,8 @@ export function useDateWindow(): DateWindowState {
   const rotationsReady = deployments.status !== 'loading' && units.status !== 'loading'
   const waiting = (range === 'rotation' || isBareWindow({ from, to, range })) && !rotationsReady
   const window = useMemo(
-    () => (today === null || waiting ? null : dateWindowOf({ from, to, range, rotation }, today, rotations)),
-    [from, to, range, rotation, today, rotations, waiting],
+    () => (today === null || waiting ? null : dateWindowOf({ from, to, range, rotation, day }, today, rotations)),
+    [from, to, range, rotation, day, today, rotations, waiting],
   )
   const rotationIndex = window?.kind === 'rotation' ? rotations.findIndex((candidate) => candidate.id === window.rotationId) : -1
 
@@ -291,8 +338,8 @@ export function useDateWindow(): DateWindowState {
       const shown = running !== undefined && running.id === window.rotationId
       change(
         running === undefined || shown
-          ? { range: DEFAULT_RANGE_KIND, rotation: undefined, from: undefined, to: undefined }
-          : { rotation: running.id, from: undefined, to: undefined },
+          ? { range: DEFAULT_RANGE_KIND, rotation: undefined, from: undefined, to: undefined, day: undefined }
+          : { rotation: running.id, from: undefined, to: undefined, day: undefined },
       )
       return
     }
@@ -301,6 +348,7 @@ export function useDateWindow(): DateWindowState {
       rotation: undefined,
       from: undefined,
       to: undefined,
+      day: undefined,
     })
   }, [change, window, rotations, today])
   const setRange = useCallback(

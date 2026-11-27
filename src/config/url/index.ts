@@ -32,8 +32,6 @@ export const SEARCH_PARAMS = {
   colors: 'colors',
   /** The board's leave conditions: statuses and types (D-132). */
   leaves: 'leaves',
-  /** "Only who is missing" (D-133). */
-  missing: 'missing',
   /** The day of the present and absent lists (D-134), and of the broken rules in the rules panel (D-141). */
   day: 'day',
   /** The last day of the day report's span (D-193). Absent: the report is of one day. */

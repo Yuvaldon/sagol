@@ -1,7 +1,7 @@
 import type { BarColorMode } from '@config'
 import type { CalendarDate } from '@contracts'
 import { t } from '@i18n'
-import { dayRangeOf, type BoardGroupLabel, type BoardHeading, type BoardLeave } from '@logic'
+import { dayRangeOf, leaveDayCount, type BoardGroupLabel, type BoardHeading, type BoardLeave } from '@logic'
 import { formatDate, formatDateRange } from '../patterns/dates'
 import { UNIT_STATE_KEYS } from '../patterns/units'
 import { MARKER_TONE, UNIFORM_TONE, leaveTypeToneOf, type PaletteTone } from '../theme/palette'
@@ -66,4 +66,10 @@ export function leaveTone(leave: BoardLeave, mode: BarColorMode): PaletteTone {
 /** How many days a leave holds, both ends counted. */
 export function leaveDays(leave: BoardLeave): number {
   return dayRangeOf(leave.start_date, leave).end + 1
+}
+
+/** How many days, in words: "יום אחד", "3 ימים". */
+export function daysText(dates: { readonly start_date: CalendarDate; readonly end_date: CalendarDate }): string {
+  const count = leaveDayCount(dates)
+  return count === 1 ? t('leaves.oneDay') : [String(count), t('leaves.days')].join(' ')
 }

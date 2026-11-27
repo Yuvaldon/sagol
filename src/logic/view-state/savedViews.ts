@@ -16,7 +16,6 @@ const PARAM_OF = {
   order: SEARCH_PARAMS.order,
   group: SEARCH_PARAMS.group,
   leaves: SEARCH_PARAMS.leaves,
-  missing: SEARCH_PARAMS.missing,
   colors: SEARCH_PARAMS.colors,
   range: SEARCH_PARAMS.range,
 } as const satisfies Record<SavedViewParam, SearchParamName>
@@ -110,13 +109,22 @@ export function matchingView(views: readonly SavedView[], search: WorkspaceSearc
   return views.find((saved) => keyOf(saved.query) === current) ?? null
 }
 
+/**
+ * The saved view, other than `except`, that keeps what the board shows now (D-462): saving the board as a new view, or
+ * over `except`, is refused while one does, so two saved views are never equal.
+ */
+export function equalView(views: readonly SavedView[], search: WorkspaceSearch, view: ViewId, except: SavedViewId | null): SavedView | null {
+  const current = keyOf(captureView(search, view))
+  return views.find((saved) => saved.id !== except && keyOf(saved.query) === current) ?? null
+}
+
 /** What a saved view's card says of it: its range kind and how many conditions it holds (D-387). */
 export function savedViewSummary(query: SavedViewQuery): { readonly range: WorkspaceSearch['range']; readonly conditions: number } {
   const { search } = applyView(query)
   const rules = readRules(search.filter ?? null)
   const filterConditions = rules.kind === 'rules' ? rules.filter.rules.length : 1
   const leaveConditions = search.leaves === undefined || !hasLeaveConditions(search.leaves) ? 0 : 1
-  return { range: search.range, conditions: filterConditions + leaveConditions + (search.missing === true ? 1 : 0) }
+  return { range: search.range, conditions: filterConditions + leaveConditions }
 }
 
 /** What is wrong with a name for a saved view, or NULL (D-384): the codes the adapter answers, before it is asked. */

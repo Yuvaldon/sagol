@@ -1,14 +1,15 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, choose, closeDrawer, openRotation, typeDate } from './support/leaves.ts'
+import { chooseOption, openOptions, optionsMenu } from './support/board.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, ORGANIZATION, OWNER, waitForSettledScreen } from './support/workspace.ts'
 
 // V3's demo: the board with real soldiers, a unit and a week in the URL, on desktop and mobile, RTL, with
 // axe. Sample data, tests only.
 
 const TOUCH_TARGET_PX = 44
-const THIS_WEEK = '8–14 בנוב׳'
-const NEXT_WEEK = '15–21 בנוב׳'
+const THIS_WEEK = '8 בנובמבר 2026'
+const NEXT_WEEK = '15 בנובמבר 2026'
 
 function boardRows(page: Page): Locator {
   return board(page).getByRole('list', { name: he.timeline.names }).getByRole('listitem')
@@ -18,9 +19,10 @@ function groupHeading(page: Page, label: string) {
   return board(page).getByRole('heading', { level: 2, name: new RegExp(`^${label} ${he.timeline.soldiersInGroup}`) })
 }
 
-/** The window as the bar writes it on the range picker's button, announced when it changes (D-211). */
-function windowLabel(page: Page) {
-  return page.getByRole('button', { name: new RegExp(he.workspace.window) })
+/** The week in sight, by its first day's header (D-480). */
+async function expectWeek(page: Page, first: string, other: string) {
+  await expect(page.getByRole('button', { name: new RegExp(`(?<!\\d)${first}`) }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: new RegExp(`(?<!\\d)${other}`) })).toHaveCount(0)
 }
 
 /** A company with two platoons. */
@@ -55,8 +57,7 @@ async function buildRoster(page: Page) {
 }
 
 async function pickUnit(page: Page, name: string) {
-  await page.getByRole('button', { name: new RegExp(he.workspace.unit) }).click()
-  await page.getByRole('option', { name, exact: true }).click()
+  await chooseOption(page, he.board.unit, name)
 }
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
@@ -82,7 +83,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await buildRoster(page)
     await openRotation(page, [OWNER.name], 'פלוגה')
     await page.goto('/?range=week')
-    await expect(windowLabel(page)).toContainText(THIS_WEEK)
+    await expectWeek(page, THIS_WEEK, NEXT_WEEK)
     await expect(page.getByRole('button', { name: he.workspace.today, exact: true })).toHaveCount(0)
     // Today she is in מחלקה ב, so that is her group (D-105).
     // The owner serves in the root unit from the claim, so the root is the first group (D-223).
@@ -110,26 +111,28 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   // The week moves in place of the current history entry, so the back button never replays it (D-332).
   await test.step('the week moves, and "today" comes back to this week', async () => {
     await page.getByRole('button', { name: he.workspace.nextWindow.week }).click()
-    await expect(windowLabel(page)).toContainText(NEXT_WEEK)
-    await expect(page).toHaveURL(/from=2026-11-15/)
+    // The selected day moves a week, and the window with it (D-480).
+    await expect(page).toHaveURL(/day=2026-11-18/)
     await expect(board(page)).toHaveCount(0)
     await expect(page.getByRole('heading', { name: he.timeline.emptyScopeTitle })).toBeVisible()
     await expectNoAxeViolations(page)
 
     await page.getByRole('button', { name: he.workspace.today, exact: true }).click()
-    await expect(windowLabel(page)).toContainText(THIS_WEEK)
+    await expectWeek(page, THIS_WEEK, NEXT_WEEK)
     await expect(boardRows(page)).toHaveCount(1)
-    await expect(page).not.toHaveURL(/from=/)
+    await expect(page).not.toHaveURL(/day=/)
     await expect(page).toHaveURL(/filter=/)
   })
 
   await test.step('a link reopens the same unit and week', async () => {
-    await pickUnit(page, he.workspace.wholeOrganization)
+    await pickUnit(page, ORGANIZATION)
     await page.getByRole('button', { name: he.workspace.nextWindow.week }).click()
     await pickUnit(page, 'פלוגה')
     await page.reload()
-    await expect(windowLabel(page)).toContainText(NEXT_WEEK)
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toContainText('פלוגה')
+    await expectWeek(page, NEXT_WEEK, THIS_WEEK)
+    await openOptions(page)
+    await expect(optionsMenu(page).getByRole('button', { name: `${he.board.unit} · פלוגה` })).toBeVisible()
+    await page.keyboard.press('Escape')
     await expect(groupHeading(page, 'מחלקה ב')).toBeVisible()
     await expect(groupHeading(page, he.soldiers.noUnit)).toHaveCount(0)
   })
@@ -154,14 +157,16 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     })
     expect(covered).toBe(true)
     await expect(page).toHaveURL(/panel=soldiers/)
-    await expect(page).toHaveURL(/from=2026-11-15/)
+    await expect(page).toHaveURL(/day=2026-11-18/)
     await closeDrawer(page)
     await expect(page).not.toHaveURL(/panel=/)
     await expect(page).toHaveURL(/filter=/)
-    await expect(windowLabel(page)).toContainText(NEXT_WEEK)
+    await expectWeek(page, NEXT_WEEK, THIS_WEEK)
   })
 
-  await test.step('on a phone the grid scrolls sideways and the names stay; on a desktop it fits', async () => {
+  await test.step('on a phone a month scrolls sideways and the names stay; on a desktop the week fits', async () => {
+    // A phone's week fits its width; a month is wider (D-480).
+    if (testInfo.project.name === 'mobile') await chooseOption(page, he.board.range, he.workspace.ranges.month)
     const scroller = board(page)
     const sizes = await scroller.evaluate((element) => ({ scroll: element.scrollWidth, client: element.clientWidth }))
     const name = board(page).getByRole('button', { name: /נועם לב/ })

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
+import { openOptions, optionsMenu } from './support/board.ts'
 import {
   ORGANIZATION,
   addUnit,
@@ -119,12 +120,11 @@ test('"ניהול" and the scope label', async ({ page }, testInfo) => {
     await openTab(page, 'board')
   })
 
-  await test.step('a single unit in sight names the scope, as a label and not a picker; a phone has no room for it', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
-    const label = page.getByRole('navigation', { name: he.workspace.viewBar }).locator('span').getByText(ORGANIZATION, { exact: true })
-    // A phone's strip shows no scope with nothing to choose (D-273).
-    if (testInfo.project.name === 'mobile') await expect(label).toHaveCount(0)
-    else await expect(label).toBeVisible()
+  await test.step('a single unit in sight is the only scope: the options offer no unit to choose (D-273, D-480)', async () => {
+    await openOptions(page)
+    await expect(optionsMenu(page).getByRole('button', { name: new RegExp(`^${he.board.unit} · `) })).toHaveCount(0)
+    await expect(optionsMenu(page).getByRole('button', { name: new RegExp(`^${he.board.sort} · `) })).toBeVisible()
+    await page.keyboard.press('Escape')
   })
 })
 
@@ -182,7 +182,7 @@ test('a fighter sees only the modules their permissions open, and no unit picker
   })
 
   await test.step('"ניהול" holds only what the fighter may open: their own record', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: new RegExp(`^${he.board.unit} · `) })).toHaveCount(0)
     await openTab(page, 'manage')
     // Viewing their own record opens the soldiers module (D-053); nothing else of "ניהול" is theirs.
     await expect(managePage(page).getByRole('button', { name: he.soldiers.open, exact: true })).toBeVisible()

@@ -5,7 +5,7 @@ import { applyView, savedViewNameIssue, savedViewSummary, useWorkspaceSearch, ty
 import { ArrowDown, ArrowLeft, ArrowUp, Bookmark, BookmarkCheck, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button as AriaButton, Label, Radio, RadioGroup } from 'react-aria-components'
-import { engineOf } from '../engines/registry'
+import { viewMeta } from '../board/views'
 import { issueKey } from '../errors/messages'
 import { SmallDialog } from '../patterns/Dialogs'
 import { Button, IconButton } from '../primitives/Button'
@@ -15,8 +15,9 @@ import { SwitchField } from '../primitives/SwitchField'
 import { useReportPreferenceSave } from './preferenceFailure'
 import { useSavedViewNotice } from './savedViewNotice'
 
-// The soldier's saved views, only inside the view sheet (D-387): the cards once one is saved, the save action beside
-// focus mode while the board matches none, and the manage list in place of the sheet's body.
+// The soldier's saved views, in their sheet (D-387, D-480): the cards once one is saved, the save action while the board
+// matches none, and the manage list in place of the sheet's body. A save that would repeat a saved view is refused and
+// names it, with a way to open it (D-462).
 
 const CARD =
   'flex min-h-touch cursor-pointer flex-col items-start justify-center gap-2xs rounded-panel border border-line p-md text-start text-control text-text outline-focus outline-offset-2 data-focus-visible:outline-2 data-hovered:bg-inner data-selected:border-action-solid data-selected:bg-inner'
@@ -84,7 +85,7 @@ export function SavedViewCards({ saved, shown, onManage, onClose }: SavedViewCar
         <Label className={LABEL}>{t('workspace.savedViews.mine')}</Label>
         <div className="grid grid-cols-2 gap-sm">
           {saved.views.map((view) => {
-            const { Icon } = engineOf(applyView(view.query).search.view ?? shown)
+            const { Icon } = viewMeta(applyView(view.query).search.view ?? shown)
             return (
               <Radio
                 key={view.id}
@@ -128,6 +129,8 @@ export interface SaveViewActionProps {
  */
 export function SaveViewAction({ saved, shown, onManage }: SaveViewActionProps) {
   const [saving, setSaving] = useState(false)
+  const [refused, setRefused] = useState<SavedView | null>(null)
+  const notice = useSavedViewNotice()
   const reportSave = useReportPreferenceSave()
   const { range } = useWorkspaceSearch()
   if (saved.current !== null) return null
@@ -137,7 +140,9 @@ export function SaveViewAction({ saved, shown, onManage }: SaveViewActionProps) 
       {left === null ? null : (
         <AriaButton
           onPress={() => {
-            reportSave(saved.overwrite(left.id))
+            const equal = saved.equalTo(left.id)
+            if (equal === null) reportSave(saved.overwrite(left.id))
+            else setRefused(equal)
           }}
           className={ACTION}
         >
@@ -150,7 +155,9 @@ export function SaveViewAction({ saved, shown, onManage }: SaveViewActionProps) 
       )}
       <AriaButton
         onPress={() => {
-          if (saved.full) onManage()
+          const equal = saved.equalTo(null)
+          if (equal !== null) setRefused(equal)
+          else if (saved.full) onManage()
           else setSaving(true)
         }}
         className={ACTION}
@@ -163,10 +170,28 @@ export function SaveViewAction({ saved, shown, onManage }: SaveViewActionProps) 
           ) : null}
         </span>
       </AriaButton>
+      {refused === null ? null : (
+        <SmallDialog
+          role="alertdialog"
+          titleKey="workspace.savedViews.equalTitle"
+          confirmKey="workspace.savedViews.openEqual"
+          isPending={false}
+          onCancel={() => {
+            setRefused(null)
+          }}
+          onConfirm={() => {
+            const applied = saved.apply(refused)
+            notice.show(applied.dropped ? { id: refused.id, cleaned: applied.cleaned } : null)
+            setRefused(null)
+          }}
+        >
+          <p className="text-name font-semibold">{refused.name}</p>
+        </SmallDialog>
+      )}
       {saving ? (
         <SaveViewDialog
           saved={saved}
-          suggestion={`${t(engineOf(shown).labelKey)} · ${rangeLabel(range)}`}
+          suggestion={`${t(viewMeta(shown).labelKey)} · ${rangeLabel(range)}`}
           onClose={() => {
             setSaving(false)
           }}

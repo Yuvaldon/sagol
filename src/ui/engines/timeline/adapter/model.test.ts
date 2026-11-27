@@ -62,7 +62,7 @@ describe('the timeline adapter', () => {
     expect(rows[2]).toMatchObject({ label: he.soldiers.unknownUnit })
   })
 
-  it('mutes and reads aloud the days "only who is missing" finds present (D-133)', () => {
+  it('mutes and reads aloud the days out of the unit; "only who is missing" is gone (D-463)', () => {
     const items: BoardItem[] = [
       {
         kind: 'soldier',
@@ -71,12 +71,11 @@ describe('the timeline adapter', () => {
         rank: null,
         unit: { kind: 'none' },
         inScope: [false, true, true],
-        present: [false, true, false],
       },
     ]
     const [row] = timelineRows(items, DAYS, null, NO_LEAVES)
-    expect(row).toMatchObject({ offDays: [true, true, false] })
-    expect(row?.kind === 'resource' ? row.offText : null).toBe(`${he.timeline.outOfScope}: 8 בנוב׳, ${he.timeline.present}: 9 בנוב׳`)
+    expect(row).toMatchObject({ offDays: [true, false, false] })
+    expect(row?.kind === 'resource' ? row.offText : null).toBe(`${he.timeline.outOfScope}: 8 בנוב׳`)
   })
 
   it('opens a soldier only when the actor may (D-076)', () => {

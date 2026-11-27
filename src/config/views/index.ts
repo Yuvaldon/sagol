@@ -2,18 +2,40 @@ import { z } from 'zod'
 import type { PropertyDataType } from '@contracts'
 
 // Ids of the view engines that can fill the central viewport (D-023). The registry in `ui`
-// maps each id to an engine; the active id lives in the URL.
+// maps each id to an engine; the active id lives in the URL. The order is the view switcher's (the handoff's board
+// spec, §2): the calendar, the timeline, the movements (`list`, a row per day), and the table.
 
-export const VIEW_IDS = ['timeline', 'calendar', 'list', 'table'] as const
+export const VIEW_IDS = ['calendar', 'timeline', 'list', 'table'] as const
 
 export const ViewId = z.enum(VIEW_IDS)
 export type ViewId = z.infer<typeof ViewId>
 
 /**
- * The view shown when the URL names none, by the device (D-074, D-290): the timeline from `md` for planning, the list of
- * the window's days on a phone for the field.
+ * The view shown when the URL names none, by the device (D-074, D-290, D-463): the timeline from `md` for planning, the
+ * calendar on a phone, where the gaps show first.
  */
-export const DEFAULT_VIEW_BY_DEVICE = { desktop: 'timeline', phone: 'list' } as const satisfies Readonly<Record<'desktop' | 'phone', ViewId>>
+export const DEFAULT_VIEW_BY_DEVICE = { desktop: 'timeline', phone: 'calendar' } as const satisfies Readonly<Record<'desktop' | 'phone', ViewId>>
+
+/** The views a phone does not offer: the table is for a wide screen (D-463). */
+export const DESKTOP_ONLY_VIEWS = ['table'] as const satisfies readonly ViewId[]
+
+/**
+ * The board of the new interface (the handoff's board spec, D-480), in days, pixels and milliseconds.
+ */
+export const BOARD = {
+  /** The requests a month cell names before "+N" (§1.10). */
+  cellBars: 3,
+  /** The movements: the days read before and after the anchor, and how many more a scroll to either end adds, up to
+   *  `DATE_WINDOW.maxDays` in all. */
+  movements: { before: 14, after: 42, step: 28 },
+  /** How long a finger holds a day before it starts a range, and how far it may wander meanwhile (§3). */
+  holdMs: 450,
+  holdTolerancePx: 8,
+  /** How far a finger travels before a move is a swipe: between months, between stops, or to reveal a row's actions. */
+  swipePx: 40,
+  /** The phone's timeline: the name column, and the narrowest day before the days scroll sideways. */
+  timeline: { nameColumnPx: 124, minDayPx: 24 },
+} as const
 
 /**
  * The date window (D-103, D-211): a week by default, and at most this many days, from a link or a rotation. A rotation

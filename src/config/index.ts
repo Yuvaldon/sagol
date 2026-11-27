@@ -37,6 +37,7 @@ export { STARTUP_ERROR_CODES } from './startup'
 export {
   BAR_COLOR_MODES,
   BarColorMode,
+  BOARD,
   BOARD_GROUP_KEYS,
   BOARD_SORT_KEYS,
   BoardGroupKey,
@@ -48,6 +49,7 @@ export {
   DEFAULT_SORT_ORDER,
   DEFAULT_TABLE_SORT_ORDER,
   DEFAULT_VIEW_BY_DEVICE,
+  DESKTOP_ONLY_VIEWS,
   RANGE_KINDS,
   RangeKind,
   WEEK_SPANS,

@@ -28,6 +28,8 @@ export const DATE_FORMATS = {
   dayMonth: { day: 'numeric', month: 'short' },
   /** Long month name and year. */
   monthYear: { month: 'long', year: 'numeric' },
+  /** Long month name alone: the board's title (the handoff's board spec, §2). */
+  month: { month: 'long' },
   /** All-numeric day, month and year. */
   numeric: { day: '2-digit', month: '2-digit', year: 'numeric' },
   /** Long weekday, day, month and year. */

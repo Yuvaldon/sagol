@@ -34,7 +34,6 @@ const WorkspaceSearchFields = z.object({
   [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),
   [SEARCH_PARAMS.colors]: BarColorMode.optional().catch(undefined),
   [SEARCH_PARAMS.leaves]: LeaveConditions.optional().catch(undefined),
-  [SEARCH_PARAMS.missing]: z.literal(true).optional().catch(undefined),
   [SEARCH_PARAMS.day]: CalendarDate.optional().catch(undefined),
   [SEARCH_PARAMS.until]: CalendarDate.optional().catch(undefined),
   [SEARCH_PARAMS.draft]: NewLeaveDraft.optional().catch(undefined),

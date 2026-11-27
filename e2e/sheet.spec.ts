@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, openNewLeave, choose } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, openMyLeaves, backToBoard } from './support/workspace.ts'
+import { chooseOption } from './support/board.ts'
 
 // V28's demo: the request sheet (D-275). One soldier, two requests of their own types and days, the second repeating
 // every week; one send puts every leave on the board and in "my requests". Desktop and mobile, RTL, with axe.
@@ -21,7 +22,7 @@ test.beforeEach(async ({ page, isMobile }) => {
   await openBoardOnTimeline(page, isMobile)
 })
 
-test('one sheet sends several requests, one of them repeating every week', async ({ page }) => {
+test('one sheet sends several requests, one of them repeating every week', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
@@ -59,6 +60,8 @@ test('one sheet sends several requests, one of them repeating every week', async
   })
 
   await test.step('every leave is on the board and in "my requests"', async () => {
+    // A phone's timeline opens on a week; the whole rotation is a range of the options (D-480).
+    if (isMobile) await chooseOption(page, he.board.range, he.workspace.rotations)
     // The sick day on the 12th, and the regular day on the 10th, 17th and 24th.
     await expect(leavesOf(page)).toHaveCount(4)
     await openMyLeaves(page)

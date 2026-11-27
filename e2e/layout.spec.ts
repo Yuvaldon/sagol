@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
-import { openViewSheet, viewSheet } from './support/board.ts'
+import { chooseOption, openOptionRow, optionsMenu } from './support/board.ts'
 import { enterAsOwner, expectNoAxeViolations, navigation, openBoardOnTimeline, OWNER } from './support/workspace.ts'
 
-// The layout checks: the two strips fit on one line in every shape of screen, center on their edges and leave the
-// board its room (D-252), what can be pressed sits inside the safe area while the canvas paints edge to edge
+// The layout checks: the board's head and the tab bar fit on one line in every shape of screen, the bar centers on
+// its edge and both leave the board its room (D-252, D-480), what can be pressed sits inside the safe area while the canvas paints edge to edge
 // (D-191), and the board's corner and name column stay one opaque surface while the days scroll under them (D-192).
 // Desktop, an upright phone and a phone on its side, RTL, with axe. Sample data, tests only.
 
@@ -66,19 +66,13 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('no viewport')
     const tabs = await navigation(page).boundingBox()
-    if (tabs === null) throw new Error('a bar is missing')
+    const head = await page.getByRole('main').locator('header').first().boundingBox()
+    if (tabs === null || head === null) throw new Error('a bar is missing')
     expect(tabs.y + tabs.height).toBeGreaterThan(viewport.height * 0.9)
-    const tops = await page.evaluate(() =>
-      [...document.querySelectorAll('nav')]
-        .filter((bar) => bar.closest('[role=dialog]') === null)
-        .map((bar) => bar.getBoundingClientRect())
-        .filter((rect) => rect.top < window.innerHeight / 2)
-        .map((rect) => rect.bottom),
-    )
-    expect(tabs.y - Math.max(...tops)).toBeGreaterThanOrEqual(viewport.height * 0.5)
+    expect(tabs.y - (head.y + head.height)).toBeGreaterThanOrEqual(viewport.height * 0.5)
   })
 
-  await test.step('each strip hugs its content and centers on its edge', async () => {
+  await test.step('the tab bar hugs its content and centers on its edge', async () => {
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('no viewport')
     const strips = await page.evaluate(() =>
@@ -89,26 +83,31 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
           return { name: bar.getAttribute('aria-label') ?? '', left: rect.left, right: rect.right }
         }),
     )
-    expect(strips).toHaveLength(2)
+    expect(strips).toHaveLength(1)
     for (const strip of strips) {
       expect(Math.abs(strip.left - (viewport.width - strip.right)), `${strip.name} is off center`).toBeLessThanOrEqual(2)
     }
   })
 
-  await test.step('the strip holds one view button, which opens a card per view and the colors (D-311)', async () => {
-    const strip = page.getByRole('navigation', { name: he.workspace.viewBar })
-    await expect(strip.getByRole('button', { name: he.workspace.view, exact: true })).toHaveCount(1)
-    await testInfo.attach('strip', { body: await page.screenshot(), contentType: 'image/png' })
-    await openViewSheet(page)
-    const views = viewSheet(page).getByRole('radiogroup', { name: he.workspace.view }).getByRole('radio')
-    await expect(views).toHaveCount(4)
-    await expect(viewSheet(page).getByRole('radiogroup', { name: he.workspace.view }).getByRole('radio', { checked: true })).toHaveCount(1)
-    await expect(viewSheet(page).getByRole('radio', { name: he.workspace.colorsByType, exact: true })).toBeChecked()
-    await expect(viewSheet(page).getByRole('radio', { name: he.workspace.colorsUniform, exact: true })).not.toBeChecked()
+  await test.step('the head holds one view button, which fans out the views of the screen; the colors are an option (D-480)', async () => {
+    await expect(page.getByRole('button', { name: he.workspace.view, exact: true })).toHaveCount(1)
+    await testInfo.attach('head', { body: await page.screenshot(), contentType: 'image/png' })
+    await page.getByRole('button', { name: he.workspace.view, exact: true }).click()
+    const fan = page.getByRole('group', { name: he.board.fan })
+    await expect(fan.getByRole('button')).toHaveCount(testInfo.project.name === 'desktop' ? 4 : 3)
+    await expect(fan.getByRole('button', { pressed: true })).toHaveCount(1)
     await expectNoAxeViolations(page)
-    await testInfo.attach('view-sheet', { body: await page.screenshot(), contentType: 'image/png' })
-    await viewSheet(page).getByRole('button', { name: he.common.close }).click()
-    await expect(viewSheet(page)).toBeHidden()
+    await testInfo.attach('fan', { body: await page.screenshot(), contentType: 'image/png' })
+    await page.keyboard.press('Escape')
+    await expect(fan).toBeHidden()
+    if (testInfo.project.name === 'desktop') {
+      await openOptionRow(page, he.board.colors)
+      await expect(optionsMenu(page).getByRole('radio', { name: he.workspace.colorsByType, exact: true })).toBeChecked()
+      await expect(optionsMenu(page).getByRole('radio', { name: he.workspace.colorsUniform, exact: true })).not.toBeChecked()
+      await expectNoAxeViolations(page)
+      await page.keyboard.press('Escape')
+      await expect(optionsMenu(page)).toBeHidden()
+    }
   })
 
   await expectNoAxeViolations(page)
@@ -165,6 +164,8 @@ test('the board’s corner and name column stay one opaque surface while the day
   await openRotationInNewUnit(page, [OWNER.name])
   const timeline = board(page)
   await expect(timeline.getByRole('button', { name: OWNER.name })).toBeVisible()
+  // A week fits a phone; a month's days scroll sideways (D-480).
+  await chooseOption(page, he.board.range, he.workspace.ranges.month)
   // RTL: the days start at the inline start, the right, and scroll in from the left.
   await timeline.evaluate((element) => {
     element.scrollLeft = -(element.scrollWidth - element.clientWidth)
@@ -172,9 +173,10 @@ test('the board’s corner and name column stay one opaque surface while the day
   await expect.poll(() => timeline.evaluate((element) => element.scrollLeft)).toBeLessThan(0)
   await testInfo.attach('scrolled', { body: await page.screenshot(), contentType: 'image/png' })
 
-  const geometry = await timeline.evaluate((element, names) => {
+  const geometry = await timeline.evaluate((element, days) => {
     const region = element.getBoundingClientRect()
-    const corner = [...element.querySelectorAll<HTMLElement>('div')].find((div) => div.textContent === names)
+    // The corner is the days' first place, above the names.
+    const corner = element.querySelector<HTMLElement>(`[aria-label="${days}"] > *`)
     const nameCell = element.querySelector('li button')?.parentElement
     if (!corner || !nameCell) return null
     const cornerRect = corner.getBoundingClientRect()
@@ -197,7 +199,7 @@ test('the board’s corner and name column stay one opaque surface while the day
         return { blur: style.backdropFilter, shadow: style.boxShadow, radius: style.borderStartEndRadius }
       })(),
     }
-  }, he.timeline.names)
+  }, he.board.days)
   expect(geometry).not.toBeNull()
   if (geometry === null) return
   // Both hold the inline-start edge, at one width, so the column is continuous from the corner down.

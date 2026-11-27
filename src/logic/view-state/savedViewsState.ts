@@ -2,7 +2,7 @@ import type { ViewId } from '@config'
 import { SAVED_VIEW_LIMITS, SavedViewId, type SavedView, type SavedViewQuery, type SoldierPreferences } from '@contracts'
 import { useCallback, useMemo, useState } from 'react'
 import { useMyPreferences, useUpdateMyPreferences, type PreferenceSaved } from '../session/preferences'
-import { applyView, captureView, matchingView, type AppliedView } from './savedViews'
+import { applyView, captureView, equalView, matchingView, type AppliedView } from './savedViews'
 import { useChangeSearch, useWorkspaceSearch } from './search'
 
 // The soldier's saved views (D-384 … D-388). Each change is a function of the stored list, so a save that meets a
@@ -31,6 +31,8 @@ export interface SavedViewsState {
   readonly left: SavedView | null
   /** TRUE at the limit: no view is saved until one is deleted (D-387). */
   readonly full: boolean
+  /** The saved view, other than `except`, equal to the board now: a save that would repeat it is refused (D-462). */
+  equalTo(except: SavedViewId | null): SavedView | null
   /** Saves the board as it is now, as a new view; `start` makes it the start view. */
   save(name: string, start: boolean): Promise<PreferenceSaved>
   /** Saves the board as it is now over the view it drifted from, under the same name (D-442). */
@@ -153,6 +155,7 @@ export function useSavedViews(view: ViewId): SavedViewsState {
     current,
     left,
     full: views.length >= SAVED_VIEW_LIMITS.max,
+    equalTo: (except) => equalView(views, search, view, except),
     save,
     apply,
     overwrite,

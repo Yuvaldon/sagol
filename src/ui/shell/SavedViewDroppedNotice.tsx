@@ -1,8 +1,7 @@
 import { t } from '@i18n'
-import { useActiveView, useSavedViews } from '@logic'
+import { useSavedViews } from '@logic'
 import { X } from 'lucide-react'
-import { AVAILABLE_VIEWS } from '../engines/registry'
-import { useViewDevice } from '../patterns/media'
+import { useBoardView } from '../board/views'
 import { Button, IconButton } from '../primitives/Button'
 import { useReportPreferenceSave } from './preferenceFailure'
 import { useSavedViewNotice } from './savedViewNotice'
@@ -10,7 +9,7 @@ import { useSavedViewNotice } from './savedViewNotice'
 /** A saved view opened without a part that no longer reads; "עדכון התצוגה" saves it so (D-385). */
 export function SavedViewDroppedNotice() {
   const { dropped, dismiss } = useSavedViewNotice()
-  const { view } = useActiveView(AVAILABLE_VIEWS, useViewDevice())
+  const { view } = useBoardView()
   const saved = useSavedViews(view)
   const reportSave = useReportPreferenceSave()
   if (dropped === null) return null

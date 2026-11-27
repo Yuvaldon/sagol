@@ -1,7 +1,7 @@
 import { SEARCH_PARAMS } from '@config'
 import { SavedView, type SavedViewQuery } from '@contracts'
 import { describe, expect, it } from 'vitest'
-import { applyView, captureView, matchingView, savedViewSummary } from './savedViews'
+import { applyView, captureView, equalView, matchingView, savedViewSummary } from './savedViews'
 import { WorkspaceSearch } from './search'
 
 // Sample values, test data only.
@@ -22,12 +22,12 @@ describe('captureView (D-384)', () => {
         [SEARCH_PARAMS.range]: 'week',
         [SEARCH_PARAMS.from]: '2026-11-01',
         [SEARCH_PARAMS.rotation]: ROTATION,
-        [SEARCH_PARAMS.missing]: true,
+        [SEARCH_PARAMS.sorts]: [{ key: 'name', order: 'asc' }],
         [SEARCH_PARAMS.panel]: 'presence',
       }),
       'list',
     )
-    expect(Object.keys(query).sort()).toEqual(['filter', 'missing', 'range', 'view'])
+    expect(Object.keys(query).sort()).toEqual(['filter', 'range', 'sorts', 'view'])
     expect(query.view).toBe(JSON.stringify('list'))
   })
   it('keeps the table sort only with the table', () => {
@@ -43,13 +43,13 @@ describe('applyView (D-385)', () => {
     const applied = applyView(captureView(search, 'calendar'))
     expect(applied.dropped).toBe(false)
     expect(applied.search).toMatchObject({ view: 'calendar', range: 'month', filter: TAG_FILTER, sorts: [{ key: 'unit', order: 'asc' }] })
-    for (const name of [SEARCH_PARAMS.from, SEARCH_PARAMS.to, SEARCH_PARAMS.rotation, SEARCH_PARAMS.missing, SEARCH_PARAMS.colors]) {
+    for (const name of [SEARCH_PARAMS.from, SEARCH_PARAMS.to, SEARCH_PARAMS.rotation, SEARCH_PARAMS.colors]) {
       expect(name in applied.search).toBe(true)
       expect(applied.search[name]).toBeUndefined()
     }
   })
   it('drops a value that no longer reads, and says so', () => {
-    const applied = applyView({ view: '"list"', range: '"fortnight-ish"', missing: 'not json' })
+    const applied = applyView({ view: '"list"', range: '"fortnight-ish"', colors: 'not json' })
     expect(applied.dropped).toBe(true)
     expect(applied.cleaned).toEqual({ view: '"list"' })
     expect(applied.search.range).toBeUndefined()
@@ -72,14 +72,25 @@ describe('matchingView (D-385)', () => {
   })
   it('finds nothing once a condition or the view changes', () => {
     const search = board({ [SEARCH_PARAMS.range]: 'week', [SEARCH_PARAMS.filter]: TAG_FILTER })
-    expect(matchingView([morning], { ...search, missing: true }, 'list')).toBeNull()
+    expect(matchingView([morning], { ...search, leaves: { statuses: ['approved'] } }, 'list')).toBeNull()
     expect(matchingView([morning], search, 'timeline')).toBeNull()
+  })
+})
+
+describe('equalView (D-462)', () => {
+  const morning = saved('morning', { view: '"list"', range: '"week"' })
+  const evening = saved('evening!', { view: '"list"', range: '"month"' })
+  it('names the other view that keeps what the board shows, never the one saved over', () => {
+    const search = board({ [SEARCH_PARAMS.range]: 'week' })
+    expect(equalView([morning, evening], search, 'list', null)).toBe(morning)
+    expect(equalView([morning, evening], search, 'list', morning.id)).toBeNull()
+    expect(equalView([evening], search, 'list', null)).toBeNull()
   })
 })
 
 describe('savedViewSummary (D-387)', () => {
   it('counts the rules and the board conditions', () => {
     expect(savedViewSummary({ view: '"list"' })).toEqual({ range: undefined, conditions: 0 })
-    expect(savedViewSummary({ filter: JSON.stringify(TAG_FILTER), missing: 'true', range: '"week"' })).toEqual({ range: 'week', conditions: 2 })
+    expect(savedViewSummary({ filter: JSON.stringify(TAG_FILTER), leaves: JSON.stringify({ statuses: ['approved'] }), range: '"week"' })).toEqual({ range: 'week', conditions: 2 })
   })
 })

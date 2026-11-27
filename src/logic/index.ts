@@ -51,8 +51,12 @@ export { usePanel, type PanelState, type PanelTarget } from './view-state/panel'
 export { useOverlayEntry, useOverlayHistory, type OverlayEntry } from './view-state/history'
 export { useOverlayLayer } from './view-state/layers'
 export {
+  FIRST_MOVEMENTS,
+  boardWindowOf,
   customSpan,
   dateWindowOf,
+  monthGridSpan,
+  movementsSpan,
   pickableRotations,
   rotationDays,
   rotationOn,
@@ -94,7 +98,6 @@ export {
 export {
   useBoardFilters,
   useLeaveConditions,
-  useOnlyMissing,
   usePresenceDay,
   useRulesDay,
   useSortRules,
@@ -103,7 +106,6 @@ export {
   type SortRulesState,
   type TableSortState,
   type LeaveConditionsState,
-  type OnlyMissingState,
   type PresenceDayState,
   type RulesDayState,
 } from './view-state/board'
@@ -168,7 +170,35 @@ export {
 export { useBoard, useBoardGrouping, type BoardConditions, type BoardGroupingState, type BoardModel } from './board/hooks'
 export { type BoardGrouping } from './view-state/grouping'
 export { boardLeaves, layerOf, type BoardLeave, type LeaveLayer } from './board/leaves'
-export { boardDays, boardEntries, calendarWeeks, type BoardDay, type BoardEntry } from './board/views'
+export {
+  boardDays,
+  boardEntries,
+  boardMovements,
+  calendarWeeks,
+  cellRequests,
+  dayLeaves,
+  hasMovement,
+  movementRuns,
+  type BoardDay,
+  type BoardEntry,
+  type DayLeaves,
+  type DayRequest,
+  type MovementDay,
+  type MovementRun,
+  type MovementSide,
+} from './board/views'
+export { absenceCandidate, impactOf, useAbsenceCheck, useApprovalCheck, type Impact } from './board/impact'
+export { leaveMoveOf, useLeaveMove, type RoundMove } from './leaves/move'
+export {
+  selectedDayChange,
+  steppedDay,
+  steppedMonthDay,
+  useBoardDay,
+  useBoardWindow,
+  windowHolds,
+  type BoardDayState,
+  type BoardWindowState,
+} from './view-state/boardDay'
 export {
   datesOfRange,
   dayRangeOf,

@@ -88,7 +88,7 @@ async function renderAt(entry: string, ports: ReturnType<typeof storeOf>['ports'
 describe('saved views (D-384, D-388)', () => {
   it('saves the board, finds it as the current view, and opens it again over a changed board', async () => {
     const store = storeOf()
-    const { views, shown } = await renderAt('/?view=list&missing=true&from=2026-11-01', store.ports)
+    const { views, shown } = await renderAt('/?view=list&group=%7B%22key%22%3A%22rank%22%7D&from=2026-11-01', store.ports)
     expect(views().current).toBeNull()
     await act(async () => {
       await views().save('  בוקר ', true)
@@ -102,7 +102,7 @@ describe('saved views (D-384, D-388)', () => {
       views().apply(saved)
     })
     await waitFor(() => {
-      expect(shown()).toMatchObject({ view: 'list', missing: true })
+      expect(shown()).toMatchObject({ view: 'list', group: { key: 'rank' } })
     })
     expect(shown().from).toBeUndefined()
   })
@@ -161,7 +161,7 @@ describe('saved views (D-384, D-388)', () => {
     })
     expect(views().left).toBeNull()
     act(() => {
-      change()({ missing: true })
+      change()({ group: { key: 'rank' } })
     })
     await waitFor(() => {
       expect(views().left?.id).toBe(morning.id)
@@ -173,7 +173,7 @@ describe('saved views (D-384, D-388)', () => {
     expect(store.stored()?.saved_views.map((view) => view.name)).toEqual(['בוקר', 'ערב'])
     expect(views().current?.id).toBe(morning.id)
     expect(views().left).toBeNull()
-    expect(shown().missing).toBe(true)
+    expect(shown().group).toEqual({ key: 'rank' })
   })
 
   it('keeps the view the board left when saving it as a new view fails (D-442)', async () => {
@@ -183,7 +183,7 @@ describe('saved views (D-384, D-388)', () => {
       await views().save('בוקר', false)
     })
     act(() => {
-      change()({ missing: true })
+      change()({ group: { key: 'rank' } })
     })
     await waitFor(() => {
       expect(views().left?.name).toBe('בוקר')
@@ -205,7 +205,7 @@ describe('saved views (D-384, D-388)', () => {
       await views().save('בוקר', false)
     })
     act(() => {
-      change()({ missing: true })
+      change()({ group: { key: 'rank' } })
     })
     await waitFor(() => {
       expect(views().left?.name).toBe('בוקר')

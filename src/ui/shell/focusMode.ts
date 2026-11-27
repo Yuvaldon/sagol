@@ -2,8 +2,9 @@ import { DEVICE_KEYS, FOCUS_MODE } from '@config'
 import { useDeviceFlag } from '@logic'
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 
-// Focus mode (D-301): one control and one key hide both strips and the chips row; one restore button, the same key
-// and Escape bring them back. Focus moves with the change, so the control pressed never vanishes under the keyboard.
+// Focus mode (D-301, the handoff's board spec §2): "מיקוד" in the board's options and one key hide the tab bar and the
+// board's head; the capsule left in their place, the same key and Escape bring them back. It is kept on this device.
+// Focus moves with the change, so the control pressed never vanishes under the keyboard.
 
 type Target = 'control' | 'restore'
 
@@ -14,7 +15,7 @@ export interface FocusMode {
   readonly on: boolean
   readonly enter: () => void
   readonly leave: () => void
-  /** Takes the board's tab or the restore button as its ref; the change focuses the one it shows. */
+  /** Takes the capsule as its ref; entering focuses it. Leaving returns the keyboard to the page. */
   readonly bind: (target: Target) => (element: HTMLButtonElement | null) => void
 }
 
@@ -49,9 +50,9 @@ function inTextField(event: KeyboardEvent): boolean {
   return event.target instanceof Element && event.target.closest(FOCUS_MODE.editable) !== null
 }
 
-/** The workspace's focus mode: kept for the browser session (D-197), live only while the board shows (D-218). */
+/** The workspace's focus mode: kept on this device (D-480), live only while the board shows (D-218). */
 export function useFocusModeScope(boardShown: boolean): FocusMode {
-  const flag = useDeviceFlag(DEVICE_KEYS.focusMode, 'session')
+  const flag = useDeviceFlag(DEVICE_KEYS.focusMode)
   const on = boardShown && flag.value
   const pending = useRef<Target | null>(null)
   const { set } = flag

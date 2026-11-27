@@ -2,45 +2,75 @@ import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 import { openTab, tab } from './workspace.ts'
 
-// The board's controls (D-311, D-312, D-313): the view sheet behind the view picker, and the builder behind "סינון ומיון".
-
-export function viewSheet(page: Page) {
-  return page.getByRole('dialog', { name: he.workspace.view })
-}
+// The board's controls (D-480): the view switcher (the fan) and the options menu in the head's capsule, the saved views
+// behind the options, and the builder behind "סינון" and "מיון מתקדם" (D-312, D-313).
 
 export function boardTab(page: Page) {
   return tab(page, 'board')
 }
 
-/** The view picker of the board's strip opens the sheet; from another destination the board comes first (D-311). */
-export async function openViewSheet(page: Page) {
+/** The options menu of the board's head (OI-386). */
+export function optionsMenu(page: Page) {
+  return page.getByRole('dialog', { name: he.board.options })
+}
+
+export async function openOptions(page: Page) {
   await openTab(page, 'board')
-  await page.getByRole('button', { name: he.workspace.view, exact: true }).click()
+  if (await optionsMenu(page).isVisible()) return
+  await page.getByRole('button', { name: new RegExp(`^${he.board.options}`) }).click()
+  await expect(optionsMenu(page)).toBeVisible()
+}
+
+/** A row of the options menu, by its name: it opens its choices in the same menu. */
+export async function openOptionRow(page: Page, name: string) {
+  await openOptions(page)
+  await optionsMenu(page).getByRole('button', { name: new RegExp(`^${name} · `) }).click()
+}
+
+/** Picks a choice of a row; the menu returns to its rows, and is closed after. */
+export async function chooseOption(page: Page, row: string, choice: string) {
+  await openOptionRow(page, row)
+  // A choice is named by its words, then by its quiet line where it has one (a rotation's dates).
+  const exact = optionsMenu(page).locator('label').filter({ has: page.getByRole('radio', { name: choice, exact: true }) })
+  const lined = optionsMenu(page).locator('label').filter({ has: page.getByRole('radio', { name: new RegExp(`^${choice}[\\s\\d]`) }) })
+  await ((await exact.count()) > 0 ? exact : lined).first().click()
+  await page.keyboard.press('Escape')
+  await expect(optionsMenu(page)).toBeHidden()
+}
+
+/** The saved views' sheet (D-387): "תצוגות שמורות" after the menu's divider. */
+export function viewSheet(page: Page) {
+  return page.getByRole('dialog', { name: he.board.savedViews })
+}
+
+export async function openViewSheet(page: Page) {
+  await openOptions(page)
+  await optionsMenu(page).getByRole('button', { name: new RegExp(`^${he.board.savedViews}`) }).click()
   await expect(viewSheet(page)).toBeVisible()
 }
 
-/** A card of the sheet is a radio inside its label: a person presses the card, and the sheet closes. */
+/** The fan: the icon of the view in sight opens the views; a pick shows it (D-480). */
 export async function selectView(page: Page, name: string) {
-  await openViewSheet(page)
-  await viewSheet(page).locator('label').filter({ has: page.getByRole('radio', { name, exact: true }) }).click()
-  await expect(viewSheet(page)).toBeHidden()
+  await openTab(page, 'board')
+  await page.getByRole('button', { name: he.workspace.view, exact: true }).click()
+  await page.getByRole('group', { name: he.board.fan }).getByRole('button', { name, exact: true }).click()
+  await expect(page.getByRole('group', { name: he.board.fan })).toBeHidden()
 }
 
-/** The colors stay open to compare, so the sheet is closed after them. */
+/** The colors of the old bars: a row of the options on a wide screen (D-454). */
 export async function selectColors(page: Page, name: string) {
-  await openViewSheet(page)
-  await viewSheet(page).locator('label').filter({ has: page.getByRole('radio', { name, exact: true }) }).click()
-  await viewSheet(page).getByRole('button', { name: he.common.close }).click()
-  await expect(viewSheet(page)).toBeHidden()
+  await chooseOption(page, he.board.colors, name)
 }
 
 export function builder(page: Page) {
   return page.getByRole('dialog', { name: he.filters.builder })
 }
 
+/** The builder, from "הוספת תנאי" in the options' "סינון". */
 export async function openBuilder(page: Page) {
   if (await builder(page).isVisible()) return
-  await page.getByRole('button', { name: he.filters.builder, exact: true }).click()
+  await openOptionRow(page, he.board.filter)
+  await optionsMenu(page).getByRole('button', { name: he.board.addCondition }).click()
   await expect(builder(page)).toBeVisible()
 }
 
@@ -77,9 +107,15 @@ export async function addFilter(page: Page, field: string, values: readonly stri
   await closeBuilder(page)
 }
 
-/** "Only who is missing" is a suggestion of the builder, set in one press. */
-export async function setOnlyMissing(page: Page) {
-  await openBuilder(page)
-  await builder(page).getByRole('button', { name: he.filters.onlyMissing, exact: true }).click()
-  await closeBuilder(page)
+/** The set conditions, as the options' "סינון" lists them. */
+export async function conditions(page: Page) {
+  await openOptionRow(page, he.board.filter)
+  return optionsMenu(page)
+}
+
+/** "ניקוי הסינון" in the options' "סינון". */
+export async function clearConditions(page: Page) {
+  await openOptionRow(page, he.board.filter)
+  await optionsMenu(page).getByRole('button', { name: he.board.clearConditions }).click()
+  await expect(optionsMenu(page)).toBeHidden()
 }

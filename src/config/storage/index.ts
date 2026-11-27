@@ -25,7 +25,7 @@ export const STORAGE_KEYS = {
 export const DEVICE_KEYS = {
   /** The day report's reasons switch (D-194). */
   dayReportReasons: `${STORAGE_PREFIX}.day-report-reasons`,
-  /** Focus mode, for the browser session (D-301). */
+  /** Focus mode, kept on this device (D-301, D-480). */
   focusMode: `${STORAGE_PREFIX}.focus-mode`,
   /** The install offer after sign-in was answered, by installing or by "not now" (D-274). */
   installAnswered: `${STORAGE_PREFIX}.install-answered`,

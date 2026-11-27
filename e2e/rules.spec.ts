@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press, openNewLeave } from './support/leaves.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, backToBoard } from './support/workspace.ts'
+import { selectView } from './support/board.ts'
 
 // V7's demo: a rule builder, the heat row, a soft rule that asks for an acknowledgment, a hard rule that refuses,
 // and a configuration conflict, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -61,7 +62,12 @@ test.beforeEach(async ({ page, isMobile }) => {
   await openBoardOnTimeline(page, isMobile)
 })
 
-test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuses', async ({ page }) => {
+/** A day of the phone's calendar, by its date; its name says when it is below a rule (D-480). */
+function calendarDay(page: Page, date: string) {
+  return page.getByRole('region', { name: he.engines.calendarLabel }).getByRole('button', { name: new RegExp(date) })
+}
+
+test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuses', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
@@ -89,7 +95,14 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
     await expect(drawer(page).getByText(he.rules.noConflicts)).toBeVisible()
     await expectNoAxeViolations(page)
     await closeDrawer(page)
-    await expect(heatRow(page)).toBeVisible()
+    if (isMobile) {
+      // A phone's timeline marks no threshold (the handoff's board spec, §3): its calendar does, by the day.
+      await selectView(page, he.workspace.views.calendar)
+      await expect(calendarDay(page, '10 בנובמבר 2026')).toHaveAccessibleName(new RegExp(he.kit.fractionLow))
+      await selectView(page, he.workspace.views.timeline)
+    } else {
+      await expect(heatRow(page)).toBeVisible()
+    }
   })
 
   await test.step('a leave that breaks it warns while filled, and asks before it is saved', async () => {
@@ -109,9 +122,16 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
 
   await test.step('the heat row marks the day, and opens its broken rules with who is missing', async () => {
     // Before the soldiers joined (8 to 10 November) the platoon had nobody, so those days break the rule too (D-071).
-    const cell = heatRow(page).getByRole('button', { name: new RegExp(`^11 .*${he.rules.heatSoft}`) })
-    await expect(cell).toHaveText('1')
-    await cell.click()
+    if (isMobile) {
+      // On a phone the calendar's day says it is below, and its drawer opens the day's rules.
+      await selectView(page, he.workspace.views.calendar)
+      await expect(calendarDay(page, '11 בנובמבר 2026')).toHaveAccessibleName(new RegExp(he.kit.fractionLow))
+      await page.getByRole('button', { name: he.board.rulesBroken }).click()
+    } else {
+      const cell = heatRow(page).getByRole('button', { name: new RegExp(`^11 .*${he.rules.heatSoft}`) })
+      await expect(cell).toHaveText('1')
+      await cell.click()
+    }
     const day = drawer(page).getByRole('region', { name: new RegExp(he.rules.dayTitle) })
     await expect(day).toContainText('שניים במחלקה')
     await expect(day).toContainText(`${he.rules.unavailable}: יעל שחר`)
@@ -121,6 +141,7 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
   await test.step('a hard rule refuses the next leave, which is not saved', async () => {
     await createRule(page, { name: 'לפחות אחד', min: '1', hard: true })
     await closeDrawer(page)
+    if (isMobile) await selectView(page, he.workspace.views.timeline)
     await startLeave(page, 'נועם בר')
     await expect(drawer(page).getByRole('status', { name: he.rules.warningHardTitle })).toContainText('לפחות אחד')
     await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()

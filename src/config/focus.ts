@@ -12,4 +12,6 @@ export const FOCUS_MODE = {
   overlay: '[role=dialog], [role=alertdialog], [role=menu], [role=listbox]',
   /** Where the key types a letter instead: a text field keeps it. */
   editable: 'input, textarea, select, [contenteditable]:not([contenteditable=false])',
+  /** A phone turned on its side: the board enters focus mode by itself (the handoff's board spec, §2). */
+  landscape: '(orientation: landscape) and (pointer: coarse)',
 } as const

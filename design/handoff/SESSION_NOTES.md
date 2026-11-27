@@ -18,9 +18,12 @@ staging deploy so the owner can test. Some component images are older than other
   open blocks and its request cards and page, "ניהול" and "אני" as pages, the shared components in `src/ui/kit`.
 - Done: the rest of R5·2 (D-474 … D-476): "דוח 1", new leave and the leave card in the drawer with stops, the leave
   round on the strip, the waiting requests listed once.
-- Next: "איתך היום" with its presence-only permission, the owner's decision of 2026-11-27 (OI-393): a model change,
-  so `schema.sql`, `DECISIONS.md` and `contracts` come first. Then R5·3, the board, with the options menu (OI-386)
-  and the move out of the leave round (OI-394). One roadmap row per pull request (D-464).
+- Done: "איתך היום" (D-478, D-479).
+- Done: R5·3, the board (D-480, D-481): one head with the month, the fan and the options menu (OI-386); the selected
+  day in `day`; the calendar with its drawer of stops, the phone's timeline of person bars, the movements; "only
+  missing" removed; equal saved views refused (OI-381); moving a round leave (OI-394). Left for R5·6: OI-397 (the wide
+  board), OI-398 (the dashed original place), OI-399 (pinch, the shrinking title).
+- Next: R5·4, "ניהול" and its pages. One roadmap row per pull request (D-464).
 - Code facts checked: rule archive and restore exist, no reorder; nobody edits their own soldier record; presence
   and the day report take any date; the leave form's live rule warning needs organization-wide reads (D-162);
   `missing` is used in `config/url`, `contracts/settings`, `logic/view-state`, `logic/board`, `ui/board`,

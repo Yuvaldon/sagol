@@ -16,6 +16,8 @@ export interface ShellChrome {
   /** The page scrolled to an offset from its top. */
   readonly onScroll: (top: number) => void
   readonly showBar: () => void
+  /** The page was moved to an offset by the screen, not by the reader: the bar shows, and the next scroll counts from there. */
+  readonly settle: (top: number) => void
   readonly cover: (on: boolean) => void
   readonly toTop: () => void
   /** The page's heading, or NULL when it leaves. */
@@ -34,6 +36,7 @@ const NONE: ShellChrome = {
   bindScroller: () => undefined,
   onScroll: () => undefined,
   showBar: () => undefined,
+  settle: () => undefined,
   cover: () => undefined,
   toTop: () => undefined,
   bindHeading: () => undefined,
@@ -69,6 +72,10 @@ export function useShellChromeScope(): ShellChrome {
   const showBar = useCallback(() => {
     setBarHidden(false)
   }, [])
+  const settle = useCallback((top: number) => {
+    anchor.current = top
+    setBarHidden(false)
+  }, [])
   const toTop = useCallback(() => {
     scroller.current?.scrollTo({ top: 0 })
     setBarHidden(false)
@@ -90,8 +97,8 @@ export function useShellChromeScope(): ShellChrome {
     return true
   }, [])
   return useMemo(
-    () => ({ barHidden, covered, bindScroller, onScroll, showBar, cover: setCovered, toTop, bindHeading, focusHeading, rememberOpener, takeOpener }),
-    [barHidden, covered, bindScroller, onScroll, showBar, toTop, bindHeading, focusHeading, rememberOpener, takeOpener],
+    () => ({ barHidden, covered, bindScroller, onScroll, showBar, settle, cover: setCovered, toTop, bindHeading, focusHeading, rememberOpener, takeOpener }),
+    [barHidden, covered, bindScroller, onScroll, showBar, settle, toTop, bindHeading, focusHeading, rememberOpener, takeOpener],
   )
 }
 

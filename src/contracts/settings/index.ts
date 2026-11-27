@@ -18,8 +18,11 @@ export const OrganizationSettings = z
   .prefault({})
 export type OrganizationSettings = z.infer<typeof OrganizationSettings>
 
-/** The search params a saved view keeps (D-384): never a date, a rotation, a panel or a draft. */
-export const SavedViewParam = z.enum(['view', 'filter', 'sorts', 'sort', 'order', 'group', 'leaves', 'missing', 'colors', 'range'])
+/**
+ * The search params a saved view keeps (D-384): never a date, a rotation, a panel or a draft. "Only who is missing" is
+ * gone (D-463): a view that kept it drops it on read, as it drops any param no longer known.
+ */
+export const SavedViewParam = z.enum(['view', 'filter', 'sorts', 'sort', 'order', 'group', 'leaves', 'colors', 'range'])
 export type SavedViewParam = z.infer<typeof SavedViewParam>
 
 /** The limits of saved views (D-384): part of the stored row's contract, so they live beside it. */

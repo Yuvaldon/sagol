@@ -1,14 +1,13 @@
 import { PANEL_IDS, type BarColorMode } from '@config'
-import type { CalendarDate, FilterExpression } from '@contracts'
+import type { CalendarDate, FilterExpression, Leave } from '@contracts'
 import { t } from '@i18n'
 import {
   hasLeaveConditions,
   useBarColors,
   useBoard,
-  useDateWindow,
   useLeaveConditions,
+  useLeaves,
   useModuleAccess,
-  useOnlyMissing,
   usePanel,
   usePresenceDay,
   useSetupUnfinished,
@@ -21,14 +20,14 @@ import {
   type ReadRules,
 } from '@logic'
 import { ListChecks } from 'lucide-react'
-import { useCallback, useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../patterns/Notices'
 import { Button } from '../primitives/Button'
 import { useOpenUnitSetup } from '../shell/unitSetup'
 
-// What every engine shares around the board model (D-174): the window, the filter and the board's own conditions from
-// the URL (D-103, D-104, D-131 to D-133), the states of an empty or loading board, and how a soldier or a leave opens.
-// An engine draws only the board it is handed, so the views never disagree on who is in view.
+// What every engine shares around the board model (D-174): the window its view shows (D-480), the filter and the
+// board's own conditions from the URL (D-103, D-104, D-131, D-132), the states of an empty or loading board, and how a
+// soldier or a leave opens. An engine draws only the board it is handed, so the views never disagree on who is in view.
 
 /** What an engine draws from. */
 export interface BoardFrame {
@@ -43,6 +42,8 @@ export interface BoardFrame {
   /** Opens the day report on a day (D-193). NULL when the actor may not open the soldiers module; the day's own NULL
    *  when the scope has no rotation on it. */
   readonly openDay: ((day: CalendarDate) => (() => void) | null) | null
+  /** The stored leaves of the window, by id: a request answered from the board is answered as stored (D-467). */
+  readonly stored: ReadonlyMap<string, Leave>
 }
 
 /** A state of the board, in the middle of the viewport, clear of the bars. */
@@ -52,7 +53,6 @@ export function Centered({ children }: { readonly children: ReactNode }) {
 
 /** Why the board is empty when soldiers exist: what the bar asks for, or the unit and the window (D-131 to D-133). */
 function emptyKeys(board: BoardConditions, rules: ReadRules) {
-  if (board.onlyMissing) return { titleKey: 'timeline.emptyMissingTitle', bodyKey: 'timeline.emptyMissingBody' } as const
   const chips =
     rules.kind === 'other' ||
     rules.filter.rules.length > 0 ||
@@ -70,8 +70,10 @@ function Board({
   window,
   filter,
   draw,
+  stored,
 }: {
   readonly model: BoardModel
+  readonly stored: ReadonlyMap<string, Leave>
   readonly board: BoardConditions
   readonly rules: ReadRules
   readonly window: DateWindow
@@ -133,29 +135,38 @@ function Board({
       </Centered>
     )
   }
-  return draw({ model, window, filter, colors: mode, openSoldier: access.soldiers ? openSoldier : null, openLeave, openDay: access.soldiers ? openDay : null })
+  return draw({ model, window, filter, colors: mode, openSoldier: access.soldiers ? openSoldier : null, openLeave, openDay: access.soldiers ? openDay : null, stored })
 }
+
+const NO_LEAVES: readonly Leave[] = []
 
 function BoardData({
   window,
   today,
+  keepLast,
   draw,
 }: {
   readonly window: DateWindow
   readonly today: CalendarDate
+  readonly keepLast: boolean
   readonly draw: Draw
 }) {
   const { filter, rules } = useViewFilter()
   const { conditions } = useLeaveConditions()
-  const missing = useOnlyMissing()
   const { rules: sorts } = useSortRules()
   const { group: grouping } = useWorkspaceSearch()
-  const board = useMemo(
-    (): BoardConditions => ({ leaves: conditions, onlyMissing: missing.on, sorts, grouping }),
-    [conditions, missing.on, sorts, grouping],
-  )
+  const board = useMemo((): BoardConditions => ({ leaves: conditions, sorts, grouping }), [conditions, sorts, grouping])
   const model = useBoard(window, today, filter, board)
+  const leaves = useLeaves(window)
+  const stored = useMemo(
+    () => new Map((leaves.status === 'ready' ? leaves.value : NO_LEAVES).map((leave) => [leave.id, leave] as const)),
+    [leaves],
+  )
+  // What a view that grows its window keeps on screen while the wider one is read, so it never jumps to a loading state.
+  const [last, setLast] = useState<{ readonly model: BoardModel; readonly window: DateWindow } | null>(null)
+  if (keepLast && model.status === 'ready' && last?.model !== model.value) setLast({ model: model.value, window })
   if (model.status === 'loading') {
+    if (keepLast && last !== null) return <Board model={last.model} stored={stored} board={board} rules={rules} window={last.window} filter={filter} draw={draw} />
     return (
       <Centered>
         <LoadingNotice />
@@ -169,12 +180,27 @@ function BoardData({
       </Centered>
     )
   }
-  return <Board model={model.value} board={board} rules={rules} window={window} filter={filter} draw={draw} />
+  return <Board model={model.value} stored={stored} board={board} rules={rules} window={window} filter={filter} draw={draw} />
 }
 
-/** The frame of every engine. The viewport shows it only once today is known. */
-export function BoardEngine({ children }: { readonly children: Draw }) {
-  const { window, today } = useDateWindow()
-  if (window === null || today === null) return null
-  return <BoardData window={window} today={today} draw={children} />
+/** The frame of every engine, on the window its view shows; `keepLast` keeps the last board while a wider one loads. */
+export function BoardEngine({
+  window,
+  today,
+  keepLast = false,
+  children,
+}: {
+  readonly window: DateWindow | null
+  readonly today: CalendarDate | null
+  readonly keepLast?: boolean
+  readonly children: Draw
+}) {
+  if (window === null || today === null) {
+    return (
+      <Centered>
+        <LoadingNotice />
+      </Centered>
+    )
+  }
+  return <BoardData window={window} today={today} keepLast={keepLast} draw={children} />
 }
