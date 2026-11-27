@@ -8,6 +8,7 @@ import {
   fullName,
   useLeaveCreation,
   useMovePermissions,
+  useOverlayLayer,
   usePanel,
   usePeopleList,
   usePeopleView,
@@ -262,6 +263,11 @@ export function SoldiersPage({ name }: { readonly name: string }) {
   const moves = useMovePermissions(seen, liveUnits)
   const archived = useArchivedCount()
   const rows = useOptionRows(view, list.status === 'ready' ? list.value : null)
+  // Choosing is a layer over the page: the back button ends it, as it closes a drawer (D-332, D-483).
+  useOverlayLayer(selecting, () => {
+    setSelecting(false)
+    setChosen(new Set())
+  })
 
   const choose = (soldierId: SoldierId, on: boolean) => {
     setChosen((current) => {
@@ -295,7 +301,9 @@ export function SoldiersPage({ name }: { readonly name: string }) {
         ]
       : []),
   ]
-  const ids = [...chosen]
+  // What the search hides is let go: the tray acts only on rows in sight, and counts only them.
+  const inSight = new Set(list.status === 'ready' ? list.value.items.flatMap((item) => (item.kind === 'soldier' ? [item.soldier.id] : [])) : [])
+  const ids = [...chosen].filter((id) => inSight.has(id))
   const creatable = new Set(creation.soldiers.map((soldier) => soldier.id))
   const actions: TrayAction[] = [
     ...(ids.length > 0 && today !== null && ids.every((id) => creatable.has(id))
@@ -425,9 +433,12 @@ export function SoldiersPage({ name }: { readonly name: string }) {
       {moving ? (
         <MoveDialog
           soldierIds={ids}
-          onClose={(done) => {
+          onClose={(refused) => {
             setMoving(false)
-            if (done) stopChoosing()
+            // The refused stay chosen, so the step can be taken again for them; with none, the choosing is over.
+            if (refused === null) return
+            if (refused.length === 0) stopChoosing()
+            else setChosen(new Set(refused))
           }}
         />
       ) : null}

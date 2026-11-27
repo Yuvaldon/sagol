@@ -7,7 +7,7 @@ import { DAY_STATE_KEYS, type DayState, type StripDay } from './dayState'
 // The 14-day strip (D-454): one segment a day, today first as a night-blue circle. A day on base is a full segment, a
 // day at home by the leave round a quiet one, another absence a filled one, a request that waits an amber outline; the words are read aloud, so color never stands alone.
 // Where days are chosen (the person card, D-482), each day is a toggle: a tap starts a range and a second tap ends it,
-// as on the month, and a chosen day carries a night-blue ring.
+// as on the month, and a chosen day carries a night-blue ring. Its days then wrap into weeks, each day a 44 px target.
 
 const SEGMENTS: Readonly<Record<DayState, string>> = {
   base: 'bg-time-base',
@@ -54,7 +54,8 @@ export function DayStrip({
   readonly select?: StripSelect | null
 }) {
   return (
-    <ol aria-label={t(labelKey)} className="flex items-start gap-2xs">
+    // Where days are chosen, the strip wraps into weeks of seven, so each day is a 44 px target (WCAG 2.5.5).
+    <ol aria-label={t(labelKey)} className={select === null ? 'flex items-start gap-2xs' : 'grid grid-cols-7 gap-2xs'}>
       {days.map((day) => {
         const words = [formatDate(day.date, 'dayMonth'), t(DAY_STATE_KEYS[day.state])].join(WORD)
         if (select === null) {
@@ -68,7 +69,7 @@ export function DayStrip({
         const chosen = select.covers(day.date)
         const allowed = select.allows(day.date)
         return (
-          <li key={day.date} className="flex min-w-none flex-1">
+          <li key={day.date} className="flex min-w-touch">
             {/* A day that cannot be chosen says so and stays in reach of the keyboard (D-473). */}
             <AriaButton
               aria-pressed={chosen}
@@ -77,7 +78,7 @@ export function DayStrip({
               onPress={() => {
                 if (allowed) select.onDay(day.date)
               }}
-              className={`flex min-h-touch min-w-none flex-1 cursor-pointer flex-col items-center gap-xs rounded-control py-2xs outline-focus -outline-offset-2 data-focus-visible:outline-2 ${
+              className={`flex min-h-touch min-w-touch flex-1 cursor-pointer flex-col items-center justify-center gap-xs rounded-control py-2xs outline-focus -outline-offset-2 data-focus-visible:outline-2 ${
                 chosen ? 'bg-action-soft ring-2 ring-action-solid' : ''
               } ${allowed ? '' : 'cursor-default opacity-60'}`}
             >

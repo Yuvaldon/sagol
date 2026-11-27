@@ -92,8 +92,8 @@ function RowCard({
   readonly onRemove: (() => void) | null
 }) {
   const answered = refusal === null ? null : formStateOf(refusal, FIELDS)
-  // A nickname or a phone a list brought shows, so nothing saved is unseen; so does a detail a unit chosen since does not take.
-  const shown = SOLDIER_CSV_COLUMNS.filter((column) => (columns.includes(column) && SHOWN.includes(column)) || row.values[column] !== '')
+  // A nickname or a phone a list brought shows, so nothing saved is unseen; a detail the unit does not take is not shown, as it is not sent.
+  const shown = SOLDIER_CSV_COLUMNS.filter((column) => columns.includes(column) && (SHOWN.includes(column) || row.values[column] !== ''))
   return (
     <fieldset className="flex flex-col gap-xs rounded-card bg-surface p-lg">
       <legend className="sr-only">{[t('soldiers.quick.row'), String(position)].join(WORD)}</legend>
@@ -156,8 +156,13 @@ export function AddSoldiersPage() {
   const [listProblem, setListProblem] = useState<string | null>(null)
   const file = useRef<HTMLInputElement>(null)
 
-  const columns = offeredColumns(permissions.privateOnCreate(unitId))
-  const placement = useMemo<QuickEntryPlacement | null>(() => (unitId === null || today === null ? null : { unit_id: unitId, valid_from: today }), [unitId, today])
+  const privateAllowed = permissions.privateOnCreate(unitId)
+  const columns = offeredColumns(privateAllowed)
+  // Where the unit takes no private details, none is sent (D-096): the rows show only what is saved.
+  const placement = useMemo<QuickEntryPlacement | null>(
+    () => (unitId === null || today === null ? null : { unit_id: unitId, valid_from: today, private_allowed: privateAllowed }),
+    [unitId, today, privateAllowed],
+  )
   const issues = useMemo(() => (placement === null ? new Map<string, readonly Issue[]>() : quickEntryIssues(rows, placement)), [rows, placement])
   const ready = placement === null ? 0 : readyQuickEntryRows(rows, placement).length
 
@@ -202,6 +207,16 @@ export function AddSoldiersPage() {
     if (done.size > 0) notices.say([String(done.size), t('manage.add.added')].join(WORD))
   }
 
+  const fullFormDoor = permissions.create ? (
+    <CardDoor
+      labelKey="manage.add.fullForm"
+      onPress={() => {
+        // The form takes the place of this screen: the list is under it, as the new soldier's card will be.
+        place.closePage()
+        panel.open(PANEL_IDS.soldiers, { entity: NEW_ENTITY })
+      }}
+    />
+  ) : null
   const action =
     placement === null ? null : (
       <AriaButton
@@ -221,7 +236,11 @@ export function AddSoldiersPage() {
       {units.status !== 'ready' || today === null ? (
         <LoadingNotice />
       ) : placements.length === 0 ? (
-        <p className="text-body text-text-muted">{t('manage.add.noUnit')}</p>
+        // Who may create a soldier with no unit has no unit to place rows in, but still the full form (D-482).
+        <>
+          <p className="text-body text-text-muted">{t('manage.add.noUnit')}</p>
+          {fullFormDoor}
+        </>
       ) : (
         <>
           <SelectField labelKey="manage.add.unit" name="unit_id" value={unitId} options={placements} onChange={setUnitId} error={null} />
@@ -315,16 +334,7 @@ export function AddSoldiersPage() {
               {t('soldiers.quick.saving')}
             </p>
           ) : null}
-          {permissions.create ? (
-            <CardDoor
-              labelKey="manage.add.fullForm"
-              onPress={() => {
-                // The form takes the place of this screen: the list is under it, as the new soldier's card will be.
-                place.closePage()
-                panel.open(PANEL_IDS.soldiers, { entity: NEW_ENTITY })
-              }}
-            />
-          ) : null}
+          {fullFormDoor}
         </>
       )}
     </PageFrame>

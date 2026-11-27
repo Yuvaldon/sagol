@@ -29,6 +29,7 @@ import { leaveDatesText, typeNameOf } from '../../modules/leaves/leaveText'
 import { formatDate } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
 import { useOpener } from '../chrome'
+import { joinOutcome } from '../manage/joinOutcome'
 import { useNotices } from '../notices'
 import { REQUESTS_OPENER } from './requestActions'
 import { ReportButton } from './ReportButton'
@@ -158,10 +159,8 @@ export function JoinsCard() {
                   notices.fail(result.error)
                   return
                 }
-                const answers = [...result.value.values()]
-                const refused = answers.find((answer) => answer.kind === 'refused')
-                if (refused?.kind === 'refused') notices.fail(refused.error)
-                else notices.say([String(answers.filter((answer) => answer.kind === 'linked').length), t('manage.joins.linkedMany')].join(WORD))
+                const { done, refusal } = joinOutcome(result.value)
+                notices.report(done, refusal)
               })
             }}
           >

@@ -19,12 +19,13 @@ import {
   type SetupStep,
 } from '@logic'
 import { ChevronLeft } from 'lucide-react'
-import { useEffect, useId, type ReactNode, type Ref } from 'react'
+import { useEffect, useId, useState, type ReactNode, type Ref } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { Badge } from '../../kit/Badge'
 import { progressText } from '../../modules/setup/steps'
 import { useNavigationEntries, useSetupEntries, type ModuleEntry } from '../moduleEntries'
 import { useOpener, useOpenerFallback } from '../chrome'
+import { LoadingNotice } from '../../patterns/Notices'
 import { PageFrame, PageHead, PageHeading } from '../PageFrame'
 import { AddSoldiersPage } from './AddSoldiersPage'
 import { JoinsPage } from './JoinsPage'
@@ -161,13 +162,26 @@ function Index({ name }: { readonly name: string }) {
   )
 }
 
+interface PageAccess {
+  readonly allowed: boolean
+  /** Whether the answers behind `allowed` are in: until then a page is neither shown as refused nor closed. */
+  readonly known: boolean
+}
+
 /** Which pages of "ניהול" the actor may open: each its tool's own access (D-455); a page they may not open is put right. */
-function usePages(): Readonly<Record<Exclude<PageId, 'requests'>, boolean>> {
+function usePages(): Readonly<Record<Exclude<PageId, 'requests'>, PageAccess>> {
   const access = useModuleAccess()
   const links = useLinkReviewAccess()
   const units = useUnits()
   const roster = useRosterPermissions(NO_SOLDIERS, units.status === 'ready' ? units.value : NO_SOLDIERS)
-  return { settings: true, soldiers: access.soldiers, joins: links.allowed, rules: access.rules, add_soldiers: access.soldiers && roster.create }
+  const sure = (allowed: boolean): PageAccess => ({ allowed, known: true })
+  return {
+    settings: sure(true),
+    soldiers: sure(access.soldiers),
+    joins: { allowed: links.allowed, known: links.known },
+    rules: sure(access.rules),
+    add_soldiers: { allowed: access.soldiers && roster.create, known: !access.soldiers || roster.create || (units.status !== 'loading' && roster.settled) },
+  }
 }
 
 const NO_SOLDIERS: readonly never[] = []
@@ -176,10 +190,22 @@ export function ManagePage({ name }: { readonly name: string }) {
   const place = useShellPlace()
   const pages = usePages()
   const { page, closePage } = place
-  const stray = page !== null && page !== 'requests' && !pages[page]
+  // A page once allowed stays while it is open: approving the last join request empties "הצטרפות" without closing it.
+  const [kept, setKept] = useState<PageId | null>(null)
+  const access = page === null || page === 'requests' ? null : pages[page]
+  if (access?.allowed === true && kept !== page) setKept(page)
+  else if (kept !== null && kept !== page) setKept(null)
+  const stray = access !== null && access.known && !access.allowed && kept !== page
   useEffect(() => {
     if (stray) closePage()
   }, [stray, closePage])
+  if (access !== null && !access.allowed && !access.known && kept !== page) {
+    return (
+      <PageFrame>
+        <LoadingNotice />
+      </PageFrame>
+    )
+  }
   if (stray) return <Index name={name} />
   switch (page) {
     case 'settings':

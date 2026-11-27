@@ -14,13 +14,19 @@ export interface NoticeAction {
 export interface Notices {
   /** Says what happened, with what can be done about it. */
   readonly say: (message: string, action?: NoticeAction) => void
-  /** Says why a step was refused; it stays until it is put away. */
-  readonly fail: (error: AppError) => void
+  /** Says why a step was refused, in `key`'s words when the step has its own (a restore's); it stays until it is put away. */
+  readonly fail: (error: AppError, key?: I18nKey) => void
+  /**
+   * What a step on several did (D-483, D-484): how many it did, and the first refusal, which keeps the toast until it is
+   * put away. With no refusal it is a plain toast.
+   */
+  readonly report: (done: string, refusal: AppError | null) => void
 }
 
 export const NoticeContext = createContext<Notices>({
   say: () => undefined,
   fail: () => undefined,
+  report: () => undefined,
 })
 
 export function useNotices(): Notices {

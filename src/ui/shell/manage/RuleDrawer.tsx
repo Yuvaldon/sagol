@@ -8,6 +8,7 @@ import {
   useAvailabilityRulesWithArchived,
   useCommandRanks,
   useDeployments,
+  useModuleAccess,
   usePanel,
   useRuleCommands,
   useRulePermissions,
@@ -29,6 +30,7 @@ import { formatDate, formatDateRange } from '../../patterns/dates'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { ruleParts, useRuleNames } from '../../patterns/rules/ruleText'
 import { IconButton } from '../../primitives/Button'
+import { restoreFailureKey } from '../../patterns/restoreFailure'
 import { useNotices } from '../notices'
 import { RuleArchiveDrawer } from './ArchiveDrawers'
 
@@ -217,7 +219,7 @@ function RuleCard({ rule, rules, onClose }: { readonly rule: AvailabilityRule; r
                 labelKey: 'common.cancel',
                 run: () => {
                   void commands.restore.run(result.value).then((restored) => {
-                    if (!restored.ok) notices.fail(restored.error)
+                    if (!restored.ok) notices.fail(restored.error, restoreFailureKey(restored.error))
                   })
                 },
               })
@@ -233,11 +235,22 @@ function RuleCard({ rule, rules, onClose }: { readonly rule: AvailabilityRule; r
 
 export function RuleDrawer() {
   const panel = usePanel()
+  const access = useModuleAccess()
+  const units = useUnits()
   const rules = useAvailabilityRulesWithArchived()
   const live = useMemo(() => (rules.status === 'ready' ? liveRules(rules.value) : []), [rules])
   const archived = useMemo(() => (rules.status === 'ready' ? archivedRows(rules.value) : []), [rules])
-  if (panel.panel !== PANEL_IDS.rules || panel.entity === null) return null
+  const permissions = useRulePermissions(units.status === 'ready' ? units.value : NO_UNITS, live)
+  // The rules' drawers are the rules module's: a link opens them only for who may open it (D-076, rule 4).
+  if (panel.panel !== PANEL_IDS.rules || panel.entity === null || !access.rules) return null
   if (panel.entity === ARCHIVE_ENTITY) return <RuleArchiveDrawer onClose={panel.close} />
+  if (panel.entity === NEW_ENTITY && !permissions.createAny) {
+    return (
+      <StopDrawer inUrl title={t('manage.pages.rules')} onClose={panel.close}>
+        <p className="text-body text-text-muted">{t('rules.notFound')}</p>
+      </StopDrawer>
+    )
+  }
   if (panel.entity === NEW_ENTITY) {
     return (
       <StopDrawer inUrl title={t('rules.newTitle')} opensAt="full" onClose={panel.close}>

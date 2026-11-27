@@ -6,6 +6,9 @@ import { NoticeContext, type NoticeAction, type Notices } from './notices'
 
 // The one toast region of the workspace (D-482): what `useNotices` says shows here, above the tab bar.
 
+const SEPARATOR = ' · '
+const CLOSE: NoticeAction = { labelKey: 'common.close', run: () => undefined }
+
 interface Shown {
   readonly id: number
   readonly message: string
@@ -26,9 +29,17 @@ export function NoticeScope({ children }: { readonly children: ReactNode }) {
         count.current += 1
         setShown({ id: count.current, message, action: action ?? null, held: false })
       },
-      fail: (error) => {
+      fail: (error, key) => {
         count.current += 1
-        setShown({ id: count.current, message: t(failureKey(error)), action: { labelKey: 'common.close', run: () => undefined }, held: true })
+        setShown({ id: count.current, message: t(key ?? failureKey(error)), action: CLOSE, held: true })
+      },
+      report: (done, refusal) => {
+        count.current += 1
+        setShown(
+          refusal === null
+            ? { id: count.current, message: done, action: null, held: false }
+            : { id: count.current, message: [done, t(failureKey(refusal))].join(SEPARATOR), action: CLOSE, held: true },
+        )
       },
     }),
     [],

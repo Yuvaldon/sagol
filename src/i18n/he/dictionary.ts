@@ -1322,6 +1322,7 @@ export const dictionary = {
       onCard: 'בכרטיס',
       linked: 'קושר לחייל',
       linkedMany: 'בקשות אושרו',
+      leftForReview: 'נשארו לבדיקה',
       rejected: 'נדחתה הבקשה של',
       openCard: 'פתח כרטיס',
       reasons: {

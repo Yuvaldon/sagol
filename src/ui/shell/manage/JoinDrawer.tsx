@@ -32,7 +32,7 @@ import { formatInstant } from '../../patterns/dates'
 import { unitStateLabel } from '../../patterns/units'
 import { Button } from '../../primitives/Button'
 import { TextField } from '../../primitives/fields'
-import { SelectField } from '../../primitives/SelectField'
+import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { unitOptions } from '../../modules/soldiers/unitOptions'
 import { useNotices } from '../notices'
 import { REASON_CHIPS } from './joinWords'
@@ -47,6 +47,7 @@ const SEPARATOR = ' · '
 const WORD = ' '
 const MAX_FOUND = 8
 const NO_ROWS: readonly never[] = []
+const NO_UNIT = 'none'
 
 const BUTTON = 'inline-flex min-h-tab cursor-pointer items-center justify-center rounded-full px-xl text-body font-bold outline-focus outline-offset-2 data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
 const PRIMARY = `${BUTTON} flex-1 bg-action-solid text-on-action shadow-primary`
@@ -152,7 +153,8 @@ function Answer({ request, assessment, onClose }: { readonly request: AccountLin
   const commands = useLinkReviewCommands()
   const [more, setMore] = useState(false)
   const [picked, setPicked] = useState<string | null>(null)
-  const [unitId, setUnitId] = useState<UnitId | null>(null)
+  // Unchosen until the actor picks; NULL is a real choice, "no unit", for who may create a soldier with none.
+  const [unitId, setUnitId] = useState<UnitId | null | undefined>(undefined)
   const [confirming, setConfirming] = useState<Confirming | null>(null)
   // A refusal shows in the drawer, which stands over the toast.
   const [failure, setFailure] = useState<AppError | null>(null)
@@ -164,8 +166,12 @@ function Answer({ request, assessment, onClose }: { readonly request: AccountLin
     [soldiers, ranks, units, memberships, today, reads],
   )
   const candidates = candidateRows(assessment.candidates, rows)
-  const options = unitOptions(liveUnits.status === 'ready' ? liveUnits.value : NO_ROWS, placements.placeIn)
-  const chosenUnit = unitId ?? options[0]?.value ?? null
+  const options: SelectOption<UnitId | null>[] = [
+    ...unitOptions(liveUnits.status === 'ready' ? liveUnits.value : NO_ROWS, placements.placeIn),
+    ...(placements.withoutUnit ? [{ key: NO_UNIT, label: { key: 'soldiers.noUnit' as const }, value: null }] : []),
+  ]
+  const first = options[0]
+  const chosenUnit = unitId === undefined ? (first === undefined ? undefined : first.value) : unitId
 
   const answer = (review: LinkReview, done: (request: AccountLinkRequest) => void) => {
     void commands.run({ request, review }).then((result) => {
@@ -222,14 +228,14 @@ function Answer({ request, assessment, onClose }: { readonly request: AccountLin
           {options.length === 0 ? (
             <p className="text-body text-text-muted">{t('accountLinks.createUnavailable')}</p>
           ) : (
-            <SelectField labelKey="manage.add.unit" name="unit_id" value={chosenUnit} options={options} onChange={setUnitId} error={null} />
+            <SelectField labelKey="manage.add.unit" name="unit_id" value={chosenUnit ?? null} options={options} onChange={setUnitId} error={null} />
           )}
           <div className="flex gap-sm">
             {options.length === 0 ? null : (
               <AriaButton
-                isDisabled={chosenUnit === null || commands.isPending || today === null}
+                isDisabled={chosenUnit === undefined || commands.isPending || today === null}
                 onPress={() => {
-                  if (chosenUnit === null || today === null) return
+                  if (chosenUnit === undefined || today === null) return
                   answer({ kind: 'create_soldier', values: { command_rank_id: null, membership: { unit_id: chosenUnit, valid_from: today } } }, linked)
                 }}
                 className={PRIMARY}

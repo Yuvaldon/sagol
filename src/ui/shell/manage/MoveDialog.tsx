@@ -14,7 +14,8 @@ import { useNotices } from '../notices'
 const WORD = ' '
 const NO_ROWS: readonly never[] = []
 
-export function MoveDialog({ soldierIds, onClose }: { readonly soldierIds: readonly SoldierId[]; readonly onClose: (done: boolean) => void }) {
+/** `onClose` gets the soldiers the move refused, to keep them chosen; NULL when the dialog was let go. */
+export function MoveDialog({ soldierIds, onClose }: { readonly soldierIds: readonly SoldierId[]; readonly onClose: (refused: readonly SoldierId[] | null) => void }) {
   const today = useToday()
   const units = useUnits()
   const soldiers = useSoldiers()
@@ -31,15 +32,19 @@ export function MoveDialog({ soldierIds, onClose }: { readonly soldierIds: reado
   const submit = async () => {
     if (unitId === null || date === '' || memberships.status !== 'ready') return
     const result = await move.run({ soldierIds, memberships: memberships.value, values: { unit_id: unitId, effective_date: date } })
-    onClose(true)
     if (!result.ok) {
+      onClose([...soldierIds])
       notices.fail(result.error)
       return
     }
-    const answers = [...result.value.values()]
-    const refusal = answers.find((answer) => !answer.ok)
-    if (refusal !== undefined && !refusal.ok) notices.fail(refusal.error)
-    else notices.say([String(answers.length), t('manage.move.done')].join(WORD))
+    const answers = [...result.value]
+    const refused = answers.flatMap(([soldierId, answer]) => (answer.ok ? [] : [soldierId]))
+    const firstRefusal = answers.find(([, answer]) => !answer.ok)?.[1]
+    onClose(refused)
+    notices.report(
+      [String(answers.length - refused.length), t('manage.move.done')].join(WORD),
+      firstRefusal === undefined || firstRefusal.ok ? null : firstRefusal.error,
+    )
   }
 
   return (
@@ -49,7 +54,7 @@ export function MoveDialog({ soldierIds, onClose }: { readonly soldierIds: reado
       confirmKey="manage.move.submit"
       isPending={move.isPending || missing}
       onCancel={() => {
-        onClose(false)
+        onClose(null)
       }}
       onConfirm={() => {
         void submit()

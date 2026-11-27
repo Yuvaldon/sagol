@@ -83,9 +83,12 @@ function RuleRow({
           onPress={() => {
             panel.open(PANEL_IDS.rules, { entity: overriddenBy })
           }}
-          className="inline-flex min-h-badge shrink-0 cursor-pointer items-center rounded-full bg-inner px-md text-small font-semibold text-text-muted outline-focus outline-offset-2 data-focus-visible:outline-2"
+          className="group inline-flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center outline-none"
         >
-          {t('manage.rules.notApplied')}
+          {/* A quiet pill, as the handoff draws it, inside a 44 px target. */}
+          <span className="inline-flex min-h-badge items-center rounded-full bg-inner px-md text-small font-semibold text-text-muted outline-focus outline-offset-2 group-data-focus-visible:outline-2">
+            {t('manage.rules.notApplied')}
+          </span>
         </AriaButton>
       )}
       {canToggle ? (
@@ -98,7 +101,7 @@ function RuleRow({
               if (!result.ok) notices.fail(result.error)
             })
           }}
-          className="group flex min-h-touch shrink-0 cursor-pointer items-center outline-none"
+          className="group flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center outline-none"
         >
           <span className="flex h-icon w-control shrink-0 items-center rounded-pill border border-line bg-inner p-2xs outline-focus outline-offset-2 group-data-focus-visible:outline-2 group-data-selected:border-action-solid group-data-selected:bg-action-solid">
             <span className="size-dot rounded-pill bg-text-muted group-data-selected:ms-auto group-data-selected:bg-on-action" />

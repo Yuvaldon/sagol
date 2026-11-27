@@ -21,6 +21,7 @@ import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notice
 import { Popover } from '../../primitives/overlays'
 import { useNotices } from '../notices'
 import { PageFrame } from '../PageFrame'
+import { joinOutcome } from './joinOutcome'
 import { REASON_CHIPS } from './joinWords'
 import { PageTop } from './PageTop'
 
@@ -67,40 +68,55 @@ function Group({ titleKey, entries, children }: { readonly titleKey: I18nKey; re
   )
 }
 
-/** The "מחלקה" chip of a request with no candidate: a short menu of the units its new soldier may go to. */
+/** A choice of the "מחלקה" chip: a unit, or no unit (NULL) for who may create a soldier with none. */
+interface UnitChoice {
+  readonly key: string
+  readonly unitId: UnitId | null
+  readonly name: string
+}
+
+/**
+ * The "מחלקה" chip of a request with no candidate: a short menu of where its new soldier may go. The chip is drawn small,
+ * as the handoff draws it, inside a 44 px target.
+ */
 function UnitChip({
   options,
   chosen,
   onChoose,
 }: {
-  readonly options: readonly { readonly id: UnitId; readonly name: string }[]
-  readonly chosen: UnitId | null
-  readonly onChoose: (unitId: UnitId) => void
+  readonly options: readonly UnitChoice[]
+  /** Undefined until a choice is made. */
+  readonly chosen: UnitId | null | undefined
+  readonly onChoose: (unitId: UnitId | null) => void
 }) {
-  const name = options.find((option) => option.id === chosen)?.name ?? null
+  const name = chosen === undefined ? null : (options.find((option) => option.unitId === chosen)?.name ?? null)
   return (
     <MenuTrigger>
       <AriaButton
         aria-label={name === null ? t('manage.joins.unitChip') : [t('manage.joins.unitChip'), name].join(SEPARATOR)}
-        className={`inline-flex min-h-badge shrink-0 cursor-pointer items-center gap-2xs rounded-full px-md text-small font-semibold outline-focus outline-offset-2 data-focus-visible:outline-2 ${
-          name === null ? 'border border-dashed border-line-dashed text-text-muted' : 'bg-action-soft text-on-action-soft'
-        }`}
+        className="group inline-flex min-h-touch min-w-touch shrink-0 cursor-pointer items-center justify-center outline-none"
       >
-        {name ?? t('manage.joins.unitChip')}
-        <ChevronDown aria-hidden size={14} />
+        <span
+          className={`inline-flex min-h-badge items-center gap-2xs rounded-full px-md text-small font-semibold outline-focus outline-offset-2 group-data-focus-visible:outline-2 ${
+            name === null ? 'border border-dashed border-line-dashed text-text-muted' : 'bg-action-soft text-on-action-soft'
+          }`}
+        >
+          {name ?? t('manage.joins.unitChip')}
+          <ChevronDown aria-hidden size={14} />
+        </span>
       </AriaButton>
       <Popover className="glass-menu min-w-trigger rounded-panel p-xs">
         <Menu
           onAction={(key) => {
-            const option = options.find((candidate) => candidate.id === key)
-            if (option !== undefined) onChoose(option.id)
+            const option = options.find((candidate) => candidate.key === key)
+            if (option !== undefined) onChoose(option.unitId)
           }}
           className="flex max-h-sheet-height max-w-menu flex-col gap-2xs overflow-y-auto outline-none"
         >
           {options.map((option) => (
             <MenuItem
-              key={option.id}
-              id={option.id}
+              key={option.key}
+              id={option.key}
               textValue={option.name}
               className="flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-md text-body outline-none data-focused:bg-inner"
             >
@@ -113,6 +129,8 @@ function UnitChip({
   )
 }
 
+const NO_UNIT = 'none'
+
 const NO_REQUESTS: readonly AccountLinkRequest[] = []
 
 export function JoinsPage({ name }: { readonly name: string }) {
@@ -124,16 +142,19 @@ export function JoinsPage({ name }: { readonly name: string }) {
   const units = useUnits()
   const placements = useLinkPlacements(units.status === 'ready' ? units.value : [])
   const approval = useJoinApproval()
-  const [placed, setPlaced] = useState<ReadonlyMap<string, UnitId>>(new Map())
+  const [placed, setPlaced] = useState<ReadonlyMap<string, UnitId | null>>(new Map())
   const groups = useMemo(() => (assessments.status === 'ready' ? joinGroups(pending, assessments.value) : null), [assessments, pending])
   const unitChoices = useMemo(
-    () => (units.status === 'ready' ? units.value.filter((unit) => placements.placeIn(unit.id)).map((unit) => ({ id: unit.id, name: unit.name })) : []),
+    (): UnitChoice[] => [
+      ...(units.status === 'ready' ? units.value.filter((unit) => placements.placeIn(unit.id)).map((unit) => ({ key: unit.id, unitId: unit.id, name: unit.name })) : []),
+      ...(placements.withoutUnit ? [{ key: NO_UNIT, unitId: null, name: t('soldiers.noUnit') }] : []),
+    ],
     [units, placements],
   )
   const ready = groups?.ready ?? []
   const placedNow = (groups?.newSoldiers ?? []).flatMap((entry) => {
-    const unitId = placed.get(entry.request.id)
-    return unitId === undefined ? [] : [{ request: entry.request, unitId }]
+    if (!placed.has(entry.request.id)) return []
+    return [{ request: entry.request, unitId: placed.get(entry.request.id) ?? null }]
   })
   const count = ready.length + placedNow.length
   const approveAll = () => {
@@ -143,11 +164,8 @@ export function JoinsPage({ name }: { readonly name: string }) {
         notices.fail(result.error)
         return
       }
-      const answers = [...result.value.values()]
-      const linked = answers.filter((answer) => answer.kind === 'linked').length
-      const refused = answers.find((answer) => answer.kind === 'refused')
-      if (refused?.kind === 'refused') notices.fail(refused.error)
-      else notices.say([String(linked), t('manage.joins.linkedMany')].join(WORD))
+      const { done, refusal } = joinOutcome(result.value)
+      notices.report(done, refusal)
     })
   }
 
@@ -202,7 +220,7 @@ export function JoinsPage({ name }: { readonly name: string }) {
                   unitChoices.length === 0 ? null : (
                     <UnitChip
                       options={unitChoices}
-                      chosen={placed.get(entry.request.id) ?? null}
+                      chosen={placed.has(entry.request.id) ? (placed.get(entry.request.id) ?? null) : undefined}
                       onChoose={(unitId) => {
                         setPlaced((current) => new Map(current).set(entry.request.id, unitId))
                       }}

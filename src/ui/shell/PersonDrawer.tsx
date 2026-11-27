@@ -34,6 +34,7 @@ import { SmallDialog } from '../patterns/Dialogs'
 import { FailureNotice, LoadingNotice } from '../patterns/Notices'
 import { UNIT_STATE_KEYS } from '../patterns/units'
 import { IconButton } from '../primitives/Button'
+import { restoreFailureKey } from '../patterns/restoreFailure'
 import { useNotices } from './notices'
 import { standingOf } from './today/standing'
 import { SoldierArchiveDrawer } from './manage/ArchiveDrawers'
@@ -275,7 +276,7 @@ function useCardActions(soldier: Soldier, onArchived: () => void) {
               labelKey: 'common.cancel',
               run: () => {
                 void commands.restore.run(result.value).then((restored) => {
-                  if (!restored.ok) notices.fail(restored.error)
+                  if (!restored.ok) notices.fail(restored.error, restoreFailureKey(restored.error))
                 })
               },
             })
@@ -304,7 +305,15 @@ function useCardActions(soldier: Soldier, onArchived: () => void) {
         <p className="text-body font-semibold">{name}</p>
       </SmallDialog>
     )
-  return { actions, dialog: [dialog, failure === null ? null : <FailureNotice key="failure" error={failure} />] }
+  return {
+    actions,
+    dialog: (
+      <>
+        {dialog}
+        {failure === null ? null : <FailureNotice error={failure} />}
+      </>
+    ),
+  }
 }
 
 function PersonCard({ person, onClose }: { readonly person: Person; readonly onClose: () => void }) {
