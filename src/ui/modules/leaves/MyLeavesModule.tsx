@@ -7,7 +7,7 @@ import { Button as AriaButton } from 'react-aria-components'
 import { formatDate } from '../../patterns/dates'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { VirtualList } from '../../patterns/VirtualList'
-import { StatusChip, TypeMark } from './LeaveMarks'
+import { LeaveBadge, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, typeNameOf } from './leaveText'
 import { MyRotationSection } from './MyRotationSection'
 import { MyUpdates } from './MyUpdates'
@@ -35,7 +35,7 @@ function MyLeaveRow({ leave, type }: { readonly leave: Leave; readonly type: Lea
           {[leaveDatesText(leave), leaveDaysText(leave)].join(LINE_SEPARATOR)}
         </span>
       </span>
-      <StatusChip status={leave.status} />
+      <LeaveBadge status={leave.status} />
     </AriaButton>
   )
 }

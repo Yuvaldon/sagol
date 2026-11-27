@@ -4,30 +4,7 @@ import { Badge, type BadgeTone } from '../../kit/Badge'
 import { glyphOf } from '../../theme/icons'
 import { leaveTypeToneOf } from '../../theme/palette'
 
-// The two small signs of a leave in a list: its status and its type (D-119, D-120).
-
-const STATUS_KEYS: Record<LeaveStatus, I18nKey> = {
-  pending: 'leaves.statusPending',
-  approved: 'leaves.statusApproved',
-  rejected: 'leaves.statusRejected',
-  cancelled: 'leaves.statusCancelled',
-}
-
-/** Status by form as well as color (D-111): a solid fill, a dashed edge, or a quiet edge for a closed leave. */
-const STATUS_CHIPS: Record<LeaveStatus, string> = {
-  pending: 'border-dashed border-status-pending text-status-pending-text',
-  approved: 'border-status-approved bg-status-approved text-on-action',
-  rejected: 'border-status-rejected text-status-rejected',
-  cancelled: 'border-line text-text-muted',
-}
-
-export function StatusChip({ status }: { readonly status: LeaveStatus }) {
-  return (
-    <span className={`inline-flex shrink-0 items-center rounded-pill border px-sm py-2xs text-label font-semibold ${STATUS_CHIPS[status]}`}>
-      {t(STATUS_KEYS[status])}
-    </span>
-  )
-}
+// The two small signs of a leave in a list: its status, as the new interface's badge, and its type (D-119, D-120, D-454).
 
 const BADGES: Record<LeaveStatus, { readonly tone: BadgeTone; readonly labelKey: I18nKey }> = {
   pending: { tone: 'pending', labelKey: 'leaves.badgePending' },

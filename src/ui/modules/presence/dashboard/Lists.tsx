@@ -4,6 +4,7 @@ import { t } from '@i18n'
 import {
   fullName,
   usePanel,
+  useShellPlace,
   usePresenceDay,
   useRulesDay,
   type Dashboard,
@@ -83,6 +84,7 @@ function Group({ label, children }: { readonly label: string; readonly children:
 /** "ממתין לטיפול": requests awaiting the actor, then the days ahead that break a rule. */
 export function OutstandingList({ dashboard, outstanding }: { readonly dashboard: Dashboard; readonly outstanding: DashboardOutstanding }) {
   const panel = usePanel()
+  const place = useShellPlace()
   const rules = useRulesDay()
   const names = useMemo(
     () => new Map<SoldierId, string>(dashboard.scope.rows.map((row) => [row.soldier.id, fullName(row.soldier)])),
@@ -113,7 +115,11 @@ export function OutstandingList({ dashboard, outstanding }: { readonly dashboard
       )}
       {rest <= 0 || !dashboard.approver ? null : (
         <li>
-          <AriaButton className={`${ROW} text-text-muted`} onPress={() => panel.open(PANEL_IDS.leaveInbox)}>
+          <AriaButton className={`${ROW} text-text-muted`} onPress={() => {
+              // The rest wait on the page of requests (D-474): the dashboard's drawer gives way to it.
+              panel.handOver()
+              place.openPage('requests')
+            }}>
             {moreText(rest)}
           </AriaButton>
         </li>

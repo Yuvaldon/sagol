@@ -13,6 +13,7 @@ import {
 } from '@logic'
 import { Check, Copy, Pencil, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { Button as AriaButton } from 'react-aria-components'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatInstant } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
@@ -22,13 +23,15 @@ import { LeaveDuplicateForm } from './LeaveDuplicateForm'
 import { LeaveEditForm } from './LeaveEditForm'
 import { LeaveStepDialog, type ClosingStep } from './LeaveStepDialog'
 import { LeaveThread } from './LeaveThread'
-import { StatusChip, TypeMark } from './LeaveMarks'
+import { LeaveBadge, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, personNames, typeNameOf } from './leaveText'
 
 // One leave (D-119): what it is, what the actor may do with it now, and its thread. A step shows at once and is
 // taken back when the command refuses; the refusal stays on screen, over the leave as it is stored.
 
 const DETAIL_SEPARATOR = ' · '
+const ACTION =
+  'inline-flex min-h-tab cursor-pointer items-center justify-center gap-xs rounded-control px-md text-body font-semibold outline-focus outline-offset-2 data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
 
 function Detail({ labelKey, children }: { readonly labelKey: I18nKey; readonly children: ReactNode }) {
   return (
@@ -112,47 +115,53 @@ function LeaveView({
   return (
     <div className="flex flex-col gap-xl">
       <section aria-label={t('leaves.detailsLabel')} className="flex flex-col gap-md">
-        <div className="flex items-center justify-between gap-sm">
-          <h3 className="flex min-w-none items-center gap-sm text-body font-bold">
-            <TypeMark type={type} />
-            <span className="truncate">{typeNameOf(type)}</span>
-          </h3>
-          <StatusChip status={leave.status} />
+        {/* The card of the leave (D-454): its days large, then its type and how many days; the drawer names the type. */}
+        <div className="flex flex-col gap-md rounded-card bg-surface p-lg">
+          <div className="flex items-start justify-between gap-sm">
+            <div className="flex min-w-none flex-col gap-2xs">
+              <p className="text-title font-bold tracking-tight tabular-nums">{leaveDatesText(leave)}</p>
+              <p className="flex items-center gap-xs text-body text-text-muted">
+                <TypeMark type={type} />
+                <span className="truncate tabular-nums">{[typeNameOf(type), leaveDaysText(leave)].join(DETAIL_SEPARATOR)}</span>
+              </p>
+            </div>
+            <LeaveBadge status={leave.status} />
+          </div>
+          <dl className="flex flex-col gap-md">
+            <Detail labelKey="leaves.soldier">{nameOf(leave.soldier_id)}</Detail>
+            {leave.reason === null ? null : <Detail labelKey="leaves.reason">{leave.reason}</Detail>}
+            {reviewed === null ? null : <Detail labelKey="leaves.reviewedBy">{reviewed}</Detail>}
+          </dl>
         </div>
-        <dl className="flex flex-col gap-md">
-          <Detail labelKey="leaves.soldier">{nameOf(leave.soldier_id)}</Detail>
-          <Detail labelKey="leaves.dates">
-            <span className="tabular-nums">{[leaveDatesText(leave), leaveDaysText(leave)].join(DETAIL_SEPARATOR)}</span>
-          </Detail>
-          {leave.reason === null ? null : <Detail labelKey="leaves.reason">{leave.reason}</Detail>}
-          {reviewed === null ? null : <Detail labelKey="leaves.reviewedBy">{reviewed}</Detail>}
-        </dl>
         {failure === null ? null : <FailureNotice error={failure} />}
-        <div role="group" aria-label={t('leaves.actionsLabel')} className="flex flex-wrap gap-sm empty:hidden">
+        {/* What can be done with the leave, each with the same weight (D-454); approving alone is the filled one. */}
+        <div role="group" aria-label={t('leaves.actionsLabel')} className="grid grid-cols-2 gap-sm empty:hidden">
           {actions.approve ? (
-            <Button
-              variant="primary"
+            <AriaButton
               isDisabled={transition.isPending}
+              className={`${ACTION} bg-action-solid text-on-action`}
               onPress={() => {
                 void step('approve')
               }}
             >
               <Check aria-hidden size={14} />
               {t('leaves.approve')}
-            </Button>
+            </AriaButton>
           ) : null}
           {actions.reject ? (
-            <Button
+            <AriaButton
+              className={`${ACTION} border border-line bg-surface text-text`}
               onPress={() => {
                 setAsking('reject')
               }}
             >
               <X aria-hidden size={14} />
               {t('leaves.reject')}
-            </Button>
+            </AriaButton>
           ) : null}
           {actions.reopen ? (
-            <Button
+            <AriaButton
+              className={`${ACTION} border border-line bg-surface text-text`}
               isDisabled={transition.isPending}
               onPress={() => {
                 void step('reopen')
@@ -160,10 +169,11 @@ function LeaveView({
             >
               <RotateCcw aria-hidden size={14} />
               {t('leaves.reopen')}
-            </Button>
+            </AriaButton>
           ) : null}
           {actions.edit ? (
-            <Button
+            <AriaButton
+              className={`${ACTION} border border-line bg-surface text-text`}
               onPress={() => {
                 setFailure(null)
                 setEditing(0)
@@ -171,10 +181,11 @@ function LeaveView({
             >
               <Pencil aria-hidden size={14} />
               {t('leaves.edit')}
-            </Button>
+            </AriaButton>
           ) : null}
           {creation.duplicable.length > 0 ? (
-            <Button
+            <AriaButton
+              className={`${ACTION} border border-line bg-surface text-text`}
               onPress={() => {
                 setFailure(null)
                 setDuplicating(true)
@@ -182,16 +193,17 @@ function LeaveView({
             >
               <Copy aria-hidden size={14} />
               {t('leaves.duplicate')}
-            </Button>
+            </AriaButton>
           ) : null}
           {actions.cancel ? (
-            <Button
+            <AriaButton
+              className={`${ACTION} border border-line bg-surface text-text`}
               onPress={() => {
                 setAsking('cancel')
               }}
             >
               {t('leaves.cancel')}
-            </Button>
+            </AriaButton>
           ) : null}
         </div>
       </section>

@@ -14,7 +14,7 @@ import { ModalOverlay } from '../primitives/overlays'
 
 const MotionModal = motion.create(Modal)
 
-type Stop = 'half' | 'full'
+export type Stop = 'half' | 'full'
 
 const STOPS: Readonly<Record<Stop, string>> = {
   half: 'max-h-stop-half',
@@ -27,14 +27,19 @@ export interface StopDrawerProps {
   /** Under the title: one quiet line. */
   readonly detail?: string | undefined
   readonly onClose: () => void
+  /** The stop it opens at: half its height, or full for what is read at length. */
+  readonly opensAt?: Stop
+  /** What is open lives in the URL, as a module panel's does, so the panel's entry is the drawer's (D-332, D-337). */
+  readonly inUrl?: boolean
   readonly children: ReactNode
 }
 
-export function StopDrawer({ title, detail, onClose, children }: StopDrawerProps) {
+export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = false, children }: StopDrawerProps) {
   const dragControls = useDragControls()
-  const [stop, setStop] = useState<Stop>('half')
+  const [stop, setStop] = useState<Stop>(opensAt)
   return (
     <ModalOverlay
+      inUrl={inUrl}
       isOpen
       isDismissable
       onOpenChange={(open) => {

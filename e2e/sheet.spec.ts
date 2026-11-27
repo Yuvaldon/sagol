@@ -11,9 +11,13 @@ function row(page: Page, n: number) {
   return drawer(page).getByRole('group', { name: `${he.leaves.row} ${String(n)}`, exact: true })
 }
 
+/** A row's type is a row of chips (D-454): a chip hides its radio inside its label, and a person presses the label. */
 async function chooseIn(page: Page, scope: Locator, label: string, option: string) {
-  await scope.getByRole('button', { name: new RegExp(`${label}$`) }).click()
-  await page.getByRole('option', { name: option, exact: true }).click()
+  await scope
+    .getByRole('radiogroup', { name: label, exact: true })
+    .locator('label')
+    .filter({ has: page.getByRole('radio', { name: option, exact: true }) })
+    .click()
 }
 
 async function typeDateIn(page: Page, scope: Locator, label: string, day: string, month: string, year: string) {

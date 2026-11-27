@@ -145,6 +145,25 @@ export async function chooseAppearance(page: Page, name: string) {
 /** The requests row of "ניהול": named alone, and described by what waits (D-120). */
 export const INBOX = he.inbox.open
 
+/** The page of every request that waits, from its row of "ניהול" (D-474). */
+export async function openRequests(page: Page) {
+  await openTab(page, 'manage')
+  await managePage(page).getByRole('button', { name: INBOX, exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1, name: he.today.approvals })).toBeVisible()
+}
+
+/** What waits, on that page. */
+export function requestsList(page: Page) {
+  return page.getByRole('region', { name: he.inbox.pendingLabel })
+}
+
+/** The requests that closed: a drawer behind the page's door (D-120). */
+export async function openClosedRequests(page: Page) {
+  await openRequests(page)
+  await page.getByRole('button', { name: he.today.closedDoor, exact: true }).click()
+  await expect(page.getByRole('dialog', { name: he.inbox.closedLabel })).toBeVisible()
+}
+
 export async function expectWaitingRequests(page: Page, count: number) {
   await openTab(page, 'manage')
   await expect(managePage(page).getByRole('button', { name: INBOX, exact: true })).toHaveAccessibleDescription(

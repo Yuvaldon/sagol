@@ -2,6 +2,7 @@ import type { CalendarDate, LeaveType, LeaveTypeGroup, LeaveTypeId, Soldier, Sol
 import { t } from '@i18n'
 import {
   fullName,
+  isBeforeDay,
   isRotationLeave,
   leaveSheetIssues,
   newLeaveSheetValues,
@@ -13,8 +14,10 @@ import {
   type NewLeaveDraft,
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
-import { Plus, X } from 'lucide-react'
+import { ChevronDown, Plus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Button as AriaButton, Disclosure, DisclosurePanel } from 'react-aria-components'
+import { Badge } from '../../kit/Badge'
 import { EntityForm } from '../../patterns/EntityForm'
 import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
 import { PropertyFields } from '../../patterns/properties/PropertyFields'
@@ -23,10 +26,12 @@ import { RuleGateDialog, RuleWarnings } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { Button, IconButton } from '../../primitives/Button'
 import { DateField } from '../../primitives/DateField'
-import { SelectField, type SelectOption } from '../../primitives/SelectField'
+import { ChipsField } from '../../primitives/ChipsField'
 import { SwitchField } from '../../primitives/SwitchField'
 import { ComboField, TextField } from '../../primitives/fields'
 import { LeaveTypeInPlace } from '../leave-types/LeaveTypesModule'
+import { DatesMonth } from './DatesMonth'
+import { leaveDaysText } from './leaveText'
 import { leaveTypeOptions } from './typeOptions'
 
 // The request sheet (D-275): one soldier, then a row per request, each of its own type and days, and a row may repeat
@@ -40,9 +45,6 @@ function sheetFields(rowCount: number): string[] {
   const rows = Array.from({ length: rowCount }, (_, row) => ROW_FIELDS.map((field) => `rows.${String(row)}.${field}`))
   return ['soldier_id', ...rows.flat()]
 }
-
-/** What the type field holds until a type is chosen. It leaves the list once one is. */
-const CHOOSE_TYPE: SelectOption<LeaveTypeId | null> = { key: 'none', label: { key: 'leaves.chooseType' }, value: null }
 
 export function LeaveSheetForm({
   soldiers,
@@ -102,7 +104,8 @@ export function LeaveSheetForm({
 
   return (
     <EntityForm
-      titleKey="leaves.newTitle"
+      // The drawer is named "יציאה חדשה" already.
+      titleKey={null}
       submitKey="leaves.submit"
       isPending={create.isPending}
       failure={state.failure}
@@ -137,6 +140,10 @@ export function LeaveSheetForm({
                 <div key={row.key} role="group" aria-label={title} className="flex flex-col gap-md rounded-control border border-line p-md">
                   <div className="flex items-center justify-between gap-sm">
                     <p className="text-name font-semibold">{title}</p>
+                    {/* How many days the request holds, as its dates stand now. */}
+                    {row.start_date === '' || row.end_date === '' || isBeforeDay(row.end_date, row.start_date) ? null : (
+                      <Badge tone="neutral">{leaveDaysText({ start_date: row.start_date, end_date: row.end_date })}</Badge>
+                    )}
                     {rowsField.state.value.length > 1 ? (
                       <IconButton
                         labelKey="leaves.removeRow"
@@ -163,11 +170,11 @@ export function LeaveSheetForm({
                   >
                     {(field) => (
                       <>
-                        <SelectField
+                        <ChipsField
                           labelKey="leaves.type"
                           name={field.name}
                           value={field.state.value}
-                          options={field.state.value === null ? [CHOOSE_TYPE, ...leaveTypeOptions(groups, types)] : leaveTypeOptions(groups, types)}
+                          options={leaveTypeOptions(groups, types)}
                           onChange={field.handleChange}
                           error={error(field.state.meta.errors, index, 'leave_type_id')}
                         />
@@ -204,6 +211,26 @@ export function LeaveSheetForm({
                       )}
                     </form.Field>
                   </div>
+                  <Disclosure>
+                    <AriaButton
+                      slot="trigger"
+                      className="flex min-h-touch w-full cursor-pointer items-center justify-between gap-sm rounded-control text-control font-semibold text-text-muted outline-focus outline-offset-2 data-focus-visible:outline-2"
+                    >
+                      {t('leaves.pickDays')}
+                      <ChevronDown aria-hidden size={16} />
+                    </AriaButton>
+                    <DisclosurePanel>
+                      <DatesMonth
+                        today={today}
+                        start={row.start_date === '' ? null : row.start_date}
+                        end={row.end_date === '' ? null : row.end_date}
+                        onChange={(selection) => {
+                          form.setFieldValue(`rows[${index}].start_date`, selection.start)
+                          form.setFieldValue(`rows[${index}].end_date`, selection.end)
+                        }}
+                      />
+                    </DisclosurePanel>
+                  </Disclosure>
                   {asksReason ? (
                     <form.Field name={`rows[${index}].reason`}>
                       {(field) => (

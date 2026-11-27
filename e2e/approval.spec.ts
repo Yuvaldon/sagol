@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, press, requestLeave, typeDate, openRotationInNewUnit } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, INBOX, expectWaitingRequests, managePage, openTab } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, INBOX, expectWaitingRequests, managePage, openTab, openRequests, requestsList, backToBoard } from './support/workspace.ts'
 
 // V5's demo: a bar opens its leave; approve, edit, comment, reject and reopen; the inbox with its pending and closed
 // lists; the "approve now" default; and an edit that another tab made stale. Desktop and mobile, RTL, with axe.
@@ -58,8 +58,10 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
     await leavesOf(page).first().click()
     await expect(page).toHaveURL(/panel=leaves&(tab=\w+&)?entity=[0-9a-f-]{36}/)
     const details = drawer(page).getByRole('region', { name: he.leaves.detailsLabel })
-    await expect(details.getByRole('heading', { name: 'רגילה' })).toBeVisible()
-    await expect(details.getByText(he.leaves.statusPending, { exact: true })).toBeVisible()
+    // The drawer is named by the leave's type; its card holds the days, the type and the badge.
+    await expect(drawer(page).getByRole('heading', { name: 'רגילה', exact: true })).toBeVisible()
+    await expect(details).toContainText('רגילה')
+    await expect(details.getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
     await expect(details.getByText(OWNER.name)).toBeVisible()
     await expect(details.getByText(`2 ${he.leaves.days}`)).toBeVisible()
     await expect(thread(page).getByRole('listitem')).toHaveText([new RegExp(he.leaves.eventCreated)])
@@ -70,7 +72,7 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
   await test.step('approving shows at once, and only the steps an approved leave allows remain', async () => {
     await action(page, he.leaves.approve).click()
     const details = drawer(page).getByRole('region', { name: he.leaves.detailsLabel })
-    await expect(details.getByText(he.leaves.statusApproved, { exact: true })).toBeVisible()
+    await expect(details.getByText(he.leaves.badgeApproved, { exact: true })).toBeVisible()
     await expect(details.getByText(he.leaves.reviewedBy)).toBeVisible()
     await expect(action(page, he.leaves.approve)).toHaveCount(0)
     await expect(action(page, he.leaves.reopen)).toBeVisible()
@@ -89,11 +91,11 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
     await expectNoAxeViolations(page)
     await drawer(page).getByRole('button', { name: he.common.save, exact: true }).click()
     const details = drawer(page).getByRole('region', { name: he.leaves.detailsLabel })
-    await expect(details.getByRole('heading', { name: 'מחלה' })).toBeVisible()
+    await expect(drawer(page).getByRole('heading', { name: 'מחלה', exact: true })).toBeVisible()
     await expect(details.getByText(`4 ${he.leaves.days}`)).toBeVisible()
     await expect(details.getByText('שפעת', { exact: true })).toBeVisible()
     // The owner may approve, so the edited leave stays approved (D-064).
-    await expect(details.getByText(he.leaves.statusApproved, { exact: true })).toBeVisible()
+    await expect(details.getByText(he.leaves.badgeApproved, { exact: true })).toBeVisible()
     await expect(thread(page)).toContainText(he.leaves.eventUpdated)
     await expect(thread(page)).not.toContainText(he.leaves.eventRescheduled)
     await expect(thread(page)).toContainText('רגילה ← מחלה')
@@ -134,7 +136,7 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
     await expectNoAxeViolations(page)
     await page.getByRole('button', { name: he.leaves.reject, exact: true }).last().click()
     const details = drawer(page).getByRole('region', { name: he.leaves.detailsLabel })
-    await expect(details.getByText(he.leaves.statusRejected, { exact: true })).toBeVisible()
+    await expect(details.getByText(he.leaves.badgeRejected, { exact: true })).toBeVisible()
     await expect(thread(page)).toContainText('אין כיסוי')
     await expect(action(page, he.leaves.edit)).toHaveCount(0)
     await closeDrawer(page)
@@ -142,30 +144,30 @@ test('a leave from its bar to a decision, and back', async ({ page }, testInfo) 
   })
 
   await test.step('the closed list is the way back: the leave is reopened from there', async () => {
-    await openModule(page, INBOX)
-    await expect(drawer(page).getByRole('heading', { name: he.inbox.emptyPendingTitle })).toBeVisible()
-    await drawer(page).getByRole('button', { name: he.inbox.tabClosed }).click()
+    await openRequests(page)
+    await expect(page.getByRole('heading', { name: he.inbox.emptyPendingTitle })).toBeVisible()
+    await page.getByRole('button', { name: he.today.closedDoor, exact: true }).click()
     await expect(page).toHaveURL(/panel=leave_closed/)
     const closed = drawer(page).getByRole('list', { name: he.inbox.closedLabel })
     await expect(closed.getByRole('listitem')).toHaveCount(1)
-    await expect(closed).toContainText(he.leaves.statusRejected)
+    await expect(closed).toContainText(he.leaves.badgeRejected)
     await expectNoAxeViolations(page)
     await closed.getByRole('button', { name: new RegExp(OWNER.name) }).click()
     await action(page, he.leaves.reopen).click()
-    await expect(drawer(page).getByRole('region', { name: he.leaves.detailsLabel }).getByText(he.leaves.statusPending, { exact: true })).toBeVisible()
+    await expect(drawer(page).getByRole('region', { name: he.leaves.detailsLabel }).getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
     await closeDrawer(page)
     await expect(leavesOf(page).first()).toHaveAccessibleName(`מחלה, ${he.leaves.statusPending}, 9–12 בנוב׳`)
   })
 
-  await test.step('the inbox approves from the row, and then has nothing waiting', async () => {
-    await openModule(page, INBOX)
-    const pending = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
+  await test.step('the page of requests approves from the row, and then has nothing waiting', async () => {
+    await openRequests(page)
+    const pending = requestsList(page)
     await expect(pending.getByRole('listitem')).toHaveCount(1)
     await expectNoAxeViolations(page)
     await shot(page, project, '3-inbox')
-    await pending.getByRole('button', { name: he.leaves.approve, exact: true }).click()
-    await expect(drawer(page).getByRole('heading', { name: he.inbox.emptyPendingTitle })).toBeVisible()
-    await closeDrawer(page)
+    await pending.getByRole('button', { name: `${he.leaves.approve} ${OWNER.name}` }).click()
+    await expect(page.getByRole('heading', { name: he.inbox.emptyPendingTitle })).toBeVisible()
+    await backToBoard(page)
     await expect(leavesOf(page).first()).toHaveAccessibleName(`מחלה, ${he.leaves.statusApproved}, 9–12 בנוב׳`)
     await shot(page, project, '4-board')
     await expectWaitingRequests(page, 0)
@@ -204,21 +206,21 @@ test('an edit another tab made stale says so, and continues from the stored leav
   await drawer(page).getByRole('button', { name: he.common.save, exact: true }).click()
   const details = drawer(page).getByRole('region', { name: he.leaves.detailsLabel })
   await expect(details.getByText(`3 ${he.leaves.days}`)).toBeVisible()
-  await expect(details.getByText(he.leaves.statusApproved, { exact: true })).toBeVisible()
+  await expect(details.getByText(he.leaves.badgeApproved, { exact: true })).toBeVisible()
 })
 
 test('the "approve now" default, and a link to a leave that is not there', async ({ page }) => {
   await setUp(page)
   await expect(leavesOf(page).first()).toHaveAccessibleName(PENDING_BAR)
 
-  await test.step('the inbox holds the default, and the new-leave form starts from it', async () => {
-    await openModule(page, INBOX)
-    const item = drawer(page).getByRole('switch', { name: he.account.approveNowDefault })
+  await test.step('the page of requests holds the default, and the new-leave form starts from it', async () => {
+    await openRequests(page)
+    const item = page.getByRole('switch', { name: he.account.approveNowDefault })
     await expect(item).not.toBeChecked()
     await expectNoAxeViolations(page)
-    await press(page, 'switch', he.account.approveNowDefault)
+    await page.locator('label').filter({ has: item }).click()
     await expect(item).toBeChecked()
-    await closeDrawer(page)
+    await backToBoard(page)
 
     await requestLeave(page, { type: 'רגילה', from: ['13', '11', '2026'], to: ['13', '11', '2026'] })
     // The bar shows before the command answers; the drawer closes once it has.
@@ -226,9 +228,9 @@ test('the "approve now" default, and a link to a leave that is not there', async
     await expect(leavesOf(page)).toHaveCount(2)
     await expect(leavesOf(page).nth(1)).toHaveAccessibleName(`רגילה, ${he.leaves.statusApproved}, 13 בנוב׳`)
     await page.reload()
-    await openModule(page, INBOX)
-    await expect(drawer(page).getByRole('switch', { name: he.account.approveNowDefault })).toBeChecked()
-    await closeDrawer(page)
+    await openRequests(page)
+    await expect(page.getByRole('switch', { name: he.account.approveNowDefault })).toBeChecked()
+    await backToBoard(page)
   })
 
   await test.step('an id that is no leave says "not found"', async () => {

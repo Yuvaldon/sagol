@@ -30,9 +30,20 @@ export async function closeDrawer(page: Page) {
   if ((await page.getByRole('dialog').count()) <= 1) await backToBoard(page)
 }
 
-/** Picks from a select inside the drawer. What a modal makes inert is still found by role. */
+/**
+ * Picks from a select inside the drawer. What a modal makes inert is still found by role. A new leave's type is a row
+ * of chips (D-454): a chip hides its radio inside its label, and a person presses the label.
+ */
 export async function choose(page: Page, label: string, option: string) {
-  await drawer(page).getByRole('button', { name: new RegExp(`${label}$`) }).click()
+  const chips = drawer(page).getByRole('radiogroup', { name: label, exact: true })
+  const select = drawer(page).getByRole('button', { name: new RegExp(`${label}$`) })
+  // The form may still be on its way: whichever of the two it shows is waited for.
+  await chips.or(select).first().waitFor()
+  if ((await chips.count()) > 0) {
+    await chips.last().locator('label').filter({ has: page.getByRole('radio', { name: option, exact: true }) }).click()
+    return
+  }
+  await select.click()
   await page.getByRole('option', { name: option, exact: true }).click()
 }
 

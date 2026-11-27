@@ -22,6 +22,7 @@ import { formatDate } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
 import { useOpener } from '../chrome'
 import { REQUESTS_OPENER } from './requestActions'
+import { ReportButton } from './ReportButton'
 import { RequestRows } from './Requests'
 import { Status } from './SoldierBlock'
 
@@ -147,15 +148,13 @@ export function MyRequestCard() {
 export function ReportCard() {
   const { rotation } = useRotationScope()
   const access = useModuleAccess()
-  const { openToday, today } = usePresenceDay()
+  const { today } = usePresenceDay()
   if (rotation === null || !access.soldiers) return null
   return (
     <Card titleKey="presence.title">
       <div className="flex items-center justify-between gap-md">
         <p className="min-w-none text-small text-text-muted tabular-nums">{today === null ? rotation.name : [rotation.name, formatDate(today, 'dayMonth')].join(SEPARATOR)}</p>
-        <Button variant="primary" onPress={openToday}>
-          {t('today.openReport')}
-        </Button>
+        <ReportButton labelKey="today.openReport" />
       </div>
     </Card>
   )

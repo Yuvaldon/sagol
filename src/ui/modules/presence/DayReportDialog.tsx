@@ -24,10 +24,10 @@ import {
   type ReportSection,
   type SectionConfirmation,
 } from '@logic'
-import { CheckCheck, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { CheckCheck, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Button as AriaButton, Dialog, Disclosure, DisclosurePanel, Heading, Modal } from 'react-aria-components'
-import { ModalOverlay } from '../../primitives/overlays'
+import { Button as AriaButton, Disclosure, DisclosurePanel, Heading } from 'react-aria-components'
+import { StopDrawer } from '../../kit/StopDrawer'
 import { groupLabel } from '../../board/labels'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { RuleViolations } from '../../patterns/rules/RuleViolations'
@@ -150,7 +150,7 @@ function UnitSection({
   const ListHeading = level === 3 ? 'h4' : 'h5'
   const lists = [...DAY_REPORT.text.listed, 'present' as const].filter((category) => section[category].length > 0)
   return (
-    <Disclosure className="group rounded-control border border-line">
+    <Disclosure className="group rounded-card bg-surface">
       <Heading level={level}>
         <AriaButton
           slot="trigger"
@@ -419,35 +419,17 @@ function DayReportBody() {
   )
 }
 
-/** The dialog, while the URL names the report and the actor may open the soldiers module (D-134). */
+/**
+ * The report's drawer (D-454), while the URL names the report and the actor may open the soldiers module (D-134). It
+ * opens at its full stop: a report is read at length.
+ */
 export function DayReportDialog() {
   const panel = usePanel()
   const access = useModuleAccess()
   if (panel.panel !== PANEL_IDS.presence || !access.soldiers) return null
   return (
-    <ModalOverlay
-      isOpen
-      isDismissable
-      onOpenChange={(open) => {
-        if (!open) panel.close()
-      }}
-      className="enter-scrim fixed inset-screen z-20 flex items-center justify-center bg-scrim p-sm md:p-lg"
-    >
-      <Modal className="glass-menu flex max-h-sheet-height w-full max-w-drawer flex-col overflow-hidden rounded-panel">
-        <Dialog className="flex min-h-none flex-col outline-none">
-          <header className="flex items-center gap-sm border-b border-line px-lg py-sm">
-            <Heading slot="title" level={2} className="min-w-none flex-1 text-body font-bold">
-              {t('presence.title')}
-            </Heading>
-            <IconButton labelKey="common.close" onPress={panel.close}>
-              <X aria-hidden size={16} />
-            </IconButton>
-          </header>
-          <div className="overflow-y-auto px-lg py-md">
-            <DayReportBody />
-          </div>
-        </Dialog>
-      </Modal>
-    </ModalOverlay>
+    <StopDrawer title={t('presence.title')} opensAt="full" onClose={panel.close}>
+      <DayReportBody />
+    </StopDrawer>
   )
 }
