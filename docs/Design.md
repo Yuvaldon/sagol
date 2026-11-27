@@ -183,7 +183,8 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **Cards**, in D-459's order, each absent when empty: "בקשות לאישור" (three rows with ✗ ✓, a count, a door),
   "בקשות הצטרפות", "הבקשה שלי" (type, dates, badge), "דוח 1" (a door, for who has no unit block, D-472), "איתך
   היום" (for who holds `presence:view` and has no unit block: the count beside the title, the names of who of their
-  unit is on base today as wrapped name pills, no door, D-478), "הסטטוס שלי" (for who sees the unit's block). In routine a
+  own unit (not the units under it) is on base today as wrapped name pills, no door, D-478, D-479; it gives "היום" to
+  a holder who reads nothing else), "הסטטוס שלי" (for who sees the unit's block). In routine a
   notice comes first (D-469).
 - **The pending-requests page** (`page=requests`): back, the title, the "approve now" default, every waiting
   request, a door to the closed ones. A toast follows a step.
@@ -256,7 +257,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | # | What | Why | Decision |
 |---|---|---|---|
 | 1 | The undesigned tools (leave-round planning, temporary units, rotations, routine switch, settings, the dashboard) stay as their current screens under "ניהול" | Removing them would lose capabilities units use; the package marked this open | D-456 |
-| 2 | "איתך היום" shows to who holds the presence-only permission `presence:view` and has no "לוח": names of who of their own unit (and the units under it) is on base today, answered by the server; the card opens nothing (superseded the earlier "no new permission", D-457) | The owner decided a plain soldier sees who is with them without reading leaves; the unit drawer the package names reads leaves | D-478 |
+| 2 | "איתך היום" shows to who holds the presence-only permission `presence:view` and has no "לוח": names of who of their own unit (that unit only, not the units under it) is on base today, answered by the server; the card opens nothing (superseded the earlier "no new permission", D-457) | The owner decided a plain soldier sees who is with them without reading leaves; the unit drawer the package names reads leaves; a wider reach waits for a level choice (OI-396) | D-478, D-479 |
 | 3 | Tap paths for the gestures marked "Open" follow the package's recommendations; a phone timeline bar is not dragged | A drag on a scrolling phone timeline fights the scroll | D-458 |
 | 4 | היום's cards: fixed order, an empty card is absent (but "הסטטוס שלי"), no maximum; "בקשות לאישור" opens a pending-requests page | The package left order, empty and maximum open | D-459 |
 | 5 | Desktop layout as above | The package gives rules, not screens | D-460 |
