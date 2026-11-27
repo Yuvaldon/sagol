@@ -89,6 +89,9 @@ test('"ניהול" opens "חיילים", where soldiers are added, found, sorted
     const card = await openSoldierCard(page, 'נועם בר')
     await expect(card.getByText('8000001')).toBeVisible()
     await expect(card.getByRole('list', { name: he.myLeaves.nextDaysTitle }).getByRole('listitem')).toHaveCount(14)
+    // Its days are chosen there, each a 44 px target.
+    const day = await card.getByRole('list', { name: he.myLeaves.nextDaysTitle }).getByRole('button').first().boundingBox()
+    expect(Math.min(day?.width ?? 0, day?.height ?? 0)).toBeGreaterThanOrEqual(44)
     await expectNoAxeViolations(page)
     await card.getByRole('button', { name: he.manage.person.full }).click()
     await expect(card.getByRole('heading', { name: he.soldiers.profileTitle, exact: true })).toBeVisible()
@@ -128,6 +131,20 @@ test('a multi-select moves several soldiers to another unit at once', async ({ p
   await expect(tray.getByRole('status')).toHaveText(`2 ${he.manage.people.selected}`)
   await expect(tab(page, 'manage')).toHaveCount(0)
   await expectNoAxeViolations(page)
+  // Choosing is a layer: the back button ends it and leaves the page where it was.
+  await page.goBack()
+  await expect(tray).toHaveCount(0)
+  await expect(soldiersHeading(page)).toBeVisible()
+  await page.getByRole('button', { name: he.manage.people.options }).click()
+  await page.getByRole('button', { name: he.manage.people.select }).click()
+  await soldierRow(page, 'אורי כהן').getByText('אורי כהן').click()
+  await soldierRow(page, 'יעל שחר').getByText('יעל שחר').click()
+  // What a search hides is not acted on: the tray counts the rows in sight.
+  await page.getByRole('button', { name: he.manage.people.search, exact: true }).click()
+  await page.getByLabel(he.manage.people.searchLabel).fill('שחר')
+  await expect(tray.getByRole('status')).toHaveText(`1 ${he.manage.people.selected}`)
+  await page.getByLabel(he.manage.people.searchLabel).fill('')
+  await expect(tray.getByRole('status')).toHaveText(`2 ${he.manage.people.selected}`)
   await tray.getByRole('button', { name: he.manage.people.move }).click()
   const dialog = page.getByRole('dialog', { name: he.manage.move.title })
   await dialog.getByRole('button', { name: new RegExp(`${he.soldiers.unit}$`) }).click()
@@ -147,6 +164,14 @@ test('"כללי נוכחות": the rules by unit, "לא חל" under a higher one
   await expect(page.getByRole('main').getByText(`מחלקה א`, { exact: true })).toBeVisible()
   await expect(lower.getByRole('button', { name: `${he.manage.rules.notApplied} · שבוע פעילות` })).toBeVisible()
   await expect(page.getByRole('main').getByText(`2 ${he.manage.rules.active}`)).toBeVisible()
+  // The quiet marker and the switch are drawn small, inside 44 px targets.
+  for (const target of [
+    lower.getByRole('button', { name: `${he.manage.rules.notApplied} · שבוע פעילות` }),
+    page.getByRole('switch', { name: `${he.manage.rules.enabled} ספר מחלקה` }).locator('xpath=ancestor::label[1]'),
+  ]) {
+    const box = await target.boundingBox()
+    expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(44)
+  }
   await expectNoAxeViolations(page)
 
   await test.step('"לא חל" opens the rule that wins; the higher rule switched off lets the lower one apply', async () => {

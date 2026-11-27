@@ -159,6 +159,8 @@ test.describe('account linking', () => {
       const request = await openRequest(page, `${GIL.first} ${GIL.last}`)
       await expectNoAxeViolations(page)
       await request.getByRole('button', { name: new RegExp(`${he.manage.add.unit}$`) }).click()
+      // Who may create a soldier with no unit may make one so from a request too (D-484).
+      await expect(page.getByRole('option', { name: he.soldiers.noUnit, exact: true })).toBeVisible()
       await page.getByRole('option', { name: UNIT, exact: true }).click()
       await request.getByRole('button', { name: he.manage.joins.createAndLink }).click()
       await expect(request).toBeHidden()
