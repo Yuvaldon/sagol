@@ -25,7 +25,7 @@ export {
 } from './env'
 export { CHANGE_FEED_CHANNEL, DEVICE_KEYS, INDEXED_DB_NAME, STORAGE_KEYS, type DeviceKey, type StorageKey } from './storage'
 export { INBOX, MINE } from './inbox'
-export { DEFAULT_TAB, PAGE_IDS, PAGE_TABS, PageId, SHELL, TAB_IDS, TODAY, TabId } from './shell'
+export { DEFAULT_TAB, PAGE_IDS, PAGE_TABS, PageId, SHELL, STOP_DRAWER, TAB_IDS, TODAY, TabId } from './shell'
 export { DASHBOARD, DASHBOARD_TEMPLATES } from './dashboard'
 export { NOTIFICATIONS } from './notifications'
 export { DAY_REPORT, DAY_REPORT_CATEGORIES, type DayReportCategory } from './report'

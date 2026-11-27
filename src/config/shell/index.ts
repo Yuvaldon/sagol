@@ -37,4 +37,11 @@ export const SHELL = {
   toastMs: 6000,
   /** The side of a tab's icon, in pixels (D-454). */
   tabIconPx: 26,
+  /** The stroke of a tab's icon: heavier on the tab in sight, and heaviest on the action circle's "+". */
+  tabStroke: { idle: 1.8, active: 2.2, action: 2.4 },
+  /** The side of the corner circle's icon, in pixels. */
+  cornerIconPx: 20,
 } as const
+
+/** How far the drawer with stops gives under a drag, as a share of the drag: little upward, fully downward (D-454). */
+export const STOP_DRAWER = { elasticUp: 0.2, elasticDown: 1 } as const
