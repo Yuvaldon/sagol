@@ -54,3 +54,4 @@ export {
 } from './deployments'
 export { dayMovements, soldierMovement, type DayMovements, type SoldierMovement } from './movements'
 export { daysTally, spreadOf, weeksOf, type DaysTally, type Spread } from './tally'
+export { overridingRule, type OverrideShape } from './override'
