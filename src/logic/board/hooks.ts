@@ -37,8 +37,8 @@ export interface BoardModel {
 /** What the board shows beyond the soldier filter (D-132, D-133). */
 export interface BoardConditions {
   readonly leaves: LeaveConditions
-  /** "Only who is missing" (D-133). */
-  readonly onlyMissing: boolean
+  /** "Only who is missing" (D-133), which the board no longer offers (D-463): absent is off. */
+  readonly onlyMissing?: boolean
   /** The sort rules of the rows, in order (D-313). */
   readonly sorts: readonly SortRule[]
   /** The URL's grouping (D-452); absent, the default for the board's scope. */
@@ -63,7 +63,7 @@ export function useBoard(
   const tags = useTags()
   const categories = useTagCategories()
   const placements = usePlacementHints(source.status === 'ready' ? source.value.soldiers : NO_SOLDIERS)
-  const { onlyMissing } = board
+  const onlyMissing = board.onlyMissing === true
   const { sorts } = board
   const leaveConditions = board.leaves
   const held = board.grouping
