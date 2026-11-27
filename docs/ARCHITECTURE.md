@@ -127,7 +127,10 @@ The data layer is written as if it were the server:
   the pairs given, a grant's scope stays within the writer's reach, and the post-write state keeps an access manager
   (D-156, D-158). A holder without seniority gets only `any` (D-157); `self` sees its own unit chain (D-159).
   `accounts.revokeLink` ends a link (D-163). Who cannot view the organization counts days on the device's zone (D-160);
-  presence and live warnings leave out what the actor cannot read in full (D-161, D-162). A grant's window is whole days
+  presence and live warnings leave out what the actor cannot read in full (D-161, D-162). One exception by design: `presence:view` on oneself
+  (D-478) answers `soldiers.presentWithMe()`, the names of who of one's own unit and the units under it is on base
+  today, computed by the data layer inside the gateway, so no leave row reaches the client for it (migration
+  `20261127000000_presence_permission.sql`, device store version 12). A grant's window is whole days
   in the organization's zone (D-166). Screens: the roles module (roles, rank bindings, the baseline) and the grants
   module. The phone's "more" menu of D-165 gave way to the navigation panel (D-173).
 - **Self-service, as built (V11, D-167 to D-169):** "my requests" reads the actor's own leaves (open and history) through
