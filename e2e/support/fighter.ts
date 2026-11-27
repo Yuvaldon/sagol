@@ -18,10 +18,20 @@ const SELF_PERMISSIONS: readonly (readonly [string, readonly string[]])[] = [
   [he.permissionLabels.resources.leave_comments, [he.permissionLabels.actions.view, he.permissionLabels.actions.create]],
 ]
 
+/** Who sees who of their unit is on base with them (D-478). */
+const PRESENCE_PERMISSION = [he.permissionLabels.resources.presence, [he.permissionLabels.actions.view]] as const
+
 export { signOut } from './workspace.ts'
 
+export interface FighterOptions {
+  /** The fighter role also holds `presence:view` (D-478). */
+  readonly presence?: boolean
+  /** Soldiers of the unit beside Yael: with any, she and they are placed in it, and they serve in the rotation too. */
+  readonly unitmates?: readonly { readonly first: string; readonly last: string }[]
+}
+
 /** The owner's setup: a unit, a type, Yael with the fields auto-link reads, the fighter role as the baseline, a rotation. */
-export async function setUpFighter(page: Page) {
+export async function setUpFighter(page: Page, { presence = false, unitmates = [] }: FighterOptions = {}) {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
 
@@ -37,16 +47,25 @@ export async function setUpFighter(page: Page) {
   await page.getByRole('button', { name: he.soldiers.new }).first().click()
   await page.getByLabel(he.soldiers.firstName).fill(YAEL.first)
   await page.getByLabel(he.soldiers.lastName).fill(YAEL.last)
+  if (unitmates.length > 0) await choose(page, he.soldiers.unit, UNIT)
   await page.getByLabel(he.soldiers.personalId).fill(YAEL.personalId)
   await page.getByLabel(he.soldiers.inviteEmail).fill(YAEL.email)
   await page.getByRole('button', { name: he.common.create }).click()
   await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(YAEL_NAME)).toBeVisible()
+  for (const mate of unitmates) {
+    await page.getByRole('button', { name: he.soldiers.new }).first().click()
+    await page.getByLabel(he.soldiers.firstName).fill(mate.first)
+    await page.getByLabel(he.soldiers.lastName).fill(mate.last)
+    await choose(page, he.soldiers.unit, UNIT)
+    await page.getByRole('button', { name: he.common.create }).click()
+    await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(`${mate.first} ${mate.last}`, { exact: true })).toBeVisible()
+  }
   await closeDrawer(page)
 
   await openModule(page, he.roles.open)
   await drawer(page).getByRole('button', { name: he.roles.new }).click()
   await page.getByLabel(he.roles.name).fill(ROLE)
-  for (const [resource, actions] of SELF_PERMISSIONS) {
+  for (const [resource, actions] of presence ? [...SELF_PERMISSIONS, PRESENCE_PERMISSION] : SELF_PERMISSIONS) {
     const group = drawer(page).getByRole('group', { name: resource, exact: true })
     for (const action of actions) {
       await group.locator('label').filter({ has: page.getByRole('checkbox', { name: action, exact: true }) }).click()
@@ -59,7 +78,7 @@ export async function setUpFighter(page: Page) {
   await expect(drawer(page).getByText(he.roles.isBaseline)).toBeVisible()
   await closeDrawer(page)
 
-  await openRotation(page, [YAEL_NAME])
+  await openRotation(page, [YAEL_NAME, ...unitmates.map((mate) => `${mate.first} ${mate.last}`)])
 }
 
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */

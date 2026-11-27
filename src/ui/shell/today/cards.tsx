@@ -1,6 +1,7 @@
 import { NEW_ENTITY, PANEL_IDS, TODAY } from '@config'
 import { t } from '@i18n'
 import {
+  fullName,
   useLeaveTypes,
   useLinkReviewAccess,
   useModuleAccess,
@@ -9,6 +10,7 @@ import {
   usePanel,
   usePendingRequests,
   usePresenceDay,
+  usePresentWithMe,
   useQuickAction,
   useRotationScope,
   useShellPlace,
@@ -156,6 +158,34 @@ export function ReportCard() {
         <p className="min-w-none text-small text-text-muted tabular-nums">{today === null ? rotation.name : [rotation.name, formatDate(today, 'dayMonth')].join(SEPARATOR)}</p>
         <ReportButton labelKey="today.openReport" />
       </div>
+    </Card>
+  )
+}
+
+/**
+ * "איתך היום" (D-478): who of the actor's own unit is on base today, by name only, for who has no unit block. The
+ * server answers the names; the card opens nothing, as its holder reads no leave (rule 6). Absent when nobody is.
+ */
+export function WithMeCard() {
+  const present = usePresentWithMe()
+  if (present.status !== 'ready' || present.value === null || present.value.length === 0) return null
+  return (
+    <Card
+      titleKey="today.withMe"
+      aside={
+        <span className="text-title font-bold tabular-nums">
+          {present.value.length}
+          <span className="sr-only"> {t('today.withMeCount')}</span>
+        </span>
+      }
+    >
+      <ul className="flex flex-wrap gap-sm">
+        {present.value.map((soldier) => (
+          <li key={soldier.id} className="rounded-full bg-inner px-cozy py-xs text-small">
+            {fullName(soldier)}
+          </li>
+        ))}
+      </ul>
     </Card>
   )
 }

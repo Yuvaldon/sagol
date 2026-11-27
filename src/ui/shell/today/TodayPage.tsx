@@ -8,7 +8,7 @@ import { EmptyNotice } from '../../patterns/Notices'
 import { useNoBoard } from '../boardShown'
 import { useOpenerFallback } from '../chrome'
 import { PageFrame, PageHeading } from '../PageFrame'
-import { ApprovalsCard, JoinsCard, MyRequestCard, MyStatusCard, ReportCard, RoutineCard } from './cards'
+import { ApprovalsCard, JoinsCard, MyRequestCard, MyStatusCard, ReportCard, RoutineCard, WithMeCard } from './cards'
 import { REQUESTS_OPENER } from './requestActions'
 import { RequestsScope } from './RequestsScope'
 import { RequestsPage } from './RequestsPage'
@@ -75,6 +75,7 @@ function Today({ name, commands, requests, approvals }: TodayPageProps) {
       <JoinsCard />
       <MyRequestCard />
       {commands ? null : <ReportCard />}
+      {commands ? null : <WithMeCard />}
       {commands && hasStatus ? <MyStatusCard /> : null}
     </PageFrame>
   )
