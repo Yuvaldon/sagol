@@ -15,6 +15,7 @@ import {
   useDateWindow,
   useHeatRow,
   useLeaveCreation,
+  useRulesDay,
   usePanel,
   type BoardDay,
   type DaySelection,
@@ -230,6 +231,7 @@ function DaySheet({
 }) {
   const heading = useId()
   const unitName = useScopeName()
+  const rules = useRulesDay()
   const [drawer, setDrawer] = useState(false)
   const swipe = useSwipe((direction) => {
     if (direction === 'up') onStop(moved(stop, 1))
@@ -290,6 +292,20 @@ function DaySheet({
           </div>
         </header>
       </div>
+      {low ? (
+        // A day below a rule says which, and who is missing, in the rules of its day (D-141).
+        <div className="shrink-0 px-lg pb-sm">
+          <AriaButton
+            onPress={() => {
+              rules.openOn(day)
+            }}
+            className={`flex min-h-touch w-full cursor-pointer items-center justify-between gap-sm rounded-control bg-status-pending-bg px-md text-small font-semibold text-status-pending-text ${FOCUS}`}
+          >
+            {t('board.rulesBroken')}
+            <ChevronLeft aria-hidden size={16} />
+          </AriaButton>
+        </div>
+      ) : null}
       {stop === 'edge' ? (
         <div aria-hidden className="h-above-bottom-bar shrink-0" />
       ) : (

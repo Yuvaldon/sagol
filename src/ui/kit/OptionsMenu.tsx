@@ -1,7 +1,7 @@
 import { TOOLTIP } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Dialog, DialogTrigger, Radio, RadioGroup, TooltipTrigger } from 'react-aria-components'
 import { NameTooltip } from '../primitives/Button'
 import { Popover } from '../primitives/overlays'
@@ -57,12 +57,14 @@ export interface OptionsMenuProps {
   readonly footer: readonly OptionAction[]
 }
 
-function ActionButton({ action, close }: { readonly action: OptionAction; readonly close: () => void }) {
+function ActionButton({ action, close, stayed }: { readonly action: OptionAction; readonly close: () => void; readonly stayed?: () => void }) {
   return (
     <AriaButton
       onPress={() => {
         action.onPress()
         if (action.stays !== true) close()
+        // The pressed row may leave with what it acted on: the keyboard goes back to the level's start.
+        else stayed?.()
       }}
       className={ROW}
     >
@@ -78,10 +80,12 @@ function ActionButton({ action, close }: { readonly action: OptionAction; readon
 function Level({ row, onBack, close }: { readonly row: OptionRow; readonly onBack: () => void; readonly close: () => void }) {
   const title = t(row.labelKey)
   const { choices } = row
+  const back = useRef<HTMLButtonElement>(null)
   return (
     <div className="flex flex-col gap-2xs">
       <div className="flex items-center gap-xs">
         <AriaButton
+          ref={back}
           // The row pressed is gone with the rows: the keyboard lands on the way back.
           autoFocus
           aria-label={t('kit.optionsBack')}
@@ -120,7 +124,14 @@ function Level({ row, onBack, close }: { readonly row: OptionRow; readonly onBac
       {row.actions === undefined || row.actions.length === 0 ? null : (
         <div className={`flex flex-col ${choices === undefined ? '' : 'border-t border-divider-strong pt-2xs'}`}>
           {row.actions.map((action) => (
-            <ActionButton key={action.key} action={action} close={close} />
+            <ActionButton
+              key={action.key}
+              action={action}
+              close={close}
+              stayed={() => {
+                back.current?.focus()
+              }}
+            />
           ))}
         </div>
       )}

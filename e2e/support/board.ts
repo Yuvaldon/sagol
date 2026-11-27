@@ -30,7 +30,10 @@ export async function openOptionRow(page: Page, name: string) {
 /** Picks a choice of a row; the menu returns to its rows, and is closed after. */
 export async function chooseOption(page: Page, row: string, choice: string) {
   await openOptionRow(page, row)
-  await optionsMenu(page).locator('label').filter({ has: page.getByRole('radio', { name: choice, exact: true }) }).click()
+  // A choice is named by its words, then by its quiet line where it has one (a rotation's dates).
+  const exact = optionsMenu(page).locator('label').filter({ has: page.getByRole('radio', { name: choice, exact: true }) })
+  const lined = optionsMenu(page).locator('label').filter({ has: page.getByRole('radio', { name: new RegExp(`^${choice}\\d`) }) })
+  await ((await exact.count()) > 0 ? exact : lined).first().click()
   await page.keyboard.press('Escape')
   await expect(optionsMenu(page)).toBeHidden()
 }

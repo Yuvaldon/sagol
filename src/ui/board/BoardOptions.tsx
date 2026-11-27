@@ -6,6 +6,7 @@ import {
   useBarColors,
   useBoardFilters,
   useBoardGrouping,
+  useBoardWindow,
   useDateWindow,
   useSavedViews,
   useSortRules,
@@ -117,8 +118,10 @@ function useUnitRow(): OptionRow | null {
   }
 }
 
-function useRangeRow(view: ViewId, onCustom: () => void): OptionRow | null {
-  const { window, rotations, setRange, showRotation } = useDateWindow()
+function useRangeRow(view: ViewId, phone: boolean, onCustom: () => void): OptionRow | null {
+  const { rotations, setRange, showRotation } = useDateWindow()
+  // What the view shows, a phone's own week included, not only what the URL names.
+  const { window } = useBoardWindow(view, phone)
   const { range } = useWorkspaceSearch()
   if (view !== 'timeline' && view !== 'table') return null
   const kind = window?.kind ?? range ?? 'week'
@@ -304,7 +307,7 @@ export function BoardOptions({ view, phone, onSavedViews }: BoardOptionsProps) {
   const focusMode = useFocusMode()
   const saved = useSavedViews(view)
   const unit = useUnitRow()
-  const range = useRangeRow(view, () => {
+  const range = useRangeRow(view, phone, () => {
     if (window !== null) setCustom({ from: window.from, to: window.to })
   })
   const sort = useSortRow()

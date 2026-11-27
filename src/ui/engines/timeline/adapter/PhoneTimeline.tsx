@@ -26,6 +26,7 @@ import { formatDate } from '../../../patterns/dates'
 import { useShellChrome } from '../../../shell/chrome'
 import { UnitDrawer } from '../../../shell/today/UnitDrawer'
 import { iconOf } from '../../../theme/icons'
+import { assignLanes } from '../core/lanes'
 import { rowOffText } from './model'
 
 // The timeline on a phone (the handoff's board spec, §3 "Timeline — who won't be here"; D-480): a row per person, the
@@ -66,7 +67,30 @@ function topOf(leaves: readonly BoardLeave[], day: CalendarDate): BoardLeave | n
   return on.find((leave) => leave.layer === 'request') ?? on.find((leave) => leave.layer === 'round') ?? null
 }
 
-function stateOf(leave: BoardLeave | null): DayState {
+/** A leave's days in the window, as a lane item; NULL outside it. */
+function placeOf(leave: BoardLeave, days: readonly CalendarDate[]): { readonly start: number; readonly length: number } | null {
+  const start = days.findIndex((day) => day >= leave.start_date)
+  const last = days.findLastIndex((day) => day <= leave.end_date)
+  return start < 0 || last < start ? null : { start, length: last - start + 1 }
+}
+
+/**
+ * The leaves the bar itself draws (D-111): of the requests, and apart of the rounds, those of the first lane, so two that
+ * overlap never hide one under the other; the rest take lanes below the bar.
+ */
+function barLeaves(leaves: readonly BoardLeave[], days: readonly CalendarDate[]): readonly BoardLeave[] {
+  const firstLane = (layer: BoardLeave['layer']) => {
+    const placed = leaves.flatMap((leave) => {
+      const at = leave.effect === 'unavailable' && leave.layer === layer ? placeOf(leave, days) : null
+      return at === null ? [] : [{ leave, ...at }]
+    })
+    const { lanes } = assignLanes(placed)
+    return placed.filter((_, index) => lanes[index] === 0).map((item) => item.leave)
+  }
+  return [...firstLane('request'), ...firstLane('round')]
+}
+
+function stateOf(leave: BoardLeave | null): Exclude<DayState, 'off'> {
   if (leave === null) return 'base'
   if (leave.layer === 'round') return 'round'
   return leave.status === 'pending' ? 'pending' : 'approved'
@@ -84,6 +108,24 @@ function runsOf(days: readonly CalendarDate[], inScope: readonly boolean[], leav
     else runs.push({ key, state, start: index, length: 1, leave })
   })
   return runs
+}
+
+interface Placed {
+  readonly leave: BoardLeave
+  readonly start: number
+  readonly length: number
+}
+
+/** The leaves the bar shows no run of, in lanes of their own (D-111). */
+function extraLanes(days: readonly CalendarDate[], runs: readonly Run[], leaves: readonly BoardLeave[]): { readonly lanes: readonly (readonly Placed[])[] } {
+  const shown = new Set(runs.flatMap((run) => (run.leave === null ? [] : [run.leave.id])))
+  const placed = leaves.flatMap((leave): Placed[] => {
+    const at = shown.has(leave.id) ? null : placeOf(leave, days)
+    return at === null ? [] : [{ leave, ...at }]
+  })
+  if (placed.length === 0) return { lanes: [] }
+  const { lanes, count } = assignLanes(placed)
+  return { lanes: Array.from({ length: count }, (_, lane) => placed.filter((_, index) => lanes[index] === lane)) }
 }
 
 function useWidth(element: HTMLElement | null): number {
@@ -133,7 +175,11 @@ function Row({
   readonly swiped: () => boolean
 }) {
   const { days } = frame.model
-  const runs = useMemo(() => runsOf(days, item.inScope, frame.model.leaves.get(item.soldier.id) ?? []), [days, item, frame.model.leaves])
+  const runs = useMemo(() => {
+    const leaves = frame.model.leaves.get(item.soldier.id) ?? []
+    return runsOf(days, item.inScope, barLeaves(leaves, days))
+  }, [days, item, frame.model.leaves])
+  const extra = useMemo(() => extraLanes(days, runs, frame.model.leaves.get(item.soldier.id) ?? []), [days, runs, frame.model.leaves, item.soldier.id])
   const name = fullName(item.soldier)
   const offText = rowOffText(item, days)
   const detail = item.rank?.short_title ?? item.rank?.title ?? null
@@ -142,6 +188,7 @@ function Row({
   return (
     <div className="flex min-h-touch items-center border-b border-divider-strong">
       <div className="sticky start-none z-2 flex shrink-0 flex-col justify-center self-stretch bg-canvas pe-sm ps-lg" style={{ width: BOARD.timeline.nameColumnPx }}>
+        {/* The name and its line are one target, the row's height, that opens the person. */}
         {openSoldier === null ? (
           <span className="truncate text-body font-semibold">{name}</span>
         ) : (
@@ -149,15 +196,16 @@ function Row({
             onPress={() => {
               openSoldier(item.soldier.id)
             }}
-            className={`min-w-none cursor-pointer truncate rounded-control text-start text-body font-semibold ${FOCUS}`}
+            className={`flex min-h-touch min-w-none cursor-pointer flex-col justify-center rounded-control text-start ${FOCUS}`}
           >
-            {name}
+            <span className="truncate text-body font-semibold">{name}</span>
           </AriaButton>
         )}
-        {detail === null ? null : <span className="truncate text-small text-text-muted">{detail}</span>}
+        {detail === null ? null : <span className="-mt-sm truncate text-small text-text-muted">{detail}</span>}
         {offText === null ? null : <span className="sr-only">{offText}</span>}
       </div>
-      <div className="relative flex h-touch items-stretch pe-lg" aria-label={name} role="group">
+      <div className="flex flex-col" aria-label={name} role="group">
+      <div className="relative flex h-touch items-stretch pe-lg">
         {runs.map((run) => {
           const width = run.length * dayPx
           if (run.state === 'off') return <span key={`${run.key}:${String(run.start)}`} aria-hidden className="shrink-0" style={{ width }} />
@@ -211,6 +259,36 @@ function Row({
             </AriaButton>
           )
         })}
+      </div>
+      {/* What the bar cannot show, a leave over another or a marker on base, takes a lane of its own below it. */}
+      {extra.lanes.map((lane, index) => (
+        // A row's lanes never reorder, so their place is their key.
+        // oxlint-disable-next-line react/no-array-index-key
+        <div key={index} className="relative h-touch">
+          {lane.map(({ leave, start, length }) => {
+            const state: Exclude<DayState, 'off'> = leave.effect === 'available' ? 'approved' : stateOf(leave)
+            const Icon = leave.effect === 'available' || state === 'approved' ? iconOf(leave.type?.icon_key ?? null) : null
+            return (
+              <AriaButton
+                key={leave.id}
+                aria-label={leaveText(leave)}
+                onPress={() => {
+                  if (!swiped()) frame.openLeave(leave.id)
+                }}
+                className={`absolute inset-y-none flex cursor-pointer items-center rounded-small ${FOCUS}`}
+                style={{ insetInlineStart: start * dayPx, width: length * dayPx }}
+              >
+                <span aria-hidden className={`relative flex h-badge w-full items-center justify-center overflow-hidden rounded-small ${LOOKS[state === 'base' ? 'approved' : state]}`}>
+                  <span className="absolute inset-none flex">
+                    <Cells length={length} dayPx={dayPx} />
+                  </span>
+                  {Icon === null ? null : <Icon aria-hidden size={ICON} className="relative" />}
+                </span>
+              </AriaButton>
+            )
+          })}
+        </div>
+      ))}
       </div>
     </div>
   )

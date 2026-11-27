@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, openNewLeave } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, backToBoard } from './support/workspace.ts'
+import { chooseOption } from './support/board.ts'
 
 // V31's demo: the leave-round planner (D-270, D-316). Two groups of the rotation's soldiers take turns on the routine
 // rhythm (8 days in, 6 home) from their own first day home; one send puts every round on the board. Desktop and
@@ -26,7 +27,7 @@ test.beforeEach(async ({ page, isMobile }) => {
   await openBoardOnTimeline(page, isMobile)
 })
 
-test('two groups take turns going home, sent as one collective leave', async ({ page }) => {
+test('two groups take turns going home, sent as one collective leave', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await openModule(page, he.soldiers.open)
@@ -62,6 +63,8 @@ test('two groups take turns going home, sent as one collective leave', async ({ 
   })
 
   await test.step('every round is on the board', async () => {
+    // A phone's timeline opens on a week; the whole rotation is a range of the options (D-480).
+    if (isMobile) await chooseOption(page, he.board.range, he.workspace.rotations)
     await expect(leavesOf(page)).toHaveCount(3)
     await expectNoAxeViolations(page)
   })

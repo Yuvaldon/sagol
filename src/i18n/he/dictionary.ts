@@ -161,6 +161,7 @@ export const dictionary = {
     sheetShrink: 'כיווץ היום הנבחר',
     onBase: 'בבסיס',
     pickRange: 'בחירת טווח',
+    rulesBroken: 'מתחת לסף ביום הזה',
     rangeTray: 'טווח הימים',
     leaveFor: 'יציאה עבור',
     leaveForSoldiers: 'יציאה לחיילים',
