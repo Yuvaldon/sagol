@@ -26,6 +26,7 @@ export const PermissionResource = z.enum([
   'accounts',
   'data_transfer',
   'day_reports',
+  'presence',
 ])
 export type PermissionResource = z.infer<typeof PermissionResource>
 
@@ -71,6 +72,11 @@ export const PERMISSION_ACTIONS_BY_RESOURCE = {
   data_transfer: ['export', 'import'],
   /** A unit's daily report, confirmed per date (D-293). */
   day_reports: ['confirm'],
+  /**
+   * Who of the holder's own unit is on base today, by name only (D-478): no leave, no type, no day but today. Checked
+   * on the holder themself; the data layer answers the names, never a row of `leaves`.
+   */
+  presence: ['view'],
 } as const satisfies Record<PermissionResource, readonly PermissionAction[]>
 
 function pairOf<R extends PermissionResource>(resource: R) {
@@ -103,6 +109,7 @@ export const Permission = z.discriminatedUnion('resource', [
   pairOf('accounts'),
   pairOf('data_transfer'),
   pairOf('day_reports'),
+  pairOf('presence'),
 ])
 export type Permission = z.infer<typeof Permission>
 

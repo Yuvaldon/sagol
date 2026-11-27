@@ -329,7 +329,7 @@ CREATE TABLE IF NOT EXISTS "role_permissions" (
 		'organization', 'unit_levels', 'units', 'command_ranks', 'seniority_overrides', 'soldiers', 'soldier_private',
 		'memberships', 'tags', 'leave_types', 'leaves', 'leave_comments', 'internal_comments',
 		'deployments', 'availability_rules', 'properties', 'roles', 'access_grants',
-		'accounts', 'data_transfer', 'day_reports'
+		'accounts', 'data_transfer', 'day_reports', 'presence'
 	)),
 	CONSTRAINT "role_permissions_action_check" CHECK ("action" IN (
 		'view', 'create', 'update', 'delete', 'duplicate', 'approve', 'export', 'import', 'confirm'

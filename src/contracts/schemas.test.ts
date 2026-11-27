@@ -324,6 +324,9 @@ describe('permission vocabulary (D-040)', () => {
     expect(Permission.safeParse({ resource: 'leaves', action: 'approve' }).success).toBe(true)
     expect(Permission.safeParse({ resource: 'tags', action: 'approve' }).success).toBe(false)
     expect(Permission.safeParse({ resource: 'data_transfer', action: 'view' }).success).toBe(false)
+    // Presence is read only, by name (D-478).
+    expect(Permission.safeParse({ resource: 'presence', action: 'view' }).success).toBe(true)
+    expect(Permission.safeParse({ resource: 'presence', action: 'update' }).success).toBe(false)
   })
 
   it('rejects an invalid pair in role_permissions', () => {

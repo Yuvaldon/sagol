@@ -56,7 +56,7 @@ am = amends, ref = refines, ext = extends.
 | D-037 | Node 24 LTS and exact dependency versions | tooling | |
 | D-038 | Contract field names are schema column names | all | |
 | D-039 | Schema drift test lives in contracts | contracts, tooling | |
-| D-040 | Valid permission combinations | contracts, domain, ui | |
+| D-040 | Valid permission combinations | contracts, domain, ui | ext D-478 |
 | D-041 | Settings defaults | contracts, data | ref D-064; ref D-115; ref D-121; ref D-384 |
 | D-042 | Date and time representation in contracts | contracts, domain | |
 | D-043 | Open items live in one file | docs | ref D-075 |
@@ -383,9 +383,9 @@ am = amends, ref = refines, ext = extends.
 | D-454 | The new language's tokens: one value per step, a caption step, a derived dark set, no leave-type color | ui, config | |
 | D-455 | Tabs, the action circle and every door follow permissions | logic, ui | ref D-465; ref D-466; ref D-469 |
 | D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | ref D-468 |
-| D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | |
+| D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | sup D-478 |
 | D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | |
-| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471; ref D-472 |
+| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471; ref D-472; ref D-478 |
 | D-460 | The desktop is derived from the phone | ui | |
 | D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | |
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | |
@@ -404,6 +404,7 @@ am = amends, ref = refines, ext = extends.
 | D-475 | "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button | config, logic, i18n, ui | am D-477 |
 | D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477 |
 | D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
+| D-478 | "איתך היום": a presence-only permission, `presence:view`, answered by name on the server | contracts, domain, config, data, logic, i18n, ui, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5938,3 +5939,34 @@ soldiers' leaves. Rule 6: nothing a role could do becomes unreachable.
   the page and closes the dashboard's drawer the regular way, so Back does not return to the dashboard.
 **Why:** the review of the batch.
 
+## D-478 — "איתך היום": a presence-only permission, `presence:view`, answered by name on the server
+2026-11-27 · accepted · supersedes D-457 · extends D-040 · refines D-459 · decided by the owner (OI-393, OI-384); the
+details under D-170
+- **The permission.** A resource `presence` with one action, `view`, checked on the holder themself (a soldier
+  target). It is a pair like any other: given by a role, through a rank binding, a grant or the baseline, and listed in
+  the roles editor as "מי בבסיס איתי".
+- **What it answers.** `soldiers.presentWithMe()`: the organization's today and, for each soldier on base, their id,
+  first name and last name. On base: an active, not archived soldier whose primary unit today is the holder's own
+  primary unit or a unit under it, other than the holder, and not away by an approved leave of a type that makes them
+  unavailable (a request that waits counts for nothing, D-134). NULL when the holder has no unit today. It answers no
+  leave, no type, no reason, no other day, and nothing of anyone outside that unit, also of soldiers whose records the
+  holder may not read. Without the permission it answers `forbidden`.
+- **The reach.** The holder's own unit and the units under it, never the units above it: the narrowest reach that
+  answers "who is here with me". The handoff's field notes speak of the platoon for a soldier of a squad; a reach set
+  by level is OI-396.
+- **On the server.** The data layer computes the answer inside the command gateway (D-201), over the rows it reads in
+  the request's transaction, and returns only the names. No table, view or policy is added, and the API roles still
+  reach no table (D-203). The leaves never travel to the client for it.
+- **Who holds it.** The migration `20261127000000_presence_permission.sql` adds `presence` to the vocabulary and gives
+  `presence:view` to every role that holds `leaves:view`, in every organization, as D-293 gave `day_reports`; the
+  device store does the same at version 12. A role keeps its own scope, so the pair answers only for a holder whose scope
+  covers themself. The owner's role at bootstrap holds every pair, and the unit template's four roles hold it. Who
+  read their unit's leaves already saw more; who read only their own (a plain soldier) gains the names of their unit
+  on base today and nothing else.
+- **The card (supersedes D-457).** "איתך היום" shows to who holds `presence:view` on themself and has no "לוח"
+  (D-466); who has "לוח" sees the same in the unit's block. Its title carries the count, and its body the names, by
+  name order (D-094), in one wrapped list. It opens nothing: the unit drawer of the handoff reads leaves, so a door
+  there would be a door to nothing for its holder (rule 6). It shows whether or not the holder is on base today, and is
+  absent when nobody else is (D-459). Its place stays D-459's: after "דוח 1", before "הסטטוס שלי".
+**Why:** the owner's decision of 2026-11-27: a plain soldier sees who is on base with them, names only, with no leave
+details and no board. Computing it on the server keeps rule 4: the names are all that leaves the gateway.
