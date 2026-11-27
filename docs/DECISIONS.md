@@ -6043,19 +6043,30 @@ calendar), D-301 (where focus mode is kept and what it hides) and the old strip 
   the full stop back to the edge. The drawer is part of the board, not a modal: the day, its fraction (which opens the
   unit's drawer on it), a band "מתחת לסף ביום הזה" on a day below a rule that opens the day's rules (D-141), and the
   day's leaves cut by day (§1.15). A request is drawn in each of its cells, not as one bar
-  across them. Past days take `text-muted`, not the package's `past` gray, which is below 4.5:1 on the canvas.
+  across them; a leave of the round that waits, as a move does, is named in its cells too (D-481). At the middle stop a
+  week is 44 px high, not the handoff's 40, so each day stays a 44 px target. The drawer's stops hold no history entry:
+  the drawer is part of the board, as a scroll is, and the back button leaves a screen and never replays a view change
+  (D-332); it never covers the board, so there is nothing for "back" to close. Past days take `text-muted`, not the
+  package's `past` gray, which is below 4.5:1 on the canvas.
 - **Timeline on a phone.** A row is the person's name (the person card) and one bar of runs; a leave's run opens its
   card and is a 44 px target; the bar draws the first lane of requests and of the round, and a leave over another, or a
   marker, takes a lane below it (D-111); days on base tapped in a row make a range, and the tray "יציאה עבור X · N ימים" carries the
-  impact line. A day's header selects it and opens the unit's drawer; on a phone the day report is reached from "דוח 1"
+  impact line. Its rows and day headers are 44 px high; a day is as wide as the week's width allows (about 37 px on a
+  phone), since the handoff fits the week to the screen, and a month narrows a day to 24 px (WCAG 2.5.8's minimum) and
+  scrolls. Picking days in a row is the finger's path; the keyboard's and a reader's is the calendar's day and
+  "בחירת טווח", whose tray opens the form where the soldier is chosen. A day's header selects it and opens the unit's
+  drawer; on a phone the day report is reached from "דוח 1"
   of "היום". A month or a rotation scrolls sideways under the names.
-- **Movements.** A leave leaves on its first day and returns on its last (D-193's convention). The leave round of a day
+- **Movements.** A leave leaves on its first day and returns on its last (D-193's convention); a leave of one day is
+  listed once, as leaving, in the movements and in the calendar's drawer alike. A tap on a day's header selects it
+  without moving the list. The leave round of a day
   and a direction is one row that opens to its names, a plain row for one person; requests are rows of their own. A run
   of days with no movement is one dashed line; today always shows.
 - **The impact line** appears only where the rules answer the actor (D-162, D-463): in the timeline's tray, from a
   leave away on the days, and beside a pending request revealed by a swipe, from the request as approved. The calendar's
   range tray has none, since no soldier is chosen yet.
-- **Answers on the board.** A swipe on a pending request reveals ✓ and ✗ for who may answer it; the row opens the leave
+- **Answers on the board.** A swipe on a pending request reveals ✓ for who may approve and ✗ for who may reject;
+  a closed row of the leave round says "ממתינה" while a leave of it waits; the row opens the leave
   card, which is the tap and keyboard path. The toast with "ביטול" follows as on "היום" (D-467).
 - **"היום"'s block.** The fraction opens the unit's drawer on today; a day column opens the board on its day with the
   drawer at its middle stop (§1.13).

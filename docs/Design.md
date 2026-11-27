@@ -298,7 +298,9 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 30 | The options' dot counts sort, grouping and filter; the unit and the range are scope | §1.12 names those three | D-480 |
 | 31 | Past days are `text-muted`, not the `past` gray | `past` is 2.5:1 on the canvas; text must reach 4.5:1 | D-480 |
 | 32 | A month cell draws a request in each of its days, not one bar across cells; the calendar range's tray has no impact line | A bar across cells breaks at week ends and the impact needs a soldier | D-480 |
-| 33 | The calendar's drawer is part of the board, not a modal; its handle steps edge → middle → full → edge | The month stays usable above it (§3) | D-480 |
+| 33 | The calendar's drawer is part of the board, not a modal, with no history entry; its handle steps edge → middle → full → edge; at the middle stop a week is 44 px, not 40 | The month stays usable above it (§3); a day stays a 44 px target | D-480 |
+| 36 | A phone's timeline day is as wide as the week allows (about 37 px), 24 px in a month; days are picked by finger there, and by keyboard on the calendar ("בחירת טווח") | The handoff fits the week to the screen; every gesture keeps a tap and keyboard path (D-458) | D-480 |
+| 37 | A one-day leave is listed once, as leaving; a waiting leave of the round shows in its month cells and as "ממתינה" on its closed row | One rule for the drawer and the movements; the approver sees a move that waits | D-480, D-481 |
 | 34 | A swipe reveals ✓ ✗ only for who may answer; a round leave has no quick ✗ anywhere; its card offers "אישור ההזזה" and "השארה במועד המקורי" once moved | `02`'s quick-approval exceptions; a swipe must not cost a soldier a planned leave | D-480, D-481 |
 | 35 | A wide screen keeps the old timeline grid, its drag and colors, and the table, under the new head | The desktop pass is R5·6 (OI-397) | D-480 |
 
