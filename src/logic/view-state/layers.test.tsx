@@ -155,7 +155,7 @@ describe('local overlay entries (D-337)', () => {
     const { history, handles } = await renderAt(['/?view=table'])
     const start = position(history)
     await step(() => {
-      handles.panel.open(PANEL_IDS.soldiers)
+      handles.panel.open(PANEL_IDS.deployments)
     })
     await step(() => {
       handles.setDialog(true)
@@ -164,7 +164,7 @@ describe('local overlay entries (D-337)', () => {
       history.back()
     })
     expect(handles.dialog).toBe(false)
-    expect(shown().panel).toBe(PANEL_IDS.soldiers)
+    expect(shown().panel).toBe(PANEL_IDS.deployments)
     await step(() => {
       history.back()
     })
@@ -175,7 +175,7 @@ describe('local overlay entries (D-337)', () => {
   it('a change made while a menu is open over a panel stays when the menu closes', async () => {
     const { history, handles } = await renderAt(['/?view=table'])
     await step(() => {
-      handles.panel.open(PANEL_IDS.soldiers)
+      handles.panel.open(PANEL_IDS.deployments)
     })
     const panelEntry = position(history)
     await step(() => {
@@ -186,14 +186,14 @@ describe('local overlay entries (D-337)', () => {
       handles.setMenu(false)
     })
     expect(position(history)).toBe(panelEntry)
-    expect(shown()).toMatchObject({ panel: PANEL_IDS.soldiers, from: '2026-11-15' })
+    expect(shown()).toMatchObject({ panel: PANEL_IDS.deployments, from: '2026-11-15' })
   })
 
   it('a panel closed from a dialog over it takes the dialog entry too', async () => {
     const { history, handles } = await renderAt(['/?view=table'])
     const start = position(history)
     await step(() => {
-      handles.panel.open(PANEL_IDS.soldiers)
+      handles.panel.open(PANEL_IDS.deployments)
     })
     await step(() => {
       handles.setDialog(true)
@@ -210,7 +210,7 @@ describe('local overlay entries (D-337)', () => {
     const { history, handles } = await renderAt(['/?view=table'])
     const start = position(history)
     await step(() => {
-      handles.panel.open(PANEL_IDS.soldiers)
+      handles.panel.open(PANEL_IDS.deployments)
     })
     await step(() => {
       handles.setDialog(true)

@@ -1,6 +1,6 @@
 import { CalendarDate, UnitId } from '@contracts'
 import { describe, expect, it } from 'vitest'
-import { blankQuickEntryRow, isBlankQuickEntryRow, quickEntryIssues, quickEntryRowsFromPaste, readyQuickEntryRows } from './quickEntry'
+import { blankQuickEntryRow, isBlankQuickEntryRow, offeredColumns, quickEntryIssues, quickEntryRowsFromPaste, readyQuickEntryRows } from './quickEntry'
 
 // Test data only (iron rule 4).
 const PLACEMENT = {
@@ -54,5 +54,17 @@ describe('the quick entry (D-282)', () => {
     expect(issues.get(second.key)).toContainEqual(duplicate)
     expect(issues.get(other.key)).toEqual([])
     expect(readyQuickEntryRows([first, second, other], PLACEMENT)).toEqual([other])
+  })
+})
+
+describe('a list where private details may not be added (D-482)', () => {
+  const LABELS = { first_name: 'שם פרטי', last_name: 'שם משפחה', nickname: 'כינוי', personal_id: 'מספר אישי', phone: 'טלפון', invite_email: 'דוא״ל' }
+  it('takes names, and refuses a list that holds a personal number, naming the column', () => {
+    expect(quickEntryRowsFromPaste('יעל\tשחר', LABELS, offeredColumns(false)).ok).toBe(true)
+    expect(quickEntryRowsFromPaste('יעל\tשחר\t\t8000001', LABELS, offeredColumns(false))).toEqual({
+      ok: false,
+      problem: { kind: 'column_not_offered', column: 'personal_id' },
+    })
+    expect(quickEntryRowsFromPaste('יעל\tשחר\t\t8000001', LABELS, offeredColumns(true)).ok).toBe(true)
   })
 })

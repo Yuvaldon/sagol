@@ -2,6 +2,7 @@ import type {
   AccountLinkRequest,
   AccountLinkRequestId,
   AccountLinkResult,
+  LinkAssessment,
   LinkCandidate,
   Permission,
   PermissionCheck,
@@ -11,14 +12,14 @@ import type {
   UnitId,
 } from '@contracts'
 import { ACCOUNT_REVIEW_PERMISSION, placementTarget } from '@domain'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOf } from '../permissions/checks'
 import { useCan } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
-import { unwrap } from '../queries/results'
+import { appErrorOf, unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { toRequestLinkInput, toReviewLinkInput, type LinkRequestValues, type LinkReview } from './forms'
 
@@ -63,6 +64,31 @@ export function useLinkCandidates(id: AccountLinkRequestId): Loaded<readonly Lin
       queryFn: () => unwrap(data.repositories.account_link_requests.candidates(id)),
     }),
   )
+}
+
+/**
+ * Each pending request's readiness and candidates (D-447), read one by one as the reviewer's page needs them (D-482),
+ * by request id. Loading until every answer is in; a failed read is the first failure.
+ */
+export function useLinkAssessments(requests: readonly Pick<AccountLinkRequest, 'id'>[]): Loaded<Readonly<Record<string, LinkAssessment>>> {
+  const { data } = usePorts()
+  return useQueries({
+    queries: requests.map((request) => ({
+      queryKey: [...QUERY_KEYS.accountLinkRequests, 'assessment', request.id],
+      queryFn: () => unwrap(data.repositories.account_link_requests.assessment(request.id)),
+    })),
+    combine: (results): Loaded<Readonly<Record<string, LinkAssessment>>> => {
+      const failed = results.find((result) => result.isError)
+      if (failed !== undefined) return { status: 'failed', error: appErrorOf(failed.error) }
+      const byId: Record<string, LinkAssessment> = {}
+      for (const [index, result] of results.entries()) {
+        const request = requests[index]
+        if (result.data === undefined || request === undefined) return { status: 'loading' }
+        byId[request.id] = result.data
+      }
+      return { status: 'ready', value: byId }
+    },
+  })
 }
 
 export function useLinkReviewCommands() {

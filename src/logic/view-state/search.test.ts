@@ -1,4 +1,4 @@
-import { NEW_ENTITY, QUICK_ENTRY, SEARCH_PARAMS } from '@config'
+import { ARCHIVE_ENTITY, NEW_ENTITY, QUICK_ENTRY, ROUND_ENTITY, SEARCH_PARAMS } from '@config'
 import { describe, expect, it } from 'vitest'
 import { WorkspaceSearch } from './search'
 
@@ -6,12 +6,33 @@ import { WorkspaceSearch } from './search'
 const ROW = '00000000-0000-4000-8000-000000000001'
 
 describe('the entity in the URL', () => {
-  it('keeps a row, a new form and the quick entry, and drops anything else', () => {
+  it('keeps a row, a new form, an archive and a round plan, and drops anything else', () => {
     const entityOf = (value: string) => WorkspaceSearch.parse({ [SEARCH_PARAMS.entity]: value })[SEARCH_PARAMS.entity]
     expect(entityOf(ROW)).toBe(ROW)
     expect(entityOf(NEW_ENTITY)).toBe(NEW_ENTITY)
-    expect(entityOf(QUICK_ENTRY)).toBe(QUICK_ENTRY)
+    expect(entityOf(ARCHIVE_ENTITY)).toBe(ARCHIVE_ENTITY)
+    expect(entityOf(ROUND_ENTITY)).toBe(ROUND_ENTITY)
     expect(entityOf('anything')).toBeUndefined()
+  })
+})
+
+describe('a link to a list that became a page of "ניהול" (D-482)', () => {
+  it('opens the page in its place', () => {
+    expect(WorkspaceSearch.parse({ panel: 'soldiers' })).toEqual({ page: 'soldiers' })
+    expect(WorkspaceSearch.parse({ panel: 'soldiers', entity: QUICK_ENTRY, tab: 'manage' })).toEqual({ page: 'add_soldiers' })
+    expect(WorkspaceSearch.parse({ panel: 'account_links' })).toEqual({ page: 'joins' })
+  })
+
+  it('keeps a link to one soldier or one request', () => {
+    expect(WorkspaceSearch.parse({ panel: 'soldiers', entity: ROW })).toEqual({ panel: 'soldiers', entity: ROW })
+    expect(WorkspaceSearch.parse({ panel: 'account_links', entity: ROW })).toEqual({ panel: 'account_links', entity: ROW })
+  })
+})
+
+describe('the options of "חיילים" (D-482)', () => {
+  it('keeps what differs from the default, and drops what does not read', () => {
+    expect(WorkspaceSearch.parse({ people: { sort: 'name', inactive: true } }).people).toEqual({ sort: 'name', inactive: true })
+    expect(WorkspaceSearch.parse({ people: { sort: 'rank' } }).people).toBeUndefined()
   })
 })
 

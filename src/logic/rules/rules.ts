@@ -17,7 +17,7 @@ import {
   type UnitLevelId,
   UpdateAvailabilityRuleInput,
 } from '@contracts'
-import { optionalText } from '@domain'
+import { optionalText, overridingRule } from '@domain'
 import { formIssues } from '../forms/issues'
 import { NO_RULES, readRules, writeRules, type FilterRule } from '../view-state/filter'
 
@@ -218,4 +218,18 @@ export function toUpdateRuleInput(
 /** Live rules, as the repository orders them: priority, then name (D-140). */
 export function liveRules(rules: readonly AvailabilityRule[]): AvailabilityRule[] {
   return rules.filter((rule) => rule.archived_at === null)
+}
+
+/**
+ * "לא חל" (D-482): each live rule another one overrides on every day it applies, with that rule's id. The list's
+ * marker opens the overriding rule.
+ */
+export function ruleOverrides(rules: readonly AvailabilityRule[]): ReadonlyMap<AvailabilityRuleId, AvailabilityRuleId> {
+  const live = liveRules(rules)
+  return new Map(
+    live.flatMap((rule) => {
+      const winner = overridingRule(rule, live)
+      return winner === null ? [] : [[rule.id, winner] as const]
+    }),
+  )
 }

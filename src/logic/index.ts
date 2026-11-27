@@ -168,7 +168,7 @@ export {
   type BoardSoldierItem,
 } from './board/rows'
 export { useBoard, useBoardGrouping, type BoardConditions, type BoardGroupingState, type BoardModel } from './board/hooks'
-export { type BoardGrouping } from './view-state/grouping'
+export { NO_GROUPING, UNIT_GROUPING, type BoardGrouping } from './view-state/grouping'
 export { boardLeaves, layerOf, type BoardLeave, type LeaveLayer } from './board/leaves'
 export {
   boardDays,
@@ -243,7 +243,7 @@ export {
   type RoundContext,
   type RoundGroup,
 } from './leaves/planner'
-export { useCreateLeaveRounds, useLeaveRoundSetup, type LeaveRoundSetup } from './leaves/plannerHooks'
+export { useCreateLeaveRounds, useLeaveRoundSetup, useRoundPlanning, type LeaveRoundSetup, type RoundPlanning } from './leaves/plannerHooks'
 export {
   leaveSheetIssues,
   newLeaveSheetValues,
@@ -411,6 +411,7 @@ export {
   NEW_RULE_VALUES,
   liveRules,
   ruleFormIssues,
+  ruleOverrides,
   ruleFormValues,
   rulePopulationFilter,
   rulePopulationOf,
@@ -483,6 +484,7 @@ export {
   blankQuickEntryRow,
   isBlankQuickEntryRow,
   quickEntryIssues,
+  offeredColumns,
   quickEntryRowsFromPaste,
   readyQuickEntryRows,
   useQuickEntrySave,
@@ -501,9 +503,20 @@ export {
   type NewSoldierFromRequestValues,
 } from './accounts/forms'
 export { candidateRows, type CandidateRow } from './accounts/review'
-export { readyCandidate, useBulkLinkApproval, type BulkLinkAnswer, type BulkLinkAnswers } from './accounts/bulk'
+export {
+  joinGroups,
+  readyCandidate,
+  useBulkLinkApproval,
+  useJoinApproval,
+  type BulkLinkAnswer,
+  type BulkLinkAnswers,
+  type JoinEntry,
+  type JoinGroups,
+  type JoinPlacement,
+} from './accounts/bulk'
 export {
   useCancelLinkRequest,
+  useLinkAssessments,
   useLinkCandidates,
   useLinkPlacements,
   useLinkReviewAccess,
@@ -602,3 +615,7 @@ export {
   type TemplateStage,
   type TemplateStep,
 } from './organization/template'
+export { usePeopleList, usePerson, useSoldierDays, type PeopleItem, type PeopleList, type PeopleRow, type Person } from './roster/people'
+export { useMovePermissions, useMoveSoldiers, type MoveAnswers } from './roster/bulk'
+export { PEOPLE_SORTS, type PeopleSort } from './view-state/peopleOptions'
+export { usePeopleView, type PeopleView, type PeopleViewState } from './view-state/people'

@@ -1,4 +1,4 @@
-import { DEFAULT_TAB, PAGE_TABS, type PageId, type TabId } from '@config'
+import { DEFAULT_TAB, PAGE_PARENTS, PAGE_TABS, type PageId, type TabId } from '@config'
 import type { CalendarDate, PermissionCheck, Soldier } from '@contracts'
 import { LEAVE_PERMISSIONS } from '@domain'
 import { useCallback, useMemo } from 'react'
@@ -29,6 +29,7 @@ export interface ShellPlace {
   openTab(tab: TabId): void
   /** Opens a page, on the destination it belongs to. */
   openPage(page: PageId): void
+  /** Closes the page: back to the page it opened over, else to the destination's first screen. */
   closePage(): void
   /** Opens the board on a day, selected (the handoff's board spec, §1.13: a day column of the commander's block). */
   openBoardOn(day: CalendarDate): void
@@ -60,7 +61,7 @@ export function useShellPlace(): ShellPlace {
   const page = search.page !== undefined && PAGE_TABS[search.page] === tab ? search.page : null
   const openTab = useCallback(
     (next: TabId) => {
-      change((current) => ({ tab: tabParam(next, current), page: undefined }))
+      change((current) => ({ tab: tabParam(next, current), page: undefined, people: undefined }))
     },
     [change],
   )
@@ -76,8 +77,12 @@ export function useShellPlace(): ShellPlace {
     },
     [change],
   )
+  // A page opened over another returns to it (D-482); the list's options live only while its page does.
   const closePage = useCallback(() => {
-    change({ page: undefined })
+    change((current) => {
+      const parent = current.page === undefined ? undefined : PAGE_PARENTS[current.page]
+      return { page: parent, people: parent === 'soldiers' ? current.people : undefined }
+    })
   }, [change])
   return useMemo(() => ({ tab, page, openTab, openPage, closePage, openBoardOn }), [tab, page, openTab, openPage, closePage, openBoardOn])
 }

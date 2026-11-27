@@ -712,7 +712,7 @@ describe('view state in the URL (D-103, D-104)', () => {
       <div>
         <p data-testid="search">{JSON.stringify(search)}</p>
         <p data-testid="window">{JSON.stringify([window.window?.from, window.window?.to, view.view, filter.unit.kind])}</p>
-        <button type="button" data-testid="open" onClick={() => { panel.open(PANEL_IDS.soldiers) }} />
+        <button type="button" data-testid="open" onClick={() => { panel.open(PANEL_IDS.deployments) }} />
         <button type="button" data-testid="close" onClick={panel.close} />
         <button type="button" data-testid="next" onClick={() => { window.shift(1) }} />
         <button type="button" data-testid="today" onClick={window.goToToday} />
@@ -771,7 +771,7 @@ describe('view state in the URL (D-103, D-104)', () => {
     })
     press('open')
     await waitFor(() => {
-      expect(read('search')).toMatchObject({ panel: 'soldiers', from: '2026-12-06', filter: unitFilterOf(PLATOON) })
+      expect(read('search')).toMatchObject({ panel: 'deployments', from: '2026-12-06', filter: unitFilterOf(PLATOON) })
     })
     press('close')
     await waitFor(() => {
@@ -784,7 +784,7 @@ describe('view state in the URL (D-103, D-104)', () => {
     await renderAt(`/?leaves=${leaves}&missing=true&day=2026-11-12`)
     press('open')
     await waitFor(() => {
-      expect(read('search')).toEqual({ panel: 'soldiers', leaves: { statuses: ['pending'] }, day: '2026-11-12' })
+      expect(read('search')).toEqual({ panel: 'deployments', leaves: { statuses: ['pending'] }, day: '2026-11-12' })
     })
   })
 

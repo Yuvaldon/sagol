@@ -41,13 +41,25 @@ export function isBlankQuickEntryRow(row: QuickEntryRow): boolean {
   return SOLDIER_CSV_COLUMNS.every((column) => row.values[column].trim() === '')
 }
 
-/** Pasted text as rows of the grid, or why it cannot be read. */
+/** A list that holds a detail the actor may not add where the rows go (D-482): nothing pasted is dropped unseen. */
+export interface ColumnNotOffered {
+  readonly ok: false
+  readonly problem: { readonly kind: 'column_not_offered'; readonly column: SoldierCsvColumn }
+}
+
+/**
+ * Pasted text, or a file's, as rows of the grid, or why it cannot be read. With `offered`, a value in any other column
+ * refuses the whole list, naming the column.
+ */
 export function quickEntryRowsFromPaste(
   text: string,
   labels: Readonly<Record<SoldierCsvColumn, string>>,
-): { readonly ok: true; readonly rows: readonly QuickEntryRow[] } | Extract<PastedSoldiers, { ok: false }> {
+  offered: readonly SoldierCsvColumn[] = SOLDIER_CSV_COLUMNS,
+): { readonly ok: true; readonly rows: readonly QuickEntryRow[] } | Extract<PastedSoldiers, { ok: false }> | ColumnNotOffered {
   const read = readPastedSoldiers(text, labels)
   if (!read.ok) return read
+  const extra = SOLDIER_CSV_COLUMNS.find((column) => !offered.includes(column) && read.rows.some((row) => (row[column] ?? '') !== ''))
+  if (extra !== undefined) return { ok: false, problem: { kind: 'column_not_offered', column: extra } }
   const rows = read.rows.map((row) => ({
     key: crypto.randomUUID(),
     values: {
@@ -129,3 +141,10 @@ export function useQuickEntrySave() {
     },
   )
 }
+
+/** The columns a new soldier is added with where the actor may, or may not, set private details (D-482, D-096). */
+export function offeredColumns(privateAllowed: boolean): readonly SoldierCsvColumn[] {
+  return privateAllowed ? SOLDIER_CSV_COLUMNS : PUBLIC_COLUMNS
+}
+
+const PUBLIC_COLUMNS: readonly SoldierCsvColumn[] = ['first_name', 'last_name', 'nickname']
