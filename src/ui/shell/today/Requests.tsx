@@ -8,7 +8,7 @@ import { Button as AriaButton } from 'react-aria-components'
 import { PersonRow } from '../../kit/PersonRow'
 import { LeaveStepDialog } from '../../modules/leaves/LeaveStepDialog'
 import { leaveDatesText, leaveDaysText, personNames, typeNameOf } from '../../modules/leaves/leaveText'
-import { FailureNotice } from '../../patterns/Notices'
+import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { RuleGateDialog } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { useReportRequestDone } from './requestDoneContext'
@@ -46,6 +46,8 @@ export function RequestRows({ leaves }: { readonly leaves: readonly Leave[] }) {
     )
   }
 
+  // A name or a type that is still on its way is not written as an unknown one in the meantime.
+  if (soldiers.status === 'loading' || types.status === 'loading') return <LoadingNotice />
   return (
     <div className="flex flex-col gap-sm">
       {failure === null ? null : <FailureNotice error={failure} />}
