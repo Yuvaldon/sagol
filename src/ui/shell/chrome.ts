@@ -1,9 +1,10 @@
 import { SHELL } from '@config'
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 // What the pages and the floating bar of the shell share (D-455): the bar hides while a page scrolls down and returns
 // when it scrolls up, a tray takes its place while something is selected, and a press on the tab in sight brings the
-// page back to its top.
+// page back to its top. The keyboard follows the screen: a page that opens takes it on its heading, and a page that
+// closes hands it back to the control that opened it.
 
 export interface ShellChrome {
   /** The bar is out of sight: the page is being read downward. */
@@ -17,6 +18,14 @@ export interface ShellChrome {
   readonly showBar: () => void
   readonly cover: (on: boolean) => void
   readonly toTop: () => void
+  /** The page's heading, or NULL when it leaves. */
+  readonly bindHeading: (element: HTMLElement | null) => void
+  /** Puts the keyboard on the page's heading: where it goes when what held it is gone. */
+  readonly focusHeading: () => void
+  /** Notes which control opened a page, so the keyboard returns to it when the page closes. */
+  readonly rememberOpener: (key: string) => void
+  /** Whether the control of this key is the one to return to; asking forgets it. */
+  readonly takeOpener: (key: string) => boolean
 }
 
 const NONE: ShellChrome = {
@@ -27,6 +36,10 @@ const NONE: ShellChrome = {
   showBar: () => undefined,
   cover: () => undefined,
   toTop: () => undefined,
+  bindHeading: () => undefined,
+  focusHeading: () => undefined,
+  rememberOpener: () => undefined,
+  takeOpener: () => false,
 }
 
 export const ShellChromeContext = createContext<ShellChrome>(NONE)
@@ -60,8 +73,54 @@ export function useShellChromeScope(): ShellChrome {
     scroller.current?.scrollTo({ top: 0 })
     setBarHidden(false)
   }, [])
+  const heading = useRef<HTMLElement | null>(null)
+  const opener = useRef<string | null>(null)
+  const bindHeading = useCallback((element: HTMLElement | null) => {
+    heading.current = element
+  }, [])
+  const focusHeading = useCallback(() => {
+    heading.current?.focus()
+  }, [])
+  const rememberOpener = useCallback((key: string) => {
+    opener.current = key
+  }, [])
+  const takeOpener = useCallback((key: string) => {
+    if (opener.current !== key) return false
+    opener.current = null
+    return true
+  }, [])
   return useMemo(
-    () => ({ barHidden, covered, bindScroller, onScroll, showBar, cover: setCovered, toTop }),
-    [barHidden, covered, bindScroller, onScroll, showBar, toTop],
+    () => ({ barHidden, covered, bindScroller, onScroll, showBar, cover: setCovered, toTop, bindHeading, focusHeading, rememberOpener, takeOpener }),
+    [barHidden, covered, bindScroller, onScroll, showBar, toTop, bindHeading, focusHeading, rememberOpener, takeOpener],
   )
+}
+
+/**
+ * For the control that opens a page: `remember` before it opens, and the ref returns the keyboard to the control when
+ * the page has closed and the control is on screen again.
+ */
+export function useOpener(key: string): { readonly remember: () => void; readonly ref: (element: HTMLElement | null) => void } {
+  const { rememberOpener, takeOpener } = useShellChrome()
+  return useMemo(
+    () => ({
+      remember: () => {
+        rememberOpener(key)
+      },
+      ref: (element: HTMLElement | null) => {
+        if (element !== null && takeOpener(key)) element.focus()
+      },
+    }),
+    [key, rememberOpener, takeOpener],
+  )
+}
+
+/**
+ * For the screen a page closes back to: when the control that opened the page is no longer there to take the keyboard
+ * (the card left with its last row), the screen's heading takes it, and the note is dropped.
+ */
+export function useOpenerFallback(key: string): void {
+  const { takeOpener, focusHeading } = useShellChrome()
+  useEffect(() => {
+    if (takeOpener(key)) focusHeading()
+  }, [key, takeOpener, focusHeading])
 }

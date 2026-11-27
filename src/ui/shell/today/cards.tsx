@@ -3,10 +3,12 @@ import { t } from '@i18n'
 import {
   useLeaveTypes,
   useLinkReviewAccess,
+  useModuleAccess,
   useMyLeaves,
   useMyLeavesAccess,
   usePanel,
   usePendingRequests,
+  usePresenceDay,
   useQuickAction,
   useRotationScope,
   useShellPlace,
@@ -16,14 +18,17 @@ import { Card, CardDoor } from '../../kit/Card'
 import { PersonRow } from '../../kit/PersonRow'
 import { LeaveBadge } from '../../modules/leaves/LeaveMarks'
 import { leaveDatesText, typeNameOf } from '../../modules/leaves/leaveText'
+import { formatDate } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
-import { useInboxAccess } from '../inboxAccess'
+import { useOpener } from '../chrome'
+import { REQUESTS_OPENER } from './requestActions'
 import { RequestRows } from './Requests'
 import { Status } from './SoldierBlock'
 
 // The cards of "היום" (D-459), in their fixed order. A card with nothing to show is absent; a card shows at most
 // three rows and a door to the rest.
 
+const SEPARATOR = ' · '
 const NO_ROWS: readonly never[] = []
 
 /**
@@ -57,18 +62,18 @@ export function RoutineCard() {
 /** "בקשות לאישור": what waits for the actor's approval, approved in place. Its title opens the page of all of them. */
 export function ApprovalsCard() {
   const place = useShellPlace()
-  const approves = useInboxAccess()
-  const { requests } = useRotationScope()
   const pending = usePendingRequests()
-  // A request surface exists only while a rotation a request can be about does (D-218).
-  if (!approves || !requests || pending.status !== 'ready' || pending.value.length === 0) return null
+  const opener = useOpener(REQUESTS_OPENER)
+  if (pending.status !== 'ready' || pending.value.length === 0) return null
   const open = () => {
+    opener.remember()
     place.openPage('requests')
   }
   return (
     <Card
       titleKey="today.approvals"
       onOpen={open}
+      openRef={opener.ref}
       aside={
         <Badge tone="pending">
           {pending.value.length}
@@ -131,6 +136,27 @@ export function MyRequestCard() {
           }}
         />
       ) : null}
+    </Card>
+  )
+}
+
+/**
+ * "דוח 1" (D-459, D-472): today's report, for who reads the unit's soldiers while a rotation runs (D-222) and has no
+ * unit block of their own to open it from.
+ */
+export function ReportCard() {
+  const { rotation } = useRotationScope()
+  const access = useModuleAccess()
+  const { openToday, today } = usePresenceDay()
+  if (rotation === null || !access.soldiers) return null
+  return (
+    <Card titleKey="presence.title">
+      <div className="flex items-center justify-between gap-md">
+        <p className="min-w-none text-small text-text-muted tabular-nums">{today === null ? rotation.name : [rotation.name, formatDate(today, 'dayMonth')].join(SEPARATOR)}</p>
+        <Button variant="primary" onPress={openToday}>
+          {t('today.openReport')}
+        </Button>
+      </div>
     </Card>
   )
 }

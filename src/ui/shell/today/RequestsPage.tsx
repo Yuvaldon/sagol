@@ -6,7 +6,7 @@ import { CardDoor } from '../../kit/Card'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { IconButton } from '../../primitives/Button'
 import { ApproveNowSwitch } from '../ApproveNowSwitch'
-import { PageFrame } from '../PageFrame'
+import { PageFrame, PageHeading } from '../PageFrame'
 import { RequestRows } from './Requests'
 
 // Every request that waits for the actor (D-459): the page behind the title of "בקשות לאישור". It replaces "awaiting
@@ -22,7 +22,9 @@ export function RequestsPage() {
         <IconButton labelKey="shell.back" onPress={place.closePage}>
           <ArrowRight aria-hidden size={20} />
         </IconButton>
-        <h1 className="text-title font-bold tracking-tight">{t('today.approvals')}</h1>
+        <PageHeading opens className="text-title font-bold tracking-tight">
+          {t('today.approvals')}
+        </PageHeading>
       </header>
       <ApproveNowSwitch />
       <section aria-label={t('inbox.pendingLabel')} className="flex flex-col rounded-card bg-surface p-lg">

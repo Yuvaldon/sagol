@@ -1,4 +1,4 @@
-import { SHEET_DISMISS } from '@config'
+import { SHEET_DISMISS, STOP_DRAWER } from '@config'
 import { t } from '@i18n'
 import { X } from 'lucide-react'
 import { motion, useDragControls } from 'motion/react'
@@ -47,7 +47,7 @@ export function StopDrawer({ title, detail, onClose, children }: StopDrawerProps
         dragListener={false}
         dragControls={dragControls}
         dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0.2, bottom: 1 }}
+        dragElastic={{ top: STOP_DRAWER.elasticUp, bottom: STOP_DRAWER.elasticDown }}
         onDragEnd={(_event, info) => {
           const far = Math.abs(info.offset.y) > SHEET_DISMISS.offsetPx
           const fast = Math.abs(info.velocity.y) > SHEET_DISMISS.velocityPxPerSecond

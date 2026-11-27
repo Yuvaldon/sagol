@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate, openNewLeave } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, INBOX, backToBoard } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, INBOX, backToBoard, openTab } from './support/workspace.ts'
 
 // The rest of the rule paths on screen (OI-107): the warning on the edit form, and the acknowledgment dialog on the
 // details' approve step, the inbox's approve and the close dialog. Desktop and mobile, RTL, with axe. Sample data,
@@ -134,4 +134,29 @@ test('the edit form warns, and approving or closing asks before a soft rule is b
     }
     await expect(leavesOf(page)).toHaveCount(0)
   })
+})
+
+test('the last waiting request, approved on "היום", still asks before a soft rule is broken (D-467)', async ({ page }) => {
+  await page.clock.setFixedTime(NOW)
+  await enterAsOwner(page)
+  await setUp(page)
+  await requestToday(page, 'יעל שחר')
+  await openTab(page, 'today')
+  const waiting = page.getByRole('region', { name: he.today.approvals })
+  await waiting.getByRole('button', { name: `${he.leaves.approve} יעל שחר` }).click()
+  // The row leaves its card at once, and the card leaves with it; the question still has where to show.
+  await expect(ackDialog(page)).toContainText(AT_LEAST_TWO)
+  await expectNoAxeViolations(page)
+  await ackDialog(page).getByRole('button', { name: he.rules.ackConfirm }).click()
+  await expect(ackDialog(page)).toHaveCount(0)
+  await expect(waiting).toHaveCount(0)
+  const toast = page.getByRole('status').filter({ hasText: he.today.approved })
+  await expect(toast).toBeVisible()
+  // The keyboard is not left on the button that is gone: the page's heading has it.
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
+  // "ביטול" is one step back from there, and the toast waits while the keyboard is on it.
+  await page.keyboard.press('Shift+Tab')
+  await expect(toast.getByRole('button', { name: he.common.cancel })).toBeFocused()
+  await backToBoard(page)
+  await expect(leavesOf(page).first()).toHaveAccessibleName(new RegExp(he.leaves.statusApproved))
 })

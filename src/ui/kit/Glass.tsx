@@ -1,6 +1,8 @@
+import { TOOLTIP } from '@config'
 import { t, type I18nKey } from '@i18n'
 import type { ReactNode } from 'react'
-import { Button as AriaButton } from 'react-aria-components'
+import { Button as AriaButton, TooltipTrigger } from 'react-aria-components'
+import { NameTooltip } from '../primitives/Button'
 
 // The glass of the new interface (D-454): a circle for one floating action in a corner, and a capsule that holds a row
 // of controls. Glass floats over content only; a card or a list is never glass.
@@ -17,25 +19,22 @@ export interface GlassCircleProps {
   readonly children: ReactNode
 }
 
-/** One icon on glass, 44 px. Its name is read aloud; a number that waits shows as a dot and is read with it. */
+/** One icon on glass, 44 px. Its name is read aloud and shows as a tooltip; a number that waits shows as a dot and is read with the name. */
 export function GlassCircle({ labelKey, onPress, count = 0, countKey, children }: GlassCircleProps) {
+  const label = t(labelKey)
+  const name = count > 0 && countKey !== undefined ? [label, String(count), t(countKey)].join(WORD) : label
   return (
-    <AriaButton
-      onPress={onPress}
-      className={`glass-regular pointer-events-auto relative inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full text-text ${FOCUS}`}
-    >
-      {children}
-      <span className="sr-only">{t(labelKey)}</span>
-      {count > 0 ? (
-        <>
-          <span aria-hidden className="absolute end-sm top-sm size-dot rounded-full border border-surface bg-status-pending-line" />
-          {countKey === undefined ? null : (
-            // The leading space keeps the number apart from the name when both are read as one.
-            <span className="sr-only">{['', String(count), t(countKey)].join(WORD)}</span>
-          )}
-        </>
-      ) : null}
-    </AriaButton>
+    <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
+      <AriaButton
+        aria-label={name}
+        onPress={onPress}
+        className={`glass-regular pointer-events-auto relative inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full text-text ${FOCUS}`}
+      >
+        {children}
+        {count > 0 ? <span aria-hidden className="absolute end-sm top-sm size-dot rounded-full border border-surface bg-status-pending-line" /> : null}
+      </AriaButton>
+      <NameTooltip>{label}</NameTooltip>
+    </TooltipTrigger>
   )
 }
 

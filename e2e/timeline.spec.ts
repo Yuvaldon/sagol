@@ -83,7 +83,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await openRotation(page, [OWNER.name], 'פלוגה')
     await page.goto('/?range=week')
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
-    await expect(page.getByRole('navigation', { name: he.workspace.viewBar }).getByRole('button', { name: he.workspace.today, exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: he.workspace.today, exact: true })).toHaveCount(0)
     // Today she is in מחלקה ב, so that is her group (D-105).
     // The owner serves in the root unit from the claim, so the root is the first group (D-223).
     await expect(groupHeading(page, ORGANIZATION)).toBeVisible()
@@ -116,7 +116,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
     await expect(page.getByRole('heading', { name: he.timeline.emptyScopeTitle })).toBeVisible()
     await expectNoAxeViolations(page)
 
-    await page.getByRole('navigation', { name: he.workspace.viewBar }).getByRole('button', { name: he.workspace.today, exact: true }).click()
+    await page.getByRole('button', { name: he.workspace.today, exact: true }).click()
     await expect(windowLabel(page)).toContainText(THIS_WEEK)
     await expect(boardRows(page)).toHaveCount(1)
     await expect(page).not.toHaveURL(/from=/)

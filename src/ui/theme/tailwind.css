@@ -88,6 +88,8 @@
   --color-on-fill: #1b1a1f;
   /* The glass surfaces (D-077): their fills, their edge, and the solid color under prefers-reduced-transparency. */
   --color-glass-bar: rgba(255, 255, 255, 0.55);
+  /* The capsule behind the tab in sight (D-455): lighter than the bar's glass in both sets. */
+  --color-tab-active: #ffffff;
   --color-glass-card: rgba(255, 255, 255, 0.5);
   --color-glass-menu: rgba(255, 255, 255, 0.85);
   --color-glass-drawer: rgba(255, 255, 255, 0.94);
@@ -288,6 +290,7 @@
     --color-absence-edge: #cfcbc2;
     --color-on-fill: #131a28;
     --color-glass-bar: rgba(40, 40, 46, 0.62);
+    --color-tab-active: #36445f;
     --color-glass-card: rgba(40, 40, 46, 0.55);
     --color-glass-menu: rgba(40, 40, 46, 0.9);
     --color-glass-drawer: rgba(28, 28, 32, 0.95);

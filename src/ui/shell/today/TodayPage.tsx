@@ -1,14 +1,16 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
 import { t } from '@i18n'
 import { usePanel, useSession, useShellPlace, type DaySelection } from '@logic'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Tray } from '../../kit/Tray'
 import { leaveDaysText } from '../../modules/leaves/leaveText'
 import { EmptyNotice } from '../../patterns/Notices'
 import { useNoBoard } from '../boardShown'
-import { PageFrame } from '../PageFrame'
-import { ApprovalsCard, JoinsCard, MyRequestCard, MyStatusCard, RoutineCard } from './cards'
-import { RequestDoneScope } from './RequestDoneScope'
+import { useOpenerFallback } from '../chrome'
+import { PageFrame, PageHeading } from '../PageFrame'
+import { ApprovalsCard, JoinsCard, MyRequestCard, MyStatusCard, ReportCard, RoutineCard } from './cards'
+import { REQUESTS_OPENER } from './requestActions'
+import { RequestsScope } from './RequestsScope'
 import { RequestsPage } from './RequestsPage'
 import { SoldierBlock } from './SoldierBlock'
 import { useStanding } from './standing'
@@ -26,24 +28,27 @@ export interface TodayPageProps {
   readonly commands: boolean
   /** Whether the actor may request a leave for themself now. */
   readonly requests: boolean
+  /** Whether requests wait for the actor's approval here: the card, and the page behind it (D-467). */
+  readonly approvals: boolean
 }
 
 /** A soldier who may not view the organization and reads no soldier at all has nothing here yet (D-151, D-160). */
 function NoAccess({ name }: { readonly name: string }) {
   return (
     <PageFrame>
-      <h1 className="sr-only">{name}</h1>
+      <PageHeading className="sr-only">{name}</PageHeading>
       <EmptyNotice titleKey="timeline.noDayTitle" bodyKey="timeline.noDayBody" headingLevel={2} />
     </PageFrame>
   )
 }
 
-function Today({ name, commands, requests }: TodayPageProps) {
+function Today({ name, commands, requests, approvals }: TodayPageProps) {
   const panel = usePanel()
   const session = useSession()
   const own = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null
   const [selection, setSelection] = useState<DaySelection | null>(null)
   const hasStatus = useStanding() !== null
+  useOpenerFallback(REQUESTS_OPENER)
   const tray =
     selection === null || own === null ? null : (
       <Tray
@@ -63,12 +68,13 @@ function Today({ name, commands, requests }: TodayPageProps) {
   return (
     <PageFrame updates tray={tray}>
       {/* The page's heading, for readers, is the organization's name, as on the board (D-175). */}
-      <h1 className="sr-only">{name}</h1>
+      <PageHeading className="sr-only">{name}</PageHeading>
       {commands ? <UnitBlock name={name} /> : <SoldierBlock selection={selection} onSelect={select} />}
       <RoutineCard />
-      <ApprovalsCard />
+      {approvals ? <ApprovalsCard /> : null}
       <JoinsCard />
       <MyRequestCard />
+      {commands ? null : <ReportCard />}
       {commands && hasStatus ? <MyStatusCard /> : null}
     </PageFrame>
   )
@@ -77,6 +83,12 @@ function Today({ name, commands, requests }: TodayPageProps) {
 export function TodayPage(props: TodayPageProps) {
   const place = useShellPlace()
   const noAccess = useNoBoard()
+  // The page of requests is for who the card is for; an address that names it for anyone else is put right (D-076).
+  const stray = place.page === 'requests' && !props.approvals
+  const { closePage } = place
+  useEffect(() => {
+    if (stray) closePage()
+  }, [stray, closePage])
   if (noAccess) return <NoAccess name={props.name} />
-  return <RequestDoneScope>{place.page === 'requests' ? <RequestsPage /> : <Today {...props} />}</RequestDoneScope>
+  return <RequestsScope>{place.page === 'requests' && props.approvals ? <RequestsPage /> : <Today {...props} />}</RequestsScope>
 }

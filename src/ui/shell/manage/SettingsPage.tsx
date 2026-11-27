@@ -5,8 +5,8 @@ import { useId } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { SetupChecklist } from '../../modules/setup/SetupModule'
 import { IconButton } from '../../primitives/Button'
-import { PageFrame } from '../PageFrame'
-import { useSettingsSections, type SettingsItem } from './rows'
+import { PageFrame, PageHeading } from '../PageFrame'
+import { useSettingsSections, type SettingsItem, type SettingsSection } from './rows'
 
 // "הגדרות" (D-456, D-285): what a unit defines once, grouped by what it is, each module with one plain line saying
 // what it is for (D-250). While the unit's setup has open steps, its checklist stands first.
@@ -37,10 +37,11 @@ function Item({ item }: { readonly item: SettingsItem }) {
 function Checklist() {
   const panel = usePanel()
   const progress = useSetupProgress()
+  const id = useId()
   if (progress.status !== 'ready' || nextSetupStep(progress.value) === null) return null
   return (
-    <section aria-labelledby="settings-checklist" className="flex flex-col gap-sm rounded-card bg-surface p-lg">
-      <h2 id="settings-checklist" className="text-heading font-bold">
+    <section aria-labelledby={id} className="flex flex-col gap-sm rounded-card bg-surface p-lg">
+      <h2 id={id} className="text-heading font-bold">
         {t('setup.title')}
       </h2>
       <SetupChecklist
@@ -49,6 +50,22 @@ function Checklist() {
           panel.open(step.panel)
         }}
       />
+    </section>
+  )
+}
+
+function Section({ section }: { readonly section: SettingsSection }) {
+  const id = useId()
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-xs">
+      <h2 id={id} className="text-small font-semibold text-text-muted">
+        {t(section.titleKey)}
+      </h2>
+      <ul className="flex flex-col rounded-card bg-surface px-lg">
+        {section.items.map((item) => (
+          <Item key={item.id} item={item} />
+        ))}
+      </ul>
     </section>
   )
 }
@@ -63,20 +80,13 @@ export function SettingsPage() {
         <IconButton labelKey="shell.back" onPress={place.closePage}>
           <ArrowRight aria-hidden size={20} />
         </IconButton>
-        <h1 className="text-title font-bold tracking-tight">{t('navigation.setupOpen')}</h1>
+        <PageHeading opens className="text-title font-bold tracking-tight">
+          {t('navigation.setupOpen')}
+        </PageHeading>
       </header>
       {stepsAllowed ? <Checklist /> : null}
       {sections.map((section) => (
-        <section key={section.id} aria-labelledby={`settings-${section.id}`} className="flex flex-col gap-xs">
-          <h2 id={`settings-${section.id}`} className="text-small font-semibold text-text-muted">
-            {t(section.titleKey)}
-          </h2>
-          <ul className="flex flex-col rounded-card bg-surface px-lg">
-            {section.items.map((item) => (
-              <Item key={item.id} item={item} />
-            ))}
-          </ul>
-        </section>
+        <Section key={section.id} section={section} />
       ))}
     </PageFrame>
   )

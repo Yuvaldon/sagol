@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { ORGANIZATION, OWNER, claimOrganization, closeSetup, expectNoAxeViolations, navigation, openTab, organizationHeading, signIn, tab } from './support/workspace.ts'
+import { ORGANIZATION, OWNER, claimOrganization, closeSetup, expectNoAxeViolations, navigation, openTab, organizationHeading, signIn, tab, openSetup } from './support/workspace.ts'
 
 // V0's demo: sign in, claim the organization, see the empty workspace, keep the session across a
 // reload, and see that a second identity gets no data. Each test starts on an empty browser
@@ -169,8 +169,9 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   async function expectTouchTargets() {
     const heights = await page
       .locator('button:visible, input:visible')
-      // A switch or a box hides its input inside its label, and the label is what a finger presses. A dialog's
-      // dismiss button for screen readers is clipped out of sight, so no finger reaches it.
+      // A switch or a box hides its input inside its label, and the label is what a finger presses. A control whose
+      // parent is clipped out of sight (`sr-only`: react-aria's dismiss button of a dialog) is for a screen reader
+      // only, and no finger reaches it.
       .evaluateAll((elements) =>
         elements
           .filter((element) => element.parentElement === null || getComputedStyle(element.parentElement).clipPath !== 'inset(50%)')
@@ -190,7 +191,18 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   await expect(organizationHeading(page)).toBeVisible()
   await expectTouchTargets()
   await closeSetup(page)
-  // The settled workspace: its empty state is in place before anything is measured.
+  // The settled workspace: its empty state is in place before anything is measured. Then every destination.
   await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
+  await expectTouchTargets()
+  await openTab(page, 'board')
+  await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
+  await expectTouchTargets()
+  await openTab(page, 'manage')
+  await expect(page.getByRole('heading', { level: 1, name: he.navigation.tab, exact: true })).toBeVisible()
+  await expectTouchTargets()
+  await openSetup(page)
+  await expectTouchTargets()
+  await openTab(page, 'me')
+  await expect(page.getByRole('button', { name: he.account.signOut, exact: true })).toBeVisible()
   await expectTouchTargets()
 })

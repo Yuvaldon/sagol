@@ -150,6 +150,7 @@ export const dictionary = {
     approved: 'הבקשה אושרה',
     rejected: 'הבקשה נדחתה',
     closedDoor: 'בקשות שנסגרו',
+    openReport: 'לדוח של היום',
   },
   me: {
     account: 'חשבון',
@@ -263,7 +264,7 @@ export const dictionary = {
     removeSort: 'הסרת מיון',
     moveUp: 'העברה למעלה',
     moveDown: 'העברה למטה',
-    today: 'היום',
+    today: 'חזרה להיום',
     window: 'טווח התאריכים',
     colors: 'צבעים',
     colorsByType: 'לפי סוג',

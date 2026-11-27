@@ -19,12 +19,23 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await expect(strip.getByRole('listitem')).toHaveCount(14)
     await page.getByRole('main').getByRole('button', { name: he.today.noOut }).click()
     await expect(strip).toHaveCount(0)
-    const days = page.getByRole('gridcell').getByRole('button')
-    // A day that has passed takes no request.
-    await expect(days.filter({ hasText: '10 בנובמבר' })).toBeDisabled()
-    await days.filter({ hasText: '18 בנובמבר' }).click()
-    await days.filter({ hasText: '20 בנובמבר' }).click()
-    await expect(page.getByRole('gridcell').getByRole('button', { pressed: true })).toHaveCount(3)
+    const days = page.getByRole('grid').getByRole('gridcell')
+    // A day that has passed takes no request, and says so.
+    await expect(days.filter({ hasText: '10 בנובמבר' })).toHaveAttribute('aria-disabled', 'true')
+    // Forced: the press is made on a day that says it is unavailable, to see that nothing comes of it.
+    await days.filter({ hasText: '10 בנובמבר' }).click({ force: true })
+    await expect(tray).toHaveCount(0)
+    // The grid is walked with the keyboard: one day takes Tab (today), the arrows move by a day and by a week, and
+    // Enter marks the day. Right to left, the left arrow is the next day.
+    await days.filter({ hasText: '11 בנובמבר' }).focus()
+    await page.keyboard.press('ArrowDown')
+    await expect(days.filter({ hasText: '18 בנובמבר' })).toBeFocused()
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('ArrowLeft')
+    await page.keyboard.press('ArrowLeft')
+    await expect(days.filter({ hasText: '20 בנובמבר' })).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('grid').getByRole('gridcell', { selected: true })).toHaveCount(3)
     await expect(tray.getByRole('button', { name: `${he.today.requestDays} · 3 ${he.leaves.days}` })).toBeVisible()
     await expect(tab(page, 'today')).toHaveCount(0)
     await expectNoAxeViolations(page)
@@ -34,7 +45,7 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await tray.getByRole('button', { name: he.today.clearSelection }).click()
     await expect(tray).toHaveCount(0)
     await expect(tab(page, 'today')).toBeVisible()
-    const days = page.getByRole('gridcell').getByRole('button')
+    const days = page.getByRole('grid').getByRole('gridcell')
     await days.filter({ hasText: '18 בנובמבר' }).click()
     await days.filter({ hasText: '20 בנובמבר' }).click()
     await tray.getByRole('button', { name: new RegExp(`^${he.today.requestDays}`) }).click()
@@ -46,6 +57,23 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     const mine = page.getByRole('region', { name: he.today.myRequest })
     await expect(mine).toContainText('18–20 בנוב׳')
     await expect(mine.getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
+  })
+
+  await test.step('who reads the unit\'s soldiers and has no unit block still opens "דוח 1", from its card (D-472)', async () => {
+    const card = page.getByRole('region', { name: he.presence.title })
+    await card.getByRole('button', { name: he.today.openReport, exact: true }).click()
+    const report = page.getByRole('dialog', { name: he.presence.title })
+    await expect(report).toBeVisible()
+    await report.getByRole('button', { name: he.common.close }).click()
+    await expect(report).toHaveCount(0)
+  })
+
+  await test.step('the page of requests is not for who approves nobody: its address shows "היום"', async () => {
+    await page.goto('/?page=requests')
+    await expect(page.getByRole('list', { name: he.myLeaves.nextDaysTitle })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: he.today.approvals })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: he.today.closedDoor })).toHaveCount(0)
+    await expect(page).not.toHaveURL(/page=/)
   })
 
   const waiting = page.getByRole('region', { name: he.today.approvals })
@@ -69,6 +97,13 @@ test('a soldier asks for days from the month, and the commander answers on "הי
   await test.step('the title opens the page of requests, where a rejection asks first', async () => {
     await waiting.getByRole('button', { name: he.today.approvals, exact: true }).click()
     await expect(page).toHaveURL(/page=requests/)
+    // The page takes the keyboard on its heading, and gives it back to the card's title when it closes.
+    await expect(page.getByRole('heading', { level: 1, name: he.today.approvals })).toBeFocused()
+    await page.getByRole('button', { name: he.shell.back, exact: true }).click()
+    await expect(waiting.getByRole('button', { name: he.today.approvals, exact: true })).toBeFocused()
+    await waiting.getByRole('button', { name: he.today.approvals, exact: true }).click()
+    // A reload keeps the page.
+    await page.reload()
     await expect(page.getByRole('heading', { level: 1, name: he.today.approvals })).toBeVisible()
     await expectNoAxeViolations(page)
     await page.getByRole('button', { name: `${he.leaves.reject} ${YAEL_NAME}` }).click()
@@ -76,6 +111,8 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await page.getByRole('button', { name: he.leaves.reject, exact: true }).click()
     await expect(toast).toContainText(he.today.rejected)
     await expect(page.getByRole('heading', { name: he.inbox.emptyPendingTitle })).toBeVisible()
+    // The answered row is gone with the button that was pressed: the page's heading has the keyboard.
+    await expect(page.getByRole('heading', { level: 1, name: he.today.approvals })).toBeFocused()
     await page.getByRole('button', { name: he.shell.back, exact: true }).click()
     await expect(page).not.toHaveURL(/page=/)
     await expect(waiting).toHaveCount(0)

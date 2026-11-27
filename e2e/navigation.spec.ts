@@ -51,6 +51,13 @@ test('"ניהול" and the scope label', async ({ page }, testInfo) => {
 
   await test.step('the tab bar holds the destinations only; the modules are not in it', async () => {
     await expect(navigation(page).getByRole('button')).toHaveCount(4)
+    // A tab is an icon: its name shows as a tooltip where there is a pointer to rest on it.
+    if (testInfo.project.name === 'desktop') {
+      await tab(page, 'me').hover()
+      await expect(page.getByRole('tooltip')).toHaveText(he.shell.tabMe)
+      await page.mouse.move(0, 0)
+      await expect(page.getByRole('tooltip')).toHaveCount(0)
+    }
     for (const name of [he.units.open, he.soldiers.open, he.roles.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }
@@ -77,6 +84,14 @@ test('"ניהול" and the scope label', async ({ page }, testInfo) => {
     await expectNoAxeViolations(page)
     await testInfo.attach('manage', { body: await page.screenshot(), contentType: 'image/png' })
     await openSetup(page)
+    // The page takes the keyboard on its heading, and a reload keeps the page, never another screen first.
+    await expect(page.getByRole('heading', { level: 1, name: he.navigation.setupOpen, exact: true })).toBeFocused()
+    // Closing returns the keyboard to the row that opened the page.
+    await managePage(page).getByRole('button', { name: he.shell.back, exact: true }).click()
+    await expect(managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })).toBeFocused()
+    await openSetup(page)
+    await page.reload()
+    await expect(page.getByRole('heading', { level: 1, name: he.navigation.setupOpen, exact: true })).toBeVisible()
     for (const section of [
       he.navigation.sections.structure,
       he.navigation.sections.access,

@@ -1,7 +1,7 @@
 import { PANEL_IDS, SHELL } from '@config'
 import { useMyLeavesAccess, useMyUpdates, usePanel, useRotationScope } from '@logic'
 import { Bell } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { GlassCircle } from '../kit/Glass'
 import { useShellChrome } from './chrome'
 
@@ -25,7 +25,7 @@ function UpdatesCircle() {
           panel.open(PANEL_IDS.myLeaves)
         }}
       >
-        <Bell aria-hidden size={20} />
+        <Bell aria-hidden size={SHELL.cornerIconPx} />
       </GlassCircle>
     </div>
   )
@@ -70,6 +70,26 @@ export function PageFrame({ updates = false, tray = null, children }: PageFrameP
       {updates ? <UpdatesCircle /> : null}
       {hasTray ? <div className="pointer-events-none absolute inset-x-lg bottom-lg flex justify-center">{tray}</div> : null}
     </main>
+  )
+}
+
+/**
+ * A page's one heading. It can take the keyboard: a page that opens over a destination starts on it (`opens`), and
+ * the keyboard lands on it when the control that held it is gone.
+ */
+export function PageHeading({ opens = false, className, children }: { readonly opens?: boolean; readonly className: string; readonly children: ReactNode }) {
+  const { bindHeading } = useShellChrome()
+  const bind = useCallback(
+    (element: HTMLHeadingElement | null) => {
+      bindHeading(element)
+      if (opens) element?.focus()
+    },
+    [bindHeading, opens],
+  )
+  return (
+    <h1 ref={bind} tabIndex={-1} className={`${className} outline-none`}>
+      {children}
+    </h1>
   )
 }
 

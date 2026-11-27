@@ -37,7 +37,8 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   // The answers are asked again whenever the soldiers in sight change. Until the new ones arrive the last ones stand,
   // so the screen and what is open over it never give way to a loading screen in the middle of work.
   const [settled, setSettled] = useState(answered)
-  if (answered.ready && (!settled.ready || answered.board !== settled.board || answered.requestsForSelf !== settled.requestsForSelf)) {
+  const moved = answered.board !== settled.board || answered.requestsForSelf !== settled.requestsForSelf || answered.approvals !== settled.approvals
+  if (answered.ready && (!settled.ready || moved)) {
     setSettled(answered)
   }
   const access = answered.ready ? answered : settled
@@ -96,7 +97,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           </BoardPlace>
         ) : (
           <>
-            {tab === 'today' ? <TodayPage name={name} commands={access.board} requests={access.requestsForSelf} /> : null}
+            {tab === 'today' ? <TodayPage name={name} commands={access.board} requests={access.requestsForSelf} approvals={access.approvals} /> : null}
             {tab === 'manage' ? <ManagePage name={name} /> : null}
             {tab === 'me' ? <MePage identity={identity} /> : null}
             <div className="pointer-events-none absolute inset-safe">{bar}</div>

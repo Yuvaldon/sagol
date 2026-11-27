@@ -9,7 +9,7 @@ import { Card } from '../../kit/Card'
 import { InfoDialog } from '../../patterns/Dialogs'
 import { Segmented } from '../../primitives/Segmented'
 import { IdentityList } from '../IdentityList'
-import { PageFrame, PageHead } from '../PageFrame'
+import { PageFrame, PageHead, PageHeading } from '../PageFrame'
 import { useReportPreferenceSave } from '../preferenceFailure'
 import { NotificationSettings } from './NotificationSettings'
 
@@ -42,7 +42,7 @@ export function MePage({ identity }: { readonly identity: AuthIdentity }) {
   return (
     <PageFrame updates>
       <PageHead>
-        <h1 className="truncate text-title font-bold tracking-tight">{named ? identity.display_name : t('shell.tabMe')}</h1>
+        <PageHeading className="truncate text-title font-bold tracking-tight">{named ? identity.display_name : t('shell.tabMe')}</PageHeading>
         <p dir="ltr" className="truncate text-end text-body text-text-muted">
           {identity.email}
         </p>
