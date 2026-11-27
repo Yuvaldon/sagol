@@ -1,4 +1,4 @@
-import { DEFAULT_TAB, TAB_IDS, type TabId } from '@config'
+import { DEFAULT_TAB, FULL_SCREEN_PAGES, TAB_IDS, type TabId } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useCurrentOrganization, useOverlayHistory, useShellAccess, useShellPlace } from '@logic'
@@ -13,8 +13,12 @@ import { ShellChromeContext, useShellChromeScope } from './chrome'
 import { FocusModeContext, useFocusModeScope } from './focusMode'
 import { InstallInvitation } from './InstallInvitation'
 import { LeaveDrawer } from './LeaveDrawer'
+import { JoinDrawer } from './manage/JoinDrawer'
 import { ManagePage } from './manage/ManagePage'
+import { RuleDrawer } from './manage/RuleDrawer'
 import { useManageAccess } from './manage/rows'
+import { NoticeScope } from './NoticeScope'
+import { PersonDrawer } from './PersonDrawer'
 import { MePage } from './me/MePage'
 import { ModuleDrawer } from './ModuleDrawer'
 import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenceFailure'
@@ -77,6 +81,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
       <SavedViewNoticeContext value={savedViewNotice}>
       <FocusModeContext value={focusMode}>
       <ShellChromeContext value={chrome}>
+      <NoticeScope>
       <div
         data-focus-mode={focusMode.on ? 'on' : undefined}
         className="relative h-dvh bg-canvas"
@@ -98,15 +103,20 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
             {tab === 'today' ? <TodayPage name={name} commands={access.board} requests={access.requestsForSelf} approvals={access.approvals} /> : null}
             {tab === 'manage' ? <ManagePage name={name} /> : null}
             {tab === 'me' ? <MePage identity={identity} /> : null}
-            <div className="pointer-events-none absolute inset-safe">{bar}</div>
+            {/* A temporary full screen has no tab bar (the handoff's placement map). */}
+            {place.page !== null && FULL_SCREEN_PAGES.includes(place.page) ? null : <div className="pointer-events-none absolute inset-safe">{bar}</div>}
           </>
         )}
         <ModuleDrawer />
         <LeaveDrawer />
+        <PersonDrawer />
+        <RuleDrawer />
+        <JoinDrawer />
         <DayReportDialog />
         <PreferenceFailureNotice />
         <InstallInvitation />
       </div>
+      </NoticeScope>
       </ShellChromeContext>
       </FocusModeContext>
       </SavedViewNoticeContext>

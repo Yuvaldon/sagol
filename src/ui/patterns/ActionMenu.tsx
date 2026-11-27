@@ -13,13 +13,24 @@ export interface RowAction {
   readonly labelKey: I18nKey
   readonly icon: ReactNode
   readonly onAction: () => void
+  /** An action that takes something away, archiving (D-461): last in the menu, in the error color. */
+  readonly tone?: 'danger'
 }
 
-export function ActionMenu({ labelKey, actions }: { readonly labelKey: I18nKey; readonly actions: readonly RowAction[] }) {
+export function ActionMenu({
+  labelKey,
+  actions,
+  variant,
+}: {
+  readonly labelKey: I18nKey
+  readonly actions: readonly RowAction[]
+  /** The trigger on its own circle, as a drawer's header draws its tools. */
+  readonly variant?: 'circle'
+}) {
   if (actions.length === 0) return null
   return (
     <MenuTrigger>
-      <IconButton labelKey={labelKey}>
+      <IconButton labelKey={labelKey} {...(variant === undefined ? {} : { variant })}>
         <MoreHorizontal aria-hidden size={16} />
       </IconButton>
       <Popover className="glass-menu min-w-trigger rounded-panel p-xs">
@@ -30,7 +41,7 @@ export function ActionMenu({ labelKey, actions }: { readonly labelKey: I18nKey; 
               id={action.id}
               textValue={t(action.labelKey)}
               onAction={action.onAction}
-              className="flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-md text-control whitespace-nowrap outline-none md:min-h-control data-focused:bg-inner"
+              className={`flex min-h-touch cursor-pointer items-center gap-sm rounded-control px-md text-control whitespace-nowrap outline-none md:min-h-control data-focused:bg-inner ${action.tone === 'danger' ? 'text-status-error' : ''}`}
             >
               {action.icon}
               {t(action.labelKey)}

@@ -35,6 +35,7 @@ export function LeaveBatchForm({
   types,
   today,
   approveNow,
+  chosen: preset = [],
 }: {
   readonly soldiers: readonly Soldier[]
   readonly canApprove: (soldierId: SoldierId) => boolean
@@ -42,6 +43,8 @@ export function LeaveBatchForm({
   readonly types: readonly LeaveType[]
   readonly today: CalendarDate
   readonly approveNow: boolean
+  /** Soldiers chosen before the form opened, together on "חיילים" (D-482). */
+  readonly chosen?: readonly SoldierId[]
 }) {
   const panel = usePanel()
   const { createBatch } = useLeaveBatchCommands()
@@ -53,7 +56,7 @@ export function LeaveBatchForm({
 
   const properties = usePropertyFields('leave')
   const form = useForm({
-    defaultValues: { ...newLeaveBatchValues(today), as_approved: approveNow },
+    defaultValues: { ...newLeaveBatchValues(today), soldier_ids: [...preset], as_approved: approveNow },
     validators: { onSubmit: ({ value }) => validatorResult(leaveBatchIssues(value, typeOf(value.leave_type_id), rotationOf(value.soldier_ids, value))) },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)

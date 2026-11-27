@@ -1,41 +1,18 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
-import { RuleEnforcement, type AppError, type AvailabilityRule, type CalendarDate, type UnitId } from '@contracts'
+import type { CalendarDate, UnitId } from '@contracts'
 import { t } from '@i18n'
-import {
-  archivedRows,
-  liveRules,
-  useAvailabilityRulesWithArchived,
-  useCommandRanks,
-  useDateWindow,
-  useDayViolations,
-  usePanel,
-  useRuleCommands,
-  useRuleConflicts,
-  useRulePermissions,
-  useRulesDay,
-  useTagCategories,
-  useTags,
-  useUnitLevels,
-  useUnitsWithArchived,
-  useDeployments,
-  useViewFilter,
-  type WindowConflict,
-} from '@logic'
-import { Archive, Plus, X } from 'lucide-react'
-import { useId, useMemo, useState, type ReactNode } from 'react'
-import { Button as AriaButton, Heading } from 'react-aria-components'
-import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
-import { ArchivedSection } from '../../patterns/ArchivedSection'
-import { SmallDialog } from '../../patterns/Dialogs'
-import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
+import { useDateWindow, useDayViolations, usePanel, useRuleConflicts, useRulesDay, useShellPlace, useViewFilter, type WindowConflict } from '@logic'
+import { X } from 'lucide-react'
+import { useId, type ReactNode } from 'react'
+import { Heading } from 'react-aria-components'
+import { CardDoor } from '../../kit/Card'
+import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatDate } from '../../patterns/dates'
-import { Button, IconButton } from '../../primitives/Button'
-import { RuleForm, type RuleFormProps } from './RuleForm'
+import { IconButton } from '../../primitives/Button'
 import { RuleViolations } from '../../patterns/rules/RuleViolations'
-import { boundText, ruleSummary, useRuleNames } from '../../patterns/rules/ruleText'
+import { boundText, useRuleNames } from '../../patterns/rules/ruleText'
 
-// The rules drawer (D-140, D-141): the broken rules of a day pressed on the heat row, the configuration conflicts on
-// the board's days, and the rules themselves, by priority then name.
+// The rules drawer of the board (D-140, D-141): the broken rules of a day pressed on the heat row, and the configuration
+// conflicts on the board's days. The rules are the page "כללי נוכחות" (D-482), a door away.
 
 const PART_SEPARATOR = ' · '
 const NAME_SEPARATOR = ', '
@@ -109,201 +86,28 @@ function ConflictsSection({ conflicts }: { readonly conflicts: readonly WindowCo
   )
 }
 
-function RuleRow({ rule, canUpdate, actions }: { readonly rule: AvailabilityRule; readonly canUpdate: boolean; readonly actions: readonly RowAction[] }) {
-  const panel = usePanel()
-  const names = useRuleNames()
-  const hard = rule.enforcement === RuleEnforcement.enum.hard
-  const content = (
-    <span className="flex min-w-none flex-col gap-2xs">
-      <span className="flex items-center gap-sm">
-        <span className="min-w-none truncate text-name font-semibold">{rule.name}</span>
-        <span
-          className={`shrink-0 rounded-pill px-sm text-micro font-semibold ${hard ? 'bg-status-rejected text-on-action' : 'border border-dashed border-status-pending text-status-pending-text'}`}
-        >
-          {t(hard ? 'rules.hard' : 'rules.soft')}
-        </span>
-        {rule.is_enabled ? null : <span className="shrink-0 rounded-pill bg-inner px-sm text-micro text-text-muted">{t('rules.disabled')}</span>}
-      </span>
-      <span className="text-micro text-text-muted">{ruleSummary(rule, names)}</span>
-    </span>
-  )
-  return (
-    <li className="flex items-center gap-2xs border-b border-line bg-surface">
-      {canUpdate ? (
-        <AriaButton
-          onPress={() => {
-            panel.open(PANEL_IDS.rules, { entity: rule.id })
-          }}
-          className="flex min-h-touch min-w-none flex-1 cursor-pointer items-center rounded-control p-xs text-start outline-focus md:min-h-control data-focus-visible:outline-2 data-hovered:bg-inner"
-        >
-          {content}
-        </AriaButton>
-      ) : (
-        <span className="flex min-h-touch min-w-none flex-1 items-center p-xs md:min-h-control">{content}</span>
-      )}
-      <ActionMenu labelKey="common.actions" actions={actions} />
-    </li>
-  )
-}
-
-function RuleEditor(props: Omit<RuleFormProps, 'onReload'>) {
-  const [generation, setGeneration] = useState(0)
-  return (
-    <RuleForm
-      key={generation}
-      {...props}
-      onReload={() => {
-        setGeneration((current) => current + 1)
-      }}
-    />
-  )
-}
-
 export function RulesModule() {
+  const place = useShellPlace()
   const panel = usePanel()
-  const rules = useAvailabilityRulesWithArchived()
-  const units = useUnitsWithArchived()
-  const levels = useUnitLevels()
-  const categories = useTagCategories()
-  const tags = useTags()
-  const ranks = useCommandRanks()
-  const deployments = useDeployments()
   const { window } = useDateWindow()
   const { unit } = useViewFilter()
   const rulesDay = useRulesDay()
   const conflicts = useRuleConflicts(window)
-  const commands = useRuleCommands()
-  const liveUnits = useMemo(() => (units.status === 'ready' ? units.value.filter((row) => row.archived_at === null) : NO_ROWS), [units])
-  const live = useMemo(() => (rules.status === 'ready' ? liveRules(rules.value) : NO_ROWS), [rules])
-  const archivedRules = useMemo(() => (rules.status === 'ready' ? archivedRows(rules.value) : NO_ROWS), [rules])
-  const everyRule = useMemo(() => [...live, ...archivedRules], [live, archivedRules])
-  const permissions = useRulePermissions(liveUnits, everyRule)
-  const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<AvailabilityRule | null>(null)
-
-  for (const loaded of [rules, units, levels, categories, tags, ranks, deployments]) {
-    if (loaded.status === 'failed') return <FailureNotice error={loaded.error} />
-  }
-  if (
-    rules.status !== 'ready' ||
-    units.status !== 'ready' ||
-    levels.status !== 'ready' ||
-    categories.status !== 'ready' ||
-    tags.status !== 'ready' ||
-    ranks.status !== 'ready' ||
-    deployments.status !== 'ready'
-  ) {
-    return <LoadingNotice />
-  }
-
-  const formProps = {
-    units: units.value,
-    levels: levels.value,
-    categories: categories.value,
-    tags: tags.value,
-    ranks: ranks.value,
-    deployments: deployments.value,
-  }
-  if (panel.entity === NEW_ENTITY) return <RuleEditor rule={null} placeable={permissions.createIn} {...formProps} />
-  if (panel.entity !== null) {
-    const rule = live.find((candidate) => candidate.id === panel.entity)
-    if (rule === undefined) {
-      return (
-        <div className="flex flex-col items-center gap-md py-xl text-center">
-          <p className="text-name text-text-muted">{t('rules.notFound')}</p>
-          <Button
-            onPress={() => {
-              panel.open(PANEL_IDS.rules)
-            }}
-          >
-            {t('common.backToList')}
-          </Button>
-        </div>
-      )
-    }
-    return <RuleEditor key={rule.id} rule={rule} placeable={permissions.moveTo} {...formProps} />
-  }
-
-  const newRule = () => {
-    setFailure(null)
-    panel.open(PANEL_IDS.rules, { entity: NEW_ENTITY })
-  }
-  const actionsOf = (rule: AvailabilityRule): RowAction[] =>
-    permissions.archive(rule)
-      ? [
-          {
-            id: 'archive',
-            labelKey: 'common.archive',
-            icon: <Archive aria-hidden size={14} />,
-            onAction: () => {
-              setFailure(null)
-              setArchiving(rule)
-            },
-          },
-        ]
-      : []
-
   return (
     <div className="flex flex-col gap-xl">
       {rulesDay.day === null ? null : (
         <DaySection day={rulesDay.day} unitId={unit.kind === 'unit' ? unit.unitId : null} onClose={rulesDay.open} />
       )}
-      {live.length === 0 ? (
-        <EmptyNotice titleKey="rules.emptyTitle" bodyKey={permissions.createAny ? undefined : 'rules.emptyReadOnly'}>
-          {permissions.createAny ? (
-            <Button variant="primary" onPress={newRule}>
-              <Plus aria-hidden size={14} />
-              {t('rules.new')}
-            </Button>
-          ) : null}
-        </EmptyNotice>
-      ) : (
-        <>
-          {conflicts.status === 'ready' ? <ConflictsSection conflicts={conflicts.value} /> : null}
-          <Section title={t('rules.listLabel')}>
-            {failure === null ? null : <FailureNotice error={failure} />}
-            <ul aria-label={t('rules.listLabel')} className="flex flex-col">
-              {live.map((rule) => (
-                <RuleRow key={rule.id} rule={rule} canUpdate={permissions.update(rule)} actions={actionsOf(rule)} />
-              ))}
-            </ul>
-            {permissions.createAny ? (
-              <div>
-                <Button onPress={newRule}>
-                  <Plus aria-hidden size={14} />
-                  {t('rules.new')}
-                </Button>
-              </div>
-            ) : null}
-          </Section>
-        </>
-      )}
-      {/* Archived rules come back from a quiet section under the list, for whoever may archive them (D-371). */}
-      <ArchivedSection
-        rows={archivedRules.filter((rule) => permissions.archive(rule))}
-        nameOf={(rule) => rule.name}
-        restore={commands.restore}
+      {conflicts.status === 'ready' ? <ConflictsSection conflicts={conflicts.value} /> : null}
+      {/* The rules themselves, their switches and their archive are the page "כללי נוכחות" (D-482). */}
+      <CardDoor
+        labelKey="manage.rules.all"
+        onPress={() => {
+          // The page is named first, on the drawer's own entry, and the drawer then closes as it always does (D-477).
+          place.openPage('rules')
+          panel.close()
+        }}
       />
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="rules.archiveTitle"
-          hintKey="rules.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
     </div>
   )
 }
-
-const NO_ROWS: readonly never[] = []

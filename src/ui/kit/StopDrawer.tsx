@@ -34,10 +34,12 @@ export interface StopDrawerProps {
   readonly opensAt?: Stop
   /** What is open lives in the URL, as a module panel's does, so the panel's entry is the drawer's (D-332, D-337). */
   readonly inUrl?: boolean
+  /** The drawer's own tools beside ✕, each on its circle: the pencil and "⋯" of a card (D-482). */
+  readonly tools?: ReactNode
   readonly children: ReactNode
 }
 
-export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = false, children }: StopDrawerProps) {
+export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = false, tools = null, children }: StopDrawerProps) {
   const dragControls = useDragControls()
   const [stop, setStop] = useState<Stop>(opensAt)
   const dialog = useRef<HTMLElement>(null)
@@ -97,10 +99,13 @@ export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = f
               </Heading>
               {detail === undefined ? null : <p className="text-small text-text-muted tabular-nums">{detail}</p>}
             </div>
-            {/* ✕ on its own white circle, as the package draws it. */}
-            <IconButton labelKey="common.close" variant="circle" onPress={onClose}>
-              <X aria-hidden size={CLOSE_ICON} />
-            </IconButton>
+            <div className="flex shrink-0 items-center gap-xs">
+              {tools}
+              {/* ✕ on its own white circle, as the package draws it. */}
+              <IconButton labelKey="common.close" variant="circle" onPress={onClose}>
+                <X aria-hidden size={CLOSE_ICON} />
+              </IconButton>
+            </div>
           </header>
           <div className="min-h-none overflow-y-auto px-lg pb-xl">
             <DrawerStopContext value={grow}>{children}</DrawerStopContext>

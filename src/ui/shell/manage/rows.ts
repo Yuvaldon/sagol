@@ -1,14 +1,16 @@
 import { SETUP_SECTIONS, type SetupPanel, type SetupSectionId, type WorkModule } from '@config'
 import type { I18nKey } from '@i18n'
-import { usePendingRequests, useRotationScope, useSetupAccess, useShellPlace } from '@logic'
+import { usePendingRequests, useRotationScope, useRoundPlanning, useSetupAccess, useShellPlace } from '@logic'
 import { useInboxAccess } from '../inboxAccess'
 import { useNavigationEntries, useSetupEntries, type ModuleEntry } from '../moduleEntries'
 
 // What "ניהול" holds for an actor (D-455, D-456): the designed tools first, then the tools that keep their current
 // screens, then "הגדרות", the page of what a unit defines once. A row exists only for who may open its module.
 
-/** The designed tools, in the package's order. */
+/** The designed tools, in the package's order; leave-round planning stands between the join requests and the rules (D-482). */
 export const DESIGNED_TOOLS: readonly WorkModule[] = ['soldiers', 'account_links', 'rules']
+/** The place of the planner's row among them: after the join requests. */
+export const ROUND_ROW_AFTER: WorkModule = 'account_links'
 /** The tools with no new design yet, after the gap. The unit tree comes first among them, from the settings' modules. */
 export const KEPT_TOOLS: readonly WorkModule[] = ['deployments', 'dashboard']
 
@@ -90,5 +92,6 @@ export function useManageAccess(): boolean {
   const setup = useSetupEntries()
   const steps = useSetupAccess()
   const inbox = useInboxEntry()
-  return work.size > 0 || setup.size > 0 || steps.length > 0 || inbox !== null
+  const round = useRoundPlanning()
+  return work.size > 0 || setup.size > 0 || steps.length > 0 || inbox !== null || round !== null
 }

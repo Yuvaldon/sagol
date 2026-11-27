@@ -83,6 +83,11 @@ export function boundText(boundKey: I18nKey, value: number, percent: boolean): s
 
 /** What a rule asks, as its row in the list says it (D-140): the bounds, who, and where. */
 export function ruleSummary(rule: AvailabilityRule, names: RuleNames): string {
+  return ruleParts(rule, names).join(PART_SEPARATOR)
+}
+
+/** The same, part by part: the chips of the rule's drawer (the handoff's sentence of chips, D-482). */
+export function ruleParts(rule: AvailabilityRule, names: RuleNames): string[] {
   const percent = rule.metric === RuleMetric.enum.percent
   const bounds = [
     ...(rule.min_value === null ? [] : [boundText('rules.min', rule.min_value, percent)]),
@@ -93,7 +98,7 @@ export function ruleSummary(rule: AvailabilityRule, names: RuleNames): string {
     population.kind === 'other'
       ? t('rules.otherPopulation')
       : [...population.tagSets.flat().map(names.tag), ...population.rankIds.map(names.rank)].join(LIST_SEPARATOR) || t('rules.everyone')
-  return [...bounds, who, scopeText(rule, names)].join(PART_SEPARATOR)
+  return [scopeText(rule, names), who, ...bounds]
 }
 
 function scopeText(rule: AvailabilityRule, names: RuleNames): string {

@@ -36,6 +36,8 @@ export interface TextFieldProps {
   readonly inputMode?: 'numeric' | 'tel' | 'email'
   /** Numbers and technical values read left to right inside the RTL layout. */
   readonly dir?: 'ltr'
+  /** A field that a press opened takes the keyboard as it shows, the search of a page (D-482). */
+  readonly autoFocus?: boolean
 }
 
 export function TextField({ labelKey, error, name, type = 'text', autoComplete, isRequired, inputMode, dir, ...rest }: TextFieldProps) {

@@ -1,4 +1,4 @@
-import { NEW_ENTITY } from '@config'
+import { NEW_ENTITY, ROUND_ENTITY } from '@config'
 import { t } from '@i18n'
 import {
   useLeaveCreation,
@@ -10,7 +10,7 @@ import {
   useSoldiers,
   useToday,
 } from '@logic'
-import { CalendarSync, User, Users, type LucideIcon } from 'lucide-react'
+import { User, Users, type LucideIcon } from 'lucide-react'
 import type { I18nKey } from '@i18n'
 import { useState } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -50,6 +50,11 @@ function NewLeave() {
         ? panel.draft
         : null
 
+  // Soldiers chosen together on "חיילים" open one collective leave for them (D-482).
+  const together =
+    panel.draft?.soldier_ids !== undefined && panel.draft.soldier_ids.every((id) => creation.soldiers.some((soldier) => soldier.id === id))
+      ? panel.draft
+      : null
   const shared = {
     soldiers: creation.soldiers,
     canApprove: creation.canApprove,
@@ -59,10 +64,14 @@ function NewLeave() {
     approveNow: preferences.value.create_leaves_as_approved,
   }
   // A collective leave needs more than one soldier to choose from (D-179), and a round plan an open rotation too (D-316).
+  // The plan has its own entry, a row of "ניהול" and a card of "היום" (OI-389, D-482).
   const many = creation.soldiers.length > 1
   const planIn = many && rounds.context !== null && rounds.preferred !== null ? { context: rounds.context, preferred: rounds.preferred } : null
-  const offered = LEAVE_MODES.filter((candidate) => candidate === 'single' || (candidate === 'collective' ? many : planIn !== null))
-  const current = offered.includes(mode) ? mode : 'single'
+  if (panel.entity === ROUND_ENTITY) {
+    return planIn === null ? <EmptyNotice titleKey="leaves.noRoundTitle" bodyKey="leaves.noRoundBody" /> : <LeaveRoundPlanner {...shared} {...planIn} />
+  }
+  const offered = LEAVE_MODES.filter((candidate) => candidate === 'single' || many)
+  const current = together !== null && many ? 'collective' : offered.includes(mode) ? mode : 'single'
   const switcher =
     offered.length > 1 ? (
       <div className="flex flex-wrap gap-sm">
@@ -89,9 +98,7 @@ function NewLeave() {
     <div className="flex flex-col gap-md">
       {switcher}
       {current === 'collective' ? (
-        <LeaveBatchForm {...shared} />
-      ) : current === 'rounds' && planIn !== null ? (
-        <LeaveRoundPlanner {...shared} {...planIn} />
+        <LeaveBatchForm {...shared} chosen={together?.soldier_ids ?? []} />
       ) : (
         <LeaveSheetForm
           // A new drag starts the form over from its own draft.
@@ -106,19 +113,18 @@ function NewLeave() {
 
 const NO_SOLDIERS: readonly never[] = []
 
-/** The ways to ask for leave: one soldier, several on the same days, or groups taking turns in a rotation. */
-const LEAVE_MODES = ['single', 'collective', 'rounds'] as const
+/** The ways to ask for leave: one soldier, or several on the same days. Groups taking turns are planned apart (D-482). */
+const LEAVE_MODES = ['single', 'collective'] as const
 type LeaveMode = (typeof LEAVE_MODES)[number]
 
 const MODE_BUTTONS: Record<LeaveMode, { readonly icon: LucideIcon; readonly labelKey: I18nKey }> = {
   single: { icon: User, labelKey: 'leaves.single' },
   collective: { icon: Users, labelKey: 'leaves.collective' },
-  rounds: { icon: CalendarSync, labelKey: 'leaves.rounds' },
 }
 
-/** The `leaves` panel: the new-leave form, or the details of the leave `entity` names (D-115, D-119). */
+/** The `leaves` panel: the new-leave form, the leave-round planner, or the details of the leave `entity` names (D-115, D-119). */
 export function LeavesModule() {
   const panel = usePanel()
-  if (panel.entity !== null && panel.entity !== NEW_ENTITY) return <LeaveDetails key={panel.entity} id={panel.entity} />
+  if (panel.entity !== null && panel.entity !== NEW_ENTITY && panel.entity !== ROUND_ENTITY) return <LeaveDetails key={panel.entity} id={panel.entity} />
   return <NewLeave />
 }
