@@ -107,6 +107,8 @@ const LEAVES_ALL = ['view', 'create', 'update', 'delete', 'duplicate', 'approve'
 const TALK = ['view', 'create'] as const
 /** Who approves requests confirms the day's report (D-293). */
 const DAY_REPORTS = ['confirm'] as const
+/** Who views leaves sees who of their own unit is on base today, by name (D-478). */
+const PRESENCE = READ
 
 /** What every holder reads of the unit's setup. */
 const SETUP_READ = {
@@ -139,6 +141,7 @@ const COMPANY_COMMAND = {
   roles: READ,
   leaves: LEAVES_ALL,
   day_reports: DAY_REPORTS,
+  presence: PRESENCE,
   leave_comments: TALK,
   internal_comments: TALK,
   accounts: ['view', 'approve'],
@@ -151,6 +154,7 @@ const PLATOON_COMMAND = {
   memberships: READ,
   leaves: LEAVES_ALL,
   day_reports: DAY_REPORTS,
+  presence: PRESENCE,
   leave_comments: TALK,
   internal_comments: TALK,
   accounts: ['view', 'approve'],
@@ -162,13 +166,15 @@ const SQUAD_COMMAND = {
   soldiers: READ,
   memberships: READ,
   leaves: ['view', 'create'],
+  presence: PRESENCE,
   leave_comments: TALK,
 } as const satisfies TemplatePermissions
 
-/** A soldier: their own days and requests. */
+/** A soldier: their own days and requests, and who of their unit is on base with them (D-478). */
 const SOLDIER = {
   ...SETUP_READ,
   leaves: ['view', 'create', 'update', 'delete'],
+  presence: PRESENCE,
   leave_comments: TALK,
 } as const satisfies TemplatePermissions
 
