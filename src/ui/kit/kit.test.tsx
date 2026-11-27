@@ -311,7 +311,18 @@ describe('the drawer with stops', () => {
     expect(shrink.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(shrink)
     expect(within(dialog).getByRole('button', { name: he.kit.drawerGrow })).toBeTruthy()
-    fireEvent.click(within(dialog).getByRole('button', { name: he.common.close }))
+    // The drawer's title is the screen's second heading, under the page's own.
+    expect(within(dialog).getByRole('heading', { level: 2, name: TITLE })).toBeTruthy()
+    // When the control that held the keyboard is gone, focus falls to the body: the next key returns it to the
+    // drawer, and Escape still closes it.
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    expect(document.activeElement).toBe(document.body)
+    fireEvent.keyDown(document.body, { key: 'Tab' })
+    expect(dialog.contains(document.activeElement)).toBe(true)
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    fireEvent.keyDown(document.body, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledOnce()
+    fireEvent.click(within(dialog).getByRole('button', { name: he.common.close }))
+    expect(onClose).toHaveBeenCalledTimes(2)
   })
 })

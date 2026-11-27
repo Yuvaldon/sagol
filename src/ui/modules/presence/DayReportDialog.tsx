@@ -150,7 +150,7 @@ function UnitSection({
   const ListHeading = level === 3 ? 'h4' : 'h5'
   const lists = [...DAY_REPORT.text.listed, 'present' as const].filter((category) => section[category].length > 0)
   return (
-    <Disclosure className="group rounded-card bg-surface">
+    <Disclosure className="group rounded-card border border-divider-strong bg-surface">
       <Heading level={level}>
         <AriaButton
           slot="trigger"

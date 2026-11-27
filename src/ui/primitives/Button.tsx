@@ -14,9 +14,15 @@ import {
 const BASE =
   'inline-flex min-h-touch cursor-pointer items-center justify-center gap-xs rounded-pill px-md text-control font-semibold whitespace-nowrap outline-focus outline-offset-2 md:min-h-control data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
 
+/** A tile: as tall as a tab, the control radius, the body size. Actions of equal weight stand side by side as tiles (D-454). */
+const TILE =
+  'inline-flex min-h-tab cursor-pointer items-center justify-center gap-xs rounded-control px-md text-body font-semibold outline-focus outline-offset-2 data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
+
 const VARIANTS = {
-  primary: 'glass-action md:min-h-bar px-lg',
-  quiet: 'bg-inner text-text data-hovered:bg-line',
+  primary: `${BASE} glass-action md:min-h-bar px-lg`,
+  quiet: `${BASE} bg-inner text-text data-hovered:bg-line`,
+  tile: `${TILE} border border-line bg-surface text-text data-hovered:bg-inner`,
+  tileSolid: `${TILE} bg-action-solid text-on-action`,
 } as const
 
 export interface ButtonProps extends Omit<AriaButtonProps, 'className'> {
@@ -24,11 +30,21 @@ export interface ButtonProps extends Omit<AriaButtonProps, 'className'> {
 }
 
 export function Button({ variant = 'quiet', ...props }: ButtonProps) {
-  return <AriaButton {...props} className={`${BASE} ${VARIANTS[variant]}`} />
+  return <AriaButton {...props} className={VARIANTS[variant]} />
 }
+
+const ICON_BASE =
+  'inline-flex cursor-pointer items-center justify-center outline-focus outline-offset-2 data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
+
+const ICON_VARIANTS = {
+  plain: `${ICON_BASE} min-h-touch min-w-touch rounded-pill text-text-muted md:min-h-control md:min-w-control data-hovered:bg-inner`,
+  /** The icon on its own white circle, 44 px on every screen: the ✕ of a drawer of the new interface (D-454). */
+  circle: `${ICON_BASE} size-touch shrink-0 rounded-full bg-surface text-text data-hovered:bg-inner`,
+} as const
 
 export interface IconButtonProps extends Omit<AriaButtonProps, 'className' | 'children' | 'aria-label'> {
   readonly labelKey: I18nKey
+  readonly variant?: keyof typeof ICON_VARIANTS
   readonly children: ReactNode
 }
 
@@ -36,14 +52,14 @@ export interface IconButtonProps extends Omit<AriaButtonProps, 'className' | 'ch
  * A button that shows only an icon (D-189, D-215). Its name is read aloud, and shows as a tooltip on hover or keyboard focus,
  * so no control needs a word on screen to be understood.
  */
-export function IconButton({ labelKey, children, ...props }: IconButtonProps) {
+export function IconButton({ labelKey, variant = 'plain', children, ...props }: IconButtonProps) {
   const label = t(labelKey)
   return (
     <TooltipTrigger delay={TOOLTIP.delayMs} closeDelay={TOOLTIP.closeDelayMs}>
       <AriaButton
         {...props}
         aria-label={label}
-        className="inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-pill text-text-muted outline-focus outline-offset-2 md:min-h-control md:min-w-control data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-hovered:bg-inner"
+        className={ICON_VARIANTS[variant]}
       >
         {children}
       </AriaButton>

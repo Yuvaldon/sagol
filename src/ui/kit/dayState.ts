@@ -17,3 +17,9 @@ export const DAY_STATE_KEYS: Readonly<Record<DayState, I18nKey>> = {
   away: 'kit.dayAway',
   pending: 'kit.dayPending',
 }
+
+/** A day of a month: with what the soldier's day is, or with no state where the month only picks days. */
+export interface MonthDay {
+  readonly date: CalendarDate
+  readonly state?: DayState
+}

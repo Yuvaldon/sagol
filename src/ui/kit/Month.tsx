@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { formatDate } from '../patterns/dates'
-import { DAY_STATE_KEYS, type StripDay } from './dayState'
+import { DAY_STATE_KEYS, type MonthDay } from './dayState'
 
 // The month the strip opens into (D-454): seven columns, the month's name between two arrows. Where days can be
 // chosen it is a grid: one day takes the Tab key, the arrow keys move between the days (and on to the next month at
@@ -29,7 +29,8 @@ const STATES = {
 export interface MonthProps {
   /** A day of the month shown: it names the month. */
   readonly month: CalendarDate
-  readonly weeks: readonly (readonly (StripDay | null)[])[]
+  /** A day with no state is only a date: a month that picks days says nothing of where the soldier is. */
+  readonly weeks: readonly (readonly (MonthDay | null)[])[]
   readonly today: CalendarDate
   readonly previousKey: I18nKey
   readonly nextKey: I18nKey
@@ -44,13 +45,14 @@ export interface MonthProps {
   } | null
 }
 
-function nameOf(day: StripDay): string {
-  return [formatDate(day.date, 'full'), t(DAY_STATE_KEYS[day.state])].join(WORD)
+function nameOf(day: MonthDay): string {
+  const date = formatDate(day.date, 'full')
+  return day.state === undefined ? date : [date, t(DAY_STATE_KEYS[day.state])].join(WORD)
 }
 
-function lookOf(day: StripDay, today: CalendarDate, chosen: boolean): string {
+function lookOf(day: MonthDay, today: CalendarDate, chosen: boolean): string {
   return `flex size-touch items-center justify-center rounded-full text-small tabular-nums ${
-    chosen ? 'bg-action-solid font-bold text-on-action' : `${STATES[day.state]} ${day.date === today ? 'font-bold text-text ring-2 ring-action-solid' : 'text-text'}`
+    chosen ? 'bg-action-solid font-bold text-on-action' : `${day.state === undefined ? '' : STATES[day.state]} ${day.date === today ? 'font-bold text-text ring-2 ring-action-solid' : 'text-text'}`
   }`
 }
 

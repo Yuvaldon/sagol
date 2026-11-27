@@ -12,7 +12,7 @@ import {
   requestLeave,
   typeDate,
 } from './support/leaves.ts'
-import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule } from './support/workspace.ts'
+import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, openTab } from './support/workspace.ts'
 import { selectView } from './support/board.ts'
 
 // V22's demo: the day report opens from a day of the timeline and of the calendar, holds the counts and the names per
@@ -169,5 +169,43 @@ test('each unit confirms its report, a change shows, and it confirms again (D-29
     await expectNoAxeViolations(page)
     await section(page).getByRole('button', { name: he.presence.confirmAgain }).click()
     await expect(section(page).getByText(he.presence.statusConfirmed, { exact: true })).toBeVisible()
+  })
+})
+
+test('the button of "היום" says when today\'s report was sent, and returns to "דוח 1" after a change (D-475)', async ({ page }) => {
+  await page.clock.setFixedTime(NOW)
+  await enterAsOwner(page)
+  await soldierInRotation(page)
+  await openModule(page, he.leaveTypes.open)
+  await createType(page, { name: 'רגילה', color: he.palette.teal })
+  await closeDrawer(page)
+  await openTab(page, 'today')
+  const button = page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.presence.title}`) })
+  await expect(button).toHaveAccessibleName(he.presence.title)
+
+  await test.step('every unit is sent, and the button reads the time', async () => {
+    await button.click()
+    const send = report(page).getByRole('button', { name: he.presence.confirm, exact: true })
+    await expect(send.first()).toBeVisible()
+    while ((await send.count()) > 0) {
+      const left = await send.count()
+      await send.first().click()
+      await expect(send).toHaveCount(left - 1)
+    }
+    await report(page).getByRole('button', { name: he.common.close }).click()
+    await expect(report(page)).toBeHidden()
+    // The clock of the demo stands at noon in Israel.
+    await expect(button).toHaveAccessibleName(`${he.presence.title} ${he.presence.statusConfirmed} 12:00`)
+    await expectNoAxeViolations(page)
+  })
+
+  await test.step('a leave of today, written after, is a change: the button is "דוח 1" again', async () => {
+    await page.clock.setFixedTime(NOW.getTime() + 60_000)
+    await requestLeave(page, { type: 'רגילה', soldier: ['יעל', SOLDIER], from: ['11', '11', '2026'], to: ['11', '11', '2026'], approveNow: true })
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await openTab(page, 'today')
+    await expect(button).toHaveAccessibleName(he.presence.title)
+    await button.click()
+    await expect(report(page).getByText(he.presence.statusChanged, { exact: true }).first()).toBeVisible()
   })
 })

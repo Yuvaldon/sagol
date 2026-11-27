@@ -13,7 +13,7 @@ import {
 } from '@logic'
 import { Check, Copy, Pencil, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Button as AriaButton } from 'react-aria-components'
+import { useFullStop } from '../../kit/drawerStop'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatInstant } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
@@ -30,8 +30,6 @@ import { leaveDatesText, leaveDaysText, personNames, typeNameOf } from './leaveT
 // taken back when the command refuses; the refusal stays on screen, over the leave as it is stored.
 
 const DETAIL_SEPARATOR = ' · '
-const ACTION =
-  'inline-flex min-h-tab cursor-pointer items-center justify-center gap-xs rounded-control px-md text-body font-semibold outline-focus outline-offset-2 data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2'
 
 function Detail({ labelKey, children }: { readonly labelKey: I18nKey; readonly children: ReactNode }) {
   return (
@@ -64,6 +62,8 @@ function LeaveView({
   const nameOf = personNames(soldiers)
   const type = types.find((candidate) => candidate.id === leave.leave_type_id) ?? null
   const timezone = useTimezone()
+  // A form needs the room: the drawer grows to its full stop for it.
+  const grow = useFullStop()
 
   async function step(next: LeaveTransition) {
     setFailure(null)
@@ -137,31 +137,31 @@ function LeaveView({
         {/* What can be done with the leave, each with the same weight (D-454); approving alone is the filled one. */}
         <div role="group" aria-label={t('leaves.actionsLabel')} className="grid grid-cols-2 gap-sm empty:hidden">
           {actions.approve ? (
-            <AriaButton
+            <Button
+              variant="tileSolid"
               isDisabled={transition.isPending}
-              className={`${ACTION} bg-action-solid text-on-action`}
               onPress={() => {
                 void step('approve')
               }}
             >
               <Check aria-hidden size={14} />
               {t('leaves.approve')}
-            </AriaButton>
+            </Button>
           ) : null}
           {actions.reject ? (
-            <AriaButton
-              className={`${ACTION} border border-line bg-surface text-text`}
+            <Button
+              variant="tile"
               onPress={() => {
                 setAsking('reject')
               }}
             >
               <X aria-hidden size={14} />
               {t('leaves.reject')}
-            </AriaButton>
+            </Button>
           ) : null}
           {actions.reopen ? (
-            <AriaButton
-              className={`${ACTION} border border-line bg-surface text-text`}
+            <Button
+              variant="tile"
               isDisabled={transition.isPending}
               onPress={() => {
                 void step('reopen')
@@ -169,41 +169,43 @@ function LeaveView({
             >
               <RotateCcw aria-hidden size={14} />
               {t('leaves.reopen')}
-            </AriaButton>
+            </Button>
           ) : null}
           {actions.edit ? (
-            <AriaButton
-              className={`${ACTION} border border-line bg-surface text-text`}
+            <Button
+              variant="tile"
               onPress={() => {
                 setFailure(null)
+                grow()
                 setEditing(0)
               }}
             >
               <Pencil aria-hidden size={14} />
               {t('leaves.edit')}
-            </AriaButton>
+            </Button>
           ) : null}
           {creation.duplicable.length > 0 ? (
-            <AriaButton
-              className={`${ACTION} border border-line bg-surface text-text`}
+            <Button
+              variant="tile"
               onPress={() => {
                 setFailure(null)
+                grow()
                 setDuplicating(true)
               }}
             >
               <Copy aria-hidden size={14} />
               {t('leaves.duplicate')}
-            </AriaButton>
+            </Button>
           ) : null}
           {actions.cancel ? (
-            <AriaButton
-              className={`${ACTION} border border-line bg-surface text-text`}
+            <Button
+              variant="tile"
               onPress={() => {
                 setAsking('cancel')
               }}
             >
               {t('leaves.cancel')}
-            </AriaButton>
+            </Button>
           ) : null}
         </div>
       </section>

@@ -2,9 +2,12 @@ import { SHEET_DISMISS, STOP_DRAWER } from '@config'
 import { t } from '@i18n'
 import { X } from 'lucide-react'
 import { motion, useDragControls } from 'motion/react'
-import { useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Dialog, Heading, Modal } from 'react-aria-components'
+import { useFocusRecovery } from '../patterns/focusRecovery'
+import { IconButton } from '../primitives/Button'
 import { ModalOverlay } from '../primitives/overlays'
+import { DrawerStopContext } from './drawerStop'
 
 // The drawer of the new interface (D-454): glass over a dimmed screen, rising from the bottom to a stop. It opens at
 // its half stop and grows to the full one; the handle is a real button, so the stop also changes by a tap or a key
@@ -37,6 +40,12 @@ export interface StopDrawerProps {
 export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = false, children }: StopDrawerProps) {
   const dragControls = useDragControls()
   const [stop, setStop] = useState<Stop>(opensAt)
+  const dialog = useRef<HTMLElement>(null)
+  // The keyboard stays in the drawer when the button that held it answered and left (approve, reopen, edit).
+  useFocusRecovery(dialog, onClose)
+  const grow = useCallback(() => {
+    setStop('full')
+  }, [])
   return (
     <ModalOverlay
       inUrl={inUrl}
@@ -63,7 +72,7 @@ export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = f
         }}
         className={`enter-surface glass-drawer flex w-full max-w-drawer flex-col overflow-hidden rounded-t-sheet md:max-h-full md:rounded-panel ${STOPS[stop]}`}
       >
-        <Dialog className="flex min-h-none flex-col outline-none">
+        <Dialog ref={dialog} className="flex min-h-none flex-col outline-none">
           <div
             onPointerDown={(event) => {
               dragControls.start(event)
@@ -83,21 +92,19 @@ export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = f
           </div>
           <header className="flex shrink-0 items-center justify-between gap-sm px-lg pb-md md:pt-lg">
             <div className="flex min-w-none flex-col">
-              <Heading slot="title" className="truncate text-heading font-bold">
+              <Heading slot="title" level={2} className="truncate text-heading font-bold">
                 {title}
               </Heading>
               {detail === undefined ? null : <p className="text-small text-text-muted tabular-nums">{detail}</p>}
             </div>
             {/* ✕ on its own white circle, as the package draws it. */}
-            <AriaButton
-              aria-label={t('common.close')}
-              onPress={onClose}
-              className="inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface text-text outline-focus outline-offset-2 data-focus-visible:outline-2"
-            >
+            <IconButton labelKey="common.close" variant="circle" onPress={onClose}>
               <X aria-hidden size={CLOSE_ICON} />
-            </AriaButton>
+            </IconButton>
           </header>
-          <div className="min-h-none overflow-y-auto px-lg pb-xl">{children}</div>
+          <div className="min-h-none overflow-y-auto px-lg pb-xl">
+            <DrawerStopContext value={grow}>{children}</DrawerStopContext>
+          </div>
         </Dialog>
       </MotionModal>
     </ModalOverlay>

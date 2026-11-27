@@ -2,12 +2,13 @@ import { SHEET_DISMISS } from '@config'
 import { t, type I18nKey } from '@i18n'
 import { X } from 'lucide-react'
 import { motion, useDragControls } from 'motion/react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Dialog, Heading, Modal } from 'react-aria-components'
 import { ModalOverlay } from '../primitives/overlays'
 import { IconButton } from '../primitives/Button'
 import { DrawerScrollContext } from './drawerScroll'
 import { DrawerWidthContext } from './drawerWidth'
+import { useFocusRecovery } from './focusRecovery'
 
 // The floating surface every management module opens in (D-023, D-092): a modal drawer on the inline
 // end from `md`, and below it a bottom sheet that also closes by dragging its grip down. Escape, the
@@ -31,20 +32,7 @@ export function Drawer({ titleKey, onClose, header, children, inUrl = false }: D
   const [body, setBody] = useState<HTMLElement | null>(null)
   const [wide, setWide] = useState(false)
 
-  // When the row that held focus is removed (archived), focus falls to the body and the keyboard loses
-  // the drawer. The next key brings it back, and Escape still closes. A dialog over the drawer holds
-  // focus itself, so this never reaches past it.
-  useEffect(() => {
-    const recover = (event: KeyboardEvent) => {
-      if (document.activeElement !== document.body) return
-      dialog.current?.focus()
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', recover, true)
-    return () => {
-      document.removeEventListener('keydown', recover, true)
-    }
-  }, [onClose])
+  useFocusRecovery(dialog, onClose)
 
   return (
     <ModalOverlay
