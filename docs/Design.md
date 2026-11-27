@@ -135,7 +135,7 @@ the tab bar, the commander block, "X מתוך Y", past tense, the amber dot, chi
 | `חיילים – טלפון – מ״פ`, `– מ״מ`, `– בחירה מרובה` | ניהול → חיילים | the soldiers module's list | shared parts outdated |
 | `חיילים – טלפון – כרטיס אדם` | Person card (drawer) | the soldier page | shared parts outdated |
 | `הוספת חיילים – טלפון – רגיל` | הוספת חיילים | quick entry and import (D-171) | current but for the frame |
-| `הצטרפות – טלפון – *` (five) | ניהול → בקשות הצטרפות and its drawers | `AccountLinksModule` (OI-382) | shared parts outdated |
+| `הצטרפות – טלפון – *` (five) | ניהול → בקשות הצטרפות and its drawers | `AccountLinksModule` (replaced in R5·4, D-484) | shared parts outdated |
 | `כללי נוכחות – טלפון – *` (five) | ניהול → כללי נוכחות, rule details, form, archive | the rules module | shared parts outdated; the form is revisited at the end (OI-385) |
 | `אני – טלפון – רגיל`, `– לוחם`, `– מורחב`, `– עריכת פרטים` | אני | "שלי", the profile | shared parts outdated |
 | `אני – טלפון – הסבב שלי` | אני → הסבב שלי | "הסבב שלי" (D-360) | shared parts outdated |
@@ -158,14 +158,14 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **Who sees what (D-455).** "היום" and "אני": everyone. "לוח": who reads leaves of soldiers other than themself.
   "ניהול": who is permitted at least one of its rows. The action circle: who may request a leave for themself. A
   row, a card or an icon the actor cannot use is absent (D-076).
-- **ניהול's rows.** The designed tools first (חיילים, בקשות הצטרפות, כללי נוכחות), then, after a gap, the tools
-  that exist and are not yet designed, each opening its current screen inside the new frame (D-456): the unit tree,
-  leave-round planning and collective leave, deployments and rotations, the dashboard, and "הגדרות" (roles, leave
-  types, tags, properties, command ranks, unit levels, organization).
+- **ניהול's rows.** The designed tools first, each opening its page (D-482): חיילים, בקשות הצטרפות, תכנון סבב יציאות
+  (the planner in the drawer, D-486), כללי נוכחות; then, after a gap, the tools that exist and are not yet designed,
+  each opening its current screen inside the new frame (D-456): בקשות, the unit tree, deployments and rotations, the
+  dashboard, and "הגדרות" (roles, leave types, tags, properties, command ranks, unit levels, organization).
 - **Creation is in context.** No global "+". Days picked on a strip, a month or a timeline row open a tray, and the
   tray opens "יציאה חדשה". A soldier and a rule are added from the add icon in their page's capsule.
 
-### Built so far (R5·1, R5·2 and R5·3; D-465 … D-481)
+### Built so far (R5·1 … R5·4; D-465 … D-486)
 
 - **Shell.** `WorkspaceScreen` shows one destination by `tab`, the floating `TabBar`, and the drawers over both. A
   page (`PageFrame`) is one centered column on the canvas, at most `drawer` wide, that scrolls under the bar; once
@@ -216,6 +216,23 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **The strip** draws the leave round quiet (`time-round`), another absence filled (`time-approved`) and a request
   that waits amber; the month does not draw the leave round.
 - **Desktop** uses the same shell until R5·6.
+- **ניהול's pages (R5·4, D-482 … D-486).** Each page: a glass back circle, the title at 28, its tools on one glass
+  capsule, one line of what it holds. **חיילים:** a white card of 44 px person rows per group (name, rank and tags,
+  seven dots: filled on base, hollow at home, today larger; none where the actor reads no leaves); the capsule holds
+  the search (a field under the head), the options (sort, group, the inactive, the days; "בחירה" and "ארכיון · N" after
+  the divider, all in the URL's `people`) and "הוספת חיילים". Holding a row or "בחירה" makes the rows checkboxes and the
+  tab bar the tray "N נבחרו" with "יציאה" and "העברה". **The person card** (the drawer at half): rank and unit under the
+  name, tag chips, personal number and phone with copy, where they are and the 14-day strip, whose days chosen open
+  "יציאה עבור X"; "כרטיס מלא" grows it to the soldier's sections; "⋯" holds "ניתוק" and "העברה לארכיון".
+  **הוספת חיילים:** a full screen with no tab bar; "ליחידה", "הדבקת רשימה", "ייבוא מקובץ", a white card per row (first
+  and last name, personal number and email where allowed), "הוספת N חיילים" as the bottom bar, and a door to the full
+  form of one soldier. **הצטרפות:** "מוכנות לאישור", "דורשות בדיקה" (an amber chip with the reason), "חיילים חדשים" (a
+  dashed "מחלקה" chip); "אישור N" in the capsule; a row opens "זה הוא?" (the candidate, an amber conflict block with
+  both values, "כן, לקשר" and "לא"; "מי מהם?"; "ליחידה" and "יצירה וקישור"; "עוד" for "חייל אחר" and "דחיית הבקשה").
+  **כללי נוכחות:** a card per unit, each row the name, the sentence and a switch, "לא חל" as a quiet pill that opens the
+  winning rule; "+" and the options ("ארכיון · N") in the capsule; the rule's drawer shows chips, the pencil opens the
+  form, "⋯" archives. An archive is a drawer: a row opens in it with "החזרה מהארכיון". **"סבב יציאות · תכנון"** is
+  "היום"'s last card while soldiers of the rotation have no round.
 
 ### A tap path for every gesture (D-458)
 
@@ -303,6 +320,12 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 37 | A one-day leave is listed once, as leaving; a waiting leave of the round shows in its month cells and as "ממתינה" on its closed row | One rule for the drawer and the movements; the approver sees a move that waits | D-480, D-481 |
 | 34 | A swipe reveals ✓ ✗ only for who may answer; a round leave has no quick ✗ anywhere; its card offers "אישור ההזזה" and "השארה במועד המקורי" once moved | `02`'s quick-approval exceptions; a swipe must not cost a soldier a planned leave | D-480, D-481 |
 | 35 | A wide screen keeps the old timeline grid, its drag and colors, and the table, under the new head | The desktop pass is R5·6 (OI-397) | D-480 |
+| 38 | The pages of "ניהול" live in the URL (`page`), and the soldiers list's options in one param `people`; the search is the page's own | D-023: a view is a link; a typed word is not | D-482 |
+| 39 | "הוספת חיילים" saves with no "ביטול"; a list with a detail the actor may not add is refused whole, naming it; the full form of one soldier is a door away | Archiving is not the inverse of creating; nothing pasted is dropped unseen; custom properties and "no unit" live in the full form | D-482 |
+| 40 | The person card's "יציאה" comes from days chosen on its strip; its pencil and the tray's "תגיות" wait for R5·5 | `03` §1.2; the tag picker and in-place edit are R5·5's components (OI-400, OI-401) | D-483 |
+| 41 | Join requests are grouped by readiness for everyone (the company commander sees one group when only new soldiers reach them); no swipe on a row; no "ביטול" after a link; a new soldier from a request has no rank and starts today | The assessment decides the groups; the drawer is the tap path (OI-402); unlinking does not bring a request back (D-451) | D-484 |
+| 42 | "לא חל" marks a rule replaced on every day it applies, read from the rules alone; the list never names soft, hard or priority | The handoff's "the system already computes this" is per day; the list needs one answer per rule | D-485 |
+| 43 | Planning the leave round leaves the new-leave form for its own row and card; the card shows while soldiers of the rotation have no round | OI-389; "at rotation start" read as "until everyone has a round" | D-486 |
 
 ## Color (Light)
 
@@ -495,11 +518,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 - **Onboarding of an identity with no account** (`ui/shell/LinkRequest.tsx`): under the "no access yet" sheet, a form with
   first name, last name and an optional personal number, or, with a pending request, a notice with the name sent and a
   "cancel request" button. Neither says whether anything matched.
-- **The account-links button** in the bar, as the inbox button: an icon with a tooltip on desktop, a tab on a phone, with
-  the count of pending requests; shown only to who may review.
-- **`AccountLinksModule`** (`ui/modules/account-links`): a `VirtualList` of requests (name, email, when); a request shows
-  its fields, its candidates (why each matches, a "link" button) and "new soldier" and "reject". Link and reject confirm in
-  a `SmallDialog`; the new soldier is an `EntityForm` (rank, unit, date placed).
+- **The requests to review** are the page "הצטרפות" of "ניהול" and its drawer "זה הוא?" (R5·4, D-484); what waits shows
+  as the dot of the "ניהול" tab and on the card of "היום". The old module and its bulk approval are removed.
 - A linked soldier with no access sees the board's notice that the account is linked and has no access yet.
 
 ## Self-service (V11, D-167, D-168)

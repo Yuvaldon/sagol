@@ -335,8 +335,16 @@ The current state, in short (D-128). The entries hold the reasons.
   naming what exists) and "אני" (`ui/shell/me`) are pages in `PageFrame`; a page over a destination is the `page`
   param. "לוח" is `BoardPlace`: each engine draws itself inside `ui/board/BoardScreen` (the month title, its arrows, "היום", the
   fan and the options menu, D-480); the selected day is `useBoardDay` and each view's window `useBoardWindow` in
-  `logic/view-state/boardDay.ts`. The `leaves` panel opens in `ui/shell/LeaveDrawer`, and "דוח 1" (`DayReportDialog`) in the same drawer
-  with stops; every other panel opens in `ModuleDrawer`. What waits for approval is listed in one place, the page
+  `logic/view-state/boardDay.ts`. The `leaves` panel opens in `ui/shell/LeaveDrawer` (a new leave, a leave's card,
+  and the leave-round planner at `entity=round`, D-486), and "דוח 1" (`DayReportDialog`) in the same drawer with stops.
+  The pages of "ניהול" (R5·4, D-482) are in `ui/shell/manage`: `SoldiersPage` over `usePeopleList` (`logic/roster/
+  people.ts`, the board's `boardItems` on today, the options in the URL's `people` param), `AddSoldiersPage` over the
+  quick entry's logic, `JoinsPage` over `useLinkAssessments` and `joinGroups`/`useJoinApproval` (`logic/accounts`), and
+  `RulesPage`, whose "לא חל" is `overridingRule` in `domain/availability`. Their drawers: the person card
+  (`ui/shell/PersonDrawer`, `panel=soldiers`), the rule (`manage/RuleDrawer`, `panel=rules` with an entity), the join
+  request (`manage/JoinDrawer`) and the archives (`manage/ArchiveDrawers`, `entity=archive`). One toast region for the
+  workspace is `NoticeScope` (`useNotices`). Every other panel opens in `ModuleDrawer`, which keeps the full form of
+  one new soldier and the board's rules of a day. What waits for approval is listed in one place, the page
   `requests` (D-474). The shared
   components of the new interface are in `ui/kit`; `ui/shell/chrome.ts` ties a page's scroll to the bar. The day
   math of "היום" is `logic/leaves/calendar.ts`, and the soldier's own days are `useMyDays`. In routine the one

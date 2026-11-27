@@ -39,7 +39,7 @@ am = amends, ref = refines, ext = extends.
 | D-020 | Contracts hold Zod schemas | contracts, config, data, logic, ui | ref D-074 |
 | D-021 | Local adapter uses IndexedDB (Dexie) | data | |
 | D-022 | Initial data through import/export, no mock data | data, ui | am D-033; ref D-050, D-171; ref D-261 |
-| D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108; ref D-112, D-115; ref D-119, D-120; ref D-132; am D-332; ref D-384 |
+| D-023 | Single-screen workspace, view state in URL | logic, ui | ref D-074, D-092, D-103, D-108; ref D-112, D-115; ref D-119, D-120; ref D-132; am D-332; ref D-384; ref D-482 |
 | D-024 | First designed component | ui | ref D-077 |
 | D-025 | i18n keys and theme tokens inside UI sessions | ui, tooling | ref D-075; ext D-359 |
 | D-026 | Libraries | all | ext D-034, D-077, D-080 |
@@ -166,7 +166,7 @@ am = amends, ref = refines, ext = extends.
 | D-147 | "A unit and below" counts archived sub-units on the days served; the chip of an unread filter | logic, ui | ref D-174 |
 | D-148 | Asking to link: the request, auto-link, withdrawing | data, logic, ui, backend | sup D-445; ref D-451 |
 | D-149 | Reviewing a link request: who may be named, what approval writes | domain, data, logic, ui, backend | ref D-163, D-164; ref D-447; ext D-449; ref D-450 |
-| D-150 | The account-links module | config, logic, ui | |
+| D-150 | The account-links module | config, logic, ui | sup D-484 |
 | D-151 | The onboarding of an identity with no account | logic, ui | ref D-160; am D-168; ref D-330 |
 | D-152 | Deferred from V9: invite links, revoking a link, restoring archived rows | docs | ref D-163 |
 | D-153 | The invite email field | logic, ui | |
@@ -268,7 +268,7 @@ am = amends, ref = refines, ext = extends.
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | am D-340 |
 | D-281 | Staging is seeded with made-up data by a guarded, re-runnable script | tooling | ref D-341 |
-| D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
+| D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298; am D-482 |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | sup D-448 |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
 | D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297; am D-456; am D-468 |
@@ -382,32 +382,37 @@ am = amends, ref = refines, ext = extends.
 | D-453 | The new interface is adopted: היום, לוח, ניהול, אני; the UI freeze ends | ui, docs | |
 | D-454 | The new language's tokens: one value per step, a caption step, a derived dark set, no leave-type color | ui, config | |
 | D-455 | Tabs, the action circle and every door follow permissions | logic, ui | ref D-465; ref D-466; ref D-469 |
-| D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | ref D-468 |
+| D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | ref D-468; ref D-482 |
 | D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | sup D-478 |
 | D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | ref D-480 |
-| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471; ref D-472; ref D-478 |
+| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471; ref D-472; ref D-478; ref D-486 |
 | D-460 | The desktop is derived from the phone | ui | |
-| D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | |
+| D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | ref D-483; ref D-485 |
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | ref D-480 |
 | D-463 | Small product choices of the new interface | contracts, config, logic, ui | ref D-480 |
 | D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
 | D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473; ref D-477 |
 | D-466 | "לוח" is for who reads another soldier's leaves, or holds that over a unit | logic | |
 | D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | ref D-473; am D-474 |
-| D-468 | "ניהול" is a page of rows, and "הגדרות" a page behind its last row | i18n, ui | |
+| D-468 | "ניהול" is a page of rows, and "הגדרות" a page behind its last row | i18n, ui | ref D-482 |
 | D-469 | Routine's "פתיחת סבב" sits in the routine notice, on "היום" and on the board | logic, ui | |
 | D-470 | "אני" holds what the user menu held, until its own batch | i18n, ui | |
-| D-471 | What the shell and "היום" batch left for the next batches | docs, ui | ref D-472; ref D-474; ref D-475; ref D-476 |
+| D-471 | What the shell and "היום" batch left for the next batches | docs, ui | ref D-472; ref D-474; ref D-475; ref D-476; ref D-486 |
 | D-472 | "דוח 1" keeps its reach: a card on "היום" for who has no unit block | i18n, ui | ref D-475 |
 | D-473 | The keyboard and the toast in the new shell | config, ui | ref D-477 |
 | D-474 | What waits for approval is listed once, on the page of requests | config, i18n, ui, app | am D-477 |
 | D-475 | "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button | config, logic, i18n, ui | am D-477 |
-| D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477 |
+| D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477; ref D-486 |
 | D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
 | D-478 | "איתך היום": a presence-only permission, `presence:view`, answered by name on the server | contracts, domain, config, data, logic, i18n, ui, backend | sup D-479 (reach); ref D-479 |
 | D-479 | "איתך היום" after review: the own unit only, the rank constraint on oneself, a narrow read, export format 7 | contracts, domain, config, data, logic, ui, backend | |
 | D-480 | The board of the new interface: one frame, the selected day, a range per view, the options menu | contracts, config, logic, i18n, ui | |
 | D-481 | Moving a leave out of the leave round: "בקשת הזזה", "אישור ההזזה", "השארה במועד המקורי" | logic, i18n, ui | |
+| D-482 | "ניהול" builds its designed pages: חיילים, הוספת חיילים, הצטרפות, כללי נוכחות | config, logic, i18n, ui | |
+| D-483 | The person card and the multi-select of "חיילים" | logic, i18n, ui | |
+| D-484 | "הצטרפות": the queue by readiness, "זה הוא?", and "אישור N" | logic, i18n, ui | |
+| D-485 | "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive | domain, logic, i18n, ui | |
+| D-486 | Leave-round planning has its own entry: a row of "ניהול" and a card of "היום" | config, logic, i18n, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -6088,3 +6093,128 @@ open, the smallest choice that keeps every capability reachable (D-464) and ever
 - Not built: the original place drawn as a dashed gap on the timeline while a move waits (OI-398).
 **Why:** the handoff's flow (`02`); the row's restraint protects the soldier's planned leave.
 
+
+## D-482 — "ניהול" builds its designed pages: חיילים, הוספת חיילים, הצטרפות, כללי נוכחות
+2026-11-27 · accepted · builds D-456's designed tools · refines D-465, D-468, D-461 · amends D-282, D-150 · decided under
+D-170 (R5·4)
+- **Pages.** A designed row of "ניהול" opens a page over it, in the URL as D-465's pages are: `page=soldiers`
+  ("חיילים"), `page=joins` ("הצטרפות"), `page=rules` ("כללי נוכחות") and `page=add_soldiers` ("הוספת חיילים"). A page
+  shows only to who may open its tool (D-455); an address that names one for anyone else is put right. Each page has
+  the handoff's head: a round glass back button, the title at 28, the page's tools on one glass capsule, and one line of
+  what it holds ("פלוגה ב׳ · 16 חיילים"). "הוספת חיילים" is a temporary full screen: no tab bar, ✕ instead of back, and
+  closing it returns to "חיילים" (`PAGE_PARENTS`).
+- **The rows' values.** "חיילים" the count the actor sees, "בקשות הצטרפות" what waits (amber), "תכנון סבב יציאות"
+  (D-486) and "כללי נוכחות" how many are on ("2 פעילים").
+- **The list's options live in the URL** (D-023), in one param `people`: the order (by command rank then name, the
+  default, or by name), the grouping (none, unit, command rank or a single-selection tag category, as the board's,
+  D-452; by unit by default when the list covers several units), the inactive (hidden by default), and the seven days
+  (shown by default). Each holds only what differs from the default; leaving the page drops it. The search is the
+  page's own state: a word typed is not a view.
+- **The list** reuses the board's rows (`boardItems`) on today: one model orders and groups people everywhere. A row is
+  the name, the command rank and the tags held now, and seven dots, today first and larger, filled on base and hollow
+  at home; a soldier whose leaves the actor may not read has no dots, never dots it cannot know (rule 4). The list is
+  not windowed: a unit's list is hundreds of rows at most (OI-403).
+- **Drawers in the URL.** `panel=soldiers&entity=<id>` is the person card (D-483), `entity=archive` the soldiers'
+  archive; `panel=rules&entity=<id|new|archive>` the rule's drawer and the rules' archive (D-485);
+  `panel=account_links&entity=<id>` the request's "זה הוא?" (D-484). The modules' drawer keeps only the full form of one
+  new soldier (`entity=new`) and the board's rules of a day (D-141).
+- **Removed** (D-464): the soldiers' list module and its quick entry (`QuickEntry`), the account-links module and its
+  bulk approval, and the rules list of the rules drawer. A link made before still works: `panel=soldiers` opens
+  "חיילים", `entity=quick` "הוספת חיילים", `panel=account_links` "הצטרפות".
+- **הוספת חיילים** (amends D-282): every row goes to one unit from today, chosen at the top among the units the actor may
+  place a new soldier in. A row is a first and a last name, and, where the actor may set private details there, a
+  personal number and an email; a nickname or a phone a list brought shows on its row. "הדבקת רשימה" and "ייבוא מקובץ"
+  (a CSV read in the browser) fill the same rows; a list that holds a detail the actor may not add there is refused
+  whole, naming the column, so nothing pasted is dropped unseen. "הוספת N חיילים" saves the ready rows one by one; a
+  saved row leaves, a refused one stays with its reason. The toast says how many were added, with no "ביטול": the new
+  soldiers' cards are where a mistake is fixed, and archiving is not the inverse of creating (it keeps the personal
+  number). "חייל אחד בטופס המלא" opens the full form (rank, unit or none, a start date, custom properties), which
+  replaces the screen and opens the new soldier's card once saved.
+- **The toast** of "ניהול" is one region for the workspace (`NoticeScope`). A refusal of a step taken inside a drawer
+  shows in the drawer, which stands over the toast.
+**Why:** the handoff's Manage screens (`01` §2 and §4, `02` Screen), with everything the replaced modules did kept
+reachable (D-464).
+
+## D-483 — The person card and the multi-select of "חיילים"
+2026-11-27 · accepted · refines D-482, D-461, D-458 · decided under D-170
+- **One card, two heights** (`02` Person card). At half height: the name, the command rank and the unit, the tags held
+  now, the personal number and the phone with a copy button each (for who reads them, D-018), and, for who reads the
+  soldier's leaves, where they are and what comes next with the 14-day strip. "כרטיס מלא" grows it to the full card:
+  every section of the soldier's page by its own permission (profile, tags, private fields, placement and transfer,
+  seniority, access, history). It opens from any name, the board's included.
+- **Days on the strip** are chosen as on the month for who may create a leave for the soldier: a tap starts a range, a
+  second ends it, and "יציאה עבור X · N ימים" opens the new-leave form on them (`03` §1.2). No "יציאה עבורו" button.
+- **"⋯"** holds the rare actions: "ניתוק" of the account, for a linked soldier whose link the actor may revoke (the linked
+  accounts' list of the removed module lives here now), and, last, "העברה לארכיון" in `status-error` (D-461). The
+  question names the soldier; the toast offers "ביטול", which restores. The archive is a drawer from the options,
+  "ארכיון · N", for who may restore.
+- **The pencil** and in-place editing of the card are R5·5's, with the profile of "אני", which is the same component
+  (OI-401). Until then the full card's forms edit, and stay in the card after a save.
+- **Multi-select.** Holding a row, or "בחירה" in the options (D-458), turns the rows into checkboxes and the tab bar into
+  the tray "N נבחרו". Its actions are those every chosen soldier allows (D-076): "יציאה" for who may create a leave for
+  each (one soldier: the new-leave form; several: one collective leave with them chosen, the draft's `soldier_ids`), and
+  "העברה" for who may move each and place in a unit: one unit and one date for all, each soldier moved by their own
+  command; the toast says how many moved, and a refusal is said for the first it stopped. "תגיות" waits for the tag
+  picker of R5·5 (OI-400).
+**Why:** the handoff's Person card and Soldiers, with the old soldier's page kept whole behind "כרטיס מלא".
+
+## D-484 — "הצטרפות": the queue by readiness, "זה הוא?", and "אישור N"
+2026-11-27 · accepted · supersedes D-150 (the module) · refines D-447, D-448, D-451 · closes OI-382 · decided under
+D-170
+- **The page** lists what waits, in three groups by the assessment (D-447): "מוכנות לאישור" (one candidate, no
+  conflict), "דורשות בדיקה" with the reason on an amber chip ("מספר אישי שונה", "כמה מועמדים", "פרטים שונים", "דוא״ל
+  שונה", "שם שונה", "נותק בעבר"), and "חיילים חדשים" (no candidate). A row is the name and the personal number asked
+  with, never masked. The handoff's company commander sees one list without headers because all that reaches them is
+  new soldiers; the groups follow the assessment, so who sees only new soldiers sees one group.
+- **A new soldier's unit** is chosen on the row's "מחלקה" chip, among the units where the actor may create a soldier,
+  approve and place (`useLinkPlacements`). The row is then counted in "אישור N".
+- **"אישור N"** in the capsule links every ready request (D-448) and makes a new soldier of every placed one, in that
+  unit from today, linked to the request; one after another, and a refusal does not stop the rest. The card of "היום"
+  shows "N מוכנות · M לבדיקה", up to three rows that open their drawer, and "אישור N" for the ready ones.
+- **"זה הוא?"** (the drawer): the requester and when they asked. One candidate: their row and, for a conflict, the amber
+  block "{field} שונה מהכרטיס" with the request's value over the card's (the card's for who reads private details);
+  "כן, לקשר" and "לא". Several: "מי מהם?" with the candidates as choices, "לקשר" and "אף אחד". None: "ליחידה" and
+  "יצירה וקישור", and "עוד". "לא", "אף אחד" and "עוד" open "חייל אחר" (any soldier the actor sees, by name, linked after
+  a confirmation) and "דחיית הבקשה", which asks first and has no "ביטול" (the requester is told, D-168).
+- **A new soldier from a request** gets no command rank and starts today; both are set later on the card. The removed
+  form's rank and date were rarely needed at the moment of approval, and the card holds them.
+- **After a link** the toast says who was linked and offers "פתח כרטיס". It has no "ביטול": unlinking does not bring the
+  request back (D-451), so it would not undo; unlinking stays on the card's "⋯".
+- **No swipe on a row** (the handoff's ✓ ✗): each request is answered in its drawer, and the ready ones together from
+  the capsule. "No per-row action buttons in lists" (`02`) leaves the tap path as the drawer (OI-402).
+**Why:** OI-382: the old module called any candidate "by name" and said no reason; the handoff's screen replaces it.
+
+## D-485 — "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive
+2026-11-27 · accepted · builds D-461 for the rules · refines D-140, D-031 · decided under D-170
+- **The list** groups the live rules by the unit they apply to, in priority order (higher first, D-140). A row is the
+  name, the sentence (unit · who · bounds) and the switch "פעיל" for who may update the rule. A rule that is off is
+  quiet. "soft", "hard" and "priority" never show on the list.
+- **"לא חל"** marks a rule that a higher rule replaces on every day it would apply: both enabled and live, the same unit,
+  scope, people (the canonical population, D-067) and grouping, the higher one's dates holding the lower one's, its
+  rotation the lower one's or none (`overridingRule` in `domain`). It is read from the rules alone, so it shows before
+  any day is evaluated; an override on some days only is still the heat row's (D-031). The marker opens the rule that
+  wins; switching off or archiving that rule takes the marker away at once.
+- **The rule's drawer** shows the rule as a sentence of chips (unit, who, bounds, dates) and, quietly, what else it does
+  ("לא לאפשר חריגה", "בקשות ממתינות נספרות", off). The pencil opens the current form in the same drawer at full height
+  (OI-385); "⋯" holds "העברה לארכיון", asked by name, undone from the toast (D-461). A new rule comes from "+" in the
+  capsule and opens on the form.
+- **The archive** is a drawer from the options, "ארכיון · N": an archived rule opens in the same drawer with
+  "החזרה מהארכיון", and returns to its place.
+- **The board's rules drawer** keeps the broken rules of a day (D-141) and the configuration conflicts of the board's
+  days, with a door "כל כללי הנוכחות" to the page.
+**Why:** the handoff's Availability rules (`01` §8, `02`), with no reorder command (D-461).
+
+## D-486 — Leave-round planning has its own entry: a row of "ניהול" and a card of "היום"
+2026-11-27 · accepted · refines D-459, D-471, D-476 · closes OI-389 · decided under D-170
+- **The entry.** The planner opens in the drawer of the new interface at full height, `panel=leaves&entity=round`,
+  titled "תכנון סבב יציאות". It is for who may create leaves for more than one soldier while an open rotation exists
+  (D-316), as the new-leave form offered it; the form's "סבבי יציאות" button is removed, and its collective leave stays.
+- **The row** "תכנון סבב יציאות" stands between "בקשות הצטרפות" and "כללי נוכחות", as the handoff draws it. Its value
+  says who is left out: "N בלי סבב יציאות", or "מתוכנן" when nobody is.
+- **Who is left out:** of the soldiers the actor may create leaves for who serve in the rotation a plan starts in (the
+  one in view, else today's, else the first open one), those with no leave of a batch there, waiting or approved (a
+  leave of a batch is the leave round, D-268). Derived on each read, never stored (rule 3).
+- **The card** "סבב יציאות · תכנון" (D-459's last place) shows to the same actor while anyone is left out: the count, the
+  rotation's name, and the title opens the planner. Once everyone has a round it is absent (D-459), which is the
+  handoff's "at rotation start".
+**Why:** OI-389; most leaves of a rotation come from its leave round, so its planning cannot hide inside another form.
