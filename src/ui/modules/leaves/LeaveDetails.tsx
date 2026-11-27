@@ -23,6 +23,7 @@ import { Button } from '../../primitives/Button'
 import { RuleGateDialog } from '../../patterns/rules/RuleGate'
 import { useRuleGate } from '../../patterns/rules/ruleAnswer'
 import { LeaveDuplicateForm } from './LeaveDuplicateForm'
+import { moveSteps } from './moveSteps'
 import { LeaveEditForm } from './LeaveEditForm'
 import { LeaveStepDialog, type ClosingStep } from './LeaveStepDialog'
 import { LeaveThread } from './LeaveThread'
@@ -62,6 +63,7 @@ function LeaveView({
   const move = useLeaveMove(leave)
   const moved = move.status === 'ready' ? move.value : null
   const round = leave.batch_id !== null
+  const steps = moveSteps(round, move, actions)
   const gate = useRuleGate()
   const [editing, setEditing] = useState<number | null>(null)
   const [duplicating, setDuplicating] = useState(false)
@@ -181,10 +183,10 @@ function LeaveView({
               }}
             >
               <Check aria-hidden size={14} />
-              {t(moved === null ? 'leaves.approve' : 'leaves.approveMove')}
+              {t(steps.approvesMove ? 'leaves.approveMove' : 'leaves.approve')}
             </Button>
           ) : null}
-          {moved !== null && actions.approve ? (
+          {steps.keepOriginal ? (
             <Button
               variant="tile"
               isDisabled={transition.isPending || edit.isPending}
@@ -196,7 +198,7 @@ function LeaveView({
               {t('leaves.keepOriginal')}
             </Button>
           ) : null}
-          {actions.reject && moved === null ? (
+          {steps.reject ? (
             <Button
               variant="tile"
               onPress={() => {

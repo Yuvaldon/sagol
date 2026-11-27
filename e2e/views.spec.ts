@@ -37,11 +37,21 @@ test('the movements, the table and the calendar show the board\'s leaves', async
     await selectView(page, he.workspace.views.list)
     await expect(page).toHaveURL(/view=list/)
     const movements = region(page, he.board.movements)
-    // The request leaves on the 9th and returns on the 10th; the one day of the sick leave is both.
+    // The request leaves on the 9th and returns on the 10th; the one day of the sick leave is listed once, leaving.
     await expect(movements.getByRole('button', { name: REGULAR })).toHaveCount(2)
-    await expect(movements.getByRole('button', { name: SICK })).toHaveCount(2)
+    await expect(movements.getByRole('button', { name: SICK })).toHaveCount(1)
     await expect(movements.getByRole('heading', { name: new RegExp(he.board.todayTag) })).toBeVisible()
     await expectNoAxeViolations(page)
+    // A day's header opens the unit's drawer on it, and the list stays where its reader left it (D-480).
+    const twelfth = movements.getByRole('button', { name: /12 בנובמבר 2026/ })
+    const before = await twelfth.boundingBox()
+    await twelfth.click()
+    await expect(page).toHaveURL(/day=2026-11-12/)
+    await expect(page.getByRole('dialog').last()).toContainText('יום חמישי, 12 בנובמבר 2026')
+    await page.getByRole('dialog').last().getByRole('button', { name: he.common.close }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    const after = await twelfth.boundingBox()
+    expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(2)
   })
 
   await test.step('the table: a row for each leave, sorted by a header; a phone has no table', async () => {

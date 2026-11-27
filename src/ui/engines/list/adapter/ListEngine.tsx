@@ -125,11 +125,14 @@ function Movements({
   frame,
   onEdges,
   onNear,
+  onPick,
   jump,
 }: {
   readonly frame: BoardFrame
   readonly onEdges: (edges: Edges) => void
   readonly onNear: (end: 'before' | 'after') => void
+  /** Selects a day from inside the list, which stays where it is. */
+  readonly onPick: (day: CalendarDate) => void
   /** Asks the list to bring a day to its top: a counter, so the same day can be asked again. */
   readonly jump: { readonly day: CalendarDate; readonly count: number }
 }) {
@@ -137,7 +140,6 @@ function Movements({
   const placed = useRef(false)
   const { settle } = chrome
   const unitName = useScopeName()
-  const { select } = useBoardDay()
   const [drawerDay, setDrawerDay] = useState<CalendarDate | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const counted = useMemo(() => boardDays(frame.model), [frame.model])
@@ -156,21 +158,23 @@ function Movements({
     before.current = { first, height: element?.scrollHeight ?? 0 }
   }, [first, runs, settle])
   // A move the screen makes is not the reader's scroll: the tab bar stays.
+  /** Brings a day to the top; FALSE while it is not drawn yet. */
   const scrollTo = useCallback((day: CalendarDate) => {
     const element = scroller.current
     const target = element?.querySelector(`[${DAY_ATTRIBUTE}="${day}"]`)
-    if (element === null || element === undefined || target === null || target === undefined) return
+    if (element === null || element === undefined || target === null || target === undefined) return false
     placed.current = true
     target.scrollIntoView({ block: 'start' })
     settle(element.scrollTop)
+    return true
   }, [settle])
-  // The day asked for comes to the top once it is drawn: on opening, and on "היום".
+  // The day asked for comes to the top once it is drawn: on opening, and on "היום". While the board it asks for is
+  // still read, the last one shows without it, and the jump waits for the days to change.
   const jumped = useRef(-1)
   useLayoutEffect(() => {
     if (jumped.current === jump.count) return
-    jumped.current = jump.count
-    scrollTo(jump.day)
-  }, [jump, scrollTo])
+    if (scrollTo(jump.day)) jumped.current = jump.count
+  }, [jump, scrollTo, runs])
   const read = useCallback(() => {
     const element = scroller.current
     if (element === null) return
@@ -213,7 +217,7 @@ function Movements({
                 frame={frame}
                 counted={counted}
                 onOpen={(day) => {
-                  select(day)
+                  onPick(day)
                   setDrawerDay(day)
                 }}
               />
@@ -243,7 +247,7 @@ export function ListEngine() {
   const desktop = useIsDesktop()
   const [reach, setReach] = useState<{ readonly before: number; readonly after: number }>(FIRST_MOVEMENTS)
   const board = useBoardWindow('list', !desktop, reach)
-  const { day, today } = useBoardDay()
+  const { day, today, select } = useBoardDay()
   const { goToToday } = useDateWindow()
   const anchor = day ?? today
   const [edges, setEdges] = useState<Edges>({ month: null, todayAway: false })
@@ -269,12 +273,28 @@ export function ListEngine() {
       setJump((current) => ({ day: today, count: (current?.count ?? 0) + 1 }))
     },
   }
+  // A day picked inside the list moves the anchor and not the days read: the reach shifts with it, so the list
+  // neither shrinks nor jumps under its reader.
+  const [picked, setPicked] = useState<CalendarDate | null>(null)
+  const days = board.window?.days
+  const onPick = useCallback(
+    (next: CalendarDate) => {
+      const from = anchor === null || days === undefined ? -1 : days.indexOf(anchor)
+      const to = days === undefined ? -1 : days.indexOf(next)
+      if (from >= 0 && to >= 0) setReach((current) => ({ before: current.before + (to - from), after: current.after - (to - from) }))
+      setPicked(next)
+      select(next)
+    },
+    [anchor, days, select],
+  )
   // The anchor moved by a choice elsewhere: read the first days around it again, and bring it to the top.
   const [held, setHeld] = useState(anchor)
   if (held !== anchor) {
     setHeld(anchor)
-    setReach(FIRST_MOVEMENTS)
-    if (anchor !== null) setJump((current) => ({ day: anchor, count: (current?.count ?? 0) + 1 }))
+    if (anchor !== picked) {
+      setReach(FIRST_MOVEMENTS)
+      if (anchor !== null) setJump((current) => ({ day: anchor, count: (current?.count ?? 0) + 1 }))
+    }
   }
   return (
     <BoardScreen head={head}>
@@ -282,7 +302,7 @@ export function ListEngine() {
         <BoardEngine window={board.window} today={today} keepLast>
           {(frame) =>
             anchor === null || shownJump === null ? null : (
-              <Movements frame={frame} onEdges={setEdges} onNear={onNear} jump={shownJump} />
+              <Movements frame={frame} onEdges={setEdges} onNear={onNear} onPick={onPick} jump={shownJump} />
             )
           }
         </BoardEngine>

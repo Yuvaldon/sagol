@@ -4,6 +4,7 @@ import { fullName, impactOf, useApprovalCheck, useLeaveActions, type BoardDay, t
 import { Check, ChevronDown, X } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { Badge } from '../kit/Badge'
 import { formatDate } from '../patterns/dates'
 import { REQUEST_ATTRIBUTE, useRequestActions } from '../shell/today/requestActions'
 import type { BoardFrame } from './BoardEngine'
@@ -56,14 +57,34 @@ function Line({ name, detail, pending, tag }: { readonly name: string; readonly 
   )
 }
 
-function Answers({ leave, name, round, counted, frame }: { readonly leave: Leave; readonly name: string; readonly round: boolean; readonly counted: readonly BoardDay[]; readonly frame: BoardFrame }) {
+/** What the actor may answer: each step by its own permission (D-063). */
+interface May {
+  readonly approve: boolean
+  readonly reject: boolean
+}
+
+function Answers({
+  leave,
+  name,
+  round,
+  may,
+  counted,
+  frame,
+}: {
+  readonly leave: Leave
+  readonly name: string
+  readonly round: boolean
+  readonly may: May
+  readonly counted: readonly BoardDay[]
+  readonly frame: BoardFrame
+}) {
   const actions = useRequestActions()
   const check = useApprovalCheck(leave)
   const impact = check.status === 'ready' ? impactOf(check.value, counted, frame.model.approved, leave.soldier_id) : null
   return (
     <div className="flex flex-col items-end gap-2xs">
       <div className="flex items-center gap-sm">
-        {round ? null : (
+        {round || !may.reject ? null : (
           <AriaButton
             aria-label={[t('leaves.reject'), name].join(WORD)}
             onPress={() => {
@@ -74,16 +95,18 @@ function Answers({ leave, name, round, counted, frame }: { readonly leave: Leave
             <X aria-hidden size={STEP_ICON} />
           </AriaButton>
         )}
-        <AriaButton
-          {...{ [REQUEST_ATTRIBUTE]: leave.id }}
-          aria-label={[t(round ? 'leaves.approveMove' : 'leaves.approve'), name].join(WORD)}
-          onPress={() => {
-            actions.approve(leave)
-          }}
-          className={`${STEP} bg-status-ok-bg text-status-ok-text`}
-        >
-          <Check aria-hidden size={STEP_ICON} />
-        </AriaButton>
+        {may.approve ? (
+          <AriaButton
+            {...{ [REQUEST_ATTRIBUTE]: leave.id }}
+            aria-label={[t(round ? 'leaves.approveMove' : 'leaves.approve'), name].join(WORD)}
+            onPress={() => {
+              actions.approve(leave)
+            }}
+            className={`${STEP} bg-status-ok-bg text-status-ok-text`}
+          >
+            <Check aria-hidden size={STEP_ICON} />
+          </AriaButton>
+        ) : null}
       </div>
       {impact === null ? null : (
         <p role="status" className="text-small font-semibold text-status-pending-text tabular-nums">
@@ -95,17 +118,27 @@ function Answers({ leave, name, round, counted, frame }: { readonly leave: Leave
 }
 
 /** A row that answers with a swipe: for a pending request its actor may answer. */
-function Answerable({ leave, children, answers }: { readonly leave: Leave; readonly children: (swiped: () => boolean) => ReactNode; readonly answers: ReactNode }) {
+function Answerable({
+  leave,
+  children,
+  answers,
+}: {
+  readonly leave: Leave
+  readonly children: (swiped: () => boolean) => ReactNode
+  readonly answers: (may: May) => ReactNode
+}) {
   const actions = useLeaveActions(leave)
   const [shown, setShown] = useState(false)
   const swipe = useSwipe((direction) => {
     if (direction === 'left' || direction === 'right') setShown(!shown)
   })
-  if (!actions.approve) return children(() => false)
+  // A round leave has no quick ✗ (D-481): what it offers by a swipe is the approval alone.
+  const may: May = { approve: actions.approve, reject: actions.reject && leave.batch_id === null }
+  if (!may.approve && !may.reject) return children(() => false)
   return (
     <div onPointerDownCapture={swipe.onPointerDown} onPointerUpCapture={swipe.onPointerUp} onPointerCancel={swipe.onPointerCancel} className="flex touch-pan-y items-center gap-sm">
       {children(swipe.consumed)}
-      {shown ? answers : null}
+      {shown ? answers(may) : null}
     </div>
   )
 }
@@ -148,7 +181,7 @@ export function RequestRow({
   return (
     <li className="border-b border-divider-strong py-xs last:border-b-0">
       {pending && stored !== undefined ? (
-        <Answerable leave={stored} answers={<Answers leave={stored} name={name} round={entry.leave.layer === 'round'} counted={counted} frame={frame} />}>
+        <Answerable leave={stored} answers={(may) => <Answers leave={stored} name={name} round={entry.leave.layer === 'round'} may={may} counted={counted} frame={frame} />}>
           {row}
         </Answerable>
       ) : (
@@ -177,6 +210,7 @@ export function RoundRow({
   const [open, setOpen] = useState(false)
   const list = useId()
   const [only] = entries
+  const waiting = entries.some((entry) => entry.leave.status === 'pending')
   if (only === undefined) return null
   if (entries.length === 1) return <RequestRow entry={only} tag={tag} frame={frame} counted={counted} />
   return (
@@ -193,6 +227,8 @@ export function RoundRow({
         <span className="text-small text-text-muted tabular-nums">{entries.length}</span>
         <ChevronDown aria-hidden size={18} className={`shrink-0 text-text-muted transition-transform duration-ui ease-standard ${open ? 'rotate-180' : ''}`} />
         <span className="flex-1" />
+        {/* A leave of it that waits, as a move does, shows while the row is closed (D-481). */}
+        {waiting ? <Badge tone="pending">{t('leaves.badgePending')}</Badge> : null}
         {groupTag === null ? null : <span className="shrink-0 text-small text-text-muted">{groupTag}</span>}
       </AriaButton>
       {open ? (

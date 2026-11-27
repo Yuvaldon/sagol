@@ -303,7 +303,8 @@ export interface BoardOptionsProps {
 
 export function BoardOptions({ view, phone, onSavedViews }: BoardOptionsProps) {
   const [custom, setCustom] = useState<{ readonly from: CalendarDate; readonly to: CalendarDate } | null>(null)
-  const { window } = useDateWindow()
+  // "טווח אחר" starts from the days the view shows, a phone's own week included.
+  const { window } = useBoardWindow(view, phone)
   const focusMode = useFocusMode()
   const saved = useSavedViews(view)
   const unit = useUnitRow()

@@ -171,7 +171,7 @@ function Month({ weeks, ...cell }: MonthProps) {
         {weeks.map((week, row) => (
           // A month's weeks never reorder, so their place is their key.
           // oxlint-disable-next-line react/no-array-index-key
-          <div key={row} className={`grid grid-cols-7 gap-2xs ${cell.compact ? 'h-bar' : 'min-h-none flex-1'}`}>
+          <div key={row} className={`grid grid-cols-7 gap-2xs ${cell.compact ? 'h-touch' : 'min-h-none flex-1'}`}>
             {week.map((day, column) =>
               day === null ? (
                 // oxlint-disable-next-line react/no-array-index-key
