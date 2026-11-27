@@ -4,7 +4,6 @@ import { X } from 'lucide-react'
 import { motion, useDragControls } from 'motion/react'
 import { useState, type ReactNode } from 'react'
 import { Button as AriaButton, Dialog, Heading, Modal } from 'react-aria-components'
-import { IconButton } from '../primitives/Button'
 import { ModalOverlay } from '../primitives/overlays'
 
 // The drawer of the new interface (D-454): glass over a dimmed screen, rising from the bottom to a stop. It opens at
@@ -13,6 +12,7 @@ import { ModalOverlay } from '../primitives/overlays'
 // From `md` it is a panel on the inline end, as the modules' drawer is, with no stops.
 
 const MotionModal = motion.create(Modal)
+const CLOSE_ICON = 18
 
 export type Stop = 'half' | 'full'
 
@@ -81,16 +81,21 @@ export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = f
               <span aria-hidden className="h-xs w-grip rounded-full bg-line" />
             </AriaButton>
           </div>
-          <header className="flex shrink-0 items-start justify-between gap-sm px-lg pb-md md:pt-lg">
+          <header className="flex shrink-0 items-center justify-between gap-sm px-lg pb-md md:pt-lg">
             <div className="flex min-w-none flex-col">
-              <Heading slot="title" className="truncate text-title font-bold tracking-tight">
+              <Heading slot="title" className="truncate text-heading font-bold">
                 {title}
               </Heading>
               {detail === undefined ? null : <p className="text-small text-text-muted tabular-nums">{detail}</p>}
             </div>
-            <IconButton labelKey="common.close" onPress={onClose}>
-              <X aria-hidden size={18} />
-            </IconButton>
+            {/* ✕ on its own white circle, as the package draws it. */}
+            <AriaButton
+              aria-label={t('common.close')}
+              onPress={onClose}
+              className="inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface text-text outline-focus outline-offset-2 data-focus-visible:outline-2"
+            >
+              <X aria-hidden size={CLOSE_ICON} />
+            </AriaButton>
           </header>
           <div className="min-h-none overflow-y-auto px-lg pb-xl">{children}</div>
         </Dialog>
