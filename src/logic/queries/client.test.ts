@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { TODAY } from '@config'
+import { describe, expect, it, vi } from 'vitest'
 import { QUERY_KEYS, createQueryClient, invalidateChanged } from './client'
 
 const stale = (client: ReturnType<typeof createQueryClient>, key: readonly unknown[]) =>
@@ -23,13 +24,20 @@ describe('invalidateChanged', () => {
     expect(stale(client, QUERY_KEYS.tags)).toBe(true)
   })
 
-  it('asks again who is on base with the actor when a leave or a leave type changes (D-478)', () => {
-    const client = createQueryClient()
-    const key = [...QUERY_KEYS.presentWithMe, '2026-11-10']
-    client.setQueryData(key, null)
-    invalidateChanged(client, [{ table: 'tags', ids: [] }])
-    expect(stale(client, key)).toBe(false)
-    invalidateChanged(client, [{ table: 'leaves', ids: [] }])
-    expect(stale(client, key)).toBe(true)
+  it('asks again who is on base with the actor once, a while after leaves change (D-478, D-479)', () => {
+    vi.useFakeTimers()
+    try {
+      const client = createQueryClient()
+      const key = [...QUERY_KEYS.presentWithMe, '2026-11-10']
+      client.setQueryData(key, null)
+      invalidateChanged(client, [{ table: 'tags', ids: [] }])
+      invalidateChanged(client, [{ table: 'leaves', ids: [] }])
+      invalidateChanged(client, [{ table: 'leave_types', ids: [] }])
+      expect(stale(client, key)).toBe(false)
+      vi.advanceTimersByTime(TODAY.withMeRefreshMs)
+      expect(stale(client, key)).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

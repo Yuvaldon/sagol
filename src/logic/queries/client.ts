@@ -1,3 +1,4 @@
+import { TODAY } from '@config'
 import type { DataChange, TableName } from '@contracts'
 import { QueryClient, type QueryKey } from '@tanstack/react-query'
 
@@ -71,7 +72,7 @@ const LINK_REQUEST_TABLES: ReadonlySet<TableName> = new Set<TableName>([
  */
 const CONFIRMABLE_TABLES: ReadonlySet<TableName> = new Set<TableName>(['deployments', 'leaves', 'leave_events'])
 
-/** Tables, beside the policy's, who is on base with the actor is computed from (D-478). */
+/** Tables, beside the policy's, who is on base with the actor is computed from (D-478); asked again after a wait (D-479). */
 const PRESENCE_TABLES: ReadonlySet<TableName> = new Set<TableName>(['leaves', 'leave_types'])
 
 /**
@@ -119,6 +120,20 @@ function refresh(client: QueryClient, queryKey: QueryKey): void {
   void client.invalidateQueries({ queryKey })
 }
 
+/** The pending refresh of "איתך היום" per cache: changes inside its wait share one read (D-479). */
+const presenceRefreshes = new WeakMap<QueryClient, ReturnType<typeof setTimeout>>()
+
+function refreshPresenceSoon(client: QueryClient): void {
+  if (presenceRefreshes.has(client)) return
+  presenceRefreshes.set(
+    client,
+    setTimeout(() => {
+      presenceRefreshes.delete(client)
+      refresh(client, QUERY_KEYS.presentWithMe)
+    }, TODAY.withMeRefreshMs),
+  )
+}
+
 export function invalidateChanged(client: QueryClient, changes: readonly DataChange[]): void {
   const policyChanged = changes.some((change) => POLICY_TABLES.has(change.table))
   if (policyChanged) refresh(client, [TABLE_SCOPE])
@@ -129,7 +144,7 @@ export function invalidateChanged(client: QueryClient, changes: readonly DataCha
     refresh(client, [TABLE_SCOPE, change.table])
     if (LINK_REQUEST_TABLES.has(change.table)) refresh(client, QUERY_KEYS.accountLinkRequests)
     if (CONFIRMABLE_TABLES.has(change.table)) refresh(client, QUERY_KEYS.reportConfirmations)
-    if (PRESENCE_TABLES.has(change.table)) refresh(client, QUERY_KEYS.presentWithMe)
+    if (PRESENCE_TABLES.has(change.table)) refreshPresenceSoon(client)
   }
   // Many tables feed the policy, and a hint is cheap to ask again (D-091).
   if (changes.length > 0) refresh(client, QUERY_KEYS.can)

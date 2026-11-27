@@ -21,8 +21,10 @@ export function presentByName(answer: PresenceWithMe): readonly PresentSoldier[]
 }
 
 /**
- * Who is on base with the actor today, for who holds `presence:view` on themself; NULL for anyone else, and for a
- * holder with no unit today. Asked again on a new day.
+ * Who is on base with the actor today, for who holds `presence:view` on themself; NULL for anyone else, for a holder
+ * with no unit today, and for an answer about another day than the screen's (D-479): the server answers in the
+ * organization's zone, and a screen that cannot read the organization counts days in the device's (D-160). Asked
+ * again on a new day.
  */
 export function usePresentWithMe(): Loaded<readonly PresentSoldier[] | null> {
   const { data } = usePorts()
@@ -43,6 +45,7 @@ export function usePresentWithMe(): Loaded<readonly PresentSoldier[] | null> {
     if (!answers.known(check)) return { status: 'loading' }
     if (!holds) return { status: 'ready', value: null }
     if (answer.status !== 'ready') return answer
-    return { status: 'ready', value: answer.value === null ? null : presentByName(answer.value) }
-  }, [check, answers, holds, answer])
+    if (answer.value === null || answer.value.date !== today) return { status: 'ready', value: null }
+    return { status: 'ready', value: presentByName(answer.value) }
+  }, [check, answers, holds, answer, today])
 }
