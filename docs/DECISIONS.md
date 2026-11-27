@@ -404,7 +404,8 @@ am = amends, ref = refines, ext = extends.
 | D-475 | "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button | config, logic, i18n, ui | am D-477 |
 | D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477 |
 | D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
-| D-478 | "איתך היום": a presence-only permission, `presence:view`, answered by name on the server | contracts, domain, config, data, logic, i18n, ui, backend | |
+| D-478 | "איתך היום": a presence-only permission, `presence:view`, answered by name on the server | contracts, domain, config, data, logic, i18n, ui, backend | sup D-479 (reach); ref D-479 |
+| D-479 | "איתך היום" after review: the own unit only, the rank constraint on oneself, a narrow read, export format 7 | contracts, domain, config, data, logic, ui, backend | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5970,3 +5971,32 @@ details under D-170
   absent when nobody else is (D-459). Its place stays D-459's: after "דוח 1", before "הסטטוס שלי".
 **Why:** the owner's decision of 2026-11-27: a plain soldier sees who is on base with them, names only, with no leave
 details and no board. Computing it on the server keeps rule 4: the names are all that leaves the gateway.
+
+## D-479 — "איתך היום" after review: the own unit only, the rank constraint on oneself, a narrow read, export format 7
+2026-11-27 · accepted · supersedes D-478 (its reach) · refines D-478 · decided under D-170 (the security review of the
+batch)
+- **The reach (supersedes D-478's).** `soldiers.presentWithMe()` names the soldiers whose primary unit today is the
+  holder's own primary unit, and no other: not the units under it, nor those above it. A soldier placed at the root
+  (a clerk, a medic, headquarters) sees only the others placed at the root; a squad soldier sees their squad. The unit is
+  the one the policy reads (D-054), so an attached membership places nobody there. Until OI-396 sets a reach by level,
+  the role's scope only decides whether the holder may ask, never how far the answer reaches, so the answer must not
+  reach beyond the one unit a scope on oneself always covers.
+- **The rank constraint on oneself.** `presence` is asked about the holder themself, so a source's
+  `subject_rank_constraint`, which ranks other soldiers against the holder, does not narrow it on the holder's own record
+  (`RANK_FREE_ON_SELF` in `domain/policy`). On any other soldier it applies as before. Without this, a pair given
+  through a `junior` source, or to a holder without seniority, answered `forbidden` while the roles editor showed it.
+- **The read.** The server reads the soldiers placed in the unit and only their leaves, keeps the approved ones that
+  cover today, and reads only the types those name; not the organization's leaves. The day, the actor and the unit are
+  the server's: any argument a caller sends is ignored. The screen asks again 30 seconds after the first change to
+  leaves or leave types (`TODAY.withMeRefreshMs`), so a burst of changes costs one read per open card.
+- **The day.** The screen shows an answer only when its day is the screen's today; a screen that counts days in the
+  device's zone (D-160) shows nothing while the two differ.
+- **No access.** A holder whose answer exists (they have a unit today) gets "היום" even when they read no organization
+  and no soldier, instead of the no-access notice (D-151, D-160).
+- **Export format 7.** `EXPORT_FORMAT_VERSION` is 7. `load_organization_export` (migration
+  `20261127000100_export_format_7.sql`) reads 5, 6 and 7, and gives a role of format 5 or 6 that holds `leaves:view`
+  the pair `presence:view`, as the migration of D-478 gave it to the stored roles. Format 5 is still numbered as D-373
+  says.
+**Why:** the review found that D-478's reach followed the unit tree beyond what the decision meant, that a constrained
+source refused the holder their own answer, that the read cost the whole organization's leaves on each change, and that
+an older export would lose the pair.
