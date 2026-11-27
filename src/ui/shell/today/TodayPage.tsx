@@ -1,6 +1,6 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
 import { t } from '@i18n'
-import { usePanel, useSession, useShellPlace, type DaySelection } from '@logic'
+import { usePanel, usePresentWithMe, useSession, useShellPlace, type DaySelection } from '@logic'
 import { useEffect, useState } from 'react'
 import { Tray } from '../../kit/Tray'
 import { leaveDaysText } from '../../modules/leaves/leaveText'
@@ -8,7 +8,7 @@ import { EmptyNotice } from '../../patterns/Notices'
 import { useNoBoard } from '../boardShown'
 import { useOpenerFallback } from '../chrome'
 import { PageFrame, PageHeading } from '../PageFrame'
-import { ApprovalsCard, JoinsCard, MyRequestCard, MyStatusCard, ReportCard, RoutineCard } from './cards'
+import { ApprovalsCard, JoinsCard, MyRequestCard, MyStatusCard, ReportCard, RoutineCard, WithMeCard } from './cards'
 import { REQUESTS_OPENER } from './requestActions'
 import { RequestsScope } from './RequestsScope'
 import { RequestsPage } from './RequestsPage'
@@ -75,6 +75,7 @@ function Today({ name, commands, requests, approvals }: TodayPageProps) {
       <JoinsCard />
       <MyRequestCard />
       {commands ? null : <ReportCard />}
+      <WithMeCard board={commands} />
       {commands && hasStatus ? <MyStatusCard /> : null}
     </PageFrame>
   )
@@ -82,7 +83,10 @@ function Today({ name, commands, requests, approvals }: TodayPageProps) {
 
 export function TodayPage(props: TodayPageProps) {
   const place = useShellPlace()
-  const noAccess = useNoBoard()
+  const noBoard = useNoBoard()
+  const present = usePresentWithMe()
+  // Who reads nothing else but is told who is on base with them has a page (D-479).
+  const noAccess = noBoard && !(present.status === 'ready' && present.value !== null)
   // The page of requests is for who the card is for; an address that names it for anyone else is put right (D-076).
   const stray = place.page === 'requests' && !props.approvals
   const { closePage } = place

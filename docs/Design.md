@@ -181,8 +181,10 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   the unit's soldiers while a rotation runs, and seven day columns, today first in night blue, amber where a rule
   is broken. A column opens the unit's drawer on its day: who is away, then who is on base.
 - **Cards**, in D-459's order, each absent when empty: "בקשות לאישור" (three rows with ✗ ✓, a count, a door),
-  "בקשות הצטרפות", "הבקשה שלי" (type, dates, badge), "דוח 1" (a door, for who has no unit block, D-472), "הסטטוס
-  שלי" (for who sees the unit's block). In routine a
+  "בקשות הצטרפות", "הבקשה שלי" (type, dates, badge), "דוח 1" (a door, for who has no unit block, D-472), "איתך
+  היום" (for who holds `presence:view` and has no unit block: the count beside the title, the names of who of their
+  own unit (not the units under it) is on base today as wrapped name pills, no door, D-478, D-479; it gives "היום" to
+  a holder who reads nothing else), "הסטטוס שלי" (for who sees the unit's block). In routine a
   notice comes first (D-469).
 - **The pending-requests page** (`page=requests`): back, the title, the "approve now" default, every waiting
   request, a door to the closed ones. A toast follows a step.
@@ -255,7 +257,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | # | What | Why | Decision |
 |---|---|---|---|
 | 1 | The undesigned tools (leave-round planning, temporary units, rotations, routine switch, settings, the dashboard) stay as their current screens under "ניהול" | Removing them would lose capabilities units use; the package marked this open | D-456 |
-| 2 | "איתך היום" shows only to who already reads their unit's leaves; no new permission | A presence-only permission is a model change the package lists as "not now" | D-457, OI-384 |
+| 2 | "איתך היום" shows to who holds the presence-only permission `presence:view` and has no "לוח": names of who of their own unit (that unit only, not the units under it) is on base today, answered by the server; the card opens nothing (superseded the earlier "no new permission", D-457) | The owner decided a plain soldier sees who is with them without reading leaves; the unit drawer the package names reads leaves; a wider reach waits for a level choice (OI-396) | D-478, D-479 |
 | 3 | Tap paths for the gestures marked "Open" follow the package's recommendations; a phone timeline bar is not dragged | A drag on a scrolling phone timeline fights the scroll | D-458 |
 | 4 | היום's cards: fixed order, an empty card is absent (but "הסטטוס שלי"), no maximum; "בקשות לאישור" opens a pending-requests page | The package left order, empty and maximum open | D-459 |
 | 5 | Desktop layout as above | The package gives rules, not screens | D-460 |
@@ -279,6 +281,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 23 | "דוח 1" keeps every part it had, in the new drawer; its words are "שליחה" and "נשלח"; the button reads "✓ HH:MM" once every section the actor sees is sent | The package draws one named list; the product has a section per unit, a span and an image to share | D-475 |
 | 24 | New leave keeps the request sheet (rows, repeat, collective, planning) behind the package's face: type chips, days on a month beside the typed dates | The package draws one request; units send several at once | D-476 |
 | 25 | The form's month builds its own range and follows the typed dates; a link to the old pending tab opens the page of requests; "sent" waits for units out of view for who answers for the whole report | Found in review | D-477 |
+| 26 | "איתך היום" shows a count and names, never a door; it shows whether or not its holder is on base today | The package's "big number" alone answers no "who"; a door to the unit drawer would open leaves its holder may not read | D-478 |
 
 ## Color (Light)
 

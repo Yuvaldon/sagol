@@ -28,6 +28,7 @@ import { describeLeaveContract } from './leaves'
 import { describeNotificationContract } from './notifications'
 import { describePermissionContract } from './permissions'
 import { describePropertyContract } from './properties'
+import { describePresenceContract } from './presence'
 import { describeReportContract } from './reports'
 import { describeRosterContract } from './roster'
 import { describeRuleContract } from './rules'
@@ -422,6 +423,7 @@ export function describeAdapterContract(name: string, createHarness: () => Promi
     describePropertyContract(() => harness, () => claim())
     describeDeploymentContract(() => harness, () => claim())
     describeReportContract(() => harness, () => claim())
+    describePresenceContract(() => harness, () => claim())
     describeNotificationContract(() => harness, () => claim())
   })
 }

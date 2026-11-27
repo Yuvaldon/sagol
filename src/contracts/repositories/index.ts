@@ -41,13 +41,8 @@ import type { AccessGrant, RankRoleBinding, Role, RolePermission } from '../enti
 import type { PropertyDefinition } from '../entities/properties'
 import type { ReportConfirmation } from '../entities/reports'
 import type { AvailabilityRule } from '../entities/rules'
-import type {
-  CommandRank,
-  SeniorityOverride,
-  Soldier,
-  SoldierPrivate,
-  UnitMembership,
-} from '../entities/soldiers'
+import { Soldier } from '../entities/soldiers'
+import type { CommandRank, SeniorityOverride, SoldierPrivate, UnitMembership } from '../entities/soldiers'
 import type { SoldierTag, Tag, TagCategory } from '../entities/tags'
 import { AccountLinkRequestStatus, LeaveStatus } from '../enums'
 import type { TableName } from '../tables'
@@ -181,6 +176,20 @@ export const ReportSectionCount = z.object({
 })
 export type ReportSectionCount = z.infer<typeof ReportSectionCount>
 
+/** A soldier as "איתך היום" names them (D-478): who they are, and nothing of their leaves. */
+export const PresentSoldier = Soldier.pick({ id: true, first_name: true, last_name: true })
+export type PresentSoldier = z.infer<typeof PresentSoldier>
+
+/**
+ * Who of the actor's own unit, and the units under it, is on base today, beside the actor (D-478). Derived on each
+ * read, never stored (D-019): the day is the organization's today, and the unit is the actor's primary unit on it.
+ */
+export const PresenceWithMe = z.object({
+  date: CalendarDate,
+  soldiers: z.array(PresentSoldier),
+})
+export type PresenceWithMe = z.infer<typeof PresenceWithMe>
+
 /** Why a soldier is proposed for a link request (D-030, D-447). Shown to the reviewer only. */
 export const LinkCandidateMatch = z.enum(['personal_id', 'email', 'name'])
 export type LinkCandidateMatch = z.infer<typeof LinkCandidateMatch>
@@ -238,7 +247,15 @@ export interface DataRepositories {
   unit_levels: EntityRepository<UnitLevel, UnitLevelId, ReferenceQuery>
   units: EntityRepository<Unit, UnitId, ReferenceQuery>
   command_ranks: EntityRepository<CommandRank, CommandRankId, ReferenceQuery>
-  soldiers: EntityRepository<Soldier, SoldierId, ReferenceQuery>
+  soldiers: EntityRepository<Soldier, SoldierId, ReferenceQuery> & {
+    /**
+     * "איתך היום" (D-478): for who holds `presence:view` on themself, the names of who of their own unit and the units
+     * under it is on base today, beside themself. NULL for a holder with no unit today; `forbidden` without the
+     * permission. It answers no leave, no type and no day but today, also of soldiers whose records the holder may
+     * not read.
+     */
+    presentWithMe(): AsyncResult<PresenceWithMe | null>
+  }
   /** Keyed by soldier id. Needs `soldier_private:view` (D-018). */
   soldier_private: EntityRepository<SoldierPrivate, SoldierId, SoldierScopedQuery>
   seniority_overrides: EntityRepository<SeniorityOverride, SeniorityOverrideId, SeniorityOverrideQuery>

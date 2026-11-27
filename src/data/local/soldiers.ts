@@ -4,6 +4,7 @@ import {
   ChangeMembershipInput,
   CreateSoldierInput,
   IssueCode,
+  LeaveStatus,
   MembershipQuery,
   MembershipType,
   RestoreSoldierInput,
@@ -32,6 +33,9 @@ import {
   normalizePersonalId,
   placementTarget,
   planMembershipChange,
+  presenceWithMe,
+  rangeCovers,
+  PRESENCE_VIEW,
   soldierTarget,
   spansOverlap,
   unitTarget,
@@ -266,9 +270,45 @@ export async function insertSoldier(
 
 // --------------------------------------------------------------------- reads
 
+/** What "איתך היום" is computed from: the policy's rows, and the leaves and their types, which it never answers. */
+const PRESENCE_TABLES: readonly TableName[] = [...POLICY_TABLES, 'leaves', 'leave_types']
+
+/**
+ * "איתך היום" (D-478, D-479). The permission is on the holder themself, and the answer is names only. It is computed
+ * here, where the rows are (on the server, inside the gateway, D-201), so whoever holds it learns no leave, no type and
+ * no other day, also of soldiers whose records they may not read. The unit is the holder's primary unit today as the
+ * policy reads it; only the leaves of the soldiers placed there are read, and only the approved ones covering today
+ * count. Any argument a caller sends is ignored: the actor and the day are the server's.
+ */
+async function presentWithMe(dependencies: LocalDependencies) {
+  const { database } = dependencies
+  const scope = await loadActorScope(dependencies)
+  requirePermission(scope, PRESENCE_VIEW, soldierTarget(scope.soldier_id))
+  const { context } = scope
+  const date = context.clock.today
+  const unitId = context.unitOf(scope.soldier_id)
+  if (unitId === null) return null
+  const placed = context.soldierIds.filter((id) => id !== scope.soldier_id && context.unitOf(id) === unitId)
+  const soldiers = (await Promise.all(placed.map((id) => tableOf(database, 'soldiers').get(id))))
+    .filter((row) => row !== undefined)
+    .map((row) => parsedRow('soldiers', row))
+  const leaves = (await Promise.all(placed.map((id) => tableOf(database, 'leaves').where('soldier_id').equals(id).toArray())))
+    .flat()
+    .map((row) => parsedRow('leaves', row))
+    .filter((leave) => leave.status === LeaveStatus.enum.approved && rangeCovers(leave, date))
+  const typeIds = [...new Set(leaves.map((leave) => leave.leave_type_id))]
+  const types = (await Promise.all(typeIds.map((id) => tableOf(database, 'leave_types').get(id))))
+    .filter((row) => row !== undefined)
+    .map((row) => parsedRow('leave_types', row))
+  return presenceWithMe({ holderId: scope.soldier_id, date, unitOf: context.unitOf, soldiers, leaves, leave_types: types })
+}
+
 export function createSoldierRepository(dependencies: LocalDependencies): DataRepositories['soldiers'] {
-  // The order for people is `logic`'s, in Hebrew (D-094). The id only keeps this answer stable.
-  return createReferenceRepository(dependencies, SPEC, (a, b) => a.id.localeCompare(b.id))
+  return {
+    // The order for people is `logic`'s, in Hebrew (D-094). The id only keeps this answer stable.
+    ...createReferenceRepository(dependencies, SPEC, (a, b) => a.id.localeCompare(b.id)),
+    presentWithMe: () => asResult(() => dependencies.database.transaction('r', PRESENCE_TABLES, () => presentWithMe(dependencies))),
+  }
 }
 
 export function createSoldierPrivateRepository(dependencies: LocalDependencies): DataRepositories['soldier_private'] {

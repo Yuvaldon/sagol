@@ -100,7 +100,7 @@ export function world(): World {
     [ROLE.baseline, 'leaves', 'delete'], [ROLE.baseline, 'leave_types', 'view'],
     [ROLE.baseline, 'units', 'view'],
     [ROLE.approver, 'leaves', 'view'], [ROLE.approver, 'leaves', 'approve'],
-    [ROLE.approver, 'soldiers', 'view'],
+    [ROLE.approver, 'soldiers', 'view'], [ROLE.approver, 'presence', 'view'],
     [ROLE.admin, 'access_grants', 'create'], [ROLE.admin, 'access_grants', 'delete'],
     [ROLE.admin, 'roles', 'update'], [ROLE.admin, 'tags', 'create'], [ROLE.admin, 'units', 'update'],
     [ROLE.archived, 'leaves', 'approve'],
@@ -291,6 +291,11 @@ export const MATRIX: MatrixRow[] = [
   ['holder without seniority gets only "any" (D-057)', 'norank', 'leaves', 'approve', soldierTarget('f11'), false],
   ['holder without seniority keeps the baseline', 'norank', 'leaves', 'create', soldierTarget('norank'), true],
   ['holder without seniority: junior_or_equal not even on self (D-157)', 'norank', 'leaves', 'approve', soldierTarget('norank'), false],
+  // Presence is asked about oneself: a rank constraint does not narrow it there (D-479)
+  ['presence on oneself through a junior source', 'sc11', 'presence', 'view', soldierTarget('sc11'), true],
+  ['presence on oneself without seniority', 'norank', 'presence', 'view', soldierTarget('norank'), true],
+  ['presence on another keeps the rank constraint', 'norank', 'presence', 'view', soldierTarget('f11'), false],
+  ['presence on a senior keeps the rank constraint', 'sc11', 'presence', 'view', soldierTarget('pc1'), false],
   // A soldier scope sees its own unit chain (D-159)
   ['self scope views the home unit', 'f11', 'units', 'view', unitTarget(UNIT.S11), true],
   ['self scope views the home unit\'s ancestors', 'f11', 'units', 'view', unitTarget(UNIT.BAT), true],

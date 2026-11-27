@@ -142,6 +142,12 @@ async function serviceBaseline(sql: Sql): Promise<void> {
     resource: "leaves",
     action: "approve",
   });
+  await insert(sql, "role_permissions", {
+    ...at,
+    role_id: role,
+    resource: "leaves",
+    action: "view",
+  });
   await sql`UPDATE organizations SET baseline_role_id = ${role}, version = version + 1 WHERE id = ${org}`;
   await insert(sql, "rank_role_bindings", {
     ...at,
@@ -361,5 +367,14 @@ describe("every migration over a database that holds an organization (D-436)", (
     expect(roots).toHaveLength(1);
     const counters = await history`SELECT 1 FROM change_counters`;
     expect(counters).toHaveLength(1);
+    // Who approves confirms the report (D-293), and who views leaves sees who is on base with them (D-478).
+    const pairs =
+      await history`SELECT resource, action FROM role_permissions ORDER BY resource, action`;
+    expect(pairs.map((row) => `${String(row.resource)}:${String(row.action)}`)).toEqual([
+      "day_reports:confirm",
+      "leaves:approve",
+      "leaves:view",
+      "presence:view",
+    ]);
   });
 });

@@ -67,7 +67,7 @@ const REPOSITORY_METHODS = {
   unit_levels: REFERENCE,
   units: REFERENCE,
   command_ranks: REFERENCE,
-  soldiers: REFERENCE,
+  soldiers: { ...REFERENCE, presentWithMe: true },
   soldier_private: REFERENCE,
   unit_memberships: REFERENCE,
   soldier_preferences: { mine: true },

@@ -193,4 +193,20 @@ describe('local database versions', () => {
     )
     store.close()
   })
+
+  it('lets every role of a version 11 store that views leaves see who is on base with its holder (D-478)', async () => {
+    const name = `sagol-${crypto.randomUUID()}`
+    const old = new Dexie(name)
+    old.version(11).stores(STORES)
+    await old.table('role_permissions').bulkAdd([
+      { role_id: ROLE, organization_id: ORG, resource: 'leaves', action: 'approve' },
+      { role_id: VIEWER, organization_id: ORG, resource: 'leaves', action: 'view' },
+    ])
+    old.close()
+
+    const store = openDatabase(name, TIME, ROTATION_LEAVE)
+    const presence = (await store.table('role_permissions').toArray()).filter((row) => (row as { resource: string }).resource === 'presence')
+    expect(presence).toEqual([{ role_id: VIEWER, organization_id: ORG, resource: 'presence', action: 'view' }])
+    store.close()
+  })
 })

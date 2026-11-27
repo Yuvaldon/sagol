@@ -22,6 +22,12 @@ export function soldierTarget(soldierId: SoldierId): PolicyTarget {
   return { kind: 'soldier', soldier_id: soldierId }
 }
 
+/**
+ * Resources whose check is on the holder themself, so a rank constraint, which ranks other soldiers against the holder,
+ * does not apply to the holder's own record (D-479): `presence:view` is asked about oneself only.
+ */
+export const RANK_FREE_ON_SELF: ReadonlySet<PermissionResource> = new Set<PermissionResource>(['presence'])
+
 const ORGANIZATION = ['organization'] as const satisfies readonly PolicyTargetKind[]
 const SOLDIER = ['soldier', 'every_soldier'] as const satisfies readonly PolicyTargetKind[]
 
@@ -64,6 +70,8 @@ export const TARGET_KINDS_BY_RESOURCE = {
   data_transfer: ORGANIZATION,
   /** The unit whose report is confirmed (D-293). */
   day_reports: ['unit'],
+  /** The holder themself: who is with them today (D-478). */
+  presence: SOLDIER,
 } as const satisfies Record<PermissionResource, readonly PolicyTargetKind[]>
 
 /** True when `resource` accepts targets of `kind`. */

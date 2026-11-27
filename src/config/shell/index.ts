@@ -26,6 +26,11 @@ export const TODAY = {
   unitDays: 7,
   /** The most rows a card shows before its door to the rest (D-459). */
   cardRows: 3,
+  /**
+   * How long "איתך היום" waits after a change to leaves before it asks again, so the changes of a busy moment cost every
+   * soldier who has the card open one read, not one per change (D-479).
+   */
+  withMeRefreshMs: 30_000,
 } as const
 
 export const SHELL = {

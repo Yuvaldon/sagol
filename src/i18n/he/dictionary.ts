@@ -145,6 +145,8 @@ export const dictionary = {
     approvals: 'בקשות לאישור',
     myRequest: 'הבקשה שלי',
     myStatus: 'הסטטוס שלי',
+    withMe: 'איתך היום',
+    withMeCount: 'בבסיס איתך',
     allRequests: 'לכל הבקשות',
     allMine: 'לכל הבקשות שלי',
     joinsWaiting: 'ממתינות לאישור או לדחייה',
@@ -1197,6 +1199,7 @@ export const dictionary = {
       accounts: 'חשבונות',
       data_transfer: 'ייבוא וייצוא',
       day_reports: 'דוח 1',
+      presence: 'מי בבסיס איתי',
     },
     actions: {
       view: 'צפייה',

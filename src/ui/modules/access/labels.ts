@@ -26,6 +26,7 @@ export const RESOURCE_KEYS: Record<PermissionResource, I18nKey> = {
   accounts: 'permissionLabels.resources.accounts',
   data_transfer: 'permissionLabels.resources.data_transfer',
   day_reports: 'permissionLabels.resources.day_reports',
+  presence: 'permissionLabels.resources.presence',
 }
 
 export const ACTION_KEYS: Record<PermissionAction, I18nKey> = {

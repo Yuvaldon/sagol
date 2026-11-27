@@ -305,13 +305,14 @@ BEGIN
                  (ARRAY['tags','view']), (ARRAY['leave_types','view']), (ARRAY['leaves','view']),
                  (ARRAY['leaves','create']), (ARRAY['leaves','update']), (ARRAY['leaves','approve']),
                  (ARRAY['leave_comments','view']), (ARRAY['leave_comments','create']),
-                 (ARRAY['internal_comments','view']), (ARRAY['internal_comments','create'])) AS v(p)
+                 (ARRAY['internal_comments','view']), (ARRAY['internal_comments','create']),
+                 (ARRAY['presence','view'])) AS v(p)
   ON CONFLICT DO NOTHING;
   INSERT INTO role_permissions (role_id, organization_id, resource, action)
   SELECT pg_temp.seed_id(org || ':seed:role:soldier'), org, p[1], p[2]
     FROM (VALUES (ARRAY['soldiers','view']), (ARRAY['leave_types','view']), (ARRAY['leaves','view']),
                  (ARRAY['leaves','create']), (ARRAY['leave_comments','view']),
-                 (ARRAY['leave_comments','create'])) AS v(p)
+                 (ARRAY['leave_comments','create']), (ARRAY['presence','view'])) AS v(p)
   ON CONFLICT DO NOTHING;
   -- The deputy reaches the whole company (one step up from the HQ); platoon and squad commanders reach their unit.
   INSERT INTO rank_role_bindings (id, organization_id, command_rank_id, role_id, anchor_type, anchor_steps,

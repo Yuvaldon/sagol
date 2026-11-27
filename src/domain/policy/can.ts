@@ -9,7 +9,7 @@ import {
 } from '@contracts'
 import type { EffectivePermission, PolicyContext } from './context'
 import { scopeCovers, scopeWithin, type ResolvedScope } from './scope'
-import { acceptsTarget } from './targets'
+import { RANK_FREE_ON_SELF, acceptsTarget } from './targets'
 
 // The one authorization check (D-007): the local adapter, logic's "can I?" hints and the
 // test matrix all call it; Postgres `has_permission()` mirrors it in phase 8.
@@ -36,6 +36,11 @@ function rankAllows(
   return constraint === SubjectRankConstraint.enum.junior ? subject < holder : subject <= holder
 }
 
+/** A check about the holder themself, on a resource a rank constraint does not narrow there (D-479). */
+function onSelfRankFree(resource: PermissionResource, holderId: SoldierId, target: PolicyTarget): boolean {
+  return RANK_FREE_ON_SELF.has(resource) && target.kind === 'soldier' && target.soldier_id === holderId
+}
+
 function grants(
   context: PolicyContext,
   holderId: SoldierId,
@@ -48,7 +53,7 @@ function grants(
     permission.resource === resource &&
     permission.action === action &&
     scopeCovers(permission.scope, action, target, context) &&
-    rankAllows(context, permission.subject_rank_constraint, holderId, target)
+    (onSelfRankFree(resource, holderId, target) || rankAllows(context, permission.subject_rank_constraint, holderId, target))
   )
 }
 

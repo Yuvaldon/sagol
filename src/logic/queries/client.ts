@@ -1,3 +1,4 @@
+import { TODAY } from '@config'
 import type { DataChange, TableName } from '@contracts'
 import { QueryClient, type QueryKey } from '@tanstack/react-query'
 
@@ -15,6 +16,8 @@ export const QUERY_KEYS = {
   units: [TABLE_SCOPE, 'units'],
   commandRanks: [TABLE_SCOPE, 'command_ranks'],
   soldiers: [TABLE_SCOPE, 'soldiers'],
+  /** "איתך היום" (D-478): under `soldiers`, so a change to them asks again. */
+  presentWithMe: [TABLE_SCOPE, 'soldiers', 'present_with_me'],
   soldierPrivate: [TABLE_SCOPE, 'soldier_private'],
   unitMemberships: [TABLE_SCOPE, 'unit_memberships'],
   soldierPreferences: [TABLE_SCOPE, 'soldier_preferences'],
@@ -69,6 +72,9 @@ const LINK_REQUEST_TABLES: ReadonlySet<TableName> = new Set<TableName>([
  */
 const CONFIRMABLE_TABLES: ReadonlySet<TableName> = new Set<TableName>(['deployments', 'leaves', 'leave_events'])
 
+/** Tables, beside the policy's, who is on base with the actor is computed from (D-478); asked again after a wait (D-479). */
+const PRESENCE_TABLES: ReadonlySet<TableName> = new Set<TableName>(['leaves', 'leave_types'])
+
 /**
  * Tables the policy is computed from (D-053 … D-058). Every list the adapter answers is filtered by the policy, so a change
  * to one of them can change what any list holds.
@@ -114,6 +120,20 @@ function refresh(client: QueryClient, queryKey: QueryKey): void {
   void client.invalidateQueries({ queryKey })
 }
 
+/** The pending refresh of "איתך היום" per cache: changes inside its wait share one read (D-479). */
+const presenceRefreshes = new WeakMap<QueryClient, ReturnType<typeof setTimeout>>()
+
+function refreshPresenceSoon(client: QueryClient): void {
+  if (presenceRefreshes.has(client)) return
+  presenceRefreshes.set(
+    client,
+    setTimeout(() => {
+      presenceRefreshes.delete(client)
+      refresh(client, QUERY_KEYS.presentWithMe)
+    }, TODAY.withMeRefreshMs),
+  )
+}
+
 export function invalidateChanged(client: QueryClient, changes: readonly DataChange[]): void {
   const policyChanged = changes.some((change) => POLICY_TABLES.has(change.table))
   if (policyChanged) refresh(client, [TABLE_SCOPE])
@@ -124,6 +144,7 @@ export function invalidateChanged(client: QueryClient, changes: readonly DataCha
     refresh(client, [TABLE_SCOPE, change.table])
     if (LINK_REQUEST_TABLES.has(change.table)) refresh(client, QUERY_KEYS.accountLinkRequests)
     if (CONFIRMABLE_TABLES.has(change.table)) refresh(client, QUERY_KEYS.reportConfirmations)
+    if (PRESENCE_TABLES.has(change.table)) refreshPresenceSoon(client)
   }
   // Many tables feed the policy, and a hint is cheap to ask again (D-091).
   if (changes.length > 0) refresh(client, QUERY_KEYS.can)
