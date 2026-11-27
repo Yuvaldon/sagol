@@ -115,6 +115,9 @@ describe('the board of the new interface (D-480)', () => {
     expect(leaves.roundReturning).toEqual([roundBack])
     expect(leaves.requests).toEqual([{ entry: request, leaving: true, returning: false }])
     expect(cellRequests(day)).toEqual([request])
+    // A leave of the round that waits, as a move does, is named in the cell for its approver (D-481).
+    const moved = entry(three, leave(66, '2026-11-10', '2026-11-10', { layer: 'round', status: 'pending' }))
+    expect(cellRequests({ ...day, entries: [...day.entries, moved] })).toEqual([request, moved])
   })
 
   it('lists who leaves and who returns by day, and folds the days without movement into one run, today apart', () => {
@@ -124,6 +127,14 @@ describe('the board of the new interface (D-480)', () => {
     const tenth = movements[2]
     expect(tenth?.leaving).toEqual({ round: [roundOut], requests: [request] })
     expect(tenth?.returning).toEqual({ round: [roundBack], requests: [] })
+    // A leave of one day leaves on it and is listed once, in the movements as in the drawer (D-480).
+    const oneDay = entry(one, leave(65, '2026-11-09', '2026-11-09'))
+    const [ninth] = boardMovements([{ day: '2026-11-09', entries: [oneDay], away: 1, total: 5 }])
+    expect(ninth?.leaving.requests).toEqual([oneDay])
+    expect(ninth?.returning.requests).toEqual([])
+    expect(dayLeaves([{ day: '2026-11-09', entries: [oneDay], away: 1, total: 5 }], '2026-11-09').requests).toEqual([
+      { entry: oneDay, leaving: true, returning: false },
+    ])
     expect(movementRuns(movements, '2026-11-12').map((run) => (run.kind === 'day' ? run.day.day : `${run.from}..${run.to}`))).toEqual([
       '2026-11-08..2026-11-09',
       '2026-11-10',

@@ -84,7 +84,10 @@ function away(entry: BoardEntry): boolean {
   return entry.leave.effect === 'unavailable'
 }
 
-/** A request on a day, and whether the day starts or ends it (D-193: `end_date` is the day of the return). */
+/**
+ * A request on a day, and whether the day starts or ends it (D-193: `end_date` is the day of the return). A leave of one
+ * day leaves on it and is listed once, as leaving, in the day's drawer and in the movements alike (D-480).
+ */
 export interface DayRequest {
   readonly entry: BoardEntry
   readonly leaving: boolean
@@ -113,13 +116,20 @@ export function dayLeaves(days: readonly BoardDay[], day: CalendarDate): DayLeav
     roundReturning: returning,
     requests: entries
       .filter((entry) => entry.leave.layer === 'request')
-      .map((entry) => ({ entry, leaving: away(entry) && entry.leave.start_date === day, returning: away(entry) && entry.leave.end_date === day })),
+      .map((entry) => ({
+        entry,
+        leaving: away(entry) && entry.leave.start_date === day,
+        returning: away(entry) && entry.leave.end_date === day && entry.leave.start_date !== day,
+      })),
   }
 }
 
-/** The requests a month cell names (§1.10): the leave round is the regular state and is not drawn. */
+/**
+ * The requests a month cell names (§1.10): the leave round is the regular state and is not drawn, unless a leave of it
+ * waits for approval, as a move does (D-481): that one asks its approver to look.
+ */
 export function cellRequests(day: BoardDay): readonly BoardEntry[] {
-  return day.entries.filter((entry) => entry.leave.layer === 'request' && covers(entry, day.day))
+  return day.entries.filter((entry) => (entry.leave.layer === 'request' || entry.leave.status === 'pending') && covers(entry, day.day))
 }
 
 /** One direction of a day's movements: the leave round's leaves of the day, and each request alone (§1.15). */
@@ -128,7 +138,10 @@ export interface MovementSide {
   readonly requests: readonly BoardEntry[]
 }
 
-/** Who leaves and who returns on a day (§3, "Movements"): an absence leaves on its first day and returns on its last. */
+/**
+ * Who leaves and who returns on a day (§3, "Movements"): an absence leaves on its first day and returns on its last; a
+ * one-day absence is listed once, as leaving, as the day's drawer lists it.
+ */
 export interface MovementDay {
   readonly day: CalendarDate
   readonly leaving: MovementSide
@@ -153,7 +166,7 @@ export function boardMovements(days: readonly BoardDay[]): MovementDay[] {
     return {
       day: day.day,
       leaving: sideOf(absences.filter((entry) => entry.leave.start_date === day.day)),
-      returning: sideOf(absences.filter((entry) => entry.leave.end_date === day.day)),
+      returning: sideOf(absences.filter((entry) => entry.leave.end_date === day.day && entry.leave.start_date !== day.day)),
     }
   })
 }
