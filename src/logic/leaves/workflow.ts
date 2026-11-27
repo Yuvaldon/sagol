@@ -308,15 +308,18 @@ export function myNextDays(
   )
 }
 
-/** A day of the soldier's own strip and month (D-454): on base, away by an approved leave, or with a request that waits. */
+/**
+ * A day of the soldier's own strip and month (D-454): on base, at home by the leave round (an approved leave of a
+ * batch, D-268), away by another approved leave, or with a request that waits.
+ */
 export interface MyDay {
   readonly date: CalendarDate
-  readonly state: 'base' | 'away' | 'pending'
+  readonly state: 'base' | 'round' | 'away' | 'pending'
   /** The leave that makes the day what it is; NULL on base. */
   readonly leave_id: LeaveId | null
 }
 
-/** The soldier's days from a day on: an approved absence wins over a request that waits, which wins over the base. */
+/** The soldier's days from a day on: an approved absence wins over a request that waits, which wins over the base. The leave round is told apart from another absence. */
 export function myDays(
   soldierId: SoldierId,
   leaves: readonly Leave[],
@@ -325,10 +328,11 @@ export function myDays(
   count: number,
 ): readonly MyDay[] {
   const availability = createAvailabilityContext({ leaves, leave_types: leaveTypes })
+  const rounds = new Set(leaves.filter((leave) => leave.batch_id !== null).map((leave) => leave.id))
   return Array.from({ length: count }, (_, index): MyDay => {
     const day = availability.on(soldierId, addDays(from, index), APPROVED_ONLY)
     const away = day.leaves.find((leave) => leave.counted)
-    if (away !== undefined) return { date: day.date, state: 'away', leave_id: away.leave_id }
+    if (away !== undefined) return { date: day.date, state: rounds.has(away.leave_id) ? 'round' : 'away', leave_id: away.leave_id }
     const waits = day.leaves.find(
       (leave) => leave.status === LeaveStatus.enum.pending && leave.effect === AvailabilityEffect.enum.unavailable,
     )
@@ -341,8 +345,9 @@ export function myDays(
 export function myStanding(days: readonly MyDay[]): { readonly away: boolean; readonly changes: CalendarDate | null } | null {
   const first = days[0]
   if (first === undefined) return null
-  const away = first.state === 'away'
-  const change = days.find((day) => (day.state === 'away') !== away)
+  const isAway = (day: MyDay) => day.state === 'away' || day.state === 'round'
+  const away = isAway(first)
+  const change = days.find((day) => isAway(day) !== away)
   return { away, changes: change?.date ?? null }
 }
 
