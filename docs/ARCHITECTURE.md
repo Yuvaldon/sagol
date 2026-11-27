@@ -322,15 +322,19 @@ The current state, in short (D-128). The entries hold the reasons.
 ## Workspace, routing and view state (D-023)
 
 - One main workspace route. Management modules and details open as floating surfaces:
-  side drawer on desktop, bottom sheet on mobile. Navigation is two floating strips that hug their content on every
-  screen (V25, D-252): a context strip at the top (scope, range, view, filters) and a destination strip at the bottom
-  (לוח, שלי, בקשות, דוח 1, ניהול) with the role's one quick action by mode (`useQuickAction` in `logic`, D-296) at its inline end. "ניהול יחידה" is
-  a panel from the inline start, a plain line per module and no pins (D-254). From V32 it holds daily work only,
-  grouped by `WORK_SECTIONS` in `config`, each module loaded lazily (OI-118), with one row at its foot to "הגדרות היחידה", the same panel's rows replaced by
-  `SETUP_SECTIONS` (D-285). A field whose definition is missing offers the module's own form over the drawer
-  (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone setup step is `nextSetupStep` in `logic`. The home follows permissions (`useHome` in `logic`, D-265): who approves or manages lands on the board,
-  anyone else on "שלי", and the last choice is kept on the device. The heat row always sits above the soldiers, sticky (D-310).
-  The "לוח" tab opens the view sheet on the board (`ViewSheet`, D-311); "סינון ומיון" opens the rule builder
+  side drawer on desktop, bottom sheet on mobile. Navigation is the new shell (R5·1, D-455, D-465):
+  `ui/shell/WorkspaceScreen` shows one of four destinations by the `tab` search param, read and written by
+  `useShellPlace` in `logic/shell/place.ts`; `useShellAccess` there says which destinations and whether the action
+  circle are the actor's. `TabBar` floats over all of them. "היום" (`ui/shell/today`), "ניהול" (`ui/shell/manage`,
+  its rows from `moduleEntries.ts` and `manage/rows.ts`, with `WORK_SECTIONS` and `SETUP_SECTIONS` in `config` still
+  naming what exists) and "אני" (`ui/shell/me`) are pages in `PageFrame`; a page over a destination is the `page`
+  param. "לוח" is `BoardPlace`: the engines under one context strip (scope, range, view, filters). The shared
+  components of the new interface are in `ui/kit`; `ui/shell/chrome.ts` ties a page's scroll to the bar. The day
+  math of "היום" is `logic/leaves/calendar.ts`, and the soldier's own days are `useMyDays`. In routine the one
+  action is "פתיחת סבב" (`useQuickAction` in `logic`, D-469). A field whose definition is missing offers the
+  module's own form over the drawer (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone
+  setup step is `nextSetupStep` in `logic`. The heat row always sits above the soldiers, sticky (D-310).
+  The view picker of the board's strip opens the view sheet (`ViewSheet`, D-311); "סינון ומיון" opens the rule builder
   (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
   done from live rows (`useSetupProgress`, D-180).
@@ -430,7 +434,7 @@ src/
   logic/       access/ accounts/ board/ deployments/ device/ filters/ forms/ home/ leaves/ organization/ permissions/
                presence/ (the day report) properties/ queries/ roster/ rules/ runtime/ seniority/ session/ shell/ tags/
                timeline/ transfer/ units/ view-state/ testing/ (test-only helpers, D-135)
-  ui/          theme/ primitives/ patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
+  ui/          theme/ primitives/ kit/ (the new interface's shared components) patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)
                worker/ (the service worker: precache, push, notification taps, D-359)

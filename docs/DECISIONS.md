@@ -191,7 +191,7 @@ am = amends, ref = refines, ext = extends.
 | D-172 | Parallel tracks: two sessions build the roadmap at once | docs, tooling | |
 | D-173 | Navigation rebalance: daily work in the bar, setup in a side panel | contracts, config, logic, ui | ref D-175; ref D-178; ext D-181; sup D-189 (bars); ref D-213; sup D-254 (pins, sections); ref D-252, D-253, D-256; ref D-278; ref D-291; sup D-310 (rules row) |
 | D-174 | The list, the table and the calendar share the board's model and frame | logic, ui | ref D-214; ref D-268; ref D-339 |
-| D-175 | The bar names the unit in scope, not the organization | ui | ref D-251 |
+| D-175 | The bar names the unit in scope, not the organization | ui | ref D-251; ref D-465 |
 | D-176 | The properties module, and the rows behind reference values | data, logic, ui | ref D-186 |
 | D-177 | Property chips in the filter bar | logic, ui | ref D-312; ref D-380 |
 | D-178 | A new navigation module: its entry first, then the enum, then its section | contracts, config, ui | ref D-254 |
@@ -241,9 +241,9 @@ am = amends, ref = refines, ext = extends.
 | D-250 | Two vocabularies: everyday words, and the words of managing a unit | i18n, ui, docs | |
 | D-251 | "ארגון" never shows; the user manages "היחידה שלי", the root unit | domain, logic, i18n, ui | ref D-347 |
 | D-252 | One navigation model: a context strip at the top, a destination strip at the bottom | config, ui | ref D-265, D-266, D-301; ref D-352; sup D-453 |
-| D-253 | The profile is personal only | ui | sup D-310 (rules row); ref D-311; ref D-356 |
-| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285; am D-456 |
-| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266; ref D-299; am D-459 |
+| D-253 | The profile is personal only | ui | sup D-310 (rules row); ref D-311; ref D-356; ref D-470 |
+| D-254 | One entry for managing the unit: "ניהול יחידה" | config, i18n, ui | ref D-278; am D-285; am D-456; am D-468 |
+| D-255 | One requests hub: mine, awaiting me, and a new request | logic, ui | sup D-265 (הבקשות שלי); ref D-266; ref D-299; am D-459; am D-467 |
 | D-256 | One path for each action | ui | ref D-285 |
 | D-257 | A rotation is a mode of the system: one at a time, and routine without one | contracts, domain, data, logic, ui, backend | ref D-266; ref D-221, D-222 |
 | D-258 | A rotation's life: dates, plus one stored fact for its close | contracts, domain, data, logic, ui, backend | ref D-221, D-222 |
@@ -253,8 +253,8 @@ am = amends, ref = refines, ext = extends.
 | D-262 | The setup: pick, adjust, done | domain, data, logic, ui, backend | am D-285; ref D-347 |
 | D-263 | Five journeys are the acceptance tests of V25, V26 and V27 | docs, tooling | ref D-265 |
 | D-264 | Order of the simplification slices | docs | am D-271 |
-| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343; ref D-350; ref D-386; ref D-455 |
-| D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296; ref D-455 |
+| D-265 | Home follows permissions: the board, or "שלי" | logic, ui | ref D-299; ref D-343; ref D-350; ref D-386; ref D-455; sup D-465 |
+| D-266 | The quick action follows the role, then the mode | logic, ui | ref D-296; ref D-455; sup D-469 (פתיחת סבב) |
 | D-267 | Several requests at once | contracts, domain, data, logic, ui, backend | |
 | D-268 | The board's visual language: presence is quiet, absence is a hole | ui | ref D-290; ref D-339 |
 | D-269 | דוח 1 as a workflow: each unit confirms, one owner sends it up | contracts, domain, data, logic, ui, backend | ref D-293 |
@@ -271,14 +271,14 @@ am = amends, ref = refines, ext = extends.
 | D-282 | Quick entry of several soldiers: a grid that runs the soldier's own command per row | logic, ui | ref D-298 |
 | D-283 | Approving several join requests: each one linked by its own review | logic, ui | sup D-448 |
 | D-284 | Launch order: V32 before V28, then the audit | docs | |
-| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297; am D-456 |
+| D-285 | Work and unit setup: two places, a definition apart from its use | docs, config, i18n, ui | ref D-297; am D-456; am D-468 |
 | D-289 | CI skips e2e and db on a draft pull request | tooling | |
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
 | D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303, D-373 |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | am D-340 |
-| D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | ref D-339 |
+| D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | ref D-339; sup D-469 |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
 | D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
@@ -345,7 +345,7 @@ am = amends, ref = refines, ext = extends.
 | D-383 | The range picker offers two and four weeks | config, logic, ui | |
 | D-384 | Saved views: personal, in the preferences, each kept param as the URL holds it | contracts, logic | ext D-442; ref D-452; am D-462 |
 | D-385 | Applying a saved view replaces the board's state; what no longer parses is dropped and reported | logic, ui | |
-| D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | |
+| D-386 | The start view: a bare open of the board starts on it; a link with params wins | contracts, logic, ui | ref D-465 |
 | D-387 | Saved views live only inside the view sheet, quiet until the first save | i18n, ui | ext D-442 |
 | D-388 | A preference change from a function of the stored row, retried once over another device's save | logic | |
 | D-400 | What was built under D-370 is recorded in the roadmap, as row R3·C | docs | |
@@ -381,16 +381,23 @@ am = amends, ref = refines, ext = extends.
 | D-452 | The board's grouping is a view option: none, unit, command rank or a single-selection tag category | contracts, config, logic, ui | |
 | D-453 | The new interface is adopted: היום, לוח, ניהול, אני; the UI freeze ends | ui, docs | |
 | D-454 | The new language's tokens: one value per step, a caption step, a derived dark set, no leave-type color | ui, config | |
-| D-455 | Tabs, the action circle and every door follow permissions | logic, ui | |
-| D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | |
+| D-455 | Tabs, the action circle and every door follow permissions | logic, ui | ref D-465; ref D-466; ref D-469 |
+| D-456 | Tools the package does not design keep their current screens, under "ניהול" | config, i18n, ui | ref D-468 |
 | D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | |
 | D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | |
-| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | |
+| D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471 |
 | D-460 | The desktop is derived from the phone | ui | |
 | D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | |
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | |
 | D-463 | Small product choices of the new interface | contracts, config, logic, ui | |
-| D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | |
+| D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
+| D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | |
+| D-466 | "לוח" is for who reads another soldier's leaves, or holds that over a unit | logic | |
+| D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | |
+| D-468 | "ניהול" is a page of rows, and "הגדרות" a page behind its last row | i18n, ui | |
+| D-469 | Routine's "פתיחת סבב" sits in the routine notice, on "היום" and on the board | logic, ui | |
+| D-470 | "אני" holds what the user menu held, until its own batch | i18n, ui | |
+| D-471 | What the shell and "היום" batch left for the next batches | docs, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5736,3 +5743,94 @@ which one it is in.
 - Each batch updates the e2e specs of the screens it replaces, removes the code it replaces, and rewrites that
   screen's section in `docs/Design.md`.
 **Why:** the owner tests on staging; small batches keep main shippable.
+
+## D-465 — The shell's destination and page live in the URL; an address that names the board opens it
+2026-11-26 · accepted · supersedes D-265 (where the app opens) · refines D-455, D-386, D-175 · decided under D-170
+- The destination is the search param `tab` (`today`, `board`, `manage`, `me`) and the page over it is `page`
+  (`requests` on "היום", `settings` on "ניהול"). A page shows only on the destination it belongs to. Both replace
+  the history entry, as every view change does (D-332): the back button leaves the screen, it does not walk tabs.
+- An address that names no destination shows "היום". When it names something of the board (its view, range,
+  rotation, sort, grouping, filter, colors, leave conditions or saved view) it shows "לוח", so every link to a
+  board made before the tabs still opens that board. "היום" is then written explicitly (`tab=today`).
+- A destination the actor does not have shows "היום". Nothing is remembered per device: the home flag of D-265
+  (`DEVICE_KEYS.homeAway`, `useHome`) is removed.
+- The start view (D-386) applies the first time the board is opened in a session on an address that names
+  nothing of it.
+- A press on the tab in sight returns the destination to its first screen at its top; on the board, to today.
+- Signing out from "אני" first returns the address to "היום", because the address keeps its search through
+  sign-in (D-092) and the next person should not start on someone's "אני".
+- The page's one heading for readers stays the organization's name on "היום" and on the board (D-175); "ניהול",
+  "אני" and each page name themselves.
+**Why:** a URL is the only place view state lives (D-023); old links must keep working; a per-device home has no
+meaning once "היום" is everyone's first screen.
+
+## D-466 — "לוח" is for who reads another soldier's leaves, or holds that over a unit
+2026-11-26 · accepted · refines D-455 · decided under D-170
+- The tab shows when the actor may view the leaves of at least one soldier they see other than themself, or holds
+  `leaves: view` over some unit (the `some_unit` target of D-362, the dashboard's own test).
+- The second half exists for an organization with one soldier: its owner manages it before anyone else is added,
+  and the empty board is where the setup is offered.
+- The open block of "היום" follows the same test: who has "לוח" sees the unit's block, anyone else their own
+  status. Who sees the unit's block and has a soldier record gets "הסטטוס שלי" as a card (D-459).
+**Why:** D-455's test read literally hides the board from a new owner, who has nobody else yet.
+
+## D-467 — "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones
+2026-11-26 · accepted · amends D-255 · refines D-459, D-120 · decided under D-170
+- The card on "היום" and the page behind its title (`page=requests`) list what waits for the actor, each row with
+  ✗ and ✓. The row opens the request. Rejecting asks first, with the optional note (D-119).
+- After a step a toast says what happened. It carries "ביטול" only when the actor may take the step back: an
+  approval by who approves, a rejection by who may reopen the request (D-063). "ביטול" reopens the request.
+- The page also holds the "approve now" default (D-121) and a door to the closed requests.
+- The requests drawer (`leave_inbox`, `leave_closed`) is kept as built. It is a row of "ניהול", "בקשות", for who
+  approves others while a rotation takes requests (D-218). Reason: the card is absent when nothing waits, and the
+  closed requests, which the board does not draw, must stay reachable; phone notifications and the dashboard also
+  link to it. OI-392 retires its pending list.
+**Why:** rule 6 (nothing unreachable), and D-459's absent empty card.
+
+## D-468 — "ניהול" is a page of rows, and "הגדרות" a page behind its last row
+2026-11-26 · accepted · amends D-254, D-285 · refines D-456 · decided under D-170
+- The navigation panel is removed. "ניהול" is a page: its title, the organization's name, then thin rows, each a
+  tool's name, what it holds now, and a chevron. A row is named by its tool alone; its value describes it.
+- Order: חיילים (how many the actor sees), בקשות הצטרפות (how many wait), כללי נוכחות; a gap; בקשות (D-467, how
+  many wait), מבנה היחידה (how many units), סבבים (the rotation in scope), דשבורד, הגדרות (the setup's progress
+  while steps are open).
+- "הגדרות" (`page=settings`) holds the setup's checklist while a step is open, then the modules of
+  `SETUP_SECTIONS` by section, each with its one line (D-250). Personal grants sit under "הרשאות" with the roles.
+  The unit tree is a row of the index, so it is not repeated there.
+- A row exists only for who may open its module (D-091). "ניהול" is a destination when at least one row is.
+- What waits behind "ניהול" shows as a dot on its tab, and is read with the tab's name.
+**Why:** the package draws "ניהול" as an index (D-453); the two places of D-285 stay two, as two pages.
+
+## D-469 — Routine's "פתיחת סבב" sits in the routine notice, on "היום" and on the board
+2026-11-26 · accepted · supersedes D-296, D-266 (the quick action) · refines D-455, D-459 · decided under D-170
+- The tab bar has no quick action of the role; the action circle is only "בקשה חדשה" for oneself (D-455).
+- In routine (D-257) the board's band, and a notice card first on "היום", name the mode and what opens it. Who may
+  open a rotation gets the button "פתיחת סבב" there. `useQuickAction` still decides it.
+- The notice is not one of D-459's cards: it is the mode of the whole product, and it explains why the request
+  cards and "דוח 1" are absent.
+**Why:** opening a rotation is the one step out of routine; hiding it two taps deep under "ניהול" would cost the
+commander the direct path D-296 gave.
+
+## D-470 — "אני" holds what the user menu held, until its own batch
+2026-11-26 · accepted · refines D-253, D-455 · decided under D-170
+- The user menu is removed. "אני" shows the name and the email, a row to the soldier's own requests (the
+  `my_leaves` drawer, as built), the appearance (D-181), the notifications card (D-356), installing the app where
+  the device offers it (D-184), sign-out and the dev identity switcher (D-006).
+- The corner glass circle on "היום", "ניהול" and "אני" opens the same drawer, where the updates are, and counts
+  the unread ones. It exists for who has their own requests while a rotation takes them (D-218).
+- The profile, "הסבב שלי", "כל הבקשות", "העדפות" and the notifications drawer are R5·5.
+**Why:** D-464: every capability stays reachable between batches.
+
+## D-471 — What the shell and "היום" batch left for the next batches
+2026-11-26 · accepted · refines D-464, D-459 · decided under D-170
+- Built: the shell, the shared components (glass circle and capsule, card, badge, fraction, person row, 14-day
+  strip, month, toast, tray, the drawer with stops), "היום" with both open blocks, the request cards and page, the
+  unit's drawer, "ניהול" and "אני" as real pages.
+- Not built, each an open item: the options menu, which has no user before the board (OI-386); "דוח 1" in the
+  new drawer with its sent state, and the card "דוח 1 · פלוגה" (OI-387); the new-leave form and the leave card in
+  the new drawer (OI-388); the card "סבב יציאות · תכנון" and its row of "ניהול" (OI-389); the strip's difference
+  between a leave round and another absence (OI-390); the notifications drawer behind the corner circle
+  (OI-391); the requests drawer's pending list (OI-392); "איתך היום" (OI-393).
+- A component with no user is not built ahead (rule 6).
+**Why:** one batch, honest about its edge.
+
