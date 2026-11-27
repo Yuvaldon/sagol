@@ -194,6 +194,15 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **Components** are in `src/ui/kit`: `Glass` (circle, capsule), `Card`, `Badge`, `Fraction`, `PersonRow`,
   `DayStrip`, `Month`, `Toast`, `Tray`, `StopDrawer`. The drawer with stops opens at half height and grows to
   full; its handle is a button (D-458); from `md` it is a panel on the inline end.
+- **"דוח 1"** opens in the drawer with stops, at full height: the day between its arrows, the counts, a white card
+  per unit that opens to its names, "שליחה" per unit, the text copy and the image. Once sent, the button of "היום"
+  reads "✓ 07:40" (D-475).
+- **"יציאה חדשה"** opens in the drawer at full height: the soldier, then per request a row of type chips, how many
+  days, the two dates with "בחירת הימים בלוח" (the month, two taps for a range), the reason, "חוזרת", and "לאשר
+  מיד" for who may. **The leave card** opens at half height, named by the leave's type: a white card with the days
+  large, type and days, the badge; then the actions, two in a row with equal weight; then the history (D-476).
+- **The strip** draws the leave round quiet (`time-round`), another absence filled (`time-approved`) and a request
+  that waits amber; the month does not draw the leave round.
 - **Desktop** uses the same shell until R5·6.
 
 ### A tap path for every gesture (D-458)
@@ -266,6 +275,9 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 19 | The options menu, "דוח 1" in the new drawer, new leave and the leave card in the new drawer, "סבב יציאות · תכנון" and "איתך היום" are not in this batch | Each is an open item with its batch | D-471 |
 | 20 | "דוח 1" is a card on "היום" for who reads the unit's soldiers and has no unit block | It was a destination of the old strip for all of them | D-472 |
 | 21 | The toast waits while it is hovered, focused or asking, and starts over at a key press; a page takes the keyboard on its heading and gives it back to its opener; the month is a keyboard grid | The package draws no keyboard or time behaviour | D-473 |
+| 22 | What waits for approval is listed once, on the page of requests; the row "בקשות" of "ניהול" opens it | Two lists of the same thing drift | D-474 |
+| 23 | "דוח 1" keeps every part it had, in the new drawer; its words are "שליחה" and "נשלח"; the button reads "✓ HH:MM" once every section the actor sees is sent | The package draws one named list; the product has a section per unit, a span and an image to share | D-475 |
+| 24 | New leave keeps the request sheet (rows, repeat, collective, planning) behind the package's face: type chips, days on a month beside the typed dates | The package draws one request; units send several at once | D-476 |
 
 ## Color (Light)
 

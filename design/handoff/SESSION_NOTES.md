@@ -16,9 +16,11 @@ staging deploy so the owner can test. Some component images are older than other
   Roadmap rows R5·1 … R5·6. Open items re-targeted; OI-384 and OI-385 opened.
 - Done: R5·1, the shell, and most of R5·2, "היום" (D-465 … D-471). The tab bar by permission, "היום" with both
   open blocks and its request cards and page, "ניהול" and "אני" as pages, the shared components in `src/ui/kit`.
-- Next: the rest of R5·2 (OI-387, OI-388, OI-390, OI-392), then R5·3, the board, with the options menu (OI-386).
-  One roadmap row per pull request (D-464).
-- For the owner: OI-393 ("איתך היום" has nobody to show to as decided), with OI-384.
+- Done: the rest of R5·2 (D-474 … D-476): "דוח 1", new leave and the leave card in the drawer with stops, the leave
+  round on the strip, the waiting requests listed once.
+- Next: "איתך היום" with its presence-only permission, the owner's decision of 2026-11-27 (OI-393): a model change,
+  so `schema.sql`, `DECISIONS.md` and `contracts` come first. Then R5·3, the board, with the options menu (OI-386)
+  and the move out of the leave round (OI-394). One roadmap row per pull request (D-464).
 - Code facts checked: rule archive and restore exist, no reorder; nobody edits their own soldier record; presence
   and the day report take any date; the leave form's live rule warning needs organization-wide reads (D-162);
   `missing` is used in `config/url`, `contracts/settings`, `logic/view-state`, `logic/board`, `ui/board`,
