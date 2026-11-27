@@ -6,9 +6,9 @@ import {
   type PresenceWithMe,
   type Soldier,
   type SoldierId,
+  type UnitId,
 } from '@contracts'
 import { APPROVED_ONLY, createAvailabilityContext, type AvailabilityLeave, type AvailabilityLeaveType } from '../availability'
-import { buildUnitTree, descendantsOf, primaryUnitOn, type MembershipSpan, type UnitNode } from '../hierarchy'
 import { compareCodeUnits } from '../json'
 
 // "איתך היום" (D-478): who of a soldier's own unit is on base on a day, by name. Pure: the data layer reads the rows
@@ -23,30 +23,26 @@ export type PresenceSoldier = Pick<Soldier, 'id' | 'first_name' | 'last_name' | 
 export interface PresenceWithMeInput {
   readonly holderId: SoldierId
   readonly date: CalendarDate
-  readonly units: Iterable<UnitNode>
+  /** A soldier's primary unit on the day (D-054), as the policy reads it; an attached membership places nobody. */
+  readonly unitOf: (soldierId: SoldierId) => UnitId | null
   readonly soldiers: Iterable<PresenceSoldier>
-  readonly memberships: Iterable<MembershipSpan>
   readonly leaves: Iterable<AvailabilityLeave>
   readonly leave_types: Iterable<AvailabilityLeaveType>
 }
 
 /**
- * The active soldiers whose primary unit on the day is the holder's own or a unit under it, beside the holder, who
- * are not away by an approved leave (a request that waits counts for nothing, D-134). NULL when the holder has no unit
- * on the day. Never the units above the holder's. In id order; the screen orders people by name (D-094).
+ * The active soldiers whose primary unit on the day is the holder's own, beside the holder, who are not away by an
+ * approved leave (a request that waits counts for nothing, D-134). Neither the units above it nor those under it
+ * (D-479). NULL when the holder has no unit on the day. In id order; the screen orders people by name (D-094).
  */
 export function presenceWithMe(input: PresenceWithMeInput): PresenceWithMe | null {
-  const memberships = [...input.memberships]
-  const unitId = primaryUnitOn(memberships, input.holderId, input.date)
+  const unitId = input.unitOf(input.holderId)
   if (unitId === null) return null
-  const reach = new Set([unitId, ...descendantsOf(buildUnitTree(input.units), unitId)])
   const availability = createAvailabilityContext({ leaves: input.leaves, leave_types: input.leave_types })
   const soldiers = [...input.soldiers]
     .filter((soldier) => {
       if (soldier.id === input.holderId || soldier.archived_at !== null) return false
-      if (soldier.status !== SoldierStatus.enum.active) return false
-      const unit = primaryUnitOn(memberships, soldier.id, input.date)
-      if (unit === null || !reach.has(unit)) return false
+      if (soldier.status !== SoldierStatus.enum.active || input.unitOf(soldier.id) !== unitId) return false
       return availability.on(soldier.id, input.date, APPROVED_ONLY).status !== AvailabilityEffect.enum.unavailable
     })
     .sort((a, b) => compareCodeUnits(a.id, b.id))
