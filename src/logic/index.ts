@@ -20,6 +20,7 @@ export {
   daysFrom,
   isBeforeDay,
   monthSpan,
+  monthsBetween,
   selectDay,
   selectionCovers,
   weeksOf,
@@ -117,7 +118,7 @@ export {
 } from './view-state/sort-rules'
 export { filterContextOf, populationOf, useFilterSource, type FilterSource } from './filters/source'
 export { presenceLists, type PresenceEntry, type PresenceInput, type PresenceLists } from './presence/presence'
-export { useConfirmDayReport, useDayReport, usePresence, useReportConfirmations } from './presence/hooks'
+export { useConfirmDayReport, useDayReport, usePresence, useReportConfirmations, useReportSentAt } from './presence/hooks'
 export {
   dayConfirmations,
   type ConfirmationSummary,

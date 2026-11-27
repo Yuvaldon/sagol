@@ -4,6 +4,8 @@ import { t } from '@i18n'
 import {
   fullName,
   usePanel,
+  useShellAccess,
+  useShellPlace,
   usePresenceDay,
   useRulesDay,
   type Dashboard,
@@ -83,6 +85,9 @@ function Group({ label, children }: { readonly label: string; readonly children:
 /** "ממתין לטיפול": requests awaiting the actor, then the days ahead that break a rule. */
 export function OutstandingList({ dashboard, outstanding }: { readonly dashboard: Dashboard; readonly outstanding: DashboardOutstanding }) {
   const panel = usePanel()
+  const place = useShellPlace()
+  // The door is for who the page is for (D-467): the same answer, so it never leads nowhere.
+  const { approvals } = useShellAccess()
   const rules = useRulesDay()
   const names = useMemo(
     () => new Map<SoldierId, string>(dashboard.scope.rows.map((row) => [row.soldier.id, fullName(row.soldier)])),
@@ -111,9 +116,14 @@ export function OutstandingList({ dashboard, outstanding }: { readonly dashboard
           </li>
         ),
       )}
-      {rest <= 0 || !dashboard.approver ? null : (
+      {rest <= 0 || !approvals ? null : (
         <li>
-          <AriaButton className={`${ROW} text-text-muted`} onPress={() => panel.open(PANEL_IDS.leaveInbox)}>
+          <AriaButton className={`${ROW} text-text-muted`} onPress={() => {
+              // The rest wait on the page of requests (D-474). The page is named first, on the drawer's own entry,
+              // and the drawer then closes as it always does: its entry is left, and what changed on it is kept (D-332).
+              place.openPage('requests')
+              panel.close()
+            }}>
             {moreText(rest)}
           </AriaButton>
         </li>

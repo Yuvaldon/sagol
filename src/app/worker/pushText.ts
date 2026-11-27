@@ -1,4 +1,4 @@
-import { CALENDAR_DATE_ZONE, DATE_FORMATS, DATE_LOCALE, PANEL_IDS, ROUTES, SEARCH_PARAMS } from '@config'
+import { CALENDAR_DATE_ZONE, DATE_FORMATS, DATE_LOCALE, PANEL_IDS, ROUTES, SEARCH_PARAMS, type PageId } from '@config'
 import { NotificationKind, type CalendarDate, type PushOutcome, type PushPayload } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import { DateFormatter, parseDate } from '@internationalized/date'
@@ -40,6 +40,9 @@ export interface PushNotice {
   readonly url: string
 }
 
+/** The page of "היום" that lists what waits for the actor. */
+const REQUESTS_PAGE: PageId = 'requests'
+
 const dayOf = (date: CalendarDate) => parseDate(date).toDate(CALENDAR_DATE_ZONE)
 
 /** The leave's days the way `ui` writes them: one day, or a range (`8–14 בנוב׳`). */
@@ -71,7 +74,8 @@ export function pushNotice(payload: PushPayload, staging: boolean): PushNotice {
       title,
       body: [String(payload.count), t('notifications.push.awaitingMany')].join(WORD_SEPARATOR),
       tag: AWAITING_TAG,
-      url: urlOf(PANEL_IDS.leaveInbox, null),
+      // What waits is listed in one place: the page of requests of "היום" (D-474).
+      url: `${ROUTES.workspace}?${new URLSearchParams({ [SEARCH_PARAMS.page]: REQUESTS_PAGE }).toString()}`,
     }
   }
   return {

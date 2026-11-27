@@ -99,13 +99,16 @@ const DAYS = [
   { date: '2026-11-18', state: 'base' },
   { date: '2026-11-19', state: 'away' },
   { date: '2026-11-20', state: 'pending' },
+  { date: '2026-11-21', state: 'round' },
 ] as const
 
 describe('the day strip', () => {
   it('reads each day with its state, in order', () => {
     render(<DayStrip days={DAYS} today="2026-11-18" labelKey="myLeaves.nextDaysTitle" />)
     const items = within(screen.getByRole('list', { name: he.myLeaves.nextDaysTitle })).getAllByRole('listitem')
-    expect(items).toHaveLength(3)
+    expect(items).toHaveLength(4)
+    // The leave round reads apart from another absence.
+    expect(items[3]?.textContent).toContain(he.kit.dayRound)
     expect(items[0]?.textContent).toContain(he.kit.dayBase)
     expect(items[1]?.textContent).toContain(he.kit.dayAway)
     expect(items[2]?.textContent).toContain(he.kit.dayPending)
@@ -308,7 +311,18 @@ describe('the drawer with stops', () => {
     expect(shrink.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(shrink)
     expect(within(dialog).getByRole('button', { name: he.kit.drawerGrow })).toBeTruthy()
-    fireEvent.click(within(dialog).getByRole('button', { name: he.common.close }))
+    // The drawer's title is the screen's second heading, under the page's own.
+    expect(within(dialog).getByRole('heading', { level: 2, name: TITLE })).toBeTruthy()
+    // When the control that held the keyboard is gone, focus falls to the body: the next key returns it to the
+    // drawer, and Escape still closes it.
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    expect(document.activeElement).toBe(document.body)
+    fireEvent.keyDown(document.body, { key: 'Tab' })
+    expect(dialog.contains(document.activeElement)).toBe(true)
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    fireEvent.keyDown(document.body, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledOnce()
+    fireEvent.click(within(dialog).getByRole('button', { name: he.common.close }))
+    expect(onClose).toHaveBeenCalledTimes(2)
   })
 })

@@ -15,6 +15,18 @@ describe('the entity in the URL', () => {
   })
 })
 
+describe('a link to the old pending tab (D-474)', () => {
+  it('is read as the page of requests, and names no panel', () => {
+    expect(WorkspaceSearch.parse({ panel: 'leave_inbox' })).toEqual({ page: 'requests' })
+    expect(WorkspaceSearch.parse({ panel: 'leave_inbox', view: 'table' })).toEqual({ page: 'requests', view: 'table' })
+  })
+
+  it('leaves every other panel as it is', () => {
+    expect(WorkspaceSearch.parse({ panel: 'leave_closed' })).toEqual({ panel: 'leave_closed' })
+    expect(WorkspaceSearch.parse({ panel: 'nothing' })).toEqual({})
+  })
+})
+
 describe('the sort in the URL (OI-264)', () => {
   const parse = (search: Record<string, unknown>) => WorkspaceSearch.parse(search)
   it('keeps a leave column of the table', () => {

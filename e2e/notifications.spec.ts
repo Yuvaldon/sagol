@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { TYPE, YAEL, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
-import { choose, closeDrawer, drawer, typeDate, openNewLeave } from './support/leaves.ts'
+import { choose, drawer, typeDate, openNewLeave } from './support/leaves.ts'
 import { stubPush, subscribeCalls } from './support/push.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn, openMyLeaves, INBOX, openTab } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, signIn, openMyLeaves, openTab, openRequests, requestsList, backToBoard } from './support/workspace.ts'
 
 // The notifications slice's demo (D-352, D-356): the profile's "התראות" group with a stubbed push manager, and the
 // updates on "שלי" after the owner approves Yael's request. On desktop and mobile, RTL, with axe. Sample data, tests
@@ -80,11 +80,11 @@ test('the owner approves Yael\'s request, and "שלי" shows her the update', as
   await test.step('the owner approves it', async () => {
     await signOut(page)
     await signIn(page, OWNER.email)
-    await openModule(page, INBOX)
-    const list = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
+    await openRequests(page)
+    const list = requestsList(page)
     await list.getByRole('button', { name: he.leaves.approve }).click()
-    await expect(drawer(page).getByText(he.inbox.emptyPendingTitle)).toBeVisible()
-    await closeDrawer(page)
+    await expect(page.getByText(he.inbox.emptyPendingTitle)).toBeVisible()
+    await backToBoard(page)
     await signOut(page)
   })
 

@@ -13,6 +13,7 @@ import {
 } from '@logic'
 import { Check, Copy, Pencil, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { useFullStop } from '../../kit/drawerStop'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatInstant } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
@@ -22,7 +23,7 @@ import { LeaveDuplicateForm } from './LeaveDuplicateForm'
 import { LeaveEditForm } from './LeaveEditForm'
 import { LeaveStepDialog, type ClosingStep } from './LeaveStepDialog'
 import { LeaveThread } from './LeaveThread'
-import { StatusChip, TypeMark } from './LeaveMarks'
+import { LeaveBadge, TypeMark } from './LeaveMarks'
 import { leaveDatesText, leaveDaysText, personNames, typeNameOf } from './leaveText'
 
 // One leave (D-119): what it is, what the actor may do with it now, and its thread. A step shows at once and is
@@ -61,6 +62,8 @@ function LeaveView({
   const nameOf = personNames(soldiers)
   const type = types.find((candidate) => candidate.id === leave.leave_type_id) ?? null
   const timezone = useTimezone()
+  // A form needs the room: the drawer grows to its full stop for it.
+  const grow = useFullStop()
 
   async function step(next: LeaveTransition) {
     setFailure(null)
@@ -112,26 +115,30 @@ function LeaveView({
   return (
     <div className="flex flex-col gap-xl">
       <section aria-label={t('leaves.detailsLabel')} className="flex flex-col gap-md">
-        <div className="flex items-center justify-between gap-sm">
-          <h3 className="flex min-w-none items-center gap-sm text-body font-bold">
-            <TypeMark type={type} />
-            <span className="truncate">{typeNameOf(type)}</span>
-          </h3>
-          <StatusChip status={leave.status} />
+        {/* The card of the leave (D-454): its days large, then its type and how many days; the drawer names the type. */}
+        <div className="flex flex-col gap-md rounded-card bg-surface p-lg">
+          <div className="flex items-start justify-between gap-sm">
+            <div className="flex min-w-none flex-col gap-2xs">
+              <p className="text-title font-bold tracking-tight tabular-nums">{leaveDatesText(leave)}</p>
+              <p className="flex items-center gap-xs text-body text-text-muted">
+                <TypeMark type={type} />
+                <span className="truncate tabular-nums">{[typeNameOf(type), leaveDaysText(leave)].join(DETAIL_SEPARATOR)}</span>
+              </p>
+            </div>
+            <LeaveBadge status={leave.status} />
+          </div>
+          <dl className="flex flex-col gap-md">
+            <Detail labelKey="leaves.soldier">{nameOf(leave.soldier_id)}</Detail>
+            {leave.reason === null ? null : <Detail labelKey="leaves.reason">{leave.reason}</Detail>}
+            {reviewed === null ? null : <Detail labelKey="leaves.reviewedBy">{reviewed}</Detail>}
+          </dl>
         </div>
-        <dl className="flex flex-col gap-md">
-          <Detail labelKey="leaves.soldier">{nameOf(leave.soldier_id)}</Detail>
-          <Detail labelKey="leaves.dates">
-            <span className="tabular-nums">{[leaveDatesText(leave), leaveDaysText(leave)].join(DETAIL_SEPARATOR)}</span>
-          </Detail>
-          {leave.reason === null ? null : <Detail labelKey="leaves.reason">{leave.reason}</Detail>}
-          {reviewed === null ? null : <Detail labelKey="leaves.reviewedBy">{reviewed}</Detail>}
-        </dl>
         {failure === null ? null : <FailureNotice error={failure} />}
-        <div role="group" aria-label={t('leaves.actionsLabel')} className="flex flex-wrap gap-sm empty:hidden">
+        {/* What can be done with the leave, each with the same weight (D-454); approving alone is the filled one. */}
+        <div role="group" aria-label={t('leaves.actionsLabel')} className="grid grid-cols-2 gap-sm empty:hidden">
           {actions.approve ? (
             <Button
-              variant="primary"
+              variant="tileSolid"
               isDisabled={transition.isPending}
               onPress={() => {
                 void step('approve')
@@ -143,6 +150,7 @@ function LeaveView({
           ) : null}
           {actions.reject ? (
             <Button
+              variant="tile"
               onPress={() => {
                 setAsking('reject')
               }}
@@ -153,6 +161,7 @@ function LeaveView({
           ) : null}
           {actions.reopen ? (
             <Button
+              variant="tile"
               isDisabled={transition.isPending}
               onPress={() => {
                 void step('reopen')
@@ -164,8 +173,10 @@ function LeaveView({
           ) : null}
           {actions.edit ? (
             <Button
+              variant="tile"
               onPress={() => {
                 setFailure(null)
+                grow()
                 setEditing(0)
               }}
             >
@@ -175,8 +186,10 @@ function LeaveView({
           ) : null}
           {creation.duplicable.length > 0 ? (
             <Button
+              variant="tile"
               onPress={() => {
                 setFailure(null)
+                grow()
                 setDuplicating(true)
               }}
             >
@@ -186,6 +199,7 @@ function LeaveView({
           ) : null}
           {actions.cancel ? (
             <Button
+              variant="tile"
               onPress={() => {
                 setAsking('cancel')
               }}

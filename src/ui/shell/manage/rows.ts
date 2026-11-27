@@ -1,6 +1,6 @@
-import { PANEL_IDS, SETUP_SECTIONS, type SetupPanel, type SetupSectionId, type WorkModule } from '@config'
+import { SETUP_SECTIONS, type SetupPanel, type SetupSectionId, type WorkModule } from '@config'
 import type { I18nKey } from '@i18n'
-import { usePanel, usePendingRequests, useRotationScope, useSetupAccess } from '@logic'
+import { usePendingRequests, useRotationScope, useSetupAccess, useShellPlace } from '@logic'
 import { useInboxAccess } from '../inboxAccess'
 import { useNavigationEntries, useSetupEntries, type ModuleEntry } from '../moduleEntries'
 
@@ -64,12 +64,12 @@ export function useSettingsSections(): readonly SettingsSection[] {
 }
 
 /**
- * The requests drawer (D-120): what waits for the actor, and the requests that closed, which the board does not draw.
- * "היום" shows what waits only while something does (D-459), so this row is the way to the closed ones at any time. A
- * request surface exists only while a rotation a request can be about does (D-218).
+ * The page of requests (D-467, D-474): what waits for the actor, and the door to the requests that closed. "היום" shows
+ * its card only while something waits (D-459), so this row is the way to the page at any time. A request surface exists
+ * only while a rotation a request can be about does (D-218).
  */
 export function useInboxEntry(): ModuleEntry | null {
-  const panel = usePanel()
+  const place = useShellPlace()
   const approves = useInboxAccess()
   const { requests } = useRotationScope()
   const pending = usePendingRequests()
@@ -78,7 +78,7 @@ export function useInboxEntry(): ModuleEntry | null {
     id: 'inbox',
     labelKey: 'inbox.open',
     onPress: () => {
-      panel.open(PANEL_IDS.leaveInbox)
+      place.openPage('requests')
     },
     count: { value: pending.status === 'ready' ? pending.value.length : 0, labelKey: 'inbox.pendingCount' },
   }

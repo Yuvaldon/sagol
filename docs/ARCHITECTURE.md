@@ -328,7 +328,9 @@ The current state, in short (D-128). The entries hold the reasons.
   circle are the actor's. `TabBar` floats over all of them. "היום" (`ui/shell/today`), "ניהול" (`ui/shell/manage`,
   its rows from `moduleEntries.ts` and `manage/rows.ts`, with `WORK_SECTIONS` and `SETUP_SECTIONS` in `config` still
   naming what exists) and "אני" (`ui/shell/me`) are pages in `PageFrame`; a page over a destination is the `page`
-  param. "לוח" is `BoardPlace`: the engines under one context strip (scope, range, view, filters). The shared
+  param. "לוח" is `BoardPlace`: the engines under one context strip (scope, range, view, filters). The `leaves` panel opens in `ui/shell/LeaveDrawer`, and "דוח 1" (`DayReportDialog`) in the same drawer
+  with stops; every other panel opens in `ModuleDrawer`. What waits for approval is listed in one place, the page
+  `requests` (D-474). The shared
   components of the new interface are in `ui/kit`; `ui/shell/chrome.ts` ties a page's scroll to the bar. The day
   math of "היום" is `logic/leaves/calendar.ts`, and the soldier's own days are `useMyDays`. In routine the one
   action is "פתיחת סבב" (`useQuickAction` in `logic`, D-469). A field whose definition is missing offers the

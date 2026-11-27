@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, openNewLeave } from './support/leaves.ts'
+import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, openNewLeave, choose } from './support/leaves.ts'
 import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, openMyLeaves, backToBoard } from './support/workspace.ts'
 
 // V28's demo: the request sheet (D-275). One soldier, two requests of their own types and days, the second repeating
@@ -9,11 +9,6 @@ import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openMo
 
 function row(page: Page, n: number) {
   return drawer(page).getByRole('group', { name: `${he.leaves.row} ${String(n)}`, exact: true })
-}
-
-async function chooseIn(page: Page, scope: Locator, label: string, option: string) {
-  await scope.getByRole('button', { name: new RegExp(`${label}$`) }).click()
-  await page.getByRole('option', { name: option, exact: true }).click()
 }
 
 async function typeDateIn(page: Page, scope: Locator, label: string, day: string, month: string, year: string) {
@@ -42,7 +37,7 @@ test('one sheet sends several requests, one of them repeating every week', async
     await page.getByRole('option', { name: OWNER.name, exact: true }).click()
 
     const first = row(page, 1)
-    await chooseIn(page, first, he.leaves.type, 'מחלה')
+    await choose(page, he.leaves.type, 'מחלה', first)
     await typeDateIn(page, first, he.leaves.from, '12', '11', '2026')
     await typeDateIn(page, first, he.leaves.to, '12', '11', '2026')
     // One row has nothing to remove.
@@ -51,7 +46,7 @@ test('one sheet sends several requests, one of them repeating every week', async
     await drawer(page).getByRole('button', { name: he.leaves.addRow }).click()
     const second = row(page, 2)
     await expect(second).toBeVisible()
-    await chooseIn(page, second, he.leaves.type, 'רגילה')
+    await choose(page, he.leaves.type, 'רגילה', second)
     await typeDateIn(page, second, he.leaves.from, '10', '11', '2026')
     await typeDateIn(page, second, he.leaves.to, '10', '11', '2026')
     await second.locator('label').filter({ has: page.getByRole('switch', { name: he.leaves.repeats, exact: true }) }).click()

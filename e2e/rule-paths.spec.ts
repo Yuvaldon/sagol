@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate, openNewLeave } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, INBOX, backToBoard, openTab } from './support/workspace.ts'
+import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, backToBoard, openTab, openRequests, requestsList } from './support/workspace.ts'
 
 // The rest of the rule paths on screen (OI-107): the warning on the edit form, and the acknowledgment dialog on the
 // details' approve step, the inbox's approve and the close dialog. Desktop and mobile, RTL, with axe. Sample data,
@@ -87,7 +87,7 @@ test('the edit form warns, and approving or closing asks before a soft rule is b
     await expectNoAxeViolations(page)
     await ackDialog(page).getByRole('button', { name: he.rules.ackConfirm }).click()
     await expect(ackDialog(page)).toHaveCount(0)
-    await expect(drawer(page).getByText(he.leaves.statusApproved, { exact: true }).first()).toBeVisible()
+    await expect(drawer(page).getByText(he.leaves.badgeApproved, { exact: true }).first()).toBeVisible()
   })
 
   await test.step('the edit form warns while a change would break the rule on more days', async () => {
@@ -102,15 +102,15 @@ test('the edit form warns, and approving or closing asks before a soft rule is b
 
   await test.step('approving in the inbox asks too', async () => {
     await requestToday(page, 'נועם בר')
-    await openModule(page, INBOX)
-    const list = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
+    await openRequests(page)
+    const list = requestsList(page)
     await expect(list.getByText('נועם בר')).toBeVisible()
     await list.getByRole('button', { name: he.leaves.approve }).click()
     await expect(ackDialog(page)).toContainText(AT_LEAST_TWO)
     await expectNoAxeViolations(page)
     await ackDialog(page).getByRole('button', { name: he.rules.ackConfirm }).click()
-    await expect(drawer(page).getByText(he.inbox.emptyPendingTitle)).toBeVisible()
-    await closeDrawer(page)
+    await expect(page.getByText(he.inbox.emptyPendingTitle)).toBeVisible()
+    await backToBoard(page)
   })
 
   await test.step('cancelling can break a maximum, and the close dialog asks for it', async () => {
@@ -154,7 +154,9 @@ test('the last waiting request, approved on "היום", still asks before a soft
   await expect(toast).toBeVisible()
   // The keyboard is not left on the button that is gone: the page's heading has it.
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
-  // "ביטול" is one step back from there, and the toast waits while the keyboard is on it.
+  // "ביטול" is offered once the answer on who may take the step back is in; it is one step back from the heading,
+  // and the toast waits while the keyboard is on it.
+  await expect(toast.getByRole('button', { name: he.common.cancel })).toBeVisible()
   await page.keyboard.press('Shift+Tab')
   await expect(toast.getByRole('button', { name: he.common.cancel })).toBeFocused()
   await backToBoard(page)

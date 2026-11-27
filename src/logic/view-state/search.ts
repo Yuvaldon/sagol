@@ -64,8 +64,25 @@ function withBoardSort(search: WorkspaceSearchFields): Omit<WorkspaceSearchField
   return isDefaultSort(sorts) ? others : { ...others, sorts }
 }
 
+/** The panel of the requests drawer's pending tab, removed in D-474: links made before still name it. */
+const OLD_INBOX_PANEL = 'leave_inbox'
+
+/**
+ * A link to the old pending tab is read as the page of requests (D-474), which "היום" shows to who it is for and
+ * drops for anyone else. A page the link names itself wins.
+ */
+function withOldInbox(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw
+  const search: Record<string, unknown> = { ...raw }
+  if (search[SEARCH_PARAMS.panel] !== OLD_INBOX_PANEL) return raw
+  const { [SEARCH_PARAMS.panel]: _panel, ...rest } = search
+  return { ...rest, [SEARCH_PARAMS.page]: rest[SEARCH_PARAMS.page] ?? REQUESTS_PAGE }
+}
+
+const REQUESTS_PAGE: PageId = 'requests'
+
 /** The search params of the workspace route. `app` hands this to the router. */
-export const WorkspaceSearch = WorkspaceSearchFields.transform(withBoardSort)
+export const WorkspaceSearch = z.preprocess(withOldInbox, WorkspaceSearchFields).transform(withBoardSort)
 export type WorkspaceSearch = z.infer<typeof WorkspaceSearch>
 
 /** The workspace search as it is now, validated. */

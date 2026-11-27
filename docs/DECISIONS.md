@@ -135,8 +135,8 @@ am = amends, ref = refines, ext = extends.
 | D-116 | Module buttons on a phone show their icon | ui | ref D-120; ref D-154; ref D-173; sup D-189 (bars); ref D-252 |
 | D-117 | The leave commands after creation: transition, update, reschedule | data, logic, backend | am D-123; ref D-124 |
 | D-118 | Leave comments: who reads, who writes | data, logic, ui, backend | |
-| D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143; ref D-255 |
-| D-120 | The requests inbox: pending and closed; `LeaveQuery.window` may be NULL | contracts, config, data, logic, ui, backend | ref D-205; sup D-255 (destination) |
+| D-119 | The leave details drawer: bars as buttons, actions, one edit form, one thread | config, logic, ui | sup D-123 (edit form); ref D-129; ref D-143; ref D-255; ref D-476 |
+| D-120 | The requests inbox: pending and closed; `LeaveQuery.window` may be NULL | contracts, config, data, logic, ui, backend | ref D-205; sup D-255 (destination); am D-474 |
 | D-121 | The "approve now" default lives in the user menu | data, logic, ui, backend | ref D-173; ext D-181; sup D-253 (place); ref D-255; ext D-352, D-358 |
 | D-122 | The board waits for the permission hints | logic, ui | |
 | D-123 | Editing a leave is one command | contracts, domain, data, logic, ui, backend | |
@@ -263,7 +263,7 @@ am = amends, ref = refines, ext = extends.
 | D-272 | The spreadsheet review: refinements of existing slices, no new ones | docs | ref D-338; ref D-349 |
 | D-273 | A phone's top strip: the sort in the view menu, the unit as an icon | ui | sup D-311 (sort placement) |
 | D-274 | The install offer also comes once, on its own, after sign-in | config, logic, ui | |
-| D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302 |
+| D-275 | Several requests at once: the sheet, the recurring row, `leaves.createMany` | contracts, data, logic, ui | D-302; ref D-476 |
 | D-276 | Staging: a second free Supabase project, updated from main after every green CI | docs | ext D-281; ext D-292; ext D-295 |
 | D-278 | A floating surface fits its content | ui, scripts | |
 | D-280 | Production delivery: automatic after staging, guarded | backend, tooling | am D-340 |
@@ -276,7 +276,7 @@ am = amends, ref = refines, ext = extends.
 | D-290 | The board's visual language as built: a hatched hole, rounds as bands, the view by device | config, data, logic, ui | am D-317 |
 | D-291 | `NavigationModule` goes; the work sections are typed by panel id | contracts, config, ui, docs | |
 | D-292 | Staging's branch gets a new commit with main's tree, so Vercel builds it | tooling | |
-| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303, D-373 |
+| D-293 | The daily report workflow: confirmations per unit and date, a rotation's report owner | contracts, domain, data, logic, ui, backend | D-302, D-303, D-373; ref D-475 |
 | D-295 | Vercel builds only `main` and `staging`; other branches get no preview | tooling | am D-340 |
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | ref D-339; sup D-469 |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
@@ -391,15 +391,19 @@ am = amends, ref = refines, ext = extends.
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | |
 | D-463 | Small product choices of the new interface | contracts, config, logic, ui | |
 | D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
-| D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473 |
+| D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473; ref D-477 |
 | D-466 | "לוח" is for who reads another soldier's leaves, or holds that over a unit | logic | |
-| D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | ref D-473 |
+| D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | ref D-473; am D-474 |
 | D-468 | "ניהול" is a page of rows, and "הגדרות" a page behind its last row | i18n, ui | |
 | D-469 | Routine's "פתיחת סבב" sits in the routine notice, on "היום" and on the board | logic, ui | |
 | D-470 | "אני" holds what the user menu held, until its own batch | i18n, ui | |
-| D-471 | What the shell and "היום" batch left for the next batches | docs, ui | ref D-472 |
-| D-472 | "דוח 1" keeps its reach: a card on "היום" for who has no unit block | i18n, ui | |
-| D-473 | The keyboard and the toast in the new shell | config, ui | |
+| D-471 | What the shell and "היום" batch left for the next batches | docs, ui | ref D-472; ref D-474; ref D-475; ref D-476 |
+| D-472 | "דוח 1" keeps its reach: a card on "היום" for who has no unit block | i18n, ui | ref D-475 |
+| D-473 | The keyboard and the toast in the new shell | config, ui | ref D-477 |
+| D-474 | What waits for approval is listed once, on the page of requests | config, i18n, ui, app | am D-477 |
+| D-475 | "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button | config, logic, i18n, ui | am D-477 |
+| D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477 |
+| D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -5870,4 +5874,67 @@ soldiers' leaves. Rule 6: nothing a role could do becomes unreachable.
   for the answers behind the rows of "ניהול" before it shows a destination, so a reload on one never shows another
   first.
 **Why:** the review of the batch (accessibility and lost state).
+
+## D-474 — What waits for approval is listed once, on the page of requests
+2026-11-27 · accepted · amends D-467, D-120 · closes OI-392 · decided under D-170
+- The requests that wait for the actor are listed on the page of requests (`page=requests`) and, three at a time, on
+  its card of "היום". The requests drawer's first tab is removed, and with it the panel `leave_inbox`.
+- The drawer that is left holds the requests that closed (`leave_closed`), behind the page's door "בקשות שנסגרו".
+- The row "בקשות" of "ניהול" opens the page, with how many wait: the card is absent when nothing waits, and the page
+  with its door must stay reachable.
+- The phone notification "requests await you" opens the page. The dashboard's "and N more" gives way to the page.
+- A link to `panel=leave_inbox` made before this names no panel any more, and opens "היום", where the card is.
+**Why:** one list is one truth; rule 6 keeps the closed requests reachable.
+
+## D-475 — "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button
+2026-11-27 · accepted · refines D-293, D-472 · closes OI-387 · decided under D-170
+- The report opens in the drawer with stops, at its full stop. Everything it did stays: the day and its arrows, a
+  span of days, the counts, a section per unit with its names, the reasons switch, the text copy and the image to
+  share or download, and each unit's confirmation.
+- The words follow the package: the action is "שליחה" (again: "שליחה מחדש"), a section stands "נשלח", "טרם נשלח"
+  or "השתנה מאז השליחה". In the code it is still the confirmation of the day report (D-293).
+- A report is sent, as the actor sees it, once every section they see stands confirmed. The button that opens
+  today's report then reads "✓ HH:MM", the time of the latest confirmation, in the organization's time zone, and is
+  read aloud as "דוח 1 נשלח HH:MM". It still opens the report. A change after that returns it to "דוח 1".
+- The same button is the commander's, in the unit's block, and the card's, for who has no block (D-472).
+**Why:** the package's Report 1 drawer; a commander should see at a glance that today's report is done.
+
+## D-476 — New leave and the leave card in the drawer of the new interface
+2026-11-27 · accepted · refines D-275, D-119 · closes OI-388, OI-390 · decided under D-170
+- The panel `leaves` opens in the drawer with stops (`LeaveDrawer`), not in the modules' drawer. "יציאה חדשה" opens
+  at its full stop; the leave card opens at half and grows for its history. Both keep their place in the URL.
+- New leave keeps every capability of the request sheet (D-275): the soldier, several rows, a row that repeats,
+  the reason, extra fields, "לאשר מיד" for who may, the rule warning and the rule question, a collective leave and
+  the leave-round plan behind their buttons. What changed is its face: the type is a row of chips; each row shows
+  how many days it holds; the days are also picked on a month ("בחירת הימים בלוח": one tap a day, a second a range,
+  no day that has passed), beside the two date fields, which stay for typing.
+- The leave card: the drawer is named by the leave's type; a white card holds the days large, the type and the
+  number of days, the badge, the soldier, the reason and who handled it. The actions have equal weight, two in a
+  row; approving alone is filled. Edit, cancel, approve, reject, reopen and copy show by permission, as before.
+- A status is written as the badge everywhere a leave is listed: "ממתינה", "אושרה", "נדחתה", "בוטלה". The board's
+  marks keep their own words in their names.
+- The strip tells the leave round (an approved leave of a batch, D-268) from another absence: quiet for the round,
+  filled for the other. The month does not draw the round (`03` §1.10). Both are days away for "בבית".
+- Not built here: the move out of the leave round (OI-394), and the type's name on a waiting request's segment
+  (OI-395).
+**Why:** the package's "New leave" and "Leave card", without losing what units use.
+
+## D-477 — Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard
+2026-11-27 · accepted · amends D-474, D-475, D-476 · refines D-465, D-473 · decided under D-170
+- **Old links (amends D-474).** A link to `panel=leave_inbox` is read as `page=requests`: it opens the page of
+  requests for who the page is for, and "היום" for anyone else. It no longer just names nothing.
+- **A page names its destination (refines D-465).** An address with `page` and no `tab` opens the page's own
+  destination, also when it names a view of the board.
+- **Sent (amends D-475).** For who reads the report's summary (its owner, or a confirmer where no owner is named), a
+  report is not sent while a unit outside their view is not confirmed (D-303). Anyone else answers for the sections
+  they see.
+- **The dates month (amends D-476).** The range being built is the month's own: a first tap is always one day,
+  whatever the two dates held, and the second tap makes the range. The month opens on the month of the first date
+  and follows it when it is typed. Its days are read as dates only; it says nothing of where anyone is.
+- **The drawer with stops (refines D-473).** It recovers the keyboard when the control that held it is gone, as the
+  modules' drawer does, so Escape still closes it after an answer. Its title is a level-2 heading. A form (edit,
+  copy) and the comment field ask it for its full stop.
+- **The dashboard's "עוד N".** It shows to who the page of requests is for, by the same answer; pressing it names
+  the page and closes the dashboard's drawer the regular way, so Back does not return to the dashboard.
+**Why:** the review of the batch.
 

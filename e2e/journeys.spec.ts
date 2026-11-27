@@ -3,7 +3,7 @@ import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { TYPE, YAEL_NAME, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
 import { choose, closeDrawer, drawer, leavesOf, typeDate } from './support/leaves.ts'
 import { selectView } from './support/board.ts'
-import { OWNER, claimOrganization, expectNoAxeViolations, navigation, openModule, setupDrawer, signIn, openMyLeaves, INBOX, expectWaitingRequests, openTab, tab } from './support/workspace.ts'
+import { OWNER, claimOrganization, expectNoAxeViolations, navigation, openModule, setupDrawer, signIn, openMyLeaves, expectWaitingRequests, openTab, tab, openRequests, requestsList } from './support/workspace.ts'
 
 // V27's acceptance: journey (a); V25's: journeys (c), (d) and (e) of docs/Design.md, step by step as written there (D-263), on desktop and
 // a phone, RTL, with axe. A step that changes in Design.md changes here in the same commit. Sample data, tests only.
@@ -91,7 +91,7 @@ test('journeys (c), (d) and (e): a soldier requests, a commander approves, the d
     await expectNoAxeViolations(page)
     await openMyLeaves(page)
     const row = drawer(page).getByRole('list', { name: he.myLeaves.openTitle }).getByRole('button', { name: new RegExp(TYPE) })
-    await expect(row.getByText(he.leaves.statusPending, { exact: true })).toBeVisible()
+    await expect(row.getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
     await expectNoAxeViolations(page)
     await closeDrawer(page)
   })
@@ -110,22 +110,21 @@ test('journeys (c), (d) and (e): a soldier requests, a commander approves, the d
     await expect(leavesOf(page).first()).toHaveAccessibleName(new RegExp(`^${TYPE}, ${he.leaves.statusPending}, `))
   })
 
-  await test.step('(d) 2 and 4. "ממתינות לאישורי" lists the request; the approve-now switch is in the hub\'s header', async () => {
-    await openModule(page, INBOX)
-    await expect(drawer(page).getByRole('button', { name: he.inbox.tabPending, exact: true })).toBeVisible()
-    await expect(drawer(page).getByRole('switch', { name: he.account.approveNowDefault })).toBeVisible()
-    const list = drawer(page).getByRole('list', { name: he.inbox.pendingLabel })
+  await test.step('(d) 2 and 4. the page of requests lists the request; the approve-now switch is on it', async () => {
+    await openRequests(page)
+    await expect(page.getByRole('switch', { name: he.account.approveNowDefault })).toBeVisible()
+    const list = requestsList(page)
     await expect(list.getByText(YAEL_NAME)).toBeVisible()
     await expect(list).toContainText(TYPE)
     await expectNoAxeViolations(page)
   })
 
   await test.step('(d) 3. the details open the leave\'s drawer, where it is approved', async () => {
-    await drawer(page).getByRole('list', { name: he.inbox.pendingLabel }).getByRole('button', { name: new RegExp(YAEL_NAME) }).click()
+    await requestsList(page).getByRole('button', { name: new RegExp(`^${YAEL_NAME}`) }).click()
     await expect(page).toHaveURL(/panel=leaves&(tab=\w+&)?entity=[0-9a-f-]{36}/)
     await drawer(page).getByRole('button', { name: he.leaves.approve, exact: true }).click()
     const details = drawer(page).getByRole('region', { name: he.leaves.detailsLabel })
-    await expect(details.getByText(he.leaves.statusApproved, { exact: true })).toBeVisible()
+    await expect(details.getByText(he.leaves.badgeApproved, { exact: true })).toBeVisible()
     await closeDrawer(page)
     await expectWaitingRequests(page, 0)
   })

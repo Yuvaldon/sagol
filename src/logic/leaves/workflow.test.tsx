@@ -4,6 +4,7 @@ import {
   DeploymentId,
   AvailabilityRuleId,
   CalendarDate,
+  LeaveBatchId,
   LeaveCommentId,
   LeaveEventId,
   LeaveId,
@@ -263,6 +264,18 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
     const days = myDays(ACTOR, rows, [], today, 5)
     expect(days.map((day) => day.state)).toEqual(['base', 'away', 'away', 'pending', 'base'])
     expect(days.map((day) => day.leave_id)).toEqual([null, rows[0]?.id, rows[0]?.id, rows[1]?.id, null])
+  })
+
+  it('tells the leave round, an approved leave of a batch, from another absence (D-268)', () => {
+    const today = CalendarDate.parse('2026-11-10')
+    const rows = [
+      leave(1, { status: 'approved', start_date: '2026-11-10', end_date: '2026-11-11', batch_id: LeaveBatchId.parse(uuid(700)) }),
+      leave(2, { status: 'approved', start_date: '2026-11-12', end_date: '2026-11-12' }),
+    ].map((row) => ({ ...row, soldier_id: ACTOR }))
+    const days = myDays(ACTOR, rows, [], today, 4)
+    expect(days.map((day) => day.state)).toEqual(['round', 'round', 'away', 'base'])
+    // Both are days away: the day that changes it is the first back on base.
+    expect(myStanding(days)).toEqual({ away: true, changes: '2026-11-13' })
   })
 
   it('tells where I am today and the day that changes it', () => {

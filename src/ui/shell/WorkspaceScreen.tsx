@@ -12,6 +12,7 @@ import { ShellChromeContext, useShellChromeScope } from './chrome'
 import { FilterFocusContext, useFilterFocusScope } from './filterFocus'
 import { FocusModeContext, useFocusModeScope } from './focusMode'
 import { InstallInvitation } from './InstallInvitation'
+import { LeaveDrawer } from './LeaveDrawer'
 import { ManagePage } from './manage/ManagePage'
 import { useManageAccess } from './manage/rows'
 import { MePage } from './me/MePage'
@@ -104,6 +105,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           </>
         )}
         <ModuleDrawer />
+        <LeaveDrawer />
         <DayReportDialog />
         <PreferenceFailureNotice />
         <InstallInvitation />

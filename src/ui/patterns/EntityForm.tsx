@@ -9,7 +9,8 @@ import { FailureNotice } from './Notices'
 // the actions. Each form brings its fields, and `forms.ts` connects them to the field codes (D-068).
 
 export interface EntityFormProps {
-  readonly titleKey: I18nKey
+  /** The form's own heading; NULL where what holds the form already names it. */
+  readonly titleKey: I18nKey | null
   readonly submitKey: I18nKey
   readonly isPending: boolean
   readonly failure: AppError | null
@@ -39,9 +40,11 @@ export function EntityForm({
         onSubmit()
       }}
     >
-      <Heading level={3} className="text-body font-bold">
-        {t(titleKey)}
-      </Heading>
+      {titleKey === null ? null : (
+        <Heading level={3} className="text-body font-bold">
+          {t(titleKey)}
+        </Heading>
+      )}
       <div className="flex flex-col gap-md">{children}</div>
       {failure === null ? null : (
         <FailureNotice error={failure}>

@@ -16,6 +16,7 @@ import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatDate, formatInstant } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
 import { SwitchField } from '../../primitives/SwitchField'
+import { useFullStop } from '../../kit/drawerStop'
 import { TextAreaField } from '../../primitives/TextAreaField'
 import { typeNameOf } from './leaveText'
 
@@ -114,6 +115,7 @@ function CommentBox({ leave, may }: { readonly leave: Leave; readonly may: Recor
   const [body, setBody] = useState('')
   const [internal, setInternal] = useState(false)
   const [failure, setFailure] = useState<AppError | null>(null)
+  const grow = useFullStop()
   if (!may.shared && !may.internal) return null
   // Whoever may write only one kind writes that kind.
   const visibility: CommentVisibility = may.internal && (internal || !may.shared) ? 'internal' : 'shared'
@@ -129,6 +131,8 @@ function CommentBox({ leave, may }: { readonly leave: Leave; readonly may: Recor
     <form
       noValidate
       className="flex flex-col gap-sm"
+      // Writing needs the room: the drawer grows to its full stop once the field is reached.
+      onFocus={grow}
       onSubmit={(event) => {
         event.preventDefault()
         void submit()

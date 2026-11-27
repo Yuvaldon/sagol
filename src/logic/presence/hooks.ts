@@ -12,6 +12,7 @@ import {
   type ReportSectionQuery,
   type ReportConfirmationQuery,
   type Soldier,
+  type Timestamp,
   type UnitId,
 } from '@contracts'
 import { addDays, buildUnitTree, compareCodeUnits, CONFIRM_DAY_REPORT, dayReportTarget } from '@domain'
@@ -329,3 +330,17 @@ export function useConfirmDayReport() {
   )
   return { run, isPending: command.isPending }
 }
+
+/**
+ * When the report of `day` was sent, for the button that opens it (D-454): the time of its latest confirmation once
+ * every section the actor sees is confirmed. NULL before that, while it loads, and for a day with no report.
+ */
+export function useReportSentAt(day: CalendarDate | null, rotations: readonly Deployment[]): Timestamp | null {
+  const days = useMemo(() => (day === null ? NO_DAYS : [day]), [day])
+  const report = useDayReport(days, null, rotations)
+  const confirmations = useReportConfirmations(days, report, rotations)
+  if (day === null || confirmations.status !== 'ready') return null
+  return confirmations.value.get(day)?.sentAt ?? null
+}
+
+const NO_DAYS: readonly CalendarDate[] = []

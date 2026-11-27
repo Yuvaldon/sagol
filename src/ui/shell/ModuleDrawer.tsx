@@ -5,7 +5,7 @@ import { Suspense, lazy, type ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { Drawer } from '../patterns/Drawer'
 import { LoadingNotice } from '../patterns/Notices'
-import { ApproveNowSwitch, MyApproveNowSwitch } from './ApproveNowSwitch'
+import { MyApproveNowSwitch } from './ApproveNowSwitch'
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
 // Each module loads when its drawer first opens, so the entry chunk holds only the board (OI-118, D-210).
@@ -18,8 +18,6 @@ const CommandRanksModule = lazy(() => import('../modules/command-ranks/CommandRa
 const LeaveTypeGroupsModule = lazy(() => import('../modules/leave-types/LeaveTypeGroupsModule').then((module) => ({ default: module.LeaveTypeGroupsModule })))
 const LeaveTypesModule = lazy(() => import('../modules/leave-types/LeaveTypesModule').then((module) => ({ default: module.LeaveTypesModule })))
 const ClosedLeavesModule = lazy(() => import('../modules/leaves/LeaveInboxModule').then((module) => ({ default: module.ClosedLeavesModule })))
-const PendingRequestsModule = lazy(() => import('../modules/leaves/LeaveInboxModule').then((module) => ({ default: module.PendingRequestsModule })))
-const LeavesModule = lazy(() => import('../modules/leaves/LeavesModule').then((module) => ({ default: module.LeavesModule })))
 const MyLeavesModule = lazy(() => import('../modules/leaves/MyLeavesModule').then((module) => ({ default: module.MyLeavesModule })))
 const DashboardModule = lazy(() => import('../modules/presence/DashboardModule').then((module) => ({ default: module.DashboardModule })))
 const RulesModule = lazy(() => import('../modules/rules/RulesModule').then((module) => ({ default: module.RulesModule })))
@@ -32,7 +30,7 @@ const UnitLevelsModule = lazy(() => import('../modules/unit-levels/UnitLevelsMod
 const TransferModule = lazy(() => import('../modules/transfer/TransferModule').then((module) => ({ default: module.TransferModule })))
 const UnitsModule = lazy(() => import('../modules/units/UnitsModule').then((module) => ({ default: module.UnitsModule })))
 
-// The map of what opens in the drawer (D-092). A drawer holds one or more sections, and each section is
+// The map of what opens in the modules' drawer (D-092); a leave and a new leave open in their own (`LeaveDrawer`). A drawer holds one or more sections, and each section is
 // its own panel in the URL. A section appears only for who may read it, and a deep link to one they
 // may not read opens nothing (D-046).
 
@@ -141,24 +139,15 @@ const GROUPS: readonly ModuleGroup[] = [
     ],
   },
   {
-    titleKey: 'leaves.title',
-    // A leave opens for whoever may read it, and the form says so when there is nobody to ask for (D-115, D-119).
-    sections: [{ panel: PANEL_IDS.leaves, labelKey: 'leaves.newTitle', isAllowed: () => true, Module: LeavesModule }],
-  },
-  {
     titleKey: 'myLeaves.title',
     // Who approves their own requests but nobody else's has no inbox: the default sits with their requests (D-299).
     Header: MyApproveNowSwitch,
     sections: [{ panel: PANEL_IDS.myLeaves, labelKey: 'myLeaves.title', isAllowed: (access) => access.myLeaves, Module: MyLeavesModule }],
   },
   {
-    titleKey: 'inbox.title',
-    // The approve-now default sits where approving happens (D-265).
-    Header: ApproveNowSwitch,
-    sections: [
-      { panel: PANEL_IDS.leaveInbox, labelKey: 'inbox.tabPending', isAllowed: (access) => access.inbox, Module: PendingRequestsModule },
-      { panel: PANEL_IDS.leaveClosed, labelKey: 'inbox.tabClosed', isAllowed: (access) => access.inbox, Module: ClosedLeavesModule },
-    ],
+    // The requests that closed, which the board does not draw. What waits is on "היום" and its page alone (D-474).
+    titleKey: 'inbox.closedLabel',
+    sections: [{ panel: PANEL_IDS.leaveClosed, labelKey: 'inbox.closedLabel', isAllowed: (access) => access.inbox, Module: ClosedLeavesModule }],
   },
   {
     titleKey: 'accountLinks.title',

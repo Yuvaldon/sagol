@@ -51,12 +51,38 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await tray.getByRole('button', { name: new RegExp(`^${he.today.requestDays}`) }).click()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
     await expect(drawer(page).getByRole('combobox', { name: he.leaves.soldier })).toHaveValue(YAEL_NAME)
+    // The type is a row of chips, and the row says how many days it holds.
     await choose(page, he.leaves.type, TYPE)
+    await expect(drawer(page).getByRole('radio', { name: TYPE, exact: true })).toBeChecked()
+    const row = drawer(page).getByRole('group', { name: `${he.leaves.row} 1` })
+    await expect(row.getByText(`3 ${he.leaves.days}`, { exact: true })).toBeVisible()
+    // The days are picked again on the form's own month: one tap a day, a second a range.
+    await row.getByRole('button', { name: he.leaves.pickDays, exact: true }).click()
+    const month = row.getByRole('grid').getByRole('gridcell')
+    await expect(month.filter({ hasText: '19 בנובמבר' })).toHaveAttribute('aria-selected', 'true')
+    await month.filter({ hasText: '23 בנובמבר' }).click()
+    await month.filter({ hasText: '24 בנובמבר' }).click()
+    await expect(row.getByText(`2 ${he.leaves.days}`, { exact: true })).toBeVisible()
+    await expectNoAxeViolations(page)
     await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
     await expect(drawer(page)).toBeHidden()
     const mine = page.getByRole('region', { name: he.today.myRequest })
-    await expect(mine).toContainText('18–20 בנוב׳')
+    await expect(mine).toContainText('23–24 בנוב׳')
     await expect(mine.getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
+  })
+
+  await test.step('the request opens its card: the days large, the type and the badge', async () => {
+    await page.getByRole('region', { name: he.today.myRequest }).getByRole('button', { name: new RegExp(TYPE) }).click()
+    const card = page.getByRole('dialog', { name: TYPE })
+    const details = card.getByRole('region', { name: he.leaves.detailsLabel })
+    await expect(details).toContainText('23–24 בנוב׳')
+    await expect(details).toContainText(`${TYPE} · 2 ${he.leaves.days}`)
+    await expect(details.getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
+    // Her role may neither edit nor cancel, so the card offers no action.
+    await expect(card.getByRole('group', { name: he.leaves.actionsLabel }).getByRole('button')).toHaveCount(0)
+    await expectNoAxeViolations(page)
+    await card.getByRole('button', { name: he.common.close }).click()
+    await expect(card).toHaveCount(0)
   })
 
   await test.step('who reads the unit\'s soldiers and has no unit block still opens "דוח 1", from its card (D-472)', async () => {
@@ -84,6 +110,18 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await signIn(page, OWNER.email)
     await expect(waiting).toContainText(`1 ${he.inbox.pendingCount}`)
     await expectNoAxeViolations(page)
+    // The row opens the leave card, where the actions stand two in a row with equal weight.
+    await waiting.getByRole('button', { name: new RegExp(`^${YAEL_NAME}`) }).click()
+    const card = page.getByRole('dialog', { name: TYPE })
+    const actions = card.getByRole('group', { name: he.leaves.actionsLabel })
+    const approve = await actions.getByRole('button', { name: he.leaves.approve, exact: true }).boundingBox()
+    const reject = await actions.getByRole('button', { name: he.leaves.reject, exact: true }).boundingBox()
+    if (approve === null || reject === null) throw new Error('an action of the card is missing')
+    expect(Math.abs(approve.width - reject.width)).toBeLessThanOrEqual(1)
+    expect(Math.abs(approve.y - reject.y)).toBeLessThanOrEqual(1)
+    await expectNoAxeViolations(page)
+    await card.getByRole('button', { name: he.common.close }).click()
+    await expect(card).toHaveCount(0)
     await waiting.getByRole('button', { name: `${he.leaves.approve} ${YAEL_NAME}` }).click()
     // The card leaves with its last row; the toast stays to say what happened.
     await expect(waiting).toHaveCount(0)
@@ -116,6 +154,28 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await page.getByRole('button', { name: he.shell.back, exact: true }).click()
     await expect(page).not.toHaveURL(/page=/)
     await expect(waiting).toHaveCount(0)
+  })
+
+  await test.step('"דוח 1" opens in the drawer, and once every unit is sent its button says so with the time', async () => {
+    const button = page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.presence.title}`) })
+    await expect(button).toHaveAccessibleName(he.presence.title)
+    await button.click()
+    const report = page.getByRole('dialog', { name: he.presence.title })
+    await expect(report).toBeVisible()
+    await expectNoAxeViolations(page)
+    const send = report.getByRole('button', { name: he.presence.confirm, exact: true })
+    await expect(send.first()).toBeVisible()
+    while ((await send.count()) > 0) {
+      const left = await send.count()
+      await send.first().click()
+      await expect(send).toHaveCount(left - 1)
+    }
+    await report.getByRole('button', { name: he.common.close }).click()
+    await expect(report).toHaveCount(0)
+    // The clock of the demo stands at noon in Israel.
+    await expect(button).toHaveAccessibleName(`${he.presence.title} ${he.presence.statusConfirmed} 12:00`)
+    await expect(button).toHaveText('12:00')
+    await expectNoAxeViolations(page)
   })
 
   await test.step('a day column opens the unit\'s drawer, which grows from its handle on a phone', async () => {

@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 import { addUnit, backToBoard, OWNER, openModule, openTab } from './workspace.ts'
 
@@ -30,9 +30,21 @@ export async function closeDrawer(page: Page) {
   if ((await page.getByRole('dialog').count()) <= 1) await backToBoard(page)
 }
 
-/** Picks from a select inside the drawer. What a modal makes inert is still found by role. */
-export async function choose(page: Page, label: string, option: string) {
-  await drawer(page).getByRole('button', { name: new RegExp(`${label}$`) }).click()
+/**
+ * Picks from a select inside the drawer, or inside `scope` when the drawer holds several of the same name (the rows
+ * of a request sheet). What a modal makes inert is still found by role. A new leave's type is a row of chips (D-454):
+ * a chip hides its radio inside its label, and a person presses the label.
+ */
+export async function choose(page: Page, label: string, option: string, scope: Locator = drawer(page)) {
+  const chips = scope.getByRole('radiogroup', { name: label, exact: true })
+  const select = scope.getByRole('button', { name: new RegExp(`${label}$`) })
+  // The form may still be on its way: whichever of the two it shows is waited for.
+  await chips.or(select).first().waitFor()
+  if ((await chips.count()) > 0) {
+    await chips.locator('label').filter({ has: page.getByRole('radio', { name: option, exact: true }) }).click()
+    return
+  }
+  await select.click()
   await page.getByRole('option', { name: option, exact: true }).click()
 }
 

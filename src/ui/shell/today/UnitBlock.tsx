@@ -7,8 +7,8 @@ import { Button as AriaButton } from 'react-aria-components'
 import { Fraction } from '../../kit/Fraction'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatDate } from '../../patterns/dates'
-import { Button } from '../../primitives/Button'
 import { PageHead } from '../PageFrame'
+import { ReportButton } from './ReportButton'
 import { dayLine } from './standing'
 import { UnitDrawer } from './UnitDrawer'
 
@@ -32,7 +32,7 @@ function useUnitName(fallback: string): string {
 
 export function UnitBlock({ name }: { readonly name: string }) {
   const today = useToday()
-  const { rotations, openToday } = usePresenceDay()
+  const { rotations } = usePresenceDay()
   const { rotation } = useRotationScope()
   const access = useModuleAccess()
   const unitName = useUnitName(name)
@@ -46,12 +46,7 @@ export function UnitBlock({ name }: { readonly name: string }) {
   const heat = useHeatRow(window, null)
   const [open, setOpen] = useState<CalendarDate | null>(null)
 
-  const reportButton =
-    rotation !== null && access.soldiers ? (
-      <Button variant="primary" onPress={openToday}>
-        {t('presence.title')}
-      </Button>
-    ) : null
+  const reportButton = rotation !== null && access.soldiers ? <ReportButton labelKey="presence.title" /> : null
   const broken = new Set(heat.status === 'ready' && heat.value !== null ? heat.value.filter((day) => day.broken > 0).map((day) => day.date) : [])
   const first = report.status === 'ready' ? report.value.days[0] : undefined
   return (
