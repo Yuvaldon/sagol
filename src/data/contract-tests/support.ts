@@ -14,6 +14,7 @@ import {
   type PermissionCheck,
   type Result,
   type ScopeAnchorType,
+  type SubjectRankConstraint,
   type CalendarDate,
   type TableRow,
 } from '@contracts'
@@ -67,6 +68,7 @@ export interface ActorScopeColumns {
   readonly anchor_type: ScopeAnchorType
   readonly anchor_unit_id?: UnitId
   readonly include_descendants?: boolean
+  readonly subject_rank_constraint?: SubjectRankConstraint
 }
 
 export async function placeSoldier(
@@ -161,7 +163,7 @@ export async function seedActor(
       anchor_level_id: null,
       anchor_steps: null,
       include_descendants: scope.include_descendants ?? false,
-      subject_rank_constraint: 'any',
+      subject_rank_constraint: scope.subject_rank_constraint ?? 'any',
       valid_from: NOW,
       valid_to: null,
       reason: null,

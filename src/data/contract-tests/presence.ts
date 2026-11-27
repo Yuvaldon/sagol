@@ -12,7 +12,7 @@ import {
 } from '@contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { ContractHarness } from './harness'
-import { NOW, errorOf, seedActor, seedRotation, valueOf } from './support'
+import { NOW, PAST_DATE, errorOf, seedActor, seedRotation, valueOf } from './support'
 
 // "איתך היום" (D-478): `presence:view` on oneself answers the names of who of one's own unit is on base today, and
 // nothing of their leaves. Sample data, test files only.
@@ -102,7 +102,13 @@ export function describePresenceContract(
       return id
     }
 
-    async function leave(deployment_id: DeploymentId, soldier_id: SoldierId, leave_type_id: LeaveTypeId, status: LeaveStatus) {
+    async function leave(
+      deployment_id: DeploymentId,
+      soldier_id: SoldierId,
+      leave_type_id: LeaveTypeId,
+      status: LeaveStatus,
+      overrides: { start_date?: string; end_date?: string; availability_effect_override?: 'available' | 'unavailable' | null } = {},
+    ) {
       await harnessOf().seed('leaves', [
         {
           id: LeaveId.parse(crypto.randomUUID()),
@@ -120,18 +126,61 @@ export function describePresenceContract(
           reviewed_at: null,
           properties: {},
           ...audit,
+          ...overrides,
         },
       ])
     }
 
-    it('names who of the holder\'s unit and the units under it is on base today, and nothing more', async () => {
+    /** A soldier written past the commands, placed in `unit_id` from PAST_DATE by a membership of `type`. */
+    async function seeded(
+      first_name: string,
+      unit_id: UnitId,
+      overrides: { status?: 'active' | 'inactive'; archived_at?: string | null } = {},
+      membership_type: 'primary' | 'attached' = 'primary',
+    ) {
+      const id = SoldierId.parse(crypto.randomUUID())
+      await harnessOf().seed('soldiers', [
+        {
+          id,
+          organization_id: organization,
+          first_name,
+          last_name: 'Bar',
+          nickname: null,
+          command_rank_id: null,
+          status: 'active',
+          properties: {},
+          ...audit,
+          archived_at: null,
+          ...overrides,
+        },
+      ])
+      await harnessOf().seed('unit_memberships', [
+        {
+          id: UnitMembershipId.parse(crypto.randomUUID()),
+          organization_id: organization,
+          soldier_id: id,
+          unit_id,
+          membership_type,
+          valid_from: PAST_DATE,
+          valid_to: null,
+          ...audit,
+          change_seq: 0,
+        },
+      ])
+      return id
+    }
+
+    const names = async () =>
+      (valueOf(await adapter().repositories.soldiers.presentWithMe())?.soldiers ?? []).map((row) => row.first_name).sort()
+
+    it('names who of the holder\'s own unit is on base today, not the units under it, and nothing more', async () => {
       const platoon = await unit('Platoon')
       const squad = await unit('Squad', platoon.id)
       const sister = await unit('Sister')
       const beside = await member(platoon.id, 'Avi')
-      const below = await member(squad.id, 'Ben')
-      const away = await member(squad.id, 'Gil')
-      const asking = await member(squad.id, 'Dan')
+      const asking = await member(platoon.id, 'Dan')
+      const away = await member(platoon.id, 'Gil')
+      await member(squad.id, 'Ben')
       await member(sister.id, 'Eli')
       await member(root, 'Uri')
       const type = await leaveType()
@@ -144,13 +193,54 @@ export function describePresenceContract(
       harnessOf().signIn(holder.identity)
       const answer = valueOf(await adapter().repositories.soldiers.presentWithMe())
       expect(answer?.date).toBe(TODAY)
-      const expected = [beside, below, asking].map(({ id, first_name, last_name }) => ({ id, first_name, last_name }))
+      const expected = [beside, asking].map(({ id, first_name, last_name }) => ({ id, first_name, last_name }))
       expect(answer?.soldiers.toSorted((a, b) => a.first_name.localeCompare(b.first_name))).toEqual(expected)
       // Names alone: no nickname, status, unit or leave travels.
       for (const row of answer?.soldiers ?? []) expect(Object.keys(row).sort()).toEqual(['first_name', 'id', 'last_name'])
       // The permission opens no leave and no soldier record.
       expect(valueOf(await adapter().repositories.leaves.list({ ids: null, window: null, soldier_ids: null, statuses: null }))).toEqual([])
       expect(valueOf(await adapter().repositories.soldiers.list({ include_archived: false }))).toEqual([])
+      // What a caller sends is ignored: the actor, the unit and the day are the server's (D-479).
+      const crafted = adapter().repositories.soldiers.presentWithMe as (...args: unknown[]) => ReturnType<ContractHarness['adapter']['repositories']['soldiers']['presentWithMe']>
+      expect(valueOf(await crafted({ unit_id: root, date: '2026-01-01', soldier_id: owner.auth_user_id }))).toEqual(answer)
+    })
+
+    it('reaches only the root for a holder placed at the root (D-479)', async () => {
+      const platoon = await unit('Platoon')
+      await member(platoon.id, 'Avi')
+      await member(root, 'Uri')
+      const holder = await seedActor(harnessOf(), organization, [PRESENCE], SELF, root)
+      harnessOf().signIn(holder.identity)
+      // The owner was placed at the root by the claim.
+      expect(await names()).toEqual(['Dana', 'Uri'])
+    })
+
+    it('leaves out an inactive or archived soldier and one only attached to the unit, and counts only an approved absence of today', async () => {
+      const platoon = await unit('Platoon')
+      await seeded('Ina', platoon.id, { status: 'inactive' })
+      await seeded('Arc', platoon.id, { archived_at: NOW })
+      await seeded('Att', platoon.id, {}, 'attached')
+      const marked = await seeded('Mor', platoon.id)
+      const later = await seeded('Lev', platoon.id)
+      const type = await leaveType()
+      const rotation = await seedRotation(harnessOf(), organization, [marked, later])
+      await leave(rotation, marked, type, 'approved', { availability_effect_override: 'available' })
+      await leave(rotation, later, type, 'approved', { start_date: '2026-11-09', end_date: '2026-11-10' })
+      const holder = await seedActor(harnessOf(), organization, [PRESENCE], SELF, platoon.id)
+      harnessOf().signIn(holder.identity)
+      expect(await names()).toEqual(['Lev', 'Mor'])
+    })
+
+    it('answers through a rank-constrained source, on the holder themself (D-479)', async () => {
+      const platoon = await unit('Platoon')
+      await member(platoon.id, 'Avi')
+      for (const constraint of ['junior', 'junior_or_equal'] as const) {
+        harnessOf().signIn(owner)
+        const holder = await seedActor(harnessOf(), organization, [PRESENCE], { anchor_type: 'self', subject_rank_constraint: constraint }, platoon.id)
+        harnessOf().signIn(holder.identity)
+        expect(valueOf(await harnessOf().adapter.session.can([{ permission: PRESENCE, target: { kind: 'soldier', soldier_id: holder.soldierId } }]))).toEqual([true])
+        expect(await names()).toContain('Avi')
+      }
     })
 
     it('is refused without the permission on oneself, and NULL for a holder with no unit today', async () => {

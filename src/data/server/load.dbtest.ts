@@ -297,6 +297,25 @@ describe('loading a local export into the backend (OI-109)', () => {
   })
 })
 
+describe('the presence pair across a load (D-478, D-479)', () => {
+  it('gives a format 6 role that views leaves the presence pair, as the migration did, and keeps format 7 as stored', async () => {
+    const exported = await localExport()
+    const pairs = exported.tables.role_permissions
+    expect(pairs.some((pair) => pair.resource === 'presence')).toBe(true)
+    const viewing = pairs.filter((pair) => pair.resource === 'leaves' && pair.action === 'view').map((pair) => pair.role_id)
+    expect(viewing.length).toBeGreaterThan(0)
+    const before = {
+      ...exported,
+      format_version: EXPORT_FORMAT_VERSION - 1,
+      tables: { ...exported.tables, role_permissions: pairs.filter((pair) => pair.resource !== 'presence') },
+    }
+    await load(before)
+    const presence = await sql`SELECT role_id FROM role_permissions WHERE resource = 'presence' AND action = 'view' ORDER BY role_id`
+    expect(presence.map((row) => row.role_id)).toEqual([...new Set(viewing)].sort())
+    expect(await sql`SELECT 1 FROM role_permissions`).toHaveLength(pairs.length)
+  })
+})
+
 describe('change numbers across a load (D-373)', () => {
   const counter = async () => (await sql`SELECT last_seq FROM change_counters`).map((row) => row.last_seq)
   const seqs = async (table: 'leave_events' | 'unit_memberships') =>
@@ -314,7 +333,7 @@ describe('change numbers across a load (D-373)', () => {
     )
   })
 
-  it('still takes the format before: numbers its events by time and id, and each confirmation from its time', async () => {
+  it('still takes format 5: numbers its events by time and id, and each confirmation from its time', async () => {
     const exported = await localExport()
     const events = exported.tables.leave_events
     const latest =
@@ -336,7 +355,7 @@ describe('change numbers across a load (D-373)', () => {
       rows.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => key !== column)))
     const before = {
       ...exported,
-      format_version: EXPORT_FORMAT_VERSION - 1,
+      format_version: EXPORT_FORMAT_VERSION - 2,
       tables: {
         ...exported.tables,
         leave_events: strip(events, 'change_seq'),
