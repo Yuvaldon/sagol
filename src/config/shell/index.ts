@@ -11,13 +11,32 @@ export type TabId = z.infer<typeof TabId>
 /** Where a bare address lands (D-455). */
 export const DEFAULT_TAB: TabId = 'today'
 
-/** A page a destination opens over itself: "בקשות לאישור" of "היום" (D-459), "הגדרות" of "ניהול" (D-456). */
-export const PAGE_IDS = ['requests', 'settings'] as const
+/**
+ * A page a destination opens over itself: "בקשות לאישור" of "היום" (D-459); "הגדרות" of "ניהול" (D-456), and its designed
+ * tools, "חיילים", "הצטרפות", "כללי נוכחות" and "הוספת חיילים" (D-482).
+ */
+export const PAGE_IDS = ['requests', 'settings', 'soldiers', 'joins', 'rules', 'add_soldiers'] as const
 export const PageId = z.enum(PAGE_IDS)
 export type PageId = z.infer<typeof PageId>
 
 /** The tab each page belongs to; a page shows only on its tab. */
-export const PAGE_TABS = { requests: 'today', settings: 'manage' } as const satisfies Record<PageId, TabId>
+export const PAGE_TABS = {
+  requests: 'today',
+  settings: 'manage',
+  soldiers: 'manage',
+  joins: 'manage',
+  rules: 'manage',
+  add_soldiers: 'manage',
+} as const satisfies Record<PageId, TabId>
+
+/**
+ * The page a page returns to (D-482): "הוספת חיילים" opens over "חיילים", so closing it goes back there, not to the index.
+ * Absent: the destination's first screen.
+ */
+export const PAGE_PARENTS: Partial<Readonly<Record<PageId, PageId>>> = { add_soldiers: 'soldiers' }
+
+/** The pages that take the tab bar's place, as a temporary full screen does (the handoff's placement map). */
+export const FULL_SCREEN_PAGES: readonly PageId[] = ['add_soldiers']
 
 export const TODAY = {
   /** The days of a soldier's strip, today first (D-454). */
@@ -31,6 +50,12 @@ export const TODAY = {
    * soldier who has the card open one read, not one per change (D-479).
    */
   withMeRefreshMs: 30_000,
+} as const
+
+/** "ניהול" and its pages (D-482). */
+export const MANAGE = {
+  /** The days of a person row's dots, today first (the handoff's "7 dots"). */
+  rowDays: 7,
 } as const
 
 export const SHELL = {

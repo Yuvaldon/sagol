@@ -25,7 +25,7 @@ export {
 } from './env'
 export { CHANGE_FEED_CHANNEL, DEVICE_KEYS, INDEXED_DB_NAME, STORAGE_KEYS, type DeviceKey, type StorageKey } from './storage'
 export { INBOX, MINE } from './inbox'
-export { DEFAULT_TAB, PAGE_IDS, PAGE_TABS, PageId, SHELL, STOP_DRAWER, TAB_IDS, TODAY, TabId } from './shell'
+export { DEFAULT_TAB, FULL_SCREEN_PAGES, MANAGE, PAGE_IDS, PAGE_PARENTS, PAGE_TABS, PageId, SHELL, STOP_DRAWER, TAB_IDS, TODAY, TabId } from './shell'
 export { DASHBOARD, DASHBOARD_TEMPLATES } from './dashboard'
 export { NOTIFICATIONS } from './notifications'
 export { DAY_REPORT, DAY_REPORT_CATEGORIES, type DayReportCategory } from './report'
@@ -72,6 +72,8 @@ export {
   DROP_EDGE_FRACTION,
   NEW_ENTITY,
   QUICK_ENTRY,
+  ARCHIVE_ENTITY,
+  ROUND_ENTITY,
   PANEL_IDS,
   SETUP_SECTIONS,
   SETUP_STEPS,
