@@ -113,7 +113,7 @@ test.describe('account linking', () => {
 
     await test.step('the owner sees the request, with the soldier whose name matches', async () => {
       await backToOwner(page)
-      await expect(menuButton(page)).toContainText('1')
+      await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 1 ${he.navigation.waiting}`)
       await openRequest(page, `${ASHER.first} ${ASHER.last}`)
       const candidates = page.getByRole('list', { name: he.accountLinks.candidatesLabel })
       await expect(candidates.getByRole('listitem')).toHaveCount(1)
@@ -147,7 +147,7 @@ test.describe('account linking', () => {
       await ask(page, DANA)
       await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
       await backToOwner(page)
-      await expect(menuButton(page)).toContainText('2')
+      await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 2 ${he.navigation.waiting}`)
     })
 
     await test.step('with no soldier to match, the owner creates one from the request', async () => {
@@ -203,7 +203,7 @@ test.describe('account linking', () => {
       await ask(page, ASHER)
       await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
       await backToOwner(page)
-      await expect(menuButton(page)).toContainText('2')
+      await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 2 ${he.navigation.waiting}`)
     })
 
     await test.step('both are chosen and approved; the ready one is linked, the other is left for review', async () => {
@@ -217,7 +217,7 @@ test.describe('account linking', () => {
       const outcomes = drawer(page).getByRole('list', { name: he.accountLinks.bulk.outcomes })
       await expect(outcomes.getByRole('listitem').filter({ hasText: ROTEM.first })).toContainText(he.accountLinks.bulk.linked)
       await expect(outcomes.getByRole('listitem').filter({ hasText: ASHER.first })).toContainText(he.accountLinks.bulk.needsReview)
-      await expect(menuButton(page)).toContainText('1')
+      await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 1 ${he.navigation.waiting}`)
     })
   })
 })
