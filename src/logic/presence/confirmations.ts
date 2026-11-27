@@ -5,10 +5,12 @@ import type {
   LeaveEvent,
   ReportConfirmation,
   SoldierId,
+  Timestamp,
   UnitId,
   UnitMembership,
 } from '@contracts'
 import {
+  compareInstants,
   confirmationStatus,
   isAncestorOrSelf,
   type ConfirmationStatus,
@@ -57,6 +59,11 @@ export interface DayConfirmations {
    * view holds from it (D-373).
    */
   readonly seenSeq: ChangeSeq
+  /**
+   * When the day's report was sent, as far as the actor sees it: the latest confirmation, once every section they see
+   * stands confirmed. NULL while one waits or has changed since, and with no section at all.
+   */
+  readonly sentAt: Timestamp | null
 }
 
 /** What was written after the smallest `seen_seq` of the confirmations read (D-373). */
@@ -130,8 +137,11 @@ export function dayConfirmations(input: DayConfirmationsInput): DayConfirmations
     rotation.report_owner_id === null ? input.mayConfirm(rotation.unit_id) : rotation.report_owner_id === input.actorId,
   )
   const statuses = [...sections.values()].map((section) => section.status)
+  const sent = statuses.length > 0 && statuses.every((status) => status === 'confirmed')
+  const times = [...sections.values()].flatMap((section) => byUnit.get(section.unitId)?.confirmed_at ?? [])
   return {
     sections,
+    sentAt: sent ? (times.toSorted(compareInstants).at(-1) ?? null) : null,
     summary: reads
       ? {
           total: statuses.length,

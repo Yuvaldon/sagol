@@ -276,6 +276,15 @@ describe('the daily report confirmations (D-293)', () => {
     expect(whole.sections.get(SQUAD)).toMatchObject({ canConfirm: true, needsFullList: false })
   })
 
+  it('says when the report was sent once every section stands confirmed, and not before', () => {
+    expect(dayConfirmations(input()).sentAt).toBeNull()
+    expect(dayConfirmations(input({ confirmations: [confirmation(SQUAD)] })).sentAt).toBeNull()
+    const both = [confirmation(SQUAD), { ...confirmation(OTHER), confirmed_at: '2026-11-10T09:30:00.000Z' }]
+    const sent = dayConfirmations(input({ confirmations: both })).sentAt
+    // The latest of the confirmations is the time.
+    expect(sent).toBe([confirmation(SQUAD).confirmed_at, '2026-11-10T09:30:00.000Z'].toSorted().at(-1))
+  })
+
   it('shows the summary to the named owner, or with none named to who may confirm', () => {
     const confirmations = [confirmation(SQUAD)]
     const ownedDay = day([rotation({ report_owner_id: OWNER })], WHOLE)
