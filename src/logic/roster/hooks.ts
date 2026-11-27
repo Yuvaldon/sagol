@@ -220,12 +220,14 @@ export function useRosterPermissions(soldiers: readonly Soldier[], units: readon
     ],
     [soldiers, units],
   )
-  const can = useCan(checks)
+  const { can, known } = useCanAnswers(checks)
   return useMemo(() => {
     const placeIn = (unitId: UnitId) =>
       can(check(P.soldierCreate, placementTarget(unitId))) && can(check(P.membershipUpdate, unitAsTarget(unitId)))
     const createWithoutUnit = can(check(P.soldierCreate, placementTarget(null)))
     return {
+      /** Whether every hint has answered, so "may not" is an answer and not a wait (D-482). */
+      settled: checks.every(known),
       createWithoutUnit,
       placeIn,
       /** Any way to add a soldier at all. */
@@ -237,7 +239,7 @@ export function useRosterPermissions(soldiers: readonly Soldier[], units: readon
       /** Whether "no unit" is known or only unknown (D-106). */
       readsPlacements: (soldierId: SoldierId) => can(check(P.membershipView, soldierTarget(soldierId))),
     }
-  }, [can, units])
+  }, [can, known, checks, units])
 }
 
 /** Whether the actor may read each soldier's placements (D-102, D-106). */

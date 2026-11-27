@@ -14,18 +14,26 @@ import { openMembershipOf } from './roster'
 // and the bulk approval do. There is no bulk command, and each answer stands alone.
 
 const MOVE: Permission = { resource: 'memberships', action: 'update' }
+/** A move closes the placement the actor reads: who may not read a soldier's placements may not move them (D-096). */
+const READ: Permission = { resource: 'memberships', action: 'view' }
 const unitTarget = (unitId: UnitId): PolicyTarget => ({ kind: 'unit', unit_id: unitId })
 
-/** Who of the soldiers the actor may move, and the units they may move them to (D-096). A hint: each command decides again. */
+/**
+ * Who of the soldiers the actor may move, and the units they may move them to (D-096): a soldier whose placements they
+ * read and may change. A hint: each command decides again.
+ */
 export function useMovePermissions(soldiers: readonly Soldier[], units: readonly Unit[]) {
   const checks = useMemo(
-    () => [...soldiers.map((soldier) => checkOf(MOVE, soldierTarget(soldier.id))), ...units.map((unit) => checkOf(MOVE, unitTarget(unit.id)))],
+    () => [
+      ...soldiers.flatMap((soldier) => [checkOf(MOVE, soldierTarget(soldier.id)), checkOf(READ, soldierTarget(soldier.id))]),
+      ...units.map((unit) => checkOf(MOVE, unitTarget(unit.id))),
+    ],
     [soldiers, units],
   )
   const can = useCan(checks)
   return useMemo(
     () => ({
-      moves: (soldierId: SoldierId) => can(checkOf(MOVE, soldierTarget(soldierId))),
+      moves: (soldierId: SoldierId) => can(checkOf(MOVE, soldierTarget(soldierId))) && can(checkOf(READ, soldierTarget(soldierId))),
       moveTo: (unitId: UnitId) => can(checkOf(MOVE, unitTarget(unitId))),
     }),
     [can],

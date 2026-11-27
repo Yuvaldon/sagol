@@ -85,10 +85,13 @@ export function joinGroups(requests: readonly AccountLinkRequest[], assessments:
   }
 }
 
-/** A request with no candidate, and the unit its new soldier goes to from today (the handoff's "מחלקה" chip). */
+/**
+ * A request with no candidate, and where its new soldier goes from today (the handoff's "מחלקה" chip): a unit, or NULL
+ * for no unit, where the actor may create a soldier with none.
+ */
 export interface JoinPlacement {
   readonly request: Pick<AccountLinkRequest, 'id'>
-  readonly unitId: UnitId
+  readonly unitId: UnitId | null
 }
 
 /**
@@ -105,6 +108,17 @@ export function useJoinApproval() {
       const linked = ready.length === 0 ? null : await link.run(ready)
       const answers = new Map<AccountLinkRequest['id'], BulkLinkAnswer>(linked?.ok === true ? linked.value : [])
       for (const { request, unitId } of placed) {
+        // Read again at the run, as the ready ones are: a soldier made or freed since the page loaded makes the request
+        // one to review, and no second soldier is created for it.
+        const assessment = await data.repositories.account_link_requests.assessment(request.id)
+        if (!assessment.ok) {
+          answers.set(request.id, { kind: 'refused', error: assessment.error })
+          continue
+        }
+        if (assessment.value.readiness !== LinkReadiness.enum.no_match) {
+          answers.set(request.id, { kind: 'needs_review', reason: reviewReason(assessment.value) })
+          continue
+        }
         const values = { command_rank_id: null, membership: { unit_id: unitId, valid_from: today } }
         const result = await data.commands.accounts.reviewLink(toReviewLinkInput(request, { kind: 'create_soldier', values }))
         answers.set(request.id, result.ok ? { kind: 'linked' } : { kind: 'refused', error: result.error })

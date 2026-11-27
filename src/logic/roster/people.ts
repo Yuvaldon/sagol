@@ -1,13 +1,13 @@
 import { MANAGE } from '@config'
 import type { CalendarDate, CommandRank, FilterExpression, Soldier, SoldierId, Tag, TagCategory, Unit, UnitId } from '@contracts'
 import { LEAVE_PERMISSIONS, addDays } from '@domain'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { boardItems, type BoardGroupItem, type BoardSoldierItem } from '../board/rows'
 import { useFilterSource } from '../filters/source'
 import { useLeaves, useLeaveTypes } from '../leaves/hooks'
 import { myDays, type MyDay } from '../leaves/workflow'
 import { checkOn } from '../permissions/checks'
-import { useCan, useCanAnswers } from '../permissions/hooks'
+import { useCanAnswers } from '../permissions/hooks'
 import type { Loaded } from '../queries/loaded'
 import { useToday } from '../session/today'
 import { useTagCategories, useTags } from '../tags/hooks'
@@ -69,7 +69,13 @@ export function usePeopleList(view: PeopleView, query: string): Loaded<PeopleLis
   const span = useMemo(() => (today === null ? null : { from: today, to: addDays(today, MANAGE.rowDays - 1) }), [today])
   const leaves = useLeaves(view.days ? span : null)
   const checks = useMemo(() => soldiers.map((soldier) => checkOn(LEAVE_PERMISSIONS.view, soldier.id)), [soldiers])
-  const can = useCan(checks)
+  const { can, known } = useCanAnswers(checks)
+  // The days wait for every answer of who reads whose leaves, so no row's dots arrive after the list (D-482).
+  // Once settled it stays settled: a soldier added later shows their dots when their answer comes, not a loading list.
+  const answered = checks.every(known)
+  const [settled, setSettled] = useState(false)
+  if (answered && checks.length > 0 && !settled) setSettled(true)
+  const readsKnown = !view.days || answered || settled
 
   return useMemo((): Loaded<PeopleList> => {
     if (source.status !== 'ready') return source
@@ -78,6 +84,7 @@ export function usePeopleList(view: PeopleView, query: string): Loaded<PeopleLis
     if (types.status !== 'ready') return types
     if (today === null || !placements.settled) return { status: 'loading' }
     if (view.days && leaves.status !== 'ready') return leaves
+    if (!readsKnown) return { status: 'loading' }
     const fallback = defaultGrouping(source.value.units, null)
     const grouping = appliedGrouping(view.group, categories.value, fallback)
     const items = boardItems({
@@ -123,7 +130,7 @@ export function usePeopleList(view: PeopleView, query: string): Loaded<PeopleLis
         categories: categories.value.filter(groupsByCategory),
       },
     }
-  }, [source, tags, categories, types, today, placements, view, leaves, query, can])
+  }, [source, tags, categories, types, today, placements, view, leaves, query, can, readsKnown])
 }
 
 /**

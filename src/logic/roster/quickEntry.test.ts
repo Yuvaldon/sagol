@@ -68,3 +68,31 @@ describe('a list where private details may not be added (D-482)', () => {
     expect(quickEntryRowsFromPaste('יעל\tשחר\t\t8000001', LABELS, offeredColumns(true)).ok).toBe(true)
   })
 })
+
+describe('repeats in the grid (D-066, D-482)', () => {
+  const PLACED = { unit_id: UnitId.parse('00000000-0000-4000-8000-000000000001'), valid_from: CalendarDate.parse('2026-11-27') }
+  const row = (values: Partial<Record<'first_name' | 'last_name' | 'personal_id' | 'invite_email', string>>) => {
+    const blank = blankQuickEntryRow()
+    return { ...blank, values: { ...blank.values, first_name: 'א', last_name: 'ב', ...values } }
+  }
+  it('marks a personal number repeated in another form, and an email repeated in another case', () => {
+    const one = row({ personal_id: '0123-45', invite_email: 'Yael@Example.test' })
+    const two = row({ personal_id: '12345', invite_email: ' yael@example.test' })
+    const issues = quickEntryIssues([one, two], PLACED)
+    for (const key of [one.key, two.key]) {
+      expect(issues.get(key)).toEqual(
+        expect.arrayContaining([
+          { path: ['private', 'personal_id'], code: 'duplicate_item' },
+          { path: ['private', 'invite_email'], code: 'duplicate_item' },
+        ]),
+      )
+    }
+  })
+  it('sends and checks no private detail where the actor may not set one', () => {
+    const one = row({ personal_id: '12345' })
+    const two = row({ personal_id: '12345' })
+    const issues = quickEntryIssues([one, two], { ...PLACED, private_allowed: false })
+    expect(issues.get(one.key)).toEqual([])
+    expect(readyQuickEntryRows([one, two], { ...PLACED, private_allowed: false })).toHaveLength(2)
+  })
+})

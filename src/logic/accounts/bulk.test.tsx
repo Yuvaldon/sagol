@@ -1,8 +1,9 @@
 import { AccountLinkRequest, AccountLinkRequestId, SoldierId, UnitId, type AppError, type LinkAssessment, type ReviewAccountLinkInput } from '@contracts'
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fakePorts, wrapperOf } from '../testing/ports'
 import { joinGroups, useBulkLinkApproval, useJoinApproval } from './bulk'
+import { useLinkReviewAccess } from './hooks'
 
 // Test data only (iron rule 4).
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -108,9 +109,12 @@ describe('the page of "הצטרפות" (D-482)', () => {
 
   it('approves the ready ones and makes a new soldier of a placed one', async () => {
     const ready: LinkAssessment = { readiness: 'ready', candidates: [{ soldier_id: SOLDIER, match: 'name' }] }
+    const none: LinkAssessment = { readiness: 'no_match', candidates: [] }
     const reviews: ReviewAccountLinkInput[] = []
     const ports = fakePorts({
-      repositories: { account_link_requests: { assessment: () => Promise.resolve({ ok: true, value: ready }) } },
+      repositories: {
+        account_link_requests: { assessment: (id: AccountLinkRequestId) => Promise.resolve({ ok: true, value: id === FIRST ? ready : none }) },
+      },
       commands: {
         accounts: {
           reviewLink: (input: ReviewAccountLinkInput) => {
@@ -127,5 +131,50 @@ describe('the page of "הצטרפות" (D-482)', () => {
     expect(reviews.map((input) => input.resolution.kind)).toEqual(['link', 'create_soldier'])
     const created = reviews[1]?.resolution
     expect(created?.kind === 'create_soldier' && created.membership).toMatchObject({ unit_id: UNIT, valid_from: '2026-11-27' })
+  })
+})
+
+describe('"אישור N" reads a placed request again (D-484)', () => {
+  it('leaves for review a request that has a candidate by now, and creates no soldier for it', async () => {
+    const now: LinkAssessment = { readiness: 'ready', candidates: [{ soldier_id: SOLDIER, match: 'name' }] }
+    const reviews: ReviewAccountLinkInput[] = []
+    const ports = fakePorts({
+      repositories: { account_link_requests: { assessment: () => Promise.resolve({ ok: true, value: now }) } },
+      commands: {
+        accounts: {
+          reviewLink: (input: ReviewAccountLinkInput) => {
+            reviews.push(input)
+            return Promise.resolve({ ok: true, value: null })
+          },
+        },
+      },
+    })
+    const { result } = renderHook(() => useJoinApproval(), { wrapper: wrapperOf(ports) })
+    const answer = await act(() => result.current.run({ ready: [], placed: [{ request: { id: FIRST }, unitId: null }], today: '2026-11-27' }))
+    expect(answer.ok && answer.value.get(FIRST)).toEqual({ kind: 'needs_review', reason: null })
+    expect(reviews).toEqual([])
+  })
+})
+
+describe('who reviews, settled (D-482)', () => {
+  it('is not settled while the pending list loads, so a page of a unit-scoped reviewer is not closed early', async () => {
+    let answer: (value: { ok: true; value: AccountLinkRequest[] }) => void = () => undefined
+    const list = new Promise<{ ok: true; value: AccountLinkRequest[] }>((resolve) => {
+      answer = resolve
+    })
+    const ports = fakePorts({
+      session: { can: () => Promise.resolve({ ok: true, value: [false] }) },
+      repositories: { account_link_requests: { list: () => list } },
+    })
+    const { result } = renderHook(() => useLinkReviewAccess(), { wrapper: wrapperOf(ports) })
+    await act(() => Promise.resolve())
+    expect(result.current).toMatchObject({ allowed: false, known: false })
+    await act(async () => {
+      answer({ ok: true, value: [] })
+      await list
+    })
+    await vi.waitFor(() => {
+      expect(result.current).toMatchObject({ allowed: false, known: true })
+    })
   })
 })

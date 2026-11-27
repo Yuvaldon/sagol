@@ -6,7 +6,7 @@ import {
   type SoldierCsvColumn,
   type UnitId,
 } from '@contracts'
-import { readPastedSoldiers, type PastedSoldiers } from '@domain'
+import { normalizeEmail, normalizePersonalId, readPastedSoldiers, type PastedSoldiers } from '@domain'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { usePorts } from '../runtime/context'
@@ -78,37 +78,68 @@ export function quickEntryRowsFromPaste(
 export interface QuickEntryPlacement {
   readonly unit_id: UnitId
   readonly valid_from: CalendarDate
+  /**
+   * Whether the actor may set private details in that unit (D-096). Where they may not, no private value is sent:
+   * what the actor may not set there, the save does not carry (D-482). Absent: they may.
+   */
+  readonly private_allowed?: boolean
 }
 
 function formValues(values: QuickEntryValues, placement: QuickEntryPlacement): NewSoldierValues {
+  const allowed = placement.private_allowed !== false
   return {
     first_name: values.first_name.trim(),
     last_name: values.last_name.trim(),
     nickname: values.nickname.trim(),
     command_rank_id: null,
-    membership: placement,
-    private: { personal_id: values.personal_id.trim(), invite_email: values.invite_email.trim(), phone: values.phone.trim() },
+    membership: { unit_id: placement.unit_id, valid_from: placement.valid_from },
+    private: allowed
+      ? { personal_id: values.personal_id.trim(), invite_email: values.invite_email.trim(), phone: values.phone.trim() }
+      : { personal_id: '', invite_email: '', phone: '' },
   }
 }
 
 const DUPLICATE_PERSONAL_ID: Issue = { path: ['private', 'personal_id'], code: 'duplicate_item' }
+const DUPLICATE_EMAIL: Issue = { path: ['private', 'invite_email'], code: 'duplicate_item' }
+
+/** How many typed rows hold each value, by its normal form; an empty value counts nowhere. */
+function countsOf(rows: readonly QuickEntryRow[], keyOf: (row: QuickEntryRow) => string | null): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>()
+  for (const row of rows) {
+    const key = keyOf(row)
+    if (key !== null) counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return counts
+}
+
+const idKey = (row: QuickEntryRow) => normalizePersonalId(row.values.personal_id)
+const emailKey = (row: QuickEntryRow) => {
+  const email = normalizeEmail(row.values.invite_email)
+  return email === '' ? null : email
+}
 
 /**
- * Each typed row's issues, by key: the form's, and a personal number another row of the grid repeats (both are
- * marked). Blank rows have no entry.
+ * Each typed row's issues, by key: the form's, and a personal number or an invite email another row of the grid
+ * repeats, compared in their normal forms (D-066): both rows are marked, so a list pasted twice says so. Blank rows have
+ * no entry. Where private details may not be set, they are not checked: they are not sent.
  */
 export function quickEntryIssues(rows: readonly QuickEntryRow[], placement: QuickEntryPlacement): ReadonlyMap<string, readonly Issue[]> {
   const typed = rows.filter((row) => !isBlankQuickEntryRow(row))
-  const counts = new Map<string, number>()
-  for (const row of typed) {
-    const personalId = row.values.personal_id.trim()
-    if (personalId !== '') counts.set(personalId, (counts.get(personalId) ?? 0) + 1)
-  }
+  const checksPrivate = placement.private_allowed !== false
+  const ids = countsOf(typed, idKey)
+  const emails = countsOf(typed, emailKey)
+  const repeated = (counts: ReadonlyMap<string, number>, key: string | null) => key !== null && (counts.get(key) ?? 0) > 1
   return new Map(
     typed.map((row) => {
       const issues = newSoldierIssues(formValues(row.values, placement))
-      const repeated = (counts.get(row.values.personal_id.trim()) ?? 0) > 1
-      return [row.key, repeated ? [...issues, DUPLICATE_PERSONAL_ID] : issues]
+      return [
+        row.key,
+        [
+          ...issues,
+          ...(checksPrivate && repeated(ids, idKey(row)) ? [DUPLICATE_PERSONAL_ID] : []),
+          ...(checksPrivate && repeated(emails, emailKey(row)) ? [DUPLICATE_EMAIL] : []),
+        ],
+      ]
     }),
   )
 }

@@ -15,7 +15,7 @@ import { ACCOUNT_REVIEW_PERMISSION, placementTarget } from '@domain'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOf } from '../permissions/checks'
-import { useCan } from '../permissions/hooks'
+import { useCan, useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
@@ -108,11 +108,13 @@ export const REVIEW_CHECKS: readonly PermissionCheck[] = [REVIEW_AT_ORGANIZATION
  * Whether the account-links button is for this actor, and how many requests wait for them (D-150): who holds
  * `accounts:approve` at organization scope, or reads at least one pending request. A hint: the adapter filters again.
  */
-export function useLinkReviewAccess(): { readonly allowed: boolean; readonly pending: number } {
-  const can = useCan(REVIEW_CHECKS)
+export function useLinkReviewAccess(): { readonly allowed: boolean; readonly pending: number; readonly known: boolean } {
+  const { can, known } = useCanAnswers(REVIEW_CHECKS)
   const requests = usePendingLinkRequests()
   const pending = requests.status === 'ready' ? requests.value.length : 0
-  return { allowed: can(REVIEW_AT_ORGANIZATION) || pending > 0, pending }
+  const allowed = can(REVIEW_AT_ORGANIZATION) || pending > 0
+  // Settled once both answers are in: a unit-scoped reviewer is allowed only by what they read (D-482).
+  return { allowed, pending, known: allowed || (known(REVIEW_AT_ORGANIZATION) && requests.status !== 'loading') }
 }
 
 const P = {
