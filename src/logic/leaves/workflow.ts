@@ -1,5 +1,6 @@
 import { INBOX, MINE } from '@config'
 import {
+  AvailabilityEffect,
   IssueCode,
   LeaveCommentId,
   LeaveStatus,
@@ -11,6 +12,7 @@ import {
   type Leave,
   type LeaveComment,
   type LeaveEvent,
+  type LeaveId,
   type LeaveQuery,
   type LeaveType,
   type LeaveTypeId,
@@ -304,6 +306,44 @@ export function myNextDays(
   return Array.from({ length: MINE.nextDays }, (_, index) =>
     availability.on(soldierId, addDays(today, index), APPROVED_ONLY),
   )
+}
+
+/** A day of the soldier's own strip and month (D-454): on base, away by an approved leave, or with a request that waits. */
+export interface MyDay {
+  readonly date: CalendarDate
+  readonly state: 'base' | 'away' | 'pending'
+  /** The leave that makes the day what it is; NULL on base. */
+  readonly leave_id: LeaveId | null
+}
+
+/** The soldier's days from a day on: an approved absence wins over a request that waits, which wins over the base. */
+export function myDays(
+  soldierId: SoldierId,
+  leaves: readonly Leave[],
+  leaveTypes: readonly LeaveType[],
+  from: CalendarDate,
+  count: number,
+): readonly MyDay[] {
+  const availability = createAvailabilityContext({ leaves, leave_types: leaveTypes })
+  return Array.from({ length: count }, (_, index): MyDay => {
+    const day = availability.on(soldierId, addDays(from, index), APPROVED_ONLY)
+    const away = day.leaves.find((leave) => leave.counted)
+    if (away !== undefined) return { date: day.date, state: 'away', leave_id: away.leave_id }
+    const waits = day.leaves.find(
+      (leave) => leave.status === LeaveStatus.enum.pending && leave.effect === AvailabilityEffect.enum.unavailable,
+    )
+    if (waits !== undefined) return { date: day.date, state: 'pending', leave_id: waits.leave_id }
+    return { date: day.date, state: 'base', leave_id: null }
+  })
+}
+
+/** Where the soldier is on the first of the days, and the first day that changes it; NULL when none of the days does. */
+export function myStanding(days: readonly MyDay[]): { readonly away: boolean; readonly changes: CalendarDate | null } | null {
+  const first = days[0]
+  if (first === undefined) return null
+  const away = first.state === 'away'
+  const change = days.find((day) => (day.state === 'away') !== away)
+  return { away, changes: change?.date ?? null }
 }
 
 /** How many days a leave covers, both ends included (D-012). */

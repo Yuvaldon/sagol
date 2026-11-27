@@ -66,8 +66,7 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('no viewport')
     const tabs = await navigation(page).boundingBox()
-    const account = await page.getByRole('button', { name: `${he.account.menu} ${OWNER.name}` }).boundingBox()
-    if (tabs === null || account === null) throw new Error('a bar is missing')
+    if (tabs === null) throw new Error('a bar is missing')
     expect(tabs.y + tabs.height).toBeGreaterThan(viewport.height * 0.9)
     const tops = await page.evaluate(() =>
       [...document.querySelectorAll('nav')]
@@ -96,9 +95,9 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     }
   })
 
-  await test.step('the strip holds no view button; the "לוח" tab opens a card per view and the colors (D-311)', async () => {
+  await test.step('the strip holds one view button, which opens a card per view and the colors (D-311)', async () => {
     const strip = page.getByRole('navigation', { name: he.workspace.viewBar })
-    await expect(strip.getByRole('button', { name: new RegExp(`^${he.workspace.view}`) })).toHaveCount(0)
+    await expect(strip.getByRole('button', { name: he.workspace.view, exact: true })).toHaveCount(1)
     await testInfo.attach('strip', { body: await page.screenshot(), contentType: 'image/png' })
     await openViewSheet(page)
     const views = viewSheet(page).getByRole('radiogroup', { name: he.workspace.view }).getByRole('radio')

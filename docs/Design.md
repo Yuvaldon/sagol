@@ -165,6 +165,37 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **Creation is in context.** No global "+". Days picked on a strip, a month or a timeline row open a tray, and the
   tray opens "יציאה חדשה". A soldier and a rule are added from the add icon in their page's capsule.
 
+### Built so far (R5·1 and most of R5·2; D-465 … D-471)
+
+- **Shell.** `WorkspaceScreen` shows one destination by `tab`, the floating `TabBar`, and the drawers over both. A
+  page (`PageFrame`) is one centered column on the canvas, at most `drawer` wide, that scrolls under the bar; once
+  scrolled its top blurs out in a 70 px band (`blur-band`). The bar slides away after 12 px of scrolling down and
+  returns after 12 px up, in `duration-drawer`, with no motion under "reduce motion"; keyboard focus brings it back.
+  The corner glass circle (a bell) is on "היום", "ניהול" and "אני".
+- **היום, a soldier.** The date line, "בבסיס" or "בבית" at display size, and a line of what comes next ("היציאה
+  הבאה: יום חמישי · 19.11") that is the button opening the 14-day strip into the month, in place. In the month a
+  day is a 44 px button for who may request a leave: one tap starts a range, a second ends it, a tap on the only
+  day clears it. The tray "בקשת יציאה · 3 ימים" then replaces the tab bar and opens the new-leave form with the
+  days filled.
+- **היום, a commander.** The unit's name and the date, the fraction of who is on base today, "דוח 1" for who reads
+  the unit's soldiers while a rotation runs, and seven day columns, today first in night blue, amber where a rule
+  is broken. A column opens the unit's drawer on its day: who is away, then who is on base.
+- **Cards**, in D-459's order, each absent when empty: "בקשות לאישור" (three rows with ✗ ✓, a count, a door),
+  "בקשות הצטרפות", "הבקשה שלי" (type, dates, badge), "דוח 1" (a door, for who has no unit block, D-472), "הסטטוס
+  שלי" (for who sees the unit's block). In routine a
+  notice comes first (D-469).
+- **The pending-requests page** (`page=requests`): back, the title, the "approve now" default, every waiting
+  request, a door to the closed ones. A toast follows a step.
+- **ניהול.** The title, the organization's name, thin rows with a value and a chevron (D-468); "הגדרות" is a page
+  of sections on white cards.
+- **אני.** The name and the email, then cards: appearance (a segmented choice), notifications (switches), account.
+- **לוח.** The engines as they were, under one glass strip: the unit, the range, the view picker (the icon of the
+  view in sight) and "סינון ומיון". Focus mode still leaves one button.
+- **Components** are in `src/ui/kit`: `Glass` (circle, capsule), `Card`, `Badge`, `Fraction`, `PersonRow`,
+  `DayStrip`, `Month`, `Toast`, `Tray`, `StopDrawer`. The drawer with stops opens at half height and grows to
+  full; its handle is a button (D-458); from `md` it is a panel on the inline end.
+- **Desktop** uses the same shell until R5·6.
+
 ### A tap path for every gesture (D-458)
 
 | Gesture | Tap path |
@@ -226,6 +257,15 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 10 | Archive sits behind "⋯", confirms by name, and offers "ביטול" in a toast; a rule's priority is a number under "עוד", with no "move to top" | OI-297; no reorder command exists | D-461 |
 | 11 | Saving a view equal to an existing one is refused and names it | OI-381 | D-462 |
 | 12 | "Only missing" is removed; a phone's default board view is the calendar; the day report's cut-over hour stays one config value | `03` §5; OI-380 | D-463 |
+| 13 | An address that names something of the board opens "לוח"; any other address without a destination opens "היום"; nothing is remembered per device | Links made before the tabs must still open their board | D-465 |
+| 14 | "לוח" and the commander's block also show to who holds leaves over a unit and sees nobody else yet | A new owner is alone in the organization | D-466 |
+| 15 | The requests drawer stays, as the row "בקשות" of "ניהול", for the closed requests; the toast's "ביטול" shows only to who may take the step back | The card is absent when nothing waits; reopening a rejected request is its own permission | D-467 |
+| 16 | "הגדרות" is a page behind the last row of "ניהול"; a row of the index is named by its tool alone, and its value describes it | The two places of D-285 stay two; a short name is found by a reader | D-468 |
+| 17 | In routine, "היום" opens with a notice that names the mode, with "פתיחת סבב" for who may | The package has no routine state; the quick action of the old strip is gone | D-469 |
+| 18 | "אני" holds what the user menu held; the corner circle opens the "שלי" drawer | Its own batch (R5·5) replaces both | D-470 |
+| 19 | The options menu, "דוח 1" in the new drawer, new leave and the leave card in the new drawer, "סבב יציאות · תכנון" and "איתך היום" are not in this batch | Each is an open item with its batch | D-471 |
+| 20 | "דוח 1" is a card on "היום" for who reads the unit's soldiers and has no unit block | It was a destination of the old strip for all of them | D-472 |
+| 21 | The toast waits while it is hovered, focused or asking, and starts over at a key press; a page takes the keyboard on its heading and gives it back to its opener; the month is a keyboard grid | The package draws no keyboard or time behaviour | D-473 |
 
 ## Color (Light)
 
@@ -297,6 +337,8 @@ because a smaller input makes phones zoom the page, and `text-control` from `md`
 
 ## Layout
 
+- **Replaced by the new shell (D-465): see "Built so far" above.** What follows describes the board's frame, which
+  "לוח" keeps: its bottom strip is now the tab bar, and the avatar moved to "אני".
 - **Workspace (D-023, D-108, D-189, D-252):** a `surface` panel on the `canvas`, filled by the active engine. Two glass
   strips float over it and hug their content, centered, on every screen and orientation (V25): the context strip at the
   top (the scope label, the range, "סינון ומיון", the avatar) and the destination strip at the
@@ -609,6 +651,8 @@ the screen are **מצב**: שגרה, סבב, מיקוד. Every module inside "נ
 | העדפות | the approve-now default | move to the requests hub | requests hub |
 
 ### Navigation (D-252 … D-256)
+
+Replaced by the tab bar and "ניהול" (D-455, D-465, D-468). Kept here for the words and the reasons.
 
 - **Top strip (context):** unit in scope · time (the rotation's name or "שגרה", the range, its arrows, "היום" while
   away from today) · view · filter · sort · avatar. A floating pill that hugs its content, centered at the top.

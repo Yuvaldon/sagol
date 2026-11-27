@@ -1,5 +1,6 @@
 import type { LeaveStatus, LeaveType } from '@contracts'
 import { t, type I18nKey } from '@i18n'
+import { Badge, type BadgeTone } from '../../kit/Badge'
 import { glyphOf } from '../../theme/icons'
 import { leaveTypeToneOf } from '../../theme/palette'
 
@@ -26,6 +27,19 @@ export function StatusChip({ status }: { readonly status: LeaveStatus }) {
       {t(STATUS_KEYS[status])}
     </span>
   )
+}
+
+const BADGES: Record<LeaveStatus, { readonly tone: BadgeTone; readonly labelKey: I18nKey }> = {
+  pending: { tone: 'pending', labelKey: 'leaves.badgePending' },
+  approved: { tone: 'ok', labelKey: 'leaves.badgeApproved' },
+  rejected: { tone: 'rejected', labelKey: 'leaves.badgeRejected' },
+  cancelled: { tone: 'neutral', labelKey: 'leaves.badgeCancelled' },
+}
+
+/** A request's status as the new interface's badge (D-454): the word on a tinted ground. */
+export function LeaveBadge({ status }: { readonly status: LeaveStatus }) {
+  const { tone, labelKey } = BADGES[status]
+  return <Badge tone={tone}>{t(labelKey)}</Badge>
 }
 
 /** The type's color and icon, beside its name. Decoration: the name carries the meaning. */

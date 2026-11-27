@@ -1,23 +1,21 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
+import { openTab, tab } from './workspace.ts'
 
-// The board's controls (D-311, D-312, D-313): the view sheet behind the "לוח" tab, and the builder behind "סינון ומיון".
+// The board's controls (D-311, D-312, D-313): the view sheet behind the view picker, and the builder behind "סינון ומיון".
 
 export function viewSheet(page: Page) {
   return page.getByRole('dialog', { name: he.workspace.view })
 }
 
 export function boardTab(page: Page) {
-  return page.getByRole('button', { name: he.workspace.board, exact: true })
+  return tab(page, 'board')
 }
 
-/** The "לוח" tab opens the sheet on the board; from another destination it first returns to the board (D-311). */
+/** The view picker of the board's strip opens the sheet; from another destination the board comes first (D-311). */
 export async function openViewSheet(page: Page) {
-  if ((await boardTab(page).getAttribute('aria-current')) !== 'page') {
-    await boardTab(page).click()
-    await expect(boardTab(page)).toHaveAttribute('aria-current', 'page')
-  }
-  await boardTab(page).click()
+  await openTab(page, 'board')
+  await page.getByRole('button', { name: he.workspace.view, exact: true }).click()
   await expect(viewSheet(page)).toBeVisible()
 }
 

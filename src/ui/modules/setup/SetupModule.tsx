@@ -11,7 +11,7 @@ import { Check, ChevronLeft } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { Button } from '../../primitives/Button'
-import { useOpenUnitSetup } from '../../shell/navigationPanelState'
+import { useOpenUnitSetup } from '../../shell/unitSetup'
 import { STEP_KEYS, WORD, progressText } from './steps'
 import { TemplateStopped, TemplateWizard } from './TemplateWizard'
 

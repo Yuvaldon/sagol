@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, ROTATION, closeDrawer, createType, drawer, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, openMyLeaves } from './support/workspace.ts'
 
 // The 1.0 dashboards' demo: the command board opens from a rotation's row on that rotation, counts it under a
 // template, takes the actor's own list of modules and keeps it, and "הסבב שלי" sums the actor's rotation at the top of
@@ -89,7 +89,7 @@ test('the command board and "הסבב שלי"', async ({ page }) => {
   })
 
   await test.step('"הסבב שלי" sums the rotation at the top of "שלי"', async () => {
-    await openModule(page, he.myLeaves.open)
+    await openMyLeaves(page)
     const mine = drawer(page).getByRole('region', { name: new RegExp(`^${he.myRotation.title}`) })
     await expect(mine).toContainText(ROTATION.name)
     await expect(mine).toContainText(he.myRotation.baseDays)

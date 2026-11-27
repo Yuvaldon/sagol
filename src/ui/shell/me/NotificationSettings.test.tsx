@@ -2,11 +2,10 @@ import { SoldierPreferences, type PermissionCheck, type Result } from '@contract
 import { dictionary as he } from '@i18n'
 import { LogicProvider, type LogicPorts, type PushAvailability } from '@logic'
 import { render, screen, waitFor } from '@testing-library/react'
-import { Menu } from 'react-aria-components'
 import { describe, expect, it, vi } from 'vitest'
-import { NotificationsMenu } from './NotificationsMenu'
+import { NotificationSettings } from './NotificationSettings'
 
-// The profile's notifications group (D-356): hidden where the browser cannot push, the device switch with the
+// The notifications card of "אני" (D-356): hidden where the browser cannot push, the device switch with the
 // browser's answer, and the kinds only while this device is on. Test data only.
 
 const NO_STORE = { read: () => null, write: () => undefined }
@@ -36,9 +35,7 @@ function portsWith(availability: PushAvailability) {
 function renderMenu(availability: PushAvailability, onIosInstall = vi.fn()) {
   render(
     <LogicProvider ports={portsWith(availability)}>
-      <Menu aria-label={he.notifications.group}>
-        <NotificationsMenu item="" onIosInstall={onIosInstall} />
-      </Menu>
+      <NotificationSettings onIosInstall={onIosInstall} />
     </LogicProvider>,
   )
 }
@@ -51,35 +48,35 @@ describe('the notifications group (D-356)', () => {
 
   it('offers the kinds only while this device is on', async () => {
     renderMenu('on')
-    const device = screen.getByRole('menuitemcheckbox', { name: he.notifications.device })
-    expect(device.getAttribute('aria-checked')).toBe('true')
-    const mine = await screen.findByRole('menuitemcheckbox', { name: he.notifications.kindMyRequest })
+    const device = screen.getByRole<HTMLInputElement>('switch', { name: he.notifications.device })
+    expect(device.checked).toBe(true)
+    const mine = await screen.findByRole<HTMLInputElement>('switch', { name: he.notifications.kindMyRequest })
     // The kinds wait, disabled, until the preferences are read.
     await waitFor(() => {
-      expect(mine.getAttribute('aria-disabled')).toBeNull()
+      expect(mine.disabled).toBe(false)
     })
-    expect(mine.getAttribute('aria-checked')).toBe(String(SoldierPreferences.parse({}).notifications.my_request))
+    expect(mine.checked).toBe(SoldierPreferences.parse({}).notifications.my_request)
     // Only an approver is offered what waits for them.
     expect(screen.queryByText(he.notifications.kindAwaitingMe)).toBeNull()
   })
 
   it('shows no kinds while the device is off', () => {
     renderMenu('off')
-    expect(screen.getByRole('menuitemcheckbox', { name: he.notifications.device }).getAttribute('aria-checked')).toBe('false')
+    expect(screen.getByRole<HTMLInputElement>('switch', { name: he.notifications.device }).checked).toBe(false)
     expect(screen.queryByText(he.notifications.kindMyRequest)).toBeNull()
   })
 
   it('turns the switch off with a hint when the browser refused', () => {
     renderMenu('denied')
-    const device = screen.getByRole('menuitemcheckbox', { name: he.notifications.device })
-    expect(device.getAttribute('aria-disabled')).toBe('true')
+    const device = screen.getByRole<HTMLInputElement>('switch', { name: he.notifications.device })
+    expect(device.disabled).toBe(true)
     expect(screen.getByText(he.notifications.denied)).toBeTruthy()
   })
 
   it('points iOS at installing the app', () => {
     const onIosInstall = vi.fn()
     renderMenu('ios_install', onIosInstall)
-    screen.getByRole('menuitem', { name: he.notifications.iosInstall }).click()
+    screen.getByRole('button', { name: he.notifications.iosInstall }).click()
     expect(onIosInstall).toHaveBeenCalledOnce()
   })
 })

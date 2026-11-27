@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, drawer, press, typeDate } from './support/leaves.ts'
-import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
+import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, openTab } from './support/workspace.ts'
 
 // V26's journey (b): routine until a rotation opens, a tag for that rotation only, the close and the reopen
 // (D-257 … D-260, D-222), and Design.md (b) from the strip's quick action in each mode (D-296). The quick action's
@@ -110,9 +110,9 @@ test('routine, a rotation with a tag of its own, the close and the reopen', asyn
   })
 })
 
-/** The strip's quick action, by its name; at most one shows (D-266). */
+/** The one action of the mode on "היום", by its name: "פתיחת סבב" in routine's notice, or the action circle (D-455, D-469). */
 function quickAction(page: Page, name: string) {
-  return navigation(page).getByRole('button', { name, exact: true })
+  return page.getByRole('button', { name, exact: true })
 }
 
 async function fillRotation(page: Page, name: string, from: readonly [string, string, string], to: readonly [string, string, string]) {
@@ -124,6 +124,7 @@ async function fillRotation(page: Page, name: string, from: readonly [string, st
 test('journey (b): the quick action in each mode, an overlap refused, a list that grows', async ({ page }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
+  await openTab(page, 'today')
 
   await test.step('(b)1. in routine the strip offers "פתיחת סבב", which opens a new rotation', async () => {
     await expect(page.getByRole('heading', { name: ROUTINE })).toBeVisible()
@@ -136,6 +137,7 @@ test('journey (b): the quick action in each mode, an overlap refused, a list tha
     await drawer(page).getByRole('button', { name: he.common.save }).click()
     await expect(rotationRow(page, 'סבב סתיו')).toContainText(he.deployments.wholeUnit)
     await closeDrawer(page)
+    await openTab(page, 'today')
   })
 
   await test.step('(b)5. ended and not closed: not routine, and no quick action', async () => {
@@ -149,6 +151,7 @@ test('journey (b): the quick action in each mode, an overlap refused, a list tha
     await rowAction(page, 'סבב סתיו', he.deployments.close)
     await expect(rotationRow(page, 'סבב סתיו')).toContainText(he.deployments.closed)
     await closeDrawer(page)
+    await openTab(page, 'today')
     await expect(page.getByRole('heading', { name: ROUTINE })).toBeVisible()
     await expect(quickAction(page, he.workspace.openRotation)).toBeVisible()
   })
@@ -170,6 +173,7 @@ test('journey (b): the quick action in each mode, an overlap refused, a list tha
     await drawer(page).getByRole('button', { name: he.common.save }).click()
     await expect(rotationRow(page, 'סבב נובמבר')).toContainText(`${he.deployments.memberCount} 1`)
     await closeDrawer(page)
+    await openTab(page, 'today')
   })
 
   await test.step('(b)2–3. the rotation runs: the quick action is "בקשה חדשה"', async () => {

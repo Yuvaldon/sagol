@@ -326,16 +326,17 @@ export function useLeaveTypePermissions() {
  * Who the actor may create a leave for, and approve now, among the soldiers they see (D-114, D-115). The form offers
  * active soldiers only (D-125); the command still takes an inactive one. A hint: the command decides again.
  */
+/** What creating, approving and copying a leave asks about each soldier in sight. */
+export function leaveCreationChecks(soldiers: readonly Soldier[]): PermissionCheck[] {
+  return soldiers.flatMap((soldier) => [
+    checkOn(LEAVE_PERMISSIONS.create, soldier.id),
+    checkOn(LEAVE_PERMISSIONS.approve, soldier.id),
+    checkOn(LEAVE_PERMISSIONS.duplicate, soldier.id),
+  ])
+}
+
 export function useLeaveCreation(soldiers: readonly Soldier[]) {
-  const checks = useMemo(
-    () =>
-      soldiers.flatMap((soldier) => [
-        checkOn(LEAVE_PERMISSIONS.create, soldier.id),
-        checkOn(LEAVE_PERMISSIONS.approve, soldier.id),
-        checkOn(LEAVE_PERMISSIONS.duplicate, soldier.id),
-      ]),
-    [soldiers],
-  )
+  const checks = useMemo(() => leaveCreationChecks(soldiers), [soldiers])
   const can = useCan(checks)
   const session = useSession()
   const self = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null

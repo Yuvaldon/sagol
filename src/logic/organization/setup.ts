@@ -43,7 +43,7 @@ const STEP_CHECKS = SETUP_STEPS.map((step) => {
   return { id: step.id, check }
 })
 
-const CHECK_LIST: readonly PermissionCheck[] = STEP_CHECKS.map((step) => step.check)
+export const CHECK_LIST: readonly PermissionCheck[] = STEP_CHECKS.map((step) => step.check)
 
 /** The steps this actor may do. None means there is no setup for them, and it does not show (D-076). */
 export function useSetupAccess(): readonly SetupStepId[] {

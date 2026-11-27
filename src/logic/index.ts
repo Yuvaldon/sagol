@@ -16,7 +16,17 @@ export type {
 export { useAppUpdate, useInstallInvitation, useInstallOffer } from './shell/hooks'
 export { useDeviceNotifications, useNotificationKinds, type DeviceNotifications, type NotificationKinds } from './shell/push'
 export { useMarkUpdatesSeen, useMyUpdates, type MyUpdateLine, type MyUpdates } from './leaves/updatesHooks'
-export { useHome, type Home } from './home/hooks'
+export {
+  daysFrom,
+  isBeforeDay,
+  monthSpan,
+  selectDay,
+  selectionCovers,
+  weeksOf,
+  type DaySelection,
+  type MonthSpan,
+} from './leaves/calendar'
+export { useShellAccess, useShellPlace, type ShellAccess, type ShellPlace } from './shell/place'
 export { useQuickAction, type QuickAction } from './home/quickAction'
 export { LogicProvider } from './runtime/LogicProvider'
 export { fieldNameOf, formIssues } from './forms/issues'
@@ -235,7 +245,9 @@ export {
   leaveDayCount,
   leaveEditIssues,
   leaveEditValues,
+  myStanding,
   type LeaveEditValues,
+  type MyDay,
   type MyLeaves,
   type ThreadEntry,
 } from './leaves/workflow'
@@ -250,6 +262,7 @@ export {
   useLeaveTransition,
   useMyLeaves,
   useMyLeavesAccess,
+  useMyDays,
   useMyNextDays,
   usePendingRequests,
   myRotationOf,

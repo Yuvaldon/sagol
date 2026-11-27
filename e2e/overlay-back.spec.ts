@@ -31,7 +31,7 @@ test('the back button closes a menu and stays on the screen (OI-291)', async ({ 
   const start = await entriesBehind(app)
   const url = app.url()
 
-  await app.getByRole('button', { name: he.account.menu }).click()
+  await app.getByRole('button', { name: new RegExp(`^${he.workspace.window}`) }).click()
   await expect(app.getByRole('menu')).toBeVisible()
   await app.goBack()
   await expect(app.getByRole('menu')).toBeHidden()
@@ -40,7 +40,7 @@ test('the back button closes a menu and stays on the screen (OI-291)', async ({ 
   expect(await entriesBehind(app)).toBe(start)
 
   // Escape takes the menu's entry with it: the next back press leaves the app.
-  await app.getByRole('button', { name: he.account.menu }).click()
+  await app.getByRole('button', { name: new RegExp(`^${he.workspace.window}`) }).click()
   await expect(app.getByRole('menu')).toBeVisible()
   await app.keyboard.press('Escape')
   await expect(app.getByRole('menu')).toBeHidden()

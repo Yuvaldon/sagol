@@ -76,16 +76,83 @@ export async function openBoardOnTimeline(page: Page, isMobile: boolean) {
   }, DEFAULT_VIEW_BY_DEVICE.desktop)
 }
 
-/** A new owner on an empty store, in the workspace, with the setup that the claim opens set aside. */
+/** The destinations of the tab bar (D-455), by their names. "ניהול" also reads what waits behind it. */
+export const TABS = {
+  today: he.shell.tabToday,
+  board: he.workspace.board,
+  manage: new RegExp(`^${he.navigation.tab}( \\d+ ${he.navigation.waiting})?$`),
+  me: he.shell.tabMe,
+} as const
+export type TabName = keyof typeof TABS
+
+export function tab(page: Page, name: TabName) {
+  const label = TABS[name]
+  return navigation(page).getByRole('button', typeof label === 'string' ? { name: label, exact: true } : { name: label })
+}
+
+/** Moves to a destination from its tab; on it already, nothing is pressed. */
+export async function openTab(page: Page, name: TabName) {
+  await expect(async () => {
+    if ((await tab(page, name).getAttribute('aria-current', { timeout: 1_000 })) !== 'page') await tab(page, name).click({ timeout: 1_000 })
+    await expect(tab(page, name)).toHaveAttribute('aria-current', 'page', { timeout: 1_000 })
+  }).toPass({ timeout: 10_000 })
+}
+
+/**
+ * Back to the board once nothing is open over the screen, for who has it: a module opens from "ניהול" and a request
+ * from "היום", and the demos that follow look at the board.
+ */
+export async function backToBoard(page: Page) {
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  if ((await tab(page, 'board').count()) > 0) await openTab(page, 'board')
+}
+
+/** A new owner on an empty store, on the board, with the setup that the claim opens set aside. */
 export async function enterAsOwner(page: Page) {
   await page.goto('/')
   await signIn(page, OWNER.email, OWNER.name)
   await claimOrganization(page)
-  await expect(organizationHeading(page)).toBeVisible()
   await closeSetup(page)
+  await openTab(page, 'board')
+  await expect(organizationHeading(page)).toBeVisible()
 }
 
-/** Sets aside the setup that the claim opened, back to the board. */
+/** Signs out from "אני", where the account is (D-455). */
+export async function signOut(page: Page) {
+  await openTab(page, 'me')
+  await page.getByRole('button', { name: he.account.signOut, exact: true }).click()
+  await expect(page).toHaveURL(/\/sign-in(\?view=\w+(&tab=today)?)?$/)
+}
+
+/** The soldier's own requests, from their row of "אני" (D-455). */
+export async function openMyLeaves(page: Page) {
+  await openTab(page, 'me')
+  await page.getByRole('main').getByRole('button', { name: he.myLeaves.openTitle, exact: true }).click()
+  await expect(page.getByRole('dialog', { name: he.myLeaves.title })).toBeVisible()
+}
+
+/** The appearance, chosen on "אני" (D-181). */
+export function appearanceChoice(page: Page, name: string) {
+  return page.getByRole('radiogroup', { name: he.account.appearance }).getByRole('radio', { name, exact: true })
+}
+
+export async function chooseAppearance(page: Page, name: string) {
+  await openTab(page, 'me')
+  await appearanceChoice(page, name).click()
+  await expect(appearanceChoice(page, name)).toBeChecked()
+}
+
+/** The requests row of "ניהול": named alone, and described by what waits (D-120). */
+export const INBOX = he.inbox.open
+
+export async function expectWaitingRequests(page: Page, count: number) {
+  await openTab(page, 'manage')
+  await expect(managePage(page).getByRole('button', { name: INBOX, exact: true })).toHaveAccessibleDescription(
+    count === 0 ? '' : `${String(count)} ${he.inbox.pendingCount}`,
+  )
+}
+
+/** Sets aside the setup that the claim opened. */
 export async function closeSetup(page: Page) {
   await expect(setupDrawer(page)).toBeVisible()
   // The drawer enters over the board as the claim lands: a press while it still prepares or slides in can be lost on a
@@ -115,57 +182,45 @@ export async function addUnit(page: Page, name: string, parent = ORGANIZATION) {
   await expect(unitRow(page, name)).toBeVisible()
 }
 
-/** The navigation panel (D-173), once open: at the work, or a step in at the unit's setup (D-285). */
-export function navigationPanel(page: Page) {
-  return page.getByRole('dialog', { name: new RegExp(`^(${he.navigation.title}|${he.navigation.setupTitle})$`) })
+/** "ניהול" (D-456): the index of tools, or its settings page. */
+export function managePage(page: Page) {
+  return page.getByRole('main')
 }
 
-/** Opens the unit's setup from the open panel's foot row (D-285). */
+function settingsHeading(page: Page) {
+  return page.getByRole('heading', { level: 1, name: he.navigation.setupOpen, exact: true })
+}
+
+/** Opens "הגדרות", the page of "ניהול" that holds what a unit defines once (D-285, D-456). */
 export async function openSetup(page: Page) {
-  await navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click()
-  await expect(navigationPanel(page).getByRole('heading', { name: he.navigation.setupTitle, exact: true })).toBeVisible()
+  await openTab(page, 'manage')
+  if (!(await settingsHeading(page).isVisible())) await managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click()
+  await expect(settingsHeading(page)).toBeVisible()
 }
 
 /**
- * Opens a module from the bar, or from the navigation panel when it is not there (D-173). The bar fills while access
- * loads, so the place of a module can still change: the whole step retries.
+ * Opens a module from its row of "ניהול", or of its settings page when it is not on the index (D-456). The rows fill
+ * while access loads, so the place of a module can still change: the whole step retries.
  */
 export async function openModule(page: Page, name: string | RegExp) {
-  // A string names the module exactly, so its pin ("pin <module>") never answers for it.
+  // A string names the module exactly: a row is named by its tool alone, and what it holds describes it.
   const options = typeof name === 'string' ? { name, exact: true } : { name }
-  const panel = navigationPanel(page)
   const dialogs = page.getByRole('dialog')
-  const othersOpen = async () => (await dialogs.count()) - ((await panel.isVisible()) ? 1 : 0)
-  const openedBefore = await othersOpen()
+  const openedBefore = await dialogs.count()
   await expect(async () => {
     // A press that landed while the page was busy can still time out: when the module's drawer opened since, the
     // step is done, and the caller checks what it opened.
-    if ((await othersOpen()) > openedBefore) return
-    const inPanel = panel.getByRole('button', options)
-    // A module of the unit's setup is a step in, behind the panel's foot row (D-285).
-    const toSetup = panel.getByRole('button', { name: he.navigation.setupOpen, exact: true })
-    if (await panel.isVisible()) {
-      if (await inPanel.isVisible()) {
-        await inPanel.click({ timeout: 1_000 })
-        return
-      }
-      if (await toSetup.isVisible()) {
-        await toSetup.click({ timeout: 1_000 })
-        await inPanel.click({ timeout: 1_000 })
-        return
-      }
-      // Opened while the bar was still filling: the module is in the bar after all.
-      await page.keyboard.press('Escape')
-      await expect(panel).toBeHidden({ timeout: 1_000 })
+    if ((await dialogs.count()) > openedBefore) return
+    if ((await tab(page, 'manage').getAttribute('aria-current', { timeout: 1_000 })) !== 'page') await tab(page, 'manage').click({ timeout: 1_000 })
+    const row = managePage(page).getByRole('button', options)
+    if (!(await row.isVisible())) {
+      // A module of the unit's settings is a step in, behind the index's last row; from the settings, the index is a step back.
+      if (await settingsHeading(page).isVisible()) await managePage(page).getByRole('button', { name: he.shell.back, exact: true }).click({ timeout: 1_000 })
+      else await managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click({ timeout: 1_000 })
     }
-    const inBar = navigation(page).getByRole('button', options)
-    if (await inBar.isVisible()) {
-      await inBar.click({ timeout: 1_000 })
-      return
-    }
-    await page.getByRole('button', { name: he.navigation.open }).click({ timeout: 1_000 })
-    await inPanel.or(toSetup).first().waitFor({ timeout: 1_000 })
-    if (!(await inPanel.isVisible())) await toSetup.click({ timeout: 1_000 })
-    await inPanel.click({ timeout: 1_000 })
+    await row.click({ timeout: 1_000 })
+    await expect(dialogs).not.toHaveCount(openedBefore, { timeout: 1_000 })
   }).toPass({ timeout: 10_000 })
+  // The drawer slides in over the page: what opens from a field of it is placed once, so the next step waits for it to rest.
+  await waitForSettledScreen(page)
 }

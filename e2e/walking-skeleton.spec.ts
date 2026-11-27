@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { ORGANIZATION, OWNER, claimOrganization, closeSetup, expectNoAxeViolations, navigation, organizationHeading, signIn } from './support/workspace.ts'
+import { ORGANIZATION, OWNER, claimOrganization, closeSetup, expectNoAxeViolations, navigation, openTab, organizationHeading, signIn, tab, openSetup } from './support/workspace.ts'
 
 // V0's demo: sign in, claim the organization, see the empty workspace, keep the session across a
 // reload, and see that a second identity gets no data. Each test starts on an empty browser
@@ -10,9 +10,10 @@ const SECOND_EMAIL = 'second@example.test'
 const BOTTOM_BAR_LIMIT = 0.5
 const TOUCH_TARGET_PX = 44
 
-async function chooseFromUserMenu(page: Page, item: string) {
-  await page.getByRole('button', { name: he.account.menu }).click()
-  await page.getByRole('menuitem', { name: item }).click()
+/** "אני" holds what the account offers (D-455): sign-out, and the identities of this device. */
+async function chooseOnMe(page: Page, item: string | RegExp) {
+  await openTab(page, 'me')
+  await page.getByRole('main').getByRole('button', { name: item }).click()
 }
 
 test('an owner claims the empty organization and reaches the workspace', async ({ page }) => {
@@ -64,8 +65,15 @@ test('an owner claims the empty organization and reaches the workspace', async (
     // The claim made the root unit, with its owner in it (OI-212): what is missing is a rotation (D-218).
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
-    await expect(page.getByRole('button', { name: `${he.account.menu} ${OWNER.name}` })).toBeVisible()
     await expectNoAxeViolations(page)
+  })
+
+  await test.step('"אני" names who is signed in', async () => {
+    await openTab(page, 'me')
+    await expect(page.getByRole('heading', { level: 1, name: OWNER.name })).toBeVisible()
+    await expect(page.getByText(OWNER.email)).toBeVisible()
+    await expectNoAxeViolations(page)
+    await openTab(page, 'today')
   })
 
   await test.step('the destinations float at the bottom on every screen (D-252)', async () => {
@@ -76,7 +84,7 @@ test('an owner claims the empty organization and reaches the workspace', async (
   })
 
   await test.step('the bars keep the page as wide as the screen, so a phone never zooms out (D-155)', async () => {
-    await expect(page.getByRole('button', { name: he.navigation.open })).toHaveCount(1)
+    await expect(tab(page, 'manage')).toHaveCount(1)
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('the page has no viewport')
     const width = await page.evaluate(() => ({ layout: window.innerWidth, content: document.documentElement.scrollWidth }))
@@ -95,11 +103,10 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await expect(organizationHeading(page)).toBeVisible()
   })
 
-  await test.step('the user menu has no axe violations when open', async () => {
-    await page.getByRole('button', { name: he.account.menu }).click()
-    await expect(page.getByRole('menuitem', { name: he.account.signOut })).toBeVisible()
+  await test.step('"אני" has no axe violations', async () => {
+    await openTab(page, 'me')
+    await expect(page.getByRole('button', { name: he.account.signOut, exact: true })).toBeVisible()
     await expectNoAxeViolations(page)
-    await page.keyboard.press('Escape')
   })
 })
 
@@ -111,7 +118,7 @@ test('a second identity sees no access and no data', async ({ page }) => {
   await closeSetup(page)
 
   await test.step('after sign-out the app returns to sign-in', async () => {
-    await chooseFromUserMenu(page, he.account.signOut)
+    await chooseOnMe(page, he.account.signOut)
     await expect(page).toHaveURL(/\/sign-in$/)
     await expect(page.getByRole('button', { name: new RegExp(OWNER.email) })).toBeVisible()
   })
@@ -136,8 +143,8 @@ test('a second identity sees no access and no data', async ({ page }) => {
     await expect(organizationHeading(page)).toBeVisible()
   })
 
-  await test.step('the user menu switches back to the second identity', async () => {
-    await chooseFromUserMenu(page, SECOND_EMAIL)
+  await test.step('"אני" switches back to the second identity', async () => {
+    await chooseOnMe(page, new RegExp(SECOND_EMAIL))
     await expect(page.getByRole('heading', { name: he.noAccess.title })).toBeVisible()
   })
 })
@@ -162,8 +169,14 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   async function expectTouchTargets() {
     const heights = await page
       .locator('button:visible, input:visible')
-      // A switch or a box hides its input inside its label, and the label is what a finger presses.
-      .evaluateAll((elements) => elements.map((element) => (element.closest('label') ?? element).getBoundingClientRect().height))
+      // A switch or a box hides its input inside its label, and the label is what a finger presses. A control whose
+      // parent is clipped out of sight (`sr-only`: react-aria's dismiss button of a dialog) is for a screen reader
+      // only, and no finger reaches it.
+      .evaluateAll((elements) =>
+        elements
+          .filter((element) => element.parentElement === null || getComputedStyle(element.parentElement).clipPath !== 'inset(50%)')
+          .map((element) => (element.closest('label') ?? element).getBoundingClientRect().height),
+      )
     expect(heights.length).toBeGreaterThan(0)
     for (const height of heights) expect(height).toBeGreaterThanOrEqual(TOUCH_TARGET_PX)
   }
@@ -178,7 +191,18 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   await expect(organizationHeading(page)).toBeVisible()
   await expectTouchTargets()
   await closeSetup(page)
-  // The settled workspace: its empty state is in place before anything is measured.
+  // The settled workspace: its empty state is in place before anything is measured. Then every destination.
   await expect(page.getByRole('button', { name: he.workspace.openRotation })).toBeVisible()
+  await expectTouchTargets()
+  await openTab(page, 'board')
+  await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
+  await expectTouchTargets()
+  await openTab(page, 'manage')
+  await expect(page.getByRole('heading', { level: 1, name: he.navigation.tab, exact: true })).toBeVisible()
+  await expectTouchTargets()
+  await openSetup(page)
+  await expectTouchTargets()
+  await openTab(page, 'me')
+  await expect(page.getByRole('button', { name: he.account.signOut, exact: true })).toBeVisible()
   await expectTouchTargets()
 })

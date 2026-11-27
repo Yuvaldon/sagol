@@ -19,10 +19,13 @@ export function LeaveStepDialog({
   leave,
   step,
   onClose,
+  onDone,
 }: {
   readonly leave: Leave
   readonly step: ClosingStep
   readonly onClose: () => void
+  /** The step landed: the leave as it now is. */
+  readonly onDone?: (leave: Leave) => void
 }) {
   const actions = useLeaveActions(leave)
   const transition = useLeaveTransition()
@@ -36,8 +39,12 @@ export function LeaveStepDialog({
     await gate.run(
       (acknowledged) => transition.run(leave, step, actions.comment.shared ? note : '', acknowledged),
       (result) => {
-        if (result.ok) onClose()
-        else setFailure(result.error)
+        if (!result.ok) {
+          setFailure(result.error)
+          return
+        }
+        onDone?.(result.value)
+        onClose()
       },
     )
   }

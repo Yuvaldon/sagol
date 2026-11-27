@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, openRotation } from './leaves.ts'
-import { addUnit, enterAsOwner, navigation, openModule, signIn } from './workspace.ts'
+import { addUnit, enterAsOwner, openModule, signIn, tab } from './workspace.ts'
 
 // What the fighter demos share: the owner's unit, a type, Yael who links on her own, the fighter role as the
 // baseline, and a rotation she serves in (D-167, D-216). Sample data, tests only.
@@ -18,11 +18,7 @@ const SELF_PERMISSIONS: readonly (readonly [string, readonly string[]])[] = [
   [he.permissionLabels.resources.leave_comments, [he.permissionLabels.actions.view, he.permissionLabels.actions.create]],
 ]
 
-export async function signOut(page: Page) {
-  await page.getByRole('button', { name: he.account.menu }).click()
-  await page.getByRole('menuitem', { name: he.account.signOut }).click()
-  await expect(page).toHaveURL(/\/sign-in(\?view=\w+)?$/)
-}
+export { signOut } from './workspace.ts'
 
 /** The owner's setup: a unit, a type, Yael with the fields auto-link reads, the fighter role as the baseline, a rotation. */
 export async function setUpFighter(page: Page) {
@@ -69,10 +65,10 @@ export async function setUpFighter(page: Page) {
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */
 export async function enterAsYael(page: Page) {
   await signIn(page, YAEL.email)
-  await expect(page).toHaveURL(/\/onboarding(\?view=\w+)?$/)
+  await expect(page).toHaveURL(/\/onboarding(\?view=\w+(&tab=today)?)?$/)
   await page.getByLabel(he.linkRequest.firstName).fill(YAEL.first)
   await page.getByLabel(he.linkRequest.lastName).fill(YAEL.last)
   await page.getByLabel(he.linkRequest.personalId).fill(YAEL.personalId)
   await page.getByRole('button', { name: he.linkRequest.submit }).click()
-  await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
+  await expect(tab(page, 'today')).toHaveAttribute('aria-current', 'page')
 }

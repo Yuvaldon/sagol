@@ -1,11 +1,25 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
-import { ORGANIZATION, addUnit, OWNER, enterAsOwner, expectNoAxeViolations, navigation, navigationPanel, openModule, signIn } from './support/workspace.ts'
+import {
+  ORGANIZATION,
+  addUnit,
+  OWNER,
+  enterAsOwner,
+  expectNoAxeViolations,
+  managePage,
+  navigation,
+  openModule,
+  openSetup,
+  openTab,
+  signIn,
+  signOut,
+  tab,
+} from './support/workspace.ts'
 
-// The bars keep the daily work; the modules that set the unit up sit in "ניהול יחידה" by group, each with its plain
-// line and none pinned out (D-254); the scope label names the single root unit; the rules row's place is the soldier's
-// own choice, in the profile (D-173, D-253). On desktop and mobile, RTL, with axe. Sample data, tests only.
+// The tab bar holds the destinations; the tools sit in "ניהול" and the modules that set the unit up on its settings
+// page by group, each with its plain line and none pinned out (D-254, D-456); the scope label names the single root
+// unit (D-173, D-253). On desktop and mobile, RTL, with axe. Sample data, tests only.
 
 const COMPANY = 'פלוגה א'
 const ROLE = 'לוחם'
@@ -15,16 +29,7 @@ const SELF_PERMISSIONS: readonly (readonly [string, readonly string[]])[] = [
   [he.permissionLabels.resources.leaves, [he.permissionLabels.actions.view, he.permissionLabels.actions.create]],
 ]
 
-function menuButton(page: Page) {
-  return page.getByRole('button', { name: new RegExp(`^${he.navigation.open}`) })
-}
-
-async function openPanel(page: Page) {
-  await menuButton(page).click()
-  await expect(navigationPanel(page)).toBeVisible()
-}
-
-test('"ניהול יחידה" and the scope label', async ({ page }, testInfo) => {
+test('"ניהול" and the scope label', async ({ page }, testInfo) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await testInfo.attach('bars', { body: await page.screenshot(), contentType: 'image/png' })
@@ -32,28 +37,61 @@ test('"ניהול יחידה" and the scope label', async ({ page }, testInfo) =
   await test.step('with no rotation, the root unit from the claim holds one, so the owner is offered to open it (D-218, D-223)', async () => {
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByText(he.workspace.routineOpenBody)).toBeVisible()
-    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
+    await expectNoAxeViolations(page)
+    // "היום" says the same, and has no request to offer while no rotation takes one.
+    await openTab(page, 'today')
+    await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
+    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.myLeaves.updatesTitle}`) })).toHaveCount(0)
     await expectNoAxeViolations(page)
     await page.getByRole('button', { name: he.workspace.openRotation }).click()
     await expect(page).toHaveURL(/panel=deployments&entity=new/)
     await closeDrawer(page)
   })
 
-  await test.step('the bars keep the daily work; set-up modules are not in them', async () => {
+  await test.step('the tab bar holds the destinations only; the modules are not in it', async () => {
+    await expect(navigation(page).getByRole('button')).toHaveCount(4)
+    // A tab is an icon: its name shows as a tooltip where there is a pointer to rest on it.
+    if (testInfo.project.name === 'desktop') {
+      await tab(page, 'me').hover()
+      await expect(page.getByRole('tooltip')).toHaveText(he.shell.tabMe)
+      await page.mouse.move(0, 0)
+      await expect(page.getByRole('tooltip')).toHaveCount(0)
+    }
     for (const name of [he.units.open, he.soldiers.open, he.roles.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }
   })
 
-  await test.step('the panel lists the modules by section, and opens one', async () => {
-    await openPanel(page)
-    // The work first; the unit's setup is a step in, behind the row at its foot, with a way back (D-285).
-    for (const section of [he.navigation.sections.people, he.navigation.sections.presence]) {
-      await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toBeVisible()
-    }
-    await expect(navigationPanel(page).getByRole('heading', { name: he.navigation.sections.structure, exact: true })).toHaveCount(0)
-    await navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click()
+  await test.step('"ניהול" lists the tools, its settings page the modules by section, and a row opens one', async () => {
+    await openTab(page, 'manage')
+    await expect(page.getByRole('heading', { level: 1, name: he.navigation.tab, exact: true })).toBeVisible()
+    await expect(managePage(page).getByText(ORGANIZATION, { exact: true })).toBeVisible()
+    // The tools first; what a unit defines once is a step in, behind the last row, with a way back (D-285, D-456).
+    const rows = managePage(page).getByRole('button')
+    await expect(rows).toHaveText([
+      new RegExp(`^${he.soldiers.open}`),
+      new RegExp(`^${he.accountLinks.open}`),
+      new RegExp(`^${he.rules.open}`),
+      new RegExp(`^${he.units.open}`),
+      new RegExp(`^${he.deployments.open}`),
+      new RegExp(`^${he.dashboard.open}`),
+      new RegExp(`^${he.navigation.setupOpen}`),
+    ])
+    // A row is named by its tool alone; what it holds describes it.
+    await expect(managePage(page).getByRole('button', { name: he.soldiers.open, exact: true })).toHaveAccessibleDescription('1')
+    await expect(managePage(page).getByRole('heading', { name: he.navigation.sections.structure, exact: true })).toHaveCount(0)
+    await expectNoAxeViolations(page)
+    await testInfo.attach('manage', { body: await page.screenshot(), contentType: 'image/png' })
+    await openSetup(page)
+    // The page takes the keyboard on its heading, and a reload keeps the page, never another screen first.
+    await expect(page.getByRole('heading', { level: 1, name: he.navigation.setupOpen, exact: true })).toBeFocused()
+    // Closing returns the keyboard to the row that opened the page.
+    await managePage(page).getByRole('button', { name: he.shell.back, exact: true }).click()
+    await expect(managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })).toBeFocused()
+    await openSetup(page)
+    await page.reload()
+    await expect(page.getByRole('heading', { level: 1, name: he.navigation.setupOpen, exact: true })).toBeVisible()
     for (const section of [
       he.navigation.sections.structure,
       he.navigation.sections.access,
@@ -61,28 +99,28 @@ test('"ניהול יחידה" and the scope label', async ({ page }, testInfo) =
       he.navigation.sections.data,
       he.navigation.sections.advanced,
     ]) {
-      await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toBeVisible()
+      await expect(managePage(page).getByRole('heading', { name: section, exact: true })).toBeVisible()
     }
-    await navigationPanel(page).getByRole('button', { name: he.navigation.back, exact: true }).click()
-    // Each module says what it is for, and none can be pinned to the bar (D-250, D-254).
-    await expect(navigationPanel(page).getByRole('button', { name: he.soldiers.open, exact: true })).toHaveAccessibleDescription(
-      he.navigation.lines.soldiers,
-    )
-    await expect(navigationPanel(page).locator('[aria-pressed]')).toHaveCount(0)
+    // Each module says what it is for, and none can be pinned (D-250, D-254).
+    await expect(managePage(page).getByRole('button', { name: he.roles.open, exact: true })).toHaveAccessibleDescription(he.navigation.lines.roles)
+    await expect(managePage(page).locator('[aria-pressed]')).toHaveCount(0)
     await expectNoAxeViolations(page)
-    await testInfo.attach('panel', { body: await page.screenshot(), contentType: 'image/png' })
-    await page.keyboard.press('Escape')
-    await expect(navigationPanel(page)).toBeHidden()
+    await testInfo.attach('settings', { body: await page.screenshot(), contentType: 'image/png' })
+    await managePage(page).getByRole('button', { name: he.shell.back, exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1, name: he.navigation.tab, exact: true })).toBeVisible()
     await openModule(page, he.units.open)
-    await expect(navigationPanel(page)).toBeHidden()
     await closeDrawer(page)
     // The root unit from the claim is the only unit, and it holds the rotation (D-223).
     await openRotation(page, [OWNER.name])
-    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toBeVisible()
+    // With a rotation that takes requests, "היום" offers one, and the updates of the owner's own requests.
+    await openTab(page, 'today')
+    await expect(page.getByRole('button', { name: he.leaves.new, exact: true })).toBeVisible()
+    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.myLeaves.updatesTitle}`) })).toBeVisible()
+    await openTab(page, 'board')
   })
 
   await test.step('a single unit in sight names the scope, as a label and not a picker; a phone has no room for it', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
     const label = page.getByRole('navigation', { name: he.workspace.viewBar }).locator('span').getByText(ORGANIZATION, { exact: true })
     // A phone's strip shows no scope with nothing to choose (D-273).
     if (testInfo.project.name === 'mobile') await expect(label).toHaveCount(0)
@@ -125,9 +163,7 @@ test('a fighter sees only the modules their permissions open, and no unit picker
   })
 
   await test.step('the soldier links and reaches the workspace, which has no rotation yet', async () => {
-    await page.getByRole('button', { name: he.account.menu }).click()
-    await page.getByRole('menuitem', { name: he.account.signOut }).click()
-    await expect(page).toHaveURL(/\/sign-in$/)
+    await signOut(page)
     await signIn(page, soldier.email)
     await expect(page).toHaveURL(/\/onboarding$/)
     await page.getByLabel(he.linkRequest.firstName).fill(soldier.first)
@@ -138,51 +174,42 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByText(he.workspace.noRotationBody)).toBeVisible()
     await expect(page.getByRole('button', { name: he.workspace.openRotation })).toHaveCount(0)
-    await expect(navigation(page).getByRole('button', { name: he.myLeaves.open })).toHaveCount(0)
+    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.myLeaves.updatesTitle}`) })).toHaveCount(0)
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
+    // Reading nobody else's leaves, the fighter has no board (D-455).
+    await expect(tab(page, 'board')).toHaveCount(0)
     await expectNoAxeViolations(page)
   })
 
-  await test.step('the panel holds only what the fighter may open: their own record', async () => {
-    await expect(page.getByRole('button', { name: new RegExp(`^(?!${he.navigation.open}$).*${he.workspace.unit}`) })).toHaveCount(0)
-    await openPanel(page)
-    // Viewing their own record opens the soldiers module (D-053); nothing else of the panel is theirs.
-    await expect(navigationPanel(page).getByRole('button', { name: he.soldiers.open, exact: true })).toBeVisible()
+  await test.step('"ניהול" holds only what the fighter may open: their own record', async () => {
+    await expect(page.getByRole('button', { name: new RegExp(he.workspace.unit) })).toHaveCount(0)
+    await openTab(page, 'manage')
+    // Viewing their own record opens the soldiers module (D-053); nothing else of "ניהול" is theirs.
+    await expect(managePage(page).getByRole('button', { name: he.soldiers.open, exact: true })).toBeVisible()
+    await expect(managePage(page).getByRole('button')).toHaveCount(1)
     for (const name of [he.units.open, he.leaveTypes.open, he.tags.open, he.roles.open, he.grants.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }
-    for (const section of [
-      he.navigation.sections.presence,
-      he.navigation.sections.structure,
-      he.navigation.sections.access,
-      he.navigation.sections.catalogs,
-      he.navigation.sections.data,
-      he.navigation.sections.advanced,
-    ]) {
-      await expect(navigationPanel(page).getByRole('heading', { name: section, exact: true })).toHaveCount(0)
-    }
-    // No setup of the unit is theirs, so its row is not there either (D-285).
-    await expect(navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })).toHaveCount(0)
+    // No setting of the unit is theirs, so its row is not there either (D-285).
+    await expect(managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })).toHaveCount(0)
     await expectNoAxeViolations(page)
   })
 })
 
-test('on a tablet held upright, no row of the panel stretches to fill it', async ({ page }, testInfo) => {
+test('on a tablet held upright, no row of "ניהול" stretches to fill it', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'one tablet shape, set here')
   await page.setViewportSize({ width: 768, height: 1024 })
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
-  await openPanel(page)
-  // The unit is not set up yet, so its setup sits apart at the foot of the work, a row like the others (D-285).
-  const setup = navigationPanel(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })
+  await openTab(page, 'manage')
+  // The unit is not set up yet: its settings are the last row, a row like the others (D-285).
+  const setup = managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })
   await expect(setup).toBeVisible()
-  await testInfo.attach('panel, tablet upright', { body: await page.screenshot(), contentType: 'image/png' })
-  const heights = await navigationPanel(page)
-    .getByRole('navigation', { name: he.navigation.title })
+  await testInfo.attach('manage, tablet upright', { body: await page.screenshot(), contentType: 'image/png' })
+  const heights = await managePage(page)
     .getByRole('button')
     .evaluateAll((buttons) => buttons.map((button) => ({ name: button.textContent ?? '', height: button.getBoundingClientRect().height })))
   expect(heights.length).toBeGreaterThan(1)
-  // A row is one or two lines tall, never the panel's leftover height.
-  // The setup's row is one of them: two lines, its name and what it holds, like a module's (D-285).
+  // A row is one line tall, never the page's leftover height.
   for (const row of heights) expect(row.height, row.name).toBeLessThanOrEqual(64)
 })

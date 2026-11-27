@@ -1,4 +1,4 @@
-import { BarColorMode, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PanelId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TableSortKey, ViewId } from '@config'
+import { BarColorMode, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PanelId, PageId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TabId, TableSortKey, ViewId } from '@config'
 import { CalendarDate, DeploymentId, FilterExpression, SavedViewId, UnitId } from '@contracts'
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
@@ -43,6 +43,9 @@ const WorkspaceSearchFields = z.object({
   [SEARCH_PARAMS.planned]: z.literal(true).optional().catch(undefined),
   // The saved view the board was last put in (D-442); one the soldier does not hold is ignored where it is read.
   [SEARCH_PARAMS.saved]: SavedViewId.optional().catch(undefined),
+  // The destination of the tab bar and the page open over it (D-455, D-459).
+  [SEARCH_PARAMS.tab]: TabId.optional().catch(undefined),
+  [SEARCH_PARAMS.page]: PageId.optional().catch(undefined),
 })
 type WorkspaceSearchFields = z.infer<typeof WorkspaceSearchFields>
 

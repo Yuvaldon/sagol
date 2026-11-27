@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { ORGANIZATION, enterAsOwner, expectNoAxeViolations, navigation, openModule } from './support/workspace.ts'
+import { ORGANIZATION, enterAsOwner, expectNoAxeViolations, navigation, openModule, tab } from './support/workspace.ts'
 
 // V1's demo: the units drawer, from levels to archive, on desktop and mobile, RTL, with axe.
 
@@ -330,7 +330,7 @@ test('on a phone: 44 px targets, real touch drag, and the sheet closes by its gr
   }
 
   await enterAsOwner(page)
-  await expect(page.getByRole('button', { name: he.navigation.open })).toBeVisible()
+  await expect(tab(page, 'manage')).toBeVisible()
   await openUnits(page)
   await buildTree(page)
   await expectTouchTargets()

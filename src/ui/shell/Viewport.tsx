@@ -1,5 +1,7 @@
+import { NEW_ENTITY, PANEL_IDS } from '@config'
 import { t } from '@i18n'
-import { useActiveView, useDateWindow, useQuickAction, useRotationScope } from '@logic'
+import { useActiveView, useDateWindow, usePanel, useQuickAction, useRotationScope } from '@logic'
+import { Button } from '../primitives/Button'
 import { EmptyNotice, LoadingNotice } from '../patterns/Notices'
 import { useViewDevice } from '../patterns/media'
 import { AVAILABLE_VIEWS, engineOf } from '../engines/registry'
@@ -13,11 +15,12 @@ import { useNoBoard } from './boardShown'
 const CENTERED = 'flex h-full items-center justify-center px-lg'
 
 /**
- * Routine (D-257, D-296): a quiet band that names the mode and what opens it, with no action of its own; the quick
- * action in the bottom strip opens a rotation.
+ * Routine (D-257, D-296): a quiet band that names the mode and what opens it. Who may open a rotation does it from the
+ * band: the tab bar holds no quick action of the role (D-455).
  */
 function RoutineBand() {
   const action = useQuickAction()
+  const panel = usePanel()
   const bodyKey = action === 'open_rotation' ? 'workspace.routineOpenBody' : 'workspace.noRotationBody'
   return (
     <section
@@ -30,6 +33,16 @@ function RoutineBand() {
         </h2>
         <p className="text-label text-text-muted">{t(bodyKey)}</p>
       </div>
+      {action === 'open_rotation' ? (
+        <Button
+          variant="primary"
+          onPress={() => {
+            panel.open(PANEL_IDS.deployments, { entity: NEW_ENTITY })
+          }}
+        >
+          {t('workspace.openRotation')}
+        </Button>
+      ) : null}
     </section>
   )
 }

@@ -24,7 +24,7 @@ import { ListChecks } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../patterns/Notices'
 import { Button } from '../primitives/Button'
-import { useOpenUnitSetup } from '../shell/navigationPanelState'
+import { useOpenUnitSetup } from '../shell/unitSetup'
 
 // What every engine shares around the board model (D-174): the window, the filter and the board's own conditions from
 // the URL (D-103, D-104, D-131 to D-133), the states of an empty or loading board, and how a soldier or a leave opens.

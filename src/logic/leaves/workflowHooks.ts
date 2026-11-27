@@ -57,10 +57,12 @@ import {
   leaveAfterStep,
   leaveSteps,
   leaveThread,
+  myDays,
   pendingRequests,
   toTransitionInput,
   toUpdateLeaveInput,
   type LeaveSoldierState,
+  type MyDay,
   type LeaveEditValues,
   type ThreadEntry,
 } from './workflow'
@@ -380,6 +382,21 @@ export function useMyNextDays(): Loaded<readonly SoldierDay[]> | null {
     if (today === null) return { status: 'loading' }
     return { status: 'ready', value: myNextDays(soldierId, leaves.value, types.value, today) }
   }, [soldierId, leaves, types, today])
+}
+
+/** The actor's own days from a day on, for their strip and month (D-454); NULL when the actor is not linked. */
+export function useMyDays(from: CalendarDate | null, count: number): Loaded<readonly MyDay[]> | null {
+  const actor = useActor()
+  const leaves = useMyLeaveRows()
+  const types = useLeaveTypes()
+  const soldierId = actor?.soldier_id ?? null
+  return useMemo((): Loaded<readonly MyDay[]> | null => {
+    if (soldierId === null) return null
+    if (leaves.status !== 'ready') return leaves
+    if (types.status !== 'ready') return types
+    if (from === null) return { status: 'loading' }
+    return { status: 'ready', value: myDays(soldierId, leaves.value, types.value, from, count) }
+  }, [soldierId, leaves, types, from, count])
 }
 
 /** The rotation "הסבב שלי" counts, and the actor's figures over it. */
