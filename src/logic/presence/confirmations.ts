@@ -61,7 +61,8 @@ export interface DayConfirmations {
   readonly seenSeq: ChangeSeq
   /**
    * When the day's report was sent, as far as the actor sees it: the latest confirmation, once every section they see
-   * stands confirmed. NULL while one waits or has changed since, and with no section at all.
+   * stands confirmed. NULL while one waits or has changed since, with no section at all, and, for who reads the summary,
+   * while a unit outside their view is not confirmed (D-303).
    */
   readonly sentAt: Timestamp | null
 }
@@ -137,7 +138,8 @@ export function dayConfirmations(input: DayConfirmationsInput): DayConfirmations
     rotation.report_owner_id === null ? input.mayConfirm(rotation.unit_id) : rotation.report_owner_id === input.actorId,
   )
   const statuses = [...sections.values()].map((section) => section.status)
-  const sent = statuses.length > 0 && statuses.every((status) => status === 'confirmed')
+  // Who reads the summary answers for the whole report: a unit outside their view that is not sent keeps it unsent (D-303).
+  const sent = statuses.length > 0 && statuses.every((status) => status === 'confirmed') && !(reads && input.unseen > 0)
   const times = [...sections.values()].flatMap((section) => byUnit.get(section.unitId)?.confirmed_at ?? [])
   return {
     sections,

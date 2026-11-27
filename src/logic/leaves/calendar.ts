@@ -6,6 +6,7 @@ import { addDays, addMonths, compareDates, daysBetween, endOfMonth, startOfMonth
 // soldier marks in it. Pure, so the screen holds no arithmetic of its own.
 
 const DAYS_IN_WEEK = 7
+const MONTHS_IN_YEAR = 12
 
 /** The days from a day on, that day first. */
 export function daysFrom(from: CalendarDate, count: number): readonly CalendarDate[] {
@@ -22,6 +23,13 @@ export interface MonthSpan {
 export function monthSpan(day: CalendarDate, offset: number): MonthSpan {
   const first = startOfMonth(addMonths(startOfMonth(day), offset))
   return { first, days: daysBetween(first, endOfMonth(first)) + 1 }
+}
+
+/** How many months the month of `day` is after the month of `from`; negative when it is before. */
+export function monthsBetween(from: CalendarDate, day: CalendarDate): number {
+  const [fromYear = 0, fromMonth = 0] = from.split('-').map(Number)
+  const [year = 0, month = 0] = day.split('-').map(Number)
+  return (year - fromYear) * MONTHS_IN_YEAR + (month - fromMonth)
 }
 
 /** Days in a row cut into weeks that start on the first day of the week; NULL pads the first and last week. */

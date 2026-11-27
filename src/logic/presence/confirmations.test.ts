@@ -285,6 +285,13 @@ describe('the daily report confirmations (D-293)', () => {
     expect(sent).toBe([confirmation(SQUAD).confirmed_at, '2026-11-10T09:30:00.000Z'].toSorted().at(-1))
   })
 
+  it('is not sent for who reads the summary while a unit outside their view is not (D-303)', () => {
+    const both = [confirmation(SQUAD), confirmation(OTHER)]
+    expect(dayConfirmations(input({ confirmations: both, unseen: 1 })).sentAt).toBeNull()
+    // Who does not read the summary answers only for what they see.
+    expect(dayConfirmations(input({ confirmations: both, unseen: 1, mayConfirm: () => false })).sentAt).not.toBeNull()
+  })
+
   it('shows the summary to the named owner, or with none named to who may confirm', () => {
     const confirmations = [confirmation(SQUAD)]
     const ownedDay = day([rotation({ report_owner_id: OWNER })], WHOLE)

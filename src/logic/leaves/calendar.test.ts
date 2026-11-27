@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { daysFrom, isBeforeDay, monthSpan, selectDay, selectionCovers, weeksOf } from './calendar'
+import { daysFrom, isBeforeDay, monthSpan, monthsBetween, selectDay, selectionCovers, weeksOf } from './calendar'
 
 describe('the day math of Today', () => {
   it('lists the days from a day on, across a month end', () => {
@@ -10,6 +10,12 @@ describe('the day math of Today', () => {
     expect(monthSpan('2026-11-18', 0)).toEqual({ first: '2026-11-01', days: 30 })
     expect(monthSpan('2026-11-18', 2)).toEqual({ first: '2027-01-01', days: 31 })
     expect(monthSpan('2026-03-31', -1)).toEqual({ first: '2026-02-01', days: 28 })
+  })
+
+  it('counts the months between two days, across a year and backward', () => {
+    expect(monthsBetween('2026-11-11', '2026-11-30')).toBe(0)
+    expect(monthsBetween('2026-11-11', '2027-01-02')).toBe(2)
+    expect(monthsBetween('2026-11-11', '2026-09-30')).toBe(-2)
   })
 
   it('cuts days into weeks that start on Sunday and pads both ends', () => {

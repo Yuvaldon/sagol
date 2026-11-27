@@ -20,6 +20,7 @@ export {
   daysFrom,
   isBeforeDay,
   monthSpan,
+  monthsBetween,
   selectDay,
   selectionCovers,
   weeksOf,
