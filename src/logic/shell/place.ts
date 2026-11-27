@@ -1,10 +1,15 @@
 import { DEFAULT_TAB, PAGE_TABS, type PageId, type TabId } from '@config'
-import type { PermissionCheck } from '@contracts'
+import type { PermissionCheck, Soldier } from '@contracts'
 import { LEAVE_PERMISSIONS } from '@domain'
 import { useCallback, useMemo } from 'react'
 import { useQuickAction } from '../home/quickAction'
+import { grantModuleChecks } from '../access/hooks'
+import { REVIEW_CHECKS } from '../accounts/hooks'
+import { leaveCreationChecks, useLeaveCreation } from '../leaves/hooks'
+import { CHECK_LIST as SETUP_CHECK_LIST } from '../organization/setup'
 import { checkOn } from '../permissions/checks'
-import { useCanAnswers } from '../permissions/hooks'
+import { MODULE_CHECK_LIST, useCanAnswers } from '../permissions/hooks'
+import { TRANSFER_CHECK_LIST } from '../transfer/hooks'
 import { useSoldiers } from '../roster/hooks'
 import { useSession } from '../session/hooks'
 import { useRotationScope } from '../view-state/rotation'
@@ -68,18 +73,30 @@ export function useShellPlace(): ShellPlace {
 }
 
 export interface ShellAccess {
-  /** Whether every answer has arrived; until then no optional destination shows. */
+  /**
+   * Whether every answer has arrived, those behind the rows of "ניהול" and the request cards included; until then
+   * no optional destination shows, so a reload on one of them never shows another first.
+   */
   readonly ready: boolean
   /** "לוח": the actor reads the leaves of a soldier other than themself, or holds that over a unit. */
   readonly board: boolean
   /** The action circle: the actor may request a leave for themself, and a rotation that has not ended takes requests (D-266). */
   readonly requestsForSelf: boolean
+  /** "בקשות לאישור" and its page: the actor approves a soldier other than themself, and a rotation takes requests (D-120, D-218). */
+  readonly approvals: boolean
 }
 
 const NO_CHECKS: readonly PermissionCheck[] = []
+const NO_SOLDIERS: readonly Soldier[] = []
 
 /** Reading the leaves of some unit (D-362): who holds it reads the leaves of others, also before another soldier exists. */
 const A_UNIT: PermissionCheck = { permission: LEAVE_PERMISSIONS.view, target: { kind: 'some_unit' } }
+
+/** Whether every one of the questions has its answer. Asked with the list its own hook asks, so the answer is shared. */
+function useAllKnown(checks: readonly PermissionCheck[]): boolean {
+  const { known } = useCanAnswers(checks)
+  return checks.every(known)
+}
 
 export function useShellAccess(): ShellAccess {
   const session = useSession()
@@ -94,15 +111,28 @@ export function useShellAccess(): ShellAccess {
     [seen, own],
   )
   const { can, known } = useCanAnswers(checks)
+  // The same questions the rows of "ניהול" and the request surfaces ask, so their answers are the ones waited for.
+  const visible = seen ?? NO_SOLDIERS
+  const creation = useLeaveCreation(visible)
+  const creationChecks = useMemo(() => leaveCreationChecks(visible), [visible])
+  const grantChecks = useMemo(() => grantModuleChecks(visible), [visible])
+  const creationKnown = useAllKnown(creationChecks)
+  const grantsKnown = useAllKnown(grantChecks)
+  const modulesKnown = useAllKnown(MODULE_CHECK_LIST)
+  const setupKnown = useAllKnown(SETUP_CHECK_LIST)
+  const reviewKnown = useAllKnown(REVIEW_CHECKS)
+  const transferKnown = useAllKnown(TRANSFER_CHECK_LIST)
+  const rowsKnown = creationKnown && grantsKnown && modulesKnown && setupKnown && reviewKnown && transferKnown
   const action = useQuickAction()
   const scope = useRotationScope()
-  const ready = session.status === 'ready' && soldiers.status !== 'loading' && checks.every(known) && scope.ready
+  const ready = session.status === 'ready' && soldiers.status !== 'loading' && checks.every(known) && rowsKnown && scope.ready
   return useMemo(
     () => ({
       ready,
       board: ready && checks.some(can),
       requestsForSelf: ready && action === 'new_leave',
+      approvals: ready && creation.approvesOthers && scope.requests,
     }),
-    [ready, checks, can, action],
+    [ready, checks, can, action, creation.approvesOthers, scope.requests],
   )
 }

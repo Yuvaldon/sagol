@@ -76,7 +76,7 @@ export function useLinkReviewCommands() {
 
 const ORGANIZATION: PolicyTarget = { kind: 'organization' }
 const REVIEW_AT_ORGANIZATION: PermissionCheck = checkOf(ACCOUNT_REVIEW_PERMISSION, ORGANIZATION)
-const REVIEW_CHECKS: readonly PermissionCheck[] = [REVIEW_AT_ORGANIZATION]
+export const REVIEW_CHECKS: readonly PermissionCheck[] = [REVIEW_AT_ORGANIZATION]
 
 /**
  * Whether the account-links button is for this actor, and how many requests wait for them (D-150): who holds

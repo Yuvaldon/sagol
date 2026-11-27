@@ -107,7 +107,19 @@ describe('the destinations follow the permissions (D-455)', () => {
   })
 
   it('shows nothing optional before the answers arrive', async () => {
-    expect((await access(COMMANDER, [ROTATION])).first).toEqual({ ready: false, board: false, requestsForSelf: false })
+    expect((await access(COMMANDER, [ROTATION])).first).toEqual({ ready: false, board: false, requestsForSelf: false, approvals: false })
+  })
+
+  it('opens "בקשות לאישור" to who approves someone else while a rotation takes requests, and to nobody else', async () => {
+    expect((await access(APPROVER, [ROTATION])).last?.approvals).toBe(true)
+    expect((await access(APPROVER)).last?.approvals).toBe(false)
+    expect((await access(FIGHTER, [ROTATION])).last?.approvals).toBe(false)
+  })
+
+  it('is not ready before the answers behind the rows of "ניהול" arrive', async () => {
+    const { first, last } = await access(COMMANDER, [ROTATION])
+    expect(first?.ready).toBe(false)
+    expect(last).toMatchObject({ ready: true, board: true })
   })
 
   it('offers a request for oneself while a rotation takes requests, to who may create their own', async () => {

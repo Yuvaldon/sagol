@@ -306,12 +306,17 @@ export function useRevokeLinkHints(accounts: readonly SoldierAccount[]) {
   )
 }
 
+/** What the grants module asks about each soldier in sight. */
+export function grantModuleChecks(soldiers: readonly Soldier[]): PermissionCheck[] {
+  return soldiers.map((soldier) => checkOn(GRANT.view, soldier.id))
+}
+
 /**
  * Whether the grants module is for this actor: who may view grants of at least one soldier they see. A hint: the
  * adapter filters the grants again.
  */
 export function useGrantModuleAccess(soldiers: readonly Soldier[]): boolean {
-  const checks = useMemo(() => soldiers.map((soldier) => checkOn(GRANT.view, soldier.id)), [soldiers])
+  const checks = useMemo(() => grantModuleChecks(soldiers), [soldiers])
   const can = useCan(checks)
   return checks.some(can)
 }

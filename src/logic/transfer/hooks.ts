@@ -15,7 +15,7 @@ const TRANSFER_CHECKS = {
   export: { permission: { resource: 'data_transfer', action: 'export' }, target: { kind: 'organization' } },
 } as const satisfies Record<string, PermissionCheck>
 
-const TRANSFER_CHECK_LIST: readonly PermissionCheck[] = Object.values(TRANSFER_CHECKS)
+export const TRANSFER_CHECK_LIST: readonly PermissionCheck[] = Object.values(TRANSFER_CHECKS)
 
 export function useTransferAccess() {
   const can = useCan(TRANSFER_CHECK_LIST)
