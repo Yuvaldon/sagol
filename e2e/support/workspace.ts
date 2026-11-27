@@ -233,9 +233,12 @@ export async function openModule(page: Page, name: string | RegExp) {
     if ((await tab(page, 'manage').getAttribute('aria-current', { timeout: 1_000 })) !== 'page') await tab(page, 'manage').click({ timeout: 1_000 })
     const row = managePage(page).getByRole('button', options)
     if (!(await row.isVisible())) {
-      // A module of the unit's settings is a step in, behind the index's last row; from the settings, the index is a step back.
+      // A module of the unit's settings is a step in, behind the index's last row; from the settings, the index is a step
+      // back; from another page of "ניהול", the tab in sight returns to the index (D-465, D-482).
+      const settingsRow = managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true })
       if (await settingsHeading(page).isVisible()) await managePage(page).getByRole('button', { name: he.shell.back, exact: true }).click({ timeout: 1_000 })
-      else await managePage(page).getByRole('button', { name: he.navigation.setupOpen, exact: true }).click({ timeout: 1_000 })
+      else if (await settingsRow.isVisible()) await settingsRow.click({ timeout: 1_000 })
+      else await tab(page, 'manage').click({ timeout: 1_000 })
     }
     await row.click({ timeout: 1_000 })
     await expect(dialogs).not.toHaveCount(openedBefore, { timeout: 1_000 })

@@ -30,7 +30,7 @@ test('the back button closes what is open and then leaves the app, never replayi
   // The owner's sequence: a destination visited and left, a module opened and closed, the window moved.
   await openTab(app, 'me')
   await openTab(app, 'board')
-  await openModule(app, he.soldiers.open)
+  await openModule(app, he.units.open)
   await expect(drawer(app)).toBeVisible()
   await closeDrawer(app)
   await expect(drawer(app)).toBeHidden()
@@ -43,7 +43,7 @@ test('the back button closes what is open and then leaves the app, never replayi
 
   // An overlay that is open is what the back button closes, and the view changed under it stays.
   const moved = app.url()
-  await openModule(app, he.soldiers.open)
+  await openModule(app, he.units.open)
   await expect(drawer(app)).toBeVisible()
   await app.goBack()
   await expect(drawer(app)).toBeHidden()

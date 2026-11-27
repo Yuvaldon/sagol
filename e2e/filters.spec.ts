@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createSoldier, openSoldierCard } from './support/soldiers.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, press, requestLeave } from './support/leaves.ts'
 import { addFilter, builder, chooseValues, clearConditions, closeBuilder, conditions, openBuilder, optionsMenu, pick } from './support/board.ts'
 import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, openTab } from './support/workspace.ts'
@@ -68,13 +69,6 @@ async function createTag(page: Page, name: string, category: string) {
   await expect(drawer(page).getByRole('list', { name: category })).toContainText(name)
 }
 
-async function createSoldier(page: Page, firstName: string, lastName: string) {
-  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(firstName)
-  await page.getByLabel(he.soldiers.lastName).fill(lastName)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
-}
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
 test.beforeEach(async ({ page, isMobile }) => {
@@ -112,10 +106,9 @@ test('tags, the set conditions, no "only who is missing", and who is present tod
   })
 
   await test.step("a soldier's tags, one of a single category", async () => {
-    await openModule(page, he.soldiers.open)
     await createSoldier(page, 'יעל', 'שחר')
     await createSoldier(page, 'נועם', 'לב')
-    await drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: /יעל שחר/ }).click()
+    await openSoldierCard(page, 'יעל שחר', { full: true })
     await page.getByRole('button', { name: he.soldiers.tagsEdit }).click()
     await press(page, 'checkbox', 'חובש')
     await press(page, 'radio', 'רווק')
@@ -129,8 +122,7 @@ test('tags, the set conditions, no "only who is missing", and who is present tod
     // The profile opens again on the soldier's new version, so saving it still works (D-130).
     await page.getByLabel(he.soldiers.nickname).fill('יעלי')
     await drawer(page).getByRole('button', { name: he.common.save, exact: true }).first().click()
-    // A saved profile goes back to the list; a refusal would stay on the page with an alert.
-    await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel })).toContainText('יעל שחר')
+    // A saved profile stays in the card; a refusal would show an alert.
     await expect(page.getByRole('alert')).toHaveCount(0)
     await closeDrawer(page)
   })

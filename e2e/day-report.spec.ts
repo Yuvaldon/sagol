@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createSoldier } from './support/soldiers.ts'
 import {
   NOW,
   ROTATION_UNIT,
   choose,
   closeDrawer,
   createType,
-  drawer,
   openRotation,
   openRotationInNewUnit,
   requestLeave,
@@ -142,15 +142,10 @@ async function soldierInRotation(page: Page) {
   await openModule(page, he.units.open)
   await addUnit(page, ROTATION_UNIT)
   await closeDrawer(page)
-  await openModule(page, he.soldiers.open)
-  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill('יעל')
-  await page.getByLabel(he.soldiers.lastName).fill('שחר')
-  await choose(page, he.soldiers.unit, ROTATION_UNIT)
-  await typeDate(page, he.soldiers.placedFrom, '01', '01', '2026')
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(SOLDIER)).toBeVisible()
-  await closeDrawer(page)
+  await createSoldier(page, 'יעל', 'שחר', async () => {
+    await choose(page, he.soldiers.unit, ROTATION_UNIT)
+    await typeDate(page, he.soldiers.placedFrom, '01', '01', '2026')
+  })
   await openRotation(page, [SOLDIER])
 }
 

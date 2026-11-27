@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { openSoldierCard } from './support/soldiers.ts'
+import { createSoldier } from './support/soldiers.ts'
 import { NOW, board, choose, closeDrawer, openRotation, typeDate } from './support/leaves.ts'
 import { chooseOption, openOptions, optionsMenu } from './support/board.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, ORGANIZATION, OWNER, waitForSettledScreen } from './support/workspace.ts'
@@ -34,21 +36,17 @@ async function buildUnits(page: Page) {
 }
 
 async function createPlacedSoldier(page: Page, firstName: string, lastName: string, unit: string) {
-  await page.getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(firstName)
-  await page.getByLabel(he.soldiers.lastName).fill(lastName)
-  await choose(page, he.soldiers.unit, unit)
-  await typeDate(page, he.soldiers.placedFrom, '01', '01', '2026')
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
+  await createSoldier(page, firstName, lastName, async () => {
+    await choose(page, he.soldiers.unit, unit)
+    await typeDate(page, he.soldiers.placedFrom, '01', '01', '2026')
+  })
 }
 
 /** Two soldiers in two platoons; the first moves to the second platoon today, Wednesday. */
 async function buildRoster(page: Page) {
-  await openModule(page, he.soldiers.open)
   await createPlacedSoldier(page, 'יעל', 'שחר', 'מחלקה א')
   await createPlacedSoldier(page, 'נועם', 'לב', 'מחלקה ב')
-  await page.getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: /יעל שחר/ }).click()
+  await openSoldierCard(page, 'יעל שחר', { full: true })
   await page.getByRole('button', { name: he.soldiers.moveOpen }).click()
   await choose(page, he.soldiers.unit, 'מחלקה ב')
   await page.getByRole('button', { name: he.soldiers.moveSubmit, exact: true }).click()
@@ -198,12 +196,12 @@ test('the drawer and its scrim do not move for who asks for less motion (OI-058)
     })
 
   await enterAsOwner(page)
-  await openModule(page, he.soldiers.open)
+  await openModule(page, he.units.open)
   expect(await animationsOf(page)).not.toEqual(['none', 'none'])
   await closeDrawer(page)
 
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await openModule(page, he.soldiers.open)
+  await openModule(page, he.units.open)
   expect(await animationsOf(page)).toEqual(['none', 'none'])
   await expectNoAxeViolations(page)
 })

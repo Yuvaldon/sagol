@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createSoldier } from './support/soldiers.ts'
 import { NOW, board, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, signIn, signOut, openTab, waitForSettledScreen } from './support/workspace.ts'
 
@@ -26,16 +27,10 @@ async function createUnit(page: Page) {
 
 /** A soldier with the private fields auto-link reads (D-153). */
 async function addYael(page: Page) {
-  await openModule(page, he.soldiers.open)
-  await page.getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(YAEL.first)
-  await page.getByLabel(he.soldiers.lastName).fill(YAEL.last)
-  await page.getByLabel(he.soldiers.personalId).fill(YAEL.personalId)
-  await page.getByLabel(he.soldiers.inviteEmail).fill(YAEL.email)
-  await page.getByRole('button', { name: he.common.create }).click()
-  const name = `${YAEL.first} ${YAEL.last}`
-  await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(name, { exact: true })).toBeVisible()
-  await closeDrawer(page)
+  await createSoldier(page, YAEL.first, YAEL.last, async () => {
+    await page.getByLabel(he.soldiers.personalId).fill(YAEL.personalId)
+    await page.getByLabel(he.soldiers.inviteEmail).fill(YAEL.email)
+  })
 }
 
 /** Yael signs in; the personal number and the invite email link her without a reviewer. */

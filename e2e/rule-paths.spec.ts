@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createRule as createRuleOnPage } from './support/rules.ts'
+import { createSoldier } from './support/soldiers.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, typeDate, openNewLeave } from './support/leaves.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, backToBoard, openTab, openRequests, requestsList } from './support/workspace.ts'
 
@@ -13,14 +15,8 @@ const AT_LEAST_TWO = 'שניים במחלקה'
 const AT_MOST_ONE = 'לכל היותר אחד'
 
 async function createRule(page: Page, name: string, bound: 'min' | 'max', value: string) {
-  await openModule(page, he.rules.open)
-  await drawer(page).getByRole('button', { name: he.rules.new }).first().click()
-  await page.getByLabel(he.rules.name).fill(name)
-  await page.getByLabel(bound === 'min' ? he.rules.min : he.rules.max, { exact: true }).fill(value)
-  await choose(page, he.rules.scope, PLATOON)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.rules.listLabel }).getByText(name, { exact: true })).toBeVisible()
-  await closeDrawer(page)
+  await createRuleOnPage(page, { name, scope: PLATOON, [bound]: value })
+  await backToBoard(page)
 }
 
 /** A platoon with two soldiers, a type, and a soft rule that wants both of them there. */
@@ -28,19 +24,14 @@ async function setUp(page: Page) {
   await openModule(page, he.units.open)
   await addUnit(page, PLATOON)
   await closeDrawer(page)
-  await openModule(page, he.soldiers.open)
   for (const [first, last] of [
     ['יעל', 'שחר'],
     ['נועם', 'בר'],
   ] as const) {
-    await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-    await page.getByLabel(he.soldiers.firstName).fill(first)
-    await page.getByLabel(he.soldiers.lastName).fill(last)
-    await choose(page, he.soldiers.unit, PLATOON)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${first} ${last}`)).toBeVisible()
+    await createSoldier(page, first, last, async () => {
+      await choose(page, he.soldiers.unit, PLATOON)
+    })
   }
-  await closeDrawer(page)
   await openModule(page, he.leaveTypes.open)
   await createType(page, { name: TYPE, color: he.palette.teal })
   await closeDrawer(page)

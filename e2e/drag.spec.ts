@@ -1,7 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createRule } from './support/rules.ts'
+import { createSoldier } from './support/soldiers.ts'
 import { NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press, typeDate } from './support/leaves.ts'
-import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, waitForSettledScreen } from './support/workspace.ts'
+import { addUnit, backToBoard, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, waitForSettledScreen } from './support/workspace.ts'
 
 // V8's demo: drag to create, move and resize leaves on the board, with the card that says what a drop would do and the
 // rule it would break. On a phone a bar is not dragged (D-458, D-480): days tapped in a row create, through the tray,
@@ -15,15 +17,10 @@ async function setUp(page: Page) {
   await openModule(page, he.units.open)
   await addUnit(page, PLATOON)
   await closeDrawer(page)
-  await openModule(page, he.soldiers.open)
-  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill('יעל')
-  await page.getByLabel(he.soldiers.lastName).fill('שחר')
-  await choose(page, he.soldiers.unit, PLATOON)
-  await typeDate(page, he.soldiers.placedFrom, '01', '01', '2026')
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(SOLDIER)).toBeVisible()
-  await closeDrawer(page)
+  await createSoldier(page, 'יעל', 'שחר', async () => {
+    await choose(page, he.soldiers.unit, PLATOON)
+    await typeDate(page, he.soldiers.placedFrom, '01', '01', '2026')
+  })
   await openModule(page, he.leaveTypes.open)
   await createType(page, { name: 'בית', color: he.palette.teal })
   await closeDrawer(page)
@@ -137,14 +134,8 @@ test('drag to create, move and resize, with what a drop would break', async ({ p
   })
 
   await test.step('a soft rule shows on the card while dragging, and the drop asks before it is saved', async () => {
-    await openModule(page, he.rules.open)
-    await drawer(page).getByRole('button', { name: he.rules.new }).first().click()
-    await page.getByLabel(he.rules.name).fill('לפחות אחד')
-    await choose(page, he.rules.scope, PLATOON)
-    await page.getByLabel(he.rules.min, { exact: true }).fill('1')
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(drawer(page).getByRole('list', { name: he.rules.listLabel }).getByText('לפחות אחד', { exact: true })).toBeVisible()
-    await closeDrawer(page)
+    await createRule(page, { name: 'לפחות אחד', scope: PLATOON, min: '1' })
+    await backToBoard(page)
 
     const box = await bar(page).boundingBox()
     if (box === null) throw new Error('no bar')
@@ -166,15 +157,8 @@ test('drag to create, move and resize, with what a drop would break', async ({ p
   })
 
   await test.step('a hard rule refuses the drop, and the bar stays where it was (OI-107)', async () => {
-    await openModule(page, he.rules.open)
-    await drawer(page).getByRole('button', { name: he.rules.new }).first().click()
-    await page.getByLabel(he.rules.name).fill('חובה אחד')
-    await choose(page, he.rules.scope, PLATOON)
-    await choose(page, he.rules.enforcement, he.rules.enforcementHard)
-    await page.getByLabel(he.rules.min, { exact: true }).fill('1')
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(drawer(page).getByRole('list', { name: he.rules.listLabel }).getByText('חובה אחד', { exact: true })).toBeVisible()
-    await closeDrawer(page)
+    await createRule(page, { name: 'חובה אחד', scope: PLATOON, min: '1', hard: true })
+    await backToBoard(page)
 
     const box = await bar(page).boundingBox()
     if (box === null) throw new Error('no bar')

@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, openNewLeave } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, backToBoard } from './support/workspace.ts'
+import { createSoldier, openManageIndex } from './support/soldiers.ts'
+import { NOW, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit } from './support/leaves.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, openTab, backToBoard } from './support/workspace.ts'
 import { chooseOption } from './support/board.ts'
 
 // V31's demo: the leave-round planner (D-270, D-316). Two groups of the rotation's soldiers take turns on the routine
@@ -10,13 +11,6 @@ import { chooseOption } from './support/board.ts'
 
 const SOLDIER = 'יעל שחר'
 
-async function createSoldier(page: Page, firstName: string, lastName: string) {
-  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(firstName)
-  await page.getByLabel(he.soldiers.lastName).fill(lastName)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
-}
 
 function group(page: Page, n: number) {
   return drawer(page).getByRole('group', { name: `${he.leaves.roundsGroup} ${String(n)}`, exact: true })
@@ -30,17 +24,27 @@ test.beforeEach(async ({ page, isMobile }) => {
 test('two groups take turns going home, sent as one collective leave', async ({ page, isMobile }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
-  await openModule(page, he.soldiers.open)
   await createSoldier(page, 'יעל', 'שחר')
-  await closeDrawer(page)
   await openRotationInNewUnit(page, [OWNER.name, SOLDIER])
   await openModule(page, he.leaveTypes.open)
   await createType(page, { name: 'רגילה', color: he.palette.teal })
   await closeDrawer(page)
 
+  await test.step('"היום" reminds the planner who has no round yet, and its card opens the planner (OI-389)', async () => {
+    await openTab(page, 'today')
+    const card = page.getByRole('region', { name: he.manage.round.card })
+    await expect(card).toContainText('2')
+    await expectNoAxeViolations(page)
+    await card.getByRole('button', { name: he.manage.round.card }).click()
+    await expect(drawer(page).getByRole('heading', { name: he.leaves.roundsTitle })).toBeVisible()
+    await closeDrawer(page)
+  })
+
   await test.step('a plan of two groups, each with its rounds', async () => {
-    await openNewLeave(page)
-    await drawer(page).getByRole('button', { name: he.leaves.rounds }).click()
+    // The planner has its own entry: a row of "ניהול" saying who has no round yet (OI-389, D-482).
+    await openManageIndex(page)
+    await expect(page.getByRole('main').getByRole('button', { name: he.manage.round.row, exact: true })).toHaveAccessibleDescription(`2 ${he.manage.round.unplanned}`)
+    await page.getByRole('main').getByRole('button', { name: he.manage.round.row, exact: true }).click()
     await expect(drawer(page).getByRole('heading', { name: he.leaves.roundsTitle })).toBeVisible()
     await page.getByLabel(he.leaves.roundsName).fill('סבבי נובמבר')
     // The plan runs from today to the rotation's end, at the routine rhythm; the first group goes home today.
@@ -67,5 +71,12 @@ test('two groups take turns going home, sent as one collective leave', async ({ 
     if (isMobile) await chooseOption(page, he.board.range, he.workspace.rotations)
     await expect(leavesOf(page)).toHaveCount(3)
     await expectNoAxeViolations(page)
+  })
+
+  await test.step('once every soldier has a round, the card is gone and the row says it is planned', async () => {
+    await openTab(page, 'today')
+    await expect(page.getByRole('region', { name: he.manage.round.card })).toHaveCount(0)
+    await openManageIndex(page)
+    await expect(page.getByRole('main').getByRole('button', { name: he.manage.round.row, exact: true })).toHaveAccessibleDescription(he.manage.round.planned)
   })
 })

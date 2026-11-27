@@ -1,18 +1,12 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createSoldier, openSoldierCard } from './support/soldiers.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, press, typeDate, openNewLeave } from './support/leaves.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, backToBoard } from './support/workspace.ts'
 
 // V15's demo: deployments and who serves in them (D-019), a collective leave and a copy of a leave (D-012, D-049),
 // and a soldier's personal seniority (D-029), on desktop and mobile, RTL, with axe. Sample data, tests only.
 
-async function createSoldier(page: Page, firstName: string, lastName: string) {
-  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(firstName)
-  await page.getByLabel(he.soldiers.lastName).fill(lastName)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
-}
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
 test.beforeEach(async ({ page, isMobile }) => {
@@ -27,10 +21,8 @@ test('deployments, a collective leave, a copy and personal seniority', async ({ 
     await openModule(page, he.units.open)
     await addUnit(page, 'פלוגה ב')
     await closeDrawer(page)
-    await openModule(page, he.soldiers.open)
     await createSoldier(page, 'יעל', 'שחר')
     await createSoldier(page, 'נועם', 'לב')
-    await closeDrawer(page)
     await openModule(page, he.leaveTypes.open)
     await createType(page, { name: 'רגילה', color: he.palette.teal })
     await closeDrawer(page)
@@ -93,8 +85,7 @@ test('deployments, a collective leave, a copy and personal seniority', async ({ 
   })
 
   await test.step("a soldier's personal seniority", async () => {
-    await openModule(page, he.soldiers.open)
-    await drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: /יעל שחר/ }).click()
+    await openSoldierCard(page, 'יעל שחר', { full: true })
     await expect(drawer(page).getByRole('heading', { name: he.seniority.title })).toBeVisible()
     await expect(drawer(page).getByText(he.seniority.none)).toBeVisible()
     await drawer(page).getByRole('button', { name: he.seniority.new }).click()
