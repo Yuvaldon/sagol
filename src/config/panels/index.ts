@@ -13,8 +13,7 @@ export const PANEL_IDS = {
   leaveTypeGroups: 'leave_type_groups',
   /** A new leave (D-115) and a leave's details (D-119). */
   leaves: 'leaves',
-  /** The requests inbox: pending requests, and closed ones (D-120). */
-  leaveInbox: 'leave_inbox',
+  /** The requests that closed (D-120); what waits is on the page of requests (D-474). */
   leaveClosed: 'leave_closed',
   /** The actor's own leaves, open and history (D-167). */
   myLeaves: 'my_leaves',
@@ -52,7 +51,6 @@ export const PanelId = z.enum([
   PANEL_IDS.leaveTypes,
   PANEL_IDS.leaveTypeGroups,
   PANEL_IDS.leaves,
-  PANEL_IDS.leaveInbox,
   PANEL_IDS.leaveClosed,
   PANEL_IDS.myLeaves,
   PANEL_IDS.tags,
