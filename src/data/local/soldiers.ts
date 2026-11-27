@@ -32,8 +32,11 @@ import {
   normalizePersonalId,
   placementTarget,
   planMembershipChange,
+  presenceWithMe,
+  PRESENCE_VIEW,
   soldierTarget,
   spansOverlap,
+  todayIn,
   unitTarget,
   withOptionalText,
 } from '@domain'
@@ -266,9 +269,43 @@ export async function insertSoldier(
 
 // --------------------------------------------------------------------- reads
 
+/** What "איתך היום" is computed from: the policy's rows, and the leaves and their types, which it never answers. */
+const PRESENCE_TABLES: readonly TableName[] = [...POLICY_TABLES, 'leaves', 'leave_types']
+
 export function createSoldierRepository(dependencies: LocalDependencies): DataRepositories['soldiers'] {
-  // The order for people is `logic`'s, in Hebrew (D-094). The id only keeps this answer stable.
-  return createReferenceRepository(dependencies, SPEC, (a, b) => a.id.localeCompare(b.id))
+  const { database } = dependencies
+  return {
+    // The order for people is `logic`'s, in Hebrew (D-094). The id only keeps this answer stable.
+    ...createReferenceRepository(dependencies, SPEC, (a, b) => a.id.localeCompare(b.id)),
+    // "איתך היום" (D-478). The permission is on the holder themself, and the answer is names only. It is computed here,
+    // where the rows are (on the server, inside the gateway, D-201), so whoever holds it learns no leave, no type and
+    // no other day, also of soldiers whose records they may not read.
+    presentWithMe: () =>
+      asResult(() =>
+        database.transaction('r', PRESENCE_TABLES, async () => {
+          const scope = await loadActorScope(dependencies)
+          requirePermission(scope, PRESENCE_VIEW, soldierTarget(scope.soldier_id))
+          const inOrganization = <T extends 'units' | 'soldiers' | 'unit_memberships' | 'leaves' | 'leave_types'>(table: T) =>
+            tableOf(database, table).where('organization_id').equals(scope.organization_id).toArray()
+          const [units, soldiers, memberships, leaves, types] = await Promise.all([
+            inOrganization('units'),
+            inOrganization('soldiers'),
+            inOrganization('unit_memberships'),
+            inOrganization('leaves'),
+            inOrganization('leave_types'),
+          ])
+          return presenceWithMe({
+            holderId: scope.soldier_id,
+            date: todayIn(scope.organization.timezone, scope.now),
+            units: units.map((row) => parsedRow('units', row)),
+            soldiers: soldiers.map((row) => parsedRow('soldiers', row)),
+            memberships: memberships.map((row) => parsedRow('unit_memberships', row)),
+            leaves: leaves.map((row) => parsedRow('leaves', row)),
+            leave_types: types.map((row) => parsedRow('leave_types', row)),
+          })
+        }),
+      ),
+  }
 }
 
 export function createSoldierPrivateRepository(dependencies: LocalDependencies): DataRepositories['soldier_private'] {

@@ -11,7 +11,7 @@ import { STORES, type Store } from './store'
 // names are schema.sql names (D-038). Primary keys and uniques mirror it where IndexedDB can: a
 // compound key holding NULL is not indexed, which acts as a partial index on "NOT NULL".
 
-const DATABASE_VERSION = 11
+const DATABASE_VERSION = 12
 
 /** Versions 1 and 2 keyed a soldier's tags by the pair; format 3 gives each row an id and a scope (D-221). */
 const VERSION_2_SOLDIER_TAGS = '[soldier_id+tag_id], organization_id, tag_id'
@@ -253,9 +253,15 @@ export function openDatabase(name: string, time: TimeSource, names: RotationLeav
   database.version(10).stores({ push_subscriptions: subscriptions })
   // Commit-ordered change numbers (D-373), as the server's migration gives them.
   database
-    .version(DATABASE_VERSION)
+    .version(11)
     .stores({ change_counters: counters })
     .upgrade((transaction) => changeNumbers(transaction))
+  // Who views leaves sees who of their own unit is on base today, as the server's migration grants (D-478).
+  database.version(DATABASE_VERSION).upgrade(async (transaction) => {
+    const permissions = transaction.table<{ role_id: string; organization_id: string; resource: string; action: string }>('role_permissions')
+    const viewing = (await permissions.toArray()).filter((row) => row.resource === 'leaves' && row.action === 'view')
+    await permissions.bulkPut(viewing.map((row) => ({ ...row, resource: 'presence', action: 'view' })))
+  })
   return {
     transaction: (mode, tables, work) => database.transaction(mode, [...tables], work),
     table: (name) => database.table(name),
