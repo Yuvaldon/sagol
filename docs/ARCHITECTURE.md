@@ -333,7 +333,9 @@ The current state, in short (D-128). The entries hold the reasons.
   circle are the actor's. `TabBar` floats over all of them. "היום" (`ui/shell/today`), "ניהול" (`ui/shell/manage`,
   its rows from `moduleEntries.ts` and `manage/rows.ts`, with `WORK_SECTIONS` and `SETUP_SECTIONS` in `config` still
   naming what exists) and "אני" (`ui/shell/me`) are pages in `PageFrame`; a page over a destination is the `page`
-  param. "לוח" is `BoardPlace`: the engines under one context strip (scope, range, view, filters). The `leaves` panel opens in `ui/shell/LeaveDrawer`, and "דוח 1" (`DayReportDialog`) in the same drawer
+  param. "לוח" is `BoardPlace`: each engine draws itself inside `ui/board/BoardScreen` (the month title, its arrows, "היום", the
+  fan and the options menu, D-480); the selected day is `useBoardDay` and each view's window `useBoardWindow` in
+  `logic/view-state/boardDay.ts`. The `leaves` panel opens in `ui/shell/LeaveDrawer`, and "דוח 1" (`DayReportDialog`) in the same drawer
   with stops; every other panel opens in `ModuleDrawer`. What waits for approval is listed in one place, the page
   `requests` (D-474). The shared
   components of the new interface are in `ui/kit`; `ui/shell/chrome.ts` ties a page's scroll to the bar. The day
@@ -341,13 +343,13 @@ The current state, in short (D-128). The entries hold the reasons.
   action is "פתיחת סבב" (`useQuickAction` in `logic`, D-469). A field whose definition is missing offers the
   module's own form over the drawer (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone
   setup step is `nextSetupStep` in `logic`. The heat row always sits above the soldiers, sticky (D-310).
-  The view picker of the board's strip opens the view sheet (`ViewSheet`, D-311); "סינון ומיון" opens the rule builder
-  (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
+  The board's options (`ui/board/BoardOptions` over `kit/OptionsMenu`) hold the unit, range, sort, group and filter;
+  their "מיון מתקדם" and "סינון" open the rule builder (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
   done from live rows (`useSetupProgress`, D-180).
-- Focus mode (D-301) is `useFocusModeScope` in `ui/shell`, a session device flag (`DEVICE_KEYS.focusMode`) live only
-  while the board shows: the workspace swaps both strips and the chips row for `FocusModeRestore`, which keeps the
-  page's heading. Its key and the overlays an Escape closes first are `FOCUS_MODE` in `config`.
+- Focus mode (D-301, D-480) is `useFocusModeScope` in `ui/shell`, a device flag (`DEVICE_KEYS.focusMode`) live only
+  while the board shows: the board's head gives way to a centered capsule and the tab bar is hidden; a coarse pointer in
+  landscape enters it (`FOCUS_MODE.landscape`). Its key and the overlays an Escape closes first are `FOCUS_MODE` in `config`.
 - All view state lives in **typed URL search params** (TanStack Router + Zod): active view
   id, date window, filters, open panel and its entity. Switching views keeps filters. Deep
   links and the back button work. Parameter names come from `config`. The window's kind (`range`: day, week, month,
@@ -360,7 +362,7 @@ The current state, in short (D-128). The entries hold the reasons.
 
 ## View engines (inside `ui/engines`)
 
-Each engine (timeline, calendar, list, table/agenda) is a self-contained module:
+Each engine (calendar, timeline, movements as `list`, table) is a self-contained module:
 
 1. **core:** pure logic (date math, layout, lanes for overlaps, collisions, drag), no React,
    no domain knowledge. Unit-tested.
@@ -375,8 +377,10 @@ Replacing an engine replaces one registry entry. Engines never call each other.
 
 The current state (D-174): `logic/board` is the one model of every engine (rows, leaves, the window's days and weeks);
 `logic/timeline` keeps only drag editing. What the engines share on screen is in `ui/board` (the frame with its loading,
-failed and empty states, the scroller region, the leave chip and the labels), outside `ui/engines`, so engines stay
-independent. Only the timeline has a core and a view; the list, the table and the calendar are adapters alone.
+failed and empty states on the window each view hands it, the head, the options, the rows of a day and the gestures),
+outside `ui/engines`, so engines stay independent. The day's cuts (`dayLeaves`, `boardMovements`, `movementRuns`) and
+the impact line (`impactOf`) are pure in `logic/board`. Only the wide timeline has a core and a view; a phone's timeline
+(`PhoneTimeline`), the movements, the table and the calendar are adapters alone.
 
 ## Dashboards (D-349, D-350, D-360 … D-362)
 

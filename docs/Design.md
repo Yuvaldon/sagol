@@ -107,7 +107,7 @@ name and takes the new value, so untouched screens move with the theme.
 | Action circle | A separate night-blue glass circle at the bar's end, on "היום" only: a leave request for me | היום |
 | Corner circle, capsule | Glass circle (bell, back, close) and a capsule of two or three icons (search, options, add). 44, shrinking to 36 with the header on scroll. A night-blue dot on the options icon when a value is not the default | every screen |
 | "Where am I" capsule | Centered at the top once the title scrolls away; tapping it returns to the top | long pages |
-| Options menu | One floating glass menu of rows with the current value ("מיון · ותק ›"); choices open inside it with a back arrow. Replaces chip rows for sort, group, filter, range and saved views | לוח, חיילים, pages with a list |
+| Options menu | One floating glass menu of rows with the current value ("מיון · ותק ›"); choices open inside it with a back arrow; actions after a divider. Replaces chip rows for sort, group, filter, range and saved views (`kit/OptionsMenu`, built with the board) | לוח, חיילים, pages with a list |
 | Drawer | Glass over a dim layer, with stops (edge, middle, full), a handle, ✕; dragging changes the stop and "כרטיס מלא" reaches full without a drag. A side panel on a desktop | all shared drawers |
 | Tray | Replaces the tab bar while something is selected ("N נבחרו" and its actions) | day selection, multi-select |
 | Fraction | `{n}/{total}`: the numerator big and bold, the denominator small and gray; both amber below the threshold | commander block, calendar, drawers |
@@ -128,9 +128,9 @@ the tab bar, the commander block, "X מתוך Y", past tense, the amber dot, chi
 |---|---|---|---|
 | `היום – טלפון – לוחם`, `– מורחב`, `– בחירת ימים` | היום, without a force | `HomeLanding`, "הסבב שלי" on "שלי" (D-360) | shared parts outdated |
 | (text only: `02` "Today — open block", `design-language/07`) | היום, with a force | `HomeLanding`, the dashboard's status cards (D-362) | text |
-| `לוח – טלפון – לוח שנה`, `– מגירה באמצע` | לוח · לוח שנה | the calendar engine, the day report's entry (D-339) | current |
-| `לוח – טלפון – ציר זמן` | לוח · ציר זמן | the timeline and list engines on a phone | current |
-| `לוח – טלפון – תנועות` | לוח · תנועות | (new: who leaves and returns, by day) | current |
+| `לוח – טלפון – לוח שנה`, `– מגירה באמצע` | לוח · לוח שנה | the calendar engine, the day report's entry (D-339) | current; built (D-480) |
+| `לוח – טלפון – ציר זמן` | לוח · ציר זמן | the timeline and list engines on a phone | current; built (D-480) |
+| `לוח – טלפון – תנועות` | לוח · תנועות | (new: who leaves and returns, by day) | current; built (D-480) |
 | `ניהול – טלפון – מ״פ`, `– מ״מ` | ניהול | "ניהול יחידה" and "עבודה" (D-254, D-285), `NavigationPanel` | shared parts outdated |
 | `חיילים – טלפון – מ״פ`, `– מ״מ`, `– בחירה מרובה` | ניהול → חיילים | the soldiers module's list | shared parts outdated |
 | `חיילים – טלפון – כרטיס אדם` | Person card (drawer) | the soldier page | shared parts outdated |
@@ -165,7 +165,7 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **Creation is in context.** No global "+". Days picked on a strip, a month or a timeline row open a tray, and the
   tray opens "יציאה חדשה". A soldier and a rule are added from the add icon in their page's capsule.
 
-### Built so far (R5·1 and most of R5·2; D-465 … D-471)
+### Built so far (R5·1, R5·2 and R5·3; D-465 … D-481)
 
 - **Shell.** `WorkspaceScreen` shows one destination by `tab`, the floating `TabBar`, and the drawers over both. A
   page (`PageFrame`) is one centered column on the canvas, at most `drawer` wide, that scrolls under the bar; once
@@ -179,7 +179,7 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   days filled.
 - **היום, a commander.** The unit's name and the date, the fraction of who is on base today, "דוח 1" for who reads
   the unit's soldiers while a rotation runs, and seven day columns, today first in night blue, amber where a rule
-  is broken. A column opens the unit's drawer on its day: who is away, then who is on base.
+  is broken. The fraction opens the unit's drawer on today; a column opens the board on its day, the drawer at its middle stop (D-480).
 - **Cards**, in D-459's order, each absent when empty: "בקשות לאישור" (three rows with ✗ ✓, a count, a door),
   "בקשות הצטרפות", "הבקשה שלי" (type, dates, badge), "דוח 1" (a door, for who has no unit block, D-472), "איתך
   היום" (for who holds `presence:view` and has no unit block: the count beside the title, the names of who of their
@@ -191,8 +191,18 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **ניהול.** The title, the organization's name, thin rows with a value and a chevron (D-468); "הגדרות" is a page
   of sections on white cards.
 - **אני.** The name and the email, then cards: appearance (a segmented choice), notifications (switches), account.
-- **לוח.** The engines as they were, under one glass strip: the unit, the range, the view picker (the icon of the
-  view in sight) and "סינון ומיון". Focus mode still leaves one button.
+- **לוח (R5·3, D-480, D-481).** One head over every view: the month as the title with two arrows, "היום" once the
+  view has left today, and a glass capsule with the fan (holding it opens the saved views) and the options menu (unit,
+  range, sort, group, filter, colors where the old bars draw; then saved views and "מיקוד"). The selected day is the
+  URL's `day`, shared by the views and the day report. **Calendar:** the month fills the height above a drawer of three
+  stops (edge, middle, full) that is part of the board; cells name requests, three then "+N", soft amber below a rule;
+  tap selects, a second tap opens the middle stop; holding a day, or "בחירת טווח", makes a range for "יציאה לחיילים".
+  **Timeline (phone):** a person bar per row, the week of the selected day; a day's header opens the unit's drawer;
+  tapped days on base make "יציאה עבור X" with the impact line; a bar opens its card. **Movements** (`view=list`):
+  day headers on the canvas, a card of "יוצאים" and "חוזרים", the leave round of a day as one row, a dashed line for a
+  quiet run; it reads more days as it scrolls. A pending request reveals ✓ ✗ by a swipe. Focus mode leaves a centered
+  capsule; a phone on its side enters it. A wide screen keeps the old timeline grid (drag, colors) and the table under
+  the same head until R5·6.
 - **Components** are in `src/ui/kit`: `Glass` (circle, capsule), `Card`, `Badge`, `Fraction`, `PersonRow`,
   `DayStrip`, `Month`, `Toast`, `Tray`, `StopDrawer`. The drawer with stops opens at half height and grows to
   full; its handle is a button (D-458); from `md` it is a panel on the inline end.
@@ -282,6 +292,15 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 24 | New leave keeps the request sheet (rows, repeat, collective, planning) behind the package's face: type chips, days on a month beside the typed dates | The package draws one request; units send several at once | D-476 |
 | 25 | The form's month builds its own range and follows the typed dates; a link to the old pending tab opens the page of requests; "sent" waits for units out of view for who answers for the whole report | Found in review | D-477 |
 | 26 | "איתך היום" shows a count and names, never a door; it shows whether or not its holder is on base today | The package's "big number" alone answers no "who"; a door to the unit drawer would open leaves its holder may not read | D-478 |
+| 27 | The board's head stays in place (no title shrinking into a capsule); arrows by the title step the view | A tap path for the swipe (D-458); the shrinking title is OI-399 | D-480 |
+| 28 | The selected day is the URL's `day`; the movements open on it, today unless one was chosen | §2's one selected day carries over between views; the spec's "always opens on today" is its default | D-480 |
+| 29 | A phone's timeline opens on a week; "טווח" offers week, month, rotation and another range | §3; two and four weeks are not in the handoff (`02`) | D-480 |
+| 30 | The options' dot counts sort, grouping and filter; the unit and the range are scope | §1.12 names those three | D-480 |
+| 31 | Past days are `text-muted`, not the `past` gray | `past` is 2.5:1 on the canvas; text must reach 4.5:1 | D-480 |
+| 32 | A month cell draws a request in each of its days, not one bar across cells; the calendar range's tray has no impact line | A bar across cells breaks at week ends and the impact needs a soldier | D-480 |
+| 33 | The calendar's drawer is part of the board, not a modal; its handle steps edge → middle → full → edge | The month stays usable above it (§3) | D-480 |
+| 34 | A swipe reveals ✓ ✗ only for who may answer; a round leave has no quick ✗ anywhere; its card offers "אישור ההזזה" and "השארה במועד המקורי" once moved | `02`'s quick-approval exceptions; a swipe must not cost a soldier a planned leave | D-480, D-481 |
+| 35 | A wide screen keeps the old timeline grid, its drag and colors, and the table, under the new head | The desktop pass is R5·6 (OI-397) | D-480 |
 
 ## Color (Light)
 
