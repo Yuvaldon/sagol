@@ -128,7 +128,7 @@ am = amends, ref = refines, ext = extends.
 | D-109 | The reference day of a timeline row | logic | |
 | D-110 | A branch and a pull request per session | docs, tooling | ref D-126; ref D-154 |
 | D-111 | Leave bars on the timeline: type color, status by form, badges, lanes | ui | ref D-119; ref D-143, D-144 |
-| D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | ref D-174; sup D-454 |
+| D-112 | Uniform color mode of the timeline (`colors` in the URL) | config, logic, ui | ref D-174; sup D-454; sup D-491 |
 | D-113 | The leave types drawer: fields, icons, order, archive | config, domain, data, logic, ui, backend | ref D-347 |
 | D-114 | Creating a leave: permissions, order of checks, rules, reads | data, logic, backend | ref D-117; ref D-125; ref D-138 |
 | D-115 | The new-leave form and its floating button | config, logic, ui | ref D-119, D-121; ref D-125, D-129; ref D-143; sup D-255 (floating "+"); ref D-267 |
@@ -159,7 +159,7 @@ am = amends, ref = refines, ext = extends.
 | D-140 | The rules module | config, logic, ui | |
 | D-141 | The heat row | config, logic, ui | ref D-173 |
 | D-142 | Live rule warnings and the acknowledgment dialog | logic, ui | ref D-143; ref D-145, D-146; ref D-162 |
-| D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144; am D-458 |
+| D-143 | Timeline drag: move, resize and create, with live feedback | config, logic, ui | ref D-144; am D-458; am D-491 |
 | D-144 | The touch path of the timeline, and its lanes on a phone | config, ui | |
 | D-145 | Approving shows the rules' answer, not a live warning | logic, ui | ref D-255 |
 | D-146 | A live warning lists hard and soft rules together | logic, ui | |
@@ -286,7 +286,7 @@ am = amends, ref = refines, ext = extends.
 | D-301 | Focus mode | config, i18n, ui, e2e | am D-480 |
 | D-302 | A leave batch, a set of copies and a report's window are bounded by config, checked in the command | config, data, logic | |
 | D-303 | A rotation report's summary counts the sections outside the owner's view, without naming them | contracts, data, logic, i18n, ui | |
-| D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | |
+| D-310 | The heat row always sits above the soldiers; the preference is gone | contracts, logic, i18n, ui | sup D-491 |
 | D-311 | The view picker is a sheet of cards, opened from the board's tab | i18n, ui | ref D-301; ext D-387 |
 | D-312 | Filtering is a rule builder | logic, i18n, ui | ref D-322; ref D-326; ext D-380, D-382; ref D-441 |
 | D-313 | Several sorts, in order | config, logic, i18n, ui | ext D-324; ref D-452 |
@@ -337,7 +337,7 @@ am = amends, ref = refines, ext = extends.
 | D-361 | The stored board reads leniently and writes strictly; the plan reads its own leaves' events | contracts | |
 | D-362 | The dashboard's build choices: CSS charts with hidden tables, who opens it, what each card counts, and what waits | contracts, domain, logic, ui, docs | ref D-403; ref D-404; ref D-405; ref D-443 |
 | D-370 | The 1.0 Could items are built while the owner is away | docs | ref D-400 |
-| D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | ref D-461 |
+| D-371 | Restoring an archived row: one `restore` command per reference entity, checked like a write | contracts, data, logic, ui | ref D-461; ref D-494 |
 | D-373 | "Changed since" by a commit-ordered change number: leave events, memberships and `seen_seq` | contracts, domain, data, logic, ui, backend | ref D-402; ref D-431 |
 | D-380 | Typed filter conditions: text, number, date and reference properties | logic, i18n, ui | ref D-441 |
 | D-381 | A unit property condition reads the soldier's primary unit that day | domain | |
@@ -386,8 +386,8 @@ am = amends, ref = refines, ext = extends.
 | D-457 | "איתך היום" shows to who already reads their unit's leaves and has no "לוח" | logic, ui | sup D-478 |
 | D-458 | Every gesture has a tap path; a phone's timeline bar is not dragged | ui | ref D-480 |
 | D-459 | "היום"'s cards: a fixed order, an empty card is absent, no maximum | logic, ui | ref D-467; ref D-469; ref D-471; ref D-472; ref D-478; ref D-486 |
-| D-460 | The desktop is derived from the phone | ui | |
-| D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | ref D-483; ref D-485 |
+| D-460 | The desktop is derived from the phone | ui | ext D-491 |
+| D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | ref D-483; ref D-485; ref D-494 |
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | ref D-480 |
 | D-463 | Small product choices of the new interface | contracts, config, logic, ui | ref D-480; ref D-489 |
 | D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
@@ -406,17 +406,22 @@ am = amends, ref = refines, ext = extends.
 | D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
 | D-478 | "איתך היום": a presence-only permission, `presence:view`, answered by name on the server | contracts, domain, config, data, logic, i18n, ui, backend | sup D-479 (reach); ref D-479 |
 | D-479 | "איתך היום" after review: the own unit only, the rank constraint on oneself, a narrow read, export format 7 | contracts, domain, config, data, logic, ui, backend | |
-| D-480 | The board of the new interface: one frame, the selected day, a range per view, the options menu | contracts, config, logic, i18n, ui | |
-| D-481 | Moving a leave out of the leave round: "בקשת הזזה", "אישור ההזזה", "השארה במועד המקורי" | logic, i18n, ui | |
-| D-482 | "ניהול" builds its designed pages: חיילים, הוספת חיילים, הצטרפות, כללי נוכחות | config, logic, i18n, ui | am D-487 |
+| D-480 | The board of the new interface: one frame, the selected day, a range per view, the options menu | contracts, config, logic, i18n, ui | sup D-491 (wide grid); ref D-492 |
+| D-481 | Moving a leave out of the leave round: "בקשת הזזה", "אישור ההזזה", "השארה במועד המקורי" | logic, i18n, ui | ref D-492 |
+| D-482 | "ניהול" builds its designed pages: חיילים, הוספת חיילים, הצטרפות, כללי נוכחות | config, logic, i18n, ui | am D-487; am D-491 |
 | D-483 | The person card and the multi-select of "חיילים" | logic, i18n, ui | am D-487; ext D-489 |
-| D-484 | "הצטרפות": the queue by readiness, "זה הוא?", and "אישור N" | logic, i18n, ui | am D-487 |
-| D-485 | "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive | domain, logic, i18n, ui | am D-487 |
+| D-484 | "הצטרפות": the queue by readiness, "זה הוא?", and "אישור N" | logic, i18n, ui | am D-487; ref D-493 |
+| D-485 | "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive | domain, logic, i18n, ui | am D-487; ref D-495 |
 | D-486 | Leave-round planning has its own entry: a row of "ניהול" and a card of "היום" | config, logic, i18n, ui | |
-| D-487 | "ניהול" after review: settled access, partial results, no unit, private details, targets and layers | logic, i18n, ui | |
+| D-487 | "ניהול" after review: settled access, partial results, no unit, private details, targets and layers | logic, i18n, ui | ref D-493; am D-491 |
 | D-488 | "אני" builds its designed screen: the profile, "הסבב שלי", "כל הבקשות", "העדפות", and the bell's drawer | domain, config, logic, i18n, ui | am D-490 |
 | D-489 | The person card's edit in place and the tag picker, one component with the profile of "אני" | logic, i18n, ui | am D-490 |
 | D-490 | "אני" after review: a save that stops halfway, a tag made in the edit, the bell's drawer, failed reads | logic, ui | |
+| D-491 | The desktop pass: the side rail, the side panel, "ניהול" beside its page, the people table, the wide board | config, logic, contracts, i18n, ui | |
+| D-492 | A moved leave's first place, the pinch, and the title that gives way on scroll | config, logic, i18n, ui | |
+| D-493 | "הצטרפות": a swipe on a row, and the linked accounts | config, i18n, ui | |
+| D-494 | Archiving every definition: by name, in red, with "ביטול" where a restore exists | i18n, ui | |
+| D-495 | The rule form after the other screens: the drawer's sentence, then "עוד" | i18n, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -6347,3 +6352,101 @@ OI-401 waited for these components.
   (the router sends it to onboarding), so that case cannot arise there.
 **Why:** the review of R5·5 found a save that could not go on after a partial refusal, an undo that kept a tag made in the
 edit, a made tag that vanished, a drawer open to anyone by address, failed reads that hid their cards, and unnamed ✕s.
+
+## D-491 — The desktop pass: the side rail, the side panel, "ניהול" beside its page, the people table, the wide board
+2026-11-28 · accepted · builds D-460 · supersedes D-480's wide-screen grid, D-112 (the color mode) and D-310 (the heat row
+on the timeline) · amends D-143, D-482 · closes OI-397, OI-403 · decided under D-170 (R5·6)
+- **The desktop** is the `md` breakpoint (768 × 512, D-190); a phone on its side keeps the phone's layout.
+- **The side rail** stands on the inline start in place of the tab bar: each destination is its icon with its name under
+  it, the one in sight on the lighter capsule, "ניהול" with its waiting dot; on "היום" the action circle comes first. The
+  rail never slides away on scroll and stays while a tray is up (the tray has its own place at the foot of the content).
+  Focus mode and a temporary full screen hide it, as they hide the bar.
+- **The side panel.** Every drawer, the drawer with stops and the modules' drawer alike, is a side panel on the inline end,
+  the screen's height, with no stops. It is not modal: nothing is dimmed, a press outside does not close it, and the
+  content beside it narrows to make room, so the board, a list or a page stays in reach and a press on another row puts
+  its own card in the panel. It takes the keyboard when it opens and gives it back when it closes; ✕, Escape and the back
+  button close it. A question asked from it stays a modal dialog. A module that needs the room (the units chart, D-318)
+  takes the whole content.
+- **The centered column.** "היום" and "אני" stay the feed's column beside the rail, not stretched (the handoff's
+  recommendation). A page that holds a table ("חיילים") is wider, at most 1040 px.
+- **"ניהול" beside its page.** With a page open, the rows of "ניהול" stand in a column on the inline start, the open one
+  marked, and the page beside them; with none, the index stands alone; "הוספת חיילים" stays a full screen. A row that
+  opens a module opens it in the side panel. While a side panel is open the column steps aside, so the page and the panel
+  keep their room.
+- **Tables where a row has more than three facts.** "חיילים" is a table: the name, the command rank, the unit, the tags
+  and the next seven days; a group's name is a row across the columns. Beside a side panel the rank, the unit and the
+  tags give way before the name does. The name is the control (the card, or the
+  checkbox while choosing); a press anywhere on the row does the same, and holding it starts choosing. "הצטרפות" and
+  "כללי נוכחות" keep their rows: a row there has three facts or fewer.
+- **A windowed list** (OI-403): the phone's rows and the table alike render only what is in sight, over the page's own
+  scroll, with the groups' headers scrolling with the rows (the handoff: not sticky).
+- **The wide board** (OI-397): the timeline draws the person bars of D-480 on every width. On the wide screen they are
+  dragged (D-143): a bar moves, its ends move its days, a marker moves whole, and a drag across days on base marks a new
+  leave; the drag's card says the new days, a return to pending and the rules it would break, and the rule gate answers
+  the drop. A press that ended a drag opens and picks nothing. The mouse never swipes there; the arrows step the range.
+  The name column is wider (176 px) for a name and its rank. A day's header selects the day and opens the unit's drawer,
+  as on a phone; the day report is "דוח 1" of "היום". The side panel holds the person card and the leave card beside the
+  timeline. The calendar, the movements and the table stay views of the fan on the wide screen.
+- **Removed** (D-464): the old timeline grid, its lanes and geometry, its row model and drag overlay; the leave-type colors
+  on the board and the "צבעים" option with the URL's `colors` (D-454): a saved view that kept it drops it on read (D-384),
+  and an address that named only `colors` opens "היום"; the heat row on the timeline, since the handoff marks no
+  threshold on the timeline (`03` §1.9): the calendar's amber days and its drawer's "מתחת לסף ביום הזה" open the rules
+  of a day on every width; the old strips' tokens.
+- **Found on the way** (amends D-487): "חיילים" and "כללי נוכחות" wait for their module's answer before an address
+  that names them is put right, as "הצטרפות" already did; an address opened in a new tab closed them too early.
+**Why:** the handoff's desktop rules (`01` §3, `02` "Phone first"), with its open row decided by its own recommendation;
+the board's direction ("a wide timeline as the main view, with a side panel") built from the components the phone
+already has, so the desktop is one interface and not a second one.
+
+## D-492 — A moved leave's first place, the pinch, and the title that gives way on scroll
+2026-11-28 · accepted · refines D-480, D-481 · closes OI-398, OI-399 · decided under D-170 (R5·6)
+- **Where a moved leave was** (OI-398). While the move of a leave of the round waits, the person bar draws the days of its
+  first place that it no longer covers as a gap with a dashed amber edge, and its new place as a waiting request (amber),
+  on every width. Its bar reads "הוזזה מ־X". The first places are read in one read of the events of the round's waiting
+  leaves on the board (`useRoundMoves`); nothing is stored (D-019).
+- **The pinch** (OI-399): two fingers apart on a phone's timeline show fewer days (a rotation, a month, a week), together
+  more; one pinch is one step. Another range starts from a month. The rotation is the one the view is on, or the one that
+  holds its first day. The timeline keeps the browser from zooming the page under two fingers. "טווח" in the options stays
+  the tap path (D-458).
+- **The title** (OI-399): the timeline is a list that starts at the top (§1.5), so once it is scrolled its month gives way
+  to a glass capsule in the middle of the head, and a press on the capsule returns the list to its top. The head keeps its
+  height, so the list does not jump. The corner capsule keeps its size: the handoff's shrink of the top layer to 36 px is
+  not built, since every control there keeps its 44 px target anyway. "חיילים" keeps its head (OI-405).
+**Why:** the handoff's board spec (`03` §1.5, §3) and `02`'s move of a round leave; the narrowest build of each.
+
+## D-493 — "הצטרפות": a swipe on a row, and the linked accounts
+2026-11-28 · accepted · refines D-484, D-487 · closes OI-402, OI-404 · decided under D-170 (R5·6)
+- **The swipe** (OI-402): sideways on a ready request reveals ✓ and ✗; on one to review, ✗ alone; a new soldier's row has
+  its unit chip and no swipe. ✓ links the request to its one candidate and the toast offers "פתח כרטיס", as the drawer
+  does. ✗ asks first, naming the requester, on a button that is not the primary color, and has no "ביטול" (D-484). The
+  row still opens "זה הוא?", the tap and keyboard path to the same answers (D-458).
+- **The linked accounts** (OI-404): a door on the capsule of "הצטרפות" (for who reads any live link) opens a drawer,
+  `panel=account_links&entity=linked`, of every live link the actor reads: the soldier's name where the actor sees them,
+  "חייל" where not, the address and when it was linked. "ניתוק" shows for who may review that soldier's links, never on
+  the actor's own (D-163), also for a soldier the actor does not see: the server answers the hint. It asks by name and has
+  no "ביטול" (D-451); the soldier's card keeps its own "ניתוק" (D-483).
+**Why:** the handoff's join requests (`02`) and the overview the removed module gave (D-487's open question).
+
+## D-494 — Archiving every definition: by name, in red, with "ביטול" where a restore exists
+2026-11-28 · accepted · builds D-461 for the modules · refines D-371 · closes OI-297 · decided under D-170 (R5·6)
+- Units, unit levels, command ranks, leave types and their groups, tags and tag categories, properties, rotations, roles
+  and rank bindings archive as soldiers and rules do: "העברה לארכיון" last in the row's "⋯", in `status-error`; the
+  question names the row and says what archiving hides; its button is the soft red, never the primary color (also for
+  soldiers, rules, unlinking and a rejection).
+- After it, a line in the module says what was archived and offers "ביטול", which restores it, where a restore exists
+  (D-371). Rotations, roles and rank bindings have none (OI-320), so their line has no "ביטול". The line stands in the
+  module, not in the workspace's toast, because on a phone the module's drawer stands over the toast. Each module's
+  archive stays at the foot of its list.
+**Why:** OI-297: no archive by accident, and an accident one tap from undone, the same in every tool.
+
+## D-495 — The rule form after the other screens: the drawer's sentence, then "עוד"
+2026-11-28 · accepted · refines D-485, D-461 · closes OI-385 · decided under D-170 (R5·6)
+- The form keeps one field per part of the command, and orders them as the rule's drawer reads the rule: its name; "איפה"
+  (the unit and how it counts there); "על מי" (the population and the rotation); "כמה" (the bounds and the metric);
+  "מתי" (the dates).
+- What is set rarely waits under "עוד": how it is enforced, the grouping, counting pending requests, the priority, the
+  switch and the description. "עוד" is open on an edit, and opens when the command refuses, so no refused field hides.
+- Not adopted: editing the sentence as chips in the form. The drawer shows the sentence; the form is where each part is
+  chosen, and a chip per field would hide the same choices one tap deeper.
+**Why:** OI-385: the handoff asked to revisit the form once the screens around it stood; the drawer's order is what the
+commander already reads.
