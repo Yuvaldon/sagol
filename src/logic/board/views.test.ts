@@ -4,7 +4,7 @@ import type { BoardModel } from './hooks'
 import type { BoardLeave } from './leaves'
 import { boardDays, boardEntries, boardMovements, calendarWeeks, cellRequests, dayLeaves, movementRuns, type BoardDay } from './views'
 import { impactOf } from './impact'
-import { leaveMoveOf } from '../leaves/move'
+import { leaveMoveOf, roundMovesOf } from '../leaves/move'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -177,5 +177,17 @@ describe('the board of the new interface (D-480)', () => {
     })
     expect(leaveMoveOf({ ...moved, batch_id: null } as never, events)).toBeNull()
     expect(leaveMoveOf(moved as never, [])).toBeNull()
+  })
+
+  it('finds the moves of the waiting leaves of the round, each from its own events, and of no other leave (OI-398)', () => {
+    const base = { start_date: '2026-11-23', end_date: '2026-11-25' }
+    const waiting = { ...base, id: uuid(81), batch_id: uuid(80), status: 'pending' }
+    const approved = { ...base, id: uuid(82), batch_id: uuid(80), status: 'approved' }
+    const request = { ...base, id: uuid(83), batch_id: null, status: 'pending' }
+    const event = (leaveId: string) =>
+      ({ leave_id: leaveId, change_seq: 1, changes: { start_date: { before: '2026-11-26', after: '2026-11-23' } } }) as never
+    const moves = roundMovesOf([waiting, approved, request] as never, [event(uuid(81)), event(uuid(82)), event(uuid(83))])
+    expect([...moves.keys()]).toEqual([uuid(81)])
+    expect(moves.get(uuid(81) as never)?.from).toEqual({ start_date: '2026-11-26', end_date: '2026-11-25' })
   })
 })

@@ -188,7 +188,7 @@ export {
   type MovementSide,
 } from './board/views'
 export { absenceCandidate, impactOf, useAbsenceCheck, useApprovalCheck, type Impact } from './board/impact'
-export { leaveMoveOf, useLeaveMove, type RoundMove } from './leaves/move'
+export { leaveMoveOf, roundMovesOf, useLeaveMove, useRoundMoves, type RoundMove } from './leaves/move'
 export {
   selectedDayChange,
   steppedDay,
