@@ -909,6 +909,13 @@ export const dictionary = {
     emptyClosedBody: 'בקשות שנדחו או בוטלו יופיעו כאן, ואפשר לפתוח אותן מחדש.',
   },
   rules: {
+    parts: {
+      where: 'איפה',
+      who: 'על מי',
+      bounds: 'כמה',
+      when: 'מתי',
+      more: 'עוד',
+    },
     title: 'כללי נוכחות',
     open: 'כללי נוכחות',
     newTitle: 'כלל חדש',

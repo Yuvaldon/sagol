@@ -21,10 +21,10 @@ import {
 import { useForm } from '@tanstack/react-form'
 import { Archive, ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { ArchivedSection } from '../../patterns/ArchivedSection'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -291,7 +291,14 @@ export function LeaveTypesModule() {
   const permissions = useLeaveTypePermissions()
   const commands = useLeaveTypeCommands()
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<LeaveType | null>(null)
+  const archiving = useArchiveStep<LeaveType>({
+    nameOf: (type) => type.name,
+    titleKey: 'leaveTypes.archiveTitle',
+    bodyKey: 'leaveTypes.archiveBody',
+    archive: commands.archive,
+    restore: commands.restore,
+    onFailure: setFailure,
+  })
 
   if (types.status === 'failed') return <FailureNotice error={types.error} />
   if (groups.status === 'failed') return <FailureNotice error={groups.error} />
@@ -357,9 +364,10 @@ export function LeaveTypesModule() {
               id: 'archive',
               labelKey: 'common.archive' as const,
               icon: <Archive aria-hidden size={14} />,
+              tone: 'danger' as const,
               onAction: () => {
                 setFailure(null)
-                setArchiving(type)
+                archiving.ask(type)
               },
             },
           ]
@@ -381,6 +389,7 @@ export function LeaveTypesModule() {
   return (
     <div className="flex flex-col gap-md">
       {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
       {sections
         .filter((section) => section.types.length > 0)
         .map((section) => (
@@ -404,24 +413,7 @@ export function LeaveTypesModule() {
         </div>
       ) : null}
       {archived}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="leaveTypes.archiveTitle"
-          hintKey="leaveTypes.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

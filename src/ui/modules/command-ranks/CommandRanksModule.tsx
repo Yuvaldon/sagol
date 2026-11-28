@@ -14,10 +14,10 @@ import {
 import { useForm } from '@tanstack/react-form'
 import { Archive, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { ArchivedSection } from '../../patterns/ArchivedSection'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -193,7 +193,14 @@ export function CommandRanksModule() {
   const permissions = useCommandRankPermissions()
   const commands = useCommandRankCommands()
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<CommandRank | null>(null)
+  const archiving = useArchiveStep<CommandRank>({
+    nameOf: (rank) => rank.title,
+    titleKey: 'commandRanks.archiveTitle',
+    bodyKey: 'commandRanks.archiveBody',
+    archive: commands.archive,
+    restore: commands.restore,
+    onFailure: setFailure,
+  })
 
   if (ranks.status === 'failed') return <FailureNotice error={ranks.error} />
   if (ranks.status === 'loading') return <LoadingNotice />
@@ -257,9 +264,10 @@ export function CommandRanksModule() {
             id: 'archive',
             labelKey: 'common.archive',
             icon: <Archive aria-hidden size={14} />,
+            tone: 'danger',
             onAction: () => {
               setFailure(null)
-              setArchiving(rank)
+              archiving.ask(rank)
             },
           },
         ]
@@ -268,6 +276,7 @@ export function CommandRanksModule() {
   return (
     <div className="flex flex-col gap-md">
       {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
       <ul aria-label={t('commandRanks.listLabel')} className="flex flex-col">
         {live.map((rank) => (
           <RankRow key={rank.id} rank={rank} canUpdate={permissions.update} actions={actionsOf(rank)} />
@@ -282,24 +291,7 @@ export function CommandRanksModule() {
         </div>
       ) : null}
       {archived}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="commandRanks.archiveTitle"
-          hintKey="commandRanks.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

@@ -15,10 +15,10 @@ import {
 import { useForm } from '@tanstack/react-form'
 import { Archive, ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { ArchivedSection } from '../../patterns/ArchivedSection'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -169,7 +169,14 @@ export function TagCategoriesModule() {
   const permissions = useTagPermissions()
   const commands = useTagCategoryCommands()
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<TagCategory | null>(null)
+  const archiving = useArchiveStep<TagCategory>({
+    nameOf: (category) => category.name,
+    titleKey: 'tagCategories.archiveTitle',
+    bodyKey: 'tagCategories.archiveBody',
+    archive: commands.archive,
+    restore: commands.restore,
+    onFailure: setFailure,
+  })
 
   if (categories.status === 'failed') return <FailureNotice error={categories.error} />
   if (categories.status === 'loading') return <LoadingNotice />
@@ -244,9 +251,10 @@ export function TagCategoriesModule() {
             id: 'archive',
             labelKey: 'common.archive' as const,
             icon: <Archive aria-hidden size={14} />,
+            tone: 'danger' as const,
             onAction: () => {
               setFailure(null)
-              setArchiving(category)
+              archiving.ask(category)
             },
           },
         ]
@@ -256,6 +264,7 @@ export function TagCategoriesModule() {
   return (
     <div className="flex flex-col gap-md">
       {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
       <ul aria-label={t('tagCategories.listLabel')} className="flex flex-col">
         {live.map((category, index) => {
           const text = (
@@ -295,24 +304,7 @@ export function TagCategoriesModule() {
         </div>
       ) : null}
       {archived}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="tagCategories.archiveTitle"
-          hintKey="tagCategories.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

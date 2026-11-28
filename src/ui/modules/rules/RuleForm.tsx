@@ -17,7 +17,7 @@ import {
   type UnitLevel,
   type UnitLevelId,
 } from '@contracts'
-import { t } from '@i18n'
+import { t, type I18nKey } from '@i18n'
 import {
   NEW_RULE_VALUES,
   liveCategories,
@@ -29,7 +29,9 @@ import {
   type RuleFormValues,
 } from '@logic'
 import { useForm, useStore } from '@tanstack/react-form'
-import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Button as AriaButton, Disclosure, DisclosurePanel } from 'react-aria-components'
 import { EntityForm } from '../../patterns/EntityForm'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
 import { Button } from '../../primitives/Button'
@@ -41,8 +43,10 @@ import { TextAreaField } from '../../primitives/TextAreaField'
 import { TextField } from '../../primitives/fields'
 import { unitOptions } from '../soldiers/unitOptions'
 
-// A rule (D-140): its name, how it is enforced, where it counts and whom, its bounds and when it holds. The population
-// is chosen with the filter bar's lists: tags by category and ranks; none counts everyone (D-131).
+// A rule (D-140): its name, then the parts of the sentence its drawer reads (OI-385, D-491): where it counts, whom, its
+// bounds and when it holds; what is set rarely (how it is enforced, the grouping, pending requests, the priority, the
+// switch and the description) waits under "עוד", open when a rule is edited. The population is chosen with the filter
+// bar's lists: tags by category and ranks; none counts everyone (D-131).
 
 const RULE_FIELDS: readonly string[] = [
   'name',
@@ -61,6 +65,16 @@ const RULE_FIELDS: readonly string[] = [
   'effective_to',
   'priority',
 ]
+
+/** A part of the rule's sentence: its name over its fields. */
+function FormPart({ titleKey, children }: { readonly titleKey: I18nKey; readonly children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-md">
+      <h3 className="text-small font-bold text-text-muted">{t(titleKey)}</h3>
+      {children}
+    </section>
+  )
+}
 
 const ENFORCEMENTS: SelectOption<RuleFormValues['enforcement']>[] = [
   { key: RuleEnforcement.enum.soft, label: { key: 'rules.enforcementSoft' }, value: RuleEnforcement.enum.soft },
@@ -179,6 +193,8 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, deploym
   const { create, update } = useRuleCommands()
   const [opened] = useState(rule)
   const [state, setState] = useState(CLEAN_FORM)
+  // "עוד" is open on an edit, and opens when the command refuses a field, so nothing refused stays out of sight.
+  const [more, setMore] = useState(rule !== null)
   const backToList = onDone
 
   const form = useForm({
@@ -189,7 +205,10 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, deploym
       const result =
         opened === null ? await create.run(value) : await update.run({ rule: opened, openedVersion: opened.version, values: value })
       if (result.ok) backToList()
-      else setState(formStateOf(result.error, RULE_FIELDS))
+      else {
+        setState(formStateOf(result.error, RULE_FIELDS))
+        setMore(true)
+      }
     },
   })
   const mode = useStore(form.store, (current) => current.values.scope_mode)
@@ -245,209 +264,225 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, deploym
           />
         )}
       </form.Field>
-      <form.Field name="enforcement">
-        {(field) => (
-          <SelectField
-            labelKey="rules.enforcement"
-            name={field.name}
-            value={field.state.value}
-            options={ENFORCEMENTS}
-            onChange={field.handleChange}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
-      <div className="grid grid-cols-2 gap-md">
-        <form.Field name="min_value">
-          {(field) => (
-            <TextField
-              labelKey="rules.min"
-              name={field.name}
-              inputMode="numeric"
-              dir="ltr"
-              value={field.state.value}
-              onChange={field.handleChange}
-              onBlur={field.handleBlur}
-              error={error(field.state.meta.errors, field.name)}
-            />
-          )}
-        </form.Field>
-        <form.Field name="max_value">
-          {(field) => (
-            <TextField
-              labelKey="rules.max"
-              name={field.name}
-              inputMode="numeric"
-              dir="ltr"
-              value={field.state.value}
-              onChange={field.handleChange}
-              onBlur={field.handleBlur}
-              error={error(field.state.meta.errors, field.name)}
-            />
-          )}
-        </form.Field>
-      </div>
-      <form.Field name="metric">
-        {(field) => (
-          <SelectField
-            labelKey="rules.metric"
-            name={field.name}
-            value={field.state.value}
-            options={METRICS}
-            onChange={field.handleChange}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
-      <PopulationField
-        other={otherPopulation}
-        tagSets={tagSets}
-        rankIds={rankIds}
-        onClearOther={() => {
-          form.setFieldValue('other_population', false)
-        }}
-        onChange={(nextTagSets, nextRankIds) => {
-          form.setFieldValue('tag_sets', nextTagSets)
-          form.setFieldValue('rank_ids', nextRankIds)
-        }}
-        categories={categories}
-        tags={tags}
-        ranks={liveRanks(ranks)}
-      />
-      {deploymentOptions.length === 1 ? null : (
-        <form.Field name="deployment_id">
+      <FormPart titleKey="rules.parts.where">
+        <form.Field name="scope_unit_id">
           {(field) => (
             <SelectField
-              labelKey="rules.deployment"
+              labelKey="rules.scope"
               name={field.name}
               value={field.state.value}
-              options={deploymentOptions}
+              options={scopeOptions}
               onChange={field.handleChange}
               error={error(field.state.meta.errors, field.name)}
             />
           )}
         </form.Field>
-      )}
-      <form.Field name="scope_unit_id">
-        {(field) => (
-          <SelectField
-            labelKey="rules.scope"
-            name={field.name}
-            value={field.state.value}
-            options={scopeOptions}
-            onChange={field.handleChange}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
-      <form.Field name="scope_mode">
-        {(field) => (
-          <SelectField
-            labelKey="rules.scopeMode"
-            name={field.name}
-            value={field.state.value}
-            options={MODES}
-            onChange={field.handleChange}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
-      {mode === RuleScopeMode.enum.each_descendant_at_level ? (
-        <form.Field name="scope_level_id">
+        <form.Field name="scope_mode">
           {(field) => (
             <SelectField
-              labelKey="rules.level"
+              labelKey="rules.scopeMode"
               name={field.name}
               value={field.state.value}
-              options={levelOptions}
+              options={MODES}
               onChange={field.handleChange}
               error={error(field.state.meta.errors, field.name)}
             />
           )}
         </form.Field>
-      ) : null}
-      <form.Field name="group_by">
-        {(field) => (
-          <SelectField
-            labelKey="rules.groupBy"
-            name={field.name}
-            value={field.state.value}
-            options={GROUPINGS}
-            onChange={field.handleChange}
-            error={error(field.state.meta.errors, field.name)}
-          />
+        {mode === RuleScopeMode.enum.each_descendant_at_level ? (
+          <form.Field name="scope_level_id">
+            {(field) => (
+              <SelectField
+                labelKey="rules.level"
+                name={field.name}
+                value={field.state.value}
+                options={levelOptions}
+                onChange={field.handleChange}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+        ) : null}
+      </FormPart>
+      <FormPart titleKey="rules.parts.who">
+        <PopulationField
+          other={otherPopulation}
+          tagSets={tagSets}
+          rankIds={rankIds}
+          onClearOther={() => {
+            form.setFieldValue('other_population', false)
+          }}
+          onChange={(nextTagSets, nextRankIds) => {
+            form.setFieldValue('tag_sets', nextTagSets)
+            form.setFieldValue('rank_ids', nextRankIds)
+          }}
+          categories={categories}
+          tags={tags}
+          ranks={liveRanks(ranks)}
+        />
+        {deploymentOptions.length === 1 ? null : (
+          <form.Field name="deployment_id">
+            {(field) => (
+              <SelectField
+                labelKey="rules.deployment"
+                name={field.name}
+                value={field.state.value}
+                options={deploymentOptions}
+                onChange={field.handleChange}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
         )}
-      </form.Field>
-      {groupBy === RuleGroupBy.enum.tag ? (
-        <form.Field name="group_tag_category_id">
+      </FormPart>
+      <FormPart titleKey="rules.parts.bounds">
+        <div className="grid grid-cols-2 gap-md">
+          <form.Field name="min_value">
+            {(field) => (
+              <TextField
+                labelKey="rules.min"
+                name={field.name}
+                inputMode="numeric"
+                dir="ltr"
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+          <form.Field name="max_value">
+            {(field) => (
+              <TextField
+                labelKey="rules.max"
+                name={field.name}
+                inputMode="numeric"
+                dir="ltr"
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+        </div>
+        <form.Field name="metric">
           {(field) => (
             <SelectField
-              labelKey="rules.groupCategory"
+              labelKey="rules.metric"
               name={field.name}
               value={field.state.value}
-              options={categoryOptions}
+              options={METRICS}
               onChange={field.handleChange}
               error={error(field.state.meta.errors, field.name)}
             />
           )}
         </form.Field>
-      ) : null}
-      <div className="grid grid-cols-2 gap-md">
-        <form.Field name="effective_from">
-          {(field) => (
-            <DateField
-              labelKey="rules.from"
-              name={field.name}
-              value={field.state.value}
-              onChange={field.handleChange}
-              error={error(field.state.meta.errors, field.name)}
-            />
-          )}
-        </form.Field>
-        <form.Field name="effective_to">
-          {(field) => (
-            <DateField
-              labelKey="rules.to"
-              name={field.name}
-              value={field.state.value}
-              onChange={field.handleChange}
-              error={error(field.state.meta.errors, field.name)}
-            />
-          )}
-        </form.Field>
-      </div>
-      <form.Field name="count_pending_as_unavailable">
-        {(field) => <SwitchField labelKey="rules.countPending" name={field.name} value={field.state.value} onChange={field.handleChange} />}
-      </form.Field>
-      <form.Field name="priority">
-        {(field) => (
-          <TextField
-            labelKey="rules.priority"
-            name={field.name}
-            inputMode="numeric"
-            dir="ltr"
-            value={field.state.value}
-            onChange={field.handleChange}
-            onBlur={field.handleBlur}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
-      <p className="text-micro text-text-muted">{t('rules.priorityHint')}</p>
-      <form.Field name="is_enabled">
-        {(field) => <SwitchField labelKey="rules.enabled" name={field.name} value={field.state.value} onChange={field.handleChange} />}
-      </form.Field>
-      <form.Field name="description">
-        {(field) => (
-          <TextAreaField
-            labelKey="rules.description"
-            name={field.name}
-            value={field.state.value}
-            onChange={field.handleChange}
-            error={error(field.state.meta.errors, field.name)}
-          />
-        )}
-      </form.Field>
+      </FormPart>
+      <FormPart titleKey="rules.parts.when">
+        <div className="grid grid-cols-2 gap-md">
+          <form.Field name="effective_from">
+            {(field) => (
+              <DateField
+                labelKey="rules.from"
+                name={field.name}
+                value={field.state.value}
+                onChange={field.handleChange}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+          <form.Field name="effective_to">
+            {(field) => (
+              <DateField
+                labelKey="rules.to"
+                name={field.name}
+                value={field.state.value}
+                onChange={field.handleChange}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+        </div>
+      </FormPart>
+      <Disclosure isExpanded={more} onExpandedChange={setMore} className="flex flex-col gap-md">
+        <AriaButton slot="trigger" className="inline-flex min-h-touch cursor-pointer items-center gap-xs self-start rounded-control text-body font-semibold text-text-muted outline-focus outline-offset-2 data-focus-visible:outline-2">
+          {t('rules.parts.more')}
+          <ChevronDown aria-hidden size={16} className={more ? 'rotate-180' : ''} />
+        </AriaButton>
+        <DisclosurePanel className="flex flex-col gap-md">
+          <form.Field name="enforcement">
+            {(field) => (
+              <SelectField
+                labelKey="rules.enforcement"
+                name={field.name}
+                value={field.state.value}
+                options={ENFORCEMENTS}
+                onChange={field.handleChange}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+          <form.Field name="group_by">
+            {(field) => (
+              <SelectField
+                labelKey="rules.groupBy"
+                name={field.name}
+                value={field.state.value}
+                options={GROUPINGS}
+                onChange={field.handleChange}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+          {groupBy === RuleGroupBy.enum.tag ? (
+            <form.Field name="group_tag_category_id">
+              {(field) => (
+                <SelectField
+                  labelKey="rules.groupCategory"
+                  name={field.name}
+                  value={field.state.value}
+                  options={categoryOptions}
+                  onChange={field.handleChange}
+                  error={error(field.state.meta.errors, field.name)}
+                />
+              )}
+            </form.Field>
+          ) : null}
+          <form.Field name="count_pending_as_unavailable">
+            {(field) => <SwitchField labelKey="rules.countPending" name={field.name} value={field.state.value} onChange={field.handleChange} />}
+          </form.Field>
+          <form.Field name="priority">
+            {(field) => (
+              <TextField
+                labelKey="rules.priority"
+                name={field.name}
+                inputMode="numeric"
+                dir="ltr"
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+          <p className="text-micro text-text-muted">{t('rules.priorityHint')}</p>
+          <form.Field name="is_enabled">
+            {(field) => <SwitchField labelKey="rules.enabled" name={field.name} value={field.state.value} onChange={field.handleChange} />}
+          </form.Field>
+          <form.Field name="description">
+            {(field) => (
+              <TextAreaField
+                labelKey="rules.description"
+                name={field.name}
+                value={field.state.value}
+                onChange={field.handleChange}
+                error={error(field.state.meta.errors, field.name)}
+              />
+            )}
+          </form.Field>
+        </DisclosurePanel>
+      </Disclosure>
     </EntityForm>
   )
 }
