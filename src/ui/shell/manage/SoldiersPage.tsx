@@ -8,6 +8,7 @@ import {
   fullName,
   useLeaveCreation,
   useMovePermissions,
+  useTagSetters,
   useOverlayLayer,
   usePanel,
   usePeopleList,
@@ -37,6 +38,7 @@ import { TextField } from '../../primitives/fields'
 import { PageFrame } from '../PageFrame'
 import { CapsuleButton } from './CapsuleButton'
 import { MoveDialog } from './MoveDialog'
+import { TagsDialog } from './TagsDialog'
 import { PageTop } from './PageTop'
 
 // "חיילים" (the handoff's Manage → Soldiers, D-482): every soldier the actor sees, regardless of presence, as thin person
@@ -253,6 +255,7 @@ export function SoldiersPage({ name }: { readonly name: string }) {
   const [selecting, setSelecting] = useState(false)
   const [chosen, setChosen] = useState<ReadonlySet<SoldierId>>(new Set())
   const [moving, setMoving] = useState(false)
+  const [tagging, setTagging] = useState(false)
   const list = usePeopleList(view, query)
   const soldiers = useSoldiers()
   const units = useUnits()
@@ -261,6 +264,7 @@ export function SoldiersPage({ name }: { readonly name: string }) {
   const roster = useRosterPermissions(NO_SOLDIERS, liveUnits)
   const creation = useLeaveCreation(seen)
   const moves = useMovePermissions(seen, liveUnits)
+  const tagsOf = useTagSetters(seen)
   const archived = useArchivedCount()
   const rows = useOptionRows(view, list.status === 'ready' ? list.value : null)
   // Choosing is a layer over the page: the back button ends it, as it closes a drawer (D-332, D-483).
@@ -330,6 +334,18 @@ export function SoldiersPage({ name }: { readonly name: string }) {
             label: t('manage.people.move'),
             onPress: () => {
               setMoving(true)
+            },
+          },
+        ]
+      : []),
+    // Tagging several: for who may update every chosen soldier, each saved by their own command (OI-400).
+    ...(ids.length > 0 && ids.every(tagsOf)
+      ? [
+          {
+            key: 'tags',
+            label: t('manage.people.tags'),
+            onPress: () => {
+              setTagging(true)
             },
           },
         ]
@@ -430,6 +446,17 @@ export function SoldiersPage({ name }: { readonly name: string }) {
           ))}
         </div>
       )}
+      {tagging ? (
+        <TagsDialog
+          soldierIds={ids}
+          onClose={(refused) => {
+            setTagging(false)
+            if (refused === null) return
+            if (refused.length === 0) stopChoosing()
+            else setChosen(new Set(refused))
+          }}
+        />
+      ) : null}
       {moving ? (
         <MoveDialog
           soldierIds={ids}

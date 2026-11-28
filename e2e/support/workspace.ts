@@ -117,27 +117,48 @@ export async function enterAsOwner(page: Page) {
   await expect(organizationHeading(page)).toBeVisible()
 }
 
-/** Signs out from "אני", where the account is (D-455). */
-export async function signOut(page: Page) {
+/** A page of "אני" from its row or door (D-488): "העדפות", "כל הבקשות" or "הסבב שלי". */
+export async function openMePage(page: Page, which: 'preferences' | 'requests' | 'rotation') {
   await openTab(page, 'me')
+  // A press on the tab in sight returns "אני" to its first screen (D-465), where the rows are.
+  if (/[?&]page=/.test(page.url())) await tab(page, 'me').click()
+  const main = page.getByRole('main')
+  if (which === 'preferences') await main.getByRole('button', { name: he.me.preferences, exact: true }).click()
+  else if (which === 'requests') await main.getByRole('button', { name: he.me.allRequests, exact: true }).click()
+  else await main.getByRole('button', { name: he.me.myRotation, exact: true }).click()
+  const title = which === 'preferences' ? he.me.preferences : which === 'requests' ? he.me.myRequests : he.me.myRotation
+  await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible()
+}
+
+/** Signs out from "העדפות" of "אני", where the account is (D-488). */
+export async function signOut(page: Page) {
+  await openMePage(page, 'preferences')
   await page.getByRole('button', { name: he.account.signOut, exact: true }).click()
   await expect(page).toHaveURL(/\/sign-in(\?view=\w+(&tab=today)?)?$/)
 }
 
-/** The soldier's own requests, from their row of "אני" (D-455). */
+/** The soldier's own requests: "כל הבקשות" of "אני", on its open part (D-488). */
 export async function openMyLeaves(page: Page) {
-  await openTab(page, 'me')
-  await page.getByRole('main').getByRole('button', { name: he.myLeaves.openTitle, exact: true }).click()
-  await expect(page.getByRole('dialog', { name: he.myLeaves.title })).toBeVisible()
+  await openMePage(page, 'requests')
 }
 
-/** The appearance, chosen on "אני" (D-181). */
+/** The open part of "כל הבקשות", or its history. */
+export function myRequestsList(page: Page, part: 'open' | 'history' = 'open') {
+  return page.getByRole('main').getByRole('region', { name: part === 'open' ? he.me.openTab : he.me.historyTab })
+}
+
+/** A row of "כל הבקשות" by its leave type: the row's button, and its badge beside it. */
+export function myRequestRow(page: Page, type: string | RegExp) {
+  return myRequestsList(page).getByRole('listitem').filter({ hasText: type })
+}
+
+/** The appearance, chosen on "העדפות" of "אני" (D-181). */
 export function appearanceChoice(page: Page, name: string) {
   return page.getByRole('radiogroup', { name: he.account.appearance }).getByRole('radio', { name, exact: true })
 }
 
 export async function chooseAppearance(page: Page, name: string) {
-  await openTab(page, 'me')
+  await openMePage(page, 'preferences')
   await appearanceChoice(page, name).click()
   await expect(appearanceChoice(page, name)).toBeChecked()
 }

@@ -2,14 +2,14 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { TYPE, YAEL, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
 import { choose, closeDrawer, drawer, typeDate, openNewLeave } from './support/leaves.ts'
-import { OWNER, expectNoAxeViolations, signIn, openMyLeaves, openRequests, requestsList, backToBoard } from './support/workspace.ts'
+import { OWNER, expectNoAxeViolations, signIn, openMyLeaves, myRequestRow, myRequestsList, openRequests, requestsList, backToBoard } from './support/workspace.ts'
 
 // V11's demo: a fighter links on their own, asks for a leave from "my requests", comments on it, the owner approves
 // it in the inbox, and the fighter sees it approved (D-167). On desktop and mobile, RTL, with axe. Sample data, tests
 // only.
 
 function openList(page: Page) {
-  return drawer(page).getByRole('list', { name: he.myLeaves.openTitle })
+  return myRequestsList(page)
 }
 
 test('a fighter asks for a leave from "my requests", and sees it approved', async ({ page }) => {
@@ -22,12 +22,11 @@ test('a fighter asks for a leave from "my requests", and sees it approved', asyn
     await expect(page.getByRole('region', { name: he.today.myRequest })).toHaveCount(0)
     await expectNoAxeViolations(page)
     await openMyLeaves(page)
-    await expect(drawer(page).getByText(he.myLeaves.emptyTitle)).toBeVisible()
+    await expect(openList(page).getByText(he.me.noOpenRequests)).toBeVisible()
     await expectNoAxeViolations(page)
   })
 
   await test.step('the new request names Yael already, and waits for approval', async () => {
-    await closeDrawer(page)
     await openNewLeave(page)
     await expect(drawer(page).getByRole('heading', { name: he.leaves.newTitle })).toBeVisible()
     await expect(drawer(page).getByRole('combobox', { name: he.leaves.soldier })).toHaveValue(`${YAEL.first} ${YAEL.last}`)
@@ -37,8 +36,7 @@ test('a fighter asks for a leave from "my requests", and sees it approved', asyn
     await drawer(page).getByRole('button', { name: he.leaves.submit, exact: true }).click()
     await expect(drawer(page)).toBeHidden()
     await openMyLeaves(page)
-    const row = openList(page).getByRole('button', { name: new RegExp(TYPE) })
-    await expect(row.getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
+    await expect(myRequestRow(page, TYPE).getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
     await expectNoAxeViolations(page)
   })
 
@@ -66,8 +64,7 @@ test('a fighter asks for a leave from "my requests", and sees it approved', asyn
     await signOut(page)
     await signIn(page, YAEL.email)
     await openMyLeaves(page)
-    const row = openList(page).getByRole('button', { name: new RegExp(TYPE) })
-    await expect(row.getByText(he.leaves.badgeApproved, { exact: true })).toBeVisible()
+    await expect(myRequestRow(page, TYPE).getByText(he.leaves.badgeApproved, { exact: true })).toBeVisible()
     await expectNoAxeViolations(page)
   })
 })

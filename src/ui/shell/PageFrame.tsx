@@ -1,28 +1,31 @@
 import { PANEL_IDS, SHELL } from '@config'
-import { useMyLeavesAccess, useMyUpdates, usePanel, useRotationScope } from '@logic'
+import { useMyLeavesAccess, useMyUpdates, usePanel } from '@logic'
 import { Bell } from 'lucide-react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { GlassCircle } from '../kit/Glass'
 import { useShellChrome } from './chrome'
 
 // A page of the shell (D-455): one column on the canvas that scrolls under the floating bar. Once scrolled, its top
-// blurs out in a 70 px band. A glass circle in the top corner opens the soldier's updates, for who has them.
+// blurs out in a 70 px band. A glass circle in the top corner, the bell, opens the notifications drawer.
 
-/** The updates of the soldier's own requests (D-167), where requests exist (D-218). Absent for anyone else (D-076). */
+/**
+ * The bell (D-488): the notifications drawer, what others did on the soldier's own requests (D-352). For every linked
+ * soldier who reads their own leaves, in routine too: an update of the last days still matters there. Absent for anyone
+ * else, who has nothing it could hold (D-076).
+ */
 function UpdatesCircle() {
   const panel = usePanel()
   const mine = useMyLeavesAccess()
-  const { requests } = useRotationScope()
   const updates = useMyUpdates()
-  if (!requests || mine?.view !== true) return null
+  if (mine?.view !== true) return null
   return (
     <div className="pointer-events-none absolute end-lg top-lg">
       <GlassCircle
-        labelKey="myLeaves.updatesTitle"
+        labelKey="me.notificationsTitle"
         count={updates?.status === 'ready' ? updates.value.unread : 0}
         countKey="myLeaves.updatesUnread"
         onPress={() => {
-          panel.open(PANEL_IDS.myLeaves)
+          panel.open(PANEL_IDS.notifications)
         }}
       >
         <Bell aria-hidden size={SHELL.cornerIconPx} />

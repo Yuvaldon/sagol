@@ -1,4 +1,4 @@
-import { ARCHIVE_ENTITY, NEW_ENTITY, PANEL_IDS, SHELL, TODAY } from '@config'
+import { ARCHIVE_ENTITY, NEW_ENTITY, PANEL_IDS, TODAY } from '@config'
 import { SoldierId, type AppError, type Soldier, type SoldierAccount } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -15,13 +15,12 @@ import {
   useSoldierAccounts,
   useSoldierCommands,
   useSoldierDays,
-  useSoldierPagePermissions,
-  useSoldierPrivate,
+  useLeaveTypes,
   useUnits,
   type DaySelection,
   type Person,
 } from '@logic'
-import { Archive, Copy, Unlink } from 'lucide-react'
+import { Archive, Unlink } from 'lucide-react'
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { CardDoor } from '../kit/Card'
@@ -33,11 +32,12 @@ import { ActionMenu, type RowAction } from '../patterns/ActionMenu'
 import { SmallDialog } from '../patterns/Dialogs'
 import { FailureNotice, LoadingNotice } from '../patterns/Notices'
 import { UNIT_STATE_KEYS } from '../patterns/units'
-import { IconButton } from '../primitives/Button'
 import { restoreFailureKey } from '../patterns/restoreFailure'
 import { useNotices } from './notices'
 import { standingOf } from './today/standing'
 import { SoldierArchiveDrawer } from './manage/ArchiveDrawers'
+import { EditControls, ProfileBody } from './person/Profile'
+import { useProfileEdit, type ProfileEdit } from './person/useProfileEdit'
 
 // The person card (the handoff's Person card, D-482): one component, two heights. At half height, where the soldier is
 // placed, their tags, their personal number and phone with copy, where they are now and their next 14 days, whose days
@@ -51,83 +51,17 @@ const SEPARATOR = ' · '
 const WORD = ' '
 const NO_ROWS: readonly never[] = []
 
-/**
- * A value with its label and a copy button: the personal number and the phone are copied all day (the handoff's Me).
- * The answer shows under the value, inside the drawer, where the eye already is.
- */
-function CopyField({ labelKey, value }: { readonly labelKey: 'soldiers.personalId' | 'soldiers.phone'; readonly value: string }) {
-  const [answer, setAnswer] = useState<'manage.person.copied' | 'presence.copyFailed' | null>(null)
-  useEffect(() => {
-    if (answer === null) return undefined
-    const timer = setTimeout(() => {
-      setAnswer(null)
-    }, SHELL.toastMs)
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [answer])
-  return (
-    <div className="flex min-w-none flex-1 items-end gap-xs">
-      <div className="flex min-w-none flex-col">
-        <span className="text-small text-text-muted">{t(labelKey)}</span>
-        <span dir="ltr" className="truncate text-start text-heading font-bold tabular-nums">
-          {value}
-        </span>
-        <span role="status" className="text-small text-text-muted">
-          {answer === null ? null : t(answer)}
-        </span>
-      </div>
-      <IconButton
-        labelKey={labelKey === 'soldiers.personalId' ? 'manage.person.copyPersonalId' : 'manage.person.copyPhone'}
-        onPress={() => {
-          // An insecure page or an old browser has no clipboard at all.
-          if (typeof navigator.clipboard?.writeText !== 'function') {
-            setAnswer('presence.copyFailed')
-            return
-          }
-          navigator.clipboard.writeText(value).then(
-            () => {
-              setAnswer('manage.person.copied')
-            },
-            () => {
-              setAnswer('presence.copyFailed')
-            },
-          )
-        }}
-      >
-        <Copy aria-hidden size={18} />
-      </IconButton>
-    </div>
-  )
-}
-
-/** The personal number and the phone, for who reads them (D-018). */
-function Contact({ soldier }: { readonly soldier: Soldier }) {
-  const units = useUnits()
-  const permissions = useSoldierPagePermissions(soldier, units.status === 'ready' ? units.value : NO_ROWS)
-  const row = useSoldierPrivate(soldier.id, permissions.viewPrivate)
-  if (!permissions.viewPrivate || row.status !== 'ready' || row.value === null) return null
-  const personalId = row.value.personal_id ?? ''
-  const phone = row.value.phone ?? ''
-  if (personalId === '' && phone === '') return null
-  return (
-    <div className="flex gap-lg">
-      {personalId === '' ? null : <CopyField labelKey="soldiers.personalId" value={personalId} />}
-      {phone === '' ? null : <CopyField labelKey="soldiers.phone" value={phone} />}
-    </div>
-  )
-}
-
 /** Where the soldier is and their next 14 days, for who reads their leaves; days chosen there become a new leave. */
 function Days({ soldier }: { readonly soldier: Soldier }) {
   const panel = usePanel()
   const days = useSoldierDays(soldier.id, TODAY.stripDays)
+  const types = useLeaveTypes()
   const creation = useLeaveCreation([soldier])
   const [selection, setSelection] = useState<DaySelection | null>(null)
   if (days === null) return null
   if (days.status !== 'ready') return <LoadingNotice />
   const { today } = days.value
-  const standing = standingOf(today, days.value.days)
+  const standing = standingOf(today, days.value.days, types.status === 'ready' ? types.value : NO_ROWS)
   if (standing === null) return null
   const creates = creation.soldiers.some((candidate) => candidate.id === soldier.id)
   return (
@@ -174,24 +108,20 @@ function Full({ soldier }: { readonly soldier: Soldier }) {
   )
 }
 
-function Card({ person }: { readonly person: Person }) {
+function Card({ person, edit }: { readonly person: Person; readonly edit: ProfileEdit }) {
   const grow = useFullStop()
   const [full, setFull] = useState(false)
   const { soldier } = person
+  // The edit asks for the full stop: its fields are more than half a screen (D-477).
+  const { editing } = edit
+  useEffect(() => {
+    if (editing) grow()
+  }, [editing, grow])
   return (
     <div className="flex flex-col gap-lg">
-      {person.tags.length === 0 ? null : (
-        <ul aria-label={t('soldiers.tagsTitle')} className="flex flex-wrap gap-xs">
-          {person.tags.map((tag) => (
-            <li key={tag} className="rounded-full bg-action-soft px-cozy py-xs text-small font-semibold text-on-action-soft">
-              {tag}
-            </li>
-          ))}
-        </ul>
-      )}
-      <Contact soldier={soldier} />
-      <Days soldier={soldier} />
-      {full ? (
+      <ProfileBody edit={edit} tags={person.tags} expanded={false} />
+      {editing ? null : <Days soldier={soldier} />}
+      {editing ? null : full ? (
         <Full soldier={soldier} />
       ) : (
         <CardDoor
@@ -318,11 +248,14 @@ function useCardActions(soldier: Soldier, onArchived: () => void) {
 
 function PersonCard({ person, onClose }: { readonly person: Person; readonly onClose: () => void }) {
   const { actions, dialog } = useCardActions(person.soldier, onClose)
+  const edit = useProfileEdit(person.soldier)
   const unit = person.unit.kind === 'unit' ? person.unit.unit.name : t(UNIT_STATE_KEYS[person.unit.kind])
   const detail = [...(person.rank === null ? [] : [person.rank.title]), unit].join(SEPARATOR)
+  // The pencil sits beside "⋯"; while editing, ✕ and ✓ take both places (the handoff's edit mode, OI-401).
+  const tools = edit.editing ? <EditControls edit={edit} /> : <EditControls edit={edit} after={<ActionMenu labelKey="common.actions" actions={actions} variant="circle" />} />
   return (
-    <StopDrawer inUrl title={fullName(person.soldier)} detail={detail} onClose={onClose} tools={<ActionMenu labelKey="common.actions" actions={actions} variant="circle" />}>
-      <Card person={person} />
+    <StopDrawer inUrl title={fullName(person.soldier)} detail={detail} onClose={onClose} tools={tools}>
+      <Card person={person} edit={edit} />
       {dialog}
     </StopDrawer>
   )

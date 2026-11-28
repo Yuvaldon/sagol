@@ -18,6 +18,7 @@ import { ManagePage } from './manage/ManagePage'
 import { RuleDrawer } from './manage/RuleDrawer'
 import { useManageAccess } from './manage/rows'
 import { NoticeScope } from './NoticeScope'
+import { NotificationsDrawer } from './NotificationsDrawer'
 import { PersonDrawer } from './PersonDrawer'
 import { MePage } from './me/MePage'
 import { ModuleDrawer } from './ModuleDrawer'
@@ -102,7 +103,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
           <>
             {tab === 'today' ? <TodayPage name={name} commands={access.board} requests={access.requestsForSelf} approvals={access.approvals} /> : null}
             {tab === 'manage' ? <ManagePage name={name} /> : null}
-            {tab === 'me' ? <MePage identity={identity} /> : null}
+            {tab === 'me' ? <MePage identity={identity} requests={access.requestsForSelf} /> : null}
             {/* A temporary full screen has no tab bar (the handoff's placement map). */}
             {place.page !== null && FULL_SCREEN_PAGES.includes(place.page) ? null : <div className="pointer-events-none absolute inset-safe">{bar}</div>}
           </>
@@ -112,6 +113,7 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
         <PersonDrawer />
         <RuleDrawer />
         <JoinDrawer />
+        <NotificationsDrawer />
         <DayReportDialog />
         <PreferenceFailureNotice />
         <InstallInvitation />

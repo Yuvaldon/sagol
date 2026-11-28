@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { ORGANIZATION, OWNER, claimOrganization, closeSetup, expectNoAxeViolations, navigation, openTab, organizationHeading, signIn, tab, openSetup } from './support/workspace.ts'
+import { ORGANIZATION, OWNER, claimOrganization, closeSetup, expectNoAxeViolations, navigation, openMePage, openTab, organizationHeading, signIn, tab, openSetup } from './support/workspace.ts'
 
 // V0's demo: sign in, claim the organization, see the empty workspace, keep the session across a
 // reload, and see that a second identity gets no data. Each test starts on an empty browser
@@ -10,9 +10,9 @@ const SECOND_EMAIL = 'second@example.test'
 const BOTTOM_BAR_LIMIT = 0.5
 const TOUCH_TARGET_PX = 44
 
-/** "אני" holds what the account offers (D-455): sign-out, and the identities of this device. */
+/** "העדפות" of "אני" holds what the account offers (D-488): sign-out, and the identities of this device. */
 async function chooseOnMe(page: Page, item: string | RegExp) {
-  await openTab(page, 'me')
+  await openMePage(page, 'preferences')
   await page.getByRole('main').getByRole('button', { name: item }).click()
 }
 
@@ -68,9 +68,11 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await expectNoAxeViolations(page)
   })
 
-  await test.step('"אני" names who is signed in', async () => {
+  await test.step('"אני" names who is signed in, and "העדפות" the account', async () => {
     await openTab(page, 'me')
     await expect(page.getByRole('heading', { level: 1, name: OWNER.name })).toBeVisible()
+    await expectNoAxeViolations(page)
+    await openMePage(page, 'preferences')
     await expect(page.getByText(OWNER.email)).toBeVisible()
     await expectNoAxeViolations(page)
     await openTab(page, 'today')
@@ -103,8 +105,8 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await expect(organizationHeading(page)).toBeVisible()
   })
 
-  await test.step('"אני" has no axe violations', async () => {
-    await openTab(page, 'me')
+  await test.step('"העדפות" has no axe violations', async () => {
+    await openMePage(page, 'preferences')
     await expect(page.getByRole('button', { name: he.account.signOut, exact: true })).toBeVisible()
     await expectNoAxeViolations(page)
   })
@@ -203,6 +205,8 @@ test('every control is a 44 px touch target on mobile', async ({ page }, testInf
   await openSetup(page)
   await expectTouchTargets()
   await openTab(page, 'me')
+  await expectTouchTargets()
+  await openMePage(page, 'preferences')
   await expect(page.getByRole('button', { name: he.account.signOut, exact: true })).toBeVisible()
   await expectTouchTargets()
 })

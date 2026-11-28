@@ -1,11 +1,10 @@
 import { NEW_ENTITY, PANEL_IDS, type PanelId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useModuleAccess, useMyLeavesAccess, usePanel, useSetupAccess, useTransferAccess } from '@logic'
+import { useModuleAccess, usePanel, useSetupAccess, useTransferAccess } from '@logic'
 import { Suspense, lazy, type ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { Drawer } from '../patterns/Drawer'
 import { LoadingNotice } from '../patterns/Notices'
-import { MyApproveNowSwitch } from './ApproveNowSwitch'
 import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
 // Each module loads when its drawer first opens, so the entry chunk holds only the board (OI-118, D-210).
@@ -17,7 +16,6 @@ const CommandRanksModule = lazy(() => import('../modules/command-ranks/CommandRa
 const LeaveTypeGroupsModule = lazy(() => import('../modules/leave-types/LeaveTypeGroupsModule').then((module) => ({ default: module.LeaveTypeGroupsModule })))
 const LeaveTypesModule = lazy(() => import('../modules/leave-types/LeaveTypesModule').then((module) => ({ default: module.LeaveTypesModule })))
 const ClosedLeavesModule = lazy(() => import('../modules/leaves/LeaveInboxModule').then((module) => ({ default: module.ClosedLeavesModule })))
-const MyLeavesModule = lazy(() => import('../modules/leaves/MyLeavesModule').then((module) => ({ default: module.MyLeavesModule })))
 const DashboardModule = lazy(() => import('../modules/presence/DashboardModule').then((module) => ({ default: module.DashboardModule })))
 const RulesModule = lazy(() => import('../modules/rules/RulesModule').then((module) => ({ default: module.RulesModule })))
 const SetupModule = lazy(() => import('../modules/setup/SetupModule').then((module) => ({ default: module.SetupModule })))
@@ -38,7 +36,6 @@ const UnitsModule = lazy(() => import('../modules/units/UnitsModule').then((modu
 type ModuleAccess = ReturnType<typeof useModuleAccess> & {
   readonly inbox: boolean
   readonly grants: boolean
-  readonly myLeaves: boolean
   readonly transfer: boolean
   readonly setup: boolean
 }
@@ -53,8 +50,6 @@ interface ModuleSection {
 interface ModuleGroup {
   readonly titleKey: I18nKey
   readonly sections: readonly ModuleSection[]
-  /** What the group's header holds under its sections, for the whole group. */
-  readonly Header?: ComponentType
 }
 
 const GROUPS: readonly ModuleGroup[] = [
@@ -139,12 +134,6 @@ const GROUPS: readonly ModuleGroup[] = [
     ],
   },
   {
-    titleKey: 'myLeaves.title',
-    // Who approves their own requests but nobody else's has no inbox: the default sits with their requests (D-299).
-    Header: MyApproveNowSwitch,
-    sections: [{ panel: PANEL_IDS.myLeaves, labelKey: 'myLeaves.title', isAllowed: (access) => access.myLeaves, Module: MyLeavesModule }],
-  },
-  {
     // The requests that closed, which the board does not draw. What waits is on "היום" and its page alone (D-474).
     titleKey: 'inbox.closedLabel',
     sections: [{ panel: PANEL_IDS.leaveClosed, labelKey: 'inbox.closedLabel', isAllowed: (access) => access.inbox, Module: ClosedLeavesModule }],
@@ -178,7 +167,6 @@ export function ModuleDrawer() {
     ...useModuleAccess(),
     inbox: useInboxAccess(),
     grants: useGrantsAccess(),
-    myLeaves: useMyLeavesAccess()?.view === true,
     transfer: useTransferAccess().any,
     setup: useSetupAccess().length > 0,
   }
@@ -196,27 +184,21 @@ export function ModuleDrawer() {
       titleKey={group.titleKey}
       onClose={panel.close}
       header={
-        sections.length < 2 && group.Header === undefined ? null : (
-          // A header that renders nothing leaves no gap.
-          <div className="flex flex-col gap-xs empty:hidden">
-            {sections.length < 2 ? null : (
-              <nav aria-label={t('common.sections')} className="flex gap-xs rounded-pill bg-inner p-2xs">
-                {sections.map((section) => (
-                  <AriaButton
-                    key={section.panel}
-                    aria-current={section.panel === open.panel ? 'page' : false}
-                    onPress={() => {
-                      panel.open(section.panel)
-                    }}
-                    className={`flex min-h-touch flex-1 cursor-pointer items-center justify-center rounded-pill text-control font-semibold outline-focus md:min-h-control data-focus-visible:outline-2 ${section.panel === open.panel ? 'bg-surface text-text' : 'text-text-muted'}`}
-                  >
-                    {t(section.labelKey)}
-                  </AriaButton>
-                ))}
-              </nav>
-            )}
-            {group.Header === undefined ? null : <group.Header />}
-          </div>
+        sections.length < 2 ? null : (
+          <nav aria-label={t('common.sections')} className="flex gap-xs rounded-pill bg-inner p-2xs">
+            {sections.map((section) => (
+              <AriaButton
+                key={section.panel}
+                aria-current={section.panel === open.panel ? 'page' : false}
+                onPress={() => {
+                  panel.open(section.panel)
+                }}
+                className={`flex min-h-touch flex-1 cursor-pointer items-center justify-center rounded-pill text-control font-semibold outline-focus md:min-h-control data-focus-visible:outline-2 ${section.panel === open.panel ? 'bg-surface text-text' : 'text-text-muted'}`}
+              >
+                {t(section.labelKey)}
+              </AriaButton>
+            ))}
+          </nav>
         )
       }
     >

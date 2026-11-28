@@ -1,20 +1,17 @@
 import { useMyLeavesAccess, useMyPreferences, useUpdateMyPreferences } from '@logic'
 import { SwitchField } from '../primitives/SwitchField'
-import { useInboxAccess } from './inboxAccess'
 import { useReportPreferenceSave } from './preferenceFailure'
 
 /**
- * The "approve now" default (D-121), for who may approve their own requests (D-299). It sits in the inbox's header,
- * where approving happens (D-265); `where` 'mine' places it in "my requests" for who has no inbox.
+ * The "approve now" default (D-121), for who may approve their own requests (D-299). It sits on the page of requests,
+ * where approving happens (D-467), and under "עבודה" of "העדפות" (D-488), where every preference of the account is.
  */
-function ApproveNow({ where }: { readonly where: 'inbox' | 'mine' }) {
+export function ApproveNowSwitch() {
   const own = useMyLeavesAccess()
-  const inbox = useInboxAccess()
   const preferences = useMyPreferences()
   const save = useUpdateMyPreferences()
   const reportSave = useReportPreferenceSave()
-  const here = where === 'inbox' || !inbox
-  if (own?.approve !== true || !here || preferences.status !== 'ready') return null
+  if (own?.approve !== true || preferences.status !== 'ready') return null
   return (
     <SwitchField
       labelKey="account.approveNowDefault"
@@ -25,12 +22,4 @@ function ApproveNow({ where }: { readonly where: 'inbox' | 'mine' }) {
       }}
     />
   )
-}
-
-export function ApproveNowSwitch() {
-  return <ApproveNow where="inbox" />
-}
-
-export function MyApproveNowSwitch() {
-  return <ApproveNow where="mine" />
 }

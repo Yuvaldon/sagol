@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, ROTATION, closeDrawer, createType, drawer, openRotationInNewUnit, requestLeave } from './support/leaves.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, openMyLeaves } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, openModule, openMePage } from './support/workspace.ts'
 
 // The 1.0 dashboards' demo: the command board opens from a rotation's row on that rotation, counts it under a
 // template, takes the actor's own list of modules and keeps it, and "הסבב שלי" sums the actor's rotation at the top of
@@ -88,14 +88,14 @@ test('the command board and "הסבב שלי"', async ({ page }) => {
     await closeDrawer(page)
   })
 
-  await test.step('"הסבב שלי" sums the rotation at the top of "שלי"', async () => {
-    await openMyLeaves(page)
-    const mine = drawer(page).getByRole('region', { name: new RegExp(`^${he.myRotation.title}`) })
-    await expect(mine).toContainText(ROTATION.name)
-    await expect(mine).toContainText(he.myRotation.baseDays)
-    await expect(mine).toContainText(he.myRotation.homeDays)
-    await expect(mine).toContainText(he.myRotation.nextLeave)
-    await expect(mine).toContainText(he.myRotation.untilEnd)
+  await test.step('"הסבב שלי" of "אני" sums the rotation (D-488)', async () => {
+    await openMePage(page, 'rotation')
+    await expect(page.getByRole('main')).toContainText(ROTATION.name)
+    const summary = page.getByRole('main').getByRole('definition').first()
+    await expect(summary).toBeVisible()
+    await expect(page.getByRole('main')).toContainText(he.myRotation.baseDays)
+    await expect(page.getByRole('main')).toContainText(he.myRotation.homeDays)
+    await expect(page.getByRole('main')).toContainText(he.me.approvedRequests)
     await expectNoAxeViolations(page)
   })
 })

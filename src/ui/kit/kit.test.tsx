@@ -114,6 +114,21 @@ describe('the day strip', () => {
     expect(items[1]?.textContent).toContain(he.kit.dayAway)
     expect(items[2]?.textContent).toContain(he.kit.dayPending)
   })
+
+  it('draws a waiting request once across its days, named by its type (OI-395)', () => {
+    const days = [
+      { date: '2026-11-18', state: 'base' },
+      { date: '2026-11-19', state: 'pending', leave_id: 'a', label: 'קורס' },
+      { date: '2026-11-20', state: 'pending', leave_id: 'a', label: 'קורס' },
+      { date: '2026-11-21', state: 'pending', leave_id: 'b', label: 'אישי' },
+    ] as const
+    render(<DayStrip days={days} today="2026-11-18" labelKey="myLeaves.nextDaysTitle" />)
+    const list = screen.getByRole('list', { name: he.myLeaves.nextDaysTitle })
+    // One name per leave, drawn on its first day; each day still reads its own words.
+    expect(within(list).getAllByText('קורס', { selector: 'span.truncate' })).toHaveLength(1)
+    expect(within(list).getAllByText('אישי', { selector: 'span.truncate' })).toHaveLength(1)
+    expect(within(list).getAllByRole('listitem')[2]?.textContent).toContain(`${he.kit.dayPending} קורס`)
+  })
 })
 
 function month(select: Parameters<typeof Month>[0]['select'], onPrevious: (() => void) | null = null, onNext = vi.fn()) {
