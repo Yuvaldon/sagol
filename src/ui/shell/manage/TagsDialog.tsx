@@ -1,4 +1,4 @@
-import type { SoldierId, TagId } from '@contracts'
+import { TagSelectionMode, type SoldierId, type TagId } from '@contracts'
 import { t } from '@i18n'
 import { heldByMany, soldierTagGroups, useRotationScope, useSetTagsOfMany, useSoldierTags, useSoldiers, useTagCategories, useTags } from '@logic'
 import { useState } from 'react'
@@ -32,7 +32,7 @@ export function TagsDialog({ soldierIds, onClose }: { readonly soldierIds: reado
   const stateOf = (tagId: TagId): PickState => {
     // In a single-choice category, a later choice of another tag lets go of this one (D-065).
     const group = groupOf(tagId)
-    if (group?.category.selection_mode === 'single') {
+    if (group?.category.selection_mode === TagSelectionMode.enum.single) {
       const own = new Set(group.choices.map((choice) => choice.tag.id))
       const latest = changes.findLast(([id, on]) => own.has(id) && on)
       if (latest !== undefined && latest[0] !== tagId && changes.lastIndexOf(latest) > changes.findLastIndex(([id]) => id === tagId)) return 'off'
@@ -53,10 +53,12 @@ export function TagsDialog({ soldierIds, onClose }: { readonly soldierIds: reado
     }
     const answers = [...result.value]
     const refused = answers.flatMap(([soldierId, answer]) => (answer.ok ? [] : [soldierId]))
+    // Only who got a change counts as tagged: a soldier who already held the choice was sent nothing (D-490).
+    const tagged = answers.filter(([, answer]) => answer.ok && answer.changed).length
     const firstRefusal = answers.find(([, answer]) => !answer.ok)?.[1]
     onClose(refused)
     notices.report(
-      [t('profile.tagsDone'), String(answers.length - refused.length), t('profile.soldiersWord')].join(WORD),
+      [t('profile.tagsDone'), String(tagged), t('profile.soldiersWord')].join(WORD),
       firstRefusal === undefined || firstRefusal.ok ? null : firstRefusal.error,
     )
   }

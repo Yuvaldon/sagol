@@ -42,7 +42,8 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
   const [failure, setFailure] = useState<AppError | null>(null)
   const name = query.trim()
   const live = liveCategories(categories)
-  const exists = tags.some((tag) => tag.archived_at === null && tag.name === name)
+  // As the search does, a name is matched whatever its case: "הוסף: X" never makes a second tag of the same name (D-490).
+  const exists = tags.some((tag) => tag.archived_at === null && tag.name.toLocaleLowerCase() === name.toLocaleLowerCase())
   const create = async (category: TagCategory) => {
     setFailure(null)
     const result = await commands.create.run({ values: { name, category_id: category.id, color_key: null }, all: tags })

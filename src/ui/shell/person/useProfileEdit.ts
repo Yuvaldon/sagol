@@ -1,8 +1,10 @@
-import type { AppError, Issue, Soldier, SoldierPrivate, TagCategoryId, TagId } from '@contracts'
+import type { AppError, Issue, Soldier, SoldierPrivate, Tag, TagCategory, TagCategoryId, TagId } from '@contracts'
 import { t } from '@i18n'
 import {
   cardEditIssues,
   cardEditValues,
+  cardTagsWith,
+  chosenAfter,
   definitionsOf,
   propertyFormValues,
   toStoredProperties,
@@ -55,6 +57,8 @@ export interface ProfileEdit {
   readonly setProperty: (id: string, value: PropertyFieldValue) => void
   readonly chosen: ReadonlyMap<TagCategoryId, readonly TagId[]>
   readonly setChosen: (next: ReadonlyMap<TagCategoryId, readonly TagId[]>) => void
+  /** A tag made in the picker joins the card and is chosen, in a category that had no live tag too (D-490). */
+  readonly addTag: (tag: Tag, category: TagCategory) => void
   readonly opened: Opened | null
   readonly answered: readonly Issue[]
   readonly failure: AppError | null
@@ -126,9 +130,19 @@ export function useProfileEdit(soldier: Soldier): ProfileEdit {
             setFailure(state.failure)
             return
           }
-          reset()
-          if (!result.value.changed) return
-          const { undo } = result.value
+          const { changed, undo, left, refusal } = result.value
+          if (refusal !== null) {
+            // What was saved stands: the edit goes on from the versions it left, so ✓ again is not stale (D-490).
+            const state = formStateOf(refusal, [...FIELDS, ...defs.map(propertyFieldName)])
+            setAnswered(state.answered)
+            setFailure(state.failure)
+            setOpened({
+              soldier: left.soldier,
+              row: left.privateRow,
+              tags: opened.tags === null || left.scopes === null ? opened.tags : { ...opened.tags, scopes: left.scopes },
+            })
+          } else reset()
+          if (!changed) return
           notices.say(t('profile.saved'), {
             labelKey: 'profile.undo',
             run: () => {
@@ -138,6 +152,13 @@ export function useProfileEdit(soldier: Soldier): ProfileEdit {
             },
           })
         })
+    },
+    addTag: (tag, category) => {
+      if (opened?.tags === undefined || opened.tags === null) return
+      const card = cardTagsWith(opened.tags, tag, category)
+      const group = card.groups.find((candidate) => candidate.category.id === category.id)
+      setOpened({ ...opened, tags: card })
+      if (group !== undefined) setChosen(chosenAfter(chosen, card, group, tag.id, true))
     },
     values,
     set: (field, value) => {

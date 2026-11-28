@@ -1,7 +1,7 @@
 import { NEW_ENTITY, PANEL_IDS } from '@config'
 import type { CalendarDate } from '@contracts'
 import { t, type I18nKey } from '@i18n'
-import { isBeforeDay, monthSpan, selectDay, selectionCovers, useMyDays, useMyRotation, usePanel, useSession, weeksOf, type DaySelection } from '@logic'
+import { isBeforeDay, monthSpan, selectDay, selectionCovers, useMyDays, useMyRotation, usePanel, useSession, useToday, weeksOf, type DaySelection } from '@logic'
 import { useMemo, useState } from 'react'
 import { Month } from '../../kit/Month'
 import { Tray } from '../../kit/Tray'
@@ -99,8 +99,10 @@ function MonthOf({
   )
 }
 
-export function RotationPage({ requests, today }: { readonly requests: boolean; readonly today: CalendarDate | null }) {
+export function RotationPage({ requests }: { readonly requests: boolean }) {
   const panel = usePanel()
+  // The organization's today, not the strip's: the month reads its own days and says its own failure (D-490).
+  const today = useToday()
   const session = useSession()
   const mine = useMyRotation()
   const own = session.status === 'ready' && session.value.status === 'linked' ? session.value.soldier_id : null

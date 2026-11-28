@@ -39,6 +39,7 @@ import type { ProfileEdit } from './useProfileEdit'
 // (OI-401). The unit is never edited here: a transfer is the card's "⋯" (D-483).
 
 const SEPARATOR = ', '
+const WORD = ' '
 const NO_ROWS: readonly never[] = []
 
 /**
@@ -151,14 +152,16 @@ function Tags({ edit, names }: { readonly edit: ProfileEdit; readonly names: rea
         selectedOf(group).map((tagId) => (
           <li key={tagId} className="inline-flex min-h-touch items-center gap-2xs rounded-full bg-action-soft ps-cozy text-small font-semibold text-on-action-soft">
             {byId.get(tagId)?.name ?? ''}
-            <IconButton
-              labelKey="profile.tagRemove"
+            {/* Each ✕ names its tag: a list of "הסרת התגית" alone says nothing to a reader (D-490). */}
+            <AriaButton
+              aria-label={[t('profile.tagRemove'), byId.get(tagId)?.name ?? ''].join(WORD)}
               onPress={() => {
                 toggle(group, tagId, false)
               }}
+              className="inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full outline-focus -outline-offset-2 data-focus-visible:outline-2 data-hovered:bg-inner"
             >
               <X aria-hidden size={14} />
-            </IconButton>
+            </AriaButton>
           </li>
         )),
       )}
@@ -170,11 +173,9 @@ function Tags({ edit, names }: { readonly edit: ProfileEdit; readonly names: rea
           stateOf={(tagId) => (held.has(tagId) ? 'on' : 'off')}
           onToggle={toggle}
           onCreated={(tag) => {
-            // A tag made here is not in the groups the edit opened on: it joins its category's choice at once.
-            const single = categories.value.find((category) => category.id === tag.category_id)?.selection_mode === 'single'
-            const group = card.groups.find((candidate) => candidate.category.id === tag.category_id)
-            const before = group === undefined ? (edit.chosen.get(tag.category_id) ?? []) : selectedOf(group)
-            edit.setChosen(new Map(edit.chosen).set(tag.category_id, single ? [tag.id] : [...before, tag.id]))
+            // A tag made here joins the card and is chosen, in a category that had no live tag too (D-490).
+            const category = categories.value.find((candidate) => candidate.id === tag.category_id)
+            if (category !== undefined) edit.addTag(tag, category)
           }}
         />
       </li>

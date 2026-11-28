@@ -1,6 +1,6 @@
 import { PANEL_IDS } from '@config'
 import { t } from '@i18n'
-import { useMarkUpdatesSeen, useMyUpdates, usePanel, useSoldiersWithArchived, useTimezone, type MyUpdateLine } from '@logic'
+import { useMarkUpdatesSeen, useMyLeavesAccess, useMyUpdates, usePanel, useSoldiersWithArchived, useTimezone, type MyUpdateLine } from '@logic'
 import { useEffect, useRef, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { StopDrawer } from '../kit/StopDrawer'
@@ -62,7 +62,15 @@ function Lines({ lines, newest }: { readonly lines: readonly MyUpdateLine[]; rea
 export function NotificationsDrawer() {
   const panel = usePanel()
   const updates = useMyUpdates()
-  if (panel.panel !== PANEL_IDS.notifications) return null
+  const mine = useMyLeavesAccess()
+  const here = panel.panel === PANEL_IDS.notifications
+  // The drawer is the bell's: an address that names it for who has no bell is put right, once the answer is in (D-490).
+  const stray = here && mine !== null && mine.known && !mine.view
+  const { close } = panel
+  useEffect(() => {
+    if (stray) close()
+  }, [stray, close])
+  if (!here || stray || mine === null || !mine.known) return null
   return (
     <StopDrawer inUrl title={t('me.notificationsTitle')} detail={t('me.notificationsAbout')} onClose={panel.close}>
       {updates === null ? (

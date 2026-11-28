@@ -1,7 +1,7 @@
 import { PANEL_IDS, TODAY } from '@config'
 import type { AuthIdentity, Leave, SoldierId } from '@contracts'
 import { t } from '@i18n'
-import { fullName, useLeaveTypes, useMyLeaves, useMyLeavesAccess, usePanel, usePerson, useSession, useShellPlace, type Person } from '@logic'
+import { fullName, useLeaveTypes, useMyLeaves, useMyLeavesAccess, usePanel, useMyDays, usePerson, useSession, useShellPlace, useToday, type Person } from '@logic'
 import { ChevronDown, ChevronLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
@@ -10,12 +10,13 @@ import { DayStrip } from '../../kit/DayStrip'
 import { PersonRow } from '../../kit/PersonRow'
 import { LeaveBadge } from '../../modules/leaves/LeaveMarks'
 import { leaveDatesText, typeNameOf } from '../../modules/leaves/leaveText'
+import { FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { UNIT_STATE_KEYS } from '../../patterns/units'
 import { IconButton } from '../../primitives/Button'
 import { PageFrame, PageHead, PageHeading } from '../PageFrame'
 import { EditControls, ProfileBody } from '../person/Profile'
 import { useProfileEdit } from '../person/useProfileEdit'
-import { useStanding } from '../today/standing'
+import { standingOf } from '../today/standing'
 import { MyRequestsPage } from './MyRequestsPage'
 import { PreferencesPage } from './PreferencesPage'
 import { RotationPage } from './RotationPage'
@@ -26,6 +27,7 @@ import { RotationPage } from './RotationPage'
 
 const SEPARATOR = ' · '
 const NO_TYPES: readonly never[] = []
+const NO_LEAVES: readonly Leave[] = []
 
 /** The profile: the name at 28, the command rank and the unit, the pencil and the chevron, then the card's body. */
 function Profile({ person }: { readonly person: Person }) {
@@ -64,8 +66,13 @@ function Profile({ person }: { readonly person: Person }) {
 /** "הסבב שלי": where the soldier is, what comes next, and the 14 days; it opens the page (D-488). */
 function RotationCard() {
   const place = useShellPlace()
-  const standing = useStanding()
-  if (standing === null) return null
+  const mine = useMyLeavesAccess()
+  const today = useToday()
+  const days = useMyDays(today, TODAY.stripDays)
+  const types = useLeaveTypes()
+  // A card for who has days of their own; a read that fails or waits says so, and the title stays the door (D-490).
+  if (days === null || mine?.view !== true) return null
+  const standing = today !== null && days.status === 'ready' ? standingOf(today, days.value, types.status === 'ready' ? types.value : NO_TYPES) : null
   return (
     <Card
       titleKey="me.myRotation"
@@ -73,8 +80,16 @@ function RotationCard() {
         place.openPage('rotation')
       }}
     >
-      <p className="text-body font-semibold tabular-nums">{[standing.place, standing.next].join(SEPARATOR)}</p>
-      <DayStrip days={standing.days} today={standing.today} labelKey="myLeaves.nextDaysTitle" />
+      {days.status === 'failed' ? (
+        <FailureNotice error={days.error} />
+      ) : standing === null ? (
+        <LoadingNotice />
+      ) : (
+        <>
+          <p className="text-body font-semibold tabular-nums">{[standing.place, standing.next].join(SEPARATOR)}</p>
+          <DayStrip days={standing.days} today={standing.today} labelKey="myLeaves.nextDaysTitle" />
+        </>
+      )}
     </Card>
   )
 }
@@ -86,13 +101,18 @@ function RequestsCard() {
   const mine = useMyLeavesAccess()
   const leaves = useMyLeaves()
   const types = useLeaveTypes()
-  if (mine?.view !== true || leaves.status !== 'ready') return null
+  if (mine?.view !== true) return null
   const typeList = types.status === 'ready' ? types.value : NO_TYPES
   const typeOf = (leave: Leave) => typeList.find((type) => type.id === leave.leave_type_id) ?? null
-  const { open } = leaves.value
+  const open = leaves.status === 'ready' ? leaves.value.open : NO_LEAVES
+  // A read that fails or waits says so; the door to all stays (D-490).
   return (
     <Card titleKey="me.myRequests">
-      {open.length === 0 ? (
+      {leaves.status === 'failed' ? (
+        <FailureNotice error={leaves.error} />
+      ) : leaves.status === 'loading' ? (
+        <LoadingNotice />
+      ) : open.length === 0 ? (
         <p className="text-body text-text-muted">{t('me.noOpenRequests')}</p>
       ) : (
         <ul className="flex flex-col">
@@ -177,7 +197,6 @@ export interface MePageProps {
 export function MePage({ identity, requests }: MePageProps) {
   const place = useShellPlace()
   const mine = useMyLeavesAccess()
-  const standing = useStanding()
   const { page, closePage } = place
   // "הסבב שלי" and "כל הבקשות" are for who has days and requests of their own; an address that names one for anyone
   // else is put right, as the other pages are (D-076).
@@ -188,6 +207,6 @@ export function MePage({ identity, requests }: MePageProps) {
   }, [stray, closePage])
   if (page === 'preferences') return <PreferencesPage identity={identity} />
   if (page === 'my_requests' && !stray) return <MyRequestsPage />
-  if (page === 'rotation' && !stray) return <RotationPage requests={requests} today={standing?.today ?? null} />
+  if (page === 'rotation' && !stray) return <RotationPage requests={requests} />
   return <Index identity={identity} />
 }
