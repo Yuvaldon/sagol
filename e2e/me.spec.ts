@@ -94,16 +94,19 @@ test('"אני": the profile edited in place, "הסבב שלי", "כל הבקשו
     await main(page).getByRole('button', { name: he.profile.collapse }).click()
   })
 
-  await test.step('"הוסף: X" makes a tag in place, and ✕ leaves the edit without saving', async () => {
+  await test.step('"הוסף: X" makes a tag in place; ✓ saves it, and "ביטול" takes it off again (D-490)', async () => {
     await main(page).getByRole('button', { name: he.profile.edit }).click()
     await main(page).getByRole('button', { name: he.profile.tagAdd }).click()
     const picker = page.getByRole('dialog', { name: he.profile.tagAdd })
     await picker.getByLabel(he.profile.tagSearch).fill(MEDIC)
     await picker.getByRole('button', { name: `${he.profile.tagCreate} ${MEDIC}` }).click()
     await page.keyboard.press('Escape')
+    // Each chip's ✕ names its tag.
+    await expect(main(page).getByRole('button', { name: `${he.profile.tagRemove} ${MEDIC}` })).toBeVisible()
+    await main(page).getByRole('button', { name: he.profile.save }).click()
+    const toast = page.getByRole('status').filter({ hasText: he.profile.saved })
     await expect(main(page).getByRole('list', { name: he.soldiers.tagsTitle })).toContainText(MEDIC)
-    await main(page).getByRole('button', { name: he.profile.cancel }).click()
-    await expect(main(page).getByRole('button', { name: he.profile.edit })).toBeVisible()
+    await toast.getByRole('button', { name: he.profile.undo }).click()
     await expect(main(page).getByRole('list', { name: he.soldiers.tagsTitle })).toHaveCount(0)
   })
 
