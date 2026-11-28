@@ -617,5 +617,21 @@ export {
 } from './organization/template'
 export { usePeopleList, usePerson, useSoldierDays, type PeopleItem, type PeopleList, type PeopleRow, type Person } from './roster/people'
 export { useMovePermissions, useMoveSoldiers, type MoveAnswers } from './roster/bulk'
+export {
+  cardEditIssues,
+  cardEditValues,
+  cardTagsOf,
+  cardTagsSelected,
+  chosenAfter,
+  useCardEditable,
+  useCardSave,
+  useCardTags,
+  type CardEditable,
+  type CardEditValues,
+  type CardSaved,
+  type CardSaveRequest,
+  type CardTags,
+} from './roster/cardEdit'
+export { changedSelection, heldByMany, useSetTagsOfMany, useTagSetters, type HeldBy, type ManyTagsRequest, type TagAnswers } from './tags/many'
 export { PEOPLE_SORTS, type PeopleSort } from './view-state/peopleOptions'
 export { usePeopleView, type PeopleView, type PeopleViewState } from './view-state/people'

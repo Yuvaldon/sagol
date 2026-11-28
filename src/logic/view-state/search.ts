@@ -83,6 +83,19 @@ function withOldInbox(raw: unknown): unknown {
 
 const REQUESTS_PAGE: PageId = 'requests'
 
+/** The panel of the drawer "שלי", removed in D-488: its requests are the page "כל הבקשות" of "אני" now. */
+const OLD_MINE_PANEL = 'my_leaves'
+const MY_REQUESTS_PAGE: PageId = 'my_requests'
+
+/** A link to "שלי" opens "כל הבקשות", which names its own destination (D-488). A page the link names itself wins. */
+function withOldMine(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw
+  const search: Record<string, unknown> = { ...raw }
+  if (search[SEARCH_PARAMS.panel] !== OLD_MINE_PANEL) return raw
+  const { [SEARCH_PARAMS.panel]: _panel, [SEARCH_PARAMS.entity]: _entity, [SEARCH_PARAMS.tab]: _tab, ...rest } = search
+  return { ...rest, [SEARCH_PARAMS.page]: rest[SEARCH_PARAMS.page] ?? MY_REQUESTS_PAGE }
+}
+
 /**
  * The lists that became pages of "ניהול" (D-482): a link to the soldiers' list, to their quick entry or to the list of
  * join requests opens the page that replaced it. A link to one soldier or one request still opens its drawer.
@@ -103,7 +116,7 @@ function withOldLists(raw: unknown): unknown {
 }
 
 /** The search params of the workspace route. `app` hands this to the router. */
-export const WorkspaceSearch = z.preprocess((raw) => withOldLists(withOldInbox(raw)), WorkspaceSearchFields).transform(withBoardSort)
+export const WorkspaceSearch = z.preprocess((raw) => withOldLists(withOldMine(withOldInbox(raw))), WorkspaceSearchFields).transform(withBoardSort)
 export type WorkspaceSearch = z.infer<typeof WorkspaceSearch>
 
 /** The workspace search as it is now, validated. */

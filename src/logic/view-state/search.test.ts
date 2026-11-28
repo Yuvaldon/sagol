@@ -42,6 +42,11 @@ describe('a link to the old pending tab (D-474)', () => {
     expect(WorkspaceSearch.parse({ panel: 'leave_inbox', view: 'table' })).toEqual({ page: 'requests', view: 'table' })
   })
 
+  it('reads a link to the drawer "שלי" as the page "כל הבקשות" (D-488)', () => {
+    expect(WorkspaceSearch.parse({ panel: 'my_leaves' })).toEqual({ page: 'my_requests' })
+    expect(WorkspaceSearch.parse({ panel: 'my_leaves', tab: 'today' })).toEqual({ page: 'my_requests' })
+  })
+
   it('leaves every other panel as it is', () => {
     expect(WorkspaceSearch.parse({ panel: 'leave_closed' })).toEqual({ panel: 'leave_closed' })
     expect(WorkspaceSearch.parse({ panel: 'nothing' })).toEqual({})
