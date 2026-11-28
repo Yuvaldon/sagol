@@ -146,7 +146,6 @@ export {
 export { reportText, type ReportWords } from './presence/reportText'
 export { useDeviceFlag, type DeviceFlag, type DeviceLasting } from './device/hooks'
 export { defaultViewOf, useActiveView, type ActiveViewState, type ViewDevice } from './view-state/view'
-export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useTimezone, useToday } from './session/today'
 export {
   useAppearance,

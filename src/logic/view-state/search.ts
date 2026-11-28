@@ -1,4 +1,4 @@
-import { ARCHIVE_ENTITY, BarColorMode, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PANEL_IDS, PanelId, PageId, QUICK_ENTRY, ROUND_ENTITY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TabId, TableSortKey, ViewId } from '@config'
+import { ARCHIVE_ENTITY, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PANEL_IDS, PanelId, PageId, QUICK_ENTRY, ROUND_ENTITY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TabId, TableSortKey, ViewId } from '@config'
 import { CalendarDate, DeploymentId, FilterExpression, SavedViewId, UnitId } from '@contracts'
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
@@ -11,7 +11,7 @@ import { PeopleOptions } from './peopleOptions'
 import { SortRules, isDefaultSort } from './sort-rules'
 
 // All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the board's grouping (D-452), the
-// filter and the board's own conditions (D-132, D-133), the bar colors, the open panel, the presence day and the report's last day (D-134, D-193), a new leave's draft (D-143), the dashboard's unit and planned days (D-349) and the saved view the board came from (D-442). A
+// filter and the board's own conditions (D-132, D-133), the open panel, the presence day and the report's last day (D-134, D-193), a new leave's draft (D-143), the dashboard's unit and planned days (D-349) and the saved view the board came from (D-442). A
 // value that is not valid here counts as absent: a URL never breaks the workspace, and it never gets
 // anyone past the adapter.
 
@@ -33,7 +33,6 @@ const WorkspaceSearchFields = z.object({
     .optional()
     .catch(undefined),
   [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),
-  [SEARCH_PARAMS.colors]: BarColorMode.optional().catch(undefined),
   [SEARCH_PARAMS.leaves]: LeaveConditions.optional().catch(undefined),
   [SEARCH_PARAMS.day]: CalendarDate.optional().catch(undefined),
   [SEARCH_PARAMS.until]: CalendarDate.optional().catch(undefined),
