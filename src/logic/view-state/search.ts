@@ -1,4 +1,4 @@
-import { ARCHIVE_ENTITY, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PANEL_IDS, PanelId, PageId, QUICK_ENTRY, ROUND_ENTITY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TabId, TableSortKey, ViewId } from '@config'
+import { ARCHIVE_ENTITY, BoardSortKey, LINKED_ENTITY, DEFAULT_SORT_ORDER, NEW_ENTITY, PANEL_IDS, PanelId, PageId, QUICK_ENTRY, ROUND_ENTITY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TabId, TableSortKey, ViewId } from '@config'
 import { CalendarDate, DeploymentId, FilterExpression, SavedViewId, UnitId } from '@contracts'
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
@@ -29,7 +29,7 @@ const WorkspaceSearchFields = z.object({
   [SEARCH_PARAMS.filter]: FilterExpression.optional().catch(undefined),
   [SEARCH_PARAMS.panel]: PanelId.optional().catch(undefined),
   [SEARCH_PARAMS.entity]: z
-    .union([z.literal(NEW_ENTITY), z.literal(ARCHIVE_ENTITY), z.literal(ROUND_ENTITY), z.uuid()])
+    .union([z.literal(NEW_ENTITY), z.literal(ARCHIVE_ENTITY), z.literal(ROUND_ENTITY), z.literal(LINKED_ENTITY), z.uuid()])
     .optional()
     .catch(undefined),
   [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),

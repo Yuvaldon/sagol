@@ -94,7 +94,7 @@ export function useLinkAssessments(requests: readonly Pick<AccountLinkRequest, '
 export function useLinkReviewCommands() {
   const { data } = usePorts()
   return useCommand(
-    [QUERY_KEYS.accountLinkRequests, QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
+    [QUERY_KEYS.accountLinkRequests, QUERY_KEYS.soldierAccounts, QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
     ({ request, review }: { request: Pick<AccountLinkRequest, 'id'>; review: LinkReview }) =>
       data.commands.accounts.reviewLink(toReviewLinkInput(request, review)),
   )
