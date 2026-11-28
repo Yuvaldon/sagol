@@ -1,6 +1,8 @@
 import { DeploymentId, OrganizationId, SoldierId, SoldierTagId, TagCategoryId, TagId, type Soldier, type SoldierTag, type Tag, type TagCategory } from '@contracts'
-import { describe, expect, it } from 'vitest'
-import { changedSelection, heldByMany } from './many'
+import { act, renderHook } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { fakePorts, wrapperOf } from '../testing/ports'
+import { changedSelection, heldByMany, useSetTagsOfMany, type TagAnswers } from './many'
 import { soldierTagGroups } from './tags'
 
 // Sample rows, test data only.
@@ -51,5 +53,19 @@ describe('tags of several soldiers (OI-400, D-489)', () => {
     expect(changedSelection(marital, [SINGLE.id], [[MARRIED.id, true]])).toEqual([MARRIED.id])
     // A change of another category leaves the group as it was.
     expect(changedSelection(role, [MEDIC.id], [[MARRIED.id, true]])).toEqual([MEDIC.id])
+  })
+
+  it('counts as tagged only a soldier whose sets were sent (D-490)', async () => {
+    const setTags = vi.fn(() => Promise.resolve({ ok: true, value: [] }))
+    const { result } = renderHook(() => useSetTagsOfMany(), { wrapper: wrapperOf(fakePorts({ commands: { soldiers: { setTags } } })) })
+    let answers: TagAnswers | null = null
+    await act(async () => {
+      const answer = await result.current.run({ soldiers: [FIRST, SECOND], rows: [held(1, 50, 11)], rotationId: null, categories: CATEGORIES, tags: TAGS, changes: [[MEDIC.id, true]] })
+      answers = answer.ok ? answer.value : null
+    })
+    const byId = answers as unknown as TagAnswers
+    expect(byId.get(FIRST.id)).toEqual({ ok: true, changed: false })
+    expect(byId.get(SECOND.id)).toEqual({ ok: true, changed: true })
+    expect(setTags).toHaveBeenCalledTimes(1)
   })
 })

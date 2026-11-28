@@ -48,7 +48,9 @@ export function changedSelection(group: SoldierTagGroup, selected: readonly TagI
 }
 
 /** Each soldier's answer, by id. */
-export type TagAnswers = ReadonlyMap<SoldierId, { readonly ok: true } | { readonly ok: false; readonly error: AppError }>
+/** Each soldier's answer, by id: saved (`changed` when a set was sent), or refused with the reason. */
+export type TagAnswer = { readonly ok: true; readonly changed: boolean } | { readonly ok: false; readonly error: AppError }
+export type TagAnswers = ReadonlyMap<SoldierId, TagAnswer>
 
 export interface ManyTagsRequest {
   readonly soldiers: readonly Soldier[]
@@ -63,7 +65,7 @@ export interface ManyTagsRequest {
 export function useSetTagsOfMany() {
   const { data } = usePorts()
   return useCommand([QUERY_KEYS.soldierTags, QUERY_KEYS.soldiers], async (request: ManyTagsRequest) => {
-    const answers = new Map<SoldierId, { readonly ok: true } | { readonly ok: false; readonly error: AppError }>()
+    const answers = new Map<SoldierId, TagAnswer>()
     for (const soldier of request.soldiers) {
       const scopes = soldierTagScopes(request.rows, soldier.id, request.rotationId)
       const groups = soldierTagGroups(request.categories, request.tags, heldInScopes(scopes))
@@ -74,8 +76,10 @@ export function useSetTagsOfMany() {
           return [group.category.id, changedSelection(group, selected, request.changes)]
         }),
       )
-      let answer: { readonly ok: true } | { readonly ok: false; readonly error: AppError } = { ok: true }
-      for (const input of toScopedTagInputs(soldier, soldier.version, request.rotationId, scopes, groups, chosen, lifetimes)) {
+      const inputs = toScopedTagInputs(soldier, soldier.version, request.rotationId, scopes, groups, chosen, lifetimes)
+      // A soldier who already holds what was chosen gets no command, and is not counted as tagged (D-490).
+      let answer: TagAnswer = { ok: true, changed: inputs.length > 0 }
+      for (const input of inputs) {
         const result = await data.commands.soldiers.setTags(input)
         if (!result.ok) {
           answer = { ok: false, error: result.error }

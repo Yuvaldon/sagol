@@ -2,7 +2,7 @@ import { OrganizationId, SoldierId, TagCategoryId, TagId, type Soldier, type Sol
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { fakePorts, wrapperOf } from '../testing/ports'
-import { cardEditIssues, cardEditValues, cardTagsOf, chosenAfter, useCardSave, type CardEditable } from './cardEdit'
+import { cardEditIssues, cardEditValues, cardTagsOf, cardTagsWith, chosenAfter, useCardSave, type CardEditable, type CardSaved } from './cardEdit'
 
 // Sample rows, test data only.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -57,12 +57,13 @@ describe('the card edit in place (OI-401, D-489)', () => {
     })
     expect(order).toEqual(['update', 'tags', 'private'])
     expect(setTags).toHaveBeenCalledWith(expect.objectContaining({ expected_version: 4, tag_ids: [MEDIC.id] }))
-    const answer = saved as unknown as { ok: true; value: { changed: boolean; undo: { soldier: Soldier; values: { nickname: string; phone: string }; tags: { chosen: ReadonlyMap<string, readonly string[]> } } } }
+    const answer = saved as unknown as { ok: true; value: CardSaved }
     expect(answer.value.changed).toBe(true)
+    expect(answer.value.refusal).toBeNull()
     // The undo starts from the versions the save left, and puts back the values the edit opened on.
     expect(answer.value.undo.soldier.version).toBe(5)
     expect([answer.value.undo.values.nickname, answer.value.undo.values.phone]).toEqual(['', '0501234567'])
-    expect(answer.value.undo.tags.chosen.get(ROLE.id)).toEqual([])
+    expect(answer.value.undo.tags).toEqual({ restore: { persistent: [], rotation: [] }, from: { persistent: [MEDIC.id], rotation: [] }, rotationId: null })
   })
 
   it('sends nothing when nothing changed', async () => {
@@ -76,5 +77,53 @@ describe('the card edit in place (OI-401, D-489)', () => {
     })
     expect(changed).toBe(false)
     expect(update).not.toHaveBeenCalled()
+  })
+
+  it('keeps what was saved when a later command is refused: the versions it left, and its undo (D-490)', async () => {
+    const update = vi.fn((input: { changes: object }) => Promise.resolve({ ok: true, value: { ...SOLDIER, ...input.changes, version: 4 } }))
+    const updatePrivate = vi.fn(() => Promise.resolve({ ok: false, error: { code: 'forbidden' } }))
+    const ports = fakePorts({ commands: { soldiers: { update, setTags: update, updatePrivate } } })
+    const { result } = renderHook(() => useCardSave(), { wrapper: wrapperOf(ports) })
+    let saved: CardSaved | null = null
+    await act(async () => {
+      const answer = await result.current.run({
+        soldier: SOLDIER,
+        privateRow: ROW,
+        editable: ALL,
+        values: { ...cardEditValues(SOLDIER, ROW), nickname: 'דני', phone: '0509999999' },
+        properties: {},
+        tags: null,
+      })
+      saved = answer.ok ? answer.value : null
+    })
+    const value = saved as unknown as CardSaved
+    expect(value.refusal).toEqual({ code: 'forbidden' })
+    expect(value.changed).toBe(true)
+    // The edit goes on from the version the profile left, so a second ✓ is not stale.
+    expect(value.left.soldier.version).toBe(4)
+    expect(value.undo.values.nickname).toBe('')
+  })
+
+  it('undoes a tag made during the edit, in a category that had none, by putting the sets back as they were', async () => {
+    const setTags = vi.fn(() => Promise.resolve({ ok: true, value: [] }))
+    const ports = fakePorts({ commands: { soldiers: { update: setTags, setTags, updatePrivate: setTags } } })
+    const { result } = renderHook(() => useCardSave(), { wrapper: wrapperOf(ports) })
+    const empty: TagCategory = { ...ROLE, id: TagCategoryId.parse(uuid(2)), selection_mode: 'single' }
+    const made: Tag = { ...MEDIC, id: TagId.parse(uuid(12)), category_id: empty.id, name: 'נהג' }
+    // The category had no live tag: the card had no group for it until the tag was made.
+    const opened = cardTagsOf([], SOLDIER, null, [ROLE, empty], [MEDIC])
+    expect(opened.groups.map((group) => group.category.id)).toEqual([ROLE.id])
+    const card = cardTagsWith(opened, made, empty)
+    const chosen = new Map([[empty.id, [made.id]]])
+    let undo: CardSaved['undo'] | null = null
+    await act(async () => {
+      const answer = await result.current.run({ soldier: SOLDIER, privateRow: ROW, editable: { profile: false, private: false, tags: true }, values: cardEditValues(SOLDIER, ROW), properties: {}, tags: { card, chosen } })
+      undo = answer.ok ? answer.value.undo : null
+    })
+    expect(setTags).toHaveBeenLastCalledWith(expect.objectContaining({ tag_ids: [made.id], expected_version: 3 }))
+    await act(async () => {
+      await result.current.run(undo as unknown as CardSaved['undo'])
+    })
+    expect(setTags).toHaveBeenLastCalledWith(expect.objectContaining({ tag_ids: [], expected_version: 4 }))
   })
 })

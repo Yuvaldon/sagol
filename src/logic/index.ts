@@ -622,6 +622,7 @@ export {
   cardEditValues,
   cardTagsOf,
   cardTagsSelected,
+  cardTagsWith,
   chosenAfter,
   useCardEditable,
   useCardSave,
@@ -631,7 +632,8 @@ export {
   type CardSaved,
   type CardSaveRequest,
   type CardTags,
+  type CardTagsChange,
 } from './roster/cardEdit'
-export { changedSelection, heldByMany, useSetTagsOfMany, useTagSetters, type HeldBy, type ManyTagsRequest, type TagAnswers } from './tags/many'
+export { changedSelection, heldByMany, useSetTagsOfMany, useTagSetters, type HeldBy, type ManyTagsRequest, type TagAnswer, type TagAnswers } from './tags/many'
 export { PEOPLE_SORTS, type PeopleSort } from './view-state/peopleOptions'
 export { usePeopleView, type PeopleView, type PeopleViewState } from './view-state/people'

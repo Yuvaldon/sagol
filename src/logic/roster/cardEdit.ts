@@ -114,6 +114,31 @@ export function chosenAfter(
   return new Map(chosen).set(group.category.id, toggledTags({ ...group, selected }, tagId, on))
 }
 
+/**
+ * A tag made in the edit's picker ("הוסף: X") joins the card the edit opened on: into its category's group, or a new group
+ * when the category had no live tag, so it is shown and saved. Its category keeps the lifetime it holds now, or its own
+ * default for a new group (D-222); with no rotation, everything is persistent.
+ */
+export function cardTagsWith(card: CardTags, tag: Tag, category: TagCategory): CardTags {
+  const choice = { tag, archived: false }
+  const own = card.groups.find((group) => group.category.id === category.id)
+  if (own !== undefined) {
+    if (own.choices.some((existing) => existing.tag.id === tag.id)) return card
+    return { ...card, groups: card.groups.map((group) => (group === own ? { ...group, choices: [...group.choices, choice] } : group)) }
+  }
+  const lifetime = card.rotationId === null ? TagLifetime.enum.persistent : category.default_lifetime
+  return {
+    ...card,
+    groups: [...card.groups, { category, choices: [choice], selected: [] }],
+    lifetimes: new Map(card.lifetimes).set(category.id, lifetime),
+  }
+}
+
+/** The tags of a save: chosen by category over the card, or the exact sets an undo puts back. */
+export type CardTagsChange =
+  | { readonly card: CardTags; readonly chosen: ReadonlyMap<TagCategoryId, readonly TagId[]> }
+  | { readonly restore: TagScopes; readonly from: TagScopes; readonly rotationId: DeploymentId | null }
+
 export interface CardSaveRequest {
   /** The soldier as the edit opened them: its version guards the save (D-012). */
   readonly soldier: Soldier
@@ -123,15 +148,19 @@ export interface CardSaveRequest {
   readonly values: CardEditValues
   /** The custom fields' values, from the form's property fields (D-016). */
   readonly properties: WithProperties
-  /** The tags chosen, by category, with the tags as the edit opened them; NULL when they are not edited. */
-  readonly tags: { readonly card: CardTags; readonly chosen: ReadonlyMap<TagCategoryId, readonly TagId[]> } | null
+  /** The tags; NULL when they are not edited. */
+  readonly tags: CardTagsChange | null
 }
 
 export interface CardSaved {
-  /** Whether anything was sent: an edit that changed nothing saves nothing and offers no "ביטול". */
+  /** Whether anything was saved: an edit that changed nothing offers no "ביטול". */
   readonly changed: boolean
-  /** The request that puts back what the save changed, from the versions the save left. */
+  /** The request that puts back what was saved, from the versions the save left. */
   readonly undo: CardSaveRequest
+  /** What the save left: the soldier's version, the private row and the tags' scopes, for an edit that goes on (D-490). */
+  readonly left: { readonly soldier: Soldier; readonly privateRow: SoldierPrivate | null; readonly scopes: TagScopes | null }
+  /** The first refusal, which stopped the rest; NULL when all was saved. What was saved before it stands. */
+  readonly refusal: AppError | null
 }
 
 /** The scopes a set of tag inputs leaves. */
@@ -142,11 +171,24 @@ function scopesAfter(scopes: TagScopes, inputs: readonly SetSoldierTagsInput[]):
   )
 }
 
-const failed = (error: AppError): Result<CardSaved> => ({ ok: false, error })
+function sameSet(a: readonly TagId[], b: readonly TagId[]): boolean {
+  return a.length === b.length && a.every((tagId) => b.includes(tagId))
+}
+
+/** The sets that put `from` back to `restore`, each guarded by the version it is saved at. */
+function restoreInputs(soldier: Soldier, change: Extract<CardTagsChange, { restore: TagScopes }>): SetSoldierTagsInput[] {
+  const sets: { deployment_id: DeploymentId | null; tag_ids: TagId[] }[] = []
+  if (!sameSet(change.restore.persistent, change.from.persistent)) sets.push({ deployment_id: null, tag_ids: [...change.restore.persistent] })
+  if (change.rotationId !== null && !sameSet(change.restore.rotation, change.from.rotation)) {
+    sets.push({ deployment_id: change.rotationId, tag_ids: [...change.restore.rotation] })
+  }
+  return sets.map((set, index) => ({ soldier_id: soldier.id, expected_version: soldier.version + index, ...set }))
+}
 
 /**
  * Saves the card: the profile (with its custom fields), the tags, then the private details. The first refusal stops
- * there and is the answer; what was saved before it stays, as each section of the full card saves alone.
+ * there and is said; what was saved before it stands, with its "ביטול", and the versions it left go on with the edit
+ * (D-490).
  */
 export function useCardSave() {
   const { data } = usePorts()
@@ -159,49 +201,54 @@ export function useCardSave() {
       let row = request.privateRow
       const before = cardEditValues(request.soldier, request.privateRow)
       let changed = false
+      let undoTags: CardTagsChange | null = null
+      let scopes: TagScopes | null = request.tags === null ? null : 'card' in request.tags ? request.tags.card.scopes : request.tags.from
+      const answer = (refusal: AppError | null): Result<CardSaved> => ({
+        ok: true,
+        value: {
+          changed,
+          undo: { soldier, privateRow: row, editable, values: before, properties: { properties: request.soldier.properties }, tags: undoTags },
+          left: { soldier, privateRow: row, scopes },
+          refusal,
+        },
+      })
       if (editable.profile) {
         const input = toUpdateSoldierInput(soldier, soldier.version, { ...profileOf(values, soldier), ...request.properties })
         if (input !== null) {
           const result = await soldiers.update(input)
-          if (!result.ok) return failed(result.error)
+          if (!result.ok) return answer(result.error)
           soldier = result.value
           changed = true
         }
       }
-      let undoTags: CardSaveRequest['tags'] = null
-      if (editable.tags && request.tags !== null) {
-        const { card, chosen } = request.tags
-        const inputs = toScopedTagInputs(soldier, soldier.version, card.rotationId, card.scopes, card.groups, chosen, card.lifetimes)
+      if (editable.tags && request.tags !== null && scopes !== null) {
+        const change = request.tags
+        const rotationId = 'card' in change ? change.card.rotationId : change.rotationId
+        const inputs =
+          'card' in change
+            ? toScopedTagInputs(soldier, soldier.version, change.card.rotationId, change.card.scopes, change.card.groups, change.chosen, change.card.lifetimes)
+            : restoreInputs(soldier, change)
+        const opened = scopes
         for (const input of inputs) {
           const result = await soldiers.setTags(input)
-          if (!result.ok) return failed(result.error)
-        }
-        if (inputs.length > 0) {
+          if (!result.ok) return answer(result.error)
+          // Each set moves the soldier's version by one (D-130); a set saved stands, whatever follows.
+          soldier = { ...soldier, version: soldier.version + 1 }
+          scopes = scopesAfter(scopes, [input])
           changed = true
-          // Each set moves the soldier's version by one (D-130).
-          soldier = { ...soldier, version: soldier.version + inputs.length }
-          const after: CardTags = { ...card, scopes: scopesAfter(card.scopes, inputs) }
-          undoTags = { card: after, chosen: new Map(card.groups.map((group) => [group.category.id, cardTagsSelected(card, group)])) }
+          undoTags = { restore: opened, from: scopes, rotationId }
         }
       }
       if (editable.private) {
         const input = toUpdatePrivateInput(soldier.id, row, values)
         if (input !== null) {
           const result = await soldiers.updatePrivate(input)
-          if (!result.ok) return failed(result.error)
+          if (!result.ok) return answer(result.error)
           row = result.value
           changed = true
         }
       }
-      const undo: CardSaveRequest = {
-        soldier,
-        privateRow: row,
-        editable,
-        values: before,
-        properties: { properties: request.soldier.properties },
-        tags: undoTags,
-      }
-      return { ok: true, value: { changed, undo } }
+      return answer(null)
     },
   )
 }
