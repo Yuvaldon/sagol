@@ -148,7 +148,8 @@ test('what can be pressed sits inside the safe area, and the canvas paints edge 
 
   // The workspace's own canvas reaches every edge, under the cutout too.
   const canvas = await page.locator('main').evaluate((main) => {
-    const workspace = main.parentElement?.parentElement
+    // The board's frame, then the content beside the rail, then the workspace itself.
+    const workspace = main.parentElement?.parentElement?.parentElement
     if (!workspace) return null
     const rect = workspace.getBoundingClientRect()
     return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, background: getComputedStyle(workspace).backgroundColor }

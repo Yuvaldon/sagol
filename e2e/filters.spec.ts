@@ -3,7 +3,7 @@ import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { createSoldier, openSoldierCard } from './support/soldiers.ts'
 import { NOW, board, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, press, requestLeave } from './support/leaves.ts'
 import { addFilter, builder, chooseValues, clearConditions, closeBuilder, conditions, openBuilder, optionsMenu, pick } from './support/board.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, openTab } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, openTab, waitForSettledScreen } from './support/workspace.ts'
 
 // V6's demo: tag categories and tags, a soldier's tags, the set conditions under the options' "סינון" (D-480), leave
 // conditions, "only who is missing" gone (D-463), and the present and absent lists, on desktop and mobile, RTL, with
@@ -248,6 +248,7 @@ test('tags, the set conditions, no "only who is missing", and who is present tod
     await expect(page).toHaveURL(/day=/)
     // The ✕ shows its name where the pointer rests on it, and showing it moves nothing: the press still lands on ✕.
     const close = report.getByRole('button', { name: he.common.close })
+    await waitForSettledScreen(page)
     const closeBox = await close.boundingBox()
     await close.hover()
     await expect(page.getByRole('tooltip')).toHaveText(he.common.close)

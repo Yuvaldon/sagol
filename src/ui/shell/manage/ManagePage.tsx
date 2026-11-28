@@ -236,13 +236,17 @@ function usePages(): Readonly<Record<ManagePageId, PageAccess>> {
   const links = useLinkReviewAccess()
   const units = useUnits()
   const roster = useRosterPermissions(NO_SOLDIERS, units.status === 'ready' ? units.value : NO_SOLDIERS)
-  const sure = (allowed: boolean): PageAccess => ({ allowed, known: true })
+  // A tool's own page waits for the answer of its module, so an address opened in a new tab is not put right too early.
+  const module = (allowed: boolean): PageAccess => ({ allowed, known: allowed || access.known })
   return {
-    settings: sure(true),
-    soldiers: sure(access.soldiers),
+    settings: { allowed: true, known: true },
+    soldiers: module(access.soldiers),
     joins: { allowed: links.allowed, known: links.known },
-    rules: sure(access.rules),
-    add_soldiers: { allowed: access.soldiers && roster.create, known: !access.soldiers || roster.create || (units.status !== 'loading' && roster.settled) },
+    rules: module(access.rules),
+    add_soldiers: {
+      allowed: access.soldiers && roster.create,
+      known: access.known && (!access.soldiers || roster.create || (units.status !== 'loading' && roster.settled)),
+    },
   }
 }
 
