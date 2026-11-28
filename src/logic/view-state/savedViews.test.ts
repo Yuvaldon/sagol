@@ -1,5 +1,5 @@
 import { SEARCH_PARAMS } from '@config'
-import { SavedView, type SavedViewQuery } from '@contracts'
+import { SavedView, SavedViewQuery } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import { applyView, captureView, equalView, matchingView, savedViewSummary } from './savedViews'
 import { WorkspaceSearch } from './search'
@@ -49,7 +49,7 @@ describe('applyView (D-385)', () => {
     }
   })
   it('drops a value that no longer reads, and says so', () => {
-    const applied = applyView({ view: '"list"', range: '"fortnight-ish"', colors: '"uniform"' })
+    const applied = applyView(SavedViewQuery.parse({ view: '"list"', range: '"fortnight-ish"', colors: '"uniform"' }))
     expect(applied.dropped).toBe(true)
     expect(applied.cleaned).toEqual({ view: '"list"' })
     expect(applied.search.range).toBeUndefined()
