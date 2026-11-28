@@ -181,7 +181,8 @@ export function MePage({ identity, requests }: MePageProps) {
   const { page, closePage } = place
   // "הסבב שלי" and "כל הבקשות" are for who has days and requests of their own; an address that names one for anyone
   // else is put right, as the other pages are (D-076).
-  const stray = (page === 'rotation' && mine !== null && mine.view !== true) || (page === 'my_requests' && mine !== null && mine.view !== true)
+  // Only once the answer is in: a reload on a page never closes it while its access is still asked (D-487).
+  const stray = (page === 'rotation' || page === 'my_requests') && mine !== null && mine.known && !mine.view
   useEffect(() => {
     if (stray) closePage()
   }, [stray, closePage])

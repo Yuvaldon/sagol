@@ -252,7 +252,7 @@ function MoreFields({ edit }: { readonly edit: ProfileEdit }) {
   if (edit.editing && edit.editable.profile) {
     return (
       <section className="flex flex-col gap-md">
-        <h3 className="text-small font-bold text-text-muted">{t('profile.moreFields')}</h3>
+        <h2 className="text-small font-bold text-text-muted">{t('profile.moreFields')}</h2>
         <PropertyFields
           fields={{ definitions: defs, values: edit.properties, set: edit.setProperty, withProperties: {}, fieldNames: defs.map(propertyFieldName) }}
           errorOf={(name) => issueError([], edit.answered, name)}
@@ -265,7 +265,7 @@ function MoreFields({ edit }: { readonly edit: ProfileEdit }) {
   const names = { soldier: (id: string) => soldierNames.get(id) ?? '', unit: (id: string) => unitNames.get(id) ?? '' }
   return (
     <section className="flex flex-col">
-      <h3 className="text-small font-bold text-text-muted">{t('profile.moreFields')}</h3>
+      <h2 className="text-small font-bold text-text-muted">{t('profile.moreFields')}</h2>
       <dl className="flex flex-col">
         {defs.map((definition) => (
           <DetailRow key={definition.id} label={definition.label} value={propertyText(definition, edit.soldier.properties[definition.id], names)} />
@@ -287,7 +287,7 @@ function Details({ edit }: { readonly edit: ProfileEdit }) {
   const rankList: readonly CommandRank[] = ranks.status === 'ready' ? ranks.value : NO_ROWS
   return (
     <section className="flex flex-col gap-xs">
-      <h3 className="text-small font-bold text-text-muted">{t('profile.details')}</h3>
+      <h2 className="text-small font-bold text-text-muted">{t('profile.details')}</h2>
       {profile ? (
         <div className="flex flex-col gap-md">
           <div className="grid grid-cols-2 gap-md">

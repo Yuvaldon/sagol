@@ -63,7 +63,7 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
       <div className="flex max-h-list flex-col gap-sm overflow-y-auto">
         {shown.map(({ group, choices }) => (
           <section key={group.category.id} aria-label={group.category.name} className="flex flex-col">
-            <h3 className="px-sm text-small font-semibold text-text-muted">{group.category.name}</h3>
+            <p aria-hidden className="px-sm text-small font-semibold text-text-muted">{group.category.name}</p>
             {choices.map((choice) => {
               const state = stateOf(choice.tag.id)
               return (
@@ -88,7 +88,7 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
       {permissions.create && name !== '' && !exists && live.length > 0 ? (
         asking ? (
           <section aria-label={t('profile.tagCategory')} className="flex flex-col">
-            <h3 className="px-sm text-small font-semibold text-text-muted">{t('profile.tagCategory')}</h3>
+            <p aria-hidden className="px-sm text-small font-semibold text-text-muted">{t('profile.tagCategory')}</p>
             {live.map((category) => (
               <AriaButton
                 key={category.id}
