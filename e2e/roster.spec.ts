@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { closeDrawers, createSoldier, openNewSoldierForm, openSoldierCard, openSoldiers, soldierList, soldierRow } from './support/soldiers.ts'
+import { closeDrawers, createSoldier, openNewSoldierForm, openSoldierCard, openSoldiers, soldierRow, soldierRows } from './support/soldiers.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
 // V2's demo, on the new interface (D-482): ranks and soldiers, from a name to a unit history, through "חיילים" and the
@@ -339,9 +339,14 @@ test('a long list reaches its last row, and the search narrows it to one', async
   await seedSoldiers(page, LONG_LIST)
   await page.reload()
   await openSoldiers(page)
-  const rows = soldierList(page).getByRole('listitem')
-  await expect(rows).toHaveCount(LONG_LIST + 1)
-  await soldierRow(page, 'חייל299 בדיקה').scrollIntoViewIfNeeded()
+  const rows = soldierRows(page)
+  await expect(page.getByRole('main').getByText(`${String(LONG_LIST + 1)} ${he.manage.people.count}`)).toBeVisible()
+  // Only the rows in sight are in the page (OI-403); the page's scroll brings the last one.
+  await expect(rows.first()).toBeVisible()
+  expect(await rows.count()).toBeLessThan(LONG_LIST + 1)
+  await page.getByRole('main').locator('.overflow-y-auto').first().evaluate((scroller) => {
+    scroller.scrollTo({ top: scroller.scrollHeight })
+  })
   await expect(soldierRow(page, 'חייל299 בדיקה')).toBeVisible()
   await page.getByRole('button', { name: he.manage.people.search, exact: true }).click()
   await page.getByLabel(he.manage.people.searchLabel).fill('חייל150')
@@ -363,4 +368,20 @@ test('a deep link reopens the card of a soldier, and a second tab follows', asyn
   await card.getByRole('button', { name: he.common.save }).first().click()
   await expect(soldierRow(other, 'יעלה שחר')).toBeVisible()
   await other.close()
+})
+
+test('a long timeline gives its month to a capsule once scrolled, and the capsule returns it to the top (OI-399)', async ({ page }) => {
+  await seedSoldiers(page, 40)
+  await page.goto('/?tab=board&view=timeline')
+  const region = page.getByRole('region', { name: he.timeline.label })
+  await expect(region.getByRole('listitem').first()).toBeVisible()
+  await region.evaluate((scroller) => {
+    scroller.scrollTo({ top: scroller.scrollHeight })
+  })
+  const capsule = page.getByRole('button', { name: new RegExp(`^${he.board.toTop} · `) })
+  await expect(capsule).toBeVisible()
+  await expectNoAxeViolations(page)
+  await capsule.click()
+  await expect(capsule).toHaveCount(0)
+  await expect(page.getByRole('main').locator('header').getByRole('heading', { level: 2 })).toBeVisible()
 })

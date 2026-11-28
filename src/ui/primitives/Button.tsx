@@ -22,6 +22,8 @@ const TILE =
 const VARIANTS = {
   primary: `${BASE} glass-action md:min-h-bar px-lg`,
   quiet: `${BASE} bg-inner text-text data-hovered:bg-line`,
+  /** What takes something away, confirmed (D-461): red on its soft fill, never the primary color. */
+  danger: `${BASE} bg-status-rejected-bg text-status-rejected-text md:min-h-bar px-lg`,
   tile: `${TILE} border border-line bg-surface text-text data-hovered:bg-inner`,
   tileSolid: `${TILE} bg-action-solid text-on-action`,
 } as const

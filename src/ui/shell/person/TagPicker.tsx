@@ -2,7 +2,7 @@ import type { AppError, Tag, TagCategory, TagId } from '@contracts'
 import { t } from '@i18n'
 import { liveCategories, useTagCommands, useTagPermissions, type SoldierTagGroup } from '@logic'
 import { Check, Minus, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button as AriaButton, Dialog, DialogTrigger, Heading } from 'react-aria-components'
 import { FailureNotice } from '../../patterns/Notices'
 import { Popover } from '../../primitives/overlays'
@@ -40,6 +40,7 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
   const [query, setQuery] = useState('')
   const [asking, setAsking] = useState(false)
   const [failure, setFailure] = useState<AppError | null>(null)
+  const box = useRef<HTMLDivElement>(null)
   const name = query.trim()
   const live = liveCategories(categories)
   // As the search does, a name is matched whatever its case: "הוסף: X" never makes a second tag of the same name (D-490).
@@ -54,12 +55,14 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
     setAsking(false)
     setQuery('')
     onCreated(result.value)
+    // "הוסף: X" leaves once the tag exists: the keyboard returns to the search, so it stays in the picker.
+    box.current?.querySelector('input')?.focus()
   }
   const shown = groups
     .map((group) => ({ group, choices: group.choices.filter((choice) => !choice.archived || stateOf(choice.tag.id) !== 'off').filter((choice) => matches(choice.tag.name, query)) }))
     .filter((entry) => entry.choices.length > 0)
   return (
-    <div className="flex flex-col gap-sm">
+    <div ref={box} className="flex flex-col gap-sm">
       <TextField labelKey="profile.tagSearch" name="tag_search" value={query} onChange={setQuery} error={null} autoFocus />
       <div className="flex max-h-list flex-col gap-sm overflow-y-auto">
         {shown.map(({ group, choices }) => (

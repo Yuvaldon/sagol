@@ -23,20 +23,11 @@ function report(page: Page) {
   return page.getByRole('dialog', { name: he.presence.title })
 }
 
-/** A day's control on the board: "the day report of", then what the day shows, then its whole date. */
-function dayControl(page: Page, date: string) {
-  return page.getByRole('button', { name: new RegExp(`^${he.presence.openDay}.*${date}`) })
-}
-
 /**
- * The report of the 12th: from its day on a wide screen's timeline (D-193); on a phone the board's day header opens the
- * unit's drawer instead (D-480), and "דוח 1" of "היום" steps a day forward from today, the 11th.
+ * The report of the 12th: the board's day header opens the unit's drawer on every width (D-480, D-491), so "דוח 1" of
+ * "היום" steps a day forward from today, the 11th.
  */
-async function openReportOnTwelfth(page: Page, isMobile: boolean) {
-  if (!isMobile) {
-    await dayControl(page, '12 בנוב').click()
-    return
-  }
+async function openReportOnTwelfth(page: Page) {
   await openTab(page, 'today')
   await page.getByRole('button', { name: new RegExp(`^${he.presence.title}`) }).first().click()
   await report(page).getByRole('button', { name: he.presence.nextDay }).click()
@@ -69,7 +60,7 @@ test('the day report: counts and names, reasons, a span, a text copy and an imag
   })
 
   await test.step('a day of the timeline opens its report; on a phone, "דוח 1" of "היום" steps to it (D-480)', async () => {
-    await openReportOnTwelfth(page, testInfo.project.name === 'mobile')
+    await openReportOnTwelfth(page)
     await expect(page).toHaveURL(/day=2026-11-12/)
     await expect(report(page).getByText('יום חמישי, 12 בנובמבר 2026')).toBeVisible()
     await openUnits(page)
@@ -149,7 +140,7 @@ async function soldierInRotation(page: Page) {
   await openRotation(page, [SOLDIER])
 }
 
-test('each unit confirms its report, a change shows, and it confirms again (D-293)', async ({ page, isMobile }) => {
+test('each unit confirms its report, a change shows, and it confirms again (D-293)', async ({ page }) => {
   await page.clock.setFixedTime(NOW)
   await enterAsOwner(page)
   await soldierInRotation(page)
@@ -161,7 +152,7 @@ test('each unit confirms its report, a change shows, and it confirms again (D-29
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await test.step('the unit is not yet confirmed, and confirms', async () => {
-    await openReportOnTwelfth(page, isMobile)
+    await openReportOnTwelfth(page)
     await expect(section(page).getByText(he.presence.statusNotYet, { exact: true })).toBeVisible()
     await expect(report(page).getByText(he.presence.summaryConfirmed)).toBeVisible()
     await expectNoAxeViolations(page)
@@ -176,7 +167,7 @@ test('each unit confirms its report, a change shows, and it confirms again (D-29
     await page.clock.setFixedTime(NOW.getTime() + 60_000)
     await requestLeave(page, { ...leave, from: ['13', '11', '2026'], to: ['13', '11', '2026'] })
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await openReportOnTwelfth(page, isMobile)
+    await openReportOnTwelfth(page)
     await expect(section(page).getByText(he.presence.statusChanged, { exact: true })).toBeVisible()
     await expect(report(page).getByText(he.presence.summaryChanged)).toBeVisible()
     await expectNoAxeViolations(page)

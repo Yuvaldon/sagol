@@ -91,3 +91,64 @@ export function useSwipe(onSwipe: (direction: SwipeDirection) => void): Swipe {
     },
   }
 }
+
+/** Two fingers apart (fewer days in sight) or together (more days). */
+export type PinchDirection = 'spread' | 'squeeze'
+
+export interface Pinch {
+  readonly onPointerDown: (event: PointerEvent) => void
+  readonly onPointerMove: (event: PointerEvent) => void
+  readonly onPointerUp: (event: PointerEvent) => void
+  /** Whether a pinch is under way or just ended: its fingers' taps are not taps. Asking forgets an ended one. */
+  readonly consumed: () => boolean
+}
+
+/**
+ * Calls `onPinch` once per pinch (OI-399), when two fingers have moved apart or together past `BOARD.pinchRatio` of
+ * where they started. One pinch is one step, however far it goes; the fingers lift before the next.
+ */
+export function usePinch(onPinch: ((direction: PinchDirection) => void) | null): Pinch {
+  const fingers = useRef(new Map<number, { x: number; y: number }>())
+  const start = useRef<number | null>(null)
+  const done = useRef(false)
+  const pinched = useRef(false)
+  const spanOf = () => {
+    const [a, b] = [...fingers.current.values()]
+    return a === undefined || b === undefined ? null : Math.hypot(a.x - b.x, a.y - b.y)
+  }
+  return {
+    onPointerDown: (event) => {
+      if (event.pointerType !== 'touch' || onPinch === null) return
+      fingers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (fingers.current.size === 2) {
+        start.current = spanOf()
+        done.current = false
+        pinched.current = true
+      }
+    },
+    onPointerMove: (event) => {
+      if (!fingers.current.has(event.pointerId)) return
+      fingers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      const from = start.current
+      const now = spanOf()
+      if (from === null || now === null || from === 0 || done.current || onPinch === null) return
+      const ratio = now / from
+      if (ratio >= BOARD.pinchRatio) {
+        done.current = true
+        onPinch('spread')
+      } else if (ratio <= 1 / BOARD.pinchRatio) {
+        done.current = true
+        onPinch('squeeze')
+      }
+    },
+    onPointerUp: (event) => {
+      fingers.current.delete(event.pointerId)
+      if (fingers.current.size < 2) start.current = null
+    },
+    consumed: () => {
+      const was = pinched.current
+      if (fingers.current.size === 0) pinched.current = false
+      return was
+    },
+  }
+}

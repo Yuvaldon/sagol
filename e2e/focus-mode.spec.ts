@@ -55,10 +55,8 @@ test('focus mode: in and out by the options, the key and Escape', async ({ page,
   await enterAsOwner(page)
   await openRotationInNewUnit(page, [OWNER.name])
   await expect(board(page)).toBeVisible()
-  // A wide screen's day opens its report (D-193); a phone's selects it and opens the unit's drawer (D-480).
-  const firstDay = isMobile
-    ? page.getByRole('group', { name: he.board.days }).getByRole('button').first()
-    : page.getByRole('button', { name: new RegExp(`^${he.presence.openDay}`) }).first()
+  // A day's header selects it and opens the unit's drawer, on every width (D-480, D-491).
+  const firstDay = page.getByRole('group', { name: he.board.days }).getByRole('button').first()
   const dayTopWithStrips = (await firstDay.boundingBox())?.y ?? 0
 
   await test.step('"מיקוד" hides the head and the tab bar, and focus moves to the capsule', async () => {

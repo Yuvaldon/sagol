@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, board, openRotationInNewUnit } from './support/leaves.ts'
-import { chooseOption, openOptionRow, optionsMenu } from './support/board.ts'
+import { chooseOption, openOptions, optionsMenu } from './support/board.ts'
 import { enterAsOwner, expectNoAxeViolations, navigation, openBoardOnTimeline, OWNER } from './support/workspace.ts'
 
 // The layout checks: the board's head and the tab bar fit on one line in every shape of screen, the bar centers on
@@ -62,17 +62,25 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     expect(page_).toBeLessThanOrEqual(0)
   })
 
-  await test.step('the destinations sit at the bottom on every screen, with room for the board', async () => {
+  await test.step('the destinations sit at the bottom of a phone, and in the side rail of a wide screen, with room for the board', async () => {
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('no viewport')
     const tabs = await navigation(page).boundingBox()
     const head = await page.getByRole('main').locator('header').first().boundingBox()
     if (tabs === null || head === null) throw new Error('a bar is missing')
+    if (testInfo.project.name === 'desktop') {
+      // The rail stands on the inline start, the right in RTL, the screen's height, beside the board (D-491).
+      expect(tabs.x + tabs.width).toBeGreaterThan(viewport.width - 2)
+      expect(tabs.height).toBeGreaterThan(viewport.height * 0.9)
+      expect(head.x + head.width).toBeLessThanOrEqual(tabs.x + 1)
+      return
+    }
     expect(tabs.y + tabs.height).toBeGreaterThan(viewport.height * 0.9)
     expect(tabs.y - (head.y + head.height)).toBeGreaterThanOrEqual(viewport.height * 0.5)
   })
 
   await test.step('the tab bar hugs its content and centers on its edge', async () => {
+    if (testInfo.project.name === 'desktop') return
     const viewport = page.viewportSize()
     if (viewport === null) throw new Error('no viewport')
     const strips = await page.evaluate(() =>
@@ -89,7 +97,7 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     }
   })
 
-  await test.step('the head holds one view button, which fans out the views of the screen; the colors are an option (D-480)', async () => {
+  await test.step('the head holds one view button, which fans out the views of the screen; no colors on any width (D-454, D-491)', async () => {
     await expect(page.getByRole('button', { name: he.workspace.view, exact: true })).toHaveCount(1)
     await testInfo.attach('head', { body: await page.screenshot(), contentType: 'image/png' })
     await page.getByRole('button', { name: he.workspace.view, exact: true }).click()
@@ -100,14 +108,11 @@ test('the bars fit on one line, the page never scrolls sideways, and the board k
     await testInfo.attach('fan', { body: await page.screenshot(), contentType: 'image/png' })
     await page.keyboard.press('Escape')
     await expect(fan).toBeHidden()
-    if (testInfo.project.name === 'desktop') {
-      await openOptionRow(page, he.board.colors)
-      await expect(optionsMenu(page).getByRole('radio', { name: he.workspace.colorsByType, exact: true })).toBeChecked()
-      await expect(optionsMenu(page).getByRole('radio', { name: he.workspace.colorsUniform, exact: true })).not.toBeChecked()
-      await expectNoAxeViolations(page)
-      await page.keyboard.press('Escape')
-      await expect(optionsMenu(page)).toBeHidden()
-    }
+    await openOptions(page)
+    await expect(optionsMenu(page).getByRole('button', { name: new RegExp(`^${he.board.sort} · `) })).toBeVisible()
+    await expectNoAxeViolations(page)
+    await page.keyboard.press('Escape')
+    await expect(optionsMenu(page)).toBeHidden()
   })
 
   await expectNoAxeViolations(page)

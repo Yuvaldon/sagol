@@ -9,11 +9,13 @@ import {
   isOnDays,
   isPastThreshold,
   sameRange,
+  type DayGrid,
   type DayRange,
   type DragKind,
+  type DragRow,
+  type TimelineDrag,
+  type TimelineDragProps,
 } from '../core/drag'
-import type { GridLayout } from '../core/layout'
-import type { TimelineDrag, TimelineDragProps, TimelineResourceRow } from './model'
 
 // The pointer side of a drag on the board (D-143, D-144). A mouse or a pen drags once it passes the threshold; a finger
 // first holds still, so a finger that moves keeps scrolling the board. The math is the core's; this file only follows
@@ -38,7 +40,7 @@ interface Gesture {
 interface Elements {
   /** What scrolls: the board. */
   readonly scroller: HTMLElement | null
-  /** The grid inside it, whose inline start is where offsets start. */
+  /** The rows inside it, whose inline start is where offsets start. */
   readonly content: HTMLElement | null
 }
 
@@ -46,8 +48,8 @@ export interface DragGesture {
   /** The drag on screen, once it has started. */
   readonly active: TimelineDrag | null
   /** A press on a row: a mark, an end of a bar, or an empty day. */
-  start(event: ReactPointerEvent, row: TimelineResourceRow): void
-  /** True while a press must not open what it was on, because it became a drag. */
+  start(event: ReactPointerEvent, row: DragRow): void
+  /** True while a press must not open or pick what it was on, because it became a drag. */
   pressIsDrag(): boolean
   /** True while a press is held, so a long press does not open the browser's menu. */
   isHolding(): boolean
@@ -62,7 +64,7 @@ function markElementOf(target: EventTarget | null): HTMLElement | null {
   return element
 }
 
-export function useDrag(layout: GridLayout, elements: Elements, handlers: TimelineDragProps | null): DragGesture {
+export function useDrag(layout: DayGrid, elements: Elements, handlers: TimelineDragProps | null): DragGesture {
   const [active, setActive] = useState<TimelineDrag | null>(null)
   const gesture = useRef<Gesture | null>(null)
   const suppressPress = useRef(false)
@@ -98,7 +100,7 @@ export function useDrag(layout: GridLayout, elements: Elements, handlers: Timeli
   )
 
   const start = useCallback(
-    (event: ReactPointerEvent, row: TimelineResourceRow) => {
+    (event: ReactPointerEvent, row: DragRow) => {
       const { handlers: drag, elements: found, layout: grid } = latest.current
       const content = found.content
       // One drag at a time: a drop that waits for its answer holds the board.
@@ -121,8 +123,10 @@ export function useDrag(layout: GridLayout, elements: Elements, handlers: Timeli
         const mark = row.marks.find((candidate) => candidate.key === target.dataset.mark)
         if (mark === undefined || mark.drag === null) return
         const box = target.getBoundingClientRect()
-        const ends = mark.drag.resize ? { start: !mark.cut.start, end: !mark.cut.end } : { start: false, end: false }
-        kind = mark.kind !== 'badge' ? grabOf(inlineOffset(event.clientX, box, rtl), box.width, TIMELINE_DRAG.handlePx, ends) : 'move'
+        // A mark whose ends do not move (a marker) is only ever moved whole.
+        kind = mark.drag.resize
+          ? grabOf(inlineOffset(event.clientX, box, rtl), box.width, TIMELINE_DRAG.handlePx, { start: !mark.cut.start, end: !mark.cut.end })
+          : 'move'
         markKey = mark.key
         origin = mark.range
       }
@@ -185,7 +189,8 @@ export function useDrag(layout: GridLayout, elements: Elements, handlers: Timeli
       }
       const pick = () => {
         current.picked = true
-        if (current.markKey !== null) suppressPress.current = true
+        // The press that ends a drag neither opens the mark it began on nor picks the day it ends on.
+        suppressPress.current = true
         if (current.touch) document.addEventListener('touchmove', holdScroll, { passive: false })
         frame = window.requestAnimationFrame(scrollAtEdge)
         report()

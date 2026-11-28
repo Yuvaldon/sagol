@@ -5,7 +5,6 @@ import {
   NO_GROUPING,
   UNIT_GROUPING,
   archivedRows,
-  fullName,
   useLeaveCreation,
   useMovePermissions,
   useTagSetters,
@@ -20,140 +19,31 @@ import {
   useToday,
   useUnits,
   type BoardGrouping,
-  type MyDay,
-  type PeopleItem,
   type PeopleList,
-  type PeopleRow,
   type PeopleViewState,
 } from '@logic'
-import { Check, Search, SlidersHorizontal, UserPlus } from 'lucide-react'
+import { Search, SlidersHorizontal, UserPlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Button as AriaButton, Checkbox } from 'react-aria-components'
-import { headingLabel } from '../../board/labels'
-import { useLongPress } from '../../board/gestures'
 import { OptionsMenu, type OptionAction, type OptionRow } from '../../kit/OptionsMenu'
 import { SelectionTray, type TrayAction } from '../../kit/Tray'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { TextField } from '../../primitives/fields'
+import { useIsDesktop } from '../../patterns/media'
 import { PageFrame } from '../PageFrame'
 import { CapsuleButton } from './CapsuleButton'
 import { MoveDialog } from './MoveDialog'
 import { TagsDialog } from './TagsDialog'
 import { PageTop } from './PageTop'
+import { PeopleRows } from './PeopleRows'
 
 // "חיילים" (the handoff's Manage → Soldiers, D-482): every soldier the actor sees, regardless of presence, as thin person
-// rows with their rank and tags and their next seven days. The capsule holds the search, the options (sort, grouping,
+// rows with their rank and tags and their next seven days, a table on a wide screen (D-491). The capsule holds the search, the options (sort, grouping,
 // the inactive, the days; "בחירה" and the archive after the divider) and "הוספת חיילים". A row opens the person card;
 // holding it, or "בחירה", starts a multi-select whose tray offers what every chosen soldier allows.
 
 const SEPARATOR = ' · '
 const WORD = ' '
 const CATEGORY = 'category:'
-
-const DOT: Readonly<Record<MyDay['state'], string>> = {
-  base: 'bg-text',
-  round: 'border border-text-muted',
-  away: 'border border-text-muted',
-  pending: 'border border-dashed border-status-pending-line',
-}
-
-const TODAY_KEYS = {
-  base: 'manage.people.todayBase',
-  round: 'manage.people.todayAway',
-  away: 'manage.people.todayAway',
-  pending: 'manage.people.todayPending',
-} as const
-
-/** The next seven days as dots, today first and larger: filled on base, hollow at home (the handoff's person row). */
-function Dots({ days }: { readonly days: readonly MyDay[] }) {
-  const [first] = days
-  return (
-    <span className="flex shrink-0 items-center gap-2xs">
-      {days.map((day, index) => (
-        <span key={day.date} aria-hidden className={`shrink-0 rounded-full ${index === 0 ? 'size-sm' : 'size-dot'} ${DOT[day.state]}`} />
-      ))}
-      {first === undefined ? null : <span className="sr-only">{t(TODAY_KEYS[first.state])}</span>}
-    </span>
-  )
-}
-
-function detailOf(row: PeopleRow): string {
-  return [
-    ...(row.rank === null ? [] : [row.rank.title]),
-    ...row.tags,
-    ...(row.soldier.status === 'inactive' ? [t('manage.people.inactiveMark')] : []),
-  ].join(SEPARATOR)
-}
-
-const ROW = 'flex min-h-touch w-full min-w-none items-center gap-sm px-lg py-xs text-start outline-focus -outline-offset-2 data-focus-visible:outline-2'
-
-function RowText({ row }: { readonly row: PeopleRow }) {
-  const detail = detailOf(row)
-  return (
-    <span className="flex min-w-none flex-1 items-baseline gap-sm">
-      <span className="shrink-0 truncate text-body font-semibold">{fullName(row.soldier)}</span>
-      {detail === '' ? null : <span className="min-w-none truncate text-small text-text-muted">{detail}</span>}
-    </span>
-  )
-}
-
-/** A soldier's row: it opens the card; held, it starts choosing with this soldier chosen. */
-function PersonButton({ row, onHold }: { readonly row: PeopleRow; readonly onHold: () => void }) {
-  const panel = usePanel()
-  const hold = useLongPress(onHold)
-  return (
-    <AriaButton
-      onPointerDownCapture={hold.onPointerDown}
-      onPointerMove={hold.onPointerMove}
-      onPointerUpCapture={hold.onPointerUp}
-      onPointerCancel={hold.onPointerCancel}
-      onPress={() => {
-        if (hold.consumed()) return
-        panel.open(PANEL_IDS.soldiers, { entity: row.soldier.id })
-      }}
-      className={`${ROW} cursor-pointer data-hovered:bg-inner`}
-    >
-      <RowText row={row} />
-      {row.days === null ? null : <Dots days={row.days} />}
-    </AriaButton>
-  )
-}
-
-/** The same row while choosing: a check circle at its start, and the row itself is the checkbox. */
-function ChoiceRow({ row, chosen, onChange }: { readonly row: PeopleRow; readonly chosen: boolean; readonly onChange: (chosen: boolean) => void }) {
-  return (
-    <Checkbox isSelected={chosen} onChange={onChange} aria-label={fullName(row.soldier)} className={`${ROW} cursor-pointer data-selected:bg-action-soft`}>
-      <span
-        aria-hidden
-        className={`flex size-badge shrink-0 items-center justify-center rounded-full border ${chosen ? 'border-action-solid bg-action-solid text-on-action' : 'border-text-muted'}`}
-      >
-        {chosen ? <Check size={14} /> : null}
-      </span>
-      <RowText row={row} />
-      {row.days === null ? null : <Dots days={row.days} />}
-    </Checkbox>
-  )
-}
-
-interface Section {
-  readonly key: string
-  readonly heading: PeopleItem | null
-  readonly rows: readonly PeopleRow[]
-}
-
-/** The rows under their headers: one white card per group, or one for the whole list. */
-function sectionsOf(items: readonly PeopleItem[]): Section[] {
-  const sections: { key: string; heading: PeopleItem | null; rows: PeopleRow[] }[] = []
-  for (const item of items) {
-    if (item.kind === 'group') sections.push({ key: item.key, heading: item, rows: [] })
-    else {
-      const last = sections.at(-1)
-      if (last === undefined) sections.push({ key: 'all', heading: null, rows: [item] })
-      else last.rows.push(item)
-    }
-  }
-  return sections
-}
 
 function groupKeyOf(grouping: BoardGrouping): string {
   return 'key' in grouping ? grouping.key : `${CATEGORY}${grouping.category}`
@@ -249,6 +139,7 @@ export function SoldiersPage({ name }: { readonly name: string }) {
   const place = useShellPlace()
   const panel = usePanel()
   const today = useToday()
+  const desktop = useIsDesktop()
   const view = usePeopleView()
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
@@ -363,7 +254,7 @@ export function SoldiersPage({ name }: { readonly name: string }) {
   const count = list.status === 'ready' ? list.value.count : null
 
   return (
-    <PageFrame tray={tray}>
+    <PageFrame tray={tray} wide>
       <PageTop
         titleKey="manage.pages.soldiers"
         detail={count === null ? name : [name, [String(count), t('manage.people.count')].join(WORD)].join(SEPARATOR)}
@@ -410,41 +301,20 @@ export function SoldiersPage({ name }: { readonly name: string }) {
           </p>
         )
       ) : (
-        <div aria-label={t('manage.people.listLabel')} role="region" className="flex flex-col gap-lg">
-          {sectionsOf(list.value.items).map((section) => (
-            <section key={section.key} className="flex flex-col gap-xs">
-              {section.heading?.kind === 'group' ? (
-                <h2 className="flex items-center justify-between gap-sm px-xs text-body font-bold">
-                  <span className="min-w-none truncate">{headingLabel(section.heading.label)}</span>
-                  <span className="shrink-0 text-small font-normal text-text-muted tabular-nums">{section.heading.size}</span>
-                </h2>
-              ) : null}
-              <ul className="flex flex-col overflow-hidden rounded-card bg-surface">
-                {section.rows.map((row) => (
-                  <li key={row.key} className="border-b border-divider-strong last:border-b-0">
-                    {selecting ? (
-                      <ChoiceRow
-                        row={row}
-                        chosen={chosen.has(row.soldier.id)}
-                        onChange={(on) => {
-                          choose(row.soldier.id, on)
-                        }}
-                      />
-                    ) : (
-                      <PersonButton
-                        row={row}
-                        onHold={() => {
-                          setSelecting(true)
-                          setChosen(new Set([row.soldier.id]))
-                        }}
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <PeopleRows
+          items={list.value.items}
+          days={view.days}
+          wide={desktop}
+          choosing={{
+            on: selecting,
+            chosen,
+            choose,
+            startWith: (soldierId) => {
+              setSelecting(true)
+              setChosen(new Set([soldierId]))
+            },
+          }}
+        />
       )}
       {tagging ? (
         <TagsDialog

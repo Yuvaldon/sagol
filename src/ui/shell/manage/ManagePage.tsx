@@ -1,4 +1,4 @@
-import { PAGE_TABS, PANEL_IDS, ROUND_ENTITY, type PageId } from '@config'
+import { FULL_SCREEN_PAGES, PAGE_TABS, PANEL_IDS, ROUND_ENTITY, type PageId } from '@config'
 import { t, type I18nKey } from '@i18n'
 import {
   liveRules,
@@ -26,6 +26,7 @@ import { progressText } from '../../modules/setup/steps'
 import { useNavigationEntries, useSetupEntries, type ModuleEntry } from '../moduleEntries'
 import { useOpener, useOpenerFallback } from '../chrome'
 import { LoadingNotice } from '../../patterns/Notices'
+import { useIsDesktop } from '../../patterns/media'
 import { PageFrame, PageHead, PageHeading } from '../PageFrame'
 import { AddSoldiersPage } from './AddSoldiersPage'
 import { JoinsPage } from './JoinsPage'
@@ -36,7 +37,8 @@ import { SoldiersPage } from './SoldiersPage'
 
 // "ניהול" (D-456, D-482): an index of thin rows, each a tool's name with what it holds now and a chevron. The designed
 // tools come first, each opening its page: "חיילים", "בקשות הצטרפות", the leave-round planner and "כללי נוכחות"; after a
-// gap, the tools that keep their current screens, each opening its module in a drawer, and "הגדרות" last.
+// gap, the tools that keep their current screens, each opening its module in a drawer, and "הגדרות" last. On a wide
+// screen an open page stands beside the rows, which stay in a column on the inline start (D-460, D-491).
 
 /** The control the keyboard returns to when the settings page closes: its row. */
 const SETTINGS_OPENER = 'settings'
@@ -49,17 +51,26 @@ function Row({
   value,
   onPress,
   buttonRef,
+  current = false,
 }: {
   readonly labelKey: I18nKey
   readonly value: ReactNode
   readonly onPress: () => void
   readonly buttonRef?: Ref<HTMLButtonElement>
+  /** The row of the page open beside the column (D-491). */
+  readonly current?: boolean
 }) {
   const valueId = useId()
   return (
     <li>
       {/* The tool is named by its visible name alone; what it holds describes it, so the name stays short to read and to find. */}
-      <AriaButton {...(buttonRef === undefined ? {} : { ref: buttonRef })} aria-describedby={valueId} onPress={onPress} className={ROW}>
+      <AriaButton
+        {...(buttonRef === undefined ? {} : { ref: buttonRef })}
+        aria-describedby={valueId}
+        aria-current={current ? 'page' : false}
+        onPress={onPress}
+        className={`${ROW} ${current ? 'font-bold text-action-solid' : ''}`}
+      >
         <span className="min-w-none truncate text-body font-semibold">{t(labelKey)}</span>
         <span aria-hidden className="flex shrink-0 items-center gap-xs text-small text-text-muted tabular-nums">
           <span id={valueId}>{value}</span>
@@ -95,7 +106,11 @@ function roundValue(planning: RoundPlanning): ReactNode {
   return planning.unplanned === 0 ? t('manage.round.planned') : [String(planning.unplanned), t('manage.round.unplanned')].join(WORD)
 }
 
-function Index({ name }: { readonly name: string }) {
+/** The page each designed row opens, so the column marks the one open beside it. */
+const ROW_PAGES: Readonly<Partial<Record<string, PageId>>> = { soldiers: 'soldiers', accountLinks: 'joins', rules: 'rules' }
+
+/** The rows of "ניהול": the designed tools, then the kept ones and "הגדרות"; `current` is the page open beside them. */
+function ToolRows({ current }: { readonly current: PageId | null }) {
   const place = useShellPlace()
   const panel = usePanel()
   const work = useNavigationEntries()
@@ -115,7 +130,15 @@ function Index({ name }: { readonly name: string }) {
     deployments: rotation?.name ?? null,
   }
   const rowOf = (entry: ModuleEntry | undefined) =>
-    entry === undefined ? null : <Row key={entry.id} labelKey={entry.labelKey} value={waitingOf(entry) ?? values[entry.id] ?? null} onPress={entry.onPress} />
+    entry === undefined ? null : (
+      <Row
+        key={entry.id}
+        labelKey={entry.labelKey}
+        value={waitingOf(entry) ?? values[entry.id] ?? null}
+        onPress={entry.onPress}
+        current={current !== null && ROW_PAGES[entry.id] === current}
+      />
+    )
   const roundRow =
     planning === null ? null : (
       <Row
@@ -132,17 +155,15 @@ function Index({ name }: { readonly name: string }) {
   const tree = rowOf(setup.get('units'))
   const kept = [...(inbox === null ? [] : [inbox]), ...(tree === null ? [] : [tree]), ...KEPT_TOOLS.map((module) => rowOf(work.get(module))).filter((row) => row !== null)]
   const opener = useOpener(SETTINGS_OPENER)
-  useOpenerFallback(SETTINGS_OPENER)
+  // Only the index takes the keyboard back on its row: the column beside an open page must not take it while it opens.
+  const settingsRef = current === null ? opener.ref : undefined
   const openSettings = () => {
     opener.remember()
     place.openPage('settings')
   }
+  const settingsCurrent = current === 'settings'
   return (
-    <PageFrame updates>
-      <PageHead>
-        <PageHeading className="text-title font-bold tracking-tight">{t('navigation.tab')}</PageHeading>
-        <p className="text-body text-text-muted">{name}</p>
-      </PageHead>
+    <>
       {designed.length > 0 ? <ul className="flex flex-col">{designed}</ul> : null}
       <ul className="flex flex-col">
         {kept}
@@ -151,14 +172,47 @@ function Index({ name }: { readonly name: string }) {
             labelKey="navigation.setupOpen"
             value={stepsAllowed ? <SetupProgress>{(steps) => progressText(steps)}</SetupProgress> : null}
             onPress={openSettings}
-            buttonRef={opener.ref}
+            {...(settingsRef === undefined ? {} : { buttonRef: settingsRef })}
+            current={settingsCurrent}
           />
         ) : stepsAllowed ? (
           // With no settings module of theirs, the row leads only to steps still open, never to an empty page.
-          <SetupProgress>{(steps) => <Row labelKey="navigation.setupOpen" value={progressText(steps)} onPress={openSettings} buttonRef={opener.ref} />}</SetupProgress>
+          <SetupProgress>
+            {(steps) => <Row labelKey="navigation.setupOpen" value={progressText(steps)} onPress={openSettings} {...(settingsRef === undefined ? {} : { buttonRef: settingsRef })} current={settingsCurrent} />}
+          </SetupProgress>
         ) : null}
       </ul>
+    </>
+  )
+}
+
+function Index({ name }: { readonly name: string }) {
+  useOpenerFallback(SETTINGS_OPENER)
+  return (
+    <PageFrame updates>
+      <PageHead>
+        <PageHeading className="text-title font-bold tracking-tight">{t('navigation.tab')}</PageHeading>
+        <p className="text-body text-text-muted">{name}</p>
+      </PageHead>
+      <ToolRows current={null} />
     </PageFrame>
+  )
+}
+
+/**
+ * A wide screen's "ניהול" with a page open (D-460, D-491): the rows in a column on the inline start, the page beside
+ * them. The column names itself for readers; the page keeps the one heading of the screen.
+ */
+function Beside({ current, children }: { readonly current: PageId; readonly children: ReactNode }) {
+  return (
+    <div className="flex h-full">
+      <nav aria-label={t('navigation.tab')} className="w-tools shrink-0 overflow-y-auto border-e border-divider-strong px-lg pt-xl pb-page-end">
+        <div className="flex flex-col gap-lg">
+          <ToolRows current={current} />
+        </div>
+      </nav>
+      <div className="relative min-w-none flex-1">{children}</div>
+    </div>
   )
 }
 
@@ -195,6 +249,7 @@ const NO_SOLDIERS: readonly never[] = []
 
 export function ManagePage({ name }: { readonly name: string }) {
   const place = useShellPlace()
+  const desktop = useIsDesktop()
   const pages = usePages()
   const { page, closePage } = place
   // A page once allowed stays while it is open: approving the last join request empties "הצטרפות" without closing it.
@@ -214,6 +269,14 @@ export function ManagePage({ name }: { readonly name: string }) {
     )
   }
   if (stray) return <Index name={name} />
+  const open = openPageOf(page, name)
+  if (open === null || page === null) return <Index name={name} />
+  // A temporary full screen stands alone on a wide screen too.
+  return desktop && !FULL_SCREEN_PAGES.includes(page) ? <Beside current={page}>{open}</Beside> : open
+}
+
+/** The page of "ניהול" the address names, or NULL for the index. */
+function openPageOf(page: PageId | null, name: string): ReactNode {
   switch (page) {
     case 'settings':
       return <SettingsPage />
@@ -226,6 +289,6 @@ export function ManagePage({ name }: { readonly name: string }) {
     case 'add_soldiers':
       return <AddSoldiersPage />
     default:
-      return <Index name={name} />
+      return null
   }
 }

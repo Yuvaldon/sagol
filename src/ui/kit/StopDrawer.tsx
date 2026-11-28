@@ -5,6 +5,8 @@ import { motion, useDragControls } from 'motion/react'
 import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Dialog, Heading, Modal } from 'react-aria-components'
 import { useFocusRecovery } from '../patterns/focusRecovery'
+import { useIsDesktop } from '../patterns/media'
+import { SidePanel } from '../patterns/SidePanel'
 import { IconButton } from '../primitives/Button'
 import { ModalOverlay } from '../primitives/overlays'
 import { DrawerStopContext } from './drawerStop'
@@ -12,7 +14,7 @@ import { DrawerStopContext } from './drawerStop'
 // The drawer of the new interface (D-454): glass over a dimmed screen, rising from the bottom to a stop. It opens at
 // its half stop and grows to the full one; the handle is a real button, so the stop also changes by a tap or a key
 // (D-458). Dragging the handle up grows it, down shrinks it and then closes it. Escape, the dim layer and ✕ close it.
-// From `md` it is a panel on the inline end, as the modules' drawer is, with no stops.
+// On a wide screen it is the side panel (D-460, D-491), as the modules' drawer is, with no stops.
 
 const MotionModal = motion.create(Modal)
 const CLOSE_ICON = 18
@@ -39,7 +41,48 @@ export interface StopDrawerProps {
   readonly children: ReactNode
 }
 
-export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = false, tools = null, children }: StopDrawerProps) {
+/** The drawer's head and its content, the same in the sheet and in the side panel. */
+function Contents({ title, detail, onClose, tools, grow, children }: Pick<StopDrawerProps, 'title' | 'detail' | 'onClose' | 'tools' | 'children'> & { readonly grow: () => void }) {
+  return (
+    <>
+      <header className="flex shrink-0 items-center justify-between gap-sm px-lg pb-md md:pt-lg">
+        <div className="flex min-w-none flex-col">
+          <Heading slot="title" level={2} className="truncate text-heading font-bold">
+            {title}
+          </Heading>
+          {detail === undefined ? null : <p className="text-small text-text-muted tabular-nums">{detail}</p>}
+        </div>
+        <div className="flex shrink-0 items-center gap-xs">
+          {tools}
+          {/* ✕ on its own white circle, as the package draws it. */}
+          <IconButton labelKey="common.close" variant="circle" onPress={onClose}>
+            <X aria-hidden size={CLOSE_ICON} />
+          </IconButton>
+        </div>
+      </header>
+      <div className="min-h-none overflow-y-auto px-lg pb-xl">
+        <DrawerStopContext value={grow}>{children}</DrawerStopContext>
+      </div>
+    </>
+  )
+}
+
+const NO_GROW = () => undefined
+
+export function StopDrawer(props: StopDrawerProps) {
+  const desktop = useIsDesktop()
+  if (desktop) {
+    return (
+      <SidePanel onClose={props.onClose} inUrl={props.inUrl ?? false} className="glass-drawer">
+        <Contents {...props} tools={props.tools ?? null} grow={NO_GROW} />
+      </SidePanel>
+    )
+  }
+  return <Sheet {...props} />
+}
+
+/** The phone's drawer: a sheet from the bottom, with its stops. */
+function Sheet({ title, detail, onClose, opensAt = 'half', inUrl = false, tools = null, children }: StopDrawerProps) {
   const dragControls = useDragControls()
   const [stop, setStop] = useState<Stop>(opensAt)
   const dialog = useRef<HTMLElement>(null)
@@ -56,7 +99,7 @@ export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = f
       onOpenChange={(open) => {
         if (!open) onClose()
       }}
-      className="enter-scrim fixed inset-screen flex items-end justify-center bg-scrim px-safe md:items-start md:justify-end md:p-sm"
+      className="enter-scrim fixed inset-screen flex items-end justify-center bg-scrim px-safe"
     >
       <MotionModal
         drag="y"
@@ -72,14 +115,14 @@ export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = f
           else if (stop === 'full') setStop('half')
           else onClose()
         }}
-        className={`enter-surface glass-drawer flex w-full max-w-drawer flex-col overflow-hidden rounded-t-sheet md:max-h-full md:rounded-panel ${STOPS[stop]}`}
+        className={`enter-surface glass-drawer flex w-full max-w-drawer flex-col overflow-hidden rounded-t-sheet ${STOPS[stop]}`}
       >
         <Dialog ref={dialog} className="flex min-h-none flex-col outline-none">
           <div
             onPointerDown={(event) => {
               dragControls.start(event)
             }}
-            className="flex shrink-0 touch-none justify-center md:hidden"
+            className="flex shrink-0 touch-none justify-center"
           >
             <AriaButton
               aria-label={t(stop === 'half' ? 'kit.drawerGrow' : 'kit.drawerShrink')}
@@ -92,24 +135,9 @@ export function StopDrawer({ title, detail, onClose, opensAt = 'half', inUrl = f
               <span aria-hidden className="h-xs w-grip rounded-full bg-line" />
             </AriaButton>
           </div>
-          <header className="flex shrink-0 items-center justify-between gap-sm px-lg pb-md md:pt-lg">
-            <div className="flex min-w-none flex-col">
-              <Heading slot="title" level={2} className="truncate text-heading font-bold">
-                {title}
-              </Heading>
-              {detail === undefined ? null : <p className="text-small text-text-muted tabular-nums">{detail}</p>}
-            </div>
-            <div className="flex shrink-0 items-center gap-xs">
-              {tools}
-              {/* ✕ on its own white circle, as the package draws it. */}
-              <IconButton labelKey="common.close" variant="circle" onPress={onClose}>
-                <X aria-hidden size={CLOSE_ICON} />
-              </IconButton>
-            </div>
-          </header>
-          <div className="min-h-none overflow-y-auto px-lg pb-xl">
-            <DrawerStopContext value={grow}>{children}</DrawerStopContext>
-          </div>
+          <Contents title={title} detail={detail} onClose={onClose} tools={tools} grow={grow}>
+            {children}
+          </Contents>
         </Dialog>
       </MotionModal>
     </ModalOverlay>

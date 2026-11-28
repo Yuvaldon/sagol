@@ -57,11 +57,6 @@ export async function selectView(page: Page, name: string) {
   await expect(page.getByRole('group', { name: he.board.fan })).toBeHidden()
 }
 
-/** The colors of the old bars: a row of the options on a wide screen (D-454). */
-export async function selectColors(page: Page, name: string) {
-  await chooseOption(page, he.board.colors, name)
-}
-
 export function builder(page: Page) {
   return page.getByRole('dialog', { name: he.filters.builder })
 }

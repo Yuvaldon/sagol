@@ -54,13 +54,8 @@ test('"ניהול" and the scope label', async ({ page }, testInfo) => {
 
   await test.step('the tab bar holds the destinations only; the modules are not in it', async () => {
     await expect(navigation(page).getByRole('button')).toHaveCount(4)
-    // A tab is an icon: its name shows as a tooltip where there is a pointer to rest on it.
-    if (testInfo.project.name === 'desktop') {
-      await tab(page, 'me').hover()
-      await expect(page.getByRole('tooltip')).toHaveText(he.shell.tabMe)
-      await page.mouse.move(0, 0)
-      await expect(page.getByRole('tooltip')).toHaveCount(0)
-    }
+    // On a phone a tab is an icon; the side rail of a wide screen writes each name under its icon (D-491).
+    if (testInfo.project.name === 'desktop') await expect(tab(page, 'me')).toContainText(he.shell.tabMe)
     for (const name of [he.units.open, he.soldiers.open, he.roles.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }

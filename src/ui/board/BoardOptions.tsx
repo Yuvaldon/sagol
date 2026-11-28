@@ -1,9 +1,8 @@
-import { BAR_COLOR_MODES, BOARD_GROUP_KEYS, DEFAULT_SORT_ORDER, type BarColorMode, type BoardGroupKey, type BoardSortKey, type RangeKind, type ViewId } from '@config'
+import { BOARD_GROUP_KEYS, DEFAULT_SORT_ORDER, type BoardGroupKey, type BoardSortKey, type RangeKind, type ViewId } from '@config'
 import type { CalendarDate, Deployment } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
   unitTreeRows,
-  useBarColors,
   useBoardFilters,
   useBoardGrouping,
   useBoardWindow,
@@ -48,7 +47,6 @@ const GROUP_LABELS: Record<BoardGroupKey, I18nKey> = {
   unit: 'workspace.groupKeys.unit',
   rank: 'workspace.groupKeys.rank',
 }
-const COLOR_LABELS: Record<BarColorMode, I18nKey> = { type: 'workspace.colorsByType', uniform: 'workspace.colorsUniform' }
 const RANGE_LABELS: Record<Exclude<RangeKind, 'rotation'>, I18nKey> = {
   day: 'workspace.ranges.day',
   week: 'workspace.ranges.week',
@@ -275,26 +273,6 @@ function useFilterRow(): OptionRow {
   }
 }
 
-function useColorsRow(view: ViewId, phone: boolean): OptionRow | null {
-  const colors = useBarColors()
-  // The colors of a leave's type stay only where the old bars still draw them: a wide screen's timeline and table (D-454).
-  if (phone || (view !== 'timeline' && view !== 'table')) return null
-  return {
-    key: 'colors',
-    labelKey: 'board.colors',
-    value: t(COLOR_LABELS[colors.mode]),
-    changed: false,
-    choices: {
-      selected: colors.mode,
-      options: BAR_COLOR_MODES.map((mode) => ({ key: mode, label: t(COLOR_LABELS[mode]) })),
-      onChange: (key) => {
-        const mode = BAR_COLOR_MODES.find((candidate) => candidate === key)
-        if (mode !== undefined) colors.select(mode)
-      },
-    },
-  }
-}
-
 export interface BoardOptionsProps {
   readonly view: ViewId
   readonly phone: boolean
@@ -314,8 +292,7 @@ export function BoardOptions({ view, phone, onSavedViews }: BoardOptionsProps) {
   const sort = useSortRow()
   const group = useGroupRow()
   const filter = useFilterRow()
-  const colors = useColorsRow(view, phone)
-  const rows = [unit, range, sort, group, filter, colors].filter((row) => row !== null)
+  const rows = [unit, range, sort, group, filter].filter((row) => row !== null)
   const footer: OptionAction[] = [
     ...(onSavedViews === null
       ? []

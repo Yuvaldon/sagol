@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { dayAt, draggedRange, edgeStep, grabOf, inlineOffset, isOnDays, isPastThreshold, rangeInWindow, sameRange } from './drag'
-import { gridLayout } from './layout'
 
 // 124 px of names, then seven days of 64 px: day 0 is 124–187, day 6 is 508–571.
-const layout = gridLayout(358, 7, { nameColumnPx: 124, minDayPx: 64 })
+const layout = { nameColumnPx: 124, dayPx: 64, dayCount: 7 }
 
 describe('where a pointer is (D-143)', () => {
   it('measures from the inline start, the right edge in RTL', () => {

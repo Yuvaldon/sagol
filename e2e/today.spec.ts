@@ -8,7 +8,7 @@ import { OWNER, expectNoAxeViolations, openTab, signIn, tab } from './support/wo
 // answers on the card and on the page of requests, and takes an answer back from the toast; a day column opens the
 // unit's drawer. On desktop and mobile, RTL, with axe. Sample data, tests only.
 
-test('a soldier asks for days from the month, and the commander answers on "היום"', async ({ page }) => {
+test('a soldier asks for days from the month, and the commander answers on "היום"', async ({ page }, testInfo) => {
   await setUpFighter(page)
   await signOut(page)
   await enterAsYael(page)
@@ -37,7 +37,8 @@ test('a soldier asks for days from the month, and the commander answers on "הי
     await page.keyboard.press('Enter')
     await expect(page.getByRole('grid').getByRole('gridcell', { selected: true })).toHaveCount(3)
     await expect(tray.getByRole('button', { name: `${he.today.requestDays} · 3 ${he.leaves.days}` })).toBeVisible()
-    await expect(tab(page, 'today')).toHaveCount(0)
+    // The tray stands in the tab bar's place on a phone; the rail of a wide screen stays (D-491).
+    await expect(tab(page, 'today')).toHaveCount(testInfo.project.name === 'desktop' ? 1 : 0)
     await expectNoAxeViolations(page)
   })
 

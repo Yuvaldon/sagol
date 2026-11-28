@@ -1,8 +1,13 @@
-import type { GridLayout } from './layout'
-
 // Dragging on the timeline (D-143, D-144). Pure: no React and no domain knowledge. Days are offsets from the window's
 // first day, and a range may reach past the window on either side (a leave the window cuts). Pixels are inline
 // offsets from the grid's inline start, so the same numbers serve RTL and LTR.
+
+/** Where the days are: after the name column, each `dayPx` wide. */
+export interface DayGrid {
+  readonly nameColumnPx: number
+  readonly dayPx: number
+  readonly dayCount: number
+}
 
 /** What a drag does: move a mark, move its first or last day, or mark days for a new item. */
 export type DragKind = 'move' | 'start' | 'end' | 'create'
@@ -19,12 +24,12 @@ export function inlineOffset(clientX: number, box: { readonly left: number; read
 }
 
 /** Whether an inline offset falls on one of the window's days, not on the name column or past the last day. */
-export function isOnDays(layout: GridLayout, inlinePx: number): boolean {
+export function isOnDays(layout: DayGrid, inlinePx: number): boolean {
   return inlinePx >= layout.nameColumnPx && inlinePx < layout.nameColumnPx + layout.dayPx * layout.dayCount
 }
 
 /** The day under an inline offset. A pointer past either end counts as the window's first or last day. */
-export function dayAt(layout: GridLayout, inlinePx: number): number {
+export function dayAt(layout: DayGrid, inlinePx: number): number {
   const day = Math.floor((inlinePx - layout.nameColumnPx) / layout.dayPx)
   return Math.min(Math.max(day, 0), Math.max(layout.dayCount - 1, 0))
 }
@@ -93,4 +98,39 @@ export function rangeInWindow(
   const end = Math.min(range.end, dayCount - 1)
   if (end < start) return null
   return { start, length: end - start + 1, cut: { start: range.start < 0, end: range.end > dayCount - 1 } }
+}
+
+/** A mark a drag may pick up: its days, which sides the window cuts, and whether its ends move (NULL: it does not move). */
+export interface DragMark {
+  readonly key: string
+  readonly range: DayRange
+  readonly cut: { readonly start: boolean; readonly end: boolean }
+  readonly drag: { readonly resize: boolean } | null
+}
+
+/** A row of the board as a drag sees it: its marks, and whether a drag on its empty days marks a new item. */
+export interface DragRow {
+  readonly key: string
+  readonly creatable: boolean
+  readonly marks: readonly DragMark[]
+}
+
+/** A drag in progress, or its drop: which row, which mark (NULL: new days), what it does, and the days it covers. */
+export interface TimelineDrag {
+  readonly rowKey: string
+  readonly markKey: string | null
+  readonly kind: DragKind
+  readonly range: DayRange
+}
+
+/** What the rules say of the days a drag covers (D-143): fine, a soft or a hard break, or not known yet. */
+export type TimelineDragTone = 'ok' | 'soft' | 'hard' | 'unknown'
+
+/** What the board hands the drag: where each change goes, what it would break, and a drop that waits for its answer. */
+export interface TimelineDragProps {
+  readonly onChange: (drag: TimelineDrag | null) => void
+  readonly onDrop: (drag: TimelineDrag) => void
+  readonly tone: TimelineDragTone
+  /** A drop that waits for its answer: its mark stays where it was dropped, and the board holds still. */
+  readonly held: TimelineDrag | null
 }
