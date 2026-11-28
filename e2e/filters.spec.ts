@@ -248,7 +248,13 @@ test('tags, the set conditions, no "only who is missing", and who is present tod
     await expect(page).toHaveURL(/day=/)
     // The ✕ shows its name where the pointer rests on it, and showing it moves nothing: the press still lands on ✕.
     const close = report.getByRole('button', { name: he.common.close })
+    // The sheet fits what it holds: it is measured once its height has come to rest as the day's names arrive.
     await waitForSettledScreen(page)
+    await expect(async () => {
+      const first = await close.boundingBox()
+      await page.waitForTimeout(300)
+      expect(await close.boundingBox()).toEqual(first)
+    }).toPass()
     const closeBox = await close.boundingBox()
     await close.hover()
     await expect(page.getByRole('tooltip')).toHaveText(he.common.close)

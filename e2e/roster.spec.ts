@@ -370,7 +370,9 @@ test('a deep link reopens the card of a soldier, and a second tab follows', asyn
   await other.close()
 })
 
-test('a long timeline gives its month to a capsule once scrolled, and the capsule returns it to the top (OI-399)', async ({ page }) => {
+test('a long timeline gives its month to a capsule once scrolled, and the capsule returns it to the top (OI-399)', async ({ page, isMobile }) => {
+  // A wide screen keeps its head while it scrolls: its arrows are the mouse's way to step the range (D-496).
+  test.skip(!isMobile, 'A phone\'s timeline only')
   await seedSoldiers(page, 40)
   await page.goto('/?tab=board&view=timeline')
   const region = page.getByRole('region', { name: he.timeline.label })
