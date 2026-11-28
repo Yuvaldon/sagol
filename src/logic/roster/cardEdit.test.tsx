@@ -20,6 +20,8 @@ describe('the card edit in place (OI-401, D-489)', () => {
     const values = { ...cardEditValues(SOLDIER, ROW), first_name: '' }
     expect(cardEditIssues(SOLDIER, ALL, values).map((issue) => issue.path.join('.'))).toContain('first_name')
     expect(cardEditIssues(SOLDIER, { profile: false, private: true, tags: false }, values)).toEqual([])
+    // The private fields are not the profile's: a valid card has no answer at all.
+    expect(cardEditIssues(SOLDIER, ALL, cardEditValues(SOLDIER, ROW))).toEqual([])
   })
 
   it('saves the profile, the tags and the private details in order, and returns what puts them back', async () => {

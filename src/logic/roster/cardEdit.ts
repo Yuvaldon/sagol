@@ -49,10 +49,16 @@ export function cardEditValues(soldier: Soldier, row: SoldierPrivate | null): Ca
   }
 }
 
+/** The profile's own fields: the private ones are another command's, and the profile's schema refuses them. */
+function profileOf(values: CardEditValues, soldier: Soldier) {
+  const { first_name, last_name, nickname, command_rank_id } = values
+  return { first_name, last_name, nickname, command_rank_id, status: soldier.status }
+}
+
 /** The answers of the fields the actor may change, before anything is sent. */
 export function cardEditIssues(soldier: Soldier, editable: CardEditable, values: CardEditValues): Issue[] {
   return [
-    ...(editable.profile ? soldierFormIssues(soldier.id, { ...values, status: soldier.status }) : []),
+    ...(editable.profile ? soldierFormIssues(soldier.id, profileOf(values, soldier)) : []),
     ...(editable.private ? privateFormIssues(soldier.id, values) : []),
   ]
 }
@@ -154,7 +160,7 @@ export function useCardSave() {
       const before = cardEditValues(request.soldier, request.privateRow)
       let changed = false
       if (editable.profile) {
-        const input = toUpdateSoldierInput(soldier, soldier.version, { ...values, status: soldier.status, ...request.properties })
+        const input = toUpdateSoldierInput(soldier, soldier.version, { ...profileOf(values, soldier), ...request.properties })
         if (input !== null) {
           const result = await soldiers.update(input)
           if (!result.ok) return failed(result.error)

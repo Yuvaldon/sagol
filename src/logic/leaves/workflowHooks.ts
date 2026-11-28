@@ -30,7 +30,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOn } from '../permissions/checks'
-import { useCan } from '../permissions/hooks'
+import { useCan, useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
@@ -323,7 +323,13 @@ const NO_LEAVES: readonly never[] = []
  * What "my requests" offers the actor on their own soldier (D-167): NULL when the actor is not linked. `approve` is
  * whether they may approve their own requests: who the "approve now" switch is for (D-121, D-299).
  */
-export function useMyLeavesAccess(): { readonly view: boolean; readonly create: boolean; readonly approve: boolean } | null {
+export function useMyLeavesAccess(): {
+  readonly view: boolean
+  readonly create: boolean
+  readonly approve: boolean
+  /** Whether the answers are in: until then each reads `false`, and nothing should be closed for it (D-488). */
+  readonly known: boolean
+} | null {
   const actor = useActor()
   const checks = useMemo(
     () =>
@@ -336,10 +342,10 @@ export function useMyLeavesAccess(): { readonly view: boolean; readonly create: 
           ],
     [actor],
   )
-  const can = useCan(checks)
+  const { can, known } = useCanAnswers(checks)
   const [view, create, approve] = checks
   if (view === undefined || create === undefined || approve === undefined) return null
-  return { view: can(view), create: can(create), approve: can(approve) }
+  return { view: can(view), create: can(create), approve: can(approve), known: checks.every(known) }
 }
 
 /** Every leave of the actor's own soldier; one list behind "my requests", "my next days" and the updates. */
