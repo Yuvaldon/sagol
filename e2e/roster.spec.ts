@@ -374,12 +374,15 @@ test('a long timeline gives its month to a capsule once scrolled, and the capsul
   await seedSoldiers(page, 40)
   await page.goto('/?tab=board&view=timeline')
   const region = page.getByRole('region', { name: he.timeline.label })
-  await expect(region.getByRole('listitem').first()).toBeVisible()
-  await region.evaluate((scroller) => {
-    scroller.scrollTo({ top: scroller.scrollHeight })
-  })
+  await expect(region.getByText('חייל039 בדיקה')).toBeAttached()
   const capsule = page.getByRole('button', { name: new RegExp(`^${he.board.toTop} · `) })
-  await expect(capsule).toBeVisible()
+  // The rows settle as the board's reads arrive; the scroll is made again until the capsule answers it.
+  await expect(async () => {
+    await region.evaluate((scroller) => {
+      scroller.scrollTo({ top: scroller.scrollHeight })
+    })
+    await expect(capsule).toBeVisible({ timeout: 1_000 })
+  }).toPass({ timeout: 10_000 })
   await expectNoAxeViolations(page)
   await capsule.click()
   await expect(capsule).toHaveCount(0)
