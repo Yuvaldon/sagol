@@ -346,6 +346,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 50 | The part of "כל הבקשות" is the page's own state, opening on "פתוחות"; saved views stay in the board's options, not under "עבודה" | A history tab is not a view to share; a saved view is made and applied on the board | D-488 |
 | 51 | The edit in place covers name, nickname, command rank, custom fields, private details and tags, each by its permission; status and a tag's rotation lifetime stay in the full card | The package's in-place fields; the rare choices keep their forms | D-489 |
 | 52 | The rotation page's legend names what the month draws (away, waiting), not the package's four | The board's month draws no leave round and no base fill (`03` §1.10) | D-488 |
+| 53 | A save refused halfway keeps what it saved, with its "ביטול", and the edit goes on; "ביטול" of tags puts the sets back exactly; a failed read shows in its card | Found in review | D-490 |
 
 ## Color (Light)
 

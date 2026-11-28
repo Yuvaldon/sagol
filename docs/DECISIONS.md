@@ -414,8 +414,9 @@ am = amends, ref = refines, ext = extends.
 | D-485 | "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive | domain, logic, i18n, ui | am D-487 |
 | D-486 | Leave-round planning has its own entry: a row of "ניהול" and a card of "היום" | config, logic, i18n, ui | |
 | D-487 | "ניהול" after review: settled access, partial results, no unit, private details, targets and layers | logic, i18n, ui | |
-| D-488 | "אני" builds its designed screen: the profile, "הסבב שלי", "כל הבקשות", "העדפות", and the bell's drawer | domain, config, logic, i18n, ui | |
-| D-489 | The person card's edit in place and the tag picker, one component with the profile of "אני" | logic, i18n, ui | |
+| D-488 | "אני" builds its designed screen: the profile, "הסבב שלי", "כל הבקשות", "העדפות", and the bell's drawer | domain, config, logic, i18n, ui | am D-490 |
+| D-489 | The person card's edit in place and the tag picker, one component with the profile of "אני" | logic, i18n, ui | am D-490 |
+| D-490 | "אני" after review: a save that stops halfway, a tag made in the edit, the bell's drawer, failed reads | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -6323,3 +6324,26 @@ OI-391 · decided under D-170 (R5·5)
   chosen (the person card) keep a segment each, in their weeks.
 **Why:** the package's "the profile is my person card" and its in-place edit, built once for both places; OI-400 and
 OI-401 waited for these components.
+
+## D-490 — "אני" after review: a save that stops halfway, a tag made in the edit, the bell's drawer, failed reads
+2026-11-28 · accepted · amends D-488, D-489 · decided under D-170 (the review of R5·5)
+- **A save that stops halfway** (amends D-489). The card's save still runs the profile, the tags, then the private details,
+  and the first refusal still stops the rest; but what was saved before it stands as a result: the save answers the
+  versions it left and the "ביטול" of what it saved, the edit stays open on those versions with the refusal said in it,
+  and ✓ again sends only what is still to send, never a stale version.
+- **"ביטול" of the tags** puts back the exact sets the soldier held when the edit opened (`restore`), not a choice per
+  category: a tag made in the edit ("הוסף: X") is taken off again, and a single-choice category never ends with two.
+- **A tag made in the edit** joins the card the edit opened on (`cardTagsWith`): into its category's group, or a new group
+  when the category had no live tag, in the category's default lifetime. It is shown and saved like any other.
+- **The tray's count** names only the soldiers whose sets changed: who already held the choice is sent nothing and is not
+  counted as tagged.
+- **The bell's drawer** (amends D-488) is for who has the bell: an address that names `panel=notifications` for anyone else
+  is put right once the answer is in.
+- **A failed read on "אני"** says so in its card ("הסבב שלי", "הבקשות שלי"), and the card's door stays; while it reads, the
+  card shows that it loads. "הסבב שלי"'s month reads the organization's today, so its own failure shows too.
+- **Each chip's ✕ names its tag** ("הסרת התגית נהג"); "הוסף: X" matches an existing name whatever its case, as the search
+  does.
+- **Not changed:** the pages of "אני" are not put right for an unlinked session: the workspace is never shown to one
+  (the router sends it to onboarding), so that case cannot arise there.
+**Why:** the review of R5·5 found a save that could not go on after a partial refusal, an undo that kept a tag made in the
+edit, a made tag that vanished, a drawer open to anyone by address, failed reads that hid their cards, and unnamed ✕s.
