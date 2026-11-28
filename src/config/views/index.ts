@@ -33,8 +33,13 @@ export const BOARD = {
   holdTolerancePx: 8,
   /** How far a finger travels before a move is a swipe: between months, between stops, or to reveal a row's actions. */
   swipePx: 40,
-  /** The phone's timeline: the name column, and the narrowest day before the days scroll sideways. */
-  timeline: { nameColumnPx: 124, minDayPx: 24 },
+  /** How far two fingers move apart or together, as a share of where they started, before a pinch changes the range. */
+  pinchRatio: 1.35,
+  /**
+   * The timeline (D-480, D-491): the name column, the narrowest day before the days scroll sideways, and the ranges a
+   * pinch steps through, narrowest first (OI-399). A wide screen's name column is wider, for a name and its rank.
+   */
+  timeline: { nameColumnPx: 124, wideNameColumnPx: 176, minDayPx: 24, pinchRanges: ['week', 'month', 'rotation'] },
 } as const
 
 /**

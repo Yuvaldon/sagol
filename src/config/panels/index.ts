@@ -70,7 +70,15 @@ export const PanelId = z.enum([
 export type PanelId = z.infer<typeof PanelId>
 
 /** A long list renders only what is in sight (TanStack Virtual). The height is a first guess, then measured. */
-export const VIRTUAL_LIST = { estimatedRowPx: 56, overscanRows: 8 } as const
+export const VIRTUAL_LIST = {
+  estimatedRowPx: 56,
+  overscanRows: 8,
+  /** "חיילים" (OI-403): a group's header, a person row on a phone and a row of the wide screen's table, as first guesses
+   *  before each is measured. */
+  headingPx: 52,
+  personRowPx: 52,
+  tableRowPx: 44,
+} as const
 
 /**
  * "ניהול יחידה", the daily work (D-285): the groups of what a commander does with people and presence, each module by
@@ -122,6 +130,9 @@ export const QUICK_ENTRY = 'quick'
 
 /** The `entity` value of a tool's archive, a drawer of its own (D-461, D-482). */
 export const ARCHIVE_ENTITY = 'archive'
+
+/** The `entity` value of the `account_links` panel that lists every linked account the actor reads (OI-404, D-491). */
+export const LINKED_ENTITY = 'linked'
 
 /** The `entity` value of the `leaves` panel that plans a leave round (OI-389, D-482). */
 export const ROUND_ENTITY = 'round'
