@@ -2,7 +2,8 @@ import type { AppError, Tag, TagCategory, TagId } from '@contracts'
 import { t } from '@i18n'
 import { liveCategories, useTagCommands, useTagPermissions, type SoldierTagGroup } from '@logic'
 import { Check, Minus, Plus } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef, useState, type RefObject } from 'react'
+import { useFocusRecovery } from '../../patterns/focusRecovery'
 import { Button as AriaButton, Dialog, DialogTrigger, Heading } from 'react-aria-components'
 import { FailureNotice } from '../../patterns/Notices'
 import { Popover } from '../../primitives/overlays'
@@ -40,7 +41,6 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
   const [query, setQuery] = useState('')
   const [asking, setAsking] = useState(false)
   const [failure, setFailure] = useState<AppError | null>(null)
-  const box = useRef<HTMLDivElement>(null)
   const name = query.trim()
   const live = liveCategories(categories)
   // As the search does, a name is matched whatever its case: "הוסף: X" never makes a second tag of the same name (D-490).
@@ -55,14 +55,12 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
     setAsking(false)
     setQuery('')
     onCreated(result.value)
-    // "הוסף: X" leaves once the tag exists: the keyboard returns to the search, so it stays in the picker.
-    box.current?.querySelector('input')?.focus()
   }
   const shown = groups
     .map((group) => ({ group, choices: group.choices.filter((choice) => !choice.archived || stateOf(choice.tag.id) !== 'off').filter((choice) => matches(choice.tag.name, query)) }))
     .filter((entry) => entry.choices.length > 0)
   return (
-    <div ref={box} className="flex flex-col gap-sm">
+    <div className="flex flex-col gap-sm">
       <TextField labelKey="profile.tagSearch" name="tag_search" value={query} onChange={setQuery} error={null} autoFocus />
       <div className="flex max-h-list flex-col gap-sm overflow-y-auto">
         {shown.map(({ group, choices }) => (
@@ -127,10 +125,21 @@ export function TagPickerList({ groups, categories, tags, stateOf, onToggle, onC
   )
 }
 
-/** The "+" chip and the list it opens. */
+/** Holds the keyboard in the open picker (`useFocusRecovery`): it lives only while the picker is open. */
+function KeepKeyboard({ dialog, onClose }: { readonly dialog: RefObject<HTMLElement | null>; readonly onClose: () => void }) {
+  useFocusRecovery(dialog, onClose)
+  return null
+}
+
+/**
+ * The "+" chip and the list it opens. "הוסף: X" leaves once its tag exists and takes the keyboard with it, so the
+ * picker keeps it: the next key returns it to the picker, and Escape still closes it (D-496).
+ */
 export function TagPicker(props: TagPickerProps) {
+  const [open, setOpen] = useState(false)
+  const dialog = useRef<HTMLElement>(null)
   return (
-    <DialogTrigger>
+    <DialogTrigger isOpen={open} onOpenChange={setOpen}>
       <AriaButton
         aria-label={t('profile.tagAdd')}
         className={`inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-full border border-dashed border-line-dashed text-text-muted ${FOCUS}`}
@@ -138,7 +147,8 @@ export function TagPicker(props: TagPickerProps) {
         <Plus aria-hidden size={18} />
       </AriaButton>
       <Popover placement="bottom start" className="glass-menu w-menu max-w-full rounded-panel p-sm">
-        <Dialog aria-label={t('profile.tagAdd')} className="outline-none">
+        <Dialog ref={dialog} aria-label={t('profile.tagAdd')} className="outline-none">
+          <KeepKeyboard dialog={dialog} onClose={() => { setOpen(false) }} />
           <Heading slot="title" className="sr-only">
             {t('profile.tagAdd')}
           </Heading>

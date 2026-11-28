@@ -1,4 +1,4 @@
-import { ARCHIVE_ENTITY, PANEL_IDS } from '@config'
+import { ARCHIVE_ENTITY, NEW_ENTITY, PANEL_IDS } from '@config'
 import type { Soldier, SoldierId } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -210,7 +210,7 @@ export function SoldiersPage({ name }: { readonly name: string }) {
               const [only] = ids
               const days = { start_date: today, end_date: today }
               panel.open(PANEL_IDS.leaves, {
-                entity: 'new',
+                entity: NEW_ENTITY,
                 draft: ids.length === 1 && only !== undefined ? { ...days, soldier_id: only } : { ...days, soldier_ids: ids },
               })
               stopChoosing()

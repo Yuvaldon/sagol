@@ -61,8 +61,9 @@ export function TimelineEngine() {
   const { head, board } = useRangeHead('timeline', !desktop)
   const today = useToday()
   const onPinch = usePinchRange(board.window)
-  // A list that starts at the top: its title gives way to the centered capsule once it is scrolled (§1.5, OI-399).
-  const listHead = useMemo(() => ({ ...head, collapses: true }), [head])
+  // A phone's list that starts at the top: its title gives way to the centered capsule once it is scrolled (§1.5,
+  // OI-399). A wide screen keeps its head: its arrows and "היום" are the mouse's only way to step the range (D-496).
+  const listHead = useMemo(() => ({ ...head, collapses: !desktop }), [head, desktop])
   return (
     <BoardScreen head={listHead}>
       <BoardEngine window={board.window} today={today}>

@@ -12,6 +12,7 @@ import {
   useLinkReviewCommands,
   useMemberships,
   usePanel,
+  useLinkReviewAccess,
   usePendingLinkRequests,
   usePlacementReading,
   useSoldierPrivate,
@@ -23,7 +24,7 @@ import {
   type CandidateRow,
   type LinkReview,
 } from '@logic'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button as AriaButton, Radio, RadioGroup } from 'react-aria-components'
 import { StopDrawer } from '../../kit/StopDrawer'
 import { SmallDialog } from '../../patterns/Dialogs'
@@ -398,8 +399,17 @@ function Request({ request, onClose }: { readonly request: AccountLinkRequest; r
 export function JoinDrawer() {
   const panel = usePanel()
   const requests = usePendingLinkRequests()
+  const links = useLinkReviewAccess()
+  // The linked accounts are the join requests' tool: an address that names them opens them only for who reviews
+  // requests, and is put right for anyone else once the answer is in (D-487, D-496).
+  const linked = panel.panel === PANEL_IDS.accountLinks && panel.entity === LINKED_ENTITY
+  const stray = linked && links.known && !links.allowed
+  const { close } = panel
+  useEffect(() => {
+    if (stray) close()
+  }, [stray, close])
   if (panel.panel !== PANEL_IDS.accountLinks || panel.entity === null) return null
-  if (panel.entity === LINKED_ENTITY) return <LinkedAccountsDrawer onClose={panel.close} />
+  if (linked) return links.allowed ? <LinkedAccountsDrawer onClose={panel.close} /> : null
   const request = requests.status === 'ready' ? requests.value.find((candidate) => candidate.id === panel.entity) : undefined
   if (request !== undefined) return <Request key={request.id} request={request} onClose={panel.close} />
   return (

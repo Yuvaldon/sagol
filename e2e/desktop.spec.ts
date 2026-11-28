@@ -51,6 +51,8 @@ test('the side rail, "ניהול" beside its page, the soldiers\' table and a ca
     await soldierRow(page, OWNER.name).getByRole('button').first().click()
     await expect(page.getByRole('dialog', { name: OWNER.name })).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(1)
+    // The panel is not modal: Escape closes it with the keyboard on the page beside it too (D-496).
+    await page.getByRole('heading', { level: 1, name: he.manage.pages.soldiers }).focus()
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })

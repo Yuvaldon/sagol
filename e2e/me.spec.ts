@@ -100,8 +100,8 @@ test('"אני": the profile edited in place, "הסבב שלי", "כל הבקשו
     const picker = page.getByRole('dialog', { name: he.profile.tagAdd })
     await picker.getByLabel(he.profile.tagSearch).fill(MEDIC)
     await picker.getByRole('button', { name: `${he.profile.tagCreate} ${MEDIC}` }).click()
-    // A press outside closes the picker (the handoff's "tapping empty space closes").
-    await page.mouse.click(4, 400)
+    // "הוסף: X" leaves with the keyboard; the picker keeps it, so Escape still closes it (D-496).
+    await page.keyboard.press('Escape')
     await expect(picker).toBeHidden()
     // Each chip's ✕ names its tag.
     await expect(main(page).getByRole('button', { name: `${he.profile.tagRemove} ${MEDIC}` })).toBeVisible()

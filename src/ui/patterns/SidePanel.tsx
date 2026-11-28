@@ -1,8 +1,7 @@
 import { useOverlayLayer } from '@logic'
-import { useEffect, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Dialog } from 'react-aria-components'
-import { useFocusRecovery } from './focusRecovery'
 
 // A drawer on a wide screen (D-460, D-491): a side panel on the inline end, the screen's full height, beside what is
 // open under it rather than over it. Nothing is dimmed and a press outside does not close it: the board, the list or
@@ -13,6 +12,27 @@ import { useFocusRecovery } from './focusRecovery'
 /** The attribute on the root that tells the layout a panel stands on the inline end (`panel-open:` in the theme). */
 const OPEN_ATTRIBUTE = 'data-side-panel'
 let openPanels = 0
+/** The panels open now, the newest last: Escape belongs to the newest. */
+const panels: object[] = []
+
+/** Escape on the document while the panel is the newest open, unless something else took the key first. */
+function useEscape(onClose: { readonly current: () => void }): void {
+  useEffect(() => {
+    const self = {}
+    panels.push(self)
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || panels.at(-1) !== self) return
+      event.preventDefault()
+      onClose.current()
+    }
+    // Bubbling, on the document: whatever handles the key on its way down (a menu, a dialog, a drag) stops it first.
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      panels.splice(panels.indexOf(self), 1)
+    }
+  }, [onClose])
+}
 
 /** Marks the root while at least one panel is open, so the content beside it narrows. */
 function usePanelRoom(): void {
@@ -59,16 +79,9 @@ export function SidePanel({ onClose, inUrl, wide = false, className, children }:
   useOverlayLayer(!inUrl, onClose)
   usePanelRoom()
   useFocusReturn(dialog)
-  useFocusRecovery(dialog, onClose)
-  const onKeyDown = (event: KeyboardEvent) => {
-    // A menu or a picker inside closes itself first and keeps the key.
-    if (event.key !== 'Escape' || event.defaultPrevented) return
-    event.preventDefault()
-    latest.current()
-  }
+  useEscape(latest)
   return createPortal(
     <div
-      onKeyDown={onKeyDown}
       className={`enter-surface side-panel fixed flex py-sm ${wide ? 'start-sm' : 'w-panel'}`}
     >
       <Dialog ref={dialog} className={`flex min-h-none w-full flex-col overflow-hidden rounded-panel outline-none ${className}`}>

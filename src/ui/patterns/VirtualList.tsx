@@ -19,11 +19,21 @@ export function VirtualList<T>({ labelKey, items, keyOf, renderRow }: VirtualLis
   const list = useRef<HTMLUListElement>(null)
   const [offset, setOffset] = useState(0)
 
-  // Where the list starts inside what scrolls, such as below a search box.
+  // Where the list starts inside what scrolls, such as below a search box: measured again whenever what scrolls changes
+  // its size, so what stands above the list can grow or shrink.
   useLayoutEffect(() => {
-    if (scroller === null || list.current === null) return
-    const top = list.current.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
-    setOffset(top)
+    const element = list.current
+    const content = scroller?.firstElementChild ?? null
+    if (scroller === null || element === null) return undefined
+    const measure = () => {
+      setOffset(element.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(content ?? scroller)
+    return () => {
+      observer.disconnect()
+    }
   }, [scroller])
 
   // TanStack Virtual hands out new functions each render, and nothing here memoizes them.

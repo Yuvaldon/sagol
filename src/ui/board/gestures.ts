@@ -60,16 +60,25 @@ export interface Swipe {
   readonly consumed: () => boolean
 }
 
-/** Calls `onSwipe` when a pointer lifts `BOARD.swipePx` or more from where it went down, mostly along one axis. */
+/**
+ * Calls `onSwipe` when a pointer lifts `BOARD.swipePx` or more from where it went down, mostly along one axis. Only the
+ * first finger swipes; a second one ends the swipe, since two fingers pinch.
+ */
 export function useSwipe(onSwipe: (direction: SwipeDirection) => void): Swipe {
   const origin = useRef<{ x: number; y: number } | null>(null)
   const swiped = useRef(false)
   return {
     onPointerDown: (event) => {
+      // A second finger makes the gesture a pinch, never a swipe: the one under way is let go.
+      if (!event.isPrimary) {
+        origin.current = null
+        return
+      }
       swiped.current = false
       origin.current = { x: event.clientX, y: event.clientY }
     },
     onPointerUp: (event) => {
+      if (!event.isPrimary) return
       const start = origin.current
       origin.current = null
       if (start === null) return

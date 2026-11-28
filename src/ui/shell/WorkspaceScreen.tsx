@@ -1,4 +1,4 @@
-import { DEFAULT_TAB, FULL_SCREEN_PAGES, TAB_IDS, type TabId } from '@config'
+import { DEFAULT_TAB, FULL_SCREEN_PAGES, PAGE_TABS, TAB_IDS, type TabId } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useCurrentOrganization, useOverlayHistory, useShellAccess, useShellPlace } from '@logic'
@@ -77,7 +77,9 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
   const name = organization.value?.name ?? t('app.name')
   // Focus mode hides the bar, and a temporary full screen has none (the handoff's placement map).
-  const barShown = !(onBoard && focusMode.on) && !(place.page !== null && FULL_SCREEN_PAGES.includes(place.page))
+  // Only a page the destination in sight holds counts: a page the actor may not reach falls back with its destination.
+  const fullScreen = place.page !== null && PAGE_TABS[place.page] === tab && FULL_SCREEN_PAGES.includes(place.page)
+  const barShown = !(onBoard && focusMode.on) && !fullScreen
 
   return (
     <SheetIntentContext value={sheetIntent}>

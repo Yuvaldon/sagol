@@ -2,9 +2,9 @@ import { PANEL_IDS, VIRTUAL_LIST } from '@config'
 import type { SoldierId } from '@contracts'
 import { t } from '@i18n'
 import { fullName, usePanel, type MyDay, type PeopleItem, type PeopleRow } from '@logic'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
 import { Check } from 'lucide-react'
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type ReactNode } from 'react'
 import { Button as AriaButton, Checkbox } from 'react-aria-components'
 import { groupLabel, headingLabel } from '../../board/labels'
 import { useLongPress } from '../../board/gestures'
@@ -140,6 +140,18 @@ function useWindowed(entries: readonly Entry[], estimate: (entry: Entry) => numb
   const scroller = usePageScroll()
   const list = useRef<HTMLDivElement>(null)
   const [offset, setOffset] = useState(0)
+  const [focused, setFocused] = useState<number | null>(null)
+  /** Notes which row holds the keyboard, from the entry index its element carries. */
+  const keepFocus = {
+    onFocus: (event: FocusEvent) => {
+      let element = event.target instanceof HTMLElement ? event.target : null
+      while (element !== null && element.dataset.index === undefined) element = element.parentElement
+      setFocused(element?.dataset.index === undefined ? null : Number(element.dataset.index))
+    },
+    onBlur: (event: FocusEvent) => {
+      if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setFocused(null)
+    },
+  }
   useLayoutEffect(() => {
     const element = list.current
     const content = scroller?.firstElementChild ?? null
@@ -167,8 +179,13 @@ function useWindowed(entries: readonly Entry[], estimate: (entry: Entry) => numb
     overscan: VIRTUAL_LIST.overscanRows,
     scrollMargin: offset,
     getItemKey: (index) => entries[index]?.key ?? index,
+    // The row that holds the keyboard stays in the page while it scrolls out of sight, so the keyboard is never lost.
+    rangeExtractor: (range) => {
+      const indexes = defaultRangeExtractor(range)
+      return focused === null || indexes.includes(focused) ? indexes : [...indexes, focused].toSorted((a, b) => a - b)
+    },
   })
-  return { list, virtualizer, offset }
+  return { list, virtualizer, offset, keepFocus }
 }
 
 /** Where a row of a card sits on the card: its corners, and the line under every row but the last. */
@@ -178,9 +195,9 @@ function cardEdges(entry: Extract<Entry, { kind: 'row' }>): string {
 
 /** A phone's list: thin rows on a white card per group. */
 function PhoneRows({ entries, choosing }: { readonly entries: readonly Entry[]; readonly choosing: Choosing }) {
-  const { list, virtualizer, offset } = useWindowed(entries, (entry) => (entry.kind === 'heading' ? VIRTUAL_LIST.headingPx : VIRTUAL_LIST.personRowPx))
+  const { list, virtualizer, offset, keepFocus } = useWindowed(entries, (entry) => (entry.kind === 'heading' ? VIRTUAL_LIST.headingPx : VIRTUAL_LIST.personRowPx))
   return (
-    <div ref={list}>
+    <div ref={list} {...keepFocus}>
       <ul className="relative" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
           const entry = entries[item.index]
@@ -322,11 +339,11 @@ const FOCUS = 'outline-focus outline-offset-2 data-focus-visible:outline-2'
 
 /** A wide screen's table: a header of columns, and each group's name as a row of its own across them. */
 function TableRows({ entries, choosing, days }: { readonly entries: readonly Entry[]; readonly choosing: Choosing; readonly days: boolean }) {
-  const { list, virtualizer, offset } = useWindowed(entries, (entry) => (entry.kind === 'heading' ? VIRTUAL_LIST.headingPx : VIRTUAL_LIST.tableRowPx))
+  const { list, virtualizer, offset, keepFocus } = useWindowed(entries, (entry) => (entry.kind === 'heading' ? VIRTUAL_LIST.headingPx : VIRTUAL_LIST.tableRowPx))
   return (
     <div role="table" aria-label={t('manage.people.tableLabel')} aria-rowcount={entries.length + 1}>
       <ColumnNames days={days} />
-      <div ref={list} role="rowgroup" className="relative" style={{ height: virtualizer.getTotalSize() }}>
+      <div ref={list} role="rowgroup" className="relative" style={{ height: virtualizer.getTotalSize() }} {...keepFocus}>
         {virtualizer.getVirtualItems().map((item) => {
           const entry = entries[item.index]
           if (entry === undefined) return null

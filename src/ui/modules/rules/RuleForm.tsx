@@ -76,6 +76,17 @@ function FormPart({ titleKey, children }: { readonly titleKey: I18nKey; readonly
   )
 }
 
+/** The fields that wait under "עוד" (D-495). */
+const MORE_FIELDS: ReadonlySet<string> = new Set([
+  'enforcement',
+  'group_by',
+  'group_tag_category_id',
+  'count_pending_as_unavailable',
+  'priority',
+  'is_enabled',
+  'description',
+])
+
 const ENFORCEMENTS: SelectOption<RuleFormValues['enforcement']>[] = [
   { key: RuleEnforcement.enum.soft, label: { key: 'rules.enforcementSoft' }, value: RuleEnforcement.enum.soft },
   { key: RuleEnforcement.enum.hard, label: { key: 'rules.enforcementHard' }, value: RuleEnforcement.enum.hard },
@@ -200,6 +211,10 @@ export function RuleForm({ rule, units, levels, categories, tags, ranks, deploym
   const form = useForm({
     defaultValues: opened === null ? NEW_RULE_VALUES : ruleFormValues(opened),
     validators: { onSubmit: ({ value }) => validatorResult(ruleFormIssues(value)) },
+    // A field under "עוד" that the form itself refuses opens it, so the refusal is in sight (D-495).
+    onSubmitInvalid: ({ value }) => {
+      if (ruleFormIssues(value).some((issue) => MORE_FIELDS.has(String(issue.path[0])))) setMore(true)
+    },
     onSubmit: async ({ value }) => {
       setState(CLEAN_FORM)
       const result =
