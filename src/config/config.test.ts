@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { AuthMode, ColorKey, DASHBOARD_TEMPLATE_IDS, DataAdapterMode, IconKey, StrictDashboardModules } from '@contracts'
 import {
   ADAPTER_OF_AUTH_MODE,
-  BAR_COLOR_MODES,
+  BOARD,
   BREAKPOINTS_PX,
   DASHBOARD,
   DASHBOARD_TEMPLATES,
-  BarColorMode,
   DATE_FORMATS,
   DATE_LOCALE,
-  DEFAULT_BAR_COLOR_MODE,
   DEFAULT_VIEW_BY_DEVICE,
   FIRST_ROTATION_LEAVE_COLOR,
   LEAVE_TYPE_PALETTE_KEYS,
@@ -34,11 +32,7 @@ import {
   SEARCH_PARAMS,
   STORAGE_KEYS,
   TIMELINE_DRAG,
-  TIMELINE_LANES,
-  TIMELINE_LANES_TOUCH,
   UNIT_TEMPLATES,
-  TIMELINE_DENSITY,
-  TIMELINE_LAYOUT,
   VIEW_IDS,
   ViewId,
   isIconKey,
@@ -209,26 +203,9 @@ describe('icons (D-113)', () => {
 })
 
 describe('views, url, storage, breakpoints, dates', () => {
-  it('has a default bar color mode that is a mode (D-112)', () => {
-    expect(BAR_COLOR_MODES).toContain(DEFAULT_BAR_COLOR_MODE)
-    expect(BarColorMode.safeParse('rainbow').success).toBe(false)
-  })
-
-  it('fits a lane step around a bar (D-111)', () => {
-    expect(TIMELINE_LANES.laneStepPx).toBeGreaterThan(TIMELINE_LANES.barPx)
-    expect(TIMELINE_LAYOUT.rowPx).toBeGreaterThan(TIMELINE_LANES.barPx)
-  })
-
-  it('makes every bar a 44 px touch target on a phone, and a row of one lane its own height (D-144)', () => {
-    expect(TIMELINE_LANES_TOUCH.laneStepPx).toBe(TIMELINE_LAYOUT.rowTouchPx)
-    expect(TIMELINE_LANES_TOUCH.laneStepPx).toBeGreaterThan(TIMELINE_LANES_TOUCH.barPx)
-    // The hit area grows by the same amount above and below a bar, in whole pixels.
-    expect((TIMELINE_LANES_TOUCH.laneStepPx - TIMELINE_LANES_TOUCH.barPx) % 2).toBe(0)
-  })
-
   it('keeps the handles of a bar apart from its body (D-143)', () => {
-    // A one-day bar of a week keeps its handles apart; a narrower day shrinks them (drag.ts).
-    expect(TIMELINE_DRAG.handlePx * 3).toBeLessThan(TIMELINE_DENSITY.bands[0].minDayPx)
+    // A day at its narrowest keeps its handles apart from its body; a narrower bar shrinks them (drag.ts).
+    expect(TIMELINE_DRAG.handlePx * 3).toBeLessThanOrEqual(BOARD.timeline.minDayPx)
     expect(TIMELINE_DRAG.holdTolerancePx).toBeGreaterThan(0)
   })
 

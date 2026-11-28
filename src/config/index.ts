@@ -35,15 +35,12 @@ export { REMOTE } from './remote'
 export { ROUTES, type RoutePath } from './routes'
 export { STARTUP_ERROR_CODES } from './startup'
 export {
-  BAR_COLOR_MODES,
-  BarColorMode,
   BOARD,
   BOARD_GROUP_KEYS,
   BOARD_SORT_KEYS,
   BoardGroupKey,
   BoardSortKey,
   DATE_WINDOW,
-  DEFAULT_BAR_COLOR_MODE,
   DEFAULT_BOARD_SORT_KEY,
   DEFAULT_RANGE_KIND,
   DEFAULT_SORT_ORDER,
@@ -59,11 +56,7 @@ export {
   SortOrder,
   TABLE_SORT_KEYS,
   TableSortKey,
-  TIMELINE_DENSITY,
   TIMELINE_DRAG,
-  TIMELINE_LANES,
-  TIMELINE_LANES_TOUCH,
-  TIMELINE_LAYOUT,
   VIEW_IDS,
   ViewId,
 } from './views'
