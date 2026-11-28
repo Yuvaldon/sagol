@@ -17,14 +17,7 @@ const PARAM_OF = {
   group: SEARCH_PARAMS.group,
   leaves: SEARCH_PARAMS.leaves,
   range: SEARCH_PARAMS.range,
-} as const satisfies Partial<Record<SavedViewParam, SearchParamName>>
-
-/** The search param a kept param is; a param the board no longer reads (the colors, D-491) has none. */
-type KeptName = (typeof PARAM_OF)[keyof typeof PARAM_OF]
-function paramOf(param: SavedViewParam): KeptName | undefined {
-  const names: Partial<Record<SavedViewParam, KeptName>> = PARAM_OF
-  return names[param]
-}
+} as const satisfies Record<SavedViewParam, SearchParamName>
 
 /** The table's own sort is kept only with the table (D-384). */
 const TABLE_ONLY: readonly SavedViewParam[] = [SavedViewParam.enum.sort, SavedViewParam.enum.order]
@@ -44,9 +37,7 @@ function kept(param: SavedViewParam, view: ViewId | undefined): boolean {
 export function captureView(search: WorkspaceSearch, view: ViewId): SavedViewQuery {
   const query: SavedViewQuery = {}
   for (const param of SavedViewParam.options) {
-    const name = paramOf(param)
-    if (name === undefined) continue
-    const value = param === SavedViewParam.enum.view ? view : search[name]
+    const value = param === SavedViewParam.enum.view ? view : search[PARAM_OF[param]]
     if (value !== undefined && kept(param, view)) query[param] = JSON.stringify(value)
   }
   return query
@@ -77,17 +68,16 @@ export function applyView(query: SavedViewQuery): AppliedView {
   for (const param of SavedViewParam.options) {
     const stored = query[param]
     if (stored === undefined) continue
-    const name = paramOf(param)
     const parsed = parsedValue(stored)
-    if (parsed.ok && name !== undefined) raw[name] = parsed.value
+    if (parsed.ok) raw[PARAM_OF[param]] = parsed.value
     else dropped = true
   }
   const read = WorkspaceSearch.parse(raw)
   const search: Partial<Record<SearchParamName, unknown>> = {}
   const cleaned: SavedViewQuery = {}
   for (const param of SavedViewParam.options) {
-    const name = paramOf(param)
-    if (name === undefined || !(name in raw)) continue
+    const name = PARAM_OF[param]
+    if (!(name in raw)) continue
     const value = read[name]
     if (value === undefined || !kept(param, read.view)) {
       dropped = true
