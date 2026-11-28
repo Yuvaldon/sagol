@@ -15,8 +15,8 @@ export const PANEL_IDS = {
   leaves: 'leaves',
   /** The requests that closed (D-120); what waits is on the page of requests (D-474). */
   leaveClosed: 'leave_closed',
-  /** The actor's own leaves, open and history (D-167). */
-  myLeaves: 'my_leaves',
+  /** The drawer of the corner bell: what others did on the actor's own requests (D-352, D-488). */
+  notifications: 'notifications',
   /** Tags by category, and the categories (D-130). */
   tags: 'tags',
   tagCategories: 'tag_categories',
@@ -52,7 +52,7 @@ export const PanelId = z.enum([
   PANEL_IDS.leaveTypeGroups,
   PANEL_IDS.leaves,
   PANEL_IDS.leaveClosed,
-  PANEL_IDS.myLeaves,
+  PANEL_IDS.notifications,
   PANEL_IDS.tags,
   PANEL_IDS.tagCategories,
   PANEL_IDS.properties,

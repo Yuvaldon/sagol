@@ -51,6 +51,8 @@ export interface MyRotationFigures {
   readonly base: SoFar
   readonly home: SoFar
   readonly openRequests: number
+  /** The soldier's own requests of the rotation that were approved ("בקשות אושרו", D-488). */
+  readonly approvedRequests: number
   /** Approved ÷ decided requests; null when none is decided. */
   readonly approvalRate: number | null
   readonly next: NextLeave
@@ -81,6 +83,7 @@ export function myRotationFigures(input: MyRotationInput): MyRotationFigures {
     base: { sofar: soFar.base, planned: whole?.base ?? null },
     home: { sofar: soFar.home, planned: whole?.home ?? null },
     openRequests: requests.filter((leave) => leave.status === LeaveStatus.enum.pending).length,
+    approvedRequests: approved,
     approvalRate: decided === 0 ? null : approved / decided,
     next: nextLeave(input, serves, coveringOf),
     left: allDays === null ? null : rotationLeft(allDays, begun, rotation.start_date, today, serves),

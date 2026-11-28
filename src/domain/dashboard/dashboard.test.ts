@@ -174,6 +174,7 @@ describe('myRotationFigures (D-350)', () => {
       base: { sofar: 8, planned: 15 },
       home: { sofar: 2, planned: 5 },
       openRequests: 1,
+      approvedRequests: 2,
       approvalRate: 2 / 3,
       next: { kind: 'next', leaveId: leaveId(2), typeId: HOME_TYPE, start: '2026-12-15', end: '2026-12-17', inDays: 5 },
       left: { kind: 'left', days: 10, lastDay: '2026-12-20', elapsed: 10, total: 20 },

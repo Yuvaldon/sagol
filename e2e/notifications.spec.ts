@@ -3,15 +3,15 @@ import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { TYPE, YAEL, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
 import { choose, drawer, typeDate, openNewLeave } from './support/leaves.ts'
 import { stubPush, subscribeCalls } from './support/push.ts'
-import { OWNER, enterAsOwner, expectNoAxeViolations, signIn, openMyLeaves, openTab, openRequests, requestsList, backToBoard } from './support/workspace.ts'
+import { OWNER, enterAsOwner, expectNoAxeViolations, signIn, openMePage, openRequests, requestsList, backToBoard } from './support/workspace.ts'
 
 // The notifications slice's demo (D-352, D-356): the profile's "התראות" group with a stubbed push manager, and the
 // updates on "שלי" after the owner approves Yael's request. On desktop and mobile, RTL, with axe. Sample data, tests
 // only.
 
-/** "אני", where the notifications card is (D-356, D-455). */
+/** "העדפות" of "אני", where the notifications card is (D-356, D-488). */
 async function openMe(page: Page) {
-  await openTab(page, 'me')
+  await openMePage(page, 'preferences')
   await expect(page.getByRole('button', { name: he.account.signOut, exact: true })).toBeVisible()
 }
 
@@ -88,26 +88,23 @@ test('the owner approves Yael\'s request, and "שלי" shows her the update', as
     await signOut(page)
   })
 
-  const updates = page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.myLeaves.updatesTitle}`) })
+  const updates = page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.me.notificationsTitle}`) })
 
-  await test.step('the corner circle of "היום" counts one unread update, and the section shows its line', async () => {
+  await test.step('the bell of "היום" counts one unread update, and its drawer shows the line (D-488)', async () => {
     await signIn(page, YAEL.email)
-    await expect(updates).toHaveAccessibleName(`${he.myLeaves.updatesTitle} 1 ${he.myLeaves.updatesUnread}`)
+    await expect(updates).toHaveAccessibleName(`${he.me.notificationsTitle} 1 ${he.myLeaves.updatesUnread}`)
     await updates.click()
-    const lines = drawer(page).getByRole('list', { name: he.myLeaves.updatesTitle })
+    const lines = drawer(page).getByRole('list', { name: he.me.notificationsTitle })
     await expect(lines.getByRole('listitem')).toHaveCount(1)
     // A fighter who cannot read the approver's record sees a neutral name (D-119).
     await expect(lines).toContainText(he.myLeaves.updateVerbs.approved)
     await expectNoAxeViolations(page)
   })
 
-  await test.step('after a reload the update is read: no count, and the section is closed', async () => {
+  await test.step('after a reload the update is read: no count, and the drawer still lists it', async () => {
     await page.goto('/')
-    await expect(updates).toHaveAccessibleName(he.myLeaves.updatesTitle)
-    await openMyLeaves(page)
-    const trigger = drawer(page).getByRole('button', { name: he.myLeaves.updatesTitle, exact: true })
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    await trigger.click()
-    await expect(drawer(page).getByRole('list', { name: he.myLeaves.updatesTitle }).getByRole('listitem')).toHaveCount(1)
+    await expect(updates).toHaveAccessibleName(he.me.notificationsTitle)
+    await updates.click()
+    await expect(drawer(page).getByRole('list', { name: he.me.notificationsTitle }).getByRole('listitem')).toHaveCount(1)
   })
 })

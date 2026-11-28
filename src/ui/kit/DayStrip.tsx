@@ -6,6 +6,7 @@ import { DAY_STATE_KEYS, type DayState, type StripDay } from './dayState'
 
 // The 14-day strip (D-454): one segment a day, today first as a night-blue circle. A day on base is a full segment, a
 // day at home by the leave round a quiet one, another absence a filled one, a request that waits an amber outline; the words are read aloud, so color never stands alone.
+// Days away by one leave are one segment across them, and a request that waits carries its type's name (OI-395).
 // Where days are chosen (the person card, D-482), each day is a toggle: a tap starts a range and a second tap ends it,
 // as on the month, and a chosen day carries a night-blue ring. Its days then wrap into weeks, each day a 44 px target.
 
@@ -26,10 +27,43 @@ export interface StripSelect {
   readonly onDay: (day: CalendarDate) => void
 }
 
-function DayFace({ day, today }: { readonly day: StripDay; readonly today: CalendarDate }) {
+/** How many days, from each day, the run of one leave that starts there holds; 0 for a day inside a run. Base days stand alone. */
+function runLengths(days: readonly StripDay[]): number[] {
+  const same = (a: StripDay | undefined, b: StripDay) =>
+    a !== undefined && a.state !== 'base' && a.state === b.state && (a.leave_id ?? null) === (b.leave_id ?? null)
+  return days.map((day, index) => {
+    if (same(days[index - 1], day)) return 0
+    let length = 1
+    for (let next = days[index + length]; next !== undefined && same(days[index + length - 1], next); next = days[index + length]) length += 1
+    return length
+  })
+}
+
+/** A run of one leave's days, drawn from its first day across the next ones (each day a column, the gap between them included). */
+function RunSegment({ day, length }: { readonly day: StripDay; readonly length: number }) {
+  return (
+    <span
+      aria-hidden
+      style={{ inlineSize: `calc(${String(length)} * 100% + ${String(length - 1)} * var(--spacing-2xs))` }}
+      className={`absolute start-none top-none flex h-badge items-center justify-center overflow-hidden rounded-small px-xs ${SEGMENTS[day.state]}`}
+    >
+      {day.state === 'pending' && day.label !== undefined && day.label !== null ? (
+        <span className="truncate text-caption font-semibold text-status-pending-text">{day.label}</span>
+      ) : null}
+    </span>
+  )
+}
+
+function DayFace({ day, today, run = null }: { readonly day: StripDay; readonly today: CalendarDate; readonly run?: number | null }) {
   return (
     <>
-      <span aria-hidden className={`h-sm w-full rounded-full ${SEGMENTS[day.state]}`} />
+      {run === null || day.state === 'base' ? (
+        <span aria-hidden className={`h-badge w-full rounded-small ${SEGMENTS[day.state]}`} />
+      ) : (
+        <span aria-hidden className="relative h-badge w-full">
+          {run > 0 ? <RunSegment day={day} length={run} /> : null}
+        </span>
+      )}
       <span
         aria-hidden
         className={`flex size-badge max-w-full items-center justify-center rounded-full text-caption tabular-nums ${
@@ -53,15 +87,17 @@ export function DayStrip({
   readonly labelKey: I18nKey
   readonly select?: StripSelect | null
 }) {
+  const runs = runLengths(days)
   return (
     // Where days are chosen, the strip wraps into weeks of seven, so each day is a 44 px target (WCAG 2.5.5).
     <ol aria-label={t(labelKey)} className={select === null ? 'flex items-start gap-2xs' : 'grid grid-cols-7 gap-2xs'}>
-      {days.map((day) => {
-        const words = [formatDate(day.date, 'dayMonth'), t(DAY_STATE_KEYS[day.state])].join(WORD)
+      {days.map((day, index) => {
+        const named = day.state === 'pending' && day.label !== undefined && day.label !== null ? [t(DAY_STATE_KEYS[day.state]), day.label].join(WORD) : t(DAY_STATE_KEYS[day.state])
+        const words = [formatDate(day.date, 'dayMonth'), named].join(WORD)
         if (select === null) {
           return (
             <li key={day.date} className="flex min-w-none flex-1 flex-col items-center gap-xs">
-              <DayFace day={day} today={today} />
+              <DayFace day={day} today={today} run={runs[index] ?? 0} />
               <span className="sr-only">{words}</span>
             </li>
           )

@@ -183,7 +183,7 @@ am = amends, ref = refines, ext = extends.
 | D-164 | Link-request candidates stay computed | data | |
 | D-165 | The roles and grants modules; "more" on a phone | config, logic, ui | ref D-173 |
 | D-166 | A grant's window is whole days in the organization's zone | logic, ui | ext D-169 |
-| D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | sup D-255 (tab); ref D-265 |
+| D-167 | My requests: the soldier's own leaves, open and history | config, logic, ui | sup D-255 (tab); ref D-265; ref D-488 |
 | D-168 | A rejected link request is told to its identity | contracts, data, logic, ui | |
 | D-169 | The grants list moves to the next state on its own | logic | |
 | D-170 | Full autonomy: Claude decides product choices and runs audits without stopping | docs, tooling | ref D-172 |
@@ -281,7 +281,7 @@ am = amends, ref = refines, ext = extends.
 | D-296 | Routine's quick action is "פתיחת סבב" in the strip; the routine band only states the mode | logic, ui | ref D-339; sup D-469 |
 | D-297 | The setup checklist lives only in "הגדרות היחידה"; the setup drawer holds only the template wizard | ui | |
 | D-298 | Quick entry of soldiers as built: the unit is required, paste goes in its own box | ui | |
-| D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | |
+| D-299 | "בקשות" for who approves another soldier; "אשר עכשיו" for who approves their own requests | logic, ui | ref D-488 |
 | D-300 | The staging deploy is marked: a black band, its own title, a black installed icon | config, i18n, ui, app, tooling | |
 | D-301 | Focus mode | config, i18n, ui, e2e | am D-480 |
 | D-302 | A leave batch, a set of copies and a report's window are bounded by config, checked in the command | config, data, logic | |
@@ -323,7 +323,7 @@ am = amends, ref = refines, ext = extends.
 | D-347 | The built-in group is a marker on `leave_type_groups`; its names are stored user data; its types are fixed absences in calm colors | contracts, domain, data, logic, ui | ref D-430 |
 | D-348 | Live changes: a committed write is broadcast on its organization's private Realtime topic | data, config, backend | ref D-437 |
 | D-349 | The command dashboard: a fixed catalogue of modules, three templates, a stored layout per person | docs | ref D-361; ref D-362; ref D-404 |
-| D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | ref D-362 |
+| D-350 | "הסבב שלי": a fixed personal board on top of "שלי" for every soldier | docs | ref D-362; sup D-488 |
 | D-351 | Phone notifications are Web Push with VAPID; browser installs are rows of `push_subscriptions` | contracts, data, backend, app | ref D-411 |
 | D-352 | In-app updates on "שלי" are derived from the events and the shared comments; only the seen time is stored | contracts, domain, data, logic, ui | |
 | D-353 | The service worker is built with `injectManifest` in `app`, and holds the push handlers | app, tooling | |
@@ -389,31 +389,34 @@ am = amends, ref = refines, ext = extends.
 | D-460 | The desktop is derived from the phone | ui | |
 | D-461 | Archiving: behind "⋯", confirmed by name, undoable from the toast | i18n, ui | ref D-483; ref D-485 |
 | D-462 | A saved view equal to an existing one is refused, naming it | logic, i18n, ui | ref D-480 |
-| D-463 | Small product choices of the new interface | contracts, config, logic, ui | ref D-480 |
+| D-463 | Small product choices of the new interface | contracts, config, logic, ui | ref D-480; ref D-489 |
 | D-464 | R5 is built in place, in batches that each reach staging | docs, tooling | ref D-471 |
 | D-465 | The shell's destination and page live in the URL; an address that names the board opens it | config, logic, ui | ref D-473; ref D-477 |
 | D-466 | "לוח" is for who reads another soldier's leaves, or holds that over a unit | logic | |
 | D-467 | "בקשות לאישור": the card and its page approve in place; the requests drawer stays for the closed ones | i18n, ui | ref D-473; am D-474 |
 | D-468 | "ניהול" is a page of rows, and "הגדרות" a page behind its last row | i18n, ui | ref D-482 |
 | D-469 | Routine's "פתיחת סבב" sits in the routine notice, on "היום" and on the board | logic, ui | |
-| D-470 | "אני" holds what the user menu held, until its own batch | i18n, ui | |
+| D-470 | "אני" holds what the user menu held, until its own batch | i18n, ui | sup D-488 |
 | D-471 | What the shell and "היום" batch left for the next batches | docs, ui | ref D-472; ref D-474; ref D-475; ref D-476; ref D-486 |
 | D-472 | "דוח 1" keeps its reach: a card on "היום" for who has no unit block | i18n, ui | ref D-475 |
 | D-473 | The keyboard and the toast in the new shell | config, ui | ref D-477 |
 | D-474 | What waits for approval is listed once, on the page of requests | config, i18n, ui, app | am D-477 |
 | D-475 | "דוח 1" in the drawer: "שליחה", "נשלח", and "✓ HH:MM" on its button | config, logic, i18n, ui | am D-477 |
-| D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477; ref D-486 |
+| D-476 | New leave and the leave card in the drawer of the new interface | logic, i18n, ui | am D-477; ref D-486; ref D-489 |
 | D-477 | Corrections to the drawers of "היום": old links, the sent state, the dates month, the keyboard | logic, ui | |
 | D-478 | "איתך היום": a presence-only permission, `presence:view`, answered by name on the server | contracts, domain, config, data, logic, i18n, ui, backend | sup D-479 (reach); ref D-479 |
 | D-479 | "איתך היום" after review: the own unit only, the rank constraint on oneself, a narrow read, export format 7 | contracts, domain, config, data, logic, ui, backend | |
 | D-480 | The board of the new interface: one frame, the selected day, a range per view, the options menu | contracts, config, logic, i18n, ui | |
 | D-481 | Moving a leave out of the leave round: "בקשת הזזה", "אישור ההזזה", "השארה במועד המקורי" | logic, i18n, ui | |
 | D-482 | "ניהול" builds its designed pages: חיילים, הוספת חיילים, הצטרפות, כללי נוכחות | config, logic, i18n, ui | am D-487 |
-| D-483 | The person card and the multi-select of "חיילים" | logic, i18n, ui | am D-487 |
+| D-483 | The person card and the multi-select of "חיילים" | logic, i18n, ui | am D-487; ext D-489 |
 | D-484 | "הצטרפות": the queue by readiness, "זה הוא?", and "אישור N" | logic, i18n, ui | am D-487 |
 | D-485 | "כללי נוכחות": "לא חל", the switch, the rule's drawer and the archive | domain, logic, i18n, ui | am D-487 |
 | D-486 | Leave-round planning has its own entry: a row of "ניהול" and a card of "היום" | config, logic, i18n, ui | |
 | D-487 | "ניהול" after review: settled access, partial results, no unit, private details, targets and layers | logic, i18n, ui | |
+| D-488 | "אני" builds its designed screen: the profile, "הסבב שלי", "כל הבקשות", "העדפות", and the bell's drawer | domain, config, logic, i18n, ui | am D-490 |
+| D-489 | The person card's edit in place and the tag picker, one component with the profile of "אני" | logic, i18n, ui | am D-490 |
+| D-490 | "אני" after review: a save that stops halfway, a tag made in the edit, the bell's drawer, failed reads | logic, ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -6260,3 +6263,87 @@ D-170
 **Why:** the review of R5·4 found pages closed before their answers, lost paths (the full form, "no unit"), partial results
 said as all or nothing, a second soldier possible from a stale assessment, private details refused late, and targets under
 44 px.
+
+## D-488 — "אני" builds its designed screen: the profile, "הסבב שלי", "כל הבקשות", "העדפות", and the bell's drawer
+2026-11-28 · accepted · supersedes D-470 · supersedes D-350 (its place and figures) · refines D-167, D-299, D-465 · closes
+OI-391 · decided under D-170 (R5·5)
+- **The screen.** "אני" is one screen for everyone (`01` §4, `02` Me): the open block is the profile, the soldier's own
+  person card (D-489); then two fixed cards in a fixed order, "הסבב שלי" (where the soldier is, what comes next, and the
+  14-day strip; its title opens the page) and "הבקשות שלי" (the open and coming requests, three of them, each with its
+  badge, and the door "כל הבקשות"); then the thin row "העדפות". A soldier whose own record the actor may not read sees the
+  account's name in its place (D-076).
+- **Pages**, in the URL as D-465's are: `page=rotation`, `page=my_requests`, `page=preferences`, all of the tab `me`, with
+  the head of `PageTop` (back circle, the title at 28). "הסבב שלי" and "כל הבקשות" are for who reads their own leaves;
+  an address that names one for anyone else is put right once that answer is in (D-487's "a page waits for its answers").
+- **"הסבב שלי"**: the rotation's name; three figures, days on base and days at home so far and the soldier's own requests
+  approved (`approvedRequests` of `myRotationFigures`); the month (`kit/Month`), which goes back to past months; days
+  chosen there make "בקשת יציאה · N ימים" for who may request now, as on "היום"; a legend of what the month draws (a day
+  away, a request that waits; the board's month draws no leave round, `03` §1.10). The figures of D-350 the package does
+  not draw (the approval rate, the next leave, the days left) leave: the next leave is the strip's line, the open
+  requests are the card of "אני". The door "הסבב שלי" also ends "היום"'s month, and "הסטטוס שלי" opens the page.
+- **"כל הבקשות"** (titled "הבקשות שלי", as drawn): "פתוחות" and "היסטוריה" as a segmented choice, rows of the type, the
+  days and how many, and the badge; a row opens the leave card. The part shown is the page's own state and opens on
+  "פתוחות", where what may still change is: a link to the history is not a view anyone shares.
+- **"העדפות"**: "מראה" (D-181), "התראות" (this device and the kinds, D-356), "עבודה" for who approves their own requests
+  (the "approve now" default, D-121, D-299; it also stays on the page of requests), "חשבון" (signed in as, installing the
+  app where offered, D-184, and the dev identities, D-006), and "התנתקות" at the foot (the word of the package). Saved
+  views stay in the board's options (D-480), where they are made and applied; "עבודה" does not repeat them.
+- **The bell** on "היום", "ניהול" and "אני" opens the notifications drawer (`panel=notifications`): what others did on the
+  soldier's own requests in the last days (D-352), newest first, unread bold, marked seen on opening; a line opens its
+  leave card in the drawer's place. It is for every linked soldier who reads their own leaves, in routine too (an update
+  of the last days still matters there), not only while a rotation takes requests (D-470's limit).
+- **Removed** (D-464): the drawer "שלי" (`panel=my_leaves`), its next days, its "הסבב שלי" section and its updates
+  section. A link made before opens "כל הבקשות" (`withOldMine` in the search). Signing out is on "העדפות".
+**Why:** the package's Me (`01` §2 and §4, `02` Me), with every capability of the drawer and the user menu reachable.
+
+## D-489 — The person card's edit in place and the tag picker, one component with the profile of "אני"
+2026-11-28 · accepted · extends D-483 · refines D-463, D-130, D-476 · closes OI-395, OI-400, OI-401 · decided under D-170
+- **One component.** The profile of "אני" and the person card render the same body (`ui/shell/person`): the tags held now,
+  the personal number and the phone with copy (for who reads them, D-018), and, expanded on "אני" (the chevron), "פרטים"
+  (the nickname, "ביחידה מאז" from the open placement for who reads placements, the invite email) and "שדות נוספים" (the
+  custom fields, D-016, in their order).
+- **The pencil** shows for who may change anything of the soldier: on "אני" beside the chevron, on the card beside "⋯".
+  Editing turns the fields into inputs in place, each by its own permission: the name, the nickname, the command rank and
+  the custom fields with `soldiers:update`; the personal number, the phone and the invite email with
+  `soldier_private:update` (which needs reading them, D-096); the tags with `soldiers:update` (D-130). The unit is never
+  edited here (a transfer is "⋯", D-483); the status and a tag's lifetime stay in the full card's forms. ✕ puts back,
+  ✓ saves the profile, then the tags, then the private details, each by its own command and version (`useCardSave`); the
+  first refusal stops there and says so. A save that changed something ends in the toast "הפרטים נשמרו" with "ביטול",
+  which saves the values the edit opened on from the versions the save left. On the card the edit grows the drawer to its
+  full stop. D-463 stands: a soldier with no permission over their own record has no pencil.
+- **The tag picker** (`02` Tags on a soldier): in the edit each chip has ✕ and "+" ends the row; "+" opens a list attached
+  to it, with a search, grouped by category, a ✓ beside what is held. A single-choice category keeps one (D-065). Who may
+  create tags gets "הוסף: X" for a name no live tag has; with several categories it asks which one, with one it does not.
+  Each category keeps the lifetime it holds now (D-222); choosing "for this rotation" stays in the full card.
+- **"תגיות" in the tray of "חיילים"** (OI-400): for who may update every chosen soldier. The picker shows ✓ for a tag every
+  chosen soldier holds and a dash for one some hold; a press sets it on all or off all. "שמירה" saves each soldier's sets
+  by their own command, one after another (`useSetTagsOfMany`); the toast says how many were tagged and the first refusal,
+  and the refused stay chosen (D-487).
+- **The strip** (OI-395): the days of one leave are one segment across them, and a request that waits carries its type's
+  name; a day on base stays its own. Each day still reads its own words, the type's name included. Days where days are
+  chosen (the person card) keep a segment each, in their weeks.
+**Why:** the package's "the profile is my person card" and its in-place edit, built once for both places; OI-400 and
+OI-401 waited for these components.
+
+## D-490 — "אני" after review: a save that stops halfway, a tag made in the edit, the bell's drawer, failed reads
+2026-11-28 · accepted · amends D-488, D-489 · decided under D-170 (the review of R5·5)
+- **A save that stops halfway** (amends D-489). The card's save still runs the profile, the tags, then the private details,
+  and the first refusal still stops the rest; but what was saved before it stands as a result: the save answers the
+  versions it left and the "ביטול" of what it saved, the edit stays open on those versions with the refusal said in it,
+  and ✓ again sends only what is still to send, never a stale version.
+- **"ביטול" of the tags** puts back the exact sets the soldier held when the edit opened (`restore`), not a choice per
+  category: a tag made in the edit ("הוסף: X") is taken off again, and a single-choice category never ends with two.
+- **A tag made in the edit** joins the card the edit opened on (`cardTagsWith`): into its category's group, or a new group
+  when the category had no live tag, in the category's default lifetime. It is shown and saved like any other.
+- **The tray's count** names only the soldiers whose sets changed: who already held the choice is sent nothing and is not
+  counted as tagged.
+- **The bell's drawer** (amends D-488) is for who has the bell: an address that names `panel=notifications` for anyone else
+  is put right once the answer is in.
+- **A failed read on "אני"** says so in its card ("הסבב שלי", "הבקשות שלי"), and the card's door stays; while it reads, the
+  card shows that it loads. "הסבב שלי"'s month reads the organization's today, so its own failure shows too.
+- **Each chip's ✕ names its tag** ("הסרת התגית נהג"); "הוסף: X" matches an existing name whatever its case, as the search
+  does.
+- **Not changed:** the pages of "אני" are not put right for an unlinked session: the workspace is never shown to one
+  (the router sends it to onboarding), so that case cannot arise there.
+**Why:** the review of R5·5 found a save that could not go on after a partial refusal, an undo that kept a tag made in the
+edit, a made tag that vanished, a drawer open to anyone by address, failed reads that hid their cards, and unnamed ✕s.

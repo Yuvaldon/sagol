@@ -175,6 +175,7 @@ export function JoinsCard() {
 /** "הבקשה שלי": the soldier's own open requests, each with its status. */
 export function MyRequestCard() {
   const panel = usePanel()
+  const place = useShellPlace()
   const mine = useMyLeavesAccess()
   const { requests } = useRotationScope()
   const leaves = useMyLeaves()
@@ -202,7 +203,7 @@ export function MyRequestCard() {
         <CardDoor
           labelKey="today.allMine"
           onPress={() => {
-            panel.open(PANEL_IDS.myLeaves)
+            place.openPage('my_requests')
           }}
         />
       ) : null}
@@ -260,8 +261,15 @@ export function WithMeCard({ board }: { readonly board: boolean }) {
 
 /** "הסטטוס שלי": where the actor is and their days, for who has no open block of their own status (D-459). */
 export function MyStatusCard() {
+  const place = useShellPlace()
+  // The card leads to "הסבב שלי" of "אני" (the handoff's card table).
   return (
-    <Card titleKey="today.myStatus">
+    <Card
+      titleKey="today.myStatus"
+      onOpen={() => {
+        place.openPage('rotation')
+      }}
+    >
       <Status selection={null} onSelect={null} size="title" />
     </Card>
   )

@@ -1,8 +1,9 @@
 import type { CalendarDate } from '@contracts'
-import { isBeforeDay, monthSpan, selectDay, selectionCovers, useMyDays, weeksOf, type DaySelection } from '@logic'
+import { isBeforeDay, monthSpan, selectDay, selectionCovers, useMyDays, useShellPlace, weeksOf, type DaySelection } from '@logic'
 import { ChevronDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
+import { CardDoor } from '../../kit/Card'
 import { DayStrip } from '../../kit/DayStrip'
 import { Month } from '../../kit/Month'
 import { LoadingNotice } from '../../patterns/Notices'
@@ -66,8 +67,9 @@ export interface StatusProps {
 }
 
 /** Where the soldier is, what comes next, and their days: the strip, or the month it opens into. */
-export function Status({ selection, onSelect, size }: StatusProps & { readonly size: 'display' | 'title' }) {
+export function Status({ selection, onSelect, size, door = false }: StatusProps & { readonly size: 'display' | 'title'; readonly door?: boolean }) {
   const standing = useStanding()
+  const place = useShellPlace()
   const [month, setMonth] = useState(false)
   if (standing === null) return null
   return (
@@ -88,7 +90,18 @@ export function Status({ selection, onSelect, size }: StatusProps & { readonly s
         </AriaButton>
       </div>
       {month ? (
-        <MonthView today={standing.today} selection={selection} onSelect={onSelect} />
+        <>
+          <MonthView today={standing.today} selection={selection} onSelect={onSelect} />
+          {/* The month's foot leads to "הסבב שלי" of "אני", where past months are too (the handoff's Today, expanded). */}
+          {door ? (
+            <CardDoor
+              labelKey="me.myRotation"
+              onPress={() => {
+                place.openPage('rotation')
+              }}
+            />
+          ) : null}
+        </>
       ) : (
         <DayStrip days={standing.days} today={standing.today} labelKey="myLeaves.nextDaysTitle" />
       )}
@@ -101,7 +114,7 @@ export function SoldierBlock({ selection, onSelect }: StatusProps) {
   return (
     <section className="flex flex-col gap-xs">
       <PageHead>{standing === null ? null : <p className="text-body text-text-muted tabular-nums">{dayLine(standing.today)}</p>}</PageHead>
-      <Status selection={selection} onSelect={onSelect} size="display" />
+      <Status selection={selection} onSelect={onSelect} size="display" door />
     </section>
   )
 }

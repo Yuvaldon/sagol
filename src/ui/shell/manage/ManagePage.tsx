@@ -1,4 +1,4 @@
-import { PANEL_IDS, ROUND_ENTITY, type PageId } from '@config'
+import { PAGE_TABS, PANEL_IDS, ROUND_ENTITY, type PageId } from '@config'
 import { t, type I18nKey } from '@i18n'
 import {
   liveRules,
@@ -168,8 +168,15 @@ interface PageAccess {
   readonly known: boolean
 }
 
+/** The pages of "ניהול": those whose destination it is. */
+type ManagePageId = { [P in PageId]: (typeof PAGE_TABS)[P] extends 'manage' ? P : never }[PageId]
+
+function isManagePage(page: PageId): page is ManagePageId {
+  return PAGE_TABS[page] === 'manage'
+}
+
 /** Which pages of "ניהול" the actor may open: each its tool's own access (D-455); a page they may not open is put right. */
-function usePages(): Readonly<Record<Exclude<PageId, 'requests'>, PageAccess>> {
+function usePages(): Readonly<Record<ManagePageId, PageAccess>> {
   const access = useModuleAccess()
   const links = useLinkReviewAccess()
   const units = useUnits()
@@ -192,7 +199,7 @@ export function ManagePage({ name }: { readonly name: string }) {
   const { page, closePage } = place
   // A page once allowed stays while it is open: approving the last join request empties "הצטרפות" without closing it.
   const [kept, setKept] = useState<PageId | null>(null)
-  const access = page === null || page === 'requests' ? null : pages[page]
+  const access = page === null || !isManagePage(page) ? null : pages[page]
   if (access?.allowed === true && kept !== page) setKept(page)
   else if (kept !== null && kept !== page) setKept(null)
   const stray = access !== null && access.known && !access.allowed && kept !== page

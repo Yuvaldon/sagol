@@ -44,7 +44,8 @@ test('"ניהול" and the scope label', async ({ page }, testInfo) => {
     await openTab(page, 'today')
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
-    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.myLeaves.updatesTitle}`) })).toHaveCount(0)
+    // The bell is the owner's in routine too: an update of the last days still matters there (D-488).
+    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.me.notificationsTitle}`) })).toBeVisible()
     await expectNoAxeViolations(page)
     await page.getByRole('button', { name: he.workspace.openRotation }).click()
     await expect(page).toHaveURL(/panel=deployments&entity=new/)
@@ -70,7 +71,8 @@ test('"ניהול" and the scope label', async ({ page }, testInfo) => {
     await expect(page.getByRole('heading', { level: 1, name: he.navigation.tab, exact: true })).toBeVisible()
     await expect(managePage(page).getByText(ORGANIZATION, { exact: true })).toBeVisible()
     // The tools first; what a unit defines once is a step in, behind the last row, with a way back (D-285, D-456).
-    const rows = managePage(page).getByRole('button')
+    // The rows; the bell in the corner is not one (D-488).
+    const rows = managePage(page).getByRole('listitem').getByRole('button')
     await expect(rows).toHaveText([
       new RegExp(`^${he.soldiers.open}`),
       new RegExp(`^${he.accountLinks.open}`),
@@ -117,7 +119,7 @@ test('"ניהול" and the scope label', async ({ page }, testInfo) => {
     // With a rotation that takes requests, "היום" offers one, and the updates of the owner's own requests.
     await openTab(page, 'today')
     await expect(page.getByRole('button', { name: he.leaves.new, exact: true })).toBeVisible()
-    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.myLeaves.updatesTitle}`) })).toBeVisible()
+    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.me.notificationsTitle}`) })).toBeVisible()
     await openTab(page, 'board')
   })
 
@@ -170,7 +172,8 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await expect(page.getByRole('heading', { name: he.workspace.routineTitle })).toBeVisible()
     await expect(page.getByText(he.workspace.noRotationBody)).toBeVisible()
     await expect(page.getByRole('button', { name: he.workspace.openRotation })).toHaveCount(0)
-    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.myLeaves.updatesTitle}`) })).toHaveCount(0)
+    // Reading her own leaves, she has the bell (D-488), and nothing to request.
+    await expect(page.getByRole('main').getByRole('button', { name: new RegExp(`^${he.me.notificationsTitle}`) })).toBeVisible()
     await expect(page.getByRole('button', { name: he.leaves.new })).toHaveCount(0)
     // Reading nobody else's leaves, the fighter has no board (D-455).
     await expect(tab(page, 'board')).toHaveCount(0)
@@ -182,7 +185,7 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await openTab(page, 'manage')
     // Viewing their own record opens the soldiers module (D-053); nothing else of "ניהול" is theirs.
     await expect(managePage(page).getByRole('button', { name: he.soldiers.open, exact: true })).toBeVisible()
-    await expect(managePage(page).getByRole('button')).toHaveCount(1)
+    await expect(managePage(page).getByRole('listitem').getByRole('button')).toHaveCount(1)
     for (const name of [he.units.open, he.leaveTypes.open, he.tags.open, he.roles.open, he.grants.open, he.transfer.open]) {
       await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0)
     }

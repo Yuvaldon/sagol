@@ -4,7 +4,7 @@ import { openSoldiers, soldierRow } from './support/soldiers.ts'
 import { TYPE, YAEL_NAME, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
 import { choose, closeDrawer, drawer, leavesOf, typeDate } from './support/leaves.ts'
 import { selectView } from './support/board.ts'
-import { OWNER, claimOrganization, expectNoAxeViolations, navigation, setupDrawer, signIn, openMyLeaves, expectWaitingRequests, openTab, tab, openRequests, requestsList } from './support/workspace.ts'
+import { OWNER, claimOrganization, expectNoAxeViolations, navigation, setupDrawer, signIn, openMyLeaves, myRequestRow, expectWaitingRequests, openTab, tab, openRequests, requestsList } from './support/workspace.ts'
 
 // V27's acceptance: journey (a); V25's: journeys (c), (d) and (e) of docs/Design.md, step by step as written there (D-263), on desktop and
 // a phone, RTL, with axe. A step that changes in Design.md changes here in the same commit. Sample data, tests only.
@@ -92,10 +92,8 @@ test('journeys (c), (d) and (e): a soldier requests, a commander approves, the d
     await expect(page.getByRole('list', { name: he.myLeaves.nextDaysTitle }).getByText(he.kit.dayPending)).toHaveCount(2)
     await expectNoAxeViolations(page)
     await openMyLeaves(page)
-    const row = drawer(page).getByRole('list', { name: he.myLeaves.openTitle }).getByRole('button', { name: new RegExp(TYPE) })
-    await expect(row.getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
+    await expect(myRequestRow(page, TYPE).getByText(he.leaves.badgePending, { exact: true })).toBeVisible()
     await expectNoAxeViolations(page)
-    await closeDrawer(page)
   })
 
   await test.step('(d) 1. the commander lands on "היום"; "בקשות לאישור" carries what waits, and the board draws it', async () => {

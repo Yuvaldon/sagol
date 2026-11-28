@@ -165,13 +165,14 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **Creation is in context.** No global "+". Days picked on a strip, a month or a timeline row open a tray, and the
   tray opens "יציאה חדשה". A soldier and a rule are added from the add icon in their page's capsule.
 
-### Built so far (R5·1 … R5·4; D-465 … D-486)
+### Built so far (R5·1 … R5·5; D-465 … D-489)
 
 - **Shell.** `WorkspaceScreen` shows one destination by `tab`, the floating `TabBar`, and the drawers over both. A
   page (`PageFrame`) is one centered column on the canvas, at most `drawer` wide, that scrolls under the bar; once
   scrolled its top blurs out in a 70 px band (`blur-band`). The bar slides away after 12 px of scrolling down and
   returns after 12 px up, in `duration-drawer`, with no motion under "reduce motion"; keyboard focus brings it back.
-  The corner glass circle (a bell) is on "היום", "ניהול" and "אני".
+  The corner glass circle (a bell) is on "היום", "ניהול" and "אני", for who reads their own leaves; it opens the
+  notifications drawer (D-488).
 - **היום, a soldier.** The date line, "בבסיס" or "בבית" at display size, and a line of what comes next ("היציאה
   הבאה: יום חמישי · 19.11") that is the button opening the 14-day strip into the month, in place. In the month a
   day is a 44 px button for who may request a leave: one tap starts a range, a second ends it, a tap on the only
@@ -190,7 +191,15 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   request, a door to the closed ones. A toast follows a step.
 - **ניהול.** The title, the organization's name, thin rows with a value and a chevron (D-468); "הגדרות" is a page
   of sections on white cards.
-- **אני.** The name and the email, then cards: appearance (a segmented choice), notifications (switches), account.
+- **אני (R5·5, D-488, D-489).** The profile: the name at 28, the command rank and the unit, the pencil and the chevron;
+  tag chips; the personal number and the phone with copy; expanded, "פרטים" (nickname, "ביחידה מאז", the email) and
+  "שדות נוספים". The pencil makes each field the actor may change an input in place, chips with ✕ and a dashed "+" that
+  opens the tag picker (search, by category, ✓, "הוסף: X"); ✕ and ✓ replace the pencil, a toast with "ביטול" follows.
+  Then "הסבב שלי" (the line and the strip, a door to its page), "הבקשות שלי" (three rows with badges, "כל הבקשות"), and
+  the row "העדפות". **הסבב שלי:** three figures at 48 (days on base, days at home, requests approved), the month with past
+  months and the request tray, a legend. **כל הבקשות:** "פתוחות" / "היסטוריה" as a segmented choice over a white card of
+  rows. **העדפות:** מראה, התראות, עבודה (for who approves their own), חשבון, "התנתקות" at the foot. **The notifications
+  drawer:** the lines of what others did on the soldier's requests, unread bold.
 - **לוח (R5·3, D-480, D-481).** One head over every view: the month as the title with two arrows, "היום" once the
   view has left today, and a glass capsule with the fan (holding it opens the saved views) and the options menu (unit,
   range, sort, group, filter, colors where the old bars draw; then saved views and "מיקוד"). The selected day is the
@@ -214,16 +223,18 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   מיד" for who may. **The leave card** opens at half height, named by the leave's type: a white card with the days
   large, type and days, the badge; then the actions, two in a row with equal weight; then the history (D-476).
 - **The strip** draws the leave round quiet (`time-round`), another absence filled (`time-approved`) and a request
-  that waits amber; the month does not draw the leave round.
+  that waits amber; a leave's days are one segment, and a waiting request carries its type's name (D-489); the month
+  does not draw the leave round.
 - **Desktop** uses the same shell until R5·6.
 - **ניהול's pages (R5·4, D-482 … D-486).** Each page: a glass back circle, the title at 28, its tools on one glass
   capsule, one line of what it holds. **חיילים:** a white card of 44 px person rows per group (name, rank and tags,
   seven dots: filled on base, hollow at home, today larger; none where the actor reads no leaves); the capsule holds
   the search (a field under the head), the options (sort, group, the inactive, the days; "בחירה" and "ארכיון · N" after
   the divider, all in the URL's `people`) and "הוספת חיילים". Holding a row or "בחירה" makes the rows checkboxes and the
-  tab bar the tray "N נבחרו" with "יציאה" and "העברה". **The person card** (the drawer at half): rank and unit under the
+  tab bar the tray "N נבחרו" with "יציאה", "העברה" and "תגיות" (the tag picker over all of them, D-489). **The person card** (the drawer at half): rank and unit under the
   name, tag chips, personal number and phone with copy, where they are and the 14-day strip, whose days chosen open
-  "יציאה עבור X"; "כרטיס מלא" grows it to the soldier's sections; "⋯" holds "ניתוק" and "העברה לארכיון".
+  "יציאה עבור X"; "כרטיס מלא" grows it to the soldier's sections; "⋯" holds "ניתוק" and "העברה לארכיון"; the pencil
+  beside it edits the card in place, as on "אני" (D-489).
   **הוספת חיילים:** a full screen with no tab bar; "ליחידה", "הדבקת רשימה", "ייבוא מקובץ", a white card per row (first
   and last name, personal number and email where allowed), "הוספת N חיילים" as the bottom bar, and a door to the full
   form of one soldier. **הצטרפות:** "מוכנות לאישור", "דורשות בדיקה" (an amber chip with the reason), "חיילים חדשים" (a
@@ -300,7 +311,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 15 | The requests drawer stays, as the row "בקשות" of "ניהול", for the closed requests; the toast's "ביטול" shows only to who may take the step back | The card is absent when nothing waits; reopening a rejected request is its own permission | D-467 |
 | 16 | "הגדרות" is a page behind the last row of "ניהול"; a row of the index is named by its tool alone, and its value describes it | The two places of D-285 stay two; a short name is found by a reader | D-468 |
 | 17 | In routine, "היום" opens with a notice that names the mode, with "פתיחת סבב" for who may | The package has no routine state; the quick action of the old strip is gone | D-469 |
-| 18 | "אני" holds what the user menu held; the corner circle opens the "שלי" drawer | Its own batch (R5·5) replaces both | D-470 |
+| 18 | "אני" holds what the user menu held; the corner circle opens the "שלי" drawer (superseded: R5·5 built both, D-488) | Its own batch (R5·5) replaces both | D-470 |
 | 19 | The options menu, "דוח 1" in the new drawer, new leave and the leave card in the new drawer, "סבב יציאות · תכנון" and "איתך היום" are not in this batch | Each is an open item with its batch | D-471 |
 | 20 | "דוח 1" is a card on "היום" for who reads the unit's soldiers and has no unit block | It was a destination of the old strip for all of them | D-472 |
 | 21 | The toast waits while it is hovered, focused or asking, and starts over at a key press; a page takes the keyboard on its heading and gives it back to its opener; the month is a keyboard grid | The package draws no keyboard or time behaviour | D-473 |
@@ -322,7 +333,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 35 | A wide screen keeps the old timeline grid, its drag and colors, and the table, under the new head | The desktop pass is R5·6 (OI-397) | D-480 |
 | 38 | The pages of "ניהול" live in the URL (`page`), and the soldiers list's options in one param `people`; the search is the page's own | D-023: a view is a link; a typed word is not | D-482 |
 | 39 | "הוספת חיילים" saves with no "ביטול"; a list with a detail the actor may not add is refused whole, naming it; the full form of one soldier is a door away | Archiving is not the inverse of creating; nothing pasted is dropped unseen; custom properties and "no unit" live in the full form | D-482 |
-| 40 | The person card's "יציאה" comes from days chosen on its strip; its pencil and the tray's "תגיות" wait for R5·5 | `03` §1.2; the tag picker and in-place edit are R5·5's components (OI-400, OI-401) | D-483 |
+| 40 | The person card's "יציאה" comes from days chosen on its strip; its pencil and the tray's "תגיות" wait for R5·5 (built, D-489) | `03` §1.2; the tag picker and in-place edit are R5·5's components (OI-400, OI-401) | D-483 |
 | 41 | Join requests are grouped by readiness for everyone (the company commander sees one group when only new soldiers reach them); no swipe on a row; no "ביטול" after a link; a new soldier from a request has no rank and starts today | The assessment decides the groups; the drawer is the tap path (OI-402); unlinking does not bring a request back (D-451) | D-484 |
 | 42 | "לא חל" marks a rule replaced on every day it applies, read from the rules alone; the list never names soft, hard or priority | The handoff's "the system already computes this" is per day; the list needs one answer per rule | D-485 |
 | 43 | Planning the leave round leaves the new-leave form for its own row and card; the card shows while soldiers of the rotation have no round | OI-389; "at rotation start" read as "until everyone has a round" | D-486 |
@@ -330,6 +341,12 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 45 | A new soldier from a request may go to no unit; private details are neither shown nor sent where the unit takes none | What the removed form offered; D-096 | D-487 |
 | 46 | Choosing on "חיילים" is a layer the back button ends; a drawer that opens another in its place replaces it | One back press per layer the actor sees (D-332) | D-487 |
 | 47 | Small pills and switches sit in 44 px targets; the strip of chosen days wraps into two weeks | 44 px targets everywhere (Accessibility) | D-487 |
+| 48 | The bell is every soldier's who reads their own leaves, in routine too; its drawer holds the updates of their requests | The package's "bell for everyone"; an update of the last days matters in routine | D-488 |
+| 49 | "הסבב שלי" shows three figures (base, home, approved); the approval rate, next leave and days left of D-350 leave | The package draws three; the next leave is the strip's line | D-488 |
+| 50 | The part of "כל הבקשות" is the page's own state, opening on "פתוחות"; saved views stay in the board's options, not under "עבודה" | A history tab is not a view to share; a saved view is made and applied on the board | D-488 |
+| 51 | The edit in place covers name, nickname, command rank, custom fields, private details and tags, each by its permission; status and a tag's rotation lifetime stay in the full card | The package's in-place fields; the rare choices keep their forms | D-489 |
+| 52 | The rotation page's legend names what the month draws (away, waiting), not the package's four | The board's month draws no leave round and no base fill (`03` §1.10) | D-488 |
+| 53 | A save refused halfway keeps what it saved, with its "ביטול", and the edit goes on; "ביטול" of tags puts the sets back exactly; a failed read shows in its card | Found in review | D-490 |
 
 ## Color (Light)
 

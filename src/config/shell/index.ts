@@ -13,9 +13,10 @@ export const DEFAULT_TAB: TabId = 'today'
 
 /**
  * A page a destination opens over itself: "בקשות לאישור" of "היום" (D-459); "הגדרות" of "ניהול" (D-456), and its designed
- * tools, "חיילים", "הצטרפות", "כללי נוכחות" and "הוספת חיילים" (D-482).
+ * tools, "חיילים", "הצטרפות", "כללי נוכחות" and "הוספת חיילים" (D-482); "הסבב שלי", "כל הבקשות" and "העדפות" of "אני"
+ * (D-488).
  */
-export const PAGE_IDS = ['requests', 'settings', 'soldiers', 'joins', 'rules', 'add_soldiers'] as const
+export const PAGE_IDS = ['requests', 'settings', 'soldiers', 'joins', 'rules', 'add_soldiers', 'rotation', 'my_requests', 'preferences'] as const
 export const PageId = z.enum(PAGE_IDS)
 export type PageId = z.infer<typeof PageId>
 
@@ -27,6 +28,9 @@ export const PAGE_TABS = {
   joins: 'manage',
   rules: 'manage',
   add_soldiers: 'manage',
+  rotation: 'me',
+  my_requests: 'me',
+  preferences: 'me',
 } as const satisfies Record<PageId, TabId>
 
 /**

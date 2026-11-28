@@ -9,6 +9,10 @@ export type DayState = 'base' | 'round' | 'away' | 'pending'
 export interface StripDay {
   readonly date: CalendarDate
   readonly state: DayState
+  /** The leave that makes the day what it is: a run of days of one leave is drawn as one segment (OI-395). */
+  readonly leave_id?: string | null
+  /** The name written across a request that waits: its type's (OI-395). */
+  readonly label?: string | null
 }
 
 export const DAY_STATE_KEYS: Readonly<Record<DayState, I18nKey>> = {
