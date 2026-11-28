@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { NOW, closeDrawer, createType, drawer, leavesOf, requestLeave, openRotationInNewUnit } from './support/leaves.ts'
-import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, appearanceChoice, chooseAppearance, openTab, signOut } from './support/workspace.ts'
+import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, appearanceChoice, chooseAppearance, openTab, signOut, openMePage } from './support/workspace.ts'
 
 // V17's demo: the soldier's appearance (D-181). Light by default, dark on request, the device's on request, kept with
 // the soldier's preferences, and every surface passes axe in the dark set. Desktop and mobile, RTL. Sample data, tests only.
@@ -22,7 +22,7 @@ test('light by default, dark on request, the device’s on request, and readable
 
   await test.step('light until chosen', async () => {
     await expect(root(page)).not.toHaveAttribute('data-appearance')
-    await openTab(page, 'me')
+    await openMePage(page, 'preferences')
     await expect(appearanceChoice(page, he.account.appearanceLight)).toBeChecked()
   })
 

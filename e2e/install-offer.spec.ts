@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { enterAsOwner, openTab } from './support/workspace.ts'
+import { enterAsOwner, openMePage } from './support/workspace.ts'
 
 // V18 (D-184): "אני" offers to install the app only when the browser offers it, and never on its own (D-076).
 // V28 (D-274): after sign-in the same offer shows once as a card that keeps the bars free; "not now" puts it away on
@@ -13,7 +13,7 @@ test('the install offer appears only when the browser makes one', async ({ page 
   const card = page.getByRole('region', { name: he.account.installOffer })
 
   await test.step('no offer, no row on "אני"', async () => {
-    await openTab(page, 'me')
+    await openMePage(page, 'preferences')
     await expect(signOutButton).toBeVisible()
     await expect(install).toHaveCount(0)
     await expect(card).toHaveCount(0)
