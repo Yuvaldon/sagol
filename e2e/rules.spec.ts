@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createRule as createRuleOnPage, openRules, type RuleSpec } from './support/rules.ts'
+import { createSoldier } from './support/soldiers.ts'
 import { NOW, choose, closeDrawer, createType, drawer, leavesOf, openRotation, press, openNewLeave } from './support/leaves.ts'
 import { addUnit, enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, backToBoard } from './support/workspace.ts'
 import { selectView } from './support/board.ts'
@@ -16,31 +18,15 @@ async function createUnit(page: Page, name: string) {
 }
 
 async function createPlacedSoldier(page: Page, firstName: string, lastName: string) {
-  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(firstName)
-  await page.getByLabel(he.soldiers.lastName).fill(lastName)
-  await choose(page, he.soldiers.unit, PLATOON)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
+  await createSoldier(page, firstName, lastName, async () => {
+    await choose(page, he.soldiers.unit, PLATOON)
+  })
 }
 
-interface RuleSpec {
-  readonly name: string
-  readonly min?: string
-  readonly max?: string
-  readonly hard?: boolean
-}
-
-async function createRule(page: Page, spec: RuleSpec) {
-  await drawer(page).getByRole('button', { name: he.rules.new }).first().click()
-  await expect(drawer(page).getByRole('heading', { name: he.rules.newTitle })).toBeVisible()
-  await page.getByLabel(he.rules.name).fill(spec.name)
-  if (spec.hard === true) await choose(page, he.rules.enforcement, he.rules.enforcementHard)
-  if (spec.min !== undefined) await page.getByLabel(he.rules.min, { exact: true }).fill(spec.min)
-  if (spec.max !== undefined) await page.getByLabel(he.rules.max, { exact: true }).fill(spec.max)
-  await choose(page, he.rules.scope, PLATOON)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.rules.listLabel }).getByText(spec.name, { exact: true })).toBeVisible()
+/** A rule of the platoon, from the page "כללי נוכחות" (D-482); back on the board after. */
+async function createRule(page: Page, spec: Omit<RuleSpec, 'scope'>) {
+  await createRuleOnPage(page, { ...spec, scope: PLATOON })
+  await backToBoard(page)
 }
 
 /** A leave of today for a soldier, approved at once, from the floating "+". */
@@ -73,28 +59,26 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
 
   await test.step('a platoon, two soldiers in it and a leave type', async () => {
     await createUnit(page, PLATOON)
-    await openModule(page, he.soldiers.open)
     await createPlacedSoldier(page, 'יעל', 'שחר')
     await createPlacedSoldier(page, 'נועם', 'בר')
-    await closeDrawer(page)
     await openModule(page, he.leaveTypes.open)
     await createType(page, { name: 'בית', color: he.palette.teal })
     await closeDrawer(page)
     await openRotation(page, ['יעל שחר', 'נועם בר'])
   })
 
-  await test.step('the rules drawer starts empty, and a soft rule asks for two in the platoon', async () => {
+  await test.step('"כללי נוכחות" starts empty, and a soft rule asks for two in the platoon', async () => {
     await expect(heatRow(page)).toHaveCount(0)
-    await openModule(page, he.rules.open)
-    await expect(drawer(page).getByRole('heading', { name: he.rules.emptyTitle })).toBeVisible()
+    await openRules(page)
+    await expect(page.getByRole('heading', { name: he.rules.emptyTitle })).toBeVisible()
     await expectNoAxeViolations(page)
-    await createRule(page, { name: 'שניים במחלקה', min: '2' })
-    const row = drawer(page).getByRole('list', { name: he.rules.listLabel }).getByRole('listitem').filter({ hasText: 'שניים במחלקה' })
+    await createRuleOnPage(page, { name: 'שניים במחלקה', scope: PLATOON, min: '2' })
+    const row = page.getByRole('main').getByRole('listitem').filter({ hasText: 'שניים במחלקה' })
     await expect(row).toContainText(`${he.rules.min} 2`)
-    await expect(row).toContainText(he.rules.soft)
-    await expect(drawer(page).getByText(he.rules.noConflicts)).toBeVisible()
+    // "soft", "hard" and "priority" never show on the list (the handoff's Availability rules).
+    await expect(row).not.toContainText(he.rules.soft)
     await expectNoAxeViolations(page)
-    await closeDrawer(page)
+    await backToBoard(page)
     if (isMobile) {
       // A phone's timeline marks no threshold (the handoff's board spec, §3): its calendar does, by the day.
       await selectView(page, he.workspace.views.calendar)
@@ -140,7 +124,6 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
 
   await test.step('a hard rule refuses the next leave, which is not saved', async () => {
     await createRule(page, { name: 'לפחות אחד', min: '1', hard: true })
-    await closeDrawer(page)
     if (isMobile) await selectView(page, he.workspace.views.timeline)
     await startLeave(page, 'נועם בר')
     await expect(drawer(page).getByRole('status', { name: he.rules.warningHardTitle })).toContainText('לפחות אחד')
@@ -153,9 +136,15 @@ test('a rule, the heat row, a soft rule acknowledged and a hard rule that refuse
     await expect(leavesOf(page)).toHaveCount(1)
   })
 
-  await test.step('a maximum below the minimum is a conflict in the rules drawer', async () => {
-    await openModule(page, he.rules.open)
+  await test.step('a maximum below the minimum is a conflict in the rules drawer of the board', async () => {
     await createRule(page, { name: 'לכל היותר אחד', max: '1' })
+    if (isMobile) {
+      await selectView(page, he.workspace.views.calendar)
+      await calendarDay(page, '11 בנובמבר 2026').click()
+      await page.getByRole('button', { name: he.board.rulesBroken }).click()
+    } else {
+      await heatRow(page).getByRole('button', { name: /^11 / }).click()
+    }
     const conflicts = drawer(page).getByRole('region', { name: he.rules.conflictsTitle })
     await expect(conflicts).toContainText('שניים במחלקה')
     await expect(conflicts).toContainText('לכל היותר אחד')

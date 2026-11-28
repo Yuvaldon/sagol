@@ -1,4 +1,4 @@
-import { LinkReadiness, type AccountLinkRequest, type AppError, type LinkAssessment, type LinkReviewReason, type SoldierId } from '@contracts'
+import { LinkReadiness, type AccountLinkRequest, type AppError, type CalendarDate, type LinkAssessment, type LinkReviewReason, type SoldierId, type UnitId } from '@contracts'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { usePorts } from '../runtime/context'
@@ -49,6 +49,78 @@ export function useBulkLinkApproval() {
           continue
         }
         const result = await data.commands.accounts.reviewLink(toReviewLinkInput(request, { kind: 'link', soldierId }))
+        answers.set(request.id, result.ok ? { kind: 'linked' } : { kind: 'refused', error: result.error })
+      }
+      const answer: { ok: true; value: BulkLinkAnswers } = { ok: true, value: answers }
+      return answer
+    },
+  )
+}
+
+/**
+ * A pending join request with its readiness (D-447), as the page of "הצטרפות" lists it (D-482): ready, to review with
+ * the reason, or with no candidate, which only a new soldier answers.
+ */
+export interface JoinEntry {
+  readonly request: AccountLinkRequest
+  readonly assessment: LinkAssessment
+}
+
+export interface JoinGroups {
+  readonly ready: readonly JoinEntry[]
+  readonly review: readonly JoinEntry[]
+  readonly newSoldiers: readonly JoinEntry[]
+}
+
+/** The requests in the page's groups, each in the order the adapter gave (oldest first). A request still assessed is in none. */
+export function joinGroups(requests: readonly AccountLinkRequest[], assessments: Readonly<Record<string, LinkAssessment>>): JoinGroups {
+  const entries = requests.flatMap((request) => {
+    const assessment = assessments[request.id]
+    return assessment === undefined ? [] : [{ request, assessment }]
+  })
+  return {
+    ready: entries.filter((entry) => entry.assessment.readiness === LinkReadiness.enum.ready),
+    review: entries.filter((entry) => entry.assessment.readiness === LinkReadiness.enum.needs_review),
+    newSoldiers: entries.filter((entry) => entry.assessment.readiness === LinkReadiness.enum.no_match),
+  }
+}
+
+/**
+ * A request with no candidate, and where its new soldier goes from today (the handoff's "מחלקה" chip): a unit, or NULL
+ * for no unit, where the actor may create a soldier with none.
+ */
+export interface JoinPlacement {
+  readonly request: Pick<AccountLinkRequest, 'id'>
+  readonly unitId: UnitId | null
+}
+
+/**
+ * "אישור N" (D-482): every chosen `ready` request is linked, as `useBulkLinkApproval` links them, and every request with
+ * no candidate that has its unit becomes a new soldier there from `today`, linked to it. One after another; a refusal
+ * does not stop the rest.
+ */
+export function useJoinApproval() {
+  const { data } = usePorts()
+  const link = useBulkLinkApproval()
+  return useCommand(
+    [QUERY_KEYS.accountLinkRequests, QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
+    async ({ ready, placed, today }: { ready: readonly Pick<AccountLinkRequest, 'id'>[]; placed: readonly JoinPlacement[]; today: CalendarDate }) => {
+      const linked = ready.length === 0 ? null : await link.run(ready)
+      const answers = new Map<AccountLinkRequest['id'], BulkLinkAnswer>(linked?.ok === true ? linked.value : [])
+      for (const { request, unitId } of placed) {
+        // Read again at the run, as the ready ones are: a soldier made or freed since the page loaded makes the request
+        // one to review, and no second soldier is created for it.
+        const assessment = await data.repositories.account_link_requests.assessment(request.id)
+        if (!assessment.ok) {
+          answers.set(request.id, { kind: 'refused', error: assessment.error })
+          continue
+        }
+        if (assessment.value.readiness !== LinkReadiness.enum.no_match) {
+          answers.set(request.id, { kind: 'needs_review', reason: reviewReason(assessment.value) })
+          continue
+        }
+        const values = { command_rank_id: null, membership: { unit_id: unitId, valid_from: today } }
+        const result = await data.commands.accounts.reviewLink(toReviewLinkInput(request, { kind: 'create_soldier', values }))
         answers.set(request.id, result.ok ? { kind: 'linked' } : { kind: 'refused', error: result.error })
       }
       const answer: { ok: true; value: BulkLinkAnswers } = { ok: true, value: answers }

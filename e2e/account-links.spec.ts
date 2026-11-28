@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
-import { choose, closeDrawer, drawer } from './support/leaves.ts'
-import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, signIn, waitForSettledScreen, signOut, tab } from './support/workspace.ts'
+import { closeDrawer } from './support/leaves.ts'
+import { closeDrawers, createSoldier, openManageIndex, openSoldierCard } from './support/soldiers.ts'
+import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, openTab, signIn, waitForSettledScreen, signOut, tab } from './support/workspace.ts'
 
 // V9's demo: a second identity asks to link and the owner reviews. Auto-link on the personal number and the invite
 // email, a link to a candidate, a new soldier from the request, a rejection, and the identity that waits. On desktop
@@ -22,17 +23,11 @@ async function createUnit(page: Page, name: string) {
 
 /** A soldier in the unit, with the private fields auto-link reads (D-153). */
 async function addSoldier(page: Page, first: string, last: string, privateFields?: { personalId: string; email: string }) {
-  await openModule(page, he.soldiers.open)
-  await page.getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(first)
-  await page.getByLabel(he.soldiers.lastName).fill(last)
-  if (privateFields !== undefined) {
+  await createSoldier(page, first, last, async () => {
+    if (privateFields === undefined) return
     await page.getByLabel(he.soldiers.personalId).fill(privateFields.personalId)
     await page.getByLabel(he.soldiers.inviteEmail).fill(privateFields.email)
-  }
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(`${first} ${last}`, { exact: true })).toBeVisible()
-  await closeDrawer(page)
+  })
 }
 
 /** An identity signs in and asks to link. */
@@ -50,15 +45,24 @@ function menuButton(page: Page) {
   return tab(page, 'manage')
 }
 
-async function openAccountLinks(page: Page) {
-  await openModule(page, new RegExp(`^${he.accountLinks.open}`))
+const joinsHeading = (page: Page) => page.getByRole('heading', { level: 1, name: he.manage.pages.joins, exact: true })
+
+/** "הצטרפות", from its row of "ניהול" (D-482). */
+async function openJoins(page: Page) {
+  await closeDrawers(page)
+  if (await joinsHeading(page).isVisible()) return
+  await openManageIndex(page)
+  if (!(await joinsHeading(page).isVisible())) await page.getByRole('main').getByRole('button', { name: he.accountLinks.open, exact: true }).click()
+  await expect(joinsHeading(page)).toBeVisible()
 }
 
+/** "זה הוא?" of one request, from its row. */
 async function openRequest(page: Page, name: string) {
-  await openAccountLinks(page)
-  await expect(page.getByRole('heading', { name: he.accountLinks.title, exact: true })).toBeVisible()
-  await page.getByRole('list', { name: he.accountLinks.listLabel }).getByRole('button', { name: new RegExp(name) }).click()
-  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible()
+  await openJoins(page)
+  await page.getByRole('main').getByRole('button', { name: new RegExp(name) }).click()
+  await expect(page.getByRole('dialog', { name })).toBeVisible()
+  await waitForSettledScreen(page)
+  return page.getByRole('dialog', { name })
 }
 
 /** From an identity waiting on the onboarding screen back to the owner, through the device's identity list. */
@@ -74,10 +78,11 @@ test.describe('account linking', () => {
     await addSoldier(page, YAEL.first, YAEL.last, { personalId: YAEL.personalId, email: YAEL.email })
     await addSoldier(page, ASHER.first, ASHER.last)
 
-    await test.step('the owner has nothing to review, and the invite email is a private field', async () => {
-      await openAccountLinks(page)
+    await test.step('the owner has nothing to review: no row of "הצטרפות" waits', async () => {
+      await openManageIndex(page)
+      await expect(page.getByRole('main').getByRole('button', { name: he.accountLinks.open, exact: true })).toHaveCount(1)
+      await openJoins(page)
       await expect(page.getByText(he.accountLinks.emptyTitle)).toBeVisible()
-      await closeDrawer(page)
     })
 
     await test.step('a verified invite email and the personal number link without a reviewer (D-005)', async () => {
@@ -111,24 +116,22 @@ test.describe('account linking', () => {
       await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
     })
 
-    await test.step('the owner sees the request, with the soldier whose name matches', async () => {
+    await test.step('the owner sees the request ready, and "זה הוא?" names the soldier whose name matches', async () => {
       await backToOwner(page)
       await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 1 ${he.navigation.waiting}`)
-      await openRequest(page, `${ASHER.first} ${ASHER.last}`)
-      const candidates = page.getByRole('list', { name: he.accountLinks.candidatesLabel })
-      await expect(candidates.getByRole('listitem')).toHaveCount(1)
-      await expect(candidates.getByText(he.accountLinks.matchName)).toBeVisible()
-      await waitForSettledScreen(page)
+      await openJoins(page)
+      await expect(page.getByRole('heading', { level: 2, name: new RegExp(he.manage.joins.ready) })).toBeVisible()
+      await expectNoAxeViolations(page)
+      const request = await openRequest(page, `${ASHER.first} ${ASHER.last}`)
+      await expect(request.getByText(he.manage.joins.isThisHim)).toBeVisible()
+      await expect(request.getByText(`${ASHER.first} ${ASHER.last}`, { exact: true }).last()).toBeVisible()
       await expectNoAxeViolations(page)
     })
 
-    await test.step('linking asks first, and lets the identity in as that soldier', async () => {
-      await page.getByRole('button', { name: he.accountLinks.link, exact: true }).click()
-      await expect(page.getByRole('dialog').last().getByText(he.accountLinks.linkTitle)).toBeVisible()
-      await waitForSettledScreen(page)
-      await page.getByRole('dialog').last().getByRole('button', { name: he.accountLinks.linkConfirm }).click()
+    await test.step('"כן, לקשר" links, and lets the identity in as that soldier', async () => {
+      await page.getByRole('dialog').getByRole('button', { name: he.manage.joins.yesLink }).click()
+      await expect(page.getByRole('status').getByText(`${ASHER.first} ${ASHER.last} ${he.manage.joins.linked}`)).toBeVisible()
       await expect(page.getByText(he.accountLinks.emptyTitle)).toBeVisible()
-      await closeDrawer(page)
       await signOut(page)
       await signIn(page, ASHER.email)
       await expect(page.getByText(he.timeline.noDayBody)).toBeVisible()
@@ -150,35 +153,33 @@ test.describe('account linking', () => {
       await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 2 ${he.navigation.waiting}`)
     })
 
-    await test.step('with no soldier to match, the owner creates one from the request', async () => {
-      await openRequest(page, `${GIL.first} ${GIL.last}`)
-      await expect(page.getByText(he.accountLinks.noCandidates)).toBeVisible()
-      await page.getByRole('button', { name: he.accountLinks.createSoldier }).click()
-      await expect(drawer(page).getByRole('heading', { name: he.accountLinks.createTitle })).toBeVisible()
-      await waitForSettledScreen(page)
+    await test.step('with no soldier to match, the owner creates one from the request, in a chosen unit', async () => {
+      await openJoins(page)
+      await expect(page.getByRole('heading', { level: 2, name: new RegExp(he.manage.joins.newSoldiers) })).toBeVisible()
+      const request = await openRequest(page, `${GIL.first} ${GIL.last}`)
       await expectNoAxeViolations(page)
-      await choose(page, he.soldiers.unit, UNIT)
-      await page.getByRole('button', { name: he.accountLinks.createSubmit }).click()
-      await expect(page.getByRole('list', { name: he.accountLinks.listLabel })).toHaveCount(1)
+      await request.getByRole('button', { name: new RegExp(`${he.manage.add.unit}$`) }).click()
+      // Who may create a soldier with no unit may make one so from a request too (D-484).
+      await expect(page.getByRole('option', { name: he.soldiers.noUnit, exact: true })).toBeVisible()
+      await page.getByRole('option', { name: UNIT, exact: true }).click()
+      await request.getByRole('button', { name: he.manage.joins.createAndLink }).click()
+      await expect(request).toBeHidden()
     })
 
     await test.step('the new soldier is on the roster with the number of the request', async () => {
-      await closeDrawer(page)
-      await openModule(page, he.soldiers.open)
-      const name = `${GIL.first} ${GIL.last}`
-      await page.getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: new RegExp(name) }).click()
-      await expect(page.getByLabel(he.soldiers.personalId)).toHaveValue(GIL.personalId)
-      await closeDrawer(page)
+      const card = await openSoldierCard(page, `${GIL.first} ${GIL.last}`)
+      await expect(card.getByText(GIL.personalId)).toBeVisible()
+      await closeDrawers(page)
     })
 
-    await test.step('a rejection asks first, and the asker is shown the form again', async () => {
-      await openRequest(page, `${DANA.first} ${DANA.last}`)
-      await page.getByRole('button', { name: he.accountLinks.reject }).click()
+    await test.step('a rejection, behind "עוד", asks first, and the asker is shown the form again', async () => {
+      const request = await openRequest(page, `${DANA.first} ${DANA.last}`)
+      await request.getByRole('button', { name: he.manage.joins.more }).click()
+      await request.getByRole('button', { name: he.accountLinks.reject }).click()
       await expect(page.getByRole('alertdialog')).toBeVisible()
       await waitForSettledScreen(page)
       await page.getByRole('alertdialog').getByRole('button', { name: he.accountLinks.rejectConfirm }).click()
       await expect(page.getByText(he.accountLinks.emptyTitle)).toBeVisible()
-      await closeDrawer(page)
       await signOut(page)
       await signIn(page, DANA.email)
       await expect(page.getByLabel(he.linkRequest.firstName)).toBeVisible()
@@ -206,18 +207,23 @@ test.describe('account linking', () => {
       await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 2 ${he.navigation.waiting}`)
     })
 
-    await test.step('both are chosen and approved; the ready one is linked, the other is left for review', async () => {
-      await openAccountLinks(page)
-      await drawer(page).getByRole('button', { name: he.accountLinks.bulk.open }).click()
-      const chooser = drawer(page).getByRole('group', { name: he.accountLinks.bulk.choose })
-      await chooser.locator('label').filter({ hasText: ROTEM.first }).click()
-      await chooser.locator('label').filter({ hasText: ASHER.first }).click()
-      await expectNoAxeViolations(page)
-      await drawer(page).getByRole('button', { name: `${he.accountLinks.bulk.approve} 2` }).click()
-      const outcomes = drawer(page).getByRole('list', { name: he.accountLinks.bulk.outcomes })
-      await expect(outcomes.getByRole('listitem').filter({ hasText: ROTEM.first })).toContainText(he.accountLinks.bulk.linked)
-      await expect(outcomes.getByRole('listitem').filter({ hasText: ASHER.first })).toContainText(he.accountLinks.bulk.needsReview)
+    await test.step('"אישור 1" in the capsule links the ready one; the other stays, with no candidate', async () => {
+      await openJoins(page)
+      await expect(page.getByRole('heading', { level: 2, name: new RegExp(he.manage.joins.ready) })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 2, name: new RegExp(he.manage.joins.newSoldiers) })).toBeVisible()
+      await page.getByRole('button', { name: `${he.manage.joins.approve} 1` }).click()
+      await expect(page.getByRole('status').getByText(`1 ${he.manage.joins.linkedMany}`)).toBeVisible()
+      await expect(page.getByRole('main').getByRole('button', { name: new RegExp(ROTEM.first) })).toHaveCount(0)
+      await expect(page.getByRole('main').getByRole('button', { name: new RegExp(ASHER.first) })).toBeVisible()
       await expect(menuButton(page)).toHaveAccessibleName(`${he.navigation.tab} 1 ${he.navigation.waiting}`)
+    })
+
+    await test.step('"היום" shows the request on its card, with how many are ready and to review', async () => {
+      await openTab(page, 'today')
+      const card = page.getByRole('region', { name: he.accountLinks.title })
+      await expect(card.getByText(`0 ${he.today.joinsReady} · 1 ${he.today.joinsReview}`)).toBeVisible()
+      await card.getByRole('button', { name: new RegExp(ASHER.first) }).click()
+      await expect(page.getByRole('dialog', { name: `${ASHER.first} ${ASHER.last}` })).toBeVisible()
     })
   })
 })

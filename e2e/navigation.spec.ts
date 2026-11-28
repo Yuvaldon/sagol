@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createSoldier } from './support/soldiers.ts'
 import { NOW, choose, closeDrawer, drawer, openRotation } from './support/leaves.ts'
 import { openOptions, optionsMenu } from './support/board.ts'
 import {
@@ -136,15 +137,10 @@ test('a fighter sees only the modules their permissions open, and no unit picker
     await openModule(page, he.units.open)
     await addUnit(page, COMPANY)
     await closeDrawer(page)
-    await openModule(page, he.soldiers.open)
-    await page.getByRole('button', { name: he.soldiers.new }).first().click()
-    await page.getByLabel(he.soldiers.firstName).fill(soldier.first)
-    await page.getByLabel(he.soldiers.lastName).fill(soldier.last)
-    await page.getByLabel(he.soldiers.personalId).fill(soldier.personalId)
-    await page.getByLabel(he.soldiers.inviteEmail).fill(soldier.email)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(`${soldier.first} ${soldier.last}`, { exact: true })).toBeVisible()
-    await closeDrawer(page)
+    await createSoldier(page, soldier.first, soldier.last, async () => {
+      await page.getByLabel(he.soldiers.personalId).fill(soldier.personalId)
+      await page.getByLabel(he.soldiers.inviteEmail).fill(soldier.email)
+    })
     await openModule(page, he.roles.open)
     await drawer(page).getByRole('button', { name: he.roles.new }).click()
     await page.getByLabel(he.roles.name).fill(ROLE)

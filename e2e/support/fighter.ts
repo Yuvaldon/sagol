@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 import { dictionary as he } from '../../src/i18n/he/dictionary.ts'
 import { NOW, choose, closeDrawer, createType, drawer, openRotation } from './leaves.ts'
+import { createSoldier } from './soldiers.ts'
 import { addUnit, enterAsOwner, openModule, signIn, tab } from './workspace.ts'
 
 // What the fighter demos share: the owner's unit, a type, Yael who links on her own, the fighter role as the
@@ -45,24 +46,16 @@ export async function setUpFighter(page: Page, { presence = false, bare = false,
   await createType(page, { name: TYPE, color: he.palette.teal })
   await closeDrawer(page)
 
-  await openModule(page, he.soldiers.open)
-  await page.getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(YAEL.first)
-  await page.getByLabel(he.soldiers.lastName).fill(YAEL.last)
-  if (unitmates.length > 0) await choose(page, he.soldiers.unit, UNIT)
-  await page.getByLabel(he.soldiers.personalId).fill(YAEL.personalId)
-  await page.getByLabel(he.soldiers.inviteEmail).fill(YAEL.email)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(YAEL_NAME)).toBeVisible()
+  await createSoldier(page, YAEL.first, YAEL.last, async () => {
+    if (unitmates.length > 0) await choose(page, he.soldiers.unit, UNIT)
+    await page.getByLabel(he.soldiers.personalId).fill(YAEL.personalId)
+    await page.getByLabel(he.soldiers.inviteEmail).fill(YAEL.email)
+  })
   for (const mate of unitmates) {
-    await page.getByRole('button', { name: he.soldiers.new }).first().click()
-    await page.getByLabel(he.soldiers.firstName).fill(mate.first)
-    await page.getByLabel(he.soldiers.lastName).fill(mate.last)
-    await choose(page, he.soldiers.unit, UNIT)
-    await page.getByRole('button', { name: he.common.create }).click()
-    await expect(page.getByRole('list', { name: he.soldiers.listLabel }).getByText(`${mate.first} ${mate.last}`, { exact: true })).toBeVisible()
+    await createSoldier(page, mate.first, mate.last, async () => {
+      await choose(page, he.soldiers.unit, UNIT)
+    })
   }
-  await closeDrawer(page)
 
   await openModule(page, he.roles.open)
   await drawer(page).getByRole('button', { name: he.roles.new }).click()

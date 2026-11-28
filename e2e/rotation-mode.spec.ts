@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { openSoldierCard } from './support/soldiers.ts'
 import { NOW, closeDrawer, drawer, press, typeDate } from './support/leaves.ts'
 import { addUnit, OWNER, enterAsOwner, expectNoAxeViolations, openModule, openTab } from './support/workspace.ts'
 
@@ -24,8 +25,7 @@ function tagsSection(page: Page) {
 }
 
 async function openOwnerCard(page: Page) {
-  await openModule(page, he.soldiers.open)
-  await drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: new RegExp(OWNER.name) }).click()
+  await openSoldierCard(page, OWNER.name, { full: true })
 }
 
 test('routine, a rotation with a tag of its own, the close and the reopen', async ({ page }) => {

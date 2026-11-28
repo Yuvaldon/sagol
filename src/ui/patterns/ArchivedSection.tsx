@@ -3,7 +3,7 @@ import { t, type I18nKey } from '@i18n'
 import { ArchiveRestore, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { Button as AriaButton, Disclosure, DisclosurePanel, Heading } from 'react-aria-components'
-import { failureKey } from '../errors/messages'
+import { restoreFailureKey } from './restoreFailure'
 import { IconButton } from '../primitives/Button'
 import { SmallDialog } from './Dialogs'
 
@@ -24,24 +24,6 @@ export interface ArchivedSectionProps<Row extends Restorable> {
   readonly bodyKey?: I18nKey
   /** 3 inside a drawer, 2 in the viewport. */
   readonly headingLevel?: 2 | 3
-}
-
-/** Why a restore was refused, in the words of a restore: what it depends on, or what took its place. */
-function restoreFailureKey(error: AppError): I18nKey {
-  const [issue] = error.code === 'validation_failed' ? error.issues : []
-  switch (issue?.code) {
-    case 'reference_archived':
-      return 'archived.blockedArchived'
-    case 'reference_not_found':
-      return 'archived.blockedMissing'
-    case 'already_exists':
-      return 'archived.blockedTaken'
-    // A unit with no parent while another live root exists (D-251).
-    case 'required':
-      return issue.path[0] === 'parent_id' ? 'archived.blockedRoot' : failureKey(error)
-    default:
-      return failureKey(error)
-  }
 }
 
 export function ArchivedSection<Row extends Restorable>({

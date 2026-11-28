@@ -2,6 +2,7 @@ import type {
   AccountLinkRequest,
   AccountLinkRequestId,
   AccountLinkResult,
+  LinkAssessment,
   LinkCandidate,
   Permission,
   PermissionCheck,
@@ -11,14 +12,14 @@ import type {
   UnitId,
 } from '@contracts'
 import { ACCOUNT_REVIEW_PERMISSION, placementTarget } from '@domain'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { checkOf } from '../permissions/checks'
-import { useCan } from '../permissions/hooks'
+import { useCan, useCanAnswers } from '../permissions/hooks'
 import { QUERY_KEYS } from '../queries/client'
 import { useCommand } from '../queries/command'
 import { loaded, type Loaded } from '../queries/loaded'
-import { unwrap } from '../queries/results'
+import { appErrorOf, unwrap } from '../queries/results'
 import { usePorts } from '../runtime/context'
 import { toRequestLinkInput, toReviewLinkInput, type LinkRequestValues, type LinkReview } from './forms'
 
@@ -65,6 +66,31 @@ export function useLinkCandidates(id: AccountLinkRequestId): Loaded<readonly Lin
   )
 }
 
+/**
+ * Each pending request's readiness and candidates (D-447), read one by one as the reviewer's page needs them (D-482),
+ * by request id. Loading until every answer is in; a failed read is the first failure.
+ */
+export function useLinkAssessments(requests: readonly Pick<AccountLinkRequest, 'id'>[]): Loaded<Readonly<Record<string, LinkAssessment>>> {
+  const { data } = usePorts()
+  return useQueries({
+    queries: requests.map((request) => ({
+      queryKey: [...QUERY_KEYS.accountLinkRequests, 'assessment', request.id],
+      queryFn: () => unwrap(data.repositories.account_link_requests.assessment(request.id)),
+    })),
+    combine: (results): Loaded<Readonly<Record<string, LinkAssessment>>> => {
+      const failed = results.find((result) => result.isError)
+      if (failed !== undefined) return { status: 'failed', error: appErrorOf(failed.error) }
+      const byId: Record<string, LinkAssessment> = {}
+      for (const [index, result] of results.entries()) {
+        const request = requests[index]
+        if (result.data === undefined || request === undefined) return { status: 'loading' }
+        byId[request.id] = result.data
+      }
+      return { status: 'ready', value: byId }
+    },
+  })
+}
+
 export function useLinkReviewCommands() {
   const { data } = usePorts()
   return useCommand(
@@ -82,11 +108,13 @@ export const REVIEW_CHECKS: readonly PermissionCheck[] = [REVIEW_AT_ORGANIZATION
  * Whether the account-links button is for this actor, and how many requests wait for them (D-150): who holds
  * `accounts:approve` at organization scope, or reads at least one pending request. A hint: the adapter filters again.
  */
-export function useLinkReviewAccess(): { readonly allowed: boolean; readonly pending: number } {
-  const can = useCan(REVIEW_CHECKS)
+export function useLinkReviewAccess(): { readonly allowed: boolean; readonly pending: number; readonly known: boolean } {
+  const { can, known } = useCanAnswers(REVIEW_CHECKS)
   const requests = usePendingLinkRequests()
   const pending = requests.status === 'ready' ? requests.value.length : 0
-  return { allowed: can(REVIEW_AT_ORGANIZATION) || pending > 0, pending }
+  const allowed = can(REVIEW_AT_ORGANIZATION) || pending > 0
+  // Settled once both answers are in: a unit-scoped reviewer is allowed only by what they read (D-482).
+  return { allowed, pending, known: allowed || (known(REVIEW_AT_ORGANIZATION) && requests.status !== 'loading') }
 }
 
 const P = {

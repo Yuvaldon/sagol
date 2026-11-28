@@ -1,4 +1,3 @@
-import { PANEL_IDS } from '@config'
 import {
   RuleEnforcement,
   RuleGroupBy,
@@ -26,7 +25,6 @@ import {
   ruleFormIssues,
   ruleFormValues,
   tagsOfCategory,
-  usePanel,
   useRuleCommands,
   type RuleFormValues,
 } from '@logic'
@@ -173,16 +171,15 @@ export interface RuleFormProps {
   /** Where the rule may be placed: NULL is the whole organization (D-139). */
   readonly placeable: (scopeUnitId: UnitId | null) => boolean
   readonly onReload: () => void
+  /** The form is done, saved or let go: the rule's drawer shows the rule again, or closes for a new one (D-482). */
+  readonly onDone: () => void
 }
 
-export function RuleForm({ rule, units, levels, categories, tags, ranks, deployments, placeable, onReload }: RuleFormProps) {
-  const panel = usePanel()
+export function RuleForm({ rule, units, levels, categories, tags, ranks, deployments, placeable, onReload, onDone }: RuleFormProps) {
   const { create, update } = useRuleCommands()
   const [opened] = useState(rule)
   const [state, setState] = useState(CLEAN_FORM)
-  const backToList = () => {
-    panel.open(PANEL_IDS.rules)
-  }
+  const backToList = onDone
 
   const form = useForm({
     defaultValues: opened === null ? NEW_RULE_VALUES : ruleFormValues(opened),

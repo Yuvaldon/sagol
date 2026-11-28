@@ -1,4 +1,4 @@
-import { NEW_ENTITY, PANEL_IDS } from '@config'
+import { NEW_ENTITY, PANEL_IDS, ROUND_ENTITY } from '@config'
 import { t } from '@i18n'
 import { useLeave, useLeaveTypes, usePanel } from '@logic'
 import { Suspense, lazy } from 'react'
@@ -36,6 +36,13 @@ function LeaveCard({ id, onClose }: { readonly id: string; readonly onClose: () 
 export function LeaveDrawer() {
   const panel = usePanel()
   if (panel.panel !== PANEL_IDS.leaves) return null
+  if (panel.entity === ROUND_ENTITY) {
+    return (
+      <StopDrawer inUrl title={t('manage.round.title')} opensAt="full" onClose={panel.close}>
+        <Body />
+      </StopDrawer>
+    )
+  }
   if (panel.entity !== null && panel.entity !== NEW_ENTITY) return <LeaveCard key={panel.entity} id={panel.entity} onClose={panel.close} />
   return (
     <StopDrawer inUrl title={t('leaves.newTitle')} opensAt="full" onClose={panel.close}>

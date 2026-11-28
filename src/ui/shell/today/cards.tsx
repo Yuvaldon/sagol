@@ -1,19 +1,25 @@
-import { NEW_ENTITY, PANEL_IDS, TODAY } from '@config'
+import { NEW_ENTITY, PANEL_IDS, ROUND_ENTITY, TODAY } from '@config'
 import { t } from '@i18n'
 import {
   fullName,
+  joinGroups,
+  useJoinApproval,
   useLeaveTypes,
+  useLinkAssessments,
   useLinkReviewAccess,
   useModuleAccess,
   useMyLeaves,
   useMyLeavesAccess,
   usePanel,
+  usePendingLinkRequests,
   usePendingRequests,
   usePresenceDay,
   usePresentWithMe,
   useQuickAction,
   useRotationScope,
+  useRoundPlanning,
   useShellPlace,
+  useToday,
 } from '@logic'
 import { Badge } from '../../kit/Badge'
 import { Card, CardDoor } from '../../kit/Card'
@@ -23,6 +29,8 @@ import { leaveDatesText, typeNameOf } from '../../modules/leaves/leaveText'
 import { formatDate } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
 import { useOpener } from '../chrome'
+import { joinOutcome } from '../manage/joinOutcome'
+import { useNotices } from '../notices'
 import { REQUESTS_OPENER } from './requestActions'
 import { ReportButton } from './ReportButton'
 import { RequestRows } from './Requests'
@@ -32,6 +40,7 @@ import { Status } from './SoldierBlock'
 // three rows and a door to the rest.
 
 const SEPARATOR = ' · '
+const WORD = ' '
 const NO_ROWS: readonly never[] = []
 
 /**
@@ -90,17 +99,75 @@ export function ApprovalsCard() {
   )
 }
 
-/** "בקשות הצטרפות": the identities that asked to link to a soldier, for who reviews them (D-150). */
+/**
+ * "בקשות הצטרפות" (the handoff's card bank, D-482): how many are ready and how many wait for review, up to three of them,
+ * and "אישור N" for the ready ones. The title opens the page; a row opens its "זה הוא?".
+ */
 export function JoinsCard() {
+  const place = useShellPlace()
   const panel = usePanel()
+  const notices = useNotices()
   const { allowed, pending } = useLinkReviewAccess()
+  const requests = usePendingLinkRequests()
+  const shown = requests.status === 'ready' ? requests.value : NO_ROWS
+  const assessments = useLinkAssessments(shown)
+  const approval = useJoinApproval()
+  const today = useToday()
   if (!allowed || pending === 0) return null
-  const open = () => {
-    panel.open(PANEL_IDS.accountLinks)
-  }
+  const groups = assessments.status === 'ready' ? joinGroups(shown, assessments.value) : null
+  const ready = groups?.ready ?? []
+  const review = (groups?.review.length ?? 0) + (groups?.newSoldiers.length ?? 0)
   return (
-    <Card titleKey="accountLinks.title" onOpen={open} aside={<Badge tone="pending">{pending}</Badge>}>
-      <p className="text-small text-text-muted">{t('today.joinsWaiting')}</p>
+    <Card
+      titleKey="accountLinks.title"
+      onOpen={() => {
+        place.openPage('joins')
+      }}
+      aside={
+        <Badge tone="pending">
+          {pending}
+          <span className="sr-only"> {t('accountLinks.pendingCount')}</span>
+        </Badge>
+      }
+    >
+      {groups === null ? null : (
+        <p className="text-small text-text-muted tabular-nums">
+          {[[String(ready.length), t('today.joinsReady')].join(WORD), [String(review), t('today.joinsReview')].join(WORD)].join(SEPARATOR)}
+        </p>
+      )}
+      <ul className="flex flex-col">
+        {shown.slice(0, TODAY.cardRows).map((request) => (
+          <li key={request.id}>
+            <PersonRow
+              name={fullName(request)}
+              detail={request.claimed_personal_id ?? undefined}
+              onPress={() => {
+                panel.open(PANEL_IDS.accountLinks, { entity: request.id })
+              }}
+            />
+          </li>
+        ))}
+      </ul>
+      {ready.length === 0 || today === null ? null : (
+        <div>
+          <Button
+            variant="primary"
+            isDisabled={approval.isPending}
+            onPress={() => {
+              void approval.run({ ready: ready.map((entry) => entry.request), placed: [], today }).then((result) => {
+                if (!result.ok) {
+                  notices.fail(result.error)
+                  return
+                }
+                const { done, refusal } = joinOutcome(result.value)
+                notices.report(done, refusal)
+              })
+            }}
+          >
+            {[t('manage.joins.approve'), String(ready.length)].join(WORD)}
+          </Button>
+        </div>
+      )}
     </Card>
   )
 }
@@ -196,6 +263,32 @@ export function MyStatusCard() {
   return (
     <Card titleKey="today.myStatus">
       <Status selection={null} onSelect={null} size="title" />
+    </Card>
+  )
+}
+
+/**
+ * "סבב יציאות · תכנון" (D-459, OI-389, D-482): for who plans the leave round, while soldiers of the rotation have no
+ * round yet, how many; it opens the planner. Absent once every one has, as an empty card is (D-459).
+ */
+export function RoundCard() {
+  const panel = usePanel()
+  const planning = useRoundPlanning()
+  if (planning === null || planning.unplanned === null || planning.unplanned === 0) return null
+  return (
+    <Card
+      titleKey="manage.round.card"
+      onOpen={() => {
+        panel.open(PANEL_IDS.leaves, { entity: ROUND_ENTITY })
+      }}
+      aside={
+        <span className="text-title font-bold tabular-nums">
+          {planning.unplanned}
+          <span className="sr-only"> {t('manage.round.unplanned')}</span>
+        </span>
+      }
+    >
+      <p className="text-small text-text-muted">{[planning.rotation.name, t('manage.round.cardBody')].join(SEPARATOR)}</p>
     </Card>
   )
 }

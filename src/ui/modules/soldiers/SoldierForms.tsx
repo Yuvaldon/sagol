@@ -68,9 +68,6 @@ export function SoldierCreateForm({
     ...(allowNoUnit ? [{ key: NO_SELECTION, label: { key: 'soldiers.noUnit' as const }, value: null }] : []),
     ...unitOptions(units, allowedUnit),
   ]
-  const backToList = () => {
-    panel.open(PANEL_IDS.soldiers)
-  }
   const initial: NewSoldierValues = {
     first_name: '',
     last_name: '',
@@ -89,7 +86,8 @@ export function SoldierCreateForm({
       // Private fields hidden by the placement are not sent: what the actor cannot see, they did not type (D-096).
       const values = allowPrivate(value.membership.unit_id) ? value : { ...value, private: initial.private }
       const result = await create.run({ ...values, ...properties.withProperties })
-      if (result.ok) backToList()
+      // The new soldier's card opens in the form's place (D-482).
+      if (result.ok) panel.open(PANEL_IDS.soldiers, { entity: result.value.id })
       else setState(formStateOf(result.error, [...NEW_FIELDS, ...properties.fieldNames]))
     },
   })
@@ -100,7 +98,7 @@ export function SoldierCreateForm({
       submitKey="common.create"
       isPending={create.isPending}
       failure={state.failure}
-      onCancel={backToList}
+      onCancel={panel.close}
       onSubmit={() => {
         void form.handleSubmit()
       }}
@@ -255,13 +253,11 @@ function ProfileFields({
   readonly ranks: readonly CommandRank[]
   readonly onReload: () => void
 }) {
-  const panel = usePanel()
   const { update } = useSoldierCommands()
   const [opened] = useState(soldier)
   const [state, setState] = useState(CLEAN_FORM)
-  const backToList = () => {
-    panel.open(PANEL_IDS.soldiers)
-  }
+  // In the person card the form stays: a save shows the saved values, and a cancel puts back the stored ones (D-482).
+  const backToList = onReload
 
   const properties = usePropertyFields('soldier', opened.properties)
   const form = useForm({
@@ -392,13 +388,11 @@ function PrivateFields({
   readonly row: SoldierPrivate | null
   readonly onReload: () => void
 }) {
-  const panel = usePanel()
   const { updatePrivate } = useSoldierCommands()
   const [opened] = useState(row)
   const [state, setState] = useState(CLEAN_FORM)
-  const backToList = () => {
-    panel.open(PANEL_IDS.soldiers)
-  }
+  // In the person card the form stays: a save shows the saved values, and a cancel puts back the stored ones (D-482).
+  const backToList = onReload
 
   const form = useForm({
     defaultValues: { personal_id: opened?.personal_id ?? '', invite_email: opened?.invite_email ?? '', phone: opened?.phone ?? '' },

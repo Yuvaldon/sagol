@@ -1,6 +1,6 @@
-import { PANEL_IDS, type PanelId } from '@config'
+import { NEW_ENTITY, PANEL_IDS, type PanelId } from '@config'
 import { t, type I18nKey } from '@i18n'
-import { useLinkReviewAccess, useModuleAccess, useMyLeavesAccess, usePanel, useSetupAccess, useTransferAccess } from '@logic'
+import { useModuleAccess, useMyLeavesAccess, usePanel, useSetupAccess, useTransferAccess } from '@logic'
 import { Suspense, lazy, type ComponentType } from 'react'
 import { Button as AriaButton } from 'react-aria-components'
 import { Drawer } from '../patterns/Drawer'
@@ -10,7 +10,6 @@ import { useGrantsAccess, useInboxAccess } from './inboxAccess'
 
 // Each module loads when its drawer first opens, so the entry chunk holds only the board (OI-118, D-210).
 const PropertiesModule = lazy(() => import('../modules/properties/PropertiesModule').then((module) => ({ default: module.PropertiesModule })))
-const AccountLinksModule = lazy(() => import('../modules/account-links/AccountLinksModule').then((module) => ({ default: module.AccountLinksModule })))
 const GrantsModule = lazy(() => import('../modules/access/GrantsModule').then((module) => ({ default: module.GrantsModule })))
 const RankBindingsModule = lazy(() => import('../modules/access/RankBindingsModule').then((module) => ({ default: module.RankBindingsModule })))
 const RolesModule = lazy(() => import('../modules/access/RolesModule').then((module) => ({ default: module.RolesModule })))
@@ -30,13 +29,14 @@ const UnitLevelsModule = lazy(() => import('../modules/unit-levels/UnitLevelsMod
 const TransferModule = lazy(() => import('../modules/transfer/TransferModule').then((module) => ({ default: module.TransferModule })))
 const UnitsModule = lazy(() => import('../modules/units/UnitsModule').then((module) => ({ default: module.UnitsModule })))
 
-// The map of what opens in the modules' drawer (D-092); a leave and a new leave open in their own (`LeaveDrawer`). A drawer holds one or more sections, and each section is
+// The map of what opens in the modules' drawer (D-092); a leave and a new leave open in their own (`LeaveDrawer`), and so
+// do a person card, a rule, a join request and an archive (D-482): only the full form of a new soldier and the board's
+// rules of a day stay here for those two panels. A drawer holds one or more sections, and each section is
 // its own panel in the URL. A section appears only for who may read it, and a deep link to one they
 // may not read opens nothing (D-046).
 
 type ModuleAccess = ReturnType<typeof useModuleAccess> & {
   readonly inbox: boolean
-  readonly accountLinks: boolean
   readonly grants: boolean
   readonly myLeaves: boolean
   readonly transfer: boolean
@@ -150,17 +150,6 @@ const GROUPS: readonly ModuleGroup[] = [
     sections: [{ panel: PANEL_IDS.leaveClosed, labelKey: 'inbox.closedLabel', isAllowed: (access) => access.inbox, Module: ClosedLeavesModule }],
   },
   {
-    titleKey: 'accountLinks.title',
-    sections: [
-      {
-        panel: PANEL_IDS.accountLinks,
-        labelKey: 'accountLinks.title',
-        isAllowed: (access) => access.accountLinks,
-        Module: AccountLinksModule,
-      },
-    ],
-  },
-  {
     titleKey: 'roles.title',
     sections: [
       { panel: PANEL_IDS.roles, labelKey: 'roles.tabRoles', isAllowed: (access) => access.roles, Module: RolesModule },
@@ -188,13 +177,15 @@ export function ModuleDrawer() {
   const access = {
     ...useModuleAccess(),
     inbox: useInboxAccess(),
-    accountLinks: useLinkReviewAccess().allowed,
     grants: useGrantsAccess(),
     myLeaves: useMyLeavesAccess()?.view === true,
     transfer: useTransferAccess().any,
     setup: useSetupAccess().length > 0,
   }
-  const group = GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
+  // A soldier and a rule open in their own drawers; the modules' drawer keeps only the new soldier's form and the day's rules.
+  const ownDrawer =
+    (panel.panel === PANEL_IDS.soldiers && panel.entity !== NEW_ENTITY) || (panel.panel === PANEL_IDS.rules && panel.entity !== null)
+  const group = ownDrawer ? undefined : GROUPS.find((candidate) => candidate.sections.some((section) => section.panel === panel.panel))
   const sections = group?.sections.filter((section) => section.isAllowed(access)) ?? []
   const open = sections.find((section) => section.panel === panel.panel)
   if (group === undefined || open === undefined) return null

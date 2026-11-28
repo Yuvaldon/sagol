@@ -1,3 +1,4 @@
+import { PANEL_IDS } from '@config'
 import { t } from '@i18n'
 import { nextSetupStep, usePanel, useSetupAccess, useSetupProgress, useShellPlace } from '@logic'
 import { ArrowRight, ChevronLeft } from 'lucide-react'
@@ -36,6 +37,7 @@ function Item({ item }: { readonly item: SettingsItem }) {
 /** The checklist of the unit's setup, while a step is open. Mounted only for who has a step. */
 function Checklist() {
   const panel = usePanel()
+  const place = useShellPlace()
   const progress = useSetupProgress()
   const id = useId()
   if (progress.status !== 'ready' || nextSetupStep(progress.value) === null) return null
@@ -47,7 +49,9 @@ function Checklist() {
       <SetupChecklist
         steps={progress.value}
         onGo={(step) => {
-          panel.open(step.panel)
+          // The soldiers are a page of "ניהול", not a module (D-482).
+          if (step.panel === PANEL_IDS.soldiers) place.openPage('soldiers')
+          else panel.open(step.panel)
         }}
       />
     </section>

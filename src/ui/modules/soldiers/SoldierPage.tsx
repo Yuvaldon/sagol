@@ -1,18 +1,19 @@
-import { PANEL_IDS } from '@config'
 import type { AppError, CalendarDate, CommandRank, Issue, Soldier, Unit, UnitId, UnitMembership } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
-  fullName,
   moveFormIssues,
   openMembershipOf,
   soldierHistory,
-  usePanel,
+  useCommandRanks,
+  useMemberships,
+  useToday,
+  useUnitsWithArchived,
   useSoldierCommands,
   useSoldierPagePermissions,
   useSoldierPrivate,
   type HistoryUnit,
 } from '@logic'
-import { ArrowRight, CornerDownLeft } from 'lucide-react'
+import { CornerDownLeft } from 'lucide-react'
 import { useState } from 'react'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { SoldierAccessSection } from '../access/SoldierAccessSection'
@@ -28,7 +29,7 @@ import { SoldierTagsSection } from './SoldierTags'
 import { unitOptions } from './unitOptions'
 
 // One soldier: the profile, the tags, the private fields, the placement, the seniority and the access (D-284). Each section has its own permission
-// (D-094, D-096, D-130), so each appears on its own.
+// (D-094, D-096, D-130), so each appears on its own. It is the person card's full height (D-482).
 
 const NO_SELECTION = 'none'
 const MOVE_FIELDS: readonly string[] = ['new_membership.unit_id', 'new_membership', 'effective_date']
@@ -239,7 +240,7 @@ function PlacementSection({
   )
 }
 
-export function SoldierPage({
+function SoldierPage({
   soldier,
   ranks,
   units,
@@ -253,7 +254,6 @@ export function SoldierPage({
   readonly memberships: readonly UnitMembership[]
   readonly today: CalendarDate | null
 }) {
-  const panel = usePanel()
   const liveUnits = units.filter((unit) => unit.archived_at === null)
   const permissions = useSoldierPagePermissions(soldier, liveUnits)
   const rank = ranks.find((candidate) => candidate.id === soldier.command_rank_id) ?? null
@@ -268,17 +268,6 @@ export function SoldierPage({
 
   return (
     <div className="flex flex-col gap-xl">
-      <div className="flex items-center gap-sm">
-        <Button
-          onPress={() => {
-            panel.open(PANEL_IDS.soldiers)
-          }}
-        >
-          <ArrowRight aria-hidden size={14} />
-          {t('common.backToList')}
-        </Button>
-        <h2 className="truncate text-body font-bold">{fullName(soldier)}</h2>
-      </div>
       {permissions.update ? (
         <SoldierProfileForm key={profileGeneration} soldier={soldier} ranks={ranks} />
       ) : (
@@ -303,4 +292,17 @@ export function SoldierPage({
       <SoldierAccessSection soldier={soldier} />
     </div>
   )
+}
+
+/** The full person card (D-482): what it reads, then every section the actor may see. */
+export function FullCard({ soldier }: { readonly soldier: Soldier }) {
+  const ranks = useCommandRanks()
+  const units = useUnitsWithArchived()
+  const memberships = useMemberships()
+  const today = useToday()
+  const reads = [ranks, units, memberships]
+  const failed = reads.find((read) => read.status === 'failed')
+  if (failed?.status === 'failed') return <FailureNotice error={failed.error} />
+  if (ranks.status !== 'ready' || units.status !== 'ready' || memberships.status !== 'ready') return <LoadingNotice />
+  return <SoldierPage soldier={soldier} ranks={ranks.value} units={units.value} memberships={memberships.value} today={today} />
 }

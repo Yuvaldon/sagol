@@ -117,8 +117,14 @@ export type SetupStepId = (typeof SETUP_STEPS)[number]['id']
 /** The `entity` value of a form for a row that does not exist yet. */
 export const NEW_ENTITY = 'new'
 
-/** The `entity` value of the soldiers' quick entry (D-282): a grid of new soldiers, not one soldier's form. */
+/** The `entity` value of the soldiers' quick entry (D-282), from links made before "הוספת חיילים" replaced it (D-482). */
 export const QUICK_ENTRY = 'quick'
+
+/** The `entity` value of a tool's archive, a drawer of its own (D-461, D-482). */
+export const ARCHIVE_ENTITY = 'archive'
+
+/** The `entity` value of the `leaves` panel that plans a leave round (OI-389, D-482). */
+export const ROUND_ENTITY = 'round'
 
 /** A sheet closes when its grip is dragged this far down, or released this fast. */
 export const SHEET_DISMISS = { offsetPx: 96, velocityPxPerSecond: 500 } as const

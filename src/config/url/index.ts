@@ -48,6 +48,8 @@ export const SEARCH_PARAMS = {
   tab: 'tab',
   /** A page the destination opened over itself (`PageId`, D-459). */
   page: 'page',
+  /** The options of the list of "חיילים": its sort, grouping, the inactive and the dots (D-482). Absent: the defaults. */
+  people: 'people',
 } as const
 
 export type SearchParamName = (typeof SEARCH_PARAMS)[keyof typeof SEARCH_PARAMS]

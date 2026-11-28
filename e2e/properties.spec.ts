@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { createSoldier, openSoldierCard } from './support/soldiers.ts'
 import { NOW, board, closeDrawer, drawer, openRotationInNewUnit } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER } from './support/workspace.ts'
 import { addFilter, clearConditions } from './support/board.ts'
@@ -29,14 +30,6 @@ async function createProperty(page: Page, label: string, dataType: string, optio
   await expect(drawer(page).getByRole('list', { name: he.properties.entityTypes.soldier })).toContainText(label)
 }
 
-async function createSoldier(page: Page, firstName: string, lastName: string, fill: (page: Page) => Promise<void>) {
-  await drawer(page).getByRole('button', { name: he.soldiers.new }).first().click()
-  await page.getByLabel(he.soldiers.firstName).fill(firstName)
-  await page.getByLabel(he.soldiers.lastName).fill(lastName)
-  await fill(page)
-  await page.getByRole('button', { name: he.common.create }).click()
-  await expect(drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByText(`${firstName} ${lastName}`)).toBeVisible()
-}
 
 // The steps read the timeline's bars, which a phone opens only when asked (D-290).
 test.beforeEach(async ({ page, isMobile }) => {
@@ -57,7 +50,6 @@ test('custom properties: defined once, filled in a form, and filtered by', async
   })
 
   await test.step("a soldier's form holds the properties' fields", async () => {
-    await openModule(page, he.soldiers.open)
     await createSoldier(page, 'יעל', 'שחר', async () => {
       await choose(page, 'סוג דם', 'A')
       await choose(page, 'רישיון נהיגה', he.properties.yes)
@@ -65,7 +57,7 @@ test('custom properties: defined once, filled in a form, and filtered by', async
     await createSoldier(page, 'נועם', 'לב', async () => {
       await choose(page, 'סוג דם', 'O')
     })
-    await drawer(page).getByRole('list', { name: he.soldiers.listLabel }).getByRole('button', { name: /יעל שחר/ }).click()
+    await openSoldierCard(page, 'יעל שחר', { full: true })
     await expect(drawer(page).getByRole('button', { name: /סוג דם$/ })).toContainText('A')
     await expectNoAxeViolations(page)
     await closeDrawer(page)

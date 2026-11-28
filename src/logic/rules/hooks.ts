@@ -10,6 +10,7 @@ import type {
   Unit,
   UnitId,
 } from '@contracts'
+import { UpdateAvailabilityRuleInput } from '@contracts'
 import { EVERY_SOLDIER, compareDates, type RuleData } from '@domain'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
@@ -81,7 +82,11 @@ export function useRuleCommands() {
   )
   const archive = useCommand(keys, (rule: AvailabilityRule) => rules.archive({ id: rule.id, expected_version: rule.version }))
   const restore = useCommand(keys, (rule: AvailabilityRule) => rules.restore({ id: rule.id, expected_version: rule.version }))
-  return { create, update, archive, restore }
+  /** The row's switch (the handoff's list): the rule on or off, nothing else changed. */
+  const toggle = useCommand(keys, (rule: AvailabilityRule) =>
+    rules.update(UpdateAvailabilityRuleInput.parse({ id: rule.id, expected_version: rule.version, changes: { is_enabled: !rule.is_enabled } })),
+  )
+  return { create, update, archive, restore, toggle }
 }
 
 // ---------------------------------------------------------------------- hints

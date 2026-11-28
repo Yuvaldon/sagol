@@ -62,7 +62,7 @@ describe('history entries (D-332)', () => {
     const { history, handles } = await renderAt('/?view=table')
     const start = position(history)
     await step(() => {
-      handles.panel.open(PANEL_IDS.soldiers)
+      handles.panel.open(PANEL_IDS.deployments)
     })
     await step(() => {
       handles.panel.open(PANEL_IDS.units)
@@ -79,7 +79,7 @@ describe('history entries (D-332)', () => {
     const { history, handles } = await renderAt('/?view=table')
     const start = position(history)
     await step(() => {
-      handles.panel.open(PANEL_IDS.soldiers)
+      handles.panel.open(PANEL_IDS.deployments)
     })
     await step(() => {
       handles.change({ from: '2026-11-15' })
@@ -135,10 +135,10 @@ describe('history entries (D-332)', () => {
     })
     await step(() => {
       handles.entry.handOff(() => {
-        handles.panel.open(PANEL_IDS.soldiers)
+        handles.panel.open(PANEL_IDS.deployments)
       })
     })
-    expect(shown().panel).toBe(PANEL_IDS.soldiers)
+    expect(shown().panel).toBe(PANEL_IDS.deployments)
     expect(position(history)).toBe(start + 1)
     await step(() => {
       history.back()
@@ -166,7 +166,7 @@ describe('history entries (D-332)', () => {
   it('a panel closed twice before the history answers leaves only its own entry', async () => {
     const { history, handles } = await renderAt('/?view=table')
     await step(() => {
-      handles.panel.open(PANEL_IDS.soldiers)
+      handles.panel.open(PANEL_IDS.deployments)
     })
     const start = position(history) - 1
     const back = vi.spyOn(history, 'back')

@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { openSoldiers, soldierRow } from './support/soldiers.ts'
 import { TYPE, YAEL_NAME, enterAsYael, setUpFighter, signOut } from './support/fighter.ts'
 import { choose, closeDrawer, drawer, leavesOf, typeDate } from './support/leaves.ts'
 import { selectView } from './support/board.ts'
-import { OWNER, claimOrganization, expectNoAxeViolations, navigation, openModule, setupDrawer, signIn, openMyLeaves, expectWaitingRequests, openTab, tab, openRequests, requestsList } from './support/workspace.ts'
+import { OWNER, claimOrganization, expectNoAxeViolations, navigation, setupDrawer, signIn, openMyLeaves, expectWaitingRequests, openTab, tab, openRequests, requestsList } from './support/workspace.ts'
 
 // V27's acceptance: journey (a); V25's: journeys (c), (d) and (e) of docs/Design.md, step by step as written there (D-263), on desktop and
 // a phone, RTL, with axe. A step that changes in Design.md changes here in the same commit. Sample data, tests only.
@@ -43,17 +44,18 @@ test('journey (a): the claim, the setup from a template, soldiers, then a rotati
     await expect(page).toHaveURL(/\/$/)
   })
 
-  await test.step('(a) 5. soldiers pasted into the quick entry are saved, then "פתיחת סבב"', async () => {
-    await openModule(page, he.soldiers.open)
-    await drawer(page).getByRole('button', { name: he.soldiers.quick.open }).click()
-    await drawer(page).getByRole('textbox', { name: he.soldiers.quick.paste }).fill(PASTED)
-    await drawer(page).getByRole('button', { name: he.soldiers.quick.pasteAdd }).click()
+  await test.step('(a) 5. soldiers pasted into "הוספת חיילים" are saved, then "פתיחת סבב"', async () => {
+    await openSoldiers(page)
+    await page.getByRole('button', { name: he.manage.pages.addSoldiers, exact: true }).click()
+    await page.getByRole('main').getByRole('button', { name: he.manage.add.paste }).click()
+    await page.getByRole('main').getByRole('textbox', { name: he.soldiers.quick.paste }).fill(PASTED)
+    await page.getByRole('main').getByRole('button', { name: he.soldiers.quick.pasteAdd }).click()
     await expectNoAxeViolations(page)
-    await drawer(page).getByRole('button', { name: `${he.soldiers.quick.save} 2` }).click()
-    await expect(drawer(page).getByRole('status')).toHaveText(`${he.soldiers.quick.saved} 2`)
-    await drawer(page).getByRole('button', { name: he.common.backToList }).click()
-    await expect(drawer(page).getByText('נועה כהן')).toBeVisible()
-    await closeDrawer(page)
+    await page.getByRole('button', { name: `${he.manage.add.submitCount} 2 ${he.manage.add.submitSoldiers}` }).click()
+    await expect(page.getByRole('status').filter({ hasText: `2 ${he.manage.add.added}` })).toBeVisible()
+    await page.getByRole('button', { name: he.common.close, exact: true }).click()
+    await expect(soldierRow(page, 'נועה כהן')).toBeVisible()
+    await openTab(page, 'today')
     await page.getByRole('button', { name: he.workspace.openRotation }).click()
     await expect(page).toHaveURL(/panel=deployments&entity=new/)
   })

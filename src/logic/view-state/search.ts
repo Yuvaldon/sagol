@@ -1,4 +1,4 @@
-import { BarColorMode, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PanelId, PageId, QUICK_ENTRY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TabId, TableSortKey, ViewId } from '@config'
+import { ARCHIVE_ENTITY, BarColorMode, BoardSortKey, DEFAULT_SORT_ORDER, NEW_ENTITY, PANEL_IDS, PanelId, PageId, QUICK_ENTRY, ROUND_ENTITY, ROUTES, RangeKind, SEARCH_PARAMS, SortOrder, TabId, TableSortKey, ViewId } from '@config'
 import { CalendarDate, DeploymentId, FilterExpression, SavedViewId, UnitId } from '@contracts'
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo } from 'react'
@@ -7,6 +7,7 @@ import { LeaveConditions } from './conditions'
 import { NewLeaveDraft } from './draft'
 import { isOverlayEntry, overlayState } from './overlay'
 import { BoardGrouping } from './grouping'
+import { PeopleOptions } from './peopleOptions'
 import { SortRules, isDefaultSort } from './sort-rules'
 
 // All view state lives in the URL (D-023): the view, the date window and its kind (D-211), the sort rules (D-313) and the table's sort (D-214), the board's grouping (D-452), the
@@ -28,7 +29,7 @@ const WorkspaceSearchFields = z.object({
   [SEARCH_PARAMS.filter]: FilterExpression.optional().catch(undefined),
   [SEARCH_PARAMS.panel]: PanelId.optional().catch(undefined),
   [SEARCH_PARAMS.entity]: z
-    .union([z.literal(NEW_ENTITY), z.literal(QUICK_ENTRY), z.uuid()])
+    .union([z.literal(NEW_ENTITY), z.literal(ARCHIVE_ENTITY), z.literal(ROUND_ENTITY), z.uuid()])
     .optional()
     .catch(undefined),
   [SEARCH_PARAMS.parent]: UnitId.optional().catch(undefined),
@@ -45,6 +46,8 @@ const WorkspaceSearchFields = z.object({
   // The destination of the tab bar and the page open over it (D-455, D-459).
   [SEARCH_PARAMS.tab]: TabId.optional().catch(undefined),
   [SEARCH_PARAMS.page]: PageId.optional().catch(undefined),
+  // The options of the list of "חיילים" (D-482).
+  [SEARCH_PARAMS.people]: PeopleOptions.optional().catch(undefined),
 })
 type WorkspaceSearchFields = z.infer<typeof WorkspaceSearchFields>
 
@@ -80,8 +83,27 @@ function withOldInbox(raw: unknown): unknown {
 
 const REQUESTS_PAGE: PageId = 'requests'
 
+/**
+ * The lists that became pages of "ניהול" (D-482): a link to the soldiers' list, to their quick entry or to the list of
+ * join requests opens the page that replaced it. A link to one soldier or one request still opens its drawer.
+ */
+const OLD_LIST_PAGES: readonly { readonly panel: string; readonly entity: string | undefined; readonly page: PageId }[] = [
+  { panel: PANEL_IDS.soldiers, entity: undefined, page: 'soldiers' },
+  { panel: PANEL_IDS.soldiers, entity: QUICK_ENTRY, page: 'add_soldiers' },
+  { panel: PANEL_IDS.accountLinks, entity: undefined, page: 'joins' },
+]
+
+function withOldLists(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw
+  const search: Record<string, unknown> = { ...raw }
+  const old = OLD_LIST_PAGES.find((list) => search[SEARCH_PARAMS.panel] === list.panel && search[SEARCH_PARAMS.entity] === list.entity)
+  if (old === undefined) return raw
+  const { [SEARCH_PARAMS.panel]: _panel, [SEARCH_PARAMS.entity]: _entity, [SEARCH_PARAMS.tab]: _tab, ...rest } = search
+  return { ...rest, [SEARCH_PARAMS.page]: rest[SEARCH_PARAMS.page] ?? old.page }
+}
+
 /** The search params of the workspace route. `app` hands this to the router. */
-export const WorkspaceSearch = z.preprocess(withOldInbox, WorkspaceSearchFields).transform(withBoardSort)
+export const WorkspaceSearch = z.preprocess((raw) => withOldLists(withOldInbox(raw)), WorkspaceSearchFields).transform(withBoardSort)
 export type WorkspaceSearch = z.infer<typeof WorkspaceSearch>
 
 /** The workspace search as it is now, validated. */

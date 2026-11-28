@@ -1,10 +1,10 @@
 import { PANEL_IDS, SETUP_SECTIONS, WORK_SECTIONS, type SetupPanel, type WorkModule } from '@config'
 import type { I18nKey } from '@i18n'
-import { useLinkReviewAccess, useModuleAccess, usePanel, useRulesDay, useTransferAccess } from '@logic'
+import { useLinkReviewAccess, useModuleAccess, usePanel, useShellPlace, useTransferAccess } from '@logic'
 import { useGrantsAccess } from './inboxAccess'
 
 // The modules of the workspace (D-116, D-167, D-173): each one only for who may open it. They are the rows of "ניהול"
-// and of its settings page (D-456).
+// and of its settings page (D-456). The designed tools open their pages (D-482); the others their modules.
 
 export interface ModuleEntry {
   readonly id: string
@@ -18,7 +18,7 @@ export interface ModuleEntry {
 export function useNavigationEntries(): ReadonlyMap<WorkModule, ModuleEntry> {
   const access = useModuleAccess()
   const panel = usePanel()
-  const rules = useRulesDay()
+  const place = useShellPlace()
   const links = useLinkReviewAccess()
   const grants = useGrantsAccess()
   const opener = (target: Parameters<typeof panel.open>[0]) => () => {
@@ -32,8 +32,22 @@ export function useNavigationEntries(): ReadonlyMap<WorkModule, ModuleEntry> {
       onPress: opener(PANEL_IDS.dashboard),
       count: null,
     },
-    soldiers: access.soldiers && { id: 'soldiers', labelKey: 'soldiers.open', onPress: opener(PANEL_IDS.soldiers), count: null },
-    rules: access.rules && { id: 'rules', labelKey: 'rules.open', onPress: rules.open, count: null },
+    soldiers: access.soldiers && {
+      id: 'soldiers',
+      labelKey: 'soldiers.open',
+      onPress: () => {
+        place.openPage('soldiers')
+      },
+      count: null,
+    },
+    rules: access.rules && {
+      id: 'rules',
+      labelKey: 'rules.open',
+      onPress: () => {
+        place.openPage('rules')
+      },
+      count: null,
+    },
     deployments: access.deployments && {
       id: 'deployments',
       labelKey: 'deployments.open',
@@ -44,7 +58,9 @@ export function useNavigationEntries(): ReadonlyMap<WorkModule, ModuleEntry> {
     account_links: links.allowed && {
       id: 'accountLinks',
       labelKey: 'accountLinks.open',
-      onPress: opener(PANEL_IDS.accountLinks),
+      onPress: () => {
+        place.openPage('joins')
+      },
       count: { value: links.pending, labelKey: 'accountLinks.pendingCount' },
     },
   } satisfies Readonly<Record<WorkModule, ModuleEntry | false>>

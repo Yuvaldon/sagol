@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
+import { openSoldiers, soldierRow } from './support/soldiers.ts'
 import { NOW, closeDrawer, drawer } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openModule } from './support/workspace.ts'
 
@@ -40,11 +41,9 @@ test('the owner imports soldiers from a CSV and downloads the export', async ({ 
     await drawer(page).getByRole('button', { name: he.transfer.import, exact: true }).click()
     await expect(drawer(page).getByText(`${he.transfer.importedCount} 2`)).toBeVisible()
     await closeDrawer(page)
-    await openModule(page, he.soldiers.open)
-    const list = page.getByRole('list', { name: he.soldiers.listLabel })
-    await expect(list.getByText('נועה ברק')).toBeVisible()
-    await expect(list.getByText('עמית גל')).toBeVisible()
-    await closeDrawer(page)
+    await openSoldiers(page)
+    await expect(soldierRow(page, 'נועה ברק')).toBeVisible()
+    await expect(soldierRow(page, 'עמית גל')).toBeVisible()
   })
 
   await test.step('the same file again is refused: its personal numbers are taken', async () => {
