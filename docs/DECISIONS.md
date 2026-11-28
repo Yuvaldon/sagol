@@ -417,11 +417,12 @@ am = amends, ref = refines, ext = extends.
 | D-488 | "אני" builds its designed screen: the profile, "הסבב שלי", "כל הבקשות", "העדפות", and the bell's drawer | domain, config, logic, i18n, ui | am D-490 |
 | D-489 | The person card's edit in place and the tag picker, one component with the profile of "אני" | logic, i18n, ui | am D-490 |
 | D-490 | "אני" after review: a save that stops halfway, a tag made in the edit, the bell's drawer, failed reads | logic, ui | |
-| D-491 | The desktop pass: the side rail, the side panel, "ניהול" beside its page, the people table, the wide board | config, logic, contracts, i18n, ui | |
-| D-492 | A moved leave's first place, the pinch, and the title that gives way on scroll | config, logic, i18n, ui | |
-| D-493 | "הצטרפות": a swipe on a row, and the linked accounts | config, i18n, ui | |
+| D-491 | The desktop pass: the side rail, the side panel, "ניהול" beside its page, the people table, the wide board | config, logic, contracts, i18n, ui | am D-496 |
+| D-492 | A moved leave's first place, the pinch, and the title that gives way on scroll | config, logic, i18n, ui | am D-496 |
+| D-493 | "הצטרפות": a swipe on a row, and the linked accounts | config, i18n, ui | am D-496 |
 | D-494 | Archiving every definition: by name, in red, with "ביטול" where a restore exists | i18n, ui | |
-| D-495 | The rule form after the other screens: the drawer's sentence, then "עוד" | i18n, ui | |
+| D-495 | The rule form after the other screens: the drawer's sentence, then "עוד" | i18n, ui | am D-496 |
+| D-496 | R5·6 after review: a pinch never steps the week, the wide head stays, the panel's Escape from anywhere | ui | |
 
 Reserved or skipped ids, with no entry: D-277, D-279, D-286, D-287, D-288, D-293 (reserved for V30), D-294.
 
@@ -6450,3 +6451,24 @@ already has, so the desktop is one interface and not a second one.
   chosen, and a chip per field would hide the same choices one tap deeper.
 **Why:** OI-385: the handoff asked to revisit the form once the screens around it stood; the drawer's order is what the
 commander already reads.
+
+## D-496 — R5·6 after review: a pinch never steps the week, the wide head stays, the panel's Escape from anywhere
+2026-11-28 · accepted · amends D-491, D-492, D-493, D-495 · decided under D-170 (the review of R5·6)
+- **A pinch is never a swipe** (amends D-492): a second finger ends the swipe under way, so lifting it far from where the
+  first went down does not also move the week.
+- **The wide head stays** (amends D-492): only a phone's timeline gives its month to the centered capsule on scroll. A
+  wide screen keeps its month, its arrows and "היום" in sight, since its mouse has no swipe to step the range.
+- **The side panel's Escape** (amends D-491): Escape closes the newest open panel wherever the keyboard is, since the
+  panel is not modal; a menu, a picker, a dialog, a tooltip or a drag that takes the key first keeps it.
+- **A full screen with its destination** (amends D-491): a page counts as a full screen only on the destination that
+  holds it, so an address naming one the actor cannot reach keeps the rail and the tab bar.
+- **"עוד" opens on a refused field** (amends D-495): when the form itself refuses a field under "עוד", it opens, as it
+  does for the command's refusal.
+- **The linked accounts are the reviewers'** (amends D-493): `entity=linked` opens only for who reviews join requests and
+  is put right for anyone else once that answer is in.
+- **The keyboard is kept**: the tag picker keeps it after "הוסף: X" leaves, so Escape closes the picker; a focused row of
+  "חיילים" stays in the page while it scrolls out of sight; a drawer's windowed list measures its place again when what
+  stands above it changes.
+- **Not changed:** choosing on "חיילים" swaps a row's button for its checkbox. Choosing starts from the options' "בחירה"
+  or a held row, where the keyboard is not on the row, and the menu gives the keyboard back to its trigger.
+**Why:** the independent review of R5·6.

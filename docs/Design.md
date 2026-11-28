@@ -376,6 +376,7 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 62 | A swipe on a join row: ✓ ✗ when ready, ✗ to review, ✗ asks first; linked accounts in a drawer from "הצטרפות" | `02` Join requests; the removed module's overview (OI-404) | D-493 |
 | 63 | Every definition archives by name with a red confirm, and "ביטול" in a line inside its module where a restore exists | D-461 for every tool; on a phone the module's drawer stands over the toast | D-494 |
 | 64 | The rule form follows the drawer's sentence (איפה, על מי, כמה, מתי) and keeps the rare fields under "עוד"; no chips in the form | OI-385: the drawer shows the sentence, the form chooses each part | D-495 |
+| 65 | The timeline's title gives way on a phone only; Escape closes the side panel wherever the keyboard is; a pinch never also swipes | Found in review: a mouse has no swipe; the panel is not modal | D-496 |
 
 ## Color (Light)
 
