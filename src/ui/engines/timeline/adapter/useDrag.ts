@@ -49,7 +49,7 @@ export interface DragGesture {
   readonly active: TimelineDrag | null
   /** A press on a row: a mark, an end of a bar, or an empty day. */
   start(event: ReactPointerEvent, row: DragRow): void
-  /** True while a press must not open or pick what it was on, because it became a drag. */
+  /** Whether the press that just ended must not open or pick what it was on, because it was a drag. Asking forgets it. */
   pressIsDrag(): boolean
   /** True while a press is held, so a long press does not open the browser's menu. */
   isHolding(): boolean
@@ -82,10 +82,6 @@ export function useDrag(layout: DayGrid, elements: Elements, handlers: TimelineD
     gesture.current = null
     if (current === null || !current.picked) return
     setActive(null)
-    // The press that ends a drag is over once this event is; only then may the next press open a mark.
-    window.setTimeout(() => {
-      suppressPress.current = false
-    }, 0)
     const drag: TimelineDrag = { rowKey: current.rowKey, markKey: current.markKey, kind: current.kind, range: current.range }
     if (dropped) latest.current.handlers?.onDrop(drag)
     else latest.current.handlers?.onChange(null)
@@ -247,7 +243,13 @@ export function useDrag(layout: DayGrid, elements: Elements, handlers: TimelineD
   return {
     active,
     start,
-    pressIsDrag: () => suppressPress.current,
+    // The press that ended a drag, or a drag that Escape put back, is not a press: asked once, and forgotten at the next
+    // pointer down on the board.
+    pressIsDrag: () => {
+      const was = suppressPress.current
+      suppressPress.current = false
+      return was
+    },
     isHolding: () => gesture.current !== null,
   }
 }

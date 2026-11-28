@@ -225,7 +225,10 @@ function PhoneRows({ entries, choosing }: { readonly entries: readonly Entry[]; 
 }
 
 const CELL = 'flex min-w-none items-center'
-const COLUMN = `${CELL} w-column shrink-0`
+/** The name keeps a column's width and takes what is left; the others give way before it does, beside a side panel. */
+const NAME = 'flex w-column shrink-0 grow items-center'
+const COLUMN = `${CELL} w-column shrink`
+const DAYS = 'flex shrink-0 items-center'
 
 /** The table's header: the columns' names. */
 function ColumnNames({ days }: { readonly days: boolean }) {
@@ -237,11 +240,11 @@ function ColumnNames({ days }: { readonly days: boolean }) {
   return (
     <div role="rowgroup">
       <div role="row" aria-rowindex={1} className="flex min-h-touch items-center gap-md px-lg">
-        {name('manage.people.columns.name', `${CELL} flex-1`)}
+        {name('manage.people.columns.name', NAME)}
         {name('manage.people.columns.rank', COLUMN)}
         {name('manage.people.columns.unit', COLUMN)}
         {name('manage.people.columns.tags', `${CELL} flex-1`)}
-        {days ? name('manage.people.columns.days', COLUMN) : null}
+        {days ? name('manage.people.columns.days', DAYS) : null}
       </div>
     </div>
   )
@@ -294,7 +297,7 @@ function TableRow({ row, index, days, choosing }: { readonly row: PeopleRow; rea
       }}
       className={`flex min-h-touch cursor-pointer items-center gap-md px-lg hover:bg-inner ${chosen ? 'bg-action-soft' : ''}`}
     >
-      <span role="cell" className={`${CELL} flex-1`}>
+      <span role="cell" className={NAME}>
         {nameCell}
       </span>
       <span role="cell" className={`${COLUMN} text-body text-text-muted`}>
@@ -307,7 +310,7 @@ function TableRow({ row, index, days, choosing }: { readonly row: PeopleRow; rea
         <span className="truncate">{[...row.tags, ...(row.soldier.status === 'inactive' ? [t('manage.people.inactiveMark')] : [])].join(SEPARATOR)}</span>
       </span>
       {days ? (
-        <span role="cell" className={COLUMN}>
+        <span role="cell" className={DAYS}>
           {row.days === null ? null : <Dots days={row.days} />}
         </span>
       ) : null}

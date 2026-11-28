@@ -201,12 +201,13 @@ function Index({ name }: { readonly name: string }) {
 
 /**
  * A wide screen's "ניהול" with a page open (D-460, D-491): the rows in a column on the inline start, the page beside
- * them. The column names itself for readers; the page keeps the one heading of the screen.
+ * them. The column names itself for readers; the page keeps the one heading of the screen. While a side panel is open
+ * the column steps aside, so the page and the panel keep their room.
  */
 function Beside({ current, children }: { readonly current: PageId; readonly children: ReactNode }) {
   return (
     <div className="flex h-full">
-      <nav aria-label={t('navigation.tab')} className="w-tools shrink-0 overflow-y-auto border-e border-divider-strong px-lg pt-xl pb-page-end">
+      <nav aria-label={t('navigation.tab')} className="w-tools shrink-0 overflow-y-auto border-e border-divider-strong px-lg pt-xl pb-page-end panel-open:hidden">
         <div className="flex flex-col gap-lg">
           <ToolRows current={current} />
         </div>
