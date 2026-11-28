@@ -18,9 +18,9 @@ import {
 } from '@logic'
 import { Archive, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, formStateOf, issueError } from '../../patterns/forms'
@@ -171,7 +171,14 @@ export function RankBindingsModule() {
   const commands = useBindingCommands()
   const [roleId, setRoleId] = useState<RoleId | null>(null)
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<RankRoleBinding | null>(null)
+  const archiving = useArchiveStep<RankRoleBinding>({
+    nameOf: (binding) => (ranks.status === 'ready' ? (ranks.value.find((rank) => rank.id === binding.command_rank_id)?.title ?? '') : ''),
+    titleKey: 'bindings.archiveTitle',
+    bodyKey: 'bindings.archiveBody',
+    archive: commands.archive,
+    restore: null,
+    onFailure: setFailure,
+  })
 
   if (roles.status === 'failed') return <FailureNotice error={roles.error} />
   if (bindings.status === 'failed') return <FailureNotice error={bindings.error} />
@@ -207,9 +214,10 @@ export function RankBindingsModule() {
             id: 'archive',
             labelKey: 'common.archive',
             icon: <Archive aria-hidden size={14} />,
+            tone: 'danger',
             onAction: () => {
               setFailure(null)
-              setArchiving(binding)
+              archiving.ask(binding)
             },
           },
         ]
@@ -219,6 +227,7 @@ export function RankBindingsModule() {
     <div className="flex flex-col gap-md">
       <SelectField labelKey="bindings.role" name="role_id" value={role?.id ?? null} options={roleChoices} onChange={setRoleId} error={null} />
       {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
       {role === undefined ? (
         <p className="text-name text-text-muted">{t('bindings.chooseRole')}</p>
       ) : rows.length === 0 ? (
@@ -265,24 +274,7 @@ export function RankBindingsModule() {
           </Button>
         </div>
       ) : null}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="bindings.archiveTitle"
-          hintKey="bindings.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

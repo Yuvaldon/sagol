@@ -28,8 +28,6 @@ export const SEARCH_PARAMS = {
   entity: 'entity',
   /** Parent of a new unit (D-092). */
   parent: 'parent',
-  /** What a timeline bar's color means (`BarColorMode`, D-112). */
-  colors: 'colors',
   /** The board's leave conditions: statuses and types (D-132). */
   leaves: 'leaves',
   /** The day of the present and absent lists (D-134), and of the broken rules in the rules panel (D-141). */

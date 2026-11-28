@@ -19,10 +19,10 @@ import {
 import { useForm } from '@tanstack/react-form'
 import { Archive, ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton, Heading } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { ArchivedSection } from '../../patterns/ArchivedSection'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, issueError, validatorResult } from '../../patterns/forms'
@@ -344,7 +344,14 @@ export function PropertiesModule() {
   const permissions = usePropertyPermissions()
   const commands = usePropertyDefinitionCommands()
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<PropertyDefinition | null>(null)
+  const archiving = useArchiveStep<PropertyDefinition>({
+    nameOf: (definition) => definition.label,
+    titleKey: 'properties.archiveTitle',
+    bodyKey: 'properties.archiveBody',
+    archive: commands.archive,
+    restore: commands.restore,
+    onFailure: setFailure,
+  })
 
   if (definitions.status === 'failed') return <FailureNotice error={definitions.error} />
   if (definitions.status === 'loading') return <LoadingNotice />
@@ -424,9 +431,10 @@ export function PropertiesModule() {
               id: 'archive',
               labelKey: 'common.archive' as const,
               icon: <Archive aria-hidden size={14} />,
+              tone: 'danger' as const,
               onAction: () => {
                 setFailure(null)
-                setArchiving(definition)
+                archiving.ask(definition)
               },
             },
           ]
@@ -437,6 +445,7 @@ export function PropertiesModule() {
   return (
     <div className="flex flex-col gap-md">
       {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
       {sections.map((section) => (
         <EntitySection key={section.type} title={t(ENTITY_TYPE_KEYS[section.type])}>
           {section.definitions.length === 0 ? (
@@ -462,24 +471,7 @@ export function PropertiesModule() {
         </div>
       ) : null}
       {archived}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="properties.archiveTitle"
-          hintKey="properties.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

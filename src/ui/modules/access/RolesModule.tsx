@@ -20,9 +20,9 @@ import {
 } from '@logic'
 import { Archive, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
@@ -220,7 +220,14 @@ export function RolesModule() {
   const permissions = useRolePermissionHints()
   const commands = useRoleCommands()
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<Role | null>(null)
+  const archiving = useArchiveStep<Role>({
+    nameOf: (role) => role.name,
+    titleKey: 'roles.archiveTitle',
+    bodyKey: 'roles.archiveBody',
+    archive: commands.archive,
+    restore: null,
+    onFailure: setFailure,
+  })
 
   if (roles.status === 'failed') return <FailureNotice error={roles.error} />
   if (pairs.status === 'failed') return <FailureNotice error={pairs.error} />
@@ -282,9 +289,10 @@ export function RolesModule() {
             id: 'archive',
             labelKey: 'common.archive',
             icon: <Archive aria-hidden size={14} />,
+            tone: 'danger',
             onAction: () => {
               setFailure(null)
-              setArchiving(role)
+              archiving.ask(role)
             },
           },
         ]
@@ -294,6 +302,7 @@ export function RolesModule() {
     <div className="flex flex-col gap-md">
       {baseline}
       {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
       <ul aria-label={t('roles.listLabel')} className="flex flex-col">
         {live.map((role) => {
           const count = permissionsOfRole(pairs.value, role.id).length
@@ -334,24 +343,7 @@ export function RolesModule() {
           </Button>
         </div>
       ) : null}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="roles.archiveTitle"
-          hintKey="roles.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

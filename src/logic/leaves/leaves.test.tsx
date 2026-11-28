@@ -181,10 +181,9 @@ describe('the leaves of a timeline row (D-111)', () => {
     expect((boardLeaves(leaves, [type(30, null, 0)]).get(YAEL) ?? []).map((row) => row.layer)).toEqual(['request', 'round'])
   })
 })
-describe('the bar colors in the URL (D-112)', () => {
-  it('keeps a known mode and counts anything else as absent', () => {
-    expect(WorkspaceSearch.parse({ colors: 'uniform' }).colors).toBe('uniform')
-    expect(WorkspaceSearch.parse({ colors: 'rainbow' }).colors).toBeUndefined()
+describe('the bar colors are gone from the URL (D-491)', () => {
+  it('reads an old link that names them as if it did not', () => {
+    expect('colors' in WorkspaceSearch.parse({ colors: 'uniform' })).toBe(false)
   })
 })
 

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { createRule } from './support/rules.ts'
-import { closeDrawers, openSoldierCard, openSoldiers, soldierList, soldierRow, soldiersHeading } from './support/soldiers.ts'
+import { closeDrawers, openSoldierCard, openSoldiers, soldierRow, soldierRows, soldiersHeading } from './support/soldiers.ts'
 import { OWNER, addUnit, enterAsOwner, expectNoAxeViolations, openModule, openTab, tab } from './support/workspace.ts'
 
 // "ניהול" of the new interface (D-482): its rows, "חיילים" with the person card and the multi-select, "הוספת חיילים",
@@ -62,16 +62,16 @@ test('"ניהול" opens "חיילים", where soldiers are added, found, sorted
   })
 
   await test.step('the list: rows with their days, the search, and the options as one menu', async () => {
-    await expect(soldierList(page).getByRole('listitem')).toHaveCount(4)
+    await expect(soldierRows(page)).toHaveCount(4)
     await expect(main(page).getByText(`4 ${he.manage.people.count}`)).toBeVisible()
     await expectNoAxeViolations(page)
     await page.getByRole('button', { name: he.manage.people.search, exact: true }).click()
     await page.getByLabel(he.manage.people.searchLabel).fill('שחר')
-    await expect(soldierList(page).getByRole('listitem')).toHaveCount(1)
+    await expect(soldierRows(page)).toHaveCount(1)
     await page.getByLabel(he.manage.people.searchLabel).fill('אין כזה')
     await expect(page.getByText(he.manage.people.noResults)).toBeVisible()
     await page.getByRole('button', { name: he.manage.people.search, exact: true }).click()
-    await expect(soldierList(page).getByRole('listitem')).toHaveCount(4)
+    await expect(soldierRows(page)).toHaveCount(4)
 
     await page.getByRole('button', { name: he.manage.people.options }).click()
     await page.getByRole('button', { name: new RegExp(`^${he.manage.people.sort}`) }).click()
@@ -81,7 +81,7 @@ test('"ניהול" opens "חיילים", where soldiers are added, found, sorted
     await page.keyboard.press('Escape')
     await expect(page).toHaveURL(/people=/)
     // By name: the last name, then the first (D-094).
-    const names = await soldierList(page).getByRole('listitem').allInnerTexts()
+    const names = await soldierRows(page).allInnerTexts()
     expect(names.map((name) => name.split('\n')[0])).toEqual(['נועם בר', 'אורי כהן', 'דנה לוי', 'יעל שחר'])
   })
 
@@ -113,7 +113,7 @@ test('"ניהול" opens "חיילים", where soldiers are added, found, sorted
   })
 })
 
-test('a multi-select moves several soldiers to another unit at once', async ({ page }) => {
+test('a multi-select moves several soldiers to another unit at once', async ({ page, isMobile }) => {
   await openModule(page, he.units.open)
   await addUnit(page, 'מחלקה א')
   await closeDrawers(page)
@@ -129,7 +129,8 @@ test('a multi-select moves several soldiers to another unit at once', async ({ p
   await soldierRow(page, 'יעל שחר').getByText('יעל שחר').click()
   await expect(page.getByRole('checkbox', { name: 'אורי כהן' })).toBeChecked()
   await expect(tray.getByRole('status')).toHaveText(`2 ${he.manage.people.selected}`)
-  await expect(tab(page, 'manage')).toHaveCount(0)
+  // The tray stands in the tab bar's place on a phone; a wide screen's rail stays beside it (D-491).
+  await expect(tab(page, 'manage')).toHaveCount(isMobile ? 0 : 1)
   await expectNoAxeViolations(page)
   // Choosing is a layer: the back button ends it and leaves the page where it was.
   await page.goBack()

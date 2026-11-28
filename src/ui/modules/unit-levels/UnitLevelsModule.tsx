@@ -17,10 +17,10 @@ import { CSS } from '@dnd-kit/utilities'
 import { useForm } from '@tanstack/react-form'
 import { Archive, ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { ArchivedSection } from '../../patterns/ArchivedSection'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { CreateInPlace } from '../../patterns/CreateInPlace'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
@@ -172,7 +172,14 @@ function LevelRow({
 function LevelList({ levels, onFailure }: { readonly levels: readonly UnitLevel[]; readonly onFailure: (error: AppError | null) => void }) {
   const permissions = useUnitLevelPermissions()
   const commands = useUnitLevelCommands()
-  const [archiving, setArchiving] = useState<UnitLevel | null>(null)
+  const archiving = useArchiveStep<UnitLevel>({
+    nameOf: (level) => level.name,
+    titleKey: 'unitLevels.archiveTitle',
+    bodyKey: 'unitLevels.archiveBody',
+    archive: commands.archive,
+    restore: commands.restore,
+    onFailure,
+  })
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_PX } }))
 
   async function reorder(order: readonly UnitLevel[]) {
@@ -214,9 +221,10 @@ function LevelList({ levels, onFailure }: { readonly levels: readonly UnitLevel[
         id: 'archive',
         labelKey: 'common.archive',
         icon: <Archive aria-hidden size={14} />,
+        tone: 'danger',
         onAction: () => {
           onFailure(null)
-          setArchiving(level)
+          archiving.ask(level)
         },
       },
     ]
@@ -240,24 +248,8 @@ function LevelList({ levels, onFailure }: { readonly levels: readonly UnitLevel[
           </ul>
         </SortableContext>
       </DndContext>
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="unitLevels.archiveTitle"
-          hintKey="unitLevels.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) onFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.notice}
+      {archiving.dialog}
     </>
   )
 }

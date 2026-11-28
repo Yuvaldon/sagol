@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { dictionary as he } from '../src/i18n/he/dictionary.ts'
 import { MARK_NAME, NOW, board, choose, closeDrawer, createType, drawer, leavesOf, openRotationInNewUnit, requestLeave, openNewLeave } from './support/leaves.ts'
 import { enterAsOwner, expectNoAxeViolations, openBoardOnTimeline, openModule, OWNER, openTab, tab, backToBoard } from './support/workspace.ts'
-import { openOptions, optionsMenu, selectColors } from './support/board.ts'
+import { openOptions, optionsMenu } from './support/board.ts'
 
 // V4's demo: leave types and their groups, a new leave from the floating "+", bars, lanes and a marker on the
 // board, and the uniform colors, on desktop and mobile, RTL, with axe. Sample data, tests only.
@@ -88,20 +88,11 @@ test('leave types, a new leave, and its bar on the board', async ({ page }, test
     await expectNoAxeViolations(page)
   })
 
-  await test.step('the uniform colors live in the URL and name the type inside the bar; a phone\'s bars have no colors', async () => {
-    if (testInfo.project.name === 'mobile') {
-      // A type is an icon and a name, never a color, on the new time components (D-454, D-480).
-      await openOptions(page)
-      await expect(optionsMenu(page).getByRole('button', { name: new RegExp(`^${he.board.colors} · `) })).toHaveCount(0)
-      await page.keyboard.press('Escape')
-      return
-    }
-    await selectColors(page, he.workspace.colorsUniform)
-    await expect(page).toHaveURL(/colors=uniform/)
-    await expect(board(page).getByText('מחלה', { exact: true })).toBeVisible()
-    await page.reload()
-    await expect(board(page).getByText('מחלה', { exact: true })).toBeVisible()
-    await expectNoAxeViolations(page)
+  await test.step('a type is an icon and a name, never a color, on every width (D-454, D-491)', async () => {
+    await openOptions(page)
+    await expect(optionsMenu(page).getByRole('button', { name: new RegExp(`^${he.board.sort} · `) })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(optionsMenu(page)).toBeHidden()
   })
 
   await test.step('on a phone the bar\'s controls and the menu are icons of a touch size, and the "+" too', async () => {

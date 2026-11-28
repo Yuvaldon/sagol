@@ -1,15 +1,13 @@
-import { PANEL_IDS, type BarColorMode } from '@config'
+import { PANEL_IDS } from '@config'
 import type { CalendarDate, FilterExpression, Leave } from '@contracts'
 import { t } from '@i18n'
 import {
   hasLeaveConditions,
-  useBarColors,
   useBoard,
   useLeaveConditions,
   useLeaves,
   useModuleAccess,
   usePanel,
-  usePresenceDay,
   useSetupUnfinished,
   useSortRules,
   useWorkspaceSearch,
@@ -34,14 +32,10 @@ export interface BoardFrame {
   readonly model: BoardModel
   readonly window: DateWindow
   readonly filter: FilterExpression | null
-  readonly colors: BarColorMode
   /** Opens a soldier's record. NULL when the actor may not open the soldiers module. */
   readonly openSoldier: ((soldierId: string) => void) | null
   /** Opens a leave's details: every leave on the board is a control (D-119). */
   readonly openLeave: (leaveId: string) => void
-  /** Opens the day report on a day (D-193). NULL when the actor may not open the soldiers module; the day's own NULL
-   *  when the scope has no rotation on it. */
-  readonly openDay: ((day: CalendarDate) => (() => void) | null) | null
   /** The stored leaves of the window, by id: a request answered from the board is answered as stored (D-467). */
   readonly stored: ReadonlyMap<string, Leave>
 }
@@ -85,7 +79,6 @@ function Board({
   // The setup's checklist is in "הגדרות היחידה" (D-297).
   const openUnitSetup = useOpenUnitSetup()
   const panel = usePanel()
-  const { mode } = useBarColors()
   const { open } = panel
   const openSoldier = useCallback(
     (soldierId: string) => {
@@ -98,16 +91,6 @@ function Board({
       open(PANEL_IDS.leaves, { entity: leaveId })
     },
     [open],
-  )
-  const { reportable, openOn } = usePresenceDay()
-  const openDay = useCallback(
-    (day: CalendarDate) =>
-      reportable(day)
-        ? () => {
-            openOn(day)
-          }
-        : null,
-    [reportable, openOn],
   )
 
   if (model.rosterCount === 0) {
@@ -135,7 +118,7 @@ function Board({
       </Centered>
     )
   }
-  return draw({ model, window, filter, colors: mode, openSoldier: access.soldiers ? openSoldier : null, openLeave, openDay: access.soldiers ? openDay : null, stored })
+  return draw({ model, window, filter, openSoldier: access.soldiers ? openSoldier : null, openLeave, stored })
 }
 
 const NO_LEAVES: readonly Leave[] = []

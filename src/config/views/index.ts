@@ -33,8 +33,13 @@ export const BOARD = {
   holdTolerancePx: 8,
   /** How far a finger travels before a move is a swipe: between months, between stops, or to reveal a row's actions. */
   swipePx: 40,
-  /** The phone's timeline: the name column, and the narrowest day before the days scroll sideways. */
-  timeline: { nameColumnPx: 124, minDayPx: 24 },
+  /** How far two fingers move apart or together, as a share of where they started, before a pinch changes the range. */
+  pinchRatio: 1.35,
+  /**
+   * The timeline (D-480, D-491): the name column, the narrowest day before the days scroll sideways, and the ranges a
+   * pinch steps through, narrowest first (OI-399). A wide screen's name column is wider, for a name and its rank.
+   */
+  timeline: { nameColumnPx: 124, wideNameColumnPx: 176, minDayPx: 24, pinchRanges: ['week', 'month', 'rotation'] },
 } as const
 
 /**
@@ -103,54 +108,6 @@ export const DEFAULT_TABLE_SORT_ORDER: SortOrder = 'asc'
  */
 export const SORTABLE_PROPERTY_TYPES = ['text', 'number', 'date', 'boolean', 'select'] as const satisfies readonly PropertyDataType[]
 
-/**
- * The timeline's density, in CSS pixels (Stone 3, D-077, D-108). Layout math and the row virtualizer read the
- * same numbers that place the cells, so they live here rather than in the theme.
- */
-export const TIMELINE_LAYOUT = {
-  rowPx: 36,
-  /** A row on mobile, where its name is a 44 px touch target (OI-033). */
-  rowTouchPx: 44,
-  groupRowPx: 32,
-  headerPx: 28,
-  nameColumnPx: 124,
-  overscanRows: 10,
-} as const
-
-/**
- * A day's narrowest column by the length of the window (D-211): a week reads its weekdays, a month fits a laptop, a
- * rotation scrolls sideways. The first band whose `upToDays` holds the window wins. Below `weekdayMinPx` a day's
- * header shows its number only.
- */
-export const TIMELINE_DENSITY = {
-  bands: [
-    { upToDays: 7, minDayPx: 64 },
-    { upToDays: 31, minDayPx: 32 },
-    { upToDays: DATE_WINDOW.maxDays, minDayPx: 24 },
-  ],
-  weekdayMinPx: 44,
-} as const
-
-/** Lanes of overlapping leaves in a timeline row (D-111), in CSS pixels, from Stone 3. */
-export const TIMELINE_LANES = {
-  /** The height of a bar, and the size of a marker's round badge. */
-  barPx: 20,
-  /** Each lane beyond the first adds this much to its row: a bar and the gap above it. */
-  laneStepPx: 24,
-  /** The space between a bar and the edge of its first or last day. */
-  barInsetPx: 3,
-} as const
-
-/**
- * Lanes on a phone (D-144, OI-067): a bar's hit area fills the gap to the next lane, so a step of 44 makes every bar a
- * 44 px touch target, and the one lane of a row fills its 44 px.
- */
-export const TIMELINE_LANES_TOUCH = {
-  barPx: 28,
-  laneStepPx: 44,
-  barInsetPx: 3,
-} as const
-
 /** Dragging on the timeline (D-143, D-144), in CSS pixels and milliseconds. */
 export const TIMELINE_DRAG = {
   /** How far a pointer travels before a press becomes a drag; anything shorter opens the leave. */
@@ -165,11 +122,3 @@ export const TIMELINE_DRAG = {
   edgeZonePx: 40,
   edgeStepPx: 12,
 } as const
-
-/** What a bar's color means (D-111, D-112): its leave type, or one color for every absence. */
-export const BAR_COLOR_MODES = ['type', 'uniform'] as const
-export const BarColorMode = z.enum(BAR_COLOR_MODES)
-export type BarColorMode = z.infer<typeof BarColorMode>
-
-/** The mode when the URL names none. */
-export const DEFAULT_BAR_COLOR_MODE: BarColorMode = 'type'

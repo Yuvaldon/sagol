@@ -1,4 +1,4 @@
-import { PANEL_IDS } from '@config'
+import { LINKED_ENTITY, PANEL_IDS } from '@config'
 import type { AccountLinkRequest, AppError, LinkAssessment, SoldierId, UnitId } from '@contracts'
 import { t } from '@i18n'
 import {
@@ -12,6 +12,7 @@ import {
   useLinkReviewCommands,
   useMemberships,
   usePanel,
+  useLinkReviewAccess,
   usePendingLinkRequests,
   usePlacementReading,
   useSoldierPrivate,
@@ -23,7 +24,7 @@ import {
   type CandidateRow,
   type LinkReview,
 } from '@logic'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button as AriaButton, Radio, RadioGroup } from 'react-aria-components'
 import { StopDrawer } from '../../kit/StopDrawer'
 import { SmallDialog } from '../../patterns/Dialogs'
@@ -36,6 +37,7 @@ import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { unitOptions } from '../../modules/soldiers/unitOptions'
 import { useNotices } from '../notices'
 import { REASON_CHIPS } from './joinWords'
+import { LinkedAccountsDrawer } from './LinkedAccounts'
 
 // "זה הוא?" (the handoff's join-request drawer, D-482, OI-382): the requester, when they asked, and the answer the
 // assessment proposes (D-447). One candidate: "זה הוא?" with their row and, when a detail differs, an amber block with
@@ -356,6 +358,7 @@ function Answer({ request, assessment, onClose }: { readonly request: AccountLin
           titleKey="accountLinks.rejectTitle"
           hintKey="accountLinks.rejectHint"
           confirmKey="accountLinks.rejectConfirm"
+          tone="danger"
           isPending={commands.isPending}
           onCancel={() => {
             setConfirming(null)
@@ -389,11 +392,24 @@ function Request({ request, onClose }: { readonly request: AccountLinkRequest; r
   )
 }
 
-/** The drawer of one join request, `panel=account_links&entity=<id>`; the list is the page "הצטרפות". */
+/**
+ * The drawer of one join request, `panel=account_links&entity=<id>`; the list is the page "הצטרפות". `entity=linked` is
+ * the linked accounts' drawer (OI-404).
+ */
 export function JoinDrawer() {
   const panel = usePanel()
   const requests = usePendingLinkRequests()
+  const links = useLinkReviewAccess()
+  // The linked accounts are the join requests' tool: an address that names them opens them only for who reviews
+  // requests, and is put right for anyone else once the answer is in (D-487, D-496).
+  const linked = panel.panel === PANEL_IDS.accountLinks && panel.entity === LINKED_ENTITY
+  const stray = linked && links.known && !links.allowed
+  const { close } = panel
+  useEffect(() => {
+    if (stray) close()
+  }, [stray, close])
   if (panel.panel !== PANEL_IDS.accountLinks || panel.entity === null) return null
+  if (linked) return links.allowed ? <LinkedAccountsDrawer onClose={panel.close} /> : null
   const request = requests.status === 'ready' ? requests.value.find((candidate) => candidate.id === panel.entity) : undefined
   if (request !== undefined) return <Request key={request.id} request={request} onClose={panel.close} />
   return (

@@ -1,4 +1,4 @@
-import { DEFAULT_TAB, FULL_SCREEN_PAGES, TAB_IDS, type TabId } from '@config'
+import { DEFAULT_TAB, FULL_SCREEN_PAGES, PAGE_TABS, TAB_IDS, type TabId } from '@config'
 import type { AuthIdentity } from '@contracts'
 import { t } from '@i18n'
 import { useCurrentOrganization, useOverlayHistory, useShellAccess, useShellPlace } from '@logic'
@@ -26,14 +26,16 @@ import { PreferenceFailureContext, usePreferenceFailureScope } from './preferenc
 import { PreferenceFailureNotice } from './PreferenceFailureNotice'
 import { SavedViewNoticeContext, useSavedViewNoticeScope } from './savedViewNotice'
 import { FailureScreen, LoadingScreen } from './states'
-import { TabBar } from './TabBar'
+import { SideRail, TabBar } from './TabBar'
+import { useIsDesktop } from '../patterns/media'
 import { TodayPage } from './today/TodayPage'
 
 /**
  * The workspace (D-455): four destinations behind one floating tab bar, "היום", "לוח", "ניהול" and "אני", each for who
  * its permissions open it to. The destination lives in the URL; an address that names none, or one the actor does not
  * have, shows "היום". A module opens over any of them as a drawer. Everything sits inside the safe area; the canvas
- * paints under the cutout (D-191).
+ * paints under the cutout (D-191). On a wide screen the bar is the side rail on the inline start, and the content
+ * narrows beside a side panel while one is open (D-460, D-491).
  */
 export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity }) {
   const organization = useCurrentOrganization()
@@ -68,12 +70,16 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
   const tab: TabId = tabs.includes(place.tab) ? place.tab : DEFAULT_TAB
   const onBoard = tab === 'board'
   const focusMode = useFocusModeScope(onBoard && boardShown && !noBoard)
+  const desktop = useIsDesktop()
   useOverlayHistory()
   useAppliedAppearance()
   if (organization.status === 'loading' || !access.ready) return <LoadingScreen />
   if (organization.status === 'failed') return <FailureScreen error={organization.error} />
   const name = organization.value?.name ?? t('app.name')
-  const bar = <TabBar tabs={tabs} current={tab} action={access.requestsForSelf} />
+  // Focus mode hides the bar, and a temporary full screen has none (the handoff's placement map).
+  // Only a page the destination in sight holds counts: a page the actor may not reach falls back with its destination.
+  const fullScreen = place.page !== null && PAGE_TABS[place.page] === tab && FULL_SCREEN_PAGES.includes(place.page)
+  const barShown = !(onBoard && focusMode.on) && !fullScreen
 
   return (
     <SheetIntentContext value={sheetIntent}>
@@ -85,29 +91,33 @@ export function WorkspaceScreen({ identity }: { readonly identity: AuthIdentity 
       <NoticeScope>
       <div
         data-focus-mode={focusMode.on ? 'on' : undefined}
-        className="relative h-dvh bg-canvas"
+        className="relative flex h-dvh bg-canvas"
       >
-        {onBoard ? (
-          <BoardPlace
-            name={name}
-            started={boardStarted}
-            onStarted={startBoard}
-            building={building}
-            onBuilt={() => {
-              setBuilding(null)
-            }}
-          >
-            {bar}
-          </BoardPlace>
-        ) : (
-          <>
-            {tab === 'today' ? <TodayPage name={name} commands={access.board} requests={access.requestsForSelf} approvals={access.approvals} /> : null}
-            {tab === 'manage' ? <ManagePage name={name} /> : null}
-            {tab === 'me' ? <MePage identity={identity} requests={access.requestsForSelf} /> : null}
-            {/* A temporary full screen has no tab bar (the handoff's placement map). */}
-            {place.page !== null && FULL_SCREEN_PAGES.includes(place.page) ? null : <div className="pointer-events-none absolute inset-safe">{bar}</div>}
-          </>
-        )}
+        {desktop && barShown ? <SideRail tabs={tabs} current={tab} action={access.requestsForSelf} /> : null}
+        <div className="relative h-full min-w-none flex-1 md:panel-open:me-panel-room">
+          {onBoard ? (
+            <BoardPlace
+              name={name}
+              started={boardStarted}
+              onStarted={startBoard}
+              building={building}
+              onBuilt={() => {
+                setBuilding(null)
+              }}
+            />
+          ) : (
+            <>
+              {tab === 'today' ? <TodayPage name={name} commands={access.board} requests={access.requestsForSelf} approvals={access.approvals} /> : null}
+              {tab === 'manage' ? <ManagePage name={name} /> : null}
+              {tab === 'me' ? <MePage identity={identity} requests={access.requestsForSelf} /> : null}
+            </>
+          )}
+          {!desktop && barShown ? (
+            <div className="pointer-events-none absolute inset-safe">
+              <TabBar tabs={tabs} current={tab} action={access.requestsForSelf} />
+            </div>
+          ) : null}
+        </div>
         <ModuleDrawer />
         <LeaveDrawer />
         <PersonDrawer />

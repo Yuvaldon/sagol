@@ -16,7 +16,6 @@ const PARAM_OF = {
   order: SEARCH_PARAMS.order,
   group: SEARCH_PARAMS.group,
   leaves: SEARCH_PARAMS.leaves,
-  colors: SEARCH_PARAMS.colors,
   range: SEARCH_PARAMS.range,
 } as const satisfies Record<SavedViewParam, SearchParamName>
 

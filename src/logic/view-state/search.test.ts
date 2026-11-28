@@ -1,4 +1,4 @@
-import { ARCHIVE_ENTITY, NEW_ENTITY, QUICK_ENTRY, ROUND_ENTITY, SEARCH_PARAMS } from '@config'
+import { ARCHIVE_ENTITY, LINKED_ENTITY, NEW_ENTITY, QUICK_ENTRY, ROUND_ENTITY, SEARCH_PARAMS } from '@config'
 import { describe, expect, it } from 'vitest'
 import { WorkspaceSearch } from './search'
 
@@ -12,6 +12,7 @@ describe('the entity in the URL', () => {
     expect(entityOf(NEW_ENTITY)).toBe(NEW_ENTITY)
     expect(entityOf(ARCHIVE_ENTITY)).toBe(ARCHIVE_ENTITY)
     expect(entityOf(ROUND_ENTITY)).toBe(ROUND_ENTITY)
+    expect(entityOf(LINKED_ENTITY)).toBe(LINKED_ENTITY)
     expect(entityOf('anything')).toBeUndefined()
   })
 })

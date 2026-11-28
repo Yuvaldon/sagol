@@ -4,6 +4,7 @@ import { moveCandidates, siblingsUnder, usePanel, useUnitCommands, useUnitPermis
 import { Archive, ArrowDown, ArrowUp, CornerDownLeft, Plus } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import type { RowAction } from '../../patterns/ActionMenu'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { SmallDialog } from '../../patterns/Dialogs'
 import { SelectField, type SelectOption } from '../../primitives/SelectField'
 import { PALETTE_SWATCHES } from '../../theme/palette'
@@ -98,7 +99,14 @@ export function UnitActionsScope({
   const panel = usePanel()
   const commands = useUnitCommands()
   const [moving, setMoving] = useState<Unit | null>(null)
-  const [archiving, setArchiving] = useState<Unit | null>(null)
+  const archiving = useArchiveStep<Unit>({
+    nameOf: (unit) => unit.name,
+    titleKey: 'units.archiveTitle',
+    bodyKey: 'units.archiveBody',
+    archive: { run: (unit) => commands.archive.run({ unit, openedVersion: unit.version }), isPending: commands.archive.isPending },
+    restore: commands.restore,
+    onFailure,
+  })
 
   async function step(unit: Unit, direction: -1 | 1) {
     onFailure(null)
@@ -148,9 +156,10 @@ export function UnitActionsScope({
         id: 'archive',
         labelKey: 'common.archive',
         icon: <Archive aria-hidden size={14} />,
+        tone: 'danger',
         onAction: () => {
           onFailure(null)
-          setArchiving(unit)
+          archiving.ask(unit)
         },
       },
     ]
@@ -177,24 +186,8 @@ export function UnitActionsScope({
           }}
         />
       )}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="units.archiveTitle"
-          hintKey="units.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run({ unit: archiving, openedVersion: archiving.version }).then((result) => {
-              setArchiving(null)
-              if (!result.ok) onFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.notice}
+      {archiving.dialog}
     </>
   )
 }

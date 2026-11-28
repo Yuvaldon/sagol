@@ -18,7 +18,7 @@ import { BoardEngine, Centered, type BoardFrame } from '../../../board/BoardEngi
 import { BoardScreen } from '../../../board/BoardScreen'
 import { EngineScroller } from '../../../board/EngineScroller'
 import { useRangeHead } from '../../../board/rangeHead'
-import { groupLabel, leaveDays, leaveTone, statusText, typeName } from '../../../board/labels'
+import { groupLabel, leaveDays, statusText, typeName } from '../../../board/labels'
 
 // The table view (D-174): one line per leave in the window, of the soldiers in view, sorted by any column. The soldier
 // opens the soldier and the type opens the leave, as on every engine (D-119). The order is in the URL (D-214, D-313):
@@ -114,7 +114,6 @@ function Cell({ id, entry, frame }: { readonly id: ColumnId; readonly entry: Boa
             frame.openLeave(leave.id)
           }}
         >
-          <span aria-hidden className={`size-dot shrink-0 rounded-pill ${leaveTone(leave, frame.colors).fill}`} />
           {typeName(leave)}
           {leave.effect === 'available' ? <span className="text-text-muted">{t('leaves.marker')}</span> : null}
         </AriaButton>

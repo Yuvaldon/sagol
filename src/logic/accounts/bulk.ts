@@ -34,7 +34,7 @@ export type BulkLinkAnswers = ReadonlyMap<AccountLinkRequest['id'], BulkLinkAnsw
 export function useBulkLinkApproval() {
   const { data } = usePorts()
   return useCommand(
-    [QUERY_KEYS.accountLinkRequests, QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
+    [QUERY_KEYS.accountLinkRequests, QUERY_KEYS.soldierAccounts, QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
     async (requests: readonly Pick<AccountLinkRequest, 'id'>[]) => {
       const answers = new Map<AccountLinkRequest['id'], BulkLinkAnswer>()
       for (const request of requests) {
@@ -103,7 +103,7 @@ export function useJoinApproval() {
   const { data } = usePorts()
   const link = useBulkLinkApproval()
   return useCommand(
-    [QUERY_KEYS.accountLinkRequests, QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
+    [QUERY_KEYS.accountLinkRequests, QUERY_KEYS.soldierAccounts, QUERY_KEYS.soldiers, QUERY_KEYS.unitMemberships, QUERY_KEYS.soldierPrivate],
     async ({ ready, placed, today }: { ready: readonly Pick<AccountLinkRequest, 'id'>[]; placed: readonly JoinPlacement[]; today: CalendarDate }) => {
       const linked = ready.length === 0 ? null : await link.run(ready)
       const answers = new Map<AccountLinkRequest['id'], BulkLinkAnswer>(linked?.ok === true ? linked.value : [])

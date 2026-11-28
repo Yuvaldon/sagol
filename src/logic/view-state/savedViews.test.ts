@@ -1,5 +1,5 @@
 import { SEARCH_PARAMS } from '@config'
-import { SavedView, type SavedViewQuery } from '@contracts'
+import { SavedView, SavedViewQuery } from '@contracts'
 import { describe, expect, it } from 'vitest'
 import { applyView, captureView, equalView, matchingView, savedViewSummary } from './savedViews'
 import { WorkspaceSearch } from './search'
@@ -43,13 +43,13 @@ describe('applyView (D-385)', () => {
     const applied = applyView(captureView(search, 'calendar'))
     expect(applied.dropped).toBe(false)
     expect(applied.search).toMatchObject({ view: 'calendar', range: 'month', filter: TAG_FILTER, sorts: [{ key: 'unit', order: 'asc' }] })
-    for (const name of [SEARCH_PARAMS.from, SEARCH_PARAMS.to, SEARCH_PARAMS.rotation, SEARCH_PARAMS.colors]) {
+    for (const name of [SEARCH_PARAMS.from, SEARCH_PARAMS.to, SEARCH_PARAMS.rotation]) {
       expect(name in applied.search).toBe(true)
       expect(applied.search[name]).toBeUndefined()
     }
   })
   it('drops a value that no longer reads, and says so', () => {
-    const applied = applyView({ view: '"list"', range: '"fortnight-ish"', colors: 'not json' })
+    const applied = applyView(SavedViewQuery.parse({ view: '"list"', range: '"fortnight-ish"', colors: '"uniform"' }))
     expect(applied.dropped).toBe(true)
     expect(applied.cleaned).toEqual({ view: '"list"' })
     expect(applied.search.range).toBeUndefined()

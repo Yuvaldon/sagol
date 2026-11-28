@@ -23,9 +23,9 @@ import {
 } from '@logic'
 import { Archive, LayoutDashboard, Lock, LockOpen, Plus, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { formatDate } from '../../patterns/dates'
 import { Button } from '../../primitives/Button'
@@ -194,7 +194,14 @@ export function DeploymentsModule() {
   const live = useMemo(() => (deployments.status === 'ready' ? liveDeployments(deployments.value) : NO_DEPLOYMENTS), [deployments])
   const permissions = useDeploymentPermissions(liveUnits, live)
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<Deployment | null>(null)
+  const archiving = useArchiveStep<Deployment>({
+    nameOf: (deployment) => deployment.name,
+    titleKey: 'deployments.archiveTitle',
+    bodyKey: 'deployments.archiveBody',
+    archive: commands.archive,
+    restore: null,
+    onFailure: setFailure,
+  })
   const [staffing, setStaffing] = useState<Deployment | null>(null)
 
   for (const loaded of [deployments, members, units, soldiers]) {
@@ -323,9 +330,10 @@ export function DeploymentsModule() {
             id: 'archive',
             labelKey: 'common.archive' as const,
             icon: <Archive aria-hidden size={14} />,
+            tone: 'danger' as const,
             onAction: () => {
               setFailure(null)
-              setArchiving(deployment)
+              archiving.ask(deployment)
             },
           },
         ]
@@ -346,6 +354,7 @@ export function DeploymentsModule() {
       ) : (
         <>
           {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
           <ul aria-label={t('deployments.listLabel')} className="flex flex-col">
             {live.map((deployment) => (
               <DeploymentRow
@@ -369,24 +378,7 @@ export function DeploymentsModule() {
           ) : null}
         </>
       )}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="deployments.archiveTitle"
-          hintKey="deployments.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

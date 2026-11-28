@@ -15,7 +15,7 @@ import {
 } from '@logic'
 import { useCallback, useMemo, useState } from 'react'
 import { useRuleGate, type RuleGate } from '../../../patterns/rules/ruleAnswer'
-import type { TimelineDrag, TimelineDragProps, TimelineDragTone } from '../view/model'
+import type { TimelineDrag, TimelineDragProps, TimelineDragTone } from '../core/drag'
 
 // A drag on the board, between the view and the commands (D-143): who may move what, what the drop would do while the
 // drag goes on, and the drop itself, one `leaves.update` with the dates through the rule gate (D-123, D-142).

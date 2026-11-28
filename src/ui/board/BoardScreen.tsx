@@ -18,7 +18,8 @@ import { ViewFan } from './ViewFan'
 // "לוח"; beside it, arrows that step the view, the tap path of a swipe (D-458). On the inline end, a glass capsule with
 // the view switcher and the options, and "היום" only once the view has left today. Focus mode leaves a small capsule
 // in the middle with the month or the range; a tap on it ends focus. While days are picked, the tray stands in the tab
-// bar's place.
+// bar's place. A view that is a list from the top (the timeline) gives its title to a capsule in the middle once it is
+// scrolled, and the capsule takes it back to the top (§1.5, OI-399).
 
 const FOCUS = 'outline-focus outline-offset-2 data-focus-visible:outline-2'
 const ARROW = `inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full text-text-muted data-disabled:cursor-default data-disabled:opacity-60 ${FOCUS}`
@@ -40,17 +41,42 @@ export interface BoardHeadProps {
   /** The view has left today: "היום" shows, and brings it back. */
   readonly away: boolean
   readonly onToday: () => void
+  /** A list that starts at the top: once scrolled, its title gives way to the centered capsule (§1.5). */
+  readonly collapses?: boolean
 }
 
-function Head({ month, steps, away, onToday, onSavedViews }: BoardHeadProps & { readonly onSavedViews: (() => void) | null }) {
+/** The scrolled list's capsule (§1.5, OI-399): the month in the middle; a tap returns the list to its top. */
+function TitleCapsule({ title }: { readonly title: string }) {
+  const { toTop } = useShellChrome()
+  return (
+    <div className="flex min-w-none flex-1 justify-center">
+      <AriaButton
+        aria-label={[t('board.toTop'), title].join(' · ')}
+        onPress={toTop}
+        className={`glass-regular inline-flex min-h-touch min-w-none cursor-pointer items-center rounded-full px-lg text-body font-bold text-text ${FOCUS}`}
+      >
+        <span aria-hidden className="truncate">
+          {title}
+        </span>
+      </AriaButton>
+    </div>
+  )
+}
+
+function Head({ month, steps, away, onToday, onSavedViews, collapses = false }: BoardHeadProps & { readonly onSavedViews: (() => void) | null }) {
   const today = useToday()
   const { view, phone } = useBoardView()
+  const { scrolled } = useShellChrome()
   const [fanned, setFanned] = useState(false)
+  const title = month === null ? '' : monthTitle(month, today)
+  const collapsed = collapses && scrolled
   return (
     <header className="flex min-h-under-bars shrink-0 items-center gap-xs px-lg pt-xs md:min-h-under-bars-md">
-      <div className={`flex min-w-none flex-1 items-center gap-2xs transition-opacity duration-ui ease-standard ${fanned ? 'opacity-40' : ''}`}>
+      {collapsed ? <h2 className="sr-only">{title}</h2> : null}
+      {collapsed ? <TitleCapsule title={title} /> : null}
+      <div className={`flex min-w-none flex-1 items-center gap-2xs transition-opacity duration-ui ease-standard ${fanned ? 'opacity-40' : ''} ${collapsed ? 'hidden' : ''}`}>
         <h2 aria-live="polite" className="min-w-none truncate text-title font-bold tracking-tight">
-          {month === null ? null : monthTitle(month, today)}
+          {title}
         </h2>
         {steps === null ? null : (
           <div className="flex shrink-0 items-center">
@@ -77,7 +103,7 @@ function Head({ month, steps, away, onToday, onSavedViews }: BoardHeadProps & { 
           </div>
         )}
       </div>
-      {away ? (
+      {away && !collapsed ? (
         <AriaButton
           onPress={onToday}
           className={`glass-regular inline-flex min-h-touch shrink-0 cursor-pointer items-center rounded-full px-lg text-body font-bold text-text ${FOCUS}`}

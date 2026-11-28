@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { GlassCircle } from '../kit/Glass'
 import { useShellChrome } from './chrome'
+import { PageScrollContext } from './pageScroll'
 
 // A page of the shell (D-455): one column on the canvas that scrolls under the floating bar. Once scrolled, its top
 // blurs out in a 70 px band. A glass circle in the top corner, the bell, opens the notifications drawer.
@@ -39,13 +40,23 @@ export interface PageFrameProps {
   readonly updates?: boolean
   /** What stands in the tab bar's place while something is selected. */
   readonly tray?: ReactNode
+  /** A page that holds a table on a wide screen takes the width it needs, not the feed's column (D-460). */
+  readonly wide?: boolean
   readonly children: ReactNode
 }
 
-export function PageFrame({ updates = false, tray = null, children }: PageFrameProps) {
+export function PageFrame({ updates = false, tray = null, wide = false, children }: PageFrameProps) {
   const chrome = useShellChrome()
   const [scrolled, setScrolled] = useState(false)
+  const [scroller, setScroller] = useState<HTMLElement | null>(null)
   const { cover, bindScroller, onScroll } = chrome
+  const bind = useCallback(
+    (element: HTMLElement | null) => {
+      setScroller(element)
+      bindScroller(element)
+    },
+    [bindScroller],
+  )
   const hasTray = tray !== null
   useEffect(() => {
     cover(hasTray)
@@ -56,7 +67,7 @@ export function PageFrame({ updates = false, tray = null, children }: PageFrameP
   return (
     <main className="absolute inset-safe isolate">
       <div
-        ref={bindScroller}
+        ref={bind}
         onScroll={(event) => {
           const top = event.currentTarget.scrollTop
           setScrolled(top > SHELL.bandFromPx)
@@ -64,7 +75,9 @@ export function PageFrame({ updates = false, tray = null, children }: PageFrameP
         }}
         className="h-full overflow-y-auto"
       >
-        <div className="mx-auto flex w-full max-w-drawer flex-col gap-lg px-lg pt-xl pb-page-end">{children}</div>
+        <div className={`mx-auto flex w-full flex-col gap-lg px-lg pt-xl pb-page-end ${wide ? 'md:max-w-wide-page' : 'max-w-drawer'}`}>
+          <PageScrollContext value={scroller}>{children}</PageScrollContext>
+        </div>
       </div>
       <div
         aria-hidden

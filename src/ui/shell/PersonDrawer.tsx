@@ -190,6 +190,7 @@ function useCardActions(soldier: Soldier, onArchived: () => void) {
         titleKey="manage.archive.soldierTitle"
         hintKey="soldiers.archiveBody"
         confirmKey="manage.archive.confirm"
+        tone="danger"
         isPending={commands.archive.isPending}
         onCancel={() => {
           setAsking(null)
@@ -221,6 +222,7 @@ function useCardActions(soldier: Soldier, onArchived: () => void) {
         titleKey="accountLinks.unlinkTitle"
         hintKey="accountLinks.unlinkHint"
         confirmKey="accountLinks.unlinkConfirm"
+        tone="danger"
         isPending={revoke.isPending}
         onCancel={() => {
           setAsking(null)

@@ -7,6 +7,9 @@
  */
 @custom-variant md (@media (width >= 48rem) and (height >= 32rem));
 
+/* While a side panel stands on the inline end of a wide screen, the content beside it narrows (D-491). */
+@custom-variant panel-open (:root[data-side-panel] &);
+
 /*
  * The design tokens of Sagol: the new interface's set (D-454, docs/Design.md), under the names the screens already
  * use, plus the names only the new screens use. Tailwind's default palette, spacing, type, radius and shadow scales
@@ -70,9 +73,8 @@
   --color-time-approved: #c9c5bc;
   --color-time-pending: #f6e4c2;
   --color-time-label: #3a3940;
-  /* What the old timeline marks (a selection, a drop target): the action color now (D-454). */
+  /* A drop target in the unit tree: the action color (D-454). */
   --color-marker: #2b3a55;
-  --color-marker-ink: #2b3a55;
   /* The company emblem's gradient (D-182): the app icon is drawn in it, and the build checks the icon against it. */
   --color-brand-light: #9b6bff;
   --color-brand: #5b2bd6;
@@ -80,12 +82,7 @@
   /* The staging deploy's band and its installed icon (D-300): black, and the band's caption on it. */
   --color-stage: #000000;
   --color-on-stage: #ffffff;
-  --color-today: #1b1a1f;
-  /* The column of today on the timeline, a band barely darker than the surface (Stone 3). */
-  --color-today-band: rgba(27, 26, 31, 0.035);
   --color-scrim: rgba(27, 26, 31, 0.28);
-  /* A caption on a solid fill: the bar of a leave on the timeline. */
-  --color-on-fill: #1b1a1f;
   /* The glass surfaces (D-077): their fills, their edge, and the solid color under prefers-reduced-transparency. */
   --color-glass-bar: rgba(255, 255, 255, 0.55);
   /* The capsule behind the tab in sight (D-455): lighter than the bar's glass in both sets. */
@@ -171,17 +168,9 @@
   --spacing-hairline: 1px;
   --spacing-grip: 36px;
   --spacing-sheet-height: 88dvh;
-  /* Where the filter row floats: under the top bar and a gap (D-131). */
-  --spacing-filter-row: 76px;
-  --spacing-filter-row-md: 62px;
-  /* Where content starts under the floating top bar: its offset, height and a gap (D-108). The filter row adds its own
-     height while it shows (D-173), below. */
+  /* The board's head: where its view starts under it (D-108, D-480). */
   --spacing-under-bars: 76px;
   --spacing-under-bars-md: 62px;
-  --spacing-under-bars-filtered: 128px;
-  --spacing-under-bars-filtered-md: 90px;
-  /* The remove button of a filter chip, from Stone 3. */
-  --spacing-chip-close: 22px;
   /* The new shell (D-455): the blur band over a scrolled page, a tab of the bar, the action circle, a badge, the room a page leaves under itself for the floating bar, and a drawer's half stop. */
   --spacing-band: 70px;
   --spacing-tab: 52px;
@@ -189,6 +178,14 @@
   --spacing-badge: 26px;
   --spacing-page-end: 120px;
   --spacing-stop-half: 56dvh;
+  /* The desktop (D-460, D-491): the side rail on the inline start, the side panel on the inline end and the room the
+     content leaves it (the panel and its gap), and the column of "ניהול"'s rows beside its open page. */
+  --spacing-rail: 88px;
+  --spacing-panel: 440px;
+  --spacing-panel-room: 456px;
+  --spacing-tools: 320px;
+  /* A column of a people table (D-491): the command rank, the unit, the seven days. */
+  --spacing-column: 168px;
   /* Room for the bottom bar on mobile, so the last row can scroll above it. */
   --spacing-above-bottom-bar: 80px;
   /* The units chart (D-319): a node, the gaps between nodes and between rows, and the canvas's height. */
@@ -205,9 +202,8 @@
   --container-sheet: 420px;
   --container-menu: 260px;
   --container-drawer: 440px;
-  --container-unit-picker: 200px;
-  /* The unit in the top strip gives way down to this, so its name still shows in a narrow window (D-252, D-273). */
-  --container-unit-floor: 88px;
+  /* A page that holds a table on a wide screen (D-491): wider than the feed's column, never the whole screen. */
+  --container-wide-page: 1040px;
 
   /* The new interface's radii (D-454): a card and a drawer's top, a control, a chip, a bar or cell of time, and the
      full round of glass circles, capsules and badges. The others belong to the screens not yet rebuilt. */
@@ -240,8 +236,8 @@
 /*
  * The Dark set (D-181), derived from the Light set by role (D-454): a near-black canvas, a surface one step lighter,
  * the inks inverted, night blue lifted until it passes 4.5:1 on the surface, and amber, green and red as dark tinted
- * fills under light text. The fills that carry text or an icon (the action, today, the palette) are light enough for
- * --color-on-action and --color-on-fill, which turn dark. Only colors and shadows change.
+ * fills under light text. The fills that carry text or an icon (the action, the palette) are light enough for
+ * --color-on-action, which turns dark. Only colors and shadows change.
  */
 @layer base {
   :root[data-appearance='dark'] {
@@ -282,13 +278,9 @@
     --color-time-pending: #5a4520;
     --color-time-label: #ededf0;
     --color-marker: #9fb4dc;
-    --color-marker-ink: #9fb4dc;
-    --color-today: #ededf0;
-    --color-today-band: rgba(255, 255, 255, 0.04);
     --color-scrim: rgba(0, 0, 0, 0.55);
     --color-absence: #8d897f;
     --color-absence-edge: #cfcbc2;
-    --color-on-fill: #131a28;
     --color-glass-bar: rgba(40, 40, 46, 0.62);
     --color-tab-active: #36445f;
     --color-glass-card: rgba(40, 40, 46, 0.55);
@@ -490,19 +482,6 @@
   }
 }
 
-/* The navigation panel comes from the inline start: the right (D-173). */
-@keyframes start-panel-in {
-  from {
-    transform: translateX(100%);
-  }
-}
-
-@utility enter-start-panel {
-  @media (prefers-reduced-motion: no-preference) {
-    animation: start-panel-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-}
-
 /*
  * An absence reads as a hole (D-268, D-290): a fine hatch in the shape's own ink (its `text-*` color) over its faint
  * fill, never a solid block. The angle is the same in both directions; only the color changes with the theme.
@@ -532,12 +511,6 @@
 @utility heat-pattern-3 {
   background-image: radial-gradient(color-mix(in srgb, currentColor 30%, transparent) 1px, transparent 1px);
   background-size: 4px 4px;
-}
-
-/* While the filter row shows, content starts under it too (D-131, D-173). */
-[data-filter-row='shown'] {
-  --spacing-under-bars: var(--spacing-under-bars-filtered);
-  --spacing-under-bars-md: var(--spacing-under-bars-filtered-md);
 }
 
 /* Content already below the bars, such as the board under routine's band (D-222), needs no room for them again. */
@@ -621,6 +594,17 @@
   inset-inline: 0;
   height: var(--safe-top);
   padding-block-start: env(safe-area-inset-top, 0px);
+}
+
+/* The side rail of a wide screen (D-491): its room above and below, inside the safe area. */
+@utility rail-safe {
+  padding-block: calc(var(--spacing-xl) + var(--safe-top)) calc(var(--spacing-xl) + var(--safe-bottom));
+}
+
+/* A side panel on a wide screen (D-491): the screen's height below the staging band, on the inline end. */
+@utility side-panel {
+  inset-block: var(--stage-band) 0;
+  inset-inline-end: var(--spacing-sm);
 }
 
 /* Keeps a top notice below the phone's status bar and notch. */

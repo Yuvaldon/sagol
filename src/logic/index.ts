@@ -146,7 +146,6 @@ export {
 export { reportText, type ReportWords } from './presence/reportText'
 export { useDeviceFlag, type DeviceFlag, type DeviceLasting } from './device/hooks'
 export { defaultViewOf, useActiveView, type ActiveViewState, type ViewDevice } from './view-state/view'
-export { useBarColors, type BarColorsState } from './view-state/colors'
 export { useTimezone, useToday } from './session/today'
 export {
   useAppearance,
@@ -188,7 +187,7 @@ export {
   type MovementSide,
 } from './board/views'
 export { absenceCandidate, impactOf, useAbsenceCheck, useApprovalCheck, type Impact } from './board/impact'
-export { leaveMoveOf, useLeaveMove, type RoundMove } from './leaves/move'
+export { leaveMoveOf, roundMovesOf, useLeaveMove, useRoundMoves, type RoundMove } from './leaves/move'
 export {
   selectedDayChange,
   steppedDay,

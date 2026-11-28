@@ -9,6 +9,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 export interface ShellChrome {
   /** The bar is out of sight: the page is being read downward. */
   readonly barHidden: boolean
+  /** The page is scrolled past its title: a list's title gives way to the centered capsule (§1.5, OI-399). */
+  readonly scrolled: boolean
   /** A tray stands in the bar's place. */
   readonly covered: boolean
   /** The page's scrolling element, or NULL when it leaves. */
@@ -32,6 +34,7 @@ export interface ShellChrome {
 
 const NONE: ShellChrome = {
   barHidden: false,
+  scrolled: false,
   covered: false,
   bindScroller: () => undefined,
   onScroll: () => undefined,
@@ -53,6 +56,7 @@ export function useShellChrome(): ShellChrome {
 
 export function useShellChromeScope(): ShellChrome {
   const [barHidden, setBarHidden] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const [covered, setCovered] = useState(false)
   const scroller = useRef<HTMLElement | null>(null)
   /** Where the page was when the bar last changed, or when it last turned around. */
@@ -61,8 +65,10 @@ export function useShellChromeScope(): ShellChrome {
     scroller.current = element
     anchor.current = 0
     setBarHidden(false)
+    setScrolled(false)
   }, [])
   const onScroll = useCallback((top: number) => {
+    setScrolled(top > SHELL.titleCollapsePx)
     const moved = top - anchor.current
     if (Math.abs(moved) < SHELL.barScrollPx) return
     anchor.current = top
@@ -79,6 +85,7 @@ export function useShellChromeScope(): ShellChrome {
   const toTop = useCallback(() => {
     scroller.current?.scrollTo({ top: 0 })
     setBarHidden(false)
+    setScrolled(false)
   }, [])
   const heading = useRef<HTMLElement | null>(null)
   const opener = useRef<string | null>(null)
@@ -97,8 +104,8 @@ export function useShellChromeScope(): ShellChrome {
     return true
   }, [])
   return useMemo(
-    () => ({ barHidden, covered, bindScroller, onScroll, showBar, settle, cover: setCovered, toTop, bindHeading, focusHeading, rememberOpener, takeOpener }),
-    [barHidden, covered, bindScroller, onScroll, showBar, settle, toTop, bindHeading, focusHeading, rememberOpener, takeOpener],
+    () => ({ barHidden, scrolled, covered, bindScroller, onScroll, showBar, settle, cover: setCovered, toTop, bindHeading, focusHeading, rememberOpener, takeOpener }),
+    [barHidden, scrolled, covered, bindScroller, onScroll, showBar, settle, toTop, bindHeading, focusHeading, rememberOpener, takeOpener],
   )
 }
 

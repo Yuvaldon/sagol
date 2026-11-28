@@ -138,8 +138,9 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
   await test.step('a name opens the soldier, and closing keeps the board as it was', async () => {
     await board(page).getByRole('button', { name: /נועם לב/ }).click()
     await expect(page.getByRole('heading', { name: 'נועם לב', exact: true })).toBeVisible()
-    // The drawer and its scrim lie over the bars, not under them, once the drawer has entered. The modal makes the
-    // bars inert, and hit testing skips what is inert, so the test lifts it for the moment of the check.
+    // A phone's drawer and its scrim lie over the bars, not under them, once the drawer has entered. The modal makes the
+    // bars inert, and hit testing skips what is inert, so the test lifts it for the moment of the check. A wide screen's
+    // side panel stands beside the rail and leaves the board in reach (D-491).
     await waitForSettledScreen(page)
     const covered = await page.evaluate(() => {
       const inert = [...document.querySelectorAll('[inert]')]
@@ -153,7 +154,7 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
       for (const element of inert) element.setAttribute('inert', '')
       return answer
     })
-    expect(covered).toBe(true)
+    expect(covered).toBe(testInfo.project.name !== 'desktop')
     await expect(page).toHaveURL(/panel=soldiers/)
     await expect(page).toHaveURL(/day=2026-11-18/)
     await closeDrawer(page)
@@ -186,13 +187,15 @@ test('the board: rows by unit, a unit and a week in the URL, and the soldier beh
 })
 
 test('the drawer and its scrim do not move for who asks for less motion (OI-058)', async ({ page }) => {
+  // A wide screen's side panel has no scrim (D-491): what moves there is the panel alone.
   const animationsOf = (target: Page) =>
     target.evaluate(() => {
       const dialog = document.querySelector('[role="dialog"]')
-      const overlay = dialog?.closest('.enter-scrim')
+      const overlay = dialog?.closest('.enter-scrim') ?? null
       const surface = dialog?.closest('.enter-surface')
-      if (!(overlay instanceof HTMLElement) || !(surface instanceof HTMLElement)) throw new Error('no drawer')
-      return [getComputedStyle(overlay).animationName, getComputedStyle(surface).animationName]
+      if (!(surface instanceof HTMLElement)) throw new Error('no drawer')
+      const scrim = overlay instanceof HTMLElement ? getComputedStyle(overlay).animationName : 'none'
+      return [scrim, getComputedStyle(surface).animationName]
     })
 
   await enterAsOwner(page)

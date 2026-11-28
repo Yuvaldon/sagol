@@ -67,10 +67,14 @@ export const SHELL = {
   barScrollPx: 12,
   /** How far, in pixels, the page is scrolled before the top blur band shows. */
   bandFromPx: 4,
+  /** How far, in pixels, a list that starts at the top is scrolled before its title gives way to the capsule (OI-399). */
+  titleCollapsePx: 24,
   /** How long a toast stays, in milliseconds; an action in it lives as long. */
   toastMs: 6000,
   /** The side of a tab's icon, in pixels (D-454). */
   tabIconPx: 26,
+  /** The side of a destination's icon in the side rail of a wide screen, where its name stands under it (D-491). */
+  railIconPx: 22,
   /** The stroke of a tab's icon: heavier on the tab in sight, and heaviest on the action circle's "+". */
   tabStroke: { idle: 1.8, active: 2.2, action: 2.4 },
   /** The side of the corner circle's icon, in pixels. */

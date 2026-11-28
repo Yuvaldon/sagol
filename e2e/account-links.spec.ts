@@ -226,4 +226,43 @@ test.describe('account linking', () => {
       await expect(page.getByRole('dialog', { name: `${ASHER.first} ${ASHER.last}` })).toBeVisible()
     })
   })
+
+  test('a swipe on a ready row links it, and the linked accounts unlink it (D-493)', async ({ page }) => {
+    await enterAsOwner(page)
+    await createUnit(page, UNIT)
+    await addSoldier(page, ROTEM.first, ROTEM.last)
+    await signOut(page)
+    await ask(page, ROTEM)
+    await expect(page.getByRole('heading', { name: he.linkRequest.waitingTitle })).toBeVisible()
+    await backToOwner(page)
+    const name = `${ROTEM.first} ${ROTEM.last}`
+
+    await test.step('a swipe sideways reveals ✓ and ✗; ✓ links the request to its one candidate', async () => {
+      await openJoins(page)
+      const row = page.getByRole('main').getByRole('listitem').filter({ hasText: ROTEM.first })
+      const box = await row.boundingBox()
+      if (box === null) throw new Error('no row')
+      await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, { steps: 6 })
+      await page.mouse.up()
+      await expect(row.getByRole('button', { name: `${he.accountLinks.reject} ${name}` })).toBeVisible()
+      await expectNoAxeViolations(page)
+      await row.getByRole('button', { name: `${he.manage.joins.linkOne} ${name}` }).click()
+      await expect(page.getByRole('status').getByText(`${name} ${he.manage.joins.linked}`)).toBeVisible()
+    })
+
+    await test.step('the linked accounts list the new link, and "ניתוק" asks by name before it ends it', async () => {
+      await page.getByRole('button', { name: he.accountLinks.linkedTitle, exact: true }).click()
+      const linked = page.getByRole('dialog', { name: he.accountLinks.linkedTitle })
+      const entry = linked.getByRole('listitem').filter({ hasText: name })
+      await expect(entry).toContainText(ROTEM.email)
+      await expectNoAxeViolations(page)
+      await entry.getByRole('button', { name: he.accountLinks.unlink }).click()
+      const asking = page.getByRole('alertdialog', { name: he.accountLinks.unlinkTitle })
+      await expect(asking).toContainText(name)
+      await asking.getByRole('button', { name: he.accountLinks.unlinkConfirm }).click()
+      await expect(linked.getByRole('listitem').filter({ hasText: name })).toHaveCount(0)
+    })
+  })
 })

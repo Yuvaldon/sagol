@@ -1,199 +1,21 @@
-import type { BarColorMode } from '@config'
-import type { CalendarDate, SoldierId } from '@contracts'
+import type { CalendarDate } from '@contracts'
 import { t } from '@i18n'
-import { dayRangeOf, fullName, type HeatDay, type BoardItem, type BoardLeave } from '@logic'
-import { formatDate } from '../../../patterns/dates'
-import { ICON_GLYPHS, iconOf } from '../../../theme/icons'
-import { leaveTypeToneOf } from '../../../theme/palette'
-import { breachLabel } from '../../../board/breaches'
-import { headingLabel, leaveText, leaveTone, rangeText, typeName } from '../../../board/labels'
-import { assignLanes } from '../core/lanes'
+import type { BoardItem } from '@logic'
+import { rangeText } from '../../../board/labels'
 import { spansOf } from '../core/layout'
-import type { TimelineDayCell, TimelineHeatCell, TimelineMark, TimelineRowModel } from '../view/model'
 
-// The translation from the domain to the neutral model of the view: soldiers become rows, units become
-// group headers, days become header cells, and leaves become bars and badges (ARCHITECTURE "View engines").
-// Pure.
+// What a row of the timeline says aloud beside its bar (ARCHITECTURE "View engines"). Pure.
 
-export function dayCells(
-  days: readonly CalendarDate[],
-  today: CalendarDate,
-  openDay: ((day: CalendarDate) => (() => void) | null) | null,
-): TimelineDayCell[] {
-  return days.map((day) => ({
-    key: day,
-    weekday: formatDate(day, 'weekdayNarrow'),
-    dayNumber: formatDate(day, 'day'),
-    isToday: day === today,
-    label: formatDate(day, 'full'),
-    onOpen: openDay === null ? null : openDay(day),
-  }))
-}
-
-/** Days flagged true, as ranges of dates read aloud after their meaning. NULL when none is. */
-function rangesText(days: readonly CalendarDate[], flags: readonly boolean[], meaning: string): string | null {
-  const ranges = spansOf(flags, true).map((span) => {
+/** The muted days of a row, out of the selected unit (D-105), as ranges read after their meaning; NULL when none is. */
+export function rowOffText(item: Extract<BoardItem, { kind: 'soldier' }>, days: readonly CalendarDate[]): string | null {
+  const ranges = spansOf(
+    item.inScope.map((inScope) => !inScope),
+    true,
+  ).map((span) => {
     const first = days[span.start]
     const last = days[span.start + span.length - 1]
     if (first === undefined || last === undefined) return ''
     return rangeText(first, last)
   })
-  return ranges.length === 0 ? null : `${meaning}: ${ranges.join(', ')}`
-}
-
-/** The muted days of a row: out of the selected unit (D-105). */
-function offTextOf(days: readonly CalendarDate[], outOfScope: readonly boolean[]): string | null {
-  return rangesText(days, outOfScope, t('timeline.outOfScope'))
-}
-
-/** What a row says of its muted days, read after its name; NULL when none is (D-105). */
-export function rowOffText(item: Extract<BoardItem, { kind: 'soldier' }>, days: readonly CalendarDate[]): string | null {
-  return offTextOf(
-    days,
-    item.inScope.map((inScope) => !inScope),
-  )
-}
-
-/** What the view needs to know about the leaves (D-111, D-112). */
-export interface TimelineMarkOptions {
-  readonly leaves: ReadonlyMap<SoldierId, readonly BoardLeave[]>
-  readonly colors: BarColorMode
-  /** Opens a leave's details: every mark is a control (D-119). */
-  readonly openLeave: (leaveId: string) => void
-  /** Whether a drag may move the leave (D-143). */
-  readonly movable: (leaveId: string) => boolean
-  /** Whether a drag on the soldier's row may mark a new leave (D-143). */
-  readonly creatable: (soldierId: SoldierId) => boolean
-}
-
-interface Placed {
-  readonly leave: BoardLeave
-  readonly start: number
-  readonly length: number
-  readonly cut: { readonly start: boolean; readonly end: boolean }
-}
-
-/** Where a leave falls in the window. Stored days compare as text (`YYYY-MM-DD`). NULL outside it. */
-function placeInWindow(leave: BoardLeave, days: readonly CalendarDate[]): Placed | null {
-  const first = days.findIndex((day) => day >= leave.start_date)
-  const last = days.findLastIndex((day) => day <= leave.end_date)
-  if (first < 0 || last < first) return null
-  const firstDay = days[0]
-  const lastDay = days[days.length - 1]
-  return {
-    leave,
-    start: first,
-    length: last - first + 1,
-    cut: {
-      start: firstDay !== undefined && leave.start_date < firstDay,
-      end: lastDay !== undefined && leave.end_date > lastDay,
-    },
-  }
-}
-
-function markOf(
-  { leave, start, length, cut }: Placed,
-  lane: number,
-  first: CalendarDate,
-  { colors, openLeave, movable }: TimelineMarkOptions,
-): TimelineMark {
-  const badge = leave.effect === 'available'
-  const uniform = colors === 'uniform'
-  const typeTone = leaveTypeToneOf(leave.type?.color_key ?? null)
-  return {
-    key: leave.id,
-    kind: badge ? 'badge' : leave.layer === 'round' ? 'band' : 'bar',
-    start,
-    length,
-    cut,
-    range: dayRangeOf(first, leave),
-    drag: movable(leave.id) ? { resize: !badge } : null,
-    lane,
-    dashed: leave.status === 'pending',
-    tone: leaveTone(leave, colors),
-    Icon: badge ? (iconOf(leave.type?.icon_key ?? null) ?? ICON_GLYPHS.other.Icon) : null,
-    dot: uniform && !badge && leave.type !== null ? typeTone.fill : null,
-    caption: uniform && !badge ? typeName(leave) : null,
-    label: leaveText(leave),
-    onOpen: () => {
-      openLeave(leave.id)
-    },
-  }
-}
-
-/**
- * Bars and badges take lanes apart: a badge sits over a bar, as in Stone 3 (D-111). A round's absence is a band under
- * them all (D-268); rounds that overlap stack, each in its share of the row's height (OI-246). Its markers are badges
- * like any other.
- */
-function marksOf(leaves: readonly BoardLeave[], days: readonly CalendarDate[], options: TimelineMarkOptions) {
-  const placed = leaves.flatMap((leave) => {
-    const at = placeInWindow(leave, days)
-    return at === null ? [] : [at]
-  })
-  const bands = placed.filter((item) => item.leave.effect !== 'available' && item.leave.layer === 'round')
-  const bars = placed.filter((item) => item.leave.effect !== 'available' && item.leave.layer === 'request')
-  const badges = placed.filter((item) => item.leave.effect === 'available')
-  const bandLanes = assignLanes(bands)
-  const barLanes = assignLanes(bars)
-  const badgeLanes = assignLanes(badges)
-  const [first] = days
-  if (first === undefined) return { marks: [], lanes: 1, bandLanes: 1 }
-  const marks = [
-    ...bands.map((item, index) => markOf(item, bandLanes.lanes[index] ?? 0, first, options)),
-    ...bars.map((item, index) => markOf(item, barLanes.lanes[index] ?? 0, first, options)),
-    ...badges.map((item, index) => markOf(item, badgeLanes.lanes[index] ?? 0, first, options)),
-  ]
-  return { marks, lanes: Math.max(barLanes.count, badgeLanes.count), bandLanes: bandLanes.count }
-}
-
-export function timelineRows(
-  items: readonly BoardItem[],
-  days: readonly CalendarDate[],
-  open: ((soldierId: string) => void) | null,
-  options: TimelineMarkOptions,
-): TimelineRowModel[] {
-  return items.map((item): TimelineRowModel => {
-    if (item.kind === 'group') return { kind: 'group', key: item.key, label: headingLabel(item.label), count: item.size }
-    const outOfScope = item.inScope.map((inScope) => !inScope)
-    const offDays = outOfScope
-    return {
-      kind: 'resource',
-      key: item.key,
-      name: fullName(item.soldier),
-      detail: item.rank?.short_title ?? item.rank?.title ?? null,
-      offDays,
-      offText: offTextOf(days, outOfScope),
-      creatable: options.creatable(item.soldier.id),
-      onOpen:
-        open === null
-          ? null
-          : () => {
-              open(item.soldier.id)
-            },
-      ...marksOf(options.leaves.get(item.soldier.id) ?? [], days, options),
-    }
-  })
-}
-
-/** The heat row's cells (D-141). A day with nothing broken is empty; any other opens the rules of its day. */
-export function heatCells(
-  heat: readonly HeatDay[],
-  openDay: (day: CalendarDate) => void,
-): TimelineHeatCell[] {
-  return heat.map((day) => {
-    const tone = day.worst ?? 'none'
-    return {
-      key: day.date,
-      tone,
-      count: day.broken === 0 ? null : String(day.broken),
-      label: breachLabel(day),
-      onOpen:
-        day.broken === 0
-          ? null
-          : () => {
-              openDay(day.date)
-            },
-    }
-  })
+  return ranges.length === 0 ? null : `${t('timeline.outOfScope')}: ${ranges.join(', ')}`
 }

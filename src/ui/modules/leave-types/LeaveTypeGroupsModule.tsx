@@ -13,10 +13,10 @@ import {
 import { useForm } from '@tanstack/react-form'
 import { Archive, ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useArchiveStep } from '../../patterns/ArchiveStep'
 import { Button as AriaButton } from 'react-aria-components'
 import { ActionMenu, type RowAction } from '../../patterns/ActionMenu'
 import { ArchivedSection } from '../../patterns/ArchivedSection'
-import { SmallDialog } from '../../patterns/Dialogs'
 import { EntityForm } from '../../patterns/EntityForm'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { CLEAN_FORM, fieldError, formStateOf, validatorResult } from '../../patterns/forms'
@@ -109,7 +109,14 @@ export function LeaveTypeGroupsModule() {
   const permissions = useLeaveTypePermissions()
   const commands = useLeaveTypeGroupCommands()
   const [failure, setFailure] = useState<AppError | null>(null)
-  const [archiving, setArchiving] = useState<LeaveTypeGroup | null>(null)
+  const archiving = useArchiveStep<LeaveTypeGroup>({
+    nameOf: (group) => group.name,
+    titleKey: 'leaveTypeGroups.archiveTitle',
+    bodyKey: 'leaveTypeGroups.archiveBody',
+    archive: commands.archive,
+    restore: commands.restore,
+    onFailure: setFailure,
+  })
 
   if (groups.status === 'failed') return <FailureNotice error={groups.error} />
   if (groups.status === 'loading') return <LoadingNotice />
@@ -185,9 +192,10 @@ export function LeaveTypeGroupsModule() {
             id: 'archive',
             labelKey: 'common.archive' as const,
             icon: <Archive aria-hidden size={14} />,
+            tone: 'danger' as const,
             onAction: () => {
               setFailure(null)
-              setArchiving(group)
+              archiving.ask(group)
             },
           },
         ]
@@ -197,6 +205,7 @@ export function LeaveTypeGroupsModule() {
   return (
     <div className="flex flex-col gap-md">
       {failure === null ? null : <FailureNotice error={failure} />}
+      {archiving.notice}
       <ul aria-label={t('leaveTypeGroups.listLabel')} className="flex flex-col">
         {live.map((group, index) => (
           <li key={group.id} className="flex items-center gap-2xs border-b border-line bg-surface">
@@ -227,24 +236,7 @@ export function LeaveTypeGroupsModule() {
         </div>
       ) : null}
       {archived}
-      {archiving === null ? null : (
-        <SmallDialog
-          role="alertdialog"
-          titleKey="leaveTypeGroups.archiveTitle"
-          hintKey="leaveTypeGroups.archiveBody"
-          confirmKey="common.archive"
-          isPending={commands.archive.isPending}
-          onCancel={() => {
-            setArchiving(null)
-          }}
-          onConfirm={() => {
-            void commands.archive.run(archiving).then((result) => {
-              setArchiving(null)
-              if (!result.ok) setFailure(result.error)
-            })
-          }}
-        />
-      )}
+      {archiving.dialog}
     </div>
   )
 }

@@ -36,7 +36,7 @@ export interface ShellPlace {
 }
 
 /** What an address says of the board itself: its view, its dates, its order and its conditions. */
-const BOARD_PARAMS = ['view', 'from', 'to', 'range', 'rotation', 'sorts', 'sort', 'order', 'group', 'filter', 'colors', 'leaves', 'saved'] as const satisfies readonly (keyof WorkspaceSearch)[]
+const BOARD_PARAMS = ['view', 'from', 'to', 'range', 'rotation', 'sorts', 'sort', 'order', 'group', 'filter', 'leaves', 'saved'] as const satisfies readonly (keyof WorkspaceSearch)[]
 
 /** Whether the address names something of the board: a link to a view of it is a link to the board. */
 function namesBoard(search: WorkspaceSearch): boolean {

@@ -1,6 +1,6 @@
 import { FOCUS_MODE } from '@config'
 import { useStartView, useWorkspaceSearch } from '@logic'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect } from 'react'
 import { useBoardShown } from './boardShown'
 import type { BuilderTarget } from './builderOpen'
 import { useFocusMode } from './focusMode'
@@ -57,13 +57,10 @@ export interface BoardPlaceProps {
   readonly onStarted: () => void
   readonly building: BuilderTarget | null
   readonly onBuilt: () => void
-  /** The tab bar, absent in focus mode. */
-  readonly children: ReactNode
 }
 
-export function BoardPlace({ name, started, onStarted, building, onBuilt, children }: BoardPlaceProps) {
+export function BoardPlace({ name, started, onStarted, building, onBuilt }: BoardPlaceProps) {
   const boardShown = useBoardShown()
-  const focusMode = useFocusMode()
   useStartOnce(started, onStarted)
   useLandscapeFocus()
   return (
@@ -74,7 +71,6 @@ export function BoardPlace({ name, started, onStarted, building, onBuilt, childr
           <Viewport />
         </main>
       </div>
-      {focusMode.on ? null : <div className="pointer-events-none absolute inset-safe">{children}</div>}
       {boardShown ? <SavedViewDroppedNotice /> : null}
       {boardShown && building !== null ? <RuleBuilder target={building} onClose={onBuilt} /> : null}
     </>

@@ -1,6 +1,10 @@
-import { CalendarDate, type Leave, type LeaveEvent } from '@contracts'
+import { CalendarDate, type Leave, type LeaveEvent, type LeaveId } from '@contracts'
+import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import type { Loaded } from '../queries/loaded'
+import { QUERY_KEYS } from '../queries/client'
+import { loaded, type Loaded } from '../queries/loaded'
+import { unwrap } from '../queries/results'
+import { usePorts } from '../runtime/context'
 import type { LeaveDates } from '../timeline/editing'
 import { useLeaveThread } from './workflowHooks'
 
@@ -44,4 +48,40 @@ export function useLeaveMove(leave: Leave): Loaded<RoundMove | null> {
     const events = thread.value.flatMap((entry) => (entry.kind === 'event' ? [entry.event] : []))
     return { status: 'ready', value: leaveMoveOf(leave, events) }
   }, [leave, thread])
+}
+
+const NO_MOVES: ReadonlyMap<LeaveId, RoundMove> = new Map()
+
+/** The leaves of the round among `leaves` that wait: only a move of one of them is drawn where it came from (OI-398). */
+export function waitingRoundLeaves(leaves: readonly Leave[]): readonly Leave[] {
+  return leaves.filter((leave) => leave.batch_id !== null && leave.status === 'pending')
+}
+
+/** The moves of the waiting leaves of the round, each from its own thread; a leave where the round put it has none. */
+export function roundMovesOf(leaves: readonly Leave[], events: readonly LeaveEvent[]): ReadonlyMap<LeaveId, RoundMove> {
+  const byLeave = new Map<LeaveId, LeaveEvent[]>()
+  for (const event of events) byLeave.set(event.leave_id, [...(byLeave.get(event.leave_id) ?? []), event])
+  const moves = new Map<LeaveId, RoundMove>()
+  for (const leave of waitingRoundLeaves(leaves)) {
+    const move = leaveMoveOf(leave, byLeave.get(leave.id) ?? [])
+    if (move !== null) moves.set(leave.id, move)
+  }
+  return moves
+}
+
+/**
+ * The moves of the round's leaves that wait among `leaves` (OI-398): the board draws where each came from while its move
+ * waits. One read of their events; none while there is nothing to read, and none until the answer is in.
+ */
+export function useRoundMoves(leaves: readonly Leave[]): ReadonlyMap<LeaveId, RoundMove> {
+  const { data } = usePorts()
+  const waiting = useMemo(() => waitingRoundLeaves(leaves), [leaves])
+  const query = useMemo(() => (waiting.length === 0 ? null : { leave_ids: waiting.map((leave) => leave.id).toSorted(), after_seq: 0 }), [waiting])
+  const events: Loaded<readonly LeaveEvent[]> = loaded(
+    useQuery({
+      queryKey: [...QUERY_KEYS.leaveEvents, query],
+      queryFn: () => (query === null ? Promise.resolve([]) : unwrap(data.repositories.leave_events.list(query))),
+    }),
+  )
+  return useMemo(() => (events.status === 'ready' ? roundMovesOf(waiting, events.value) : NO_MOVES), [events, waiting])
 }

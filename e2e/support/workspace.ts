@@ -17,7 +17,9 @@ export async function waitForSettledScreen(page: Page) {
   await page.waitForFunction(
     () =>
       document.getAnimations().every((animation) => animation.playState !== 'running') &&
-      [...document.querySelectorAll<HTMLElement>('[data-rac]')].every((element) => element.style.clipPath !== 'inset(50%)'),
+      // A tooltip never covers anything (it takes no press), and a tab's tooltip can stay in its exiting state under a
+      // modal drawer when an emulated phone hovers (OI-406): it is not waited for.
+      [...document.querySelectorAll<HTMLElement>('[data-rac]')].every((element) => element.style.clipPath !== 'inset(50%)' || element.getAttribute('role') === 'tooltip'),
   )
 }
 

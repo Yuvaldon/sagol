@@ -1,4 +1,4 @@
-import { PANEL_IDS } from '@config'
+import { LINKED_ENTITY, PANEL_IDS } from '@config'
 import type { AccountLinkRequest, UnitId } from '@contracts'
 import { t, type I18nKey } from '@i18n'
 import {
@@ -7,50 +7,103 @@ import {
   useJoinApproval,
   useLinkAssessments,
   useLinkPlacements,
+  useLinkReviewCommands,
   usePanel,
   usePendingLinkRequests,
+  useSoldierAccounts,
   useToday,
   useUnits,
   type JoinEntry,
+  type LinkReview,
 } from '@logic'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Link2, X } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger } from 'react-aria-components'
+import { useSwipe } from '../../board/gestures'
 import { Badge } from '../../kit/Badge'
+import { SmallDialog } from '../../patterns/Dialogs'
 import { EmptyNotice, FailureNotice, LoadingNotice } from '../../patterns/Notices'
 import { Popover } from '../../primitives/overlays'
 import { useNotices } from '../notices'
 import { PageFrame } from '../PageFrame'
 import { joinOutcome } from './joinOutcome'
 import { REASON_CHIPS } from './joinWords'
+import { CapsuleButton } from './CapsuleButton'
 import { PageTop } from './PageTop'
 
 // "הצטרפות" (the handoff's Manage → Join requests, D-482, OI-382): a queue of what waits, by readiness (D-447). Ready
 // requests have one candidate and no conflict; a request to review says why on an amber chip; a request with no
 // candidate becomes a new soldier once a unit is chosen on its "מחלקה" chip. "אישור N" in the capsule approves every
-// ready one and creates every placed one. A row opens "זה הוא?", where each request is answered on its own.
+// ready one and creates every placed one. A row opens "זה הוא?", where each request is answered on its own. A swipe on a
+// ready row reveals ✓ and ✗, on a row to review ✗ alone, and a rejection asks first (OI-402); the drawer is the tap path
+// to the same answers (D-458).
 
 const SEPARATOR = ' · '
 const WORD = ' '
 
-function RequestRow({ request, trailing }: { readonly request: AccountLinkRequest; readonly trailing?: ReactNode }) {
+const FOCUS = 'outline-focus outline-offset-2 data-focus-visible:outline-2'
+const STEP = `inline-flex size-touch shrink-0 cursor-pointer items-center justify-center rounded-full ${FOCUS}`
+const STEP_ICON = 20
+
+/** What a swipe on a row reveals (OI-402): ✓ links a ready request to its one candidate; ✗ asks, then rejects. */
+interface SwipeAnswers {
+  readonly link: (() => void) | null
+  readonly reject: () => void
+}
+
+function RequestRow({ request, trailing, answers = null }: { readonly request: AccountLinkRequest; readonly trailing?: ReactNode; readonly answers?: SwipeAnswers | null }) {
   const panel = usePanel()
+  const [shown, setShown] = useState(false)
+  const swipe = useSwipe((direction) => {
+    if (answers !== null && (direction === 'left' || direction === 'right')) setShown(!shown)
+  })
+  const name = fullName(request)
   return (
-    <li className="flex min-h-touch items-center gap-sm border-b border-divider-strong pe-lg last:border-b-0">
+    <li
+      onPointerDownCapture={swipe.onPointerDown}
+      onPointerUpCapture={swipe.onPointerUp}
+      onPointerCancel={swipe.onPointerCancel}
+      className="flex min-h-touch touch-pan-y items-center gap-sm border-b border-divider-strong pe-lg last:border-b-0"
+    >
       <AriaButton
         onPress={() => {
+          if (swipe.consumed()) return
           panel.open(PANEL_IDS.accountLinks, { entity: request.id })
         }}
         className="flex min-h-touch min-w-none flex-1 cursor-pointer items-baseline gap-sm py-xs ps-lg text-start outline-focus -outline-offset-2 data-focus-visible:outline-2 data-hovered:bg-inner"
       >
-        <span className="shrink-0 truncate text-body font-semibold">{fullName(request)}</span>
+        <span className="shrink-0 truncate text-body font-semibold">{name}</span>
         {request.claimed_personal_id === null ? null : (
           <span dir="ltr" className="min-w-none truncate text-small text-text-muted tabular-nums">
             {request.claimed_personal_id}
           </span>
         )}
       </AriaButton>
-      {trailing}
+      {shown && answers !== null ? (
+        <span className="flex shrink-0 items-center gap-sm">
+          <AriaButton
+            aria-label={[t('accountLinks.reject'), name].join(WORD)}
+            onPress={() => {
+              setShown(false)
+              answers.reject()
+            }}
+            className={`${STEP} bg-status-rejected-bg text-status-rejected-text`}
+          >
+            <X aria-hidden size={STEP_ICON} />
+          </AriaButton>
+          {answers.link === null ? null : (
+            <AriaButton
+              aria-label={[t('manage.joins.linkOne'), name].join(WORD)}
+              onPress={answers.link}
+              className={`${STEP} bg-status-ok-bg text-status-ok-text`}
+            >
+              <Check aria-hidden size={STEP_ICON} />
+            </AriaButton>
+          )}
+        </span>
+      ) : (
+        trailing
+      )}
     </li>
   )
 }
@@ -133,8 +186,81 @@ const NO_UNIT = 'none'
 
 const NO_REQUESTS: readonly AccountLinkRequest[] = []
 
+/** The answers a swipe gives (OI-402): a link with its toast and "פתח כרטיס", and a rejection asked first. */
+function useSwipeAnswers() {
+  const panel = usePanel()
+  const notices = useNotices()
+  const commands = useLinkReviewCommands()
+  const [rejecting, setRejecting] = useState<AccountLinkRequest | null>(null)
+  const answer = (request: AccountLinkRequest, review: LinkReview, done: (answered: AccountLinkRequest) => void) => {
+    void commands.run({ request, review }).then((result) => {
+      setRejecting(null)
+      if (!result.ok) {
+        notices.fail(result.error)
+        return
+      }
+      done(result.value)
+    })
+  }
+  const answersOf = (entry: JoinEntry): SwipeAnswers => {
+    const { request, assessment } = entry
+    const [only] = assessment.candidates
+    return {
+      link:
+        assessment.readiness === 'ready' && only !== undefined && assessment.candidates.length === 1
+          ? () => {
+              answer(request, { kind: 'link', soldierId: only.soldier_id }, (answered) => {
+                const soldierId = answered.resolved_soldier_id
+                notices.say(
+                  [fullName(request), t('manage.joins.linked')].join(WORD),
+                  soldierId === null
+                    ? undefined
+                    : {
+                        labelKey: 'manage.joins.openCard',
+                        run: () => {
+                          panel.open(PANEL_IDS.soldiers, { entity: soldierId })
+                        },
+                      },
+                )
+              })
+            }
+          : null,
+      reject: () => {
+        setRejecting(request)
+      },
+    }
+  }
+  const dialog =
+    rejecting === null ? null : (
+      <SmallDialog
+        role="alertdialog"
+        titleKey="accountLinks.rejectTitle"
+        hintKey="accountLinks.rejectHint"
+        confirmKey="accountLinks.rejectConfirm"
+        tone="danger"
+        isPending={commands.isPending}
+        onCancel={() => {
+          setRejecting(null)
+        }}
+        onConfirm={() => {
+          answer(rejecting, { kind: 'reject' }, () => {
+            notices.say([t('manage.joins.rejected'), fullName(rejecting)].join(WORD))
+          })
+        }}
+      >
+        <p className="text-body font-semibold">{fullName(rejecting)}</p>
+      </SmallDialog>
+    )
+  return { answersOf, dialog }
+}
+
 export function JoinsPage({ name }: { readonly name: string }) {
   const notices = useNotices()
+  const panel = usePanel()
+  const swipe = useSwipeAnswers()
+  // The linked accounts' door (OI-404): for who reads any live link.
+  const accounts = useSoldierAccounts()
+  const linked = accounts.status === 'ready' ? accounts.value.filter((account) => account.revoked_at === null).length : 0
   const today = useToday()
   const requests = usePendingLinkRequests()
   const pending = requests.status === 'ready' ? requests.value : NO_REQUESTS
@@ -175,15 +301,29 @@ export function JoinsPage({ name }: { readonly name: string }) {
         titleKey="manage.pages.joins"
         detail={[name, [String(pending.length), t('manage.joins.waiting')].join(WORD)].join(SEPARATOR)}
         tools={
-          count === 0 ? null : (
-            <AriaButton
-              isDisabled={approval.isPending}
-              onPress={approveAll}
-              className="inline-flex min-h-touch cursor-pointer items-center gap-xs rounded-full px-md text-body font-bold outline-focus outline-offset-2 data-focus-visible:outline-2"
-            >
-              <Check aria-hidden size={18} />
-              {[t('manage.joins.approve'), String(count)].join(WORD)}
-            </AriaButton>
+          count === 0 && linked === 0 ? null : (
+            <>
+              {linked === 0 ? null : (
+                <CapsuleButton
+                  labelKey="accountLinks.linkedTitle"
+                  onPress={() => {
+                    panel.open(PANEL_IDS.accountLinks, { entity: LINKED_ENTITY })
+                  }}
+                >
+                  <Link2 aria-hidden size={20} />
+                </CapsuleButton>
+              )}
+              {count === 0 ? null : (
+                <AriaButton
+                  isDisabled={approval.isPending}
+                  onPress={approveAll}
+                  className="inline-flex min-h-touch cursor-pointer items-center gap-xs rounded-full px-md text-body font-bold outline-focus outline-offset-2 data-focus-visible:outline-2"
+                >
+                  <Check aria-hidden size={18} />
+                  {[t('manage.joins.approve'), String(count)].join(WORD)}
+                </AriaButton>
+              )}
+            </>
           )
         }
       />
@@ -199,7 +339,7 @@ export function JoinsPage({ name }: { readonly name: string }) {
         <>
           <Group titleKey="manage.joins.ready" entries={groups.ready}>
             {groups.ready.map((entry) => (
-              <RequestRow key={entry.request.id} request={entry.request} />
+              <RequestRow key={entry.request.id} request={entry.request} answers={swipe.answersOf(entry)} />
             ))}
           </Group>
           <Group titleKey="manage.joins.review" entries={groups.review}>
@@ -207,6 +347,7 @@ export function JoinsPage({ name }: { readonly name: string }) {
               <RequestRow
                 key={entry.request.id}
                 request={entry.request}
+                answers={{ link: null, reject: swipe.answersOf(entry).reject }}
                 trailing={entry.assessment.readiness === 'needs_review' ? <Badge tone="pending">{t(REASON_CHIPS[entry.assessment.reason])}</Badge> : null}
               />
             ))}
@@ -232,6 +373,7 @@ export function JoinsPage({ name }: { readonly name: string }) {
           </Group>
         </>
       )}
+      {swipe.dialog}
     </PageFrame>
   )
 }

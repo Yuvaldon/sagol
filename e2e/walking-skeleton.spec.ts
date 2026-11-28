@@ -16,7 +16,7 @@ async function chooseOnMe(page: Page, item: string | RegExp) {
   await page.getByRole('main').getByRole('button', { name: item }).click()
 }
 
-test('an owner claims the empty organization and reaches the workspace', async ({ page }) => {
+test('an owner claims the empty organization and reaches the workspace', async ({ page }, testInfo) => {
   await test.step('sign-in is in Hebrew, RTL, and has no axe violations', async () => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/sign-in$/)
@@ -78,11 +78,12 @@ test('an owner claims the empty organization and reaches the workspace', async (
     await openTab(page, 'today')
   })
 
-  await test.step('the destinations float at the bottom on every screen (D-252)', async () => {
+  await test.step('the destinations float at the bottom of a phone, and stand in the side rail of a wide screen (D-252, D-491)', async () => {
     const box = await navigation(page).boundingBox()
     const viewport = page.viewportSize()
     if (box === null || viewport === null) throw new Error('navigation has no box')
-    expect(box.y).toBeGreaterThan(viewport.height * BOTTOM_BAR_LIMIT)
+    if (testInfo.project.name === 'desktop') expect(box.x + box.width).toBeGreaterThan(viewport.width - 2)
+    else expect(box.y).toBeGreaterThan(viewport.height * BOTTOM_BAR_LIMIT)
   })
 
   await test.step('the bars keep the page as wide as the screen, so a phone never zooms out (D-155)', async () => {

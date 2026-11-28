@@ -13,9 +13,22 @@ export function soldierList(page: Page) {
   return page.getByRole('region', { name: he.manage.people.listLabel })
 }
 
+/**
+ * The soldiers' rows in sight: the phone's items and the table's rows that hold a soldier's control (a group's header and
+ * the table's header hold none). The list renders only what is in sight (OI-403).
+ */
+export function soldierRows(page: Page): Locator {
+  return soldierList(page)
+    .getByRole('listitem')
+    .or(soldierList(page).getByRole('row'))
+    .filter({ has: page.getByRole('button').or(page.getByRole('checkbox')) })
+}
+
+/** A soldier's row: an item of the phone's list, or a row of the wide screen's table (D-491). */
 export function soldierRow(page: Page, name: string): Locator {
   return soldierList(page)
     .getByRole('listitem')
+    .or(soldierList(page).getByRole('row'))
     .filter({ has: page.getByText(name, { exact: true }) })
 }
 

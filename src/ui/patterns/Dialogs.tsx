@@ -23,6 +23,8 @@ export interface SmallDialogProps {
   readonly onCancel: () => void
   readonly children?: ReactNode
   readonly role?: 'dialog' | 'alertdialog'
+  /** A step that takes something away (archiving, a rejection): its button is never the primary color (D-461). */
+  readonly tone?: 'danger'
 }
 
 export function SmallDialog({
@@ -34,6 +36,7 @@ export function SmallDialog({
   onCancel,
   children,
   role = 'dialog',
+  tone,
 }: SmallDialogProps) {
   return (
     <ModalOverlay
@@ -55,7 +58,7 @@ export function SmallDialog({
           </div>
           <div className="flex flex-wrap justify-end gap-sm">
             <Button onPress={onCancel}>{t('common.cancel')}</Button>
-            <Button variant="primary" isDisabled={isPending} onPress={onConfirm}>
+            <Button variant={tone === 'danger' ? 'danger' : 'primary'} isDisabled={isPending} onPress={onConfirm}>
               {t(confirmKey)}
             </Button>
           </div>

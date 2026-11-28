@@ -203,6 +203,7 @@ function RuleCard({ rule, rules, onClose }: { readonly rule: AvailabilityRule; r
           titleKey="manage.archive.ruleTitle"
           hintKey="manage.archive.ruleBody"
           confirmKey="manage.archive.confirm"
+          tone="danger"
           isPending={commands.archive.isPending}
           onCancel={() => {
             setArchiving(false)

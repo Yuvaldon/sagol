@@ -210,8 +210,9 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   tapped days on base make "יציאה עבור X" with the impact line; a bar opens its card. **Movements** (`view=list`):
   day headers on the canvas, a card of "יוצאים" and "חוזרים", the leave round of a day as one row, a dashed line for a
   quiet run; it reads more days as it scrolls. A pending request reveals ✓ ✗ by a swipe. Focus mode leaves a centered
-  capsule; a phone on its side enters it. A wide screen keeps the old timeline grid (drag, colors) and the table under
-  the same head until R5·6.
+  capsule; a phone on its side enters it. The wide screen draws the same person bars and drags them (D-491); while a
+  move of a round leave waits, its first place is a dashed gap (D-492); a pinch on a phone's timeline steps its range,
+  and once the timeline is scrolled its month gives way to a centered capsule that returns it to the top (D-492).
 - **Components** are in `src/ui/kit`: `Glass` (circle, capsule), `Card`, `Badge`, `Fraction`, `PersonRow`,
   `DayStrip`, `Month`, `Toast`, `Tray`, `StopDrawer`. The drawer with stops opens at half height and grows to
   full; its handle is a button (D-458); from `md` it is a panel on the inline end.
@@ -225,7 +226,8 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **The strip** draws the leave round quiet (`time-round`), another absence filled (`time-approved`) and a request
   that waits amber; a leave's days are one segment, and a waiting request carries its type's name (D-489); the month
   does not draw the leave round.
-- **Desktop** uses the same shell until R5·6.
+- **Desktop** (R5·6, D-491 … D-495): the side rail, the side panel, the centered column, "ניהול" beside its page, the
+  people table and the wide board, as the section "Desktop" below says.
 - **ניהול's pages (R5·4, D-482 … D-486).** Each page: a glass back circle, the title at 28, its tools on one glass
   capsule, one line of what it holds. **חיילים:** a white card of 44 px person rows per group (name, rank and tags,
   seven dots: filled on base, hollow at home, today larger; none where the actor reads no leaves); the capsule holds
@@ -244,6 +246,10 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
   winning rule; "+" and the options ("ארכיון · N") in the capsule; the rule's drawer shows chips, the pencil opens the
   form, "⋯" archives. An archive is a drawer: a row opens in it with "החזרה מהארכיון". **"סבב יציאות · תכנון"** is
   "היום"'s last card while soldiers of the rotation have no round.
+- **R5·6 on the phone too** (D-492 … D-495): a swipe on a join row reveals ✓ ✗ (ready) or ✗ (to review), and ✗ asks
+  first; the capsule of "הצטרפות" opens the linked accounts, each with "ניתוק" for who may; every definition's archive asks
+  by name with a red button and leaves a line with "ביטול" in its module; the rule form reads איפה, על מי, כמה, מתי, then
+  "עוד"; "חיילים" renders only the rows in sight.
 
 ### A tap path for every gesture (D-458)
 
@@ -271,14 +277,26 @@ placement map; `07` is current and wins over them for the tab bar, numbers and t
 - **Signed out, not linked, no organization:** the current sign-in, join and setup flows, in the new tokens and
   type, each as one centered column with one primary action.
 
-### Desktop (D-460)
+### Desktop (D-460, D-491)
 
-The phone is the design; the desktop is derived. From the `desktop` breakpoint: the tab bar is a side rail on the
-inline start (icons with labels, the action as its first item); a drawer is a side panel on the inline end, not a
-centered dialog; "היום" and "אני" are one centered column (the feed's width, not stretched); "ניהול" is its list
-beside the open page; lists of people are tables where a row has more than three facts; the unit tree is a
-hierarchy diagram. "לוח" is the exception: a wide timeline with the calendar and movements beside it in the panel,
-and dragging a bar stays.
+The phone is the design; the desktop is derived, from the `md` breakpoint (768 × 512).
+
+- **Side rail** on the inline start instead of the tab bar: each destination its icon with its name under it, the one
+  in sight on the lighter capsule; the action circle first, on "היום". It never slides away; focus mode and a full
+  screen hide it.
+- **Side panel** on the inline end instead of every drawer: the screen's height, no stops, not modal (nothing dimmed, a
+  press outside keeps it), and the content narrows beside it, so another row's card replaces it in place. ✕, Escape and
+  back close it; a question asked from it is still a modal dialog.
+- **"היום" and "אני"** are the feed's centered column beside the rail.
+- **"ניהול"** with a page open is its rows in a column on the inline start (the open one marked) and the page beside it;
+  the column steps aside while a side panel is open.
+- **Tables** where a row has more than three facts: "חיילים" is a table (name, command rank, unit, tags, the seven days),
+  a group's name a row across it; its name opens the card or is the checkbox while choosing. Every list of people renders
+  only the rows in sight.
+- **"לוח"** is the wide timeline of person bars, dragged with the mouse (a bar, its ends, new days on base), with the
+  drag's card; the person card and the leave card open in the side panel beside it. Calendar, movements and the table
+  stay views of the fan. No threshold marking on the timeline; the calendar's amber days open the rules of a day.
+- **The unit tree** is the org chart already built (D-319), a view switch beside the list.
 
 ### Accessibility and RTL
 
@@ -330,11 +348,11 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 36 | A phone's timeline day is as wide as the week allows (about 37 px), 24 px in a month; days are picked by finger there, and by keyboard on the calendar ("בחירת טווח") | The handoff fits the week to the screen; every gesture keeps a tap and keyboard path (D-458) | D-480 |
 | 37 | A one-day leave is listed once, as leaving; a waiting leave of the round shows in its month cells and as "ממתינה" on its closed row | One rule for the drawer and the movements; the approver sees a move that waits | D-480, D-481 |
 | 34 | A swipe reveals ✓ ✗ only for who may answer; a round leave has no quick ✗ anywhere; its card offers "אישור ההזזה" and "השארה במועד המקורי" once moved | `02`'s quick-approval exceptions; a swipe must not cost a soldier a planned leave | D-480, D-481 |
-| 35 | A wide screen keeps the old timeline grid, its drag and colors, and the table, under the new head | The desktop pass is R5·6 (OI-397) | D-480 |
+| 35 | A wide screen keeps the old timeline grid, its drag and colors, and the table, under the new head (superseded: R5·6 draws the person bars, row 58) | The desktop pass is R5·6 (OI-397) | D-480 |
 | 38 | The pages of "ניהול" live in the URL (`page`), and the soldiers list's options in one param `people`; the search is the page's own | D-023: a view is a link; a typed word is not | D-482 |
 | 39 | "הוספת חיילים" saves with no "ביטול"; a list with a detail the actor may not add is refused whole, naming it; the full form of one soldier is a door away | Archiving is not the inverse of creating; nothing pasted is dropped unseen; custom properties and "no unit" live in the full form | D-482 |
 | 40 | The person card's "יציאה" comes from days chosen on its strip; its pencil and the tray's "תגיות" wait for R5·5 (built, D-489) | `03` §1.2; the tag picker and in-place edit are R5·5's components (OI-400, OI-401) | D-483 |
-| 41 | Join requests are grouped by readiness for everyone (the company commander sees one group when only new soldiers reach them); no swipe on a row; no "ביטול" after a link; a new soldier from a request has no rank and starts today | The assessment decides the groups; the drawer is the tap path (OI-402); unlinking does not bring a request back (D-451) | D-484 |
+| 41 | Join requests are grouped by readiness for everyone (the company commander sees one group when only new soldiers reach them); no swipe on a row (superseded, row 62); no "ביטול" after a link; a new soldier from a request has no rank and starts today | The assessment decides the groups; the drawer is the tap path (OI-402); unlinking does not bring a request back (D-451) | D-484 |
 | 42 | "לא חל" marks a rule replaced on every day it applies, read from the rules alone; the list never names soft, hard or priority | The handoff's "the system already computes this" is per day; the list needs one answer per rule | D-485 |
 | 43 | Planning the leave round leaves the new-leave form for its own row and card; the card shows while soldiers of the rotation have no round | OI-389; "at rotation start" read as "until everyone has a round" | D-486 |
 | 44 | A step on several ends in one toast: how many it did, how many were left for review, the first refusal; refused soldiers stay chosen; "אישור N" asks no confirmation and reads each request again | Partial results must be said; a question on every approval is skipped by habit | D-487 |
@@ -347,6 +365,18 @@ Each is ours (D-170), not the package's. A row is added whenever a batch decides
 | 51 | The edit in place covers name, nickname, command rank, custom fields, private details and tags, each by its permission; status and a tag's rotation lifetime stay in the full card | The package's in-place fields; the rare choices keep their forms | D-489 |
 | 52 | The rotation page's legend names what the month draws (away, waiting), not the package's four | The board's month draws no leave round and no base fill (`03` §1.10) | D-488 |
 | 53 | A save refused halfway keeps what it saved, with its "ביטול", and the edit goes on; "ביטול" of tags puts the sets back exactly; a failed read shows in its card | Found in review | D-490 |
+| 54 | The desktop is `md` (768 × 512); a phone on its side keeps the phone's layout | One breakpoint, the one the screens already use (D-190) | D-491 |
+| 55 | The side panel is not modal: nothing dims, a press outside keeps it, the content narrows beside it | "Side panel" beside the work, not over it; another row's card replaces it in place | D-491 |
+| 56 | "ניהול" with a page open shows its rows in a column beside the page; the index alone when no page is open | The handoff's "list on the side, content beside it", with no empty pane | D-491 |
+| 57 | "חיילים" is a table on the desktop; join requests and rules keep their rows | "Rows become a table where appropriate": a row with more than three facts | D-491 |
+| 58 | The wide board is the phone's person bars, dragged; calendar and movements stay views of the fan, not parts of the panel | The handoff's "wide timeline and a side panel for the person card or leave" | D-491 |
+| 59 | The heat row leaves the timeline on every width; the calendar opens the rules of a day | `03` §1.9: no threshold marking on the timeline | D-491 |
+| 60 | A moved round leave's first place is a dashed amber gap; the new place a waiting request | `02`'s move of a round leave; read from its events, nothing stored | D-492 |
+| 61 | A pinch steps week, month, rotation, one step per pinch; the timeline's title gives way to a centered capsule, the corner capsule keeps its size | `03` §1.5 and §3; every target stays 44 px | D-492 |
+| 62 | A swipe on a join row: ✓ ✗ when ready, ✗ to review, ✗ asks first; linked accounts in a drawer from "הצטרפות" | `02` Join requests; the removed module's overview (OI-404) | D-493 |
+| 63 | Every definition archives by name with a red confirm, and "ביטול" in a line inside its module where a restore exists | D-461 for every tool; on a phone the module's drawer stands over the toast | D-494 |
+| 64 | The rule form follows the drawer's sentence (איפה, על מי, כמה, מתי) and keeps the rare fields under "עוד"; no chips in the form | OI-385: the drawer shows the sentence, the form chooses each part | D-495 |
+| 65 | The timeline's title gives way on a phone only; Escape closes the side panel wherever the keyboard is; a pinch never also swipes | Found in review: a mouse has no swipe; the panel is not modal | D-496 |
 
 ## Color (Light)
 

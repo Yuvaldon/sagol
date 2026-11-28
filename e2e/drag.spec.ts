@@ -11,7 +11,6 @@ import { addUnit, backToBoard, enterAsOwner, expectNoAxeViolations, openBoardOnT
 
 const PLATOON = 'מחלקה א'
 const SOLDIER = 'יעל שחר'
-const NAMES_PX = 124
 
 async function setUp(page: Page) {
   await openModule(page, he.units.open)
@@ -33,13 +32,13 @@ async function setUp(page: Page) {
   await waitForSettledScreen(page)
 }
 
-/** Where a day of the soldier's row is on screen: the grid starts at the row's right edge, after the names (RTL). */
+/** Where a day of the soldier's bar is on screen: under its header in the days' strip, on the soldier's row (D-491). */
 async function dayPoint(page: Page, day: number) {
-  const row = board(page).getByRole('listitem').filter({ hasText: SOLDIER })
-  const box = await row.boundingBox()
-  if (box === null) throw new Error('no row')
-  const dayPx = (box.width - NAMES_PX) / 7
-  return { x: box.x + box.width - NAMES_PX - dayPx * (day + 0.5), y: box.y + box.height / 2, dayPx }
+  const bars = board(page).getByRole('group', { name: SOLDIER })
+  const box = await bars.boundingBox()
+  const header = await page.getByRole('group', { name: he.board.days }).getByRole('button').nth(day).boundingBox()
+  if (box === null || header === null) throw new Error('no row')
+  return { x: header.x + header.width / 2, y: box.y + 22, dayPx: header.width }
 }
 
 function bar(page: Page) {

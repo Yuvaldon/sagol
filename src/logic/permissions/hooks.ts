@@ -68,8 +68,10 @@ const MODULE_CHECKS = {
 export const MODULE_CHECK_LIST: readonly PermissionCheck[] = Object.values(MODULE_CHECKS)
 
 export function useModuleAccess() {
-  const can = useCan(MODULE_CHECK_LIST)
+  const { can, known } = useCanAnswers(MODULE_CHECK_LIST)
   return {
+    /** Whether every answer is in: until then a module reads as closed, and nothing is put right for it (D-487). */
+    known: MODULE_CHECK_LIST.every(known),
     units: can(MODULE_CHECKS.units),
     unitLevels: can(MODULE_CHECKS.unitLevels),
     soldiers: can(MODULE_CHECKS.soldiers),

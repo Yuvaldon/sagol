@@ -327,10 +327,12 @@ The current state, in short (D-128). The entries hold the reasons.
 ## Workspace, routing and view state (D-023)
 
 - One main workspace route. Management modules and details open as floating surfaces:
-  side drawer on desktop, bottom sheet on mobile. Navigation is the new shell (R5·1, D-455, D-465):
+  a side panel on desktop (`ui/patterns/SidePanel`, not modal: the content narrows beside it through the root's
+  `data-side-panel` and the theme's `panel-open:` variant, D-491), a bottom sheet on mobile. Navigation is the new shell (R5·1, D-455, D-465):
   `ui/shell/WorkspaceScreen` shows one of four destinations by the `tab` search param, read and written by
   `useShellPlace` in `logic/shell/place.ts`; `useShellAccess` there says which destinations and whether the action
-  circle are the actor's. `TabBar` floats over all of them. "היום" (`ui/shell/today`), "ניהול" (`ui/shell/manage`,
+  circle are the actor's. `TabBar` floats over all of them on a phone; on a desktop `SideRail` (same file) stands on the
+  inline start, and "ניהול" shows its rows beside an open page (`ManagePage`'s `Beside`, D-491). "היום" (`ui/shell/today`), "ניהול" (`ui/shell/manage`,
   its rows from `moduleEntries.ts` and `manage/rows.ts`, with `WORK_SECTIONS` and `SETUP_SECTIONS` in `config` still
   naming what exists) and "אני" (`ui/shell/me`) are pages in `PageFrame`; a page over a destination is the `page`
   param. "לוח" is `BoardPlace`: each engine draws itself inside `ui/board/BoardScreen` (the month title, its arrows, "היום", the
@@ -338,8 +340,10 @@ The current state, in short (D-128). The entries hold the reasons.
   `logic/view-state/boardDay.ts`. The `leaves` panel opens in `ui/shell/LeaveDrawer` (a new leave, a leave's card,
   and the leave-round planner at `entity=round`, D-486), and "דוח 1" (`DayReportDialog`) in the same drawer with stops.
   The pages of "ניהול" (R5·4, D-482) are in `ui/shell/manage`: `SoldiersPage` over `usePeopleList` (`logic/roster/
-  people.ts`, the board's `boardItems` on today, the options in the URL's `people` param), `AddSoldiersPage` over the
-  quick entry's logic, `JoinsPage` over `useLinkAssessments` and `joinGroups`/`useJoinApproval` (`logic/accounts`), and
+  people.ts`, the board's `boardItems` on today, the options in the URL's `people` param), its rows in `PeopleRows` (a
+  windowed list on a phone, a windowed table on a desktop, over the page's scroll from `pageScroll`, D-491), `AddSoldiersPage` over the
+  quick entry's logic, `JoinsPage` over `useLinkAssessments` and `joinGroups`/`useJoinApproval` (`logic/accounts`), with a swipe on a row and
+  the linked accounts' drawer (`LinkedAccounts`, `entity=linked`, D-493), and
   `RulesPage`, whose "לא חל" is `overridingRule` in `domain/availability`. Their drawers: the person card
   (`ui/shell/PersonDrawer`, `panel=soldiers`), the rule (`manage/RuleDrawer`, `panel=rules` with an entity), the join
   request (`manage/JoinDrawer`) and the archives (`manage/ArchiveDrawers`, `entity=archive`). One toast region for the
@@ -352,10 +356,12 @@ The current state, in short (D-128). The entries hold the reasons.
   `logic/roster/cardEdit.ts`, and the tray's tags `useSetTagsOfMany` in `logic/tags/many.ts`. The shared
   components of the new interface are in `ui/kit`; `ui/shell/chrome.ts` ties a page's scroll to the bar. The day
   math of "היום" is `logic/leaves/calendar.ts`, and the soldier's own days are `useMyDays`. In routine the one
-  action is "פתיחת סבב" (`useQuickAction` in `logic`, D-469). A field whose definition is missing offers the
+  action is "פתיחת סבב" (`useQuickAction` in `logic`, D-469). A module's archive asks, then leaves a line with
+  "ביטול" in the module (`useArchiveStep` in `ui/patterns`, D-494). A field whose definition is missing offers the
   module's own form over the drawer (`CreateInPlace` in `ui/patterns`), and takes what was saved; the next undone
-  setup step is `nextSetupStep` in `logic`. The heat row always sits above the soldiers, sticky (D-310).
-  The board's options (`ui/board/BoardOptions` over `kit/OptionsMenu`) hold the unit, range, sort, group and filter;
+  setup step is `nextSetupStep` in `logic`. The timeline marks no threshold (D-491); the calendar does, by the day.
+  The board's options (`ui/board/BoardOptions` over `kit/OptionsMenu`) hold the unit, range, sort, group and filter (no
+  colors, D-491);
   their "מיון מתקדם" and "סינון" open the rule builder (`RuleBuilder`, D-312), whose soldier rules live in the URL's `filter` and its sort rows in `sorts` (D-313). The organization's setup (`setup` panel) is first in that panel and the
   empty board's one action (D-256); its steps are `SETUP_STEPS` in `config`, shown by `create` permission and marked
   done from live rows (`useSetupProgress`, D-180).
@@ -376,14 +382,12 @@ The current state, in short (D-128). The entries hold the reasons.
 
 Each engine (calendar, timeline, movements as `list`, table) is a self-contained module:
 
-1. **core:** pure logic (date math, layout, lanes for overlaps, collisions, drag), no React,
-   no domain knowledge. Unit-tested.
-2. **view:** React rendering of a neutral model (resources and time-bound items).
-3. **adapter:** the only place translating domain entities (soldier, leave, availability)
-   into that model.
+1. **core:** pure logic (date math, lanes for overlaps, drag), no React, no domain knowledge. Unit-tested.
+2. **adapter:** the only place translating domain entities (soldier, leave, availability) into what is drawn, and
+   drawing it.
 
 A registry maps view ids (from `config`) to engines. The central viewport is a pluggable
-container that mounts whichever engine is active; each engine reads the same view state (window, filter, colors) from the
+container that mounts whichever engine is active; each engine reads the same view state (window, filter, sort) from the
 URL through `logic`, so switching engines keeps it.
 Replacing an engine replaces one registry entry. Engines never call each other.
 
@@ -391,8 +395,11 @@ The current state (D-174): `logic/board` is the one model of every engine (rows,
 `logic/timeline` keeps only drag editing. What the engines share on screen is in `ui/board` (the frame with its loading,
 failed and empty states on the window each view hands it, the head, the options, the rows of a day and the gestures),
 outside `ui/engines`, so engines stay independent. The day's cuts (`dayLeaves`, `boardMovements`, `movementRuns`) and
-the impact line (`impactOf`) are pure in `logic/board`. Only the wide timeline has a core and a view; a phone's timeline
-(`PhoneTimeline`), the movements, the table and the calendar are adapters alone.
+the impact line (`impactOf`) are pure in `logic/board`. Only the timeline has a core (lanes, the drag's math); its adapter
+draws the person bars on every width (`PersonTimeline` over the pure `bars.ts`), drags them on a desktop (`useDrag`,
+`boardDrag`, the drag's card in `DragOverlay`), and draws a moved round leave's first place from `useRoundMoves` (D-491,
+D-492). The old grid, its view model and the color mode are gone. The movements, the table and the calendar are adapters
+alone.
 
 ## Dashboards (D-349, D-350, D-360 … D-362)
 
@@ -457,7 +464,7 @@ src/
   logic/       access/ accounts/ board/ deployments/ device/ filters/ forms/ home/ leaves/ organization/ permissions/
                presence/ (the day report) properties/ queries/ roster/ rules/ runtime/ seniority/ session/ shell/ tags/
                timeline/ transfer/ units/ view-state/ testing/ (test-only helpers, D-135)
-  ui/          theme/ primitives/ kit/ (the new interface's shared components) patterns/ (rules/: the rule gate, shared by modules and engines) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
+  ui/          theme/ primitives/ kit/ (the new interface's shared components) patterns/ (rules/: the rule gate, shared by modules and engines; SidePanel, ArchiveStep) errors/ shell/ modules/ board/ engines/{registry,timeline,calendar,list,table}/
   i18n/        he/ keys
   app/         env/ time/ composition/ router/ shell/ (the browser's worker and install offer, D-183)
                worker/ (the service worker: precache, push, notification taps, D-359)
