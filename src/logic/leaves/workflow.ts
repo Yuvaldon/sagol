@@ -317,6 +317,8 @@ export interface MyDay {
   readonly state: 'base' | 'round' | 'away' | 'pending'
   /** The leave that makes the day what it is; NULL on base. */
   readonly leave_id: LeaveId | null
+  /** That leave's type, which names a request that waits on the strip (OI-395); NULL on base. */
+  readonly type_id: LeaveTypeId | null
 }
 
 /** The soldier's days from a day on: an approved absence wins over a request that waits, which wins over the base. The leave round is told apart from another absence. */
@@ -329,15 +331,18 @@ export function myDays(
 ): readonly MyDay[] {
   const availability = createAvailabilityContext({ leaves, leave_types: leaveTypes })
   const rounds = new Set(leaves.filter((leave) => leave.batch_id !== null).map((leave) => leave.id))
+  const typeOf = new Map(leaves.map((leave) => [leave.id, leave.leave_type_id]))
   return Array.from({ length: count }, (_, index): MyDay => {
     const day = availability.on(soldierId, addDays(from, index), APPROVED_ONLY)
     const away = day.leaves.find((leave) => leave.counted)
-    if (away !== undefined) return { date: day.date, state: rounds.has(away.leave_id) ? 'round' : 'away', leave_id: away.leave_id }
+    if (away !== undefined) {
+      return { date: day.date, state: rounds.has(away.leave_id) ? 'round' : 'away', leave_id: away.leave_id, type_id: typeOf.get(away.leave_id) ?? null }
+    }
     const waits = day.leaves.find(
       (leave) => leave.status === LeaveStatus.enum.pending && leave.effect === AvailabilityEffect.enum.unavailable,
     )
-    if (waits !== undefined) return { date: day.date, state: 'pending', leave_id: waits.leave_id }
-    return { date: day.date, state: 'base', leave_id: null }
+    if (waits !== undefined) return { date: day.date, state: 'pending', leave_id: waits.leave_id, type_id: typeOf.get(waits.leave_id) ?? null }
+    return { date: day.date, state: 'base', leave_id: null, type_id: null }
   })
 }
 

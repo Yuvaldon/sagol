@@ -264,6 +264,8 @@ describe('the thread, the inbox and the day count (D-119, D-120)', () => {
     const days = myDays(ACTOR, rows, [], today, 5)
     expect(days.map((day) => day.state)).toEqual(['base', 'away', 'away', 'pending', 'base'])
     expect(days.map((day) => day.leave_id)).toEqual([null, rows[0]?.id, rows[0]?.id, rows[1]?.id, null])
+    // The type names a waiting request across its days on the strip (OI-395).
+    expect(days.map((day) => day.type_id)).toEqual([null, rows[0]?.leave_type_id, rows[0]?.leave_type_id, rows[1]?.leave_type_id, null])
   })
 
   it('tells the leave round, an approved leave of a batch, from another absence (D-268)', () => {
