@@ -345,7 +345,11 @@ The current state, in short (D-128). The entries hold the reasons.
   request (`manage/JoinDrawer`) and the archives (`manage/ArchiveDrawers`, `entity=archive`). One toast region for the
   workspace is `NoticeScope` (`useNotices`). Every other panel opens in `ModuleDrawer`, which keeps the full form of
   one new soldier and the board's rules of a day. What waits for approval is listed in one place, the page
-  `requests` (D-474). The shared
+  `requests` (D-474). "אני" (R5·5, D-488) is `ui/shell/me`: the index, `RotationPage`, `MyRequestsPage` and
+  `PreferencesPage` (`page=rotation|my_requests|preferences`); the bell opens `ui/shell/NotificationsDrawer`
+  (`panel=notifications`, over `useMyUpdates`). The profile and the person card share `ui/shell/person` (D-489): `Profile`
+  (the body, the copy fields, the edit's controls), `useProfileEdit`, and `TagPicker`; their save is `useCardSave` in
+  `logic/roster/cardEdit.ts`, and the tray's tags `useSetTagsOfMany` in `logic/tags/many.ts`. The shared
   components of the new interface are in `ui/kit`; `ui/shell/chrome.ts` ties a page's scroll to the bar. The day
   math of "היום" is `logic/leaves/calendar.ts`, and the soldier's own days are `useMyDays`. In routine the one
   action is "פתיחת סבב" (`useQuickAction` in `logic`, D-469). A field whose definition is missing offers the
